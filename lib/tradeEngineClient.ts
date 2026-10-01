@@ -33,7 +33,7 @@ export interface TradeEngineTick {
 // ── Symbol Normalizer ────────────────────────────────────────────────────────
 export function normalizeSymbolKey(sym: string): string {
   if (!sym) return '';
-  return sym
+  const clean = sym
     .trim()
     .toUpperCase()
     .replace(/\s+/g, '')
@@ -41,6 +41,46 @@ export function normalizeSymbolKey(sym: string): string {
     .replace(/\.BO$/, '')
     .replace(/-USD$/, '')
     .replace(/USDT$/, '');
+
+  // Canonical index mappings
+  if (clean === 'NIFTY50' || clean === 'NIFTY_50' || clean === 'CNXNIFTY' || clean === 'NIFTY') {
+    return 'NIFTY';
+  }
+  if (clean === 'BANKNIFTY' || clean === 'NIFTYBANK' || clean === 'BANK_NIFTY') {
+    return 'BANKNIFTY';
+  }
+  if (clean === 'FINNIFTY' || clean === 'CNXFINANCE' || clean === 'NIFTYFINSERVICE' || clean === 'FIN_NIFTY') {
+    return 'FINNIFTY';
+  }
+  if (clean === 'SENSEX' || clean === 'BSESENSEX' || clean === 'BSE30') {
+    return 'SENSEX';
+  }
+  if (clean === 'MIDCAP150' || clean === 'NIFTYMIDCAP150') {
+    return 'MIDCAP150';
+  }
+  if (clean === 'SPX' || clean === 'S&P500' || clean === 'SP500') {
+    return 'SPX';
+  }
+  if (clean === 'NDX' || clean === 'NASDAQ100' || clean === 'NASDAQ') {
+    return 'NDX';
+  }
+  if (clean === 'DJI' || clean === 'DOWJONES' || clean === 'DOW') {
+    return 'DJI';
+  }
+  if (clean === 'BTC' || clean === 'BITCOIN') {
+    return 'BTC';
+  }
+  if (clean === 'ETH' || clean === 'ETHEREUM') {
+    return 'ETH';
+  }
+  if (clean === 'SOL' || clean === 'SOLANA') {
+    return 'SOL';
+  }
+  if (clean === 'BNB' || clean === 'BINANCECOIN') {
+    return 'BNB';
+  }
+
+  return clean;
 }
 
 /** Check if two symbol representations refer to the same instrument */

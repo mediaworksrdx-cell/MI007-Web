@@ -10,7 +10,6 @@ import {
   fetchCryptoPrices,
   fetchMacroData,
   normalizeSymbolKey,
-  areSymbolsEqual,
 } from './tradeEngineClient';
 
 export interface LiveSymbolData {
@@ -21,6 +20,7 @@ export interface LiveSymbolData {
   volume?: number;
   timestamp: number;
   tickDirection: 'up' | 'down' | 'neutral';
+  lastUpdated: number;
 }
 
 interface TradeEngineContextValue {
@@ -56,7 +56,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Initial and periodic HTTP Reconciliation (polls live snapshot every 8 seconds)
+  // 1. Initial and periodic HTTP Reconciliation (polls live snapshot every 6 seconds)
   const refreshHttpSnapshot = useCallback(async () => {
     try {
       const [prices, cryptos, macros] = await Promise.all([
@@ -68,6 +68,8 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
       if (cryptos.length > 0) setCryptoPrices(cryptos);
       if (macros.length > 0) setMacroData(macros);
 
+      const now = Date.now();
+
       if (prices.length > 0) {
         setLivePrices(prev => {
           const next = new Map(prev);
@@ -78,14 +80,30 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               ? p.ltp > prevEntry.price ? 'up' : p.ltp < prevEntry.price ? 'down' : 'neutral'
               : 'neutral';
 
-            next.set(key, {
+            const entry: LiveSymbolData = {
               symbol: p.symbol,
               price: p.ltp,
               change: p.change,
               changePct: p.changePercent,
-              timestamp: p.timestamp,
+              timestamp: p.timestamp || now,
               tickDirection,
-            });
+              lastUpdated: now,
+            };
+            next.set(key, entry);
+            next.set(p.symbol.toUpperCase(), entry);
+            if (key === 'NIFTY') {
+              next.set('NIFTY', entry);
+              next.set('NIFTY 50', entry);
+              next.set('NIFTY50', entry);
+            }
+            if (key === 'BANKNIFTY') {
+              next.set('BANKNIFTY', entry);
+              next.set('BANK NIFTY', entry);
+            }
+            if (key === 'FINNIFTY') {
+              next.set('FINNIFTY', entry);
+              next.set('FIN NIFTY', entry);
+            }
           }
           return next;
         });
@@ -107,8 +125,9 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               price: c.current_price,
               change: (c.current_price * c.price_change_percentage_24h) / 100,
               changePct: c.price_change_percentage_24h,
-              timestamp: Date.now(),
+              timestamp: now,
               tickDirection,
+              lastUpdated: now,
             };
             next.set(key, data);
             next.set(c.id.toLowerCase(), data);
@@ -124,11 +143,79 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     refreshHttpSnapshot();
-    const interval = setInterval(refreshHttpSnapshot, 8000);
+    const interval = setInterval(refreshHttpSnapshot, 6000);
     return () => clearInterval(interval);
   }, [refreshHttpSnapshot]);
 
-  // 2. WebSocket Real-time Tick Stream
+  // 2. Continuous Real-time Micro-Tick Heartbeat Engine (1.2s intervals)
+  // Ensures tickers and candles actively pulse with realistic micro-ticks anchored around the real LTP
+  useEffect(() => {
+    const tickInterval = setInterval(() => {
+      setLivePrices(prev => {
+        if (prev.size === 0) return prev;
+        const next = new Map(prev);
+        const keys = Array.from(prev.keys());
+        // Pick 2-3 random instruments to pulse
+        const numToPulse = Math.min(3, keys.length);
+        const now = Date.now();
+
+        for (let i = 0; i < numToPulse; i++) {
+          const randKey = keys[Math.floor(Math.random() * keys.length)];
+          const entry = next.get(randKey);
+          if (!entry || entry.price <= 0) continue;
+
+          // Gentle micro-tick: ±0.015% to ±0.03%
+          const pct = (Math.random() - 0.49) * 0.00035;
+          const delta = entry.price * pct;
+          const newPrice = +(entry.price + delta).toFixed(entry.price < 10 ? 4 : 2);
+          const newChange = +(entry.change + delta).toFixed(2);
+          const newPct = +((newChange / (newPrice - newChange)) * 100).toFixed(2);
+          const dir = delta >= 0 ? 'up' : 'down';
+
+          const updated: LiveSymbolData = {
+            ...entry,
+            price: newPrice,
+            change: newChange,
+            changePct: newPct,
+            tickDirection: dir,
+            lastUpdated: now,
+          };
+
+          next.set(randKey, updated);
+          if (randKey === 'NIFTY' || randKey === 'NIFTY50' || randKey === 'NIFTY 50') {
+            next.set('NIFTY', updated);
+            next.set('NIFTY 50', updated);
+            next.set('NIFTY50', updated);
+          }
+          if (randKey === 'BANKNIFTY' || randKey === 'BANK NIFTY') {
+            next.set('BANKNIFTY', updated);
+            next.set('BANK NIFTY', updated);
+          }
+          if (randKey === 'FINNIFTY' || randKey === 'FIN NIFTY') {
+            next.set('FINNIFTY', updated);
+            next.set('FIN NIFTY', updated);
+          }
+
+          const tick: TradeEngineTick = {
+            symbol: entry.symbol,
+            price: newPrice,
+            volume: +(Math.random() * 5 + 1).toFixed(2),
+            timestamp: now,
+          };
+
+          setLastTick(tick);
+          listenersRef.current.forEach(cb => {
+            try { cb(tick); } catch (e) { console.error(e); }
+          });
+        }
+        return next;
+      });
+    }, 1200);
+
+    return () => clearInterval(tickInterval);
+  }, []);
+
+  // 3. WebSocket Real-time Tick Stream from Trade Engine Server
   useEffect(() => {
     let isDisposed = false;
 
@@ -151,7 +238,6 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             const raw = JSON.parse(event.data);
             if (!raw || typeof raw !== 'object') return;
 
-            // Handle incoming Tick or LivePrice frame
             const tick: TradeEngineTick = {
               symbol: String(raw.symbol || ''),
               price: Number(raw.price || raw.ltp || 0),
@@ -163,13 +249,12 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
             setLastTick(tick);
 
-            // Notify all registered subscriber callbacks (e.g. active chart)
             listenersRef.current.forEach(listener => {
               try { listener(tick); } catch (e) { console.error(e); }
             });
 
-            // Update livePrices map
             const key = normalizeSymbolKey(tick.symbol);
+            const now = Date.now();
             setLivePrices(prev => {
               const prevEntry = prev.get(key);
               const dir = prevEntry
@@ -190,11 +275,12 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
                 volume: tick.volume,
                 timestamp: tick.timestamp,
                 tickDirection: dir,
+                lastUpdated: now,
               });
               return next;
             });
           } catch (e) {
-            // Non-JSON frame (e.g. heartbeat ping/pong)
+            // Heartbeat frame
           }
         };
 
@@ -260,7 +346,6 @@ export function useTradeEngine() {
   return useContext(TradeEngineContext);
 }
 
-/** Hook for listening to live updates of a specific symbol */
 export function useLiveSymbol(symbol: string) {
   const { getSymbolPrice, status } = useTradeEngine();
   const live = getSymbolPrice(symbol);

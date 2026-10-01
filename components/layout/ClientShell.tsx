@@ -10,7 +10,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Navbar market={market} onMarketChange={setMarket} />
-      <main className="min-h-screen pt-[88px] pb-0">
+      <main className="min-h-screen pt-28 pb-0">
         {children}
       </main>
       <Footer />

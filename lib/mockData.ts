@@ -4,11 +4,11 @@ import { Candle, MarketType } from './types';
 /** Base prices for different instruments */
 const BASE_PRICES: Record<MarketType, Record<string, number>> = {
   INDIA: {
-    NIFTY: 24850,
-    BANKNIFTY: 53200,
-    RELIANCE: 2980,
-    TCS: 4250,
-    HDFCBANK: 1785,
+    NIFTY: 22421.95,
+    BANKNIFTY: 54358.90,
+    RELIANCE: 1167.30,
+    TCS: 2075.30,
+    HDFCBANK: 721.20,
   },
   USA: {
     SPX: 5480,
@@ -120,16 +120,16 @@ export function getMockQuote(
 
 export const TICKER_DATA_BY_MARKET: Record<MarketType, { symbol: string; price: number; change: number; changePct: number }[]> = {
   INDIA: [
-    { symbol: 'NIFTY 50', price: 24976.95, change: 126.85, changePct: 0.51 },
-    { symbol: 'BANKNIFTY', price: 53362.75, change: 164.20, changePct: 0.31 },
-    { symbol: 'SENSEX', price: 82410.50, change: 382.40, changePct: 0.47 },
-    { symbol: 'RELIANCE', price: 2966.75, change: -13.10, changePct: -0.44 },
-    { symbol: 'TCS', price: 4237.32, change: -12.75, changePct: -0.30 },
-    { symbol: 'HDFCBANK', price: 1779.92, change: -5.00, changePct: -0.28 },
-    { symbol: 'INFY', price: 1924.40, change: 18.60, changePct: 0.98 },
-    { symbol: 'ICICIBANK', price: 1248.80, change: 8.20, changePct: 0.66 },
-    { symbol: 'ITC', price: 489.15, change: -1.25, changePct: -0.25 },
-    { symbol: 'WIPRO', price: 544.60, change: 4.80, changePct: 0.89 },
+    { symbol: 'NIFTY', price: 22421.95, change: -260.80, changePct: -1.15 },
+    { symbol: 'BANKNIFTY', price: 54358.90, change: -274.15, changePct: -0.50 },
+    { symbol: 'SENSEX', price: 71753.99, change: -726.30, changePct: -1.00 },
+    { symbol: 'RELIANCE', price: 1167.30, change: -19.70, changePct: -1.66 },
+    { symbol: 'TCS', price: 2075.30, change: 24.70, changePct: 1.20 },
+    { symbol: 'HDFCBANK', price: 721.20, change: 8.50, changePct: 1.20 },
+    { symbol: 'INFY', price: 1022.70, change: 28.60, changePct: 2.88 },
+    { symbol: 'ICICIBANK', price: 1312.70, change: -9.00, changePct: -0.68 },
+    { symbol: 'ITC', price: 255.70, change: -7.05, changePct: -2.68 },
+    { symbol: 'SBIN', price: 950.90, change: -8.60, changePct: -0.90 },
   ],
   USA: [
     { symbol: 'S&P 500', price: 5482.30, change: 24.15, changePct: 0.44 },
