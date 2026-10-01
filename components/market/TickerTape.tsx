@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import Link from 'next/link';
 import { MarketType, MARKETS } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
@@ -126,13 +127,18 @@ export function TickerTape({ market: propMarket, currency: propCurrency }: Ticke
             const isMacro = (item as any).isMacro;
             const displayVal = (item as any).displayVal;
             const isUp = item.change >= 0;
+            const cleanSym = item.symbol.replace(/\s+/g, '');
+            const href = `/chart/${cleanSym}?market=${activeMarket}`;
 
             return (
-              <div
+              <Link
                 key={`${item.symbol}-${idx}`}
-                className="inline-flex items-center gap-2 px-3 text-[14px] mono shrink-0 whitespace-nowrap cursor-default hover:bg-slate-100 transition-colors rounded py-0.5"
+                href={isMacro ? '#' : href}
+                className={`inline-flex items-center gap-2 px-3 text-[14px] mono shrink-0 whitespace-nowrap transition-colors rounded py-0.5 ${
+                  isMacro ? 'cursor-default' : 'cursor-pointer hover:bg-slate-200/70 hover:scale-[1.02]'
+                }`}
               >
-                <span className="font-black text-black tracking-wider">
+                <span className="font-black text-black tracking-wider group-hover:text-emerald-700">
                   {item.symbol}
                 </span>
 
@@ -164,7 +170,7 @@ export function TickerTape({ market: propMarket, currency: propCurrency }: Ticke
                   </span>
                 )}
                 <span className="text-slate-300 ml-2 font-normal">|</span>
-              </div>
+              </Link>
             );
           })}
         </div>

@@ -46,12 +46,45 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [isLiveFromEngine, setIsLiveFromEngine] = useState(false);
 
   const { status, getSymbolPrice, subscribeToTicks } = useTradeEngine();
-  const currency = instruments[0].currency;
 
-  // Reset symbol when market changes
+  // Sync with defaultSymbol whenever URL/prop changes
   useEffect(() => {
-    setSelectedSymbol(INSTRUMENTS[market][0].symbol);
+    if (defaultSymbol) {
+      setSelectedSymbol(defaultSymbol);
+    }
+  }, [defaultSymbol]);
+
+  // Only reset symbol when the market truly changes (NOT on initial mount)
+  const isFirstMount = useRef(true);
+  const prevMarketRef = useRef(market);
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    if (prevMarketRef.current !== market) {
+      prevMarketRef.current = market;
+      setSelectedSymbol(INSTRUMENTS[market][0].symbol);
+    }
   }, [market]);
+
+  const isCryptoSymbol = ['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX'].includes(selectedSymbol.toUpperCase());
+  const currency = isCryptoSymbol ? '$' : (instruments[0]?.currency ?? '₹');
+
+  const allTabs = useMemo(() => {
+    const list = [...instruments];
+    const exists = list.some(inst => areSymbolsEqual(inst.symbol, selectedSymbol));
+    if (!exists && selectedSymbol) {
+      list.unshift({
+        symbol: selectedSymbol,
+        name: selectedSymbol,
+        exchange: isCryptoSymbol ? 'CRYPTO' : (market === 'USA' ? 'NASDAQ' : market === 'UAE' ? 'DFM' : 'NSE'),
+        currency: isCryptoSymbol ? '$' : (instruments[0]?.currency ?? '₹'),
+        market,
+      });
+    }
+    return list;
+  }, [instruments, selectedSymbol, isCryptoSymbol, market]);
 
   // Load candles from Trade Engine (with realistic fallback)
   useEffect(() => {
@@ -198,7 +231,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     <div className="flex flex-col h-full rounded-xl border border-border-navy bg-surface-card overflow-hidden shadow-card">
       {/* ── Instrument Tabs & Live Engine Status ── */}
       <div className="flex items-center gap-0.5 border-b border-border-navy px-2 pt-2 overflow-x-auto scrollbar-none">
-        {instruments.map(inst => {
+        {allTabs.map(inst => {
           const isSelected = inst.symbol === selectedSymbol;
           return (
             <button key={inst.symbol} onClick={() => setSelectedSymbol(inst.symbol)}

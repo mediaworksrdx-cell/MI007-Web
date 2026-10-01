@@ -264,7 +264,7 @@ export default function TerminalPage() {
                 return (
                   <Link
                     key={c.symbol}
-                    href={`/chart/${c.symbol}?market=INDIA`}
+                    href={`/chart/${c.symbol}`}
                     className="rounded-xl border border-white/60 bg-white/60 backdrop-blur-md p-3 hover:border-emerald-500 hover:bg-white/80 transition-all shadow-sm flex flex-col gap-1 group"
                   >
                     <div className="flex items-center justify-between">

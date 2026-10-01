@@ -13,17 +13,33 @@ interface ChartPageProps {
   searchParams: Promise<{ market?: string }>;
 }
 
+const CRYPTO_SET = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX']);
+const USA_SET = new Set(['SPX', 'NDX', 'DJI', 'AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'S&P 500', 'NASDAQ 100', 'DOW JONES']);
+const UAE_SET = new Set(['DFMGI', 'ADXGI', 'ADX', 'EMAAR', 'FAB', 'DEWA', 'ALDAR', 'ENBD', 'ADNOC', 'AIRARABIA', 'DFM GENERAL', 'ADX GENERAL', 'FTSE ADX 15']);
+
 export default function ChartPage({ params, searchParams }: ChartPageProps) {
   const { symbol } = use(params);
   const { market: marketParam } = use(searchParams);
 
+  const cleanSym = symbol.toUpperCase();
+  const isCrypto = CRYPTO_SET.has(cleanSym);
+
   const validMarkets: MarketType[] = ['INDIA', 'USA', 'UAE'];
-  const defaultMarket: MarketType = validMarkets.includes(marketParam as MarketType)
-    ? (marketParam as MarketType)
-    : 'INDIA';
+  let defaultMarket: MarketType = 'INDIA';
+
+  if (marketParam && validMarkets.includes(marketParam as MarketType)) {
+    defaultMarket = marketParam as MarketType;
+  } else if (USA_SET.has(cleanSym)) {
+    defaultMarket = 'USA';
+  } else if (UAE_SET.has(cleanSym)) {
+    defaultMarket = 'UAE';
+  } else if (isCrypto) {
+    defaultMarket = 'USA';
+  }
 
   const [market, setMarket] = useState<MarketType>(defaultMarket);
-  const currency = MARKETS[market].currency;
+
+  const marketBadge = isCrypto ? '🌐 24/7 CRYPTO' : `${MARKETS[market].flag} ${MARKETS[market].label}`;
 
   return (
     <>
@@ -39,8 +55,8 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
             ← TERMINAL
           </Link>
           <span className="text-slate-400 font-bold">|</span>
-          <span className="mono text-[14px] font-black text-emerald-700 tracking-widest">{symbol.toUpperCase()}</span>
-          <span className="mono text-[13px] text-black font-bold">{MARKETS[market].flag} {MARKETS[market].label}</span>
+          <span className="mono text-[14px] font-black text-emerald-700 tracking-widest">{cleanSym}</span>
+          <span className="mono text-[13px] text-black font-bold">{marketBadge}</span>
 
           {/* Live badge */}
           <div className="ml-auto flex items-center gap-1.5">
@@ -51,7 +67,7 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
 
         {/* ── Full Chart Terminal ── */}
         <div className="flex-1 min-h-0 p-3">
-          <ChartContainer market={market} defaultSymbol={symbol.toUpperCase()} />
+          <ChartContainer market={market} defaultSymbol={cleanSym} />
         </div>
       </main>
 

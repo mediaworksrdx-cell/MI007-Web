@@ -6,24 +6,60 @@ const BASE_PRICES: Record<MarketType, Record<string, number>> = {
   INDIA: {
     NIFTY: 22421.95,
     BANKNIFTY: 54358.90,
+    SENSEX: 71753.99,
+    FINNIFTY: 24468.60,
     RELIANCE: 1167.30,
     TCS: 2075.30,
     HDFCBANK: 721.20,
+    INFY: 1022.70,
+    ITC: 255.70,
+    SBIN: 950.90,
+    TATAMOTORS: 277.15,
+    LT: 3677.20,
+    ICICIBANK: 1312.70,
   },
   USA: {
-    SPX: 5480,
+    SPX: 5500,
+    'S&P 500': 5500,
     NDX: 19200,
+    'NASDAQ 100': 19200,
+    DJI: 39500,
+    'DOW JONES': 39500,
     AAPL: 228,
     NVDA: 875,
+    MSFT: 432.80,
     TSLA: 248,
+    AMZN: 198.30,
+    META: 562.10,
+    GOOGL: 176.40,
   },
   UAE: {
-    DFMGI: 4320,
-    ADXGI: 9850,
+    DFMGI: 4850,
+    'DFM GENERAL': 4850,
+    ADXGI: 9250,
+    ADX: 9250,
+    'ADX GENERAL': 9250,
+    'FTSE ADX 15': 9410.20,
     EMAAR: 8.45,
     FAB: 13.80,
     DEWA: 2.92,
+    ALDAR: 6.82,
+    ENBD: 18.65,
+    ADNOC: 3.78,
+    AIRARABIA: 2.65,
   },
+};
+
+const CRYPTO_BASE_PRICES: Record<string, number> = {
+  BTC: 83651.0,
+  ETH: 2687.59,
+  SOL: 103.50,
+  BNB: 754.0,
+  DOGE: 0.090,
+  SHIB: 0.0000185,
+  XRP: 0.60,
+  ADA: 0.45,
+  AVAX: 28.50,
 };
 
 /** Generate realistic OHLCV candles with volatility clustering */
@@ -33,8 +69,16 @@ export function generateMockCandles(
   count: number = 300,
   timeframeMs: number = 60 * 60 * 1000 // 1H default
 ): Candle[] {
-  const market_prices = BASE_PRICES[market];
-  const basePrice = market_prices[symbol] ?? 1000;
+  const symClean = symbol.toUpperCase().replace(/\s+/g, '');
+  const market_prices = BASE_PRICES[market] || BASE_PRICES.INDIA;
+  const basePrice =
+    CRYPTO_BASE_PRICES[symClean] ??
+    market_prices[symbol] ??
+    market_prices[symClean] ??
+    BASE_PRICES.INDIA[symClean] ??
+    BASE_PRICES.USA[symClean] ??
+    BASE_PRICES.UAE[symClean] ??
+    1000;
 
   // Volatility coefficients per market
   const volFactor = market === 'INDIA' ? 0.0008
@@ -102,7 +146,16 @@ export function getMockQuote(
   market: MarketType,
   symbol: string
 ): { price: number; change: number; changePct: number; high: number; low: number; volume: number; open: number } {
-  const basePrice = BASE_PRICES[market]?.[symbol] ?? 1000;
+  const symClean = symbol.toUpperCase().replace(/\s+/g, '');
+  const market_prices = BASE_PRICES[market] || BASE_PRICES.INDIA;
+  const basePrice =
+    CRYPTO_BASE_PRICES[symClean] ??
+    market_prices[symbol] ??
+    market_prices[symClean] ??
+    BASE_PRICES.INDIA[symClean] ??
+    BASE_PRICES.USA[symClean] ??
+    BASE_PRICES.UAE[symClean] ??
+    1000;
   const change = (Math.random() - 0.48) * basePrice * 0.018;
   const open = basePrice - change * 0.3;
   const high = basePrice + Math.abs(change) * 1.4;
