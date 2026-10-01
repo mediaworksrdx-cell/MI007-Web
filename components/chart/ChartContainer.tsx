@@ -14,6 +14,7 @@ import {
 import { getMockCandles, getMockQuote } from '@/lib/mockData';
 import { fetchCandles, areSymbolsEqual } from '@/lib/tradeEngineClient';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
+import { loadStoredCandles, saveStoredCandles, mergeCandleArrays } from '@/lib/candleStorage';
 import { ChartToolbar } from './ChartToolbar';
 import { CandlestickCanvas } from './CandlestickCanvas';
 import { OHLCVHeader } from './OHLCVHeader';
@@ -86,27 +87,40 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     return list;
   }, [instruments, selectedSymbol, isCryptoSymbol, market]);
 
-  // Load candles from Trade Engine (with realistic fallback)
+  // Load candles from cache first, then reconcile with Trade Engine
   useEffect(() => {
     let isCancelled = false;
     setIsLoadingCandles(true);
 
     async function loadCandles() {
-      // 1. Attempt to fetch real candles from Trade Engine
+      // 1. Instant load from IndexedDB cache
+      const cached = await loadStoredCandles(selectedSymbol, timeframe);
+      if (!isCancelled && cached && cached.length > 0) {
+        setCandles(cached);
+        const lastC = cached[cached.length - 1];
+        setCurrentPrice(lastC?.close);
+        setIsLoadingCandles(false);
+      }
+
+      // 2. Fetch latest candles from Trade Engine API
       const engineCandles = await fetchCandles(selectedSymbol, timeframe);
 
       if (!isCancelled) {
         if (engineCandles && engineCandles.length > 5) {
-          setCandles(engineCandles);
-          const lastC = engineCandles[engineCandles.length - 1];
+          const merged = mergeCandleArrays(cached || [], engineCandles);
+          setCandles(merged);
+          const lastC = merged[merged.length - 1];
           setCurrentPrice(lastC?.close);
           setIsLiveFromEngine(true);
-        } else {
+          // Persist merged dataset to IndexedDB
+          saveStoredCandles(selectedSymbol, timeframe, merged);
+        } else if (!cached || cached.length === 0) {
           // Fallback to high-quality generator if offline or empty
           const fallback = getMockCandles(market, selectedSymbol, timeframe, 300);
           setCandles(fallback);
           setCurrentPrice(fallback[fallback.length - 1]?.close);
           setIsLiveFromEngine(false);
+          saveStoredCandles(selectedSymbol, timeframe, fallback);
         }
         setIsLoadingCandles(false);
       }
@@ -119,7 +133,10 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     };
   }, [market, selectedSymbol, timeframe]);
 
-  // Listen to live WebSocket ticks from the Trade Engine
+  // Track last save timestamp to throttle IndexedDB writes during active ticks
+  const lastSaveTimeRef = useRef<number>(0);
+
+  // Listen to live WebSocket ticks from the Trade Engine with clock-aligned candle formation
   useEffect(() => {
     const unsub = subscribeToTicks((tick) => {
       if (areSymbolsEqual(tick.symbol, selectedSymbol)) {
@@ -129,11 +146,15 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         setCandles(prev => {
           if (prev.length === 0) return prev;
           const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
-          const lastCandle = prev[prev.length - 1];
           const now = tick.timestamp || Date.now();
+          // True interval binning: calculate the bucket openTime for the current time
+          const currentBucketOpenTime = Math.floor(now / tfMs) * tfMs;
+          const lastCandle = prev[prev.length - 1];
 
-          // If tick is within the duration of the current candle, update it
-          if (now < lastCandle.openTime + tfMs) {
+          let next: Candle[];
+
+          // Case 1: Tick falls into currently active bucket
+          if (lastCandle.openTime === currentBucketOpenTime) {
             const updated: Candle = {
               ...lastCandle,
               close: tick.price,
@@ -141,21 +162,39 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
               low: Math.min(lastCandle.low, tick.price),
               volume: lastCandle.volume + (tick.volume > 0 ? tick.volume : 1),
             };
-            const next = [...prev];
+            next = [...prev];
             next[next.length - 1] = updated;
-            return next;
-          } else {
-            // New candle started
+          } else if (currentBucketOpenTime > lastCandle.openTime) {
+            // Case 2: New time bucket started — start ONE single new candle stamped at currentBucketOpenTime
             const newBar: Candle = {
-              openTime: lastCandle.openTime + tfMs,
+              openTime: currentBucketOpenTime,
               open: lastCandle.close,
               high: Math.max(lastCandle.close, tick.price),
               low: Math.min(lastCandle.close, tick.price),
               close: tick.price,
               volume: tick.volume > 0 ? tick.volume : 1,
             };
-            return [...prev, newBar];
+            next = [...prev.slice(-999), newBar];
+          } else {
+            // Case 3: Prior/matching sub-bucket update
+            const updated: Candle = {
+              ...lastCandle,
+              close: tick.price,
+              high: Math.max(lastCandle.high, tick.price),
+              low: Math.min(lastCandle.low, tick.price),
+            };
+            next = [...prev];
+            next[next.length - 1] = updated;
           }
+
+          // Throttle save to storage every 4 seconds or on new candle
+          const nowTime = Date.now();
+          if (nowTime - lastSaveTimeRef.current > 4000) {
+            lastSaveTimeRef.current = nowTime;
+            saveStoredCandles(selectedSymbol, timeframe, next);
+          }
+
+          return next;
         });
       }
     });
