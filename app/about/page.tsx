@@ -70,8 +70,9 @@ export default function AboutPage() {
         {/* ── Hero ── */}
         <section className="border-b border-slate-200 bg-slate-50/70 backdrop-blur-sm py-20">
           <div className="mx-auto max-w-4xl px-6 text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-50 px-4 py-1.5 shadow-xs">
-              <span className="text-amber-700 text-xs font-bold mono tracking-widest uppercase">About Market Intelligence AI — MI007</span>
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-4 py-1.5 shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+              <span className="text-slate-800 text-xs font-bold mono tracking-widest uppercase">A Synthetix Analytics Product</span>
             </div>
             <h1 className="mb-6 text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
               Built for the{' '}

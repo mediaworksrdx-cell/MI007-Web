@@ -302,6 +302,19 @@ export default function HeroSection() {
 
       {/* ── 3. MARKET INTELLIGENCE AI TEXT NARRATIVE (BELOW STATS BAR) ── */}
       <div className="w-full max-w-5xl mx-auto text-center relative z-20 px-4 sm:px-6 pointer-events-auto">
+        {/* A Synthetix Analytics Product */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/95 px-3.5 py-1 shadow-xs mb-5 backdrop-blur-xs"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+          <span className="mono text-[11px] font-bold tracking-widest text-slate-700 uppercase">
+            A Synthetix Analytics Product
+          </span>
+        </motion.div>
+
         {/* Cyber-Falcon Emblem Logo (Only Logo as requested) */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 12 }}

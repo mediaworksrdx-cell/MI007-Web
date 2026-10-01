@@ -30,10 +30,13 @@ export function Footer() {
                 <div className="text-[11px] tracking-[0.18em] text-slate-700 uppercase font-extrabold font-mono mt-1">
                   Autonomous Market Intelligence
                 </div>
+                <div className="text-[10.5px] font-bold text-emerald-700 uppercase tracking-wider mono mt-1">
+                  A Synthetix Analytics Product
+                </div>
               </div>
             </div>
             <p className="text-[14px] text-black font-medium leading-relaxed">
-              Institutional-grade quantitative analytics across Indian and Gulf financial markets by Synthetix Analytics.
+              Institutional-grade quantitative analytics across Indian and Gulf financial markets.
             </p>
             <div className="flex gap-2 mt-1">
               <span className="rounded-sm border border-slate-300 bg-white px-2 py-0.5 text-[12px] text-black font-bold font-mono tracking-wide shadow-xs">🇮🇳 NSE/BSE (HQ)</span>
