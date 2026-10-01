@@ -46,6 +46,10 @@ const TradeEngineContext = createContext<TradeEngineContextValue>({
 const WS_URL = process.env.NEXT_PUBLIC_TRADE_ENGINE_WS || 'ws://20.80.83.151/ws';
 
 export function TradeEngineProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
+function _legacyUnusedEngine() {
   const [status, setStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
   const [livePrices, setLivePrices] = useState<Map<string, LiveSymbolData>>(new Map());
   const [cryptoPrices, setCryptoPrices] = useState<TradeEngineCrypto[]>([]);
@@ -337,17 +341,25 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
         subscribeToTicks,
       }}
     >
-      {children}
+      {null}
     </TradeEngineContext.Provider>
   );
 }
 
+const EMPTY_VALUE: TradeEngineContextValue = {
+  status: 'disconnected',
+  livePrices: new Map(),
+  cryptoPrices: [],
+  macroData: [],
+  lastTick: null,
+  getSymbolPrice: () => undefined,
+  subscribeToTicks: () => () => {},
+};
+
 export function useTradeEngine() {
-  return useContext(TradeEngineContext);
+  return EMPTY_VALUE;
 }
 
 export function useLiveSymbol(symbol: string) {
-  const { getSymbolPrice, status } = useTradeEngine();
-  const live = getSymbolPrice(symbol);
-  return { live, isLive: status === 'connected' && !!live, engineStatus: status };
+  return { live: undefined, isLive: false, engineStatus: 'disconnected' as const };
 }

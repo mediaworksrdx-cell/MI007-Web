@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import './globals.css';
 import GlobalMarketCanvasFX from '@/components/fx/GlobalMarketCanvasFX';
 import { MarketProvider } from '@/lib/marketContext';
-import { TradeEngineProvider } from '@/lib/tradeEngineContext';
 
 export const metadata: Metadata = {
   title: 'Market Intelligence AI — MI007',
@@ -25,9 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Site-Wide 60fps Floating Candlesticks, Price Badges & Up/Down Arrows Parallax Engine */}
         <GlobalMarketCanvasFX />
         <MarketProvider>
-          <TradeEngineProvider>
-            {children}
-          </TradeEngineProvider>
+          {children}
         </MarketProvider>
       </body>
     </html>

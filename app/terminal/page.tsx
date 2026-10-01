@@ -1,88 +1,110 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { MarketType, MARKETS, INSTRUMENTS } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
-import { useTradeEngine } from '@/lib/tradeEngineContext';
 
-// ─── India watchlist ───────────────────────────────────────────────────────
+// ─── India watchlist with stable realistic closing data ────────────────────────
 const INDIA_INDICES = [
-  { symbol: 'NIFTY', name: 'NIFTY 50',    base: 22421.95 },
-  { symbol: 'BANKNIFTY', name: 'BANK NIFTY', base: 54358.9 },
-  { symbol: 'SENSEX', name: 'SENSEX',     base: 71753.99 },
-  { symbol: 'FINNIFTY', name: 'NIFTY FINANCIAL', base: 24468.6 },
+  { symbol: 'NIFTY', name: 'NIFTY 50', base: 22421.95, changePct: -0.87 },
+  { symbol: 'BANKNIFTY', name: 'BANK NIFTY', base: 54358.90, changePct: -0.33 },
+  { symbol: 'SENSEX', name: 'SENSEX', base: 71753.99, changePct: -0.79 },
+  { symbol: 'FINNIFTY', name: 'NIFTY FINANCIAL', base: 24468.60, changePct: -0.38 },
 ];
 const INDIA_WATCHLIST = [
-  { symbol: 'RELIANCE', name: 'Reliance Industries', base: 1167.3, sector: 'Energy' },
-  { symbol: 'TCS',      name: 'Tata Consultancy',    base: 2075.3, sector: 'IT' },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank',           base: 717.2,  sector: 'Banking' },
-  { symbol: 'INFY',     name: 'Infosys',             base: 1022.7, sector: 'IT' },
-  { symbol: 'ITC',      name: 'ITC Ltd',             base: 255.7,  sector: 'FMCG' },
-  { symbol: 'SBIN',     name: 'State Bank of India', base: 950.9,  sector: 'Banking' },
-  { symbol: 'TATAMOTORS', name: 'Tata Motors',       base: 277.15, sector: 'Auto' },
-  { symbol: 'LT',       name: 'Larsen & Toubro',     base: 3677.2, sector: 'Infra' },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank',         base: 1312.7, sector: 'Banking' },
+  { symbol: 'RELIANCE', name: 'Reliance Industries', base: 1167.30, sector: 'Energy', changePct: -1.63 },
+  { symbol: 'TCS', name: 'Tata Consultancy', base: 2075.30, sector: 'IT', changePct: 1.19 },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank', base: 721.20, sector: 'Banking', changePct: 1.76 },
+  { symbol: 'INFY', name: 'Infosys', base: 1022.70, sector: 'IT', changePct: 2.88 },
+  { symbol: 'ITC', name: 'ITC Ltd', base: 255.70, sector: 'FMCG', changePct: -2.61 },
+  { symbol: 'SBIN', name: 'State Bank of India', base: 950.90, sector: 'Banking', changePct: -0.56 },
+  { symbol: 'TATAMOTORS', name: 'Tata Motors', base: 277.15, sector: 'Auto', changePct: -0.82 },
+  { symbol: 'LT', name: 'Larsen & Toubro', base: 3677.20, sector: 'Infra', changePct: 0.94 },
+  { symbol: 'ICICIBANK', name: 'ICICI Bank', base: 1312.70, sector: 'Banking', changePct: -0.84 },
 ];
 const CRYPTO = [
-  { symbol: 'BTC', name: 'Bitcoin',  base: 83651.0 },
-  { symbol: 'ETH', name: 'Ethereum', base: 2687.59 },
-  { symbol: 'SOL', name: 'Solana',   base: 103.5   },
-  { symbol: 'BNB', name: 'BNB',      base: 754.0   },
-  { symbol: 'DOGE', name: 'Dogecoin', base: 0.090  },
-  { symbol: 'SHIB', name: 'Shiba Inu', base: 0.0000185 },
+  { symbol: 'BTC', name: 'Bitcoin', base: 83651.0, changePct: 1.24 },
+  { symbol: 'ETH', name: 'Ethereum', base: 2687.59, changePct: 0.88 },
+  { symbol: 'SOL', name: 'Solana', base: 103.50, changePct: 2.45 },
+  { symbol: 'BNB', name: 'BNB', base: 754.00, changePct: 0.42 },
+  { symbol: 'DOGE', name: 'Dogecoin', base: 0.090, changePct: -1.15 },
+  { symbol: 'SHIB', name: 'Shiba Inu', base: 0.0000185, changePct: -0.85 },
 ];
 
 // USA watchlist
 const USA_INDICES = [
-  { symbol: 'SPX',  name: 'S&P 500',     base: 5500.0 },
-  { symbol: 'NDX',  name: 'NASDAQ 100',  base: 19200.0 },
-  { symbol: 'DJI',  name: 'DOW JONES',   base: 39500.0 },
+  { symbol: 'SPX', name: 'S&P 500', base: 5500.0, changePct: 0.44 },
+  { symbol: 'NDX', name: 'NASDAQ 100', base: 19200.0, changePct: 0.78 },
+  { symbol: 'DJI', name: 'DOW JONES', base: 39500.0, changePct: -0.10 },
 ];
 const USA_WATCHLIST = [
-  { symbol: 'AAPL', name: 'Apple Inc.',   base: 225.0, sector: 'Tech' },
-  { symbol: 'NVDA', name: 'NVIDIA Corp.', base: 118.0, sector: 'Semis' },
-  { symbol: 'MSFT', name: 'Microsoft',    base: 420.0, sector: 'Tech' },
-  { symbol: 'TSLA', name: 'Tesla Inc.',   base: 210.0, sector: 'EV' },
-  { symbol: 'AMZN', name: 'Amazon',       base: 175.0, sector: 'eCommerce' },
+  { symbol: 'AAPL', name: 'Apple Inc.', base: 228.60, sector: 'Tech', changePct: 0.64 },
+  { symbol: 'NVDA', name: 'NVIDIA Corp.', base: 875.40, sector: 'Semis', changePct: 2.53 },
+  { symbol: 'MSFT', name: 'Microsoft', base: 432.80, sector: 'Tech', changePct: -0.48 },
+  { symbol: 'TSLA', name: 'Tesla Inc.', base: 248.50, sector: 'EV', changePct: 2.37 },
+  { symbol: 'AMZN', name: 'Amazon', base: 198.30, sector: 'eCommerce', changePct: -0.43 },
 ];
 
 // UAE watchlist
 const UAE_INDICES = [
-  { symbol: 'DFMGI', name: 'DFM General',  base: 4850.0 },
-  { symbol: 'ADX',   name: 'ADX General',  base: 9250.0 },
+  { symbol: 'DFMGI', name: 'DFM General', base: 4850.0, changePct: 0.43 },
+  { symbol: 'ADX', name: 'ADX General', base: 9250.0, changePct: -0.23 },
 ];
 const UAE_WATCHLIST = [
-  { symbol: 'EMAAR', name: 'Emaar Properties',    base: 8.45,  sector: 'Real Estate' },
-  { symbol: 'FAB',   name: 'First Abu Dhabi Bank',base: 13.20, sector: 'Banking' },
-  { symbol: 'DEWA',  name: 'Dubai Electricity',   base: 2.45,  sector: 'Utilities' },
-  { symbol: 'SALIK', name: 'Salik Company',       base: 3.65,  sector: 'Transport' },
+  { symbol: 'EMAAR', name: 'Emaar Properties', base: 8.45, sector: 'Real Estate', changePct: 0.95 },
+  { symbol: 'FAB', name: 'First Abu Dhabi Bank', base: 13.20, sector: 'Banking', changePct: -0.72 },
+  { symbol: 'DEWA', name: 'Dubai Electricity', base: 2.45, sector: 'Utilities', changePct: 0.68 },
+  { symbol: 'SALIK', name: 'Salik Company', base: 3.65, sector: 'Transport', changePct: 1.15 },
 ];
 
-// ─── Mini sparkline ───────────────────────────────────────────────────────
-function Sparkline({ up }: { up: boolean }) {
-  const pts = Array.from({ length: 10 }, (_, i) => {
-    const noise = (Math.random() - (up ? 0.35 : 0.65)) * 8;
-    return 24 - (up ? i * 1.5 : -i * 1.5) + noise;
+// ─── 100% Deterministic, Static Mini Sparkline (Never Moves or Twitches) ────
+function Sparkline({ symbol, up }: { symbol?: string; up: boolean }) {
+  const seed = (symbol || 'SYM').split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
+  const pts = Array.from({ length: 12 }, (_, i) => {
+    const pseudo = Math.sin(seed * (i + 1) * 0.73) * 3.2;
+    const trend = up ? (i / 11) * 14 : ((11 - i) / 11) * 14;
+    return 18 - trend + pseudo;
   });
-  const max = Math.max(...pts); const min = Math.min(...pts);
+  const max = Math.max(...pts);
+  const min = Math.min(...pts);
   const range = max - min || 1;
-  const path = pts.map((v, i) => `${i === 0 ? 'M' : 'L'}${(i / (pts.length - 1)) * 64},${24 - ((v - min) / range) * 24}`).join(' ');
+  const path = pts
+    .map((v, i) => `${i === 0 ? 'M' : 'L'}${(i / (pts.length - 1)) * 64},${22 - ((v - min) / range) * 18}`)
+    .join(' ');
+
   return (
-    <svg width="64" height="28" viewBox="0 0 64 28" className="opacity-90">
-      <path d={path} fill="none" stroke={up ? '#059669' : '#E11D48'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="64" height="28" viewBox="0 0 64 28" className="opacity-90 flex-shrink-0">
+      <path
+        d={path}
+        fill="none"
+        stroke={up ? '#059669' : '#E11D48'}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
-function IndexTile({ symbol, name, base, currency, market }: { symbol: string; name: string; base: number; currency: string; market: MarketType }) {
-  const { getSymbolPrice } = useTradeEngine();
-  const live = getSymbolPrice(symbol);
-  const price = live && live.price > 0 ? live.price : base;
-  const changePct = live ? live.changePct : 0.45;
+function IndexTile({
+  symbol,
+  name,
+  base,
+  changePct = 0.45,
+  currency,
+  market,
+}: {
+  symbol: string;
+  name: string;
+  base: number;
+  changePct?: number;
+  currency: string;
+  market: MarketType;
+}) {
   const up = changePct >= 0;
 
   return (
@@ -92,17 +114,16 @@ function IndexTile({ symbol, name, base, currency, market }: { symbol: string; n
     >
       <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-1.5">
-            <span className="mono text-[16px] font-black text-black group-hover:text-emerald-600 transition-colors tracking-wide">{symbol}</span>
-            {live && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
-          </div>
+          <span className="mono text-[16px] font-black text-black group-hover:text-emerald-600 transition-colors tracking-wide">
+            {symbol}
+          </span>
           <div className="text-[14px] text-slate-700 font-bold">{name}</div>
         </div>
-        <Sparkline up={up} />
+        <Sparkline symbol={symbol} up={up} />
       </div>
       <div className="flex items-end justify-between mt-1">
         <span className="mono text-[17px] font-black text-slate-900">
-          {currency}{price.toLocaleString(undefined, { minimumFractionDigits: price < 10 ? 2 : 2, maximumFractionDigits: 2 })}
+          {currency}{base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
         <span className={`mono text-[14px] font-bold ${up ? 'text-emerald-600' : 'text-rose-600'}`}>
           {up ? '▲' : '▼'} {Math.abs(changePct).toFixed(2)}%
@@ -113,11 +134,23 @@ function IndexTile({ symbol, name, base, currency, market }: { symbol: string; n
 }
 
 // ─── Watchlist Row ────────────────────────────────────────────────────────
-function WatchlistRow({ symbol, name, base, sector, currency, market }: { symbol: string; name: string; base: number; sector: string; currency: string; market: MarketType }) {
-  const { getSymbolPrice } = useTradeEngine();
-  const live = getSymbolPrice(symbol);
-  const price = live && live.price > 0 ? live.price : base;
-  const changePct = live ? live.changePct : 0.25;
+function WatchlistRow({
+  symbol,
+  name,
+  base,
+  sector,
+  changePct = 0.25,
+  currency,
+  market,
+}: {
+  symbol: string;
+  name: string;
+  base: number;
+  sector: string;
+  changePct?: number;
+  currency: string;
+  market: MarketType;
+}) {
   const up = changePct >= 0;
 
   return (
@@ -131,10 +164,7 @@ function WatchlistRow({ symbol, name, base, sector, currency, market }: { symbol
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="mono text-[16px] font-black text-black group-hover:text-emerald-600 transition-colors truncate">{symbol}</span>
-          {live && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
-        </div>
+        <span className="mono text-[16px] font-black text-black group-hover:text-emerald-600 transition-colors truncate block">{symbol}</span>
         <div className="text-[14px] text-slate-700 font-bold truncate">{name}</div>
       </div>
 
@@ -144,14 +174,14 @@ function WatchlistRow({ symbol, name, base, sector, currency, market }: { symbol
 
       <div className="text-right flex-shrink-0">
         <div className="mono text-[16px] font-black text-slate-900">
-          {currency}{price.toLocaleString(undefined, { minimumFractionDigits: price < 10 ? 2 : 2, maximumFractionDigits: 2 })}
+          {currency}{base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
         <div className={`mono text-[14px] font-bold ${up ? 'text-emerald-600' : 'text-rose-600'}`}>
           {up ? '+' : ''}{changePct.toFixed(2)}%
         </div>
       </div>
 
-      <Sparkline up={up} />
+      <Sparkline symbol={symbol} up={up} />
 
       {/* Chart arrow */}
       <div className="flex-shrink-0 text-black group-hover:text-emerald-600 transition-colors text-base font-black">›</div>
@@ -174,7 +204,6 @@ function SectionHeader({ title, badge }: { title: string; badge?: string }) {
 
 export default function TerminalPage() {
   const { market, setMarket, currency } = useMarket();
-  const { status, getSymbolPrice } = useTradeEngine();
 
   // Market data per region
   const indices = market === 'INDIA' ? INDIA_INDICES : market === 'USA' ? USA_INDICES : UAE_INDICES;
@@ -204,15 +233,9 @@ export default function TerminalPage() {
                   />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2.5">
-                    <h1 className="mono text-[20px] sm:text-[23px] font-black text-slate-900 tracking-wider uppercase">
-                      Market Intelligence AI <span className="text-amber-600">MI007</span>
-                    </h1>
-                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-50/90 shadow-xs">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="mono text-[12.5px] text-emerald-700 font-black tracking-widest">LIVE DESK</span>
-                    </div>
-                  </div>
+                  <h1 className="mono text-[20px] sm:text-[23px] font-black text-slate-900 tracking-wider uppercase">
+                    Market Intelligence AI <span className="text-amber-600">MI007</span>
+                  </h1>
                   <p className="text-[14px] text-slate-600 font-medium mt-0.5">Autonomous Market Intelligence & Quantitative Microstructure</p>
                 </div>
               </div>
@@ -222,10 +245,6 @@ export default function TerminalPage() {
                   <span>{MARKETS[market].flag}</span>
                   <span className="text-slate-900 font-black">{MARKETS[market].label}</span>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50/90 text-[13px] mono text-emerald-700 font-bold shadow-xs">
-                  <span className={`h-2 w-2 rounded-full ${status === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
-                  <span>{status === 'connected' ? 'TRADE ENGINE ONLINE' : 'ENGINE CONNECTING'}</span>
-                </div>
               </div>
             </div>
 
@@ -233,7 +252,15 @@ export default function TerminalPage() {
             <SectionHeader title="Core Indices" badge={`${indices.length} ACTIVE`} />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
               {indices.map(idx => (
-                <IndexTile key={idx.symbol} symbol={idx.symbol} name={idx.name} base={idx.base} currency={currency} market={market} />
+                <IndexTile
+                  key={idx.symbol}
+                  symbol={idx.symbol}
+                  name={idx.name}
+                  base={idx.base}
+                  changePct={idx.changePct}
+                  currency={currency}
+                  market={market}
+                />
               ))}
             </div>
 
@@ -247,6 +274,7 @@ export default function TerminalPage() {
                   name={item.name}
                   base={item.base}
                   sector={item.sector}
+                  changePct={item.changePct}
                   currency={currency}
                   market={market}
                 />
@@ -257,10 +285,7 @@ export default function TerminalPage() {
             <SectionHeader title="Crypto Intelligence" badge="24/7 GLOBAL" />
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
               {CRYPTO.map(c => {
-                const live = getSymbolPrice(c.symbol);
-                const price = live && live.price > 0 ? live.price : c.base;
-                const changePct = live ? live.changePct : 0.85;
-                const up = changePct >= 0;
+                const up = c.changePct >= 0;
                 return (
                   <Link
                     key={c.symbol}
@@ -269,14 +294,13 @@ export default function TerminalPage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="mono text-[14px] font-black text-black group-hover:text-emerald-600 transition-colors">{c.symbol}</span>
-                      {live && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                     </div>
                     <div className="text-[12px] text-slate-600 font-bold truncate">{c.name}</div>
                     <div className="mono text-[14px] font-black text-slate-900 mt-1">
-                      ${price.toLocaleString(undefined, { minimumFractionDigits: price < 1 ? 4 : 2, maximumFractionDigits: price < 1 ? 7 : 2 })}
+                      ${c.base.toLocaleString(undefined, { minimumFractionDigits: c.base < 1 ? 4 : 2, maximumFractionDigits: c.base < 1 ? 7 : 2 })}
                     </div>
                     <div className={`mono text-[12px] font-bold ${up ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {up ? '▲' : '▼'} {Math.abs(changePct).toFixed(2)}%
+                      {up ? '▲' : '▼'} {Math.abs(c.changePct).toFixed(2)}%
                     </div>
                   </Link>
                 );

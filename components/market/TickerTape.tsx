@@ -4,7 +4,6 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { MarketType, MARKETS } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
-import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { getTickerData } from '@/lib/mockData';
 
 interface TickerTapeProps {
@@ -12,63 +11,24 @@ interface TickerTapeProps {
   currency?: string;
 }
 
+const MACRO_ITEMS = [
+  { symbol: 'DXY', displayVal: '104.20', isMacro: true, change: 0, changePct: 0, price: 104.20 },
+  { symbol: 'XAU/USD', displayVal: '2,150.50', isMacro: true, change: 0, changePct: 0, price: 2150.50 },
+  { symbol: 'US10Y', displayVal: '4.25%', isMacro: true, change: 0, changePct: 0, price: 4.25 },
+  { symbol: 'BRENT', displayVal: '$82.50', isMacro: true, change: 0, changePct: 0, price: 82.50 },
+  { symbol: 'VIX', displayVal: '13.40', isMacro: true, change: 0, changePct: 0, price: 13.40 },
+];
+
 export function TickerTape({ market: propMarket, currency: propCurrency }: TickerTapeProps) {
   const context = useMarket();
   const activeMarket = propMarket ?? context.market ?? 'INDIA';
   const currency = propCurrency ?? context.currency ?? MARKETS[activeMarket]?.currency ?? '₹';
 
-  const { livePrices, macroData, status, getSymbolPrice } = useTradeEngine();
-
-  // Combine real TradeEngine prices with base market instruments
+  // Stable, static market data without random fluctuations
   const displayItems = useMemo(() => {
     const baseList = getTickerData(activeMarket);
-
-    // Merge in live prices from TradeEngine
-    const merged = baseList.map(item => {
-      let live = getSymbolPrice(item.symbol);
-      if (!live) {
-        live = livePrices.get(item.symbol.toUpperCase()) ||
-               livePrices.get(item.symbol.replace(/\s+/g, '').toUpperCase()) ||
-               livePrices.get(`${item.symbol.toUpperCase()}.NS`);
-      }
-
-      if (live && live.price > 0) {
-        return {
-          symbol: item.symbol,
-          price: live.price,
-          change: live.change,
-          changePct: live.changePct,
-          direction: live.tickDirection,
-          lastUpdated: live.lastUpdated,
-        };
-      }
-      return {
-        ...item,
-        direction: 'neutral' as const,
-        lastUpdated: 0,
-      };
-    });
-
-    // Also include live macro benchmarks
-    const macroItems = (macroData.length > 0 ? macroData : [
-      { symbol: 'DXY', value: '104.20' },
-      { symbol: 'XAU/USD', value: '2,150.50' },
-      { symbol: 'US10Y', value: '4.25%' },
-      { symbol: 'BRENT', value: '82.50' },
-      { symbol: 'VIX', value: '13.40' },
-    ]).map(m => ({
-      symbol: m.symbol,
-      price: parseFloat(m.value.replace(/[^0-9.]/g, '')) || 0,
-      change: 0,
-      changePct: 0,
-      isMacro: true,
-      displayVal: m.value,
-      direction: 'neutral' as const,
-      lastUpdated: 0,
-    }));
-
-    return [...merged, ...macroItems];
-  }, [activeMarket, livePrices, macroData]);
+    return [...baseList, ...MACRO_ITEMS];
+  }, [activeMarket]);
 
   // Duplicate data array for seamless 50% translation marquee
   const items = [...displayItems, ...displayItems];
@@ -107,22 +67,14 @@ export function TickerTape({ market: propMarket, currency: propCurrency }: Ticke
         }}
       />
 
-      {/* Pinned Engine Status Badge — Flex item, NEVER overlaps marquee belt */}
-      <div className="flex-shrink-0 z-30 flex items-center gap-1.5 px-3 h-full bg-slate-950 text-white text-[11px] font-mono font-bold tracking-wider border-r border-slate-800 shadow-md">
-        <span className={`w-2 h-2 rounded-full ${status === 'connected' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-        <span>LIVE</span>
-        <span className="text-slate-600 font-normal">|</span>
-        <span className="text-emerald-400 font-bold">ENGINE</span>
-      </div>
-
-      {/* Marquee viewport container strictly starting AFTER the badge */}
+      {/* Marquee viewport container spanning full ribbon */}
       <div className="flex-1 overflow-hidden relative h-full flex items-center">
         {/* Edge gradient fade masks for smooth ribbon entry/exit */}
         <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
         <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
 
         {/* Rolling Ribbon Belt */}
-        <div className="ticker-ribbon-belt pl-2">
+        <div className="ticker-ribbon-belt pl-3">
           {items.map((item, idx) => {
             const isMacro = (item as any).isMacro;
             const displayVal = (item as any).displayVal;
@@ -142,19 +94,11 @@ export function TickerTape({ market: propMarket, currency: propCurrency }: Ticke
                   {item.symbol}
                 </span>
 
-                <span
-                  className={`font-extrabold transition-colors duration-300 ${
-                    item.direction === 'up'
-                      ? 'text-emerald-600'
-                      : item.direction === 'down'
-                      ? 'text-rose-600'
-                      : 'text-slate-900'
-                  }`}
-                >
+                <span className="font-black text-slate-900">
                   {displayVal
                     ? displayVal
                     : `${currency}${item.price.toLocaleString(undefined, {
-                        minimumFractionDigits: item.price < 10 ? 2 : 2,
+                        minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}`}
                 </span>
