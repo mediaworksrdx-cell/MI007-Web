@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background circle glow -->
+  <defs>
+    <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00E676" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#0A1A33" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bodyGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1C3C6E"/>
+      <stop offset="100%" stop-color="#0A1A33"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Outer glow ring -->
+  <circle cx="100" cy="100" r="96" fill="url(#glowGrad)"/>
+  <circle cx="100" cy="100" r="90" fill="none" stroke="#1C3C6E" stroke-width="0.8" opacity="0.6"/>
+
+  <!-- Left Wing -->
+  <polygon points="100,95 20,70 35,100 20,128 100,108"
+    fill="url(#bodyGrad)" stroke="#00E676" stroke-width="0.6" opacity="0.9"/>
+
+  <!-- Left Wing inner accent -->
+  <polygon points="100,97 30,75 42,98 30,122 100,106"
+    fill="none" stroke="#00E676" stroke-width="0.4" opacity="0.5"/>
+
+  <!-- Right Wing -->
+  <polygon points="100,95 180,70 165,100 180,128 100,108"
+    fill="url(#bodyGrad)" stroke="#00E676" stroke-width="0.6" opacity="0.9"/>
+
+  <!-- Right Wing inner accent -->
+  <polygon points="100,97 170,75 158,98 170,122 100,106"
+    fill="none" stroke="#00E676" stroke-width="0.4" opacity="0.5"/>
+
+  <!-- Body center diamond -->
+  <polygon points="100,65 115,100 100,135 85,100"
+    fill="#0F2549" stroke="#00E676" stroke-width="1.2" filter="url(#glow)"/>
+
+  <!-- Golden crest / crown -->
+  <polygon points="100,58 107,72 100,68 93,72"
+    fill="#FFD600" stroke="#FFD600" stroke-width="0.5" filter="url(#glow)"/>
+  <polygon points="94,62 100,58 106,62 100,66"
+    fill="#F5AF19" stroke="#FFD600" stroke-width="0.4"/>
+
+  <!-- Energy core (mint-green) -->
+  <circle cx="100" cy="100" r="8" fill="#00E676" opacity="0.9" filter="url(#glow)"/>
+  <circle cx="100" cy="100" r="4" fill="#FFFFFF" opacity="0.95"/>
+
+  <!-- Cyber grid lines on wings -->
+  <line x1="55" y1="82" x2="100" y2="100" stroke="#00E676" stroke-width="0.3" opacity="0.4"/>
+  <line x1="40" y1="90" x2="100" y2="100" stroke="#00E676" stroke-width="0.3" opacity="0.3"/>
+  <line x1="55" y1="118" x2="100" y2="100" stroke="#00E676" stroke-width="0.3" opacity="0.4"/>
+  <line x1="40" y1="110" x2="100" y2="100" stroke="#00E676" stroke-width="0.3" opacity="0.3"/>
+  <line x1="145" y1="82" x2="100" y2="100" stroke="#00E676" stroke-width="0.3" opacity="0.4"/>
+  <line x1="160" y1="90" x2="100" y2="100" stroke="#00E676" stroke-width="0.3" opacity="0.3"/>
+  <line x1="145" y1="118" x2="100" y2="100" stroke="#00E676" stroke-width="0.3" opacity="0.4"/>
+  <line x1="160" y1="110" x2="100" y2="100" stroke="#00E676" stroke-width="0.3" opacity="0.3"/>
+
+  <!-- Wing tip diamonds -->
+  <polygon points="20,100 27,94 34,100 27,106" fill="#FFD600" opacity="0.8"/>
+  <polygon points="180,100 173,94 166,100 173,106" fill="#FFD600" opacity="0.8"/>
+
+  <!-- Feather detail lines on wings -->
+  <path d="M 60 85 Q 78 90 95 99" stroke="#00B0FF" stroke-width="0.5" fill="none" opacity="0.5"/>
+  <path d="M 60 115 Q 78 110 95 101" stroke="#00B0FF" stroke-width="0.5" fill="none" opacity="0.5"/>
+  <path d="M 140 85 Q 122 90 105 99" stroke="#00B0FF" stroke-width="0.5" fill="none" opacity="0.5"/>
+  <path d="M 140 115 Q 122 110 105 101" stroke="#00B0FF" stroke-width="0.5" fill="none" opacity="0.5"/>
+</svg>

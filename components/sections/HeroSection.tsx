@@ -1,0 +1,377 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
+
+interface HudItem {
+  top?: string;
+  left?: string;
+  right?: string;
+  bottom?: string;
+  label: string;
+  hudClass: string;
+  dotColor: string;
+  center?: boolean;
+}
+
+export default function HeroSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
+  const [bullDelta, setBullDelta] = useState(12.48);
+  const [bearDelta, setBearDelta] = useState(-8.24);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  // Live Micro-Telemetry Ticks
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setBullDelta(+(12.48 + (Math.random() - 0.48) * 0.35).toFixed(2));
+      setBearDelta(+(-8.24 + (Math.random() - 0.52) * 0.25).toFixed(2));
+    }, 2400);
+    return () => clearInterval(timer);
+  }, []);
+
+  const heroHuds: HudItem[] = [
+    {
+      top: '25%',
+      left: '7%',
+      label: `BULL ACCUMULATION // +${bullDelta}% ▲`,
+      hudClass: 'video-hud-bull',
+      dotColor: '#00FF88',
+    },
+    {
+      top: '25%',
+      right: '7%',
+      label: `BEAR DISTRIBUTION // ${bearDelta}% ▼`,
+      hudClass: 'video-hud-bear',
+      dotColor: '#FF2E5B',
+    },
+    {
+      bottom: '22%',
+      left: '50%',
+      label: 'ORDER BLOCK RE-TEST // 24,810',
+      hudClass: 'video-hud-cyan',
+      dotColor: '#00E5FF',
+      center: true,
+    },
+  ];
+
+  // 3D Parallax Tilt with Mouse
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    setMouseOffset({ x, y });
+  };
+
+  const handleMouseLeave = () => {
+    setMouseOffset({ x: 0, y: 0 });
+  };
+
+  const toggleSound = () => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsMuted(videoRef.current.muted);
+  };
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play();
+      setIsPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  return (
+    <section
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative min-h-screen flex flex-col justify-between items-center bg-transparent z-10 px-0 pt-36 sm:pt-40 md:pt-44 pb-16 select-none overflow-hidden"
+    >
+      {/* Subtle Top Radial Ambient Light (Midnight Blue & Emerald) */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[520px] bg-gradient-to-b from-mint-green/[0.07] via-accent-cyan/[0.03] to-transparent blur-3xl pointer-events-none hero-theatre-gutter" />
+
+      {/* ── 1. CINEMATIC THEATRE VIDEO (EXACT 1.5-INCH MARGIN LEFT & RIGHT) ── */}
+      <div className="w-full relative z-20 pointer-events-auto hero-theatre-gutter">
+        <div
+          className="relative w-full h-[380px] sm:h-[450px] md:h-[520px] lg:h-[580px] xl:h-[620px] overflow-hidden bg-slate-950 group shadow-[0_25px_70px_-15px_rgba(0,0,0,0.35)] rounded-[36px] sm:rounded-[52px] md:rounded-[68px] lg:rounded-[80px] border border-slate-200/90"
+        >
+          {/* 10-Second Looping Video Playing in Heavily Rounded Rectangle Frame (Zero head crop) */}
+          <video
+            ref={videoRef}
+            autoPlay
+            loop
+            muted={isMuted}
+            playsInline
+            preload="auto"
+            poster="/images/cinematic/hero_clash_hd.jpg"
+            className="w-full h-full object-cover select-none pointer-events-none transition-transform duration-500"
+            style={{
+              filter: 'contrast(1.06) brightness(0.98) saturate(1.08)',
+              objectPosition: 'center 12%',
+              transform: 'scale(1.06) translateY(-16px)',
+              transformOrigin: 'center top',
+            }}
+          >
+            <source src="/Video/Market%20AI.mp4" type="video/mp4" />
+            <source src="/Video/Market AI.mp4" type="video/mp4" />
+          </video>
+
+          {/* Interactive Dual-Spectrum Atmospheric Aura (Emerald Left, Crimson Right) */}
+          <div
+            className="absolute inset-0 pointer-events-none transition-all duration-500"
+            style={{
+              background: `
+                radial-gradient(circle at 18% 50%, rgba(0, 255, 136, ${0.16 + Math.max(0, -mouseOffset.x) * 0.25}) 0%, transparent 60%),
+                radial-gradient(circle at 82% 50%, rgba(255, 23, 68, ${0.16 + Math.max(0, mouseOffset.x) * 0.25}) 0%, transparent 60%)
+              `,
+            }}
+          />
+
+          {/* Holographic Telemetry HUD Badges Composed Over the Video */}
+          {heroHuds.map((hud, idx) => (
+            <div
+              key={idx}
+              className={`absolute px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full border backdrop-blur-xl mono text-xs sm:text-sm font-black shadow-2xl ${hud.hudClass} ${
+                hud.center ? '-translate-x-1/2' : ''
+              }`}
+              style={{
+                top: hud.top,
+                left: hud.left,
+                right: hud.right,
+                bottom: hud.bottom,
+              }}
+            >
+              <div className="flex items-center gap-2 whitespace-nowrap">
+                <span
+                  className="w-2 h-2 rounded-full animate-ping"
+                  style={{ backgroundColor: hud.dotColor }}
+                />
+                <span className="font-mono tracking-wider font-extrabold">{hud.label}</span>
+              </div>
+            </div>
+          ))}
+
+          {/* Frame Top Corner Badge */}
+          <div className="absolute top-5 sm:top-7 left-6 sm:left-9 z-20 px-3.5 py-1.5 rounded-full border backdrop-blur-xl mono text-xs font-bold flex items-center gap-2 video-overlay-ctrl shadow-lg">
+            <span className="w-2 h-2 rounded-full bg-[#00FF88] animate-pulse shadow-[0_0_8px_#00FF88]" />
+            <span className="font-mono tracking-wider font-extrabold text-white">LIVE MARKET FEED // 60FPS</span>
+          </div>
+
+          {/* Video Audio & Playback Controls Floating on Video Bottom-Right */}
+          <div className="absolute bottom-5 sm:bottom-7 right-6 sm:right-9 z-20 flex items-center gap-2.5 pointer-events-auto">
+            <button
+              onClick={toggleSound}
+              title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
+              className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border backdrop-blur-xl text-xs sm:text-sm font-mono font-bold hover:border-[#00FF88] transition-all flex items-center gap-2 cursor-pointer shadow-xl video-overlay-ctrl"
+            >
+              <span>{isMuted ? '🔇' : '🔊'}</span>
+              <span className="text-white tracking-wider font-black">{isMuted ? 'SOUND OFF' : 'SOUND ON'}</span>
+            </button>
+
+            <button
+              onClick={togglePlay}
+              title={isPlaying ? 'Pause Video' : 'Play Video'}
+              className="p-1.5 px-3.5 sm:px-4 sm:py-2 rounded-xl border backdrop-blur-xl text-xs sm:text-sm font-mono font-bold hover:border-[#00FF88] transition-all cursor-pointer shadow-xl flex items-center gap-2 video-overlay-ctrl"
+            >
+              <span>{isPlaying ? '⏸' : '▶'}</span>
+              <span className="text-white tracking-wider font-black">{isPlaying ? 'PAUSE' : 'PLAY'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2. LIVE STATS & TELEMETRY BAR (IMMEDIATELY BELOW VIDEO - SINGLE UNIFIED BAR) ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.2 }}
+        className="w-full relative z-20 pointer-events-auto hero-theatre-gutter mt-7 mb-12 sm:mb-16"
+      >
+        <div className="w-full rounded-2xl border-2 border-slate-200/90 bg-white/95 backdrop-blur-2xl px-6 sm:px-8 py-3.5 sm:py-4 shadow-lg flex flex-col xl:flex-row items-center justify-between gap-4 xl:gap-6 mono overflow-hidden relative">
+          {/* Left: Momentum Telemetry (Static High-Priority) */}
+          <div className="flex items-center flex-wrap sm:flex-nowrap justify-center xl:justify-start gap-4 sm:gap-6 shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="text-black font-extrabold text-[14px] sm:text-[15px] tracking-wide">BULL MOMENTUM:</span>
+              <strong className="font-mono font-black text-emerald-600 text-[16px] sm:text-[18px]">+{bullDelta}%</strong>
+            </div>
+            <span className="text-slate-300 font-bold hidden sm:inline text-lg">|</span>
+            <div className="flex items-center gap-2">
+              <span className="text-black font-extrabold text-[14px] sm:text-[15px] tracking-wide">BEAR RESISTANCE:</span>
+              <strong className="font-mono font-black text-rose-600 text-[16px] sm:text-[18px]">{bearDelta}%</strong>
+            </div>
+            <span className="text-slate-300 font-bold hidden md:inline text-lg">|</span>
+            <div className="hidden md:flex items-center gap-2">
+              <span className="text-black font-extrabold text-[14px] sm:text-[15px] tracking-wide">EQUILIBRIUM:</span>
+              <strong className="font-mono font-black text-black text-[16px] sm:text-[18px]">24,842.50</strong>
+            </div>
+          </div>
+
+          {/* Central Divider */}
+          <div className="hidden xl:block w-px h-8 bg-slate-300 shrink-0" />
+
+          {/* Right: Global L3 Feed with Infinite Marquee (Contained, Never Overflows) */}
+          <div className="w-full xl:w-auto xl:flex-1 min-w-0 flex items-center gap-3 sm:gap-4 overflow-hidden relative">
+            <div className="flex items-center gap-2 text-emerald-700 text-[14px] sm:text-[15px] font-black tracking-wide shrink-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>GLOBAL L3 FEED</span>
+            </div>
+
+            {/* Edge fade masks */}
+            <div className="absolute left-[130px] sm:left-[150px] top-0 bottom-0 w-6 bg-gradient-to-r from-white via-white/80 to-transparent z-10 pointer-events-none hidden sm:block" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none hidden sm:block" />
+
+            {/* Scrolling Ticker Stream (Contained within boundaries) */}
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <div className="l3-marquee-track flex items-center gap-6 whitespace-nowrap text-[14px] sm:text-[15px] font-semibold text-black">
+                {/* Loop Sequence 1 */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-black font-bold">NIFTY 50</span>
+                  <span className="text-black font-black">24,842.50</span>{' '}
+                  <span className="text-emerald-600 font-black">+1.40%</span>
+                </div>
+                <span className="text-slate-300 font-bold">•</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-black font-bold">S&P 500</span>
+                  <span className="text-black font-black">5,864.20</span>{' '}
+                  <span className="text-emerald-600 font-black">+0.82%</span>
+                </div>
+                <span className="text-slate-300 font-bold">•</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-black font-bold">BTC</span>
+                  <span className="text-black font-black">$68,410</span>{' '}
+                  <span className="text-emerald-600 font-black">+3.24%</span>
+                </div>
+                <span className="text-slate-300 font-bold">•</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-black font-bold">NASDAQ</span>
+                  <span className="text-black font-black">18,240</span>{' '}
+                  <span className="text-emerald-600 font-black">+0.65%</span>
+                </div>
+                <span className="text-slate-300 font-bold">•</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-black font-bold">GOLD</span>
+                  <span className="text-black font-black">$2,648</span>{' '}
+                  <span className="text-emerald-600 font-black">+0.45%</span>
+                </div>
+                <span className="text-slate-300 font-bold">•</span>
+
+                {/* Loop Sequence 2 (Seamless duplication) */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-black font-bold">NIFTY 50</span>
+                  <span className="text-black font-black">24,842.50</span>{' '}
+                  <span className="text-emerald-600 font-black">+1.40%</span>
+                </div>
+                <span className="text-slate-300 font-bold">•</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-black font-bold">S&P 500</span>
+                  <span className="text-black font-black">5,864.20</span>{' '}
+                  <span className="text-emerald-600 font-black">+0.82%</span>
+                </div>
+                <span className="text-slate-300 font-bold">•</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-black font-bold">BTC</span>
+                  <span className="text-black font-black">$68,410</span>{' '}
+                  <span className="text-emerald-600 font-black">+3.24%</span>
+                </div>
+                <span className="text-slate-300 font-bold">•</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-black font-bold">NASDAQ</span>
+                  <span className="text-black font-black">18,240</span>{' '}
+                  <span className="text-emerald-600 font-black">+0.65%</span>
+                </div>
+                <span className="text-slate-300 font-bold">•</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-black font-bold">GOLD</span>
+                  <span className="text-black font-black">$2,648</span>{' '}
+                  <span className="text-emerald-600 font-black">+0.45%</span>
+                </div>
+                <span className="text-slate-300 font-bold">•</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ── 3. MARKET INTELLIGENCE AI TEXT NARRATIVE (BELOW STATS BAR) ── */}
+      <div className="w-full max-w-5xl mx-auto text-center relative z-20 px-4 sm:px-6 pointer-events-auto">
+        {/* Cyber-Falcon Emblem Logo (Only Logo as requested) */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="inline-flex items-center justify-center mb-6"
+        >
+          <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl sm:rounded-3xl bg-slate-950 border-2 border-slate-800 flex items-center justify-center p-2.5 sm:p-3 shadow-xl shadow-black/20 hover:scale-105 hover:border-amber-500/50 transition-all duration-300">
+            <Image
+              src="/images/logo-falcon-transparent.png"
+              alt="Market Intelligence AI — MI007"
+              width={80}
+              height={80}
+              className="object-contain drop-shadow-[0_0_15px_rgba(0,255,136,0.35)]"
+              priority
+            />
+          </div>
+        </motion.div>
+
+        {/* Main Headline */}
+        <motion.h1
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.35 }}
+          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[-0.03em] text-slate-900 leading-none mb-6"
+        >
+          <span className="bg-gradient-to-r from-slate-950 via-slate-800 to-emerald-700 bg-clip-text text-transparent">
+            MARKET INTELLIGENCE
+          </span>
+          <span className="inline-block ml-3 sm:ml-4 font-mono text-emerald-600 drop-shadow-[0_0_25px_rgba(5,150,105,0.4)]">
+            AI
+          </span>
+          <span className="inline-block ml-3 sm:ml-4 text-2xl sm:text-4xl md:text-5xl font-mono font-black text-amber-500 tracking-wider">
+            MI007
+          </span>
+        </motion.h1>
+
+        {/* Subtitle */}
+        <motion.p
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.4 }}
+          className="text-[17px] sm:text-[19px] md:text-[21px] text-black font-medium max-w-3xl mx-auto mb-8 sm:mb-10 leading-relaxed"
+        >
+          For a Smarter Tomorrow. Multi-dimensional technical synthesis and real-time liquidity sweep detection engineered for institutional execution.
+        </motion.p>
+
+        {/* Action Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.45 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-8"
+        >
+          <a
+            href="#terminal"
+            className="w-full sm:w-auto px-9 py-4 rounded-xl border border-emerald-600 bg-emerald-600 text-white font-mono text-[15px] sm:text-[17px] font-extrabold tracking-widest uppercase shadow-md hover:bg-emerald-500 hover:scale-[1.03] transition-all duration-300 text-center cursor-pointer flex items-center justify-center gap-2 group"
+          >
+            <span>⚡ EXPLORE THE SYSTEM</span>
+            <span className="inline-block transition-transform duration-200 group-hover:translate-x-1.5">→</span>
+          </a>
+
+          <a
+            href="#movement"
+            className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-300 bg-white text-slate-800 font-mono text-[15px] sm:text-[17px] font-bold tracking-widest uppercase backdrop-blur-xl transition-all duration-300 hover:bg-slate-100 hover:border-slate-400 text-center cursor-pointer shadow-sm"
+          >
+            DISCOVER THE FORCES
+          </a>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
