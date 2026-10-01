@@ -130,6 +130,8 @@ export interface ChartOptions {
   indicatorResults: Map<IndicatorType, unknown>;
   currentPriceOverride?: number;
   timeframe: string;
+  drawings?: import('./drawingTypes').DrawingItem[];
+  activeDrawing?: import('./drawingTypes').DrawingItem | null;
 }
 
 export interface ViewState {

@@ -24,18 +24,18 @@ export type {
 };
 export { INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay };
 
-// ── Color Constants (Android Theme.kt exact) ──────────────────────────────
-const BULL  = '#00E676';
-const BEAR  = '#FF1744';
-const LINE_COLOR = '#42A5F5';
-const GRID  = '#1A1A1A';
-const AXIS_TEXT = '#666666';
-const CROSSHAIR_COLOR = 'rgba(170,170,170,0.5)';
-const LABEL_BG = '#333333';
-const PANEL_BG = '#0F1117';
-const PANEL_SEP = '#2A2E39';
-const VOL_LABEL = '#00E5FF';
-const VOL_AXIS = '#78909C';
+// ── Color Constants (Crisp Professional Light Theme) ──────────────────────
+const BULL  = '#00A35C';
+const BEAR  = '#E11D48';
+const LINE_COLOR = '#2563EB';
+const GRID  = '#F1F5F9';
+const AXIS_TEXT = '#475569';
+const CROSSHAIR_COLOR = 'rgba(71, 85, 105, 0.45)';
+const LABEL_BG = '#0F172A';
+const PANEL_BG = '#F8FAFC';
+const PANEL_SEP = '#E2E8F0';
+const VOL_LABEL = '#0284C7';
+const VOL_AXIS = '#64748B';
 
 // ── Formatters ────────────────────────────────────────────────────────────
 export function formatPrice(p: number): string {
@@ -481,15 +481,14 @@ export function renderChart(
   dpr: number
 ) {
   const W = ctx.canvas.width, H = ctx.canvas.height;
-  const RM = 56 * dpr;  // right margin
-  const BM = 20 * dpr;  // bottom margin
+  const RM = 58 * dpr;  // right price axis margin
+  const BM = 22 * dpr;  // time axis margin
 
   // Panel layout
   const panelInds = options.indicators.filter(i => !isOverlay(i.type) && i.enabled);
   const hasVolPanel = options.showVolumePanel;
   const totalPanels = panelInds.length + (hasVolPanel ? 1 : 0);
-  const panelH = totalPanels === 0 ? 0 :
-    Math.min(totalPanels, 2) * H * 0.18 + Math.max(0, totalPanels - 2) * H * 0.12;
+  const panelH = totalPanels === 0 ? 0 : Math.min(H * 0.38, totalPanels * 95 * dpr);
   const chartH = H - panelH - BM;
   const chartW = W - RM;
 
@@ -511,9 +510,9 @@ export function renderChart(
 
   function priceToY(p: number): number { return chartH - ((p - pMin) / pRange * chartH); }
 
-  // Clear
+  // Clear canvas with crisp white background
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#131722';
+  ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, W, H);
 
   // Timeframe detection
@@ -523,14 +522,14 @@ export function renderChart(
   const tf = options.timeframe.toUpperCase();
   const isDailyOrHigher = ['1D','D','1W','W','1M','M'].includes(tf) || avgDur >= 20 * 3600000;
 
-  // ── LAYER 1: Grid ──────────────────────────────────────────────────────
+  // ── LAYER 1: Grid & Axes (Light Mode) ──────────────────────────────────
   ctx.save();
   const gridDash = [4*dpr, 4*dpr];
   const numHL = 5;
   const pStep = pRange / numHL;
   ctx.setLineDash(gridDash);
-  ctx.lineWidth = 0.5 * dpr;
-  ctx.strokeStyle = GRID;
+  ctx.lineWidth = 0.8 * dpr;
+  ctx.strokeStyle = '#F1F5F9';
   ctx.font = `${9*dpr}px "JetBrains Mono",monospace`;
   ctx.fillStyle = AXIS_TEXT;
   ctx.textBaseline = 'middle';
@@ -540,8 +539,9 @@ export function renderChart(
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(chartW, y); ctx.stroke();
     ctx.fillText(formatPrice(price), chartW + 4*dpr, y);
   }
+
   // Vertical grid + time labels
-  const timeStep = Math.max(1, Math.floor(visCnt / 5));
+  const timeStep = Math.max(1, Math.floor(visCnt / 6));
   ctx.font = `${8*dpr}px "JetBrains Mono",monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
@@ -549,7 +549,7 @@ export function renderChart(
   for (let i = startIdx; i < endIdx; i += timeStep) {
     const li = i - startIdx;
     const x = li * candleW + candleW / 2;
-    ctx.strokeStyle = GRID; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, chartH); ctx.stroke();
+    ctx.strokeStyle = '#F1F5F9'; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, chartH); ctx.stroke();
     if (i < candles.length) {
       const ts = candles[i].openTime;
       const d = new Date(ts);
@@ -561,10 +561,16 @@ export function renderChart(
       else label = formatTimeLabel(ts, false);
       prevDay = curDay;
       ctx.fillStyle = AXIS_TEXT;
-      ctx.fillText(label, x, chartH + 4*dpr);
+      ctx.fillText(label, x, chartH + 5*dpr);
     }
   }
+
+  // Solid separators for right price scale and bottom time scale
   ctx.setLineDash([]);
+  ctx.strokeStyle = '#E2E8F0';
+  ctx.lineWidth = 1 * dpr;
+  ctx.beginPath(); ctx.moveTo(chartW, 0); ctx.lineTo(chartW, chartH + BM); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, chartH); ctx.lineTo(W, chartH); ctx.stroke();
   ctx.restore();
 
   // ── LAYER 2: Volume Profile (VPVR) ────────────────────────────────────
@@ -782,6 +788,65 @@ export function renderChart(
     ctx.fillText(prStr, bL+padH+dotR*2+3*dpr, clY);
   }
 
+  // ── LAYER 6.5: User Drawings (Trendlines, Horizontal Rays, Boxes, Fibonacci) ──
+  const allDrawings = [...(options.drawings || [])];
+  if (options.activeDrawing) allDrawings.push(options.activeDrawing);
+
+  if (allDrawings.length > 0) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, chartW, chartH); ctx.clip();
+
+    for (const item of allDrawings) {
+      if (!item.points || item.points.length === 0) continue;
+      const p1 = item.points[0];
+      const x1 = (p1.index - startIdx) * candleW + candleW / 2;
+      const y1 = priceToY(p1.price);
+
+      ctx.strokeStyle = item.color || '#2563EB';
+      ctx.fillStyle = item.color || '#2563EB';
+      ctx.lineWidth = (item.lineWidth || 2) * dpr;
+
+      if (item.tool === 'HORIZONTAL') {
+        ctx.save();
+        ctx.setLineDash([6 * dpr, 4 * dpr]);
+        ctx.beginPath(); ctx.moveTo(0, y1); ctx.lineTo(chartW, y1); ctx.stroke();
+        ctx.restore();
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillText(`H-Line: ${formatPrice(p1.price)}`, 6 * dpr, y1 - 4 * dpr);
+      } else if (item.points.length >= 2) {
+        const p2 = item.points[1];
+        const x2 = (p2.index - startIdx) * candleW + candleW / 2;
+        const y2 = priceToY(p2.price);
+
+        if (item.tool === 'TRENDLINE') {
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+        } else if (item.tool === 'RECTANGLE') {
+          const rx = Math.min(x1, x2), ry = Math.min(y1, y2);
+          const rw = Math.abs(x2 - x1), rh = Math.abs(y2 - y1);
+          ctx.fillStyle = item.color ? `${item.color}22` : 'rgba(37, 99, 235, 0.12)';
+          ctx.fillRect(rx, ry, rw, rh);
+          ctx.strokeRect(rx, ry, rw, rh);
+        } else if (item.tool === 'FIBONACCI') {
+          const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0];
+          const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+          for (const lvl of levels) {
+            const ly = y1 + (y2 - y1) * lvl;
+            const pVal = p1.price + (p2.price - p1.price) * lvl;
+            ctx.save();
+            ctx.setLineDash([3 * dpr, 3 * dpr]);
+            ctx.beginPath(); ctx.moveTo(minX, ly); ctx.lineTo(maxX, ly); ctx.stroke();
+            ctx.restore();
+            ctx.font = `${7.5 * dpr}px "JetBrains Mono",monospace`;
+            ctx.fillText(`${(lvl * 100).toFixed(1)}% (${formatPrice(pVal)})`, minX + 4 * dpr, ly - 3 * dpr);
+          }
+        }
+      }
+    }
+    ctx.restore();
+  }
+
   // ── LAYER 7: Indicator Overlays ───────────────────────────────────────
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 0, chartW, chartH); ctx.clip();
@@ -869,11 +934,11 @@ export function renderChart(
   ctx.restore();
 
   // ── LAYER 8 & 9: Sub-panels ───────────────────────────────────────────
-  let panelOffset = chartH;
+  let panelOffset = chartH + BM;
+  const pH = totalPanels > 0 ? panelH / totalPanels : 0;
 
   // Volume Panel
   if (hasVolPanel) {
-    const pH = totalPanels <= 2 ? H * 0.18 : H * 0.12;
     // Bg
     ctx.fillStyle = PANEL_BG; ctx.fillRect(0, panelOffset, chartW+RM, pH);
     // Separator
@@ -904,7 +969,7 @@ export function renderChart(
         const c = candles[i];
         const barH = Math.max(1.5, (c.volume / maxV) * avH);
         const bT = panelOffset + pH - barH;
-        ctx.fillStyle = c.close >= c.open ? 'rgba(0,230,118,0.7)' : 'rgba(255,23,68,0.7)';
+        ctx.fillStyle = c.close >= c.open ? 'rgba(0,163,92,0.7)' : 'rgba(225,29,72,0.7)';
         ctx.fillRect(x, bT, bw, barH);
       }
     }
@@ -913,35 +978,34 @@ export function renderChart(
 
   // Indicator Panels
   for (const cfg of panelInds) {
-    const pH = totalPanels <= 2 ? H * 0.18 : H * 0.12;
     const result = options.indicatorResults.get(cfg.type);
     // Panel bg + separator
     ctx.fillStyle = PANEL_BG; ctx.fillRect(0, panelOffset, chartW+RM, pH);
-    ctx.strokeStyle = '#1A1A1A'; ctx.lineWidth = 1*dpr;
-    ctx.beginPath(); ctx.moveTo(0, panelOffset); ctx.lineTo(chartW, panelOffset); ctx.stroke();
+    ctx.strokeStyle = PANEL_SEP; ctx.lineWidth = 1*dpr;
+    ctx.beginPath(); ctx.moveTo(0, panelOffset); ctx.lineTo(chartW+RM, panelOffset); ctx.stroke();
     // Label
     ctx.font = `bold ${9*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle = cfg.color;
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText(INDICATOR_DEFAULTS[cfg.type].label, 4*dpr, panelOffset+2*dpr);
+    ctx.fillText(INDICATOR_DEFAULTS[cfg.type].label, 4*dpr, panelOffset+3*dpr);
 
     if (!result) {
-      ctx.font = `${12*dpr}px sans-serif`; ctx.fillStyle = 'rgba(128,128,128,0.6)';
+      ctx.font = `${11*dpr}px sans-serif`; ctx.fillStyle = '#94A3B8';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('Computing...', chartW/2, panelOffset+pH/2);
+      ctx.fillText('Calculating...', chartW/2, panelOffset+pH/2);
       panelOffset += pH; continue;
     }
 
-    const padding = 4*dpr;
-    const dH = pH - padding*2;
+    const padding = 6*dpr;
+    const dH = Math.max(10, pH - padding*2);
     const dT = panelOffset + padding;
 
-    function drawPanelLine(vals: (number|null)[], minV: number, range: number, color: string, sw=1) {
+    function drawPanelLine(vals: (number|null)[], minV: number, range: number, color: string, sw=1.2) {
       ctx.beginPath(); let s = false;
       for (let i = startIdx; i < Math.min(endIdx, vals.length); i++) {
         const v = vals[i]; if (v === null) { s=false; continue; }
         const li = i - startIdx;
         const x = li*candleW+candleW/2;
-        const y = dT + dH * (1 - (v - minV) / range);
+        const y = dT + dH * (1 - (v - minV) / (range || 1));
         if (!s) { ctx.moveTo(x,y); s=true; } else ctx.lineTo(x,y);
       }
       ctx.strokeStyle = color; ctx.lineWidth = sw*dpr; ctx.stroke();
@@ -951,15 +1015,15 @@ export function renderChart(
       case 'RSI': {
         const vals = result as (number|null)[];
         const ob = dT + dH * (1 - 70/100), os = dT + dH * (1 - 30/100), mid = dT + dH * 0.5;
-        ctx.save(); ctx.setLineDash([3*dpr,3*dpr]); ctx.lineWidth=0.5*dpr;
-        ctx.strokeStyle='rgba(255,23,68,0.4)'; ctx.beginPath(); ctx.moveTo(0,ob); ctx.lineTo(chartW,ob); ctx.stroke();
-        ctx.strokeStyle='rgba(0,230,118,0.4)'; ctx.beginPath(); ctx.moveTo(0,os); ctx.lineTo(chartW,os); ctx.stroke();
-        ctx.strokeStyle='#333333'; ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(chartW,mid); ctx.stroke();
+        ctx.save(); ctx.setLineDash([3*dpr,3*dpr]); ctx.lineWidth=0.8*dpr;
+        ctx.strokeStyle='rgba(225,29,72,0.45)'; ctx.beginPath(); ctx.moveTo(0,ob); ctx.lineTo(chartW,ob); ctx.stroke();
+        ctx.strokeStyle='rgba(0,163,92,0.45)'; ctx.beginPath(); ctx.moveTo(0,os); ctx.lineTo(chartW,os); ctx.stroke();
+        ctx.strokeStyle='#CBD5E1'; ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(chartW,mid); ctx.stroke();
         ctx.setLineDash([]); ctx.restore();
-        // Level labels
-        ctx.font=`${7*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle='#555555'; ctx.textAlign='left'; ctx.textBaseline='middle';
-        ctx.fillText('70', chartW+2*dpr, ob); ctx.fillText('30', chartW+2*dpr, os);
-        drawPanelLine(vals, 0, 100, cfg.color, 1);
+        // Level labels on right axis
+        ctx.font=`${7.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle='#64748B'; ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.fillText('70', chartW+4*dpr, ob); ctx.fillText('30', chartW+4*dpr, os);
+        drawPanelLine(vals, 0, 100, cfg.color, 1.5);
         break;
       }
       case 'MACD': {
