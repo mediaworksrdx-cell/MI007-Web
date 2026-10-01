@@ -1,41 +1,41 @@
 'use client';
 
-import {
-  useRef, useEffect, useCallback, useState, useLayoutEffect
-} from 'react';
-import { Candle, IndicatorResult } from '@/lib/types';
-import { renderChart, ChartOptions } from '@/lib/chartRenderer';
+import { useRef, useEffect, useCallback, useState, useLayoutEffect } from 'react';
+import type { Candle, ChartType, IndicatorType, IndicatorConfig } from '@/lib/types';
+import { renderChart } from '@/lib/chartRenderer';
 
-interface CandlestickCanvasProps extends ChartOptions {
+interface CandlestickCanvasProps {
   candles: Candle[];
+  chartType: ChartType;
+  showVolume: boolean;
+  showVolumePanel: boolean;
+  showSmcOverlay: boolean;
+  showVolumeProfile: boolean;
+  indicators: IndicatorConfig[];
+  indicatorResults: Map<IndicatorType, unknown>;
+  currentPriceOverride?: number;
+  timeframe: string;
   className?: string;
 }
 
 const VISIBLE_CANDLES_BASE = 60;
 
 export function CandlestickCanvas({
-  candles,
-  chartType,
-  showVolume,
-  indicators,
-  currentPrice,
-  timeframe,
-  className = '',
+  candles, chartType, showVolume, showVolumePanel,
+  showSmcOverlay, showVolumeProfile,
+  indicators, indicatorResults,
+  currentPriceOverride, timeframe, className = '',
 }: CandlestickCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
-  const [scrollOffset, setScrollOffset] = useState(0); // candles from right
+  const [scrollOffset, setScrollOffset] = useState(0);
   const [crosshair, setCrosshair] = useState<{ x: number; y: number } | null>(null);
   const [dpr, setDpr] = useState(1);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
-  // Detect device pixel ratio
-  useLayoutEffect(() => {
-    setDpr(window.devicePixelRatio || 1);
-  }, []);
+  useLayoutEffect(() => { setDpr(window.devicePixelRatio || 1); }, []);
 
-  // Resize observer
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -49,7 +49,6 @@ export function CandlestickCanvas({
     return () => ro.disconnect();
   }, []);
 
-  // Set canvas size
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || size.w === 0) return;
@@ -59,12 +58,9 @@ export function CandlestickCanvas({
     canvas.style.height = `${size.h}px`;
   }, [size, dpr]);
 
-  // Compute viewport
+  // Viewport calculation
   const visibleCount = Math.max(8, Math.round(VISIBLE_CANDLES_BASE / zoom));
-  const endIdx = Math.max(
-    visibleCount,
-    candles.length - Math.round(scrollOffset)
-  );
+  const endIdx = Math.max(visibleCount, candles.length - Math.round(scrollOffset));
   const clampedEnd = Math.min(endIdx, candles.length);
   const clampedStart = Math.max(0, clampedEnd - visibleCount);
 
@@ -78,13 +74,19 @@ export function CandlestickCanvas({
     renderChart(
       ctx,
       candles,
-      { chartType, showVolume, indicators, currentPrice, timeframe },
-      { startIdx: clampedStart, endIdx: clampedEnd, zoom },
+      {
+        chartType, showVolume, showVolumePanel,
+        showSmcOverlay, showVolumeProfile,
+        indicators, indicatorResults,
+        currentPriceOverride, timeframe,
+      },
+      { startIdx: clampedStart, endIdx: clampedEnd },
       crosshair ? { x: crosshair.x * dpr, y: crosshair.y * dpr } : null,
       dpr
     );
-  }, [candles, chartType, showVolume, indicators, currentPrice, timeframe,
-      clampedStart, clampedEnd, zoom, crosshair, size, dpr]);
+  }, [candles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
+      indicators, indicatorResults, currentPriceOverride, timeframe,
+      clampedStart, clampedEnd, crosshair, size, dpr]);
 
   // Pointer events
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -113,9 +115,7 @@ export function CandlestickCanvas({
 
   // Touch pan
   const lastTouchX = useRef<number | null>(null);
-  const handleTouchStart = (e: React.TouchEvent) => {
-    lastTouchX.current = e.touches[0].clientX;
-  };
+  const handleTouchStart = (e: React.TouchEvent) => { lastTouchX.current = e.touches[0].clientX; };
   const handleTouchMove = (e: React.TouchEvent) => {
     if (lastTouchX.current === null) return;
     const dx = e.touches[0].clientX - lastTouchX.current;
@@ -130,19 +130,16 @@ export function CandlestickCanvas({
     <div ref={containerRef} className={`relative w-full h-full ${className}`}>
       <canvas
         ref={canvasRef}
-        className="chart block w-full h-full select-none"
+        className="chart block w-full h-full select-none cursor-crosshair"
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       />
-      {/* Scroll-to-live button */}
       {scrollOffset > 5 && (
-        <button
-          onClick={() => setScrollOffset(0)}
-          className="absolute bottom-8 right-20 rounded-full border border-border-navy bg-surface-card/90 px-2.5 py-1 text-[11px] font-bold text-text-secondary hover:text-mint-green hover:border-mint-green transition-all mono"
-        >
+        <button onClick={() => setScrollOffset(0)}
+          className="absolute bottom-8 right-20 rounded-full border border-border-navy bg-surface-card/90 px-2.5 py-1 text-[11px] font-bold text-text-secondary hover:text-mint-green hover:border-mint-green transition-all mono shadow-lg">
           »» LIVE
         </button>
       )}

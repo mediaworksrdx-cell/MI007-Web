@@ -1,10 +1,19 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Candle, IndicatorResult, IndicatorType, Timeframe, MarketType, INSTRUMENTS } from '@/lib/types';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Timeframe, MarketType, INSTRUMENTS } from '@/lib/types';
+import type { Candle, ChartType, IndicatorType, IndicatorConfig } from '@/lib/types';
+import {
+  INDICATOR_DEFAULTS,
+  calculateSMA, calculateEMA, calculateRSI, calculateMACD,
+  calculateBollingerBands, calculateVWAP, calculateSupertrend,
+  calculateATR, calculateStochastic, calculateIchimoku,
+  calculateCVD, calculateParabolicSAR, calculateADX,
+  calculateOBV, calculateCCI, calculateWilliamsR, calculateMFI,
+} from '@/lib/chartRenderer';
 import { getMockCandles, getMockQuote } from '@/lib/mockData';
-import { calculateEMA, calculateSMA, calculateBollinger, calculateVWAP, calculateRSI, calculateMACD } from '@/lib/indicators';
-import { TickSimulator } from '@/lib/tickSimulator';
+import { fetchCandles, areSymbolsEqual } from '@/lib/tradeEngineClient';
+import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { ChartToolbar } from './ChartToolbar';
 import { CandlestickCanvas } from './CandlestickCanvas';
 import { OHLCVHeader } from './OHLCVHeader';
@@ -25,12 +34,18 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     defaultSymbol ?? instruments[0].symbol
   );
   const [timeframe, setTimeframe] = useState<Timeframe>('1H');
-  const [chartType, setChartType] = useState<'CANDLESTICK' | 'LINE' | 'AREA' | 'HEIKIN_ASHI'>('CANDLESTICK');
+  const [chartType, setChartType] = useState<ChartType>('CANDLESTICK');
   const [showVolume, setShowVolume] = useState(true);
-  const [activeIndicators, setActiveIndicators] = useState<string[]>(['EMA']);
+  const [showVolumePanel, setShowVolumePanel] = useState(false);
+  const [showSmcOverlay, setShowSmcOverlay] = useState(true);
+  const [showVolumeProfile, setShowVolumeProfile] = useState(false);
+  const [activeIndicators, setActiveIndicators] = useState<IndicatorType[]>(['EMA']);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | undefined>();
+  const [isLoadingCandles, setIsLoadingCandles] = useState(true);
+  const [isLiveFromEngine, setIsLiveFromEngine] = useState(false);
 
+  const { status, getSymbolPrice, subscribeToTicks } = useTradeEngine();
   const currency = instruments[0].currency;
 
   // Reset symbol when market changes
@@ -38,150 +53,232 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     setSelectedSymbol(INSTRUMENTS[market][0].symbol);
   }, [market]);
 
-  // Load candles on symbol/timeframe change
+  // Load candles from Trade Engine (with realistic fallback)
   useEffect(() => {
-    const data = getMockCandles(market, selectedSymbol, timeframe, 300);
-    setCandles(data);
-    setCurrentPrice(data[data.length - 1]?.close);
-  }, [market, selectedSymbol, timeframe]);
+    let isCancelled = false;
+    setIsLoadingCandles(true);
 
-  // Live tick simulator
-  useEffect(() => {
-    if (candles.length === 0) return;
-    const sim = new TickSimulator({
-      market,
-      symbol: selectedSymbol,
-      timeframeMs: TIMEFRAME_MS[timeframe] ?? TIMEFRAME_MS['1H'],
-      intervalMs: 1200,
-      onTick: (updatedCandle, isNew) => {
-        setCurrentPrice(updatedCandle.close);
-        setCandles(prev => {
-          if (prev.length === 0) return prev;
-          if (isNew) return [...prev, updatedCandle];
-          const next = [...prev];
-          next[next.length - 1] = updatedCandle;
-          return next;
-        });
-      },
-    });
-    sim.start(candles);
-    return () => sim.stop();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [market, selectedSymbol, timeframe]);
+    async function loadCandles() {
+      // 1. Attempt to fetch real candles from Trade Engine
+      const engineCandles = await fetchCandles(selectedSymbol, timeframe);
 
-  // Compute indicators
-  const indicators: IndicatorResult[] = useMemo(() => {
-    const results: IndicatorResult[] = [];
-    for (const name of activeIndicators) {
-      if (name === 'EMA') {
-        results.push({ type: 'EMA', values: calculateEMA(candles, 21) });
-        results.push({ type: 'EMA', values: calculateEMA(candles, 9) });
-      } else if (name === 'SMA') {
-        results.push({ type: 'SMA', values: calculateSMA(candles, 20) });
-      } else if (name === 'BOLLINGER') {
-        const b = calculateBollinger(candles, 20, 2);
-        results.push({ type: 'BOLLINGER', values: b.upper, values2: b.lower, values3: b.middle });
-      } else if (name === 'VWAP') {
-        results.push({ type: 'VWAP', values: calculateVWAP(candles) });
-      } else if (name === 'RSI') {
-        results.push({ type: 'RSI', values: calculateRSI(candles, 14) });
-      } else if (name === 'MACD') {
-        const m = calculateMACD(candles, 12, 26, 9);
-        results.push({ type: 'MACD', values: m.macd, values2: m.signal, values3: m.histogram });
+      if (!isCancelled) {
+        if (engineCandles && engineCandles.length > 5) {
+          setCandles(engineCandles);
+          const lastC = engineCandles[engineCandles.length - 1];
+          setCurrentPrice(lastC?.close);
+          setIsLiveFromEngine(true);
+        } else {
+          // Fallback to high-quality generator if offline or empty
+          const fallback = getMockCandles(market, selectedSymbol, timeframe, 300);
+          setCandles(fallback);
+          setCurrentPrice(fallback[fallback.length - 1]?.close);
+          setIsLiveFromEngine(false);
+        }
+        setIsLoadingCandles(false);
       }
     }
-    return results;
-  }, [candles, activeIndicators]);
 
-  const toggleIndicator = useCallback((name: string) => {
+    loadCandles();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [market, selectedSymbol, timeframe]);
+
+  // Listen to live WebSocket ticks from the Trade Engine
+  useEffect(() => {
+    const unsub = subscribeToTicks((tick) => {
+      if (areSymbolsEqual(tick.symbol, selectedSymbol)) {
+        setIsLiveFromEngine(true);
+        setCurrentPrice(tick.price);
+
+        setCandles(prev => {
+          if (prev.length === 0) return prev;
+          const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
+          const lastCandle = prev[prev.length - 1];
+          const now = tick.timestamp || Date.now();
+
+          // If tick is within the duration of the current candle, update it
+          if (now < lastCandle.openTime + tfMs) {
+            const updated: Candle = {
+              ...lastCandle,
+              close: tick.price,
+              high: Math.max(lastCandle.high, tick.price),
+              low: Math.min(lastCandle.low, tick.price),
+              volume: lastCandle.volume + (tick.volume > 0 ? tick.volume : 1),
+            };
+            const next = [...prev];
+            next[next.length - 1] = updated;
+            return next;
+          } else {
+            // New candle started
+            const newBar: Candle = {
+              openTime: lastCandle.openTime + tfMs,
+              open: lastCandle.close,
+              high: Math.max(lastCandle.close, tick.price),
+              low: Math.min(lastCandle.close, tick.price),
+              close: tick.price,
+              volume: tick.volume > 0 ? tick.volume : 1,
+            };
+            return [...prev, newBar];
+          }
+        });
+      }
+    });
+
+    return () => unsub();
+  }, [selectedSymbol, timeframe, subscribeToTicks]);
+
+  // Sync snapshot price if available from trade engine
+  useEffect(() => {
+    const live = getSymbolPrice(selectedSymbol);
+    if (live && live.price > 0) {
+      setCurrentPrice(live.price);
+      setIsLiveFromEngine(true);
+    }
+  }, [selectedSymbol, getSymbolPrice]);
+
+  // Build IndicatorConfig array from active indicator types
+  const indicatorConfigs: IndicatorConfig[] = useMemo(() => {
+    return activeIndicators.map(t => {
+      const d = INDICATOR_DEFAULTS[t];
+      return {
+        type: t, period: d.period, secondaryPeriod: d.secondaryPeriod,
+        tertiaryPeriod: d.tertiaryPeriod, color: d.color,
+        secondaryColor: d.secondaryColor, tertiaryColor: d.tertiaryColor,
+        enabled: true, multiplier: d.multiplier,
+      };
+    });
+  }, [activeIndicators]);
+
+  // Compute indicator results
+  const indicatorResults = useMemo(() => {
+    const map = new Map<IndicatorType, unknown>();
+    for (const cfg of indicatorConfigs) {
+      switch (cfg.type) {
+        case 'SMA': map.set('SMA', calculateSMA(candles, cfg.period)); break;
+        case 'EMA': map.set('EMA', calculateEMA(candles, cfg.period)); break;
+        case 'RSI': map.set('RSI', calculateRSI(candles, cfg.period)); break;
+        case 'MACD': map.set('MACD', calculateMACD(candles, cfg.period, cfg.secondaryPeriod, cfg.tertiaryPeriod)); break;
+        case 'BOLLINGER_BANDS': map.set('BOLLINGER_BANDS', calculateBollingerBands(candles, cfg.period, cfg.multiplier)); break;
+        case 'VWAP': map.set('VWAP', calculateVWAP(candles)); break;
+        case 'SUPERTREND': map.set('SUPERTREND', calculateSupertrend(candles, cfg.period, cfg.multiplier)); break;
+        case 'ICHIMOKU': map.set('ICHIMOKU', calculateIchimoku(candles, cfg.period, cfg.secondaryPeriod, cfg.tertiaryPeriod)); break;
+        case 'ATR': map.set('ATR', calculateATR(candles, cfg.period)); break;
+        case 'STOCHASTIC': map.set('STOCHASTIC', calculateStochastic(candles, cfg.period, cfg.secondaryPeriod)); break;
+        case 'CVD': map.set('CVD', calculateCVD(candles)); break;
+        case 'PARABOLIC_SAR': map.set('PARABOLIC_SAR', calculateParabolicSAR(candles)); break;
+        case 'ADX': map.set('ADX', calculateADX(candles, cfg.period)); break;
+        case 'OBV': map.set('OBV', calculateOBV(candles)); break;
+        case 'CCI': map.set('CCI', calculateCCI(candles, cfg.period)); break;
+        case 'WILLIAMS_R': map.set('WILLIAMS_R', calculateWilliamsR(candles, cfg.period)); break;
+        case 'MFI': map.set('MFI', calculateMFI(candles, cfg.period)); break;
+      }
+    }
+    return map;
+  }, [candles, indicatorConfigs]);
+
+  const toggleIndicator = useCallback((type: IndicatorType) => {
     setActiveIndicators(prev =>
-      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
     );
   }, []);
 
   const lastCandle = candles[candles.length - 1] ?? null;
   const quote = useMemo(() => getMockQuote(market, selectedSymbol), [market, selectedSymbol]);
 
+  // Live snapshot details from context
+  const livePriceData = getSymbolPrice(selectedSymbol);
+  const displayPrice = currentPrice ?? livePriceData?.price ?? lastCandle?.close ?? 0;
+  const displayChange = livePriceData?.change ?? quote.change;
+  const displayChangePct = livePriceData?.changePct ?? quote.changePct;
+
   return (
     <div className="flex flex-col h-full rounded-xl border border-border-navy bg-surface-card overflow-hidden shadow-card">
-      {/* ── Instrument Tabs ── */}
-      <div className="flex items-center gap-0.5 border-b border-border-navy px-2 pt-2 overflow-x-auto">
+      {/* ── Instrument Tabs & Live Engine Status ── */}
+      <div className="flex items-center gap-0.5 border-b border-border-navy px-2 pt-2 overflow-x-auto scrollbar-none">
         {instruments.map(inst => {
           const isSelected = inst.symbol === selectedSymbol;
           return (
-            <button
-              key={inst.symbol}
-              onClick={() => setSelectedSymbol(inst.symbol)}
-              className={`flex-shrink-0 px-3.5 py-1.5 text-[14px] font-bold mono rounded-t border transition-all ${
+            <button key={inst.symbol} onClick={() => setSelectedSymbol(inst.symbol)}
+              className={`flex-shrink-0 px-3 py-1.5 text-[12px] font-bold mono rounded-t border transition-all ${
                 isSelected
                   ? 'border-border-navy border-b-surface-card bg-surface-card text-mint-green -mb-px'
                   : 'border-transparent text-text-muted hover:text-text-secondary'
-              }`}
-            >
-              {inst.symbol}
-            </button>
+              }`}>{inst.symbol}</button>
           );
         })}
 
-        {/* Live quote on the right */}
-        {lastCandle && (
-          <div className="ml-auto flex items-center gap-3 px-3 pb-1.5 flex-shrink-0">
-            <span className="mono text-[16px] font-black text-text-primary">
-              {currency}{(currentPrice ?? lastCandle.close).toLocaleString()}
-            </span>
-            <span className={`mono text-[14px] font-bold ${quote.change >= 0 ? 'text-mint-green' : 'text-crimson-red'}`}>
-              {quote.change >= 0 ? '+' : ''}{quote.change.toFixed(2)} ({quote.changePct.toFixed(2)}%)
+        {/* Live Trade Engine Beacon */}
+        <div className="ml-auto flex items-center gap-3 px-3 pb-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-border-navy bg-bg-midnight/70 text-[10px] mono">
+            <span className={`w-2 h-2 rounded-full ${status === 'connected' ? 'bg-mint-green animate-pulse' : 'bg-cyber-gold'}`} />
+            <span className="text-text-muted font-bold">
+              {status === 'connected' ? (isLiveFromEngine ? 'TRADE ENGINE LIVE' : 'ENGINE CONNECTED') : 'RECONNECTING'}
             </span>
           </div>
-        )}
+
+          {lastCandle && (
+            <div className="flex items-center gap-2">
+              <span className="mono text-[14px] font-black text-text-primary">
+                {currency}{displayPrice.toLocaleString(undefined, { minimumFractionDigits: displayPrice < 10 ? 2 : 2, maximumFractionDigits: 2 })}
+              </span>
+              <span className={`mono text-[12px] font-bold ${displayChange >= 0 ? 'text-mint-green' : 'text-crimson-red'}`}>
+                {displayChange >= 0 ? '+' : ''}{displayChange.toFixed(2)} ({displayChange >= 0 ? '+' : ''}{displayChangePct.toFixed(2)}%)
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Toolbar ── */}
       <ChartToolbar
-        timeframe={timeframe}
-        chartType={chartType}
-        showVolume={showVolume}
+        timeframe={timeframe} chartType={chartType}
+        showVolume={showVolume} showVolumePanel={showVolumePanel}
+        showSmcOverlay={showSmcOverlay} showVolumeProfile={showVolumeProfile}
         activeIndicators={activeIndicators}
         onTimeframeChange={setTimeframe}
-        onChartTypeChange={ct => setChartType(ct as typeof chartType)}
+        onChartTypeChange={setChartType}
         onToggleVolume={() => setShowVolume(v => !v)}
+        onToggleVolumePanel={() => setShowVolumePanel(v => !v)}
+        onToggleSmcOverlay={() => setShowSmcOverlay(v => !v)}
+        onToggleVolumeProfile={() => setShowVolumeProfile(v => !v)}
         onToggleIndicator={toggleIndicator}
       />
 
       {/* ── OHLCV Header ── */}
-      <OHLCVHeader
-        candle={lastCandle}
-        currency={currency}
-        timeframe={timeframe}
-        currentPrice={currentPrice}
-      />
+      <OHLCVHeader candle={lastCandle} currency={currency} timeframe={timeframe} currentPrice={displayPrice} />
 
-      {/* ── Chart ── */}
-      <div className="flex-1 min-h-0 bg-white">
+      {/* ── Chart Canvas ── */}
+      <div className="flex-1 min-h-0 relative">
+        {isLoadingCandles && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-bg-midnight/40 backdrop-blur-xs">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border-navy bg-surface-card text-text-secondary text-[12px] mono font-bold">
+              <span className="w-3 h-3 rounded-full border-2 border-mint-green border-t-transparent animate-spin" />
+              <span>STREAMING FROM TRADE ENGINE...</span>
+            </div>
+          </div>
+        )}
         <CandlestickCanvas
-          candles={candles}
-          chartType={chartType}
-          showVolume={showVolume}
-          indicators={indicators}
-          currentPrice={currentPrice}
-          timeframe={timeframe}
-          className="h-full bg-white"
+          candles={candles} chartType={chartType}
+          showVolume={showVolume} showVolumePanel={showVolumePanel}
+          showSmcOverlay={showSmcOverlay} showVolumeProfile={showVolumeProfile}
+          indicators={indicatorConfigs} indicatorResults={indicatorResults}
+          currentPriceOverride={displayPrice} timeframe={timeframe}
+          className="h-full"
         />
       </div>
 
       {/* ── Active Indicator Badges ── */}
       {activeIndicators.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 border-t border-border-navy px-3 py-2 bg-slate-50/50">
-          {activeIndicators.map(name => (
-            <div key={name} className="flex items-center gap-1.5 rounded-full border border-border-navy bg-white px-2.5 py-1 text-[13px] mono shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-mint-green" />
-              <span className="text-text-secondary font-bold">{name}</span>
-              <button
-                onClick={() => toggleIndicator(name)}
-                className="ml-0.5 text-text-muted hover:text-crimson-red transition-colors font-bold"
-              >
-                ×
-              </button>
+        <div className="flex flex-wrap gap-1 border-t border-border-navy px-3 py-1.5 bg-bg-midnight/30">
+          {activeIndicators.map(t => (
+            <div key={t} className="flex items-center gap-1 rounded-full border border-border-navy px-2 py-0.5 text-[10px] mono">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: INDICATOR_DEFAULTS[t].color }} />
+              <span className="text-text-secondary font-bold">{INDICATOR_DEFAULTS[t].label}</span>
+              <button onClick={() => toggleIndicator(t)}
+                className="ml-0.5 text-text-muted hover:text-crimson-red transition-colors font-bold">×</button>
             </div>
           ))}
         </div>
