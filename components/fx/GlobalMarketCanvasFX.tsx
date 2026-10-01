@@ -490,11 +490,7 @@ export default function GlobalMarketCanvasFX() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-[1]"
-      style={{
-        width: '100vw',
-        height: '100vh',
-      }}
+      className="fixed inset-0 pointer-events-none z-[1] w-full h-full"
     />
   );
 }

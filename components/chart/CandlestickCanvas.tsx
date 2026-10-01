@@ -426,6 +426,7 @@ export function CandlestickCanvas({
       <canvas
         ref={canvasRef}
         className="chart block w-full h-full select-none cursor-crosshair"
+        style={{ touchAction: 'pan-y' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

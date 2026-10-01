@@ -81,15 +81,15 @@ export default function AboutSection() {
           </svg>
 
           {/* Top Corridor HUD Bar */}
-          <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-200 bg-slate-50/95 backdrop-blur-xl text-[14px] font-mono shadow-xs">
-            <div className="flex items-center gap-2 text-cyan-800 font-bold">
-              <span className="w-2 h-2 rounded-full bg-cyan-600 animate-pulse" />
-              <span>ALGORITHMIC EXECUTION CORRIDOR // STRUCTURAL PRICE ACTION</span>
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 p-2.5 sm:p-3.5 rounded-2xl border border-slate-200 bg-slate-50/95 backdrop-blur-xl text-[12px] sm:text-[14px] font-mono shadow-xs">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-cyan-800 font-bold truncate">
+              <span className="w-2 h-2 rounded-full bg-cyan-600 animate-pulse shrink-0" />
+              <span>ALGORITHMIC EXECUTION CORRIDOR <span className="hidden sm:inline">// STRUCTURAL PRICE ACTION</span></span>
             </div>
-            <div className="flex items-center gap-4 text-black font-semibold text-[14px]">
+            <div className="flex items-center gap-2 sm:gap-4 text-black font-semibold text-[11px] sm:text-[14px]">
               <span>SWEEP DEPTH: <strong className="text-emerald-700 font-black">89.4%</strong></span>
               <span>|</span>
-              <span>VOLATILITY BAND: <strong className="text-amber-700 font-black">OPTIMAL</strong></span>
+              <span>VOLATILITY: <strong className="text-amber-700 font-black">OPTIMAL</strong></span>
             </div>
           </div>
 
@@ -99,11 +99,11 @@ export default function AboutSection() {
             <div
               onMouseEnter={() => setActiveZone('breakout')}
               onMouseLeave={() => setActiveZone(null)}
-              className="absolute top-[18%] left-[16%] px-4 py-2 rounded-full border-2 border-emerald-500 bg-white shadow-md cursor-pointer transition-transform hover:scale-105"
+              className="absolute top-[10%] sm:top-[18%] left-[2%] sm:left-[16%] px-2.5 sm:px-4 py-1 sm:py-2 rounded-full border-2 border-emerald-500 bg-white shadow-md cursor-pointer transition-transform hover:scale-105"
             >
-              <div className="flex items-center gap-2 mono text-[14px] font-black text-emerald-700">
+              <div className="flex items-center gap-1.5 sm:gap-2 mono text-[11px] sm:text-[14px] font-black text-emerald-700">
                 <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
-                <span>BREAKOUT CONFIDENCE 82%</span>
+                <span>BREAKOUT 82%</span>
               </div>
             </div>
 
@@ -111,9 +111,9 @@ export default function AboutSection() {
             <div
               onMouseEnter={() => setActiveZone('resistance')}
               onMouseLeave={() => setActiveZone(null)}
-              className="absolute top-[18%] right-[16%] px-4 py-2 rounded-full border-2 border-rose-500 bg-white shadow-md cursor-pointer transition-transform hover:scale-105"
+              className="absolute top-[10%] sm:top-[18%] right-[2%] sm:right-[16%] px-2.5 sm:px-4 py-1 sm:py-2 rounded-full border-2 border-rose-500 bg-white shadow-md cursor-pointer transition-transform hover:scale-105"
             >
-              <div className="flex items-center gap-2 mono text-[14px] font-black text-rose-700">
+              <div className="flex items-center gap-1.5 sm:gap-2 mono text-[11px] sm:text-[14px] font-black text-rose-700">
                 <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
                 <span>RESISTANCE 25,240</span>
               </div>
@@ -123,18 +123,18 @@ export default function AboutSection() {
             <div
               onMouseEnter={() => setActiveZone('support')}
               onMouseLeave={() => setActiveZone(null)}
-              className="absolute bottom-[22%] left-[20%] px-4 py-2 rounded-full border-2 border-emerald-500 bg-white shadow-md cursor-pointer transition-transform hover:scale-105"
+              className="absolute bottom-[16%] sm:bottom-[22%] left-[2%] sm:left-[20%] px-2.5 sm:px-4 py-1 sm:py-2 rounded-full border-2 border-emerald-500 bg-white shadow-md cursor-pointer transition-transform hover:scale-105"
             >
-              <div className="flex items-center gap-2 mono text-[14px] font-black text-emerald-700">
+              <div className="flex items-center gap-1.5 sm:gap-2 mono text-[11px] sm:text-[14px] font-black text-emerald-700">
                 <span className="w-2 h-2 rounded-full bg-emerald-600" />
                 <span>SUPPORT 24,580</span>
               </div>
             </div>
 
             {/* Rejection / Downtrend Tag (Bottom Right) */}
-            <div className="absolute bottom-[22%] right-[20%] px-4 py-2 rounded-full border-2 border-rose-500 bg-white shadow-md cursor-pointer">
-              <div className="flex items-center gap-2 mono text-[14px] font-black text-rose-700">
-                <span>REJECTION 75% // DOWNTREND -4.23%</span>
+            <div className="absolute bottom-[16%] sm:bottom-[22%] right-[2%] sm:right-[20%] px-2.5 sm:px-4 py-1 sm:py-2 rounded-full border-2 border-rose-500 bg-white shadow-md cursor-pointer">
+              <div className="flex items-center gap-1.5 sm:gap-2 mono text-[11px] sm:text-[14px] font-black text-rose-700">
+                <span>REJECTION 75%<span className="hidden sm:inline"> // DOWNTREND -4.23%</span></span>
               </div>
             </div>
           </div>

@@ -45,7 +45,7 @@ export default function HowItWorksSection() {
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.15 }}
             onClick={() => setSelectedSide('bull')}
-            className={`relative rounded-3xl border-2 transition-all duration-300 cursor-pointer group shadow-lg flex flex-col justify-between p-7 min-h-[380px] overflow-hidden ${
+            className={`relative rounded-3xl border-2 transition-all duration-300 cursor-pointer group shadow-lg flex flex-col justify-between p-4 sm:p-7 min-h-[380px] overflow-hidden ${
               selectedSide === 'bull'
                 ? 'border-emerald-500 shadow-xl bg-emerald-50/80 backdrop-blur-2xl'
                 : 'border-slate-200 hover:border-slate-300 bg-white/90 backdrop-blur-xl'
@@ -55,39 +55,39 @@ export default function HowItWorksSection() {
             <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
             {/* Top Badge & Metric */}
-            <div className="relative z-10 flex items-center justify-between pb-6 border-b border-slate-200/80">
-              <div className="px-4 py-2 rounded-full border-2 border-emerald-500 bg-white text-emerald-800 mono text-[14px] font-bold flex items-center gap-2 shadow-xs">
+            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-slate-200/80">
+              <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 border-emerald-500 bg-white text-emerald-800 mono text-[12px] sm:text-[14px] font-bold flex items-center gap-2 shadow-xs">
                 <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
                 <span>BULL ACCUMULATION // +12.48% ▲</span>
               </div>
-              <div className="text-right">
-                <span className="mono text-[13px] text-black font-black block">BUY DELTA</span>
-                <span className="mono text-[17px] text-emerald-700 font-black">+4.8M TENSORS</span>
+              <div className="text-left sm:text-right">
+                <span className="mono text-[11px] sm:text-[13px] text-black font-black block">BUY DELTA</span>
+                <span className="mono text-[15px] sm:text-[17px] text-emerald-700 font-black">+4.8M TENSORS</span>
               </div>
             </div>
 
             {/* Live Quantitative Flow Matrix */}
-            <div className="relative z-10 py-6 space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
-                  <span className="text-[13px] mono text-black font-bold block mb-1">MOMENTUM</span>
-                  <span className="text-[17px] font-mono font-bold text-black">+8.32%</span>
+            <div className="relative z-10 py-4 sm:py-6 space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="p-2.5 sm:p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
+                  <span className="text-[11px] sm:text-[13px] mono text-black font-bold block mb-1">MOMENTUM</span>
+                  <span className="text-[14px] sm:text-[17px] font-mono font-bold text-black">+8.32%</span>
                 </div>
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
-                  <span className="text-[13px] mono text-black font-bold block mb-1">IMBALANCE</span>
-                  <span className="text-[17px] font-mono font-bold text-emerald-700">3.8 : 1</span>
+                <div className="p-2.5 sm:p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
+                  <span className="text-[11px] sm:text-[13px] mono text-black font-bold block mb-1">IMBALANCE</span>
+                  <span className="text-[14px] sm:text-[17px] font-mono font-bold text-emerald-700">3.8 : 1</span>
                 </div>
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
-                  <span className="text-[13px] mono text-black font-bold block mb-1">VWAP BIAS</span>
-                  <span className="text-[17px] font-mono font-bold text-cyan-700">+3.4° UP</span>
+                <div className="p-2.5 sm:p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
+                  <span className="text-[11px] sm:text-[13px] mono text-black font-bold block mb-1">VWAP BIAS</span>
+                  <span className="text-[14px] sm:text-[17px] font-mono font-bold text-cyan-700">+3.4° UP</span>
                 </div>
               </div>
 
               {/* Order Book Liquidity Depth Bars */}
-              <div className="space-y-1.5 pt-2">
-                <div className="flex justify-between text-[14px] mono text-black font-bold">
-                  <span>BUY WALL DEPTH (24,800 - 24,840)</span>
-                  <span className="text-emerald-700 font-bold">84% ABSORPTION</span>
+              <div className="space-y-1.5 pt-1 sm:pt-2">
+                <div className="flex justify-between text-[12px] sm:text-[14px] mono text-black font-bold">
+                  <span className="truncate pr-2">BUY WALL DEPTH (24,800 - 24,840)</span>
+                  <span className="text-emerald-700 font-bold shrink-0">84% ABSORPTION</span>
                 </div>
                 <div className="w-full h-2.5 rounded-full bg-slate-200 overflow-hidden flex gap-1 p-0.5">
                   <div className="h-full bg-emerald-600 rounded-full w-[84%]" />
@@ -97,15 +97,15 @@ export default function HowItWorksSection() {
             </div>
 
             {/* Bottom Insight Card */}
-            <div className="relative z-10 p-4 rounded-2xl border border-emerald-300 bg-white shadow-md space-y-2 mt-auto">
-              <div className="flex items-center justify-between text-[14px] font-mono">
-                <span className="text-black font-bold">SMART MONEY MOMENTUM:</span>
-                <span className="text-emerald-700 font-black text-[15px]">96.4% CONVICTION</span>
+            <div className="relative z-10 p-3.5 sm:p-4 rounded-2xl border border-emerald-300 bg-white shadow-md space-y-2 mt-auto">
+              <div className="flex items-center justify-between text-[13px] sm:text-[14px] font-mono">
+                <span className="text-black font-bold">SMART MONEY:</span>
+                <span className="text-emerald-700 font-black text-[14px] sm:text-[15px]">96.4% CONVICTION</span>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                 <div className="h-full bg-emerald-600 w-[96.4%]" />
               </div>
-              <p className="text-[14px] text-black font-medium leading-relaxed font-sans pt-1">
+              <p className="text-[13px] sm:text-[14px] text-black font-medium leading-relaxed font-sans pt-1">
                 Aggressive buying volume breaking overhead liquidity blocks. Higher-low structural formation confirmed on H4 timeframe.
               </p>
             </div>
@@ -117,7 +117,7 @@ export default function HowItWorksSection() {
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.25 }}
             onClick={() => setSelectedSide('bear')}
-            className={`relative rounded-3xl border-2 transition-all duration-300 cursor-pointer group shadow-lg flex flex-col justify-between p-7 min-h-[380px] overflow-hidden ${
+            className={`relative rounded-3xl border-2 transition-all duration-300 cursor-pointer group shadow-lg flex flex-col justify-between p-4 sm:p-7 min-h-[380px] overflow-hidden ${
               selectedSide === 'bear'
                 ? 'border-rose-500 shadow-xl bg-rose-50/80 backdrop-blur-2xl'
                 : 'border-slate-200 hover:border-slate-300 bg-white/90 backdrop-blur-xl'
@@ -127,39 +127,39 @@ export default function HowItWorksSection() {
             <div className="absolute top-0 right-0 w-80 h-80 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
 
             {/* Top Badge & Metric */}
-            <div className="relative z-10 flex items-center justify-between pb-6 border-b border-slate-200/80">
-              <div className="px-4 py-2 rounded-full border-2 border-rose-500 bg-white text-rose-800 mono text-[14px] font-bold flex items-center gap-2 shadow-xs">
+            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-slate-200/80">
+              <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 border-rose-500 bg-white text-rose-800 mono text-[12px] sm:text-[14px] font-bold flex items-center gap-2 shadow-xs">
                 <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
                 <span>BEAR DISTRIBUTION // -8.24% ▼</span>
               </div>
-              <div className="text-right">
-                <span className="mono text-[13px] text-black font-black block">SELL DELTA</span>
-                <span className="mono text-[17px] text-rose-700 font-black">-3.9M TENSORS</span>
+              <div className="text-left sm:text-right">
+                <span className="mono text-[11px] sm:text-[13px] text-black font-black block">SELL DELTA</span>
+                <span className="mono text-[15px] sm:text-[17px] text-rose-700 font-black">-3.9M TENSORS</span>
               </div>
             </div>
 
             {/* Live Quantitative Flow Matrix */}
-            <div className="relative z-10 py-6 space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
-                  <span className="text-[13px] mono text-black font-bold block mb-1">RESISTANCE</span>
-                  <span className="text-[17px] font-mono font-bold text-black">25,320</span>
+            <div className="relative z-10 py-4 sm:py-6 space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="p-2.5 sm:p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
+                  <span className="text-[11px] sm:text-[13px] mono text-black font-bold block mb-1">RESISTANCE</span>
+                  <span className="text-[14px] sm:text-[17px] font-mono font-bold text-black">25,320</span>
                 </div>
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
-                  <span className="text-[13px] mono text-black font-bold block mb-1">DRAIN VELOCITY</span>
-                  <span className="text-[17px] font-mono font-bold text-rose-700">-5.17%</span>
+                <div className="p-2.5 sm:p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
+                  <span className="text-[11px] sm:text-[13px] mono text-black font-bold block mb-1">DRAIN VELOCITY</span>
+                  <span className="text-[14px] sm:text-[17px] font-mono font-bold text-rose-700">-5.17%</span>
                 </div>
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
-                  <span className="text-[13px] mono text-black font-bold block mb-1">SUPPLY WALL</span>
-                  <span className="text-[17px] font-mono font-bold text-amber-700">ACTIVE</span>
+                <div className="p-2.5 sm:p-3.5 rounded-xl border border-slate-200 bg-white shadow-xs">
+                  <span className="text-[11px] sm:text-[13px] mono text-black font-bold block mb-1">SUPPLY WALL</span>
+                  <span className="text-[14px] sm:text-[17px] font-mono font-bold text-amber-700">ACTIVE</span>
                 </div>
               </div>
 
               {/* Order Book Liquidity Depth Bars */}
-              <div className="space-y-1.5 pt-2">
-                <div className="flex justify-between text-[14px] mono text-black font-bold">
-                  <span>SELL SUPPLY DUMP (25,280 - 25,320)</span>
-                  <span className="text-rose-700 font-bold">92% EXHAUSTION</span>
+              <div className="space-y-1.5 pt-1 sm:pt-2">
+                <div className="flex justify-between text-[12px] sm:text-[14px] mono text-black font-bold">
+                  <span className="truncate pr-2">SELL SUPPLY DUMP (25,280 - 25,320)</span>
+                  <span className="text-rose-700 font-bold shrink-0">92% EXHAUSTION</span>
                 </div>
                 <div className="w-full h-2.5 rounded-full bg-slate-200 overflow-hidden flex gap-1 p-0.5">
                   <div className="h-full bg-rose-600 rounded-full w-[92%]" />
@@ -169,15 +169,15 @@ export default function HowItWorksSection() {
             </div>
 
             {/* Bottom Insight Card */}
-            <div className="relative z-10 p-4 rounded-2xl border border-rose-300 bg-white shadow-md space-y-2 mt-auto">
-              <div className="flex items-center justify-between text-[14px] font-mono">
-                <span className="text-black font-bold">RESISTANCE PRESSURE:</span>
-                <span className="text-rose-700 font-black text-[15px]">92.1% CONVICTION</span>
+            <div className="relative z-10 p-3.5 sm:p-4 rounded-2xl border border-rose-300 bg-white shadow-md space-y-2 mt-auto">
+              <div className="flex items-center justify-between text-[13px] sm:text-[14px] font-mono">
+                <span className="text-black font-bold">RESISTANCE:</span>
+                <span className="text-rose-700 font-black text-[14px] sm:text-[15px]">92.1% CONVICTION</span>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                 <div className="h-full bg-rose-600 w-[92.1%]" />
               </div>
-              <p className="text-[14px] text-black font-medium leading-relaxed font-sans pt-1">
+              <p className="text-[13px] sm:text-[14px] text-black font-medium leading-relaxed font-sans pt-1">
                 Institutional supply dumping into bid absorption pools. Exhaustion detected at 25,320 resistance with negative delta velocity.
               </p>
             </div>

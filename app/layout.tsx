@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import GlobalMarketCanvasFX from '@/components/fx/GlobalMarketCanvasFX';
 import { MarketProvider } from '@/lib/marketContext';
@@ -7,6 +7,14 @@ export const metadata: Metadata = {
   title: 'Market Intelligence AI — MI007',
   description: 'Autonomous Market Intelligence & Institutional-grade quantitative analytics across India, USA & UAE financial markets.',
   icons: { icon: '/favicon.png', apple: '/logo-falcon.png' },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: 'cover',
+  themeColor: '#FFFFFF',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

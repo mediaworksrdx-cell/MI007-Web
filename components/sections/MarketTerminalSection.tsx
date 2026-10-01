@@ -542,14 +542,14 @@ export default function MarketTerminalSection() {
           className="w-full rounded-2xl overflow-hidden border-2 border-slate-200 bg-white/95 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.06)] flex flex-col relative"
         >
           {/* Top Control Bar: Symbols + Toggles + Live Status */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-slate-200 bg-slate-50/90 text-[14px] font-mono">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 p-3 sm:p-4 border-b border-slate-200 bg-slate-50/90 text-[13px] sm:text-[14px] font-mono">
             {/* Symbol Switchers */}
-            <div className="flex items-center gap-1.5 overflow-x-auto">
+            <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0">
               {SYMBOLS_DATA.map((sym, idx) => (
                 <button
                   key={sym.name}
                   onClick={() => setActiveSymbolIdx(idx)}
-                  className={`px-3.5 py-1.5 rounded-lg text-[14px] font-bold transition-all ${
+                  className={`px-2.5 sm:px-3.5 py-1.5 rounded-lg text-[13px] sm:text-[14px] font-bold transition-all shrink-0 ${
                     activeSymbolIdx === idx
                       ? 'bg-emerald-50 text-emerald-800 border-2 border-emerald-500 shadow-xs'
                       : 'border border-slate-200 text-black hover:text-black hover:border-slate-400 bg-white'
@@ -561,10 +561,10 @@ export default function MarketTerminalSection() {
             </div>
 
             {/* Indicator Toggles */}
-            <div className="flex items-center gap-2 text-[13px]">
+            <div className="flex items-center flex-wrap gap-1.5 text-[11px] sm:text-[13px]">
               <button
                 onClick={() => setShowPatterns((p) => !p)}
-                className={`px-3 py-1.5 rounded-lg border font-bold transition-colors ${
+                className={`px-2 sm:px-3 py-1.5 rounded-lg border font-bold transition-colors ${
                   showPatterns ? 'border-sky-500 text-sky-700 bg-sky-50' : 'border-slate-200 text-black bg-white hover:bg-slate-50'
                 }`}
               >
@@ -572,7 +572,7 @@ export default function MarketTerminalSection() {
               </button>
               <button
                 onClick={() => setShowSignals((s) => !s)}
-                className={`px-3 py-1.5 rounded-lg border font-bold transition-colors ${
+                className={`px-2 sm:px-3 py-1.5 rounded-lg border font-bold transition-colors ${
                   showSignals ? 'border-emerald-500 text-emerald-700 bg-emerald-50' : 'border-slate-200 text-black bg-white hover:bg-slate-50'
                 }`}
               >
@@ -580,7 +580,7 @@ export default function MarketTerminalSection() {
               </button>
               <button
                 onClick={() => setShowRsi((r) => !r)}
-                className={`px-3 py-1.5 rounded-lg border font-bold transition-colors ${
+                className={`px-2 sm:px-3 py-1.5 rounded-lg border font-bold transition-colors ${
                   showRsi ? 'border-purple-500 text-purple-700 bg-purple-50' : 'border-slate-200 text-black bg-white hover:bg-slate-50'
                 }`}
               >
@@ -588,7 +588,7 @@ export default function MarketTerminalSection() {
               </button>
               <button
                 onClick={() => setShowMacd((m) => !m)}
-                className={`px-3 py-1.5 rounded-lg border font-bold transition-colors ${
+                className={`px-2 sm:px-3 py-1.5 rounded-lg border font-bold transition-colors ${
                   showMacd ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-slate-200 text-black bg-white hover:bg-slate-50'
                 }`}
               >
@@ -597,25 +597,26 @@ export default function MarketTerminalSection() {
             </div>
 
             {/* Live Symbol Price */}
-            <div className="flex items-center gap-3">
-              <span className="text-slate-900 font-bold text-[17px]">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <span className="text-slate-900 font-bold text-[15px] sm:text-[17px]">
                 {activeSymbol.currency}
                 {candles[candles.length - 1]?.close.toLocaleString() || activeSymbol.basePrice}
               </span>
-              <span className="text-emerald-700 font-bold text-[14px]">
+              <span className="text-emerald-700 font-bold text-[13px] sm:text-[14px]">
                 {activeSymbol.change}
               </span>
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-ping" />
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-600 animate-ping" />
             </div>
           </div>
 
           {/* Terminal Body: Chart + Live Dynamic AI Inspector */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[480px] sm:min-h-[580px]">
             {/* Chart Area (9 Cols) */}
-            <div className="lg:col-span-9 relative w-full h-[520px] lg:h-auto bg-white">
+            <div className="lg:col-span-9 relative w-full h-[360px] sm:h-[460px] lg:h-auto bg-white">
               <canvas
                 ref={canvasRef}
                 className="w-full h-full block cursor-crosshair bg-white"
+                style={{ touchAction: 'pan-y' }}
                 onPointerMove={handlePointerMove}
                 onPointerLeave={handlePointerLeave}
               />
@@ -707,7 +708,7 @@ export default function MarketTerminalSection() {
 
               {/* Bottom Telemetry Note */}
               <div className="pt-3 border-t border-slate-200 text-[12px] text-black font-semibold">
-                <span>Hover cursor over candles to trigger real-time AI node inspection.</span>
+                <span>Hover cursor or tap candles to trigger real-time AI node inspection.</span>
               </div>
             </div>
           </div>

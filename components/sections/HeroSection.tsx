@@ -101,7 +101,7 @@ export default function HeroSection() {
       {/* ── 1. CINEMATIC THEATRE VIDEO (EXACT 1.5-INCH MARGIN LEFT & RIGHT) ── */}
       <div className="w-full relative z-20 pointer-events-auto hero-theatre-gutter">
         <div
-          className="relative w-full h-[380px] sm:h-[450px] md:h-[520px] lg:h-[580px] xl:h-[620px] overflow-hidden bg-slate-950 group shadow-[0_25px_70px_-15px_rgba(0,0,0,0.35)] rounded-[36px] sm:rounded-[52px] md:rounded-[68px] lg:rounded-[80px] border border-slate-200/90"
+          className="relative w-full h-[250px] xs:h-[300px] sm:h-[420px] md:h-[500px] lg:h-[580px] xl:h-[620px] overflow-hidden bg-slate-950 group shadow-[0_25px_70px_-15px_rgba(0,0,0,0.35)] rounded-[24px] xs:rounded-[32px] sm:rounded-[52px] md:rounded-[68px] lg:rounded-[80px] border border-slate-200/90"
         >
           {/* 10-Second Looping Video Playing in Heavily Rounded Rectangle Frame (Zero head crop) */}
           <video
@@ -135,11 +135,11 @@ export default function HeroSection() {
             }}
           />
 
-          {/* Holographic Telemetry HUD Badges Composed Over the Video */}
+          {/* Holographic Telemetry HUD Badges Composed Over the Video (Hidden on mobile to avoid badge collisions) */}
           {heroHuds.map((hud, idx) => (
             <div
               key={idx}
-              className={`absolute px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full border backdrop-blur-xl mono text-xs sm:text-sm font-black shadow-2xl ${hud.hudClass} ${
+              className={`hidden sm:flex absolute px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full border backdrop-blur-xl mono text-xs sm:text-sm font-black shadow-2xl ${hud.hudClass} ${
                 hud.center ? '-translate-x-1/2' : ''
               }`}
               style={{
@@ -160,29 +160,29 @@ export default function HeroSection() {
           ))}
 
           {/* Frame Top Corner Badge */}
-          <div className="absolute top-5 sm:top-7 left-6 sm:left-9 z-20 px-3.5 py-1.5 rounded-full border backdrop-blur-xl mono text-xs font-bold flex items-center gap-2 video-overlay-ctrl shadow-lg">
+          <div className="absolute top-3.5 sm:top-7 left-3.5 sm:left-9 z-20 px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full border backdrop-blur-xl mono text-[10px] sm:text-xs font-bold flex items-center gap-1.5 sm:gap-2 video-overlay-ctrl shadow-lg">
             <span className="w-2 h-2 rounded-full bg-[#00FF88] animate-pulse shadow-[0_0_8px_#00FF88]" />
             <span className="font-mono tracking-wider font-extrabold text-white">LIVE MARKET FEED // 60FPS</span>
           </div>
 
           {/* Video Audio & Playback Controls Floating on Video Bottom-Right */}
-          <div className="absolute bottom-5 sm:bottom-7 right-6 sm:right-9 z-20 flex items-center gap-2.5 pointer-events-auto">
+          <div className="absolute bottom-3 sm:bottom-7 right-3 sm:right-9 z-20 flex items-center gap-1.5 sm:gap-2.5 pointer-events-auto">
             <button
               onClick={toggleSound}
               title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
-              className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border backdrop-blur-xl text-xs sm:text-sm font-mono font-bold hover:border-[#00FF88] transition-all flex items-center gap-2 cursor-pointer shadow-xl video-overlay-ctrl"
+              className="px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border backdrop-blur-xl text-xs sm:text-sm font-mono font-bold hover:border-[#00FF88] transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer shadow-xl video-overlay-ctrl min-h-[38px] sm:min-h-[44px]"
             >
               <span>{isMuted ? '🔇' : '🔊'}</span>
-              <span className="text-white tracking-wider font-black">{isMuted ? 'SOUND OFF' : 'SOUND ON'}</span>
+              <span className="text-white tracking-wider font-black hidden xs:inline">{isMuted ? 'SOUND OFF' : 'SOUND ON'}</span>
             </button>
 
             <button
               onClick={togglePlay}
               title={isPlaying ? 'Pause Video' : 'Play Video'}
-              className="p-1.5 px-3.5 sm:px-4 sm:py-2 rounded-xl border backdrop-blur-xl text-xs sm:text-sm font-mono font-bold hover:border-[#00FF88] transition-all cursor-pointer shadow-xl flex items-center gap-2 video-overlay-ctrl"
+              className="p-1.5 px-2.5 sm:px-4 sm:py-2 rounded-xl border backdrop-blur-xl text-xs sm:text-sm font-mono font-bold hover:border-[#00FF88] transition-all cursor-pointer shadow-xl flex items-center gap-1.5 sm:gap-2 video-overlay-ctrl min-h-[38px] sm:min-h-[44px]"
             >
               <span>{isPlaying ? '⏸' : '▶'}</span>
-              <span className="text-white tracking-wider font-black">{isPlaying ? 'PAUSE' : 'PLAY'}</span>
+              <span className="text-white tracking-wider font-black hidden xs:inline">{isPlaying ? 'PAUSE' : 'PLAY'}</span>
             </button>
           </div>
         </div>
@@ -195,17 +195,17 @@ export default function HeroSection() {
         transition={{ duration: 0.7, delay: 0.2 }}
         className="w-full relative z-20 pointer-events-auto hero-theatre-gutter mt-7 mb-12 sm:mb-16"
       >
-        <div className="w-full rounded-2xl border-2 border-slate-200/90 bg-white/95 backdrop-blur-2xl px-6 sm:px-8 py-3.5 sm:py-4 shadow-lg flex flex-col xl:flex-row items-center justify-between gap-4 xl:gap-6 mono overflow-hidden relative">
+        <div className="w-full rounded-2xl border-2 border-slate-200/90 bg-white/95 backdrop-blur-2xl px-4 sm:px-8 py-3 sm:py-4 shadow-lg flex flex-col xl:flex-row items-center justify-between gap-3 sm:gap-4 xl:gap-6 mono overflow-hidden relative">
           {/* Left: Momentum Telemetry (Static High-Priority) */}
-          <div className="flex items-center flex-wrap sm:flex-nowrap justify-center xl:justify-start gap-4 sm:gap-6 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-black font-extrabold text-[14px] sm:text-[15px] tracking-wide">BULL MOMENTUM:</span>
-              <strong className="font-mono font-black text-emerald-600 text-[16px] sm:text-[18px]">+{bullDelta}%</strong>
+          <div className="flex items-center flex-wrap sm:flex-nowrap justify-center xl:justify-start gap-3 sm:gap-6 shrink-0 text-center sm:text-left">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-black font-extrabold text-[12px] xs:text-[14px] sm:text-[15px] tracking-wide">BULL MOMENTUM:</span>
+              <strong className="font-mono font-black text-emerald-600 text-[14px] xs:text-[16px] sm:text-[18px]">+{bullDelta}%</strong>
             </div>
             <span className="text-slate-300 font-bold hidden sm:inline text-lg">|</span>
-            <div className="flex items-center gap-2">
-              <span className="text-black font-extrabold text-[14px] sm:text-[15px] tracking-wide">BEAR RESISTANCE:</span>
-              <strong className="font-mono font-black text-rose-600 text-[16px] sm:text-[18px]">{bearDelta}%</strong>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-black font-extrabold text-[12px] xs:text-[14px] sm:text-[15px] tracking-wide">BEAR RESISTANCE:</span>
+              <strong className="font-mono font-black text-rose-600 text-[14px] xs:text-[16px] sm:text-[18px]">{bearDelta}%</strong>
             </div>
             <span className="text-slate-300 font-bold hidden md:inline text-lg">|</span>
             <div className="hidden md:flex items-center gap-2">
@@ -339,15 +339,15 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.35 }}
-          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[-0.03em] text-slate-900 leading-none mb-6"
+          className="text-[26px] xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[-0.03em] text-slate-900 leading-[1.1] sm:leading-none mb-4 sm:mb-6 break-words"
         >
           <span className="bg-gradient-to-r from-slate-950 via-slate-800 to-emerald-700 bg-clip-text text-transparent">
             MARKET INTELLIGENCE
           </span>
-          <span className="inline-block ml-3 sm:ml-4 font-mono text-emerald-600 drop-shadow-[0_0_25px_rgba(5,150,105,0.4)]">
+          <span className="inline-block ml-2 sm:ml-4 font-mono text-emerald-600 drop-shadow-[0_0_25px_rgba(5,150,105,0.4)]">
             AI
           </span>
-          <span className="inline-block ml-3 sm:ml-4 text-2xl sm:text-4xl md:text-5xl font-mono font-black text-amber-500 tracking-wider">
+          <span className="inline-block ml-2 sm:ml-4 text-xl xs:text-2xl sm:text-4xl md:text-5xl font-mono font-black text-amber-500 tracking-wider">
             MI007
           </span>
         </motion.h1>
@@ -357,7 +357,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.4 }}
-          className="text-[17px] sm:text-[19px] md:text-[21px] text-black font-medium max-w-3xl mx-auto mb-8 sm:mb-10 leading-relaxed"
+          className="text-[15px] sm:text-[19px] md:text-[21px] text-black font-medium max-w-3xl mx-auto mb-6 sm:mb-10 leading-relaxed px-2 sm:px-0"
         >
           For a Smarter Tomorrow. Multi-dimensional technical synthesis and real-time liquidity sweep detection engineered for institutional execution.
         </motion.p>
@@ -367,11 +367,11 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.45 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-8"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-8 w-full max-w-md sm:max-w-none mx-auto"
         >
           <a
             href="#terminal"
-            className="w-full sm:w-auto px-9 py-4 rounded-xl border border-emerald-600 bg-emerald-600 text-white font-mono text-[15px] sm:text-[17px] font-extrabold tracking-widest uppercase shadow-md hover:bg-emerald-500 hover:scale-[1.03] transition-all duration-300 text-center cursor-pointer flex items-center justify-center gap-2 group"
+            className="w-full sm:w-auto px-6 sm:px-9 py-3.5 sm:py-4 min-h-[48px] rounded-xl border border-emerald-600 bg-emerald-600 text-white font-mono text-[14px] sm:text-[17px] font-extrabold tracking-widest uppercase shadow-md hover:bg-emerald-500 hover:scale-[1.03] transition-all duration-300 text-center cursor-pointer flex items-center justify-center gap-2 group active:bg-emerald-700"
           >
             <span>⚡ EXPLORE THE SYSTEM</span>
             <span className="inline-block transition-transform duration-200 group-hover:translate-x-1.5">→</span>
@@ -379,7 +379,7 @@ export default function HeroSection() {
 
           <a
             href="#movement"
-            className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-300 bg-white text-slate-800 font-mono text-[15px] sm:text-[17px] font-bold tracking-widest uppercase backdrop-blur-xl transition-all duration-300 hover:bg-slate-100 hover:border-slate-400 text-center cursor-pointer shadow-sm"
+            className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 min-h-[48px] rounded-xl border border-slate-300 bg-white text-slate-800 font-mono text-[14px] sm:text-[17px] font-bold tracking-widest uppercase backdrop-blur-xl transition-all duration-300 hover:bg-slate-100 hover:border-slate-400 text-center cursor-pointer shadow-sm active:bg-slate-200 flex items-center justify-center"
           >
             DISCOVER THE FORCES
           </a>

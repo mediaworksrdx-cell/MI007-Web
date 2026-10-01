@@ -189,13 +189,13 @@ export default function ContactPage() {
                 <div className="flex flex-col gap-1">
                   <a
                     href="mailto:care@synthetixanalytics.com"
-                    className="text-[17px] font-bold text-slate-900 hover:text-emerald-600 transition-colors"
+                    className="text-[15px] sm:text-[17px] font-bold text-slate-900 hover:text-emerald-600 transition-colors break-all"
                   >
                     care@synthetixanalytics.com
                   </a>
                   <a
                     href="tel:+918838202279"
-                    className="text-[17px] font-bold text-slate-900 hover:text-emerald-600 transition-colors"
+                    className="text-[15px] sm:text-[17px] font-bold text-slate-900 hover:text-emerald-600 transition-colors"
                   >
                     +91 8838202279
                   </a>

@@ -156,35 +156,37 @@ function WatchlistRow({
   return (
     <Link
       href={`/chart/${symbol}?market=${market}`}
-      className="flex items-center gap-3.5 px-4 py-3 rounded-xl border border-white/60 bg-white/60 backdrop-blur-md hover:border-emerald-500 hover:bg-white/80 hover:shadow-md transition-all shadow-sm group"
+      className="flex items-center gap-2 sm:gap-3.5 px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl border border-white/60 bg-white/60 backdrop-blur-md hover:border-emerald-500 hover:bg-white/80 hover:shadow-md transition-all shadow-sm group min-w-0"
     >
       {/* Symbol badge */}
-      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-white/80 bg-white/80 shadow-xs">
-        <span className="mono text-[13px] font-black text-black group-hover:text-emerald-600 transition-colors">{symbol.slice(0, 3)}</span>
+      <div className="flex h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-lg border border-white/80 bg-white/80 shadow-xs">
+        <span className="mono text-[12px] sm:text-[13px] font-black text-black group-hover:text-emerald-600 transition-colors">{symbol.slice(0, 3)}</span>
       </div>
 
       <div className="flex-1 min-w-0">
-        <span className="mono text-[16px] font-black text-black group-hover:text-emerald-600 transition-colors truncate block">{symbol}</span>
-        <div className="text-[14px] text-slate-700 font-bold truncate">{name}</div>
+        <span className="mono text-[14px] sm:text-[16px] font-black text-black group-hover:text-emerald-600 transition-colors truncate block">{symbol}</span>
+        <div className="text-[12px] sm:text-[14px] text-slate-700 font-bold truncate">{name}</div>
       </div>
 
-      <div className="hidden sm:block">
-        <span className="rounded px-2.5 py-0.5 text-[13px] font-black text-black border border-slate-300 bg-white/70 mono">{sector}</span>
+      <div className="hidden md:block">
+        <span className="rounded px-2.5 py-0.5 text-[12px] font-black text-black border border-slate-300 bg-white/70 mono">{sector}</span>
       </div>
 
       <div className="text-right flex-shrink-0">
-        <div className="mono text-[16px] font-black text-slate-900">
+        <div className="mono text-[14px] sm:text-[16px] font-black text-slate-900">
           {currency}{base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
-        <div className={`mono text-[14px] font-bold ${up ? 'text-emerald-600' : 'text-rose-600'}`}>
+        <div className={`mono text-[12px] sm:text-[14px] font-bold ${up ? 'text-emerald-600' : 'text-rose-600'}`}>
           {up ? '+' : ''}{changePct.toFixed(2)}%
         </div>
       </div>
 
-      <Sparkline symbol={symbol} up={up} />
+      <div className="hidden xs:block flex-shrink-0">
+        <Sparkline symbol={symbol} up={up} />
+      </div>
 
       {/* Chart arrow */}
-      <div className="flex-shrink-0 text-black group-hover:text-emerald-600 transition-colors text-base font-black">›</div>
+      <div className="flex-shrink-0 text-black group-hover:text-emerald-600 transition-colors text-base font-black pl-0.5">›</div>
     </Link>
   );
 }
@@ -215,33 +217,33 @@ export default function TerminalPage() {
 
       <main className="min-h-screen pt-28 sm:pt-32 relative z-20 bg-transparent pb-20">
         {/* ── Master Cockpit Layer ── */}
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8 relative z-20 isolate">
-          <div className="relative rounded-2xl border-2 border-slate-200/80 bg-white/50 backdrop-blur-xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.1),0_0_0_1px_rgba(0,0,0,0.03)] p-6 sm:p-9 overflow-hidden">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 py-4 sm:py-8 relative z-20 isolate">
+          <div className="relative rounded-2xl border-2 border-slate-200/80 bg-white/50 backdrop-blur-xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.1),0_0_0_1px_rgba(0,0,0,0.03)] p-3.5 sm:p-6 lg:p-9 overflow-hidden">
             {/* Top Outer Hairline Accent */}
             <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 pointer-events-none" />
 
             {/* ── Outer Bezel Header ── */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-5 border-b border-slate-200 relative z-10">
-              <div className="flex items-center gap-3.5">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-800 bg-slate-950 shadow-md p-1.5 flex-shrink-0">
+            <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-slate-200 relative z-10">
+              <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                <div className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-950 shadow-md p-1 sm:p-1.5 flex-shrink-0">
                   <Image
                     src="/images/logo-falcon-transparent.png"
                     alt="Market Intelligence AI — MI007"
-                    width={48}
-                    height={48}
+                    width={44}
+                    height={44}
                     className="object-contain drop-shadow-[0_0_8px_rgba(0,255,136,0.3)]"
                   />
                 </div>
-                <div>
-                  <h1 className="mono text-[20px] sm:text-[23px] font-black text-slate-900 tracking-wider uppercase">
+                <div className="min-w-0">
+                  <h1 className="mono text-[16px] sm:text-[23px] font-black text-slate-900 tracking-wider uppercase truncate">
                     Market Intelligence AI <span className="text-amber-600">MI007</span>
                   </h1>
-                  <p className="text-[14px] text-slate-600 font-medium mt-0.5">Autonomous Market Intelligence & Quantitative Microstructure</p>
+                  <p className="text-[12px] sm:text-[14px] text-slate-600 font-medium mt-0.5 truncate">Autonomous Market Intelligence & Quantitative Microstructure</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white text-[15px] mono text-slate-900 font-bold shadow-xs">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg border border-slate-200 bg-white text-[13px] sm:text-[15px] mono text-slate-900 font-bold shadow-xs">
                   <span>{MARKETS[market].flag}</span>
                   <span className="text-slate-900 font-black">{MARKETS[market].label}</span>
                 </div>
