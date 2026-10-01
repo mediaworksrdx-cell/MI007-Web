@@ -1,7 +1,7 @@
 // ─── Market Intelligence 007 — Core TypeScript Types ───────────────────────
 
 export type MarketType = 'INDIA' | 'USA' | 'UAE';
-export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1H' | '4H' | '1D' | '1W';
+export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1H' | '4H' | '1D' | '1W' | '1M';
 
 export interface Candle {
   openTime: number;
@@ -115,9 +115,40 @@ export interface SmcLiquiditySweep {
   label: string;
 }
 
+export interface SmcOrderBlock {
+  startIndex: number;
+  endIndex: number;
+  topPrice: number;
+  bottomPrice: number;
+  isBullish: boolean;
+  isMitigated: boolean;
+  volumeRatio?: number;
+}
+
+export interface SmcStructureBreak {
+  candleIndex: number;
+  price: number;
+  isBullish: boolean;
+  type: string; // 'BOS ↑' | 'BOS ↓' | 'CHoCH ↑' | 'CHoCH ↓'
+}
+
 export interface SmcAnalysis {
   fvgs: SmcFvg[];
   sweeps: SmcLiquiditySweep[];
+  orderBlocks: SmcOrderBlock[];
+  structureBreaks: SmcStructureBreak[];
+  equilibriumPrice: number;
+}
+
+export interface FnoOverlayLevels {
+  callWall?: number;
+  putWall?: number;
+  gammaFlip?: number;
+  maxPain?: number;
+  callWallGex?: number;
+  putWallGex?: number;
+  totalNetGex?: number;
+  enabled: boolean;
 }
 
 export interface ChartOptions {
@@ -126,6 +157,8 @@ export interface ChartOptions {
   showVolumePanel: boolean;
   showSmcOverlay: boolean;
   showVolumeProfile: boolean;
+  showFnoOverlay?: boolean;
+  fnoLevels?: FnoOverlayLevels;
   indicators: IndicatorConfig[];
   indicatorResults: Map<IndicatorType, unknown>;
   currentPriceOverride?: number;

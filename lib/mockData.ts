@@ -128,6 +128,7 @@ const TIMEFRAME_MS: Record<string, number> = {
   '4H': 4 * 60 * 60_000,
   '1D': 24 * 60 * 60_000,
   '1W': 7 * 24 * 60 * 60_000,
+  '1M': 30 * 24 * 60 * 60_000,
 };
 
 /** Get candles for a given market, symbol, and timeframe */

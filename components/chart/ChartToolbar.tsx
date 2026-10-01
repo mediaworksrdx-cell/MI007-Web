@@ -14,6 +14,7 @@ const TIMEFRAMES: { value: Timeframe; label: string }[] = [
   { value: '4H',  label: '4H (4 Hours)' },
   { value: '1D',  label: '1D (1 Day)' },
   { value: '1W',  label: '1W (1 Week)' },
+  { value: '1M',  label: '1M (1 Month)' },
 ];
 
 const CHART_TYPES: { value: ChartType; label: string; icon: string }[] = [
@@ -40,6 +41,7 @@ interface ChartToolbarProps {
   showVolumePanel: boolean;
   showSmcOverlay: boolean;
   showVolumeProfile: boolean;
+  showFnoOverlay?: boolean;
   activeIndicators: IndicatorType[];
   engineStatus?: string;
   isLiveFromEngine?: boolean;
@@ -56,17 +58,18 @@ interface ChartToolbarProps {
   onToggleVolumePanel: () => void;
   onToggleSmcOverlay: () => void;
   onToggleVolumeProfile: () => void;
+  onToggleFnoOverlay?: () => void;
   onToggleIndicator: (type: IndicatorType) => void;
   onOpenIndicatorSettings?: (type: IndicatorType) => void;
 }
 
 export function ChartToolbar({
   timeframe, chartType, activeDrawingTool,
-  showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
+  showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile, showFnoOverlay = false,
   activeIndicators,
   engineStatus, isLiveFromEngine, currency = '₹', displayPrice, displayChange, displayChangePct,
   onTimeframeChange, onChartTypeChange, onDrawingToolChange, onClearDrawings, onUndoDrawing,
-  onToggleVolume, onToggleVolumePanel, onToggleSmcOverlay, onToggleVolumeProfile,
+  onToggleVolume, onToggleVolumePanel, onToggleSmcOverlay, onToggleVolumeProfile, onToggleFnoOverlay,
   onToggleIndicator, onOpenIndicatorSettings,
 }: ChartToolbarProps) {
   const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'DRAWING' | null>(null);
@@ -426,6 +429,19 @@ export function ChartToolbar({
           >
             VPVR
           </button>
+          {onToggleFnoOverlay && (
+            <button
+              onClick={onToggleFnoOverlay}
+              title="Toggle Institutional Options Dealer Walls (CW, PW, γ-Flip, Max Pain)"
+              className={`px-2 py-1 rounded-md text-[11px] font-bold mono border transition-colors ${
+                showFnoOverlay
+                  ? 'bg-purple-50 border-purple-300 text-purple-800'
+                  : 'border-slate-200 text-slate-500 hover:border-slate-300'
+              }`}
+            >
+              F&O
+            </button>
+          )}
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useCallback, useState, useLayoutEffect } from 'react';
-import type { Candle, ChartType, IndicatorType, IndicatorConfig } from '@/lib/types';
+import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels } from '@/lib/types';
 import { isOverlay } from '@/lib/types';
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
 import { renderChart } from '@/lib/chartRenderer';
@@ -13,6 +13,8 @@ interface CandlestickCanvasProps {
   showVolumePanel: boolean;
   showSmcOverlay: boolean;
   showVolumeProfile: boolean;
+  showFnoOverlay?: boolean;
+  fnoLevels?: FnoOverlayLevels;
   indicators: IndicatorConfig[];
   indicatorResults: Map<IndicatorType, unknown>;
   currentPriceOverride?: number;
@@ -28,7 +30,7 @@ const VISIBLE_CANDLES_BASE = 60;
 
 export function CandlestickCanvas({
   candles, chartType, showVolume, showVolumePanel,
-  showSmcOverlay, showVolumeProfile,
+  showSmcOverlay, showVolumeProfile, showFnoOverlay, fnoLevels,
   indicators, indicatorResults,
   currentPriceOverride, timeframe, className = '',
   activeDrawingTool = 'NONE',
@@ -44,6 +46,15 @@ export function CandlestickCanvas({
   const [drawingInProgress, setDrawingInProgress] = useState<DrawingItem | null>(null);
   const [dpr, setDpr] = useState(1);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const [clockTick, setClockTick] = useState(0);
+
+  // 1-second tick for real-time countdown timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setClockTick(c => (c + 1) % 10000);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useLayoutEffect(() => { setDpr(window.devicePixelRatio || 1); }, []);
 
@@ -131,6 +142,7 @@ export function CandlestickCanvas({
       {
         chartType, showVolume, showVolumePanel,
         showSmcOverlay, showVolumeProfile,
+        showFnoOverlay, fnoLevels,
         indicators, indicatorResults,
         currentPriceOverride, timeframe,
         drawings,
@@ -141,9 +153,10 @@ export function CandlestickCanvas({
       dpr
     );
   }, [candles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
+      showFnoOverlay, fnoLevels,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, drawingInProgress,
-      clampedStart, clampedEnd, crosshair, size, dpr]);
+      clampedStart, clampedEnd, crosshair, size, dpr, clockTick]);
 
   // Pointer events
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {

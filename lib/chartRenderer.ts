@@ -9,7 +9,8 @@ import {
   MACDResult, BollingerResult, SupertrendResult, StochasticResult,
   IchimokuResult, AdxResult, CvdResult,
   VolumeProfileBucket, VolumeProfileData,
-  SmcFvg, SmcLiquiditySweep, SmcAnalysis,
+  SmcFvg, SmcLiquiditySweep, SmcOrderBlock, SmcStructureBreak, SmcAnalysis,
+  FnoOverlayLevels,
   ChartOptions, ViewState, Crosshair,
   INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay,
 } from './types';
@@ -19,7 +20,8 @@ export type {
   MACDResult, BollingerResult, SupertrendResult, StochasticResult,
   IchimokuResult, AdxResult, CvdResult,
   VolumeProfileBucket, VolumeProfileData,
-  SmcFvg, SmcLiquiditySweep, SmcAnalysis,
+  SmcFvg, SmcLiquiditySweep, SmcOrderBlock, SmcStructureBreak, SmcAnalysis,
+  FnoOverlayLevels,
   ChartOptions, ViewState, Crosshair,
 };
 export { INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay };
@@ -316,34 +318,206 @@ export function calculateVolumeProfile(candles: Candle[], priceMin: number, pric
 }
 
 export function detectSMC(candles: Candle[]): SmcAnalysis {
-  if (candles.length < 5) return { fvgs: [], sweeps: [] };
+  if (candles.length < 5) {
+    const lastClose = candles.length > 0 ? candles[candles.length - 1].close : 0;
+    return {
+      fvgs: [],
+      sweeps: [],
+      orderBlocks: [],
+      structureBreaks: [],
+      equilibriumPrice: lastClose,
+    };
+  }
+
+  // 1. Fair Value Gaps (FVGs)
   const fvgs: SmcFvg[] = [];
-  const sweeps: SmcLiquiditySweep[] = [];
   for (let i = 2; i < candles.length; i++) {
-    const c1 = candles[i-2], c3 = candles[i];
+    const c1 = candles[i - 2], c3 = candles[i];
     if (c3.low > c1.high) {
-      const fvg: SmcFvg = { startIndex: i-1, endIndex: candles.length-1, topPrice: c3.low, bottomPrice: c1.high, isBullish: true, isMitigated: false };
-      for (let k = i+1; k < candles.length; k++) { if (candles[k].low <= fvg.bottomPrice) { fvg.isMitigated = true; fvg.endIndex = k; break; } }
+      const fvg: SmcFvg = {
+        startIndex: i - 1,
+        endIndex: candles.length - 1,
+        topPrice: c3.low,
+        bottomPrice: c1.high,
+        isBullish: true,
+        isMitigated: false,
+      };
+      for (let k = i + 1; k < candles.length; k++) {
+        if (candles[k].low <= fvg.bottomPrice) {
+          fvg.isMitigated = true;
+          fvg.endIndex = k;
+          break;
+        }
+      }
       fvgs.push(fvg);
     } else if (c3.high < c1.low) {
-      const fvg: SmcFvg = { startIndex: i-1, endIndex: candles.length-1, topPrice: c1.low, bottomPrice: c3.high, isBullish: false, isMitigated: false };
-      for (let k = i+1; k < candles.length; k++) { if (candles[k].high >= fvg.topPrice) { fvg.isMitigated = true; fvg.endIndex = k; break; } }
+      const fvg: SmcFvg = {
+        startIndex: i - 1,
+        endIndex: candles.length - 1,
+        topPrice: c1.low,
+        bottomPrice: c3.high,
+        isBullish: false,
+        isMitigated: false,
+      };
+      for (let k = i + 1; k < candles.length; k++) {
+        if (candles[k].high >= fvg.topPrice) {
+          fvg.isMitigated = true;
+          fvg.endIndex = k;
+          break;
+        }
+      }
       fvgs.push(fvg);
     }
   }
+
+  // 2. Liquidity Sweeps
+  const sweeps: SmcLiquiditySweep[] = [];
   const pp = 5;
   for (let i = pp * 2; i < candles.length; i++) {
-    const cH = candles[i-pp].high, cL = candles[i-pp].low;
+    const cH = candles[i - pp].high, cL = candles[i - pp].low;
     let isPH = true, isPL = true;
     for (let p = i - pp * 2; p < i; p++) {
-      if (p !== i - pp) { if (candles[p].high > cH) isPH = false; if (candles[p].low < cL) isPL = false; }
+      if (p !== i - pp) {
+        if (candles[p].high > cH) isPH = false;
+        if (candles[p].low < cL) isPL = false;
+      }
     }
     const cur = candles[i];
-    if (isPH && cur.high > cH && cur.close < cH) sweeps.push({ candleIndex: i, price: cur.high, isHighSweep: true, label: 'BSL Sweep ($$$)' });
-    if (isPL && cur.low < cL && cur.close > cL) sweeps.push({ candleIndex: i, price: cur.low, isHighSweep: false, label: 'SSL Sweep ($$$)' });
+    if (isPH && cur.high > cH && cur.close < cH) {
+      sweeps.push({ candleIndex: i, price: cur.high, isHighSweep: true, label: 'BSL Sweep ($$$)' });
+    }
+    if (isPL && cur.low < cL && cur.close > cL) {
+      sweeps.push({ candleIndex: i, price: cur.low, isHighSweep: false, label: 'SSL Sweep ($$$)' });
+    }
   }
-  return { fvgs, sweeps };
+
+  // 3. Order Blocks (OB Demand & Supply — Android HardenedSMCEngine parity)
+  const orderBlocks: SmcOrderBlock[] = [];
+  const volMa20: number[] = [];
+  for (let i = 0; i < candles.length; i++) {
+    let s = 0, count = 0;
+    for (let j = Math.max(0, i - 19); j <= i; j++) {
+      s += candles[j].volume;
+      count++;
+    }
+    volMa20.push(s / count);
+  }
+
+  for (let i = 2; i < candles.length - 1; i++) {
+    const candle = candles[i];
+    const next = candles[i + 1];
+    const ma = volMa20[i + 1] || next.volume;
+    const isHighVol = next.volume >= 1.15 * ma;
+
+    // Bullish OB (Demand): Bearish candle followed by high volume impulse candle breaking high
+    if (candle.close < candle.open && next.close > candle.high && isHighVol) {
+      const ob: SmcOrderBlock = {
+        startIndex: i,
+        endIndex: candles.length - 1,
+        topPrice: candle.high,
+        bottomPrice: candle.low,
+        isBullish: true,
+        isMitigated: false,
+        volumeRatio: next.volume / (ma || 1),
+      };
+      for (let k = i + 2; k < candles.length; k++) {
+        if (candles[k].close < ob.bottomPrice) {
+          ob.isMitigated = true;
+          ob.endIndex = k;
+          break;
+        } else if (candles[k].low <= ob.topPrice) {
+          ob.isMitigated = true;
+          ob.endIndex = k;
+          break;
+        }
+      }
+      orderBlocks.push(ob);
+    }
+
+    // Bearish OB (Supply): Bullish candle followed by high volume breakdown candle breaking low
+    if (candle.close > candle.open && next.close < candle.low && isHighVol) {
+      const ob: SmcOrderBlock = {
+        startIndex: i,
+        endIndex: candles.length - 1,
+        topPrice: candle.high,
+        bottomPrice: candle.low,
+        isBullish: false,
+        isMitigated: false,
+        volumeRatio: next.volume / (ma || 1),
+      };
+      for (let k = i + 2; k < candles.length; k++) {
+        if (candles[k].close > ob.topPrice) {
+          ob.isMitigated = true;
+          ob.endIndex = k;
+          break;
+        } else if (candles[k].high >= ob.bottomPrice) {
+          ob.isMitigated = true;
+          ob.endIndex = k;
+          break;
+        }
+      }
+      orderBlocks.push(ob);
+    }
+  }
+
+  // 4. Structure Breaks (BOS / CHoCH)
+  const structureBreaks: SmcStructureBreak[] = [];
+  let lastSwingHigh = -Infinity;
+  let lastSwingLow = Infinity;
+  for (let i = 4; i < candles.length; i++) {
+    const prev = candles[i - 1];
+    const curr = candles[i];
+
+    if (
+      candles[i - 2].high > candles[i - 4].high &&
+      candles[i - 2].high > candles[i - 3].high &&
+      candles[i - 2].high > candles[i - 1].high &&
+      candles[i - 2].high > candles[i].high
+    ) {
+      lastSwingHigh = candles[i - 2].high;
+    }
+
+    if (
+      candles[i - 2].low < candles[i - 4].low &&
+      candles[i - 2].low < candles[i - 3].low &&
+      candles[i - 2].low < candles[i - 1].low &&
+      candles[i - 2].low < candles[i].low
+    ) {
+      lastSwingLow = candles[i - 2].low;
+    }
+
+    if (lastSwingHigh > -Infinity && curr.close > lastSwingHigh && prev.close <= lastSwingHigh) {
+      structureBreaks.push({
+        candleIndex: i,
+        price: lastSwingHigh,
+        isBullish: true,
+        type: 'BOS ↑',
+      });
+      lastSwingHigh = -Infinity;
+    }
+
+    if (lastSwingLow < Infinity && curr.close < lastSwingLow && prev.close >= lastSwingLow) {
+      structureBreaks.push({
+        candleIndex: i,
+        price: lastSwingLow,
+        isBullish: false,
+        type: 'BOS ↓',
+      });
+      lastSwingLow = Infinity;
+    }
+  }
+
+  // 5. Equilibrium Midline (50% range)
+  let minPrice = Infinity, maxPrice = -Infinity;
+  for (const c of candles) {
+    if (c.low < minPrice) minPrice = c.low;
+    if (c.high > maxPrice) maxPrice = c.high;
+  }
+  const equilibriumPrice = (minPrice + maxPrice) / 2;
+
+  return { fvgs, sweeps, orderBlocks, structureBreaks, equilibriumPrice };
 }
+
 
 export function calculateParabolicSAR(candles: Candle[], step=0.02, maxAf=0.20): (number|null)[] {
   if (candles.length < 2) return Array(candles.length).fill(null);
@@ -621,10 +795,61 @@ export function renderChart(
     }
   }
 
-  // ── LAYER 3: SMC Overlays ─────────────────────────────────────────────
+  // ── LAYER 3: SMC Overlays (Equilibrium, Order Blocks, FVGs, Sweeps, Structure Breaks) ──
   if (options.showSmcOverlay) {
     const smcData = detectSMC(candles);
-    // FVGs
+
+    // 1. Equilibrium Midline (EQ 50% — Golden Dash)
+    if (smcData.equilibriumPrice > 0 && smcData.equilibriumPrice >= pMin && smcData.equilibriumPrice <= pMax) {
+      const eqY = priceToY(smcData.equilibriumPrice);
+      ctx.save();
+      ctx.setLineDash([8 * dpr, 6 * dpr]);
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.75)'; // Amber/Gold #D97706
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(0, eqY);
+      ctx.lineTo(chartW, eqY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+      ctx.fillStyle = '#D97706';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(`EQ (50%): ${formatPrice(smcData.equilibriumPrice)}`, 10 * dpr, eqY - 3 * dpr);
+      ctx.restore();
+    }
+
+    // 2. Order Blocks (OB Demand & OB Supply — High Volume Reversal Zones)
+    for (const ob of smcData.orderBlocks) {
+      if (ob.endIndex < startIdx || ob.startIndex > endIdx) continue;
+      const ls = Math.max(0, ob.startIndex - startIdx);
+      const le = Math.min(visCnt, ob.endIndex - startIdx);
+      const lx = ls * candleW, rx = le * candleW + candleW;
+      const bw = Math.max(rx - lx, candleW);
+      const yT = priceToY(ob.topPrice), yB = priceToY(ob.bottomPrice);
+      const bTop = Math.min(yT, yB), bH = Math.max(Math.abs(yT - yB), 3 * dpr);
+      const obColor = ob.isBullish ? '#0284C7' : '#EA580C'; // Demand: Cyan/Blue, Supply: Orange/Amber
+      const obBg = ob.isBullish ? 'rgba(2, 132, 199, 0.16)' : 'rgba(234, 88, 12, 0.16)';
+      const obBorder = ob.isBullish ? 'rgba(2, 132, 199, 0.55)' : 'rgba(234, 88, 12, 0.55)';
+
+      ctx.save();
+      ctx.fillStyle = obBg;
+      ctx.fillRect(lx, bTop, bw, bH);
+      ctx.strokeStyle = obBorder;
+      ctx.lineWidth = 1 * dpr;
+      ctx.strokeRect(lx, bTop, bw, bH);
+
+      if (bw > 25 * dpr) {
+        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = obColor;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(ob.isBullish ? 'OB (Demand)' : 'OB (Supply)', lx + 4 * dpr, bTop + 2 * dpr);
+      }
+      ctx.restore();
+    }
+
+    // 3. Fair Value Gaps (FVGs)
     for (const fvg of smcData.fvgs) {
       if (fvg.endIndex < startIdx || fvg.startIndex > endIdx) continue;
       const ls = Math.max(0, fvg.startIndex - startIdx);
@@ -646,7 +871,45 @@ export function renderChart(
         ctx.fillText(fvg.isBullish ? '+FVG' : '-FVG', lx+2*dpr, bTop+1*dpr);
       }
     }
-    // Sweeps
+
+    // 4. Structure Breaks (BOS / CHoCH)
+    for (const sb of smcData.structureBreaks) {
+      if (sb.candleIndex >= startIdx && sb.candleIndex < endIdx && sb.price >= pMin && sb.price <= pMax) {
+        const y = priceToY(sb.price);
+        const color = sb.isBullish ? BULL : BEAR;
+        ctx.save();
+        ctx.setLineDash([5 * dpr, 4 * dpr]);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.1 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(chartW, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.font = `900 ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        const text = sb.type;
+        const tm = ctx.measureText(text);
+        const tw = tm.width + 6 * dpr;
+        const th = 11 * dpr;
+        const tx = chartW - tw - 4 * dpr;
+        const ty = y - th / 2;
+
+        ctx.fillStyle = sb.isBullish ? 'rgba(0, 163, 92, 0.15)' : 'rgba(225, 29, 72, 0.15)';
+        ctx.fillRect(tx, ty, tw, th);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 0.8 * dpr;
+        ctx.strokeRect(tx, ty, tw, th);
+
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, tx + tw / 2, y);
+        ctx.restore();
+      }
+    }
+
+    // 5. Liquidity Sweeps
     for (const sw of smcData.sweeps) {
       if (sw.candleIndex >= startIdx && sw.candleIndex < endIdx) {
         const li = sw.candleIndex - startIdx;
@@ -664,6 +927,7 @@ export function renderChart(
       }
     }
   }
+
 
   // ── LAYER 4: Volume Overlay (behind candles) ──────────────────────────
   if (options.showVolume && !options.showVolumePanel) {
@@ -790,6 +1054,73 @@ export function renderChart(
     ctx.fillStyle = txtColor;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillText(prStr, bL+padH+dotR*2+3*dpr, clY);
+
+    // ── Real-time Candle Countdown Timer (Parity with Android InstitutionalChartEngine) ──
+    const TF_DURATIONS: Record<string, number> = {
+      '1M': 60_000,
+      '5M': 300_000,
+      '15M': 900_000,
+      '30M': 1_800_000,
+      '1H': 3_600_000,
+      '4H': 14_400_000,
+      '1D': 86_400_000,
+      '1W': 604_800_000,
+      'MONTH': 2_592_000_000,
+    };
+    const upperTf = options.timeframe.toUpperCase();
+    const durKey = upperTf === '1M' && isDailyOrHigher ? 'MONTH' : upperTf;
+    const barDuration = TF_DURATIONS[durKey] || (isDailyOrHigher ? 86_400_000 : 3_600_000);
+    const nextClose = lastC.openTime + barDuration;
+    const now = Date.now();
+    const remainingMs = Math.max(0, nextClose - now);
+
+    const totSecs = Math.floor(remainingMs / 1000);
+    const cdDays = Math.floor(totSecs / 86400);
+    const cdHours = Math.floor((totSecs % 86400) / 3600);
+    const cdMins = Math.floor((totSecs % 3600) / 60);
+    const cdSecs = totSecs % 60;
+
+    let timerText = '';
+    if (cdDays > 0) {
+      timerText = `${cdDays}d ${cdHours}h`;
+    } else if (cdHours > 0) {
+      timerText = `${String(cdHours).padStart(2, '0')}:${String(cdMins).padStart(2, '0')}:${String(cdSecs).padStart(2, '0')}`;
+    } else {
+      timerText = `${String(cdMins).padStart(2, '0')}:${String(cdSecs).padStart(2, '0')}`;
+    }
+
+    const timerBadgeStr = `⏱ ${timerText}`;
+    ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+    const tMeas = ctx.measureText(timerBadgeStr);
+    const tPadH = 4 * dpr, tPadV = 2 * dpr;
+    const tW = tMeas.width + tPadH * 2;
+    const tH = 8 * dpr + tPadV * 2;
+    const tL = chartW + 2 * dpr;
+    const tT = bT + bH2 + 3 * dpr;
+
+    if (tT + tH <= chartH + BM) {
+      ctx.save();
+      ctx.fillStyle = '#334155'; // Slate-700
+      ctx.beginPath();
+      const tcr = 3 * dpr;
+      ctx.moveTo(tL + tcr, tT);
+      ctx.lineTo(tL + tW - tcr, tT);
+      ctx.arcTo(tL + tW, tT, tL + tW, tT + tcr, tcr);
+      ctx.lineTo(tL + tW, tT + tH - tcr);
+      ctx.arcTo(tL + tW, tT + tH, tL + tW - tcr, tT + tH, tcr);
+      ctx.lineTo(tL + tcr, tT + tH);
+      ctx.arcTo(tL, tT + tH, tL, tT + tH - tcr, tcr);
+      ctx.lineTo(tL, tT + tcr);
+      ctx.arcTo(tL, tT, tL + tcr, tT, tcr);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#F8FAFC';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(timerBadgeStr, tL + tW / 2, tT + tH / 2);
+      ctx.restore();
+    }
   }
 
   // ── LAYER 6.5: User Drawings (Trendlines, Horizontal Rays, Boxes, Fibonacci) ──
@@ -937,6 +1268,70 @@ export function renderChart(
   }
   ctx.restore();
 
+  // ── LAYER 7.5: Institutional F&O Overlay (Dealer Walls: CW, PW, Gamma Flip, Max Pain) ──
+  if (options.showFnoOverlay && options.fnoLevels && options.fnoLevels.enabled) {
+    const fno = options.fnoLevels;
+    const fnoDash = [5 * dpr, 4 * dpr];
+
+    function drawFnoLevel(price: number | undefined, color: string, label: string, gex?: number) {
+      if (price === undefined || price < pMin || price > pMax) return;
+      const y = priceToY(price);
+
+      ctx.save();
+      ctx.setLineDash(fnoDash);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.3 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(chartW, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Format level text with GEX badge if available
+      let fullText = `${label}: ${formatPrice(price)}`;
+      if (gex !== undefined && gex !== null) {
+        const gexStr = Math.abs(gex) >= 1e9 ? `${(gex / 1e9).toFixed(1)}B` : Math.abs(gex) >= 1e6 ? `${(gex / 1e6).toFixed(1)}M` : `${gex.toFixed(0)}`;
+        fullText = `${label}: ${formatPrice(price)} (${gexStr} GEX)`;
+      }
+
+      ctx.font = `900 ${8 * dpr}px "JetBrains Mono",monospace`;
+      const tm = ctx.measureText(fullText);
+      const bW = tm.width + 12 * dpr;
+      const bH = 13 * dpr;
+      const bX = chartW - bW - 6 * dpr;
+      const bY = y - bH - 2 * dpr;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.94)'; // Dark Slate pill
+      ctx.beginPath();
+      const cr = 3 * dpr;
+      ctx.moveTo(bX + cr, bY); ctx.lineTo(bX + bW - cr, bY); ctx.arcTo(bX + bW, bY, bX + bW, bY + cr, cr);
+      ctx.lineTo(bX + bW, bY + bH - cr); ctx.arcTo(bX + bW, bY + bH, bX + bW - cr, bY + bH, cr);
+      ctx.lineTo(bX + cr, bY + bH); ctx.arcTo(bX, bY + bH, bX, bY + bH - cr, cr);
+      ctx.lineTo(bX, bY + cr); ctx.arcTo(bX, bY, bX + cr, bY, cr);
+      ctx.closePath();
+      ctx.fill();
+
+      // Color indicator stripe on the left of badge
+      ctx.fillStyle = color;
+      ctx.fillRect(bX + 2.5 * dpr, bY + 2.5 * dpr, 2.5 * dpr, bH - 5 * dpr);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(fullText, bX + 8 * dpr, bY + bH / 2);
+      ctx.restore();
+    }
+
+    // Call Wall (Red #FF1744)
+    drawFnoLevel(fno.callWall, '#FF1744', 'CW', fno.callWallGex);
+    // Put Wall (Green #00A35C)
+    drawFnoLevel(fno.putWall, '#00A35C', 'PW', fno.putWallGex);
+    // Gamma Flip (Gold / Amber #D97706)
+    drawFnoLevel(fno.gammaFlip, '#D97706', 'γ-Flip');
+    // Max Pain (Purple #9333EA)
+    drawFnoLevel(fno.maxPain, '#9333EA', 'Max Pain');
+  }
+
   // ── LAYER 8 & 9: Sub-panels ───────────────────────────────────────────
   let panelOffset = chartH + BM;
   const pH = totalPanels > 0 ? panelH / totalPanels : 0;
@@ -948,14 +1343,35 @@ export function renderChart(
     // Separator
     ctx.strokeStyle = PANEL_SEP; ctx.lineWidth = 1*dpr;
     ctx.beginPath(); ctx.moveTo(0, panelOffset); ctx.lineTo(chartW+RM, panelOffset); ctx.stroke();
-    // Find max vol
+
+    // 20-period Volume MA calculation
+    const volMa20Values: (number | null)[] = [];
+    for (let i = 0; i < candles.length; i++) {
+      if (i < 19) {
+        volMa20Values.push(null);
+      } else {
+        let s = 0;
+        for (let j = i - 19; j <= i; j++) s += candles[j].volume;
+        volMa20Values.push(s / 20);
+      }
+    }
+
+    // Find max vol (including volume MA)
     let maxV = 0;
-    for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) maxV = Math.max(maxV, candles[i].volume);
-    // Label
+    for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
+      maxV = Math.max(maxV, candles[i].volume);
+      const maV = volMa20Values[i];
+      if (maV !== null && maV !== undefined && maV > maxV) maxV = maV;
+    }
+
+    // Label with Volume MA readout
     const lastC = candles[Math.min(endIdx-1, candles.length-1)];
+    const lastMa = volMa20Values[Math.min(endIdx - 1, volMa20Values.length - 1)];
     const volTxt = lastC && lastC.volume > 0 ? `Vol ${formatVolume(lastC.volume)}` : 'Vol';
+    const maTxt = lastMa !== null && lastMa !== undefined ? ` | MA(20) ${formatVolume(lastMa)}` : '';
     ctx.font = `bold ${8.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle = VOL_LABEL;
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(volTxt, 4*dpr, panelOffset+2*dpr);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(`${volTxt}${maTxt}`, 4*dpr, panelOffset+2*dpr);
+
     // Max vol label right
     if (maxV > 0) {
       ctx.font = `${7.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle = VOL_AXIS; ctx.textAlign = 'left';
@@ -976,9 +1392,30 @@ export function renderChart(
         ctx.fillStyle = c.close >= c.open ? 'rgba(0,163,92,0.7)' : 'rgba(225,29,72,0.7)';
         ctx.fillRect(x, bT, bw, barH);
       }
+
+      // Draw Volume MA 20 Curve (Amber/Orange line on top of volume bars)
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, panelOffset, chartW, pH);
+      ctx.clip();
+      ctx.beginPath();
+      let startedMa = false;
+      for (let i = startIdx; i < Math.min(endIdx, volMa20Values.length); i++) {
+        const v = volMa20Values[i];
+        if (v === null) { startedMa = false; continue; }
+        const li = i - startIdx;
+        const x = li * candleW + candleW / 2;
+        const y = panelOffset + pH - Math.max(1, (v / maxV) * avH);
+        if (!startedMa) { ctx.moveTo(x, y); startedMa = true; } else { ctx.lineTo(x, y); }
+      }
+      ctx.strokeStyle = '#FFB74D'; // Amber/Orange
+      ctx.lineWidth = 1.4 * dpr;
+      ctx.stroke();
+      ctx.restore();
     }
     panelOffset += pH;
   }
+
 
   // Indicator Panels
   for (const cfg of panelInds) {

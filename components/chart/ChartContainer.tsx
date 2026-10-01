@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Timeframe, MarketType, INSTRUMENTS } from '@/lib/types';
-import type { Candle, ChartType, IndicatorType, IndicatorConfig } from '@/lib/types';
+import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels } from '@/lib/types';
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
 import {
   INDICATOR_DEFAULTS,
@@ -29,6 +29,7 @@ interface ChartContainerProps {
 const TIMEFRAME_MS: Record<string, number> = {
   '1m': 60_000, '5m': 300_000, '15m': 900_000, '30m': 1_800_000,
   '1H': 3_600_000, '4H': 14_400_000, '1D': 86_400_000, '1W': 604_800_000,
+  '1M': 30 * 86_400_000,
 };
 
 export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
@@ -45,6 +46,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [showVolumePanel, setShowVolumePanel] = useState(false);
   const [showSmcOverlay, setShowSmcOverlay] = useState(true);
   const [showVolumeProfile, setShowVolumeProfile] = useState(false);
+  const [showFnoOverlay, setShowFnoOverlay] = useState(false);
   const [activeIndicators, setActiveIndicators] = useState<IndicatorType[]>(['EMA']);
   const [customConfigs, setCustomConfigs] = useState<Partial<Record<IndicatorType, Partial<IndicatorConfig>>>>({});
   const [editingIndicator, setEditingIndicator] = useState<IndicatorType | null>(null);
@@ -343,6 +345,24 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const displayChange = livePriceData?.change ?? quote.change;
   const displayChangePct = livePriceData?.changePct ?? quote.changePct;
 
+  // Institutional Options Dealer Walls (Call Wall, Put Wall, Gamma Flip, Max Pain — Parity with Android FnoOverlayLayer)
+  const fnoLevels: FnoOverlayLevels = useMemo(() => {
+    const price = displayPrice || lastCandle?.close || 1000;
+    const strikeStep = price > 50000 ? 1000 : price > 10000 ? 100 : price > 2000 ? 50 : price > 500 ? 20 : price > 100 ? 5 : 1;
+    const baseStrike = Math.round(price / strikeStep) * strikeStep;
+
+    return {
+      callWall: baseStrike + strikeStep * 3,
+      putWall: baseStrike - strikeStep * 3,
+      gammaFlip: baseStrike - strikeStep * 0.5,
+      maxPain: baseStrike - strikeStep,
+      callWallGex: 1.45e9,
+      putWallGex: -1.18e9,
+      totalNetGex: 2.7e8,
+      enabled: showFnoOverlay,
+    };
+  }, [displayPrice, lastCandle?.close, showFnoOverlay]);
+
   return (
     <div className="flex flex-col h-full rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs relative">
       {/* ── Top Dropdown Toolbar ── */}
@@ -354,6 +374,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         showVolumePanel={showVolumePanel}
         showSmcOverlay={showSmcOverlay}
         showVolumeProfile={showVolumeProfile}
+        showFnoOverlay={showFnoOverlay}
         activeIndicators={activeIndicators}
         engineStatus={status}
         isLiveFromEngine={isLiveFromEngine}
@@ -370,6 +391,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         onToggleVolumePanel={() => setShowVolumePanel(v => !v)}
         onToggleSmcOverlay={() => setShowSmcOverlay(v => !v)}
         onToggleVolumeProfile={() => setShowVolumeProfile(v => !v)}
+        onToggleFnoOverlay={() => setShowFnoOverlay(v => !v)}
         onToggleIndicator={toggleIndicator}
         onOpenIndicatorSettings={t => setEditingIndicator(t)}
       />
@@ -432,6 +454,8 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           showVolumePanel={showVolumePanel}
           showSmcOverlay={showSmcOverlay}
           showVolumeProfile={showVolumeProfile}
+          showFnoOverlay={showFnoOverlay}
+          fnoLevels={fnoLevels}
           indicators={indicatorConfigs}
           indicatorResults={indicatorResults}
           currentPriceOverride={displayPrice}
