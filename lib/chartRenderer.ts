@@ -10,7 +10,7 @@ import {
   IchimokuResult, AdxResult, CvdResult,
   VolumeProfileBucket, VolumeProfileData,
   SmcFvg, SmcLiquiditySweep, SmcOrderBlock, SmcStructureBreak, SmcAnalysis,
-  FnoOverlayLevels,
+  FnoOverlayLevels, StrategyPayoffOverlay,
   ChartOptions, ViewState, Crosshair,
   INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay,
 } from './types';
@@ -21,10 +21,11 @@ export type {
   IchimokuResult, AdxResult, CvdResult,
   VolumeProfileBucket, VolumeProfileData,
   SmcFvg, SmcLiquiditySweep, SmcOrderBlock, SmcStructureBreak, SmcAnalysis,
-  FnoOverlayLevels,
+  FnoOverlayLevels, StrategyPayoffOverlay,
   ChartOptions, ViewState, Crosshair,
 };
 export { INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay };
+
 
 // ── Color Constants (Crisp Professional Light Theme) ──────────────────────
 const BULL  = '#00A35C';
@@ -1123,7 +1124,7 @@ export function renderChart(
     }
   }
 
-  // ── LAYER 6.5: User Drawings (Trendlines, Horizontal Rays, Boxes, Fibonacci) ──
+  // ── LAYER 6.5: User Drawings (Extended Suite matching Android DrawingLayer) ──
   const allDrawings = [...(options.drawings || [])];
   if (options.activeDrawing) allDrawings.push(options.activeDrawing);
 
@@ -1136,9 +1137,10 @@ export function renderChart(
       const p1 = item.points[0];
       const x1 = (p1.index - startIdx) * candleW + candleW / 2;
       const y1 = priceToY(p1.price);
+      const color = item.color || '#2563EB';
 
-      ctx.strokeStyle = item.color || '#2563EB';
-      ctx.fillStyle = item.color || '#2563EB';
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
       ctx.lineWidth = (item.lineWidth || 2) * dpr;
 
       if (item.tool === 'HORIZONTAL') {
@@ -1148,6 +1150,36 @@ export function renderChart(
         ctx.restore();
         ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
         ctx.fillText(`H-Line: ${formatPrice(p1.price)}`, 6 * dpr, y1 - 4 * dpr);
+      } else if (item.tool === 'VERTICAL_LINE') {
+        ctx.save();
+        ctx.setLineDash([6 * dpr, 4 * dpr]);
+        ctx.beginPath(); ctx.moveTo(x1, 0); ctx.lineTo(x1, chartH); ctx.stroke();
+        ctx.restore();
+        const cTime = candles[Math.min(Math.max(0, p1.index), candles.length - 1)]?.openTime;
+        if (cTime) {
+          const tText = formatCrosshairTime(cTime, isDailyOrHigher);
+          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          ctx.fillText(tText, Math.max(4 * dpr, x1 - 30 * dpr), 12 * dpr);
+        }
+      } else if (item.tool === 'TEXT') {
+        const textContent = item.text || 'Annotation';
+        ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
+        const tm = ctx.measureText(textContent);
+        const bW = tm.width + 10 * dpr;
+        const bH = 14 * dpr;
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        ctx.beginPath();
+        const cr = 3 * dpr;
+        ctx.moveTo(x1 + cr, y1 - bH); ctx.lineTo(x1 + bW - cr, y1 - bH); ctx.arcTo(x1 + bW, y1 - bH, x1 + bW, y1, cr);
+        ctx.lineTo(x1 + bW, y1 - cr); ctx.arcTo(x1 + bW, y1, x1 + bW - cr, y1, cr);
+        ctx.lineTo(x1 + cr, y1); ctx.arcTo(x1, y1, x1, y1 - cr, cr);
+        ctx.lineTo(x1, y1 - bH + cr); ctx.arcTo(x1, y1 - bH, x1 + cr, y1 - bH, cr);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(textContent, x1 + 5 * dpr, y1 - bH / 2);
+        ctx.restore();
       } else if (item.points.length >= 2) {
         const p2 = item.points[1];
         const x2 = (p2.index - startIdx) * candleW + candleW / 2;
@@ -1157,6 +1189,44 @@ export function renderChart(
           ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
           ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
           ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+        } else if (item.tool === 'RAY') {
+          const dx = x2 - x1, dy = y2 - y1;
+          const len = Math.hypot(dx, dy);
+          if (len > 0) {
+            const factor = Math.max(chartW, chartH) * 3 / len;
+            const rayX = x1 + dx * factor;
+            const rayY = y1 + dy * factor;
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(rayX, rayY); ctx.stroke();
+            ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          }
+        } else if (item.tool === 'CHANNEL') {
+          const p3 = item.points[2] || { price: p1.price + (pMax - pMin) * 0.04, index: p1.index };
+          const pOffset = p3.price - p1.price;
+          const y1p = priceToY(p1.price + pOffset);
+          const y2p = priceToY(p2.price + pOffset);
+          const y1m = (y1 + y1p) / 2;
+          const y2m = (y2 + y2p) / 2;
+
+          // Shaded fill between rails
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x2, y2p); ctx.lineTo(x1, y1p); ctx.closePath();
+          ctx.fillStyle = 'rgba(37, 99, 235, 0.08)';
+          ctx.fill();
+
+          // Rails
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x1, y1p); ctx.lineTo(x2, y2p); ctx.stroke();
+
+          // 50% Dashed Midline
+          ctx.setLineDash([4 * dpr, 4 * dpr]);
+          ctx.beginPath(); ctx.moveTo(x1, y1m); ctx.lineTo(x2, y2m); ctx.stroke();
+          ctx.restore();
+
+          // Anchors
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'RECTANGLE') {
           const rx = Math.min(x1, x2), ry = Math.min(y1, y2);
           const rw = Math.abs(x2 - x1), rh = Math.abs(y2 - y1);
@@ -1164,23 +1234,111 @@ export function renderChart(
           ctx.fillRect(rx, ry, rw, rh);
           ctx.strokeRect(rx, ry, rw, rh);
         } else if (item.tool === 'FIBONACCI') {
-          const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0];
+          const levels = [
+            { lvl: 0.0,   color: '#EF4444', label: '0.0%' },
+            { lvl: 0.236, color: '#F97316', label: '23.6%' },
+            { lvl: 0.382, color: '#F59E0B', label: '38.2%' },
+            { lvl: 0.5,   color: '#10B981', label: '50.0%' },
+            { lvl: 0.618, color: '#06B6D4', label: '61.8%' },
+            { lvl: 0.786, color: '#8B5CF6', label: '78.6%' },
+            { lvl: 1.0,   color: '#EF4444', label: '100.0%' },
+          ];
           const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
-          for (const lvl of levels) {
-            const ly = y1 + (y2 - y1) * lvl;
-            const pVal = p1.price + (p2.price - p1.price) * lvl;
+
+          // Golden pocket fill (0.382 - 0.618)
+          const y382 = y1 + (y2 - y1) * 0.382;
+          const y618 = y1 + (y2 - y1) * 0.618;
+          ctx.save();
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.10)';
+          ctx.fillRect(minX, Math.min(y382, y618), maxX - minX, Math.abs(y618 - y382));
+          ctx.restore();
+
+          for (const itemFib of levels) {
+            const ly = y1 + (y2 - y1) * itemFib.lvl;
+            const pVal = p1.price + (p2.price - p1.price) * itemFib.lvl;
             ctx.save();
+            ctx.strokeStyle = itemFib.color;
             ctx.setLineDash([3 * dpr, 3 * dpr]);
             ctx.beginPath(); ctx.moveTo(minX, ly); ctx.lineTo(maxX, ly); ctx.stroke();
             ctx.restore();
-            ctx.font = `${7.5 * dpr}px "JetBrains Mono",monospace`;
-            ctx.fillText(`${(lvl * 100).toFixed(1)}% (${formatPrice(pVal)})`, minX + 4 * dpr, ly - 3 * dpr);
+            ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+            ctx.fillStyle = itemFib.color;
+            ctx.fillText(`${itemFib.label} (${formatPrice(pVal)})`, minX + 4 * dpr, ly - 3 * dpr);
           }
+        } else if (item.tool === 'FIBONACCI_EXTENSION') {
+          const p3 = item.points[2] || p2;
+          const baseRange = p2.price - p1.price;
+          const extLevels = [
+            { lvl: 0.0,   color: '#64748B', label: '0.0 (Base)' },
+            { lvl: 0.618, color: '#0284C7', label: '0.618 Target' },
+            { lvl: 1.0,   color: '#10B981', label: '1.0 Target' },
+            { lvl: 1.618, color: '#F59E0B', label: '1.618 Golden Ext' },
+            { lvl: 2.618, color: '#EF4444', label: '2.618 Ultra Ext' },
+          ];
+          const minX = Math.min(x1, x2);
+          for (const ext of extLevels) {
+            const targetP = p3.price + baseRange * ext.lvl;
+            if (targetP >= pMin && targetP <= pMax) {
+              const ly = priceToY(targetP);
+              ctx.save();
+              ctx.strokeStyle = ext.color;
+              ctx.setLineDash([4 * dpr, 4 * dpr]);
+              ctx.beginPath(); ctx.moveTo(minX, ly); ctx.lineTo(chartW, ly); ctx.stroke();
+              ctx.restore();
+              ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+              ctx.fillStyle = ext.color;
+              ctx.fillText(`${ext.label}: ${formatPrice(targetP)}`, minX + 6 * dpr, ly - 3 * dpr);
+            }
+          }
+        } else if (item.tool === 'MEASURE') {
+          const deltaPrice = p2.price - p1.price;
+          const pct = p1.price !== 0 ? (deltaPrice / p1.price) * 100 : 0;
+          const bars = Math.abs(p2.index - p1.index);
+          const isBull = deltaPrice >= 0;
+          const measureColor = isBull ? BULL : BEAR;
+
+          const rx = Math.min(x1, x2), ry = Math.min(y1, y2);
+          const rw = Math.max(Math.abs(x2 - x1), 1);
+          const rh = Math.max(Math.abs(y2 - y1), 1);
+
+          ctx.save();
+          ctx.fillStyle = isBull ? 'rgba(0, 163, 92, 0.12)' : 'rgba(225, 29, 72, 0.12)';
+          ctx.fillRect(rx, ry, rw, rh);
+          ctx.strokeStyle = measureColor;
+          ctx.lineWidth = 1 * dpr;
+          ctx.strokeRect(rx, ry, rw, rh);
+
+          // Diagonal arrow guideline
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+
+          // Central badge
+          const sign = isBull ? '+' : '';
+          const infoStr = `${sign}${formatPrice(deltaPrice)} (${sign}${pct.toFixed(2)}%) | ${bars} bars`;
+          ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+          const tm = ctx.measureText(infoStr);
+          const bW = tm.width + 10 * dpr, bH = 14 * dpr;
+          const bX = rx + rw / 2 - bW / 2;
+          const bY = ry + rh / 2 - bH / 2;
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+          ctx.beginPath();
+          const cr = 3 * dpr;
+          ctx.moveTo(bX + cr, bY); ctx.lineTo(bX + bW - cr, bY); ctx.arcTo(bX + bW, bY, bX + bW, bY + cr, cr);
+          ctx.lineTo(bX + bW, bY + bH - cr); ctx.arcTo(bX + bW, bY + bH, bX + bW - cr, bY + bH, cr);
+          ctx.lineTo(bX + cr, bY + bH); ctx.arcTo(bX, bY + bH, bX, bY + bH - cr, cr);
+          ctx.lineTo(bX, bY + cr); ctx.arcTo(bX, bY, bX + cr, bY, cr);
+          ctx.closePath(); ctx.fill();
+
+          ctx.fillStyle = measureColor;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(infoStr, bX + bW / 2, bY + bH / 2);
+          ctx.restore();
         }
       }
     }
     ctx.restore();
   }
+
 
   // ── LAYER 7: Indicator Overlays ───────────────────────────────────────
   ctx.save();
@@ -1331,6 +1489,89 @@ export function renderChart(
     // Max Pain (Purple #9333EA)
     drawFnoLevel(fno.maxPain, '#9333EA', 'Max Pain');
   }
+
+  // ── Strategy Payoff Overlay (Max Profit/Loss Zones, Breakevens, Strategy Name — Android parity) ──
+  if (options.strategyOverlay && options.strategyOverlay.enabled) {
+    const strat = options.strategyOverlay;
+
+    // 1. Max Profit Zone (Translucent Green)
+    if (strat.maxProfitZone) {
+      const zLow = Math.max(pMin, strat.maxProfitZone.low);
+      const zHigh = Math.min(pMax, strat.maxProfitZone.high);
+      if (zHigh > zLow) {
+        const yTop = priceToY(zHigh);
+        const yBot = priceToY(zLow);
+        const bH = Math.max(Math.abs(yBot - yTop), 2);
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 163, 92, 0.12)';
+        ctx.fillRect(0, yTop, chartW, bH);
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = 'rgba(0, 163, 92, 0.85)';
+        ctx.textAlign = 'right';
+        ctx.fillText('MAX PROFIT ZONE', chartW - 8 * dpr, yTop + 10 * dpr);
+        ctx.restore();
+      }
+    }
+
+    // 2. Max Loss Zone (Translucent Red)
+    if (strat.maxLossZone) {
+      const zLow = Math.max(pMin, strat.maxLossZone.low);
+      const zHigh = Math.min(pMax, strat.maxLossZone.high);
+      if (zHigh > zLow) {
+        const yTop = priceToY(zHigh);
+        const yBot = priceToY(zLow);
+        const bH = Math.max(Math.abs(yBot - yTop), 2);
+        ctx.save();
+        ctx.fillStyle = 'rgba(225, 29, 72, 0.12)';
+        ctx.fillRect(0, yTop, chartW, bH);
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = 'rgba(225, 29, 72, 0.85)';
+        ctx.textAlign = 'right';
+        ctx.fillText('MAX LOSS ZONE', chartW - 8 * dpr, yTop + 10 * dpr);
+        ctx.restore();
+      }
+    }
+
+    // 3. Breakeven Points (Yellow Dotted Lines)
+    if (strat.breakevenPoints && strat.breakevenPoints.length > 0) {
+      for (const be of strat.breakevenPoints) {
+        if (be >= pMin && be <= pMax) {
+          const beY = priceToY(be);
+          ctx.save();
+          ctx.setLineDash([3 * dpr, 3 * dpr]);
+          ctx.strokeStyle = '#EAB308';
+          ctx.lineWidth = 1.2 * dpr;
+          ctx.beginPath(); ctx.moveTo(0, beY); ctx.lineTo(chartW, beY); ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Badge
+          const beTxt = `BE: ${formatPrice(be)}`;
+          ctx.font = `900 ${8 * dpr}px "JetBrains Mono",monospace`;
+          const tm = ctx.measureText(beTxt);
+          const bW = tm.width + 8 * dpr, bH = 12 * dpr;
+          const bX = chartW - bW - 6 * dpr;
+          const bY = beY - bH / 2;
+          ctx.fillStyle = '#0F172A';
+          ctx.fillRect(bX, bY, bW, bH);
+          ctx.fillStyle = '#EAB308';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(beTxt, bX + bW / 2, beY);
+          ctx.restore();
+        }
+      }
+    }
+
+    // 4. Strategy Watermark in top-left
+    if (strat.strategyName) {
+      ctx.save();
+      ctx.font = `900 ${9.5 * dpr}px "JetBrains Mono",monospace`;
+      ctx.fillStyle = 'rgba(2, 132, 199, 0.75)';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText(`STRATEGY: ${strat.strategyName.toUpperCase()}`, 12 * dpr, 28 * dpr);
+      ctx.restore();
+    }
+  }
+
 
   // ── LAYER 8 & 9: Sub-panels ───────────────────────────────────────────
   let panelOffset = chartH + BM;

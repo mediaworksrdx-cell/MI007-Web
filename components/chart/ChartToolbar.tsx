@@ -26,11 +26,25 @@ const CHART_TYPES: { value: ChartType; label: string; icon: string }[] = [
 ];
 
 const DRAWING_TOOLS: { value: DrawingToolType; label: string; icon: string }[] = [
-  { value: 'NONE',       label: 'Cursor / Pan Mode', icon: '↖' },
-  { value: 'TRENDLINE',  label: 'Trendline (2 clicks)', icon: '╱' },
-  { value: 'HORIZONTAL', label: 'Horizontal Ray (1 click)', icon: '―' },
-  { value: 'RECTANGLE',  label: 'Support/Resistance Box', icon: '▭' },
-  { value: 'FIBONACCI',  label: 'Fibonacci Retracement', icon: '≡' },
+  { value: 'NONE',                label: 'Cursor / Pan Mode', icon: '↖' },
+  { value: 'TRENDLINE',           label: 'Trendline (2 clicks)', icon: '╱' },
+  { value: 'RAY',                 label: 'Extended Ray (2 clicks)', icon: '⟶' },
+  { value: 'HORIZONTAL',          label: 'Horizontal Line (1 click)', icon: '―' },
+  { value: 'VERTICAL_LINE',       label: 'Vertical Line (1 click)', icon: '│' },
+  { value: 'CHANNEL',             label: 'Parallel Channel (3 clicks)', icon: '⫽' },
+  { value: 'RECTANGLE',           label: 'Support/Resistance Box (2 clicks)', icon: '▭' },
+  { value: 'FIBONACCI',           label: 'Fibonacci Retracement (2 clicks)', icon: '≡' },
+  { value: 'FIBONACCI_EXTENSION', label: 'Fib Extension Targets (3 clicks)', icon: '⤢' },
+  { value: 'MEASURE',             label: 'Price Range & Bars (2 clicks)', icon: '📐' },
+  { value: 'TEXT',                label: 'Text Annotation (1 click)', icon: '🔤' },
+];
+
+const STRATEGIES = [
+  { value: 'NONE', label: 'Strategy: None' },
+  { value: 'BULL_CALL_SPREAD', label: 'Bull Call Spread' },
+  { value: 'BEAR_PUT_SPREAD', label: 'Bear Put Spread' },
+  { value: 'LONG_STRADDLE', label: 'Long Straddle' },
+  { value: 'IRON_CONDOR', label: 'Iron Condor' },
 ];
 
 interface ChartToolbarProps {
@@ -42,6 +56,7 @@ interface ChartToolbarProps {
   showSmcOverlay: boolean;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
+  selectedStrategy?: string;
   activeIndicators: IndicatorType[];
   engineStatus?: string;
   isLiveFromEngine?: boolean;
@@ -59,6 +74,7 @@ interface ChartToolbarProps {
   onToggleSmcOverlay: () => void;
   onToggleVolumeProfile: () => void;
   onToggleFnoOverlay?: () => void;
+  onSelectStrategy?: (strategy: string) => void;
   onToggleIndicator: (type: IndicatorType) => void;
   onOpenIndicatorSettings?: (type: IndicatorType) => void;
 }
@@ -66,13 +82,15 @@ interface ChartToolbarProps {
 export function ChartToolbar({
   timeframe, chartType, activeDrawingTool,
   showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile, showFnoOverlay = false,
+  selectedStrategy = 'NONE',
   activeIndicators,
   engineStatus, isLiveFromEngine, currency = '₹', displayPrice, displayChange, displayChangePct,
   onTimeframeChange, onChartTypeChange, onDrawingToolChange, onClearDrawings, onUndoDrawing,
   onToggleVolume, onToggleVolumePanel, onToggleSmcOverlay, onToggleVolumeProfile, onToggleFnoOverlay,
+  onSelectStrategy,
   onToggleIndicator, onOpenIndicatorSettings,
 }: ChartToolbarProps) {
-  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'DRAWING' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'DRAWING' | 'STRATEGY' | null>(null);
   const [indicatorSearch, setIndicatorSearch] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -442,8 +460,51 @@ export function ChartToolbar({
               F&O
             </button>
           )}
+          {onSelectStrategy && (
+            <div className="relative">
+              <button
+                onClick={() => setOpenMenu(openMenu === 'STRATEGY' ? null : 'STRATEGY')}
+                title="Options Strategy Payoff Overlay (Profit/Loss Zones & Breakevens)"
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold mono border transition-colors ${
+                  selectedStrategy && selectedStrategy !== 'NONE'
+                    ? 'bg-indigo-50 border-indigo-300 text-indigo-800'
+                    : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                }`}
+              >
+                <span>🎯</span>
+                <span>{selectedStrategy && selectedStrategy !== 'NONE' ? selectedStrategy.replace(/_/g, ' ') : 'STRAT'}</span>
+                <span className="text-[9px]">▾</span>
+              </button>
+
+              {openMenu === 'STRATEGY' && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-50">
+                  <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Options Strategy Payoff
+                  </div>
+                  {STRATEGIES.map(s => (
+                    <button
+                      key={s.value}
+                      onClick={() => {
+                        onSelectStrategy(s.value);
+                        setOpenMenu(null);
+                      }}
+                      className={`flex items-center justify-between w-full px-3 py-1.5 text-left text-xs font-medium transition-colors ${
+                        (selectedStrategy || 'NONE') === s.value
+                          ? 'bg-indigo-50 text-indigo-700 font-bold'
+                          : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span>{s.label}</span>
+                      {(selectedStrategy || 'NONE') === s.value && <span className="text-indigo-600 font-bold">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
 
       {/* ── Right Controls: Live Beacon & Quote (Saves vertical space!) ── */}
       <div className="flex items-center gap-3">

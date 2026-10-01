@@ -1,4 +1,15 @@
-export type DrawingToolType = 'NONE' | 'TRENDLINE' | 'HORIZONTAL' | 'RECTANGLE' | 'FIBONACCI';
+export type DrawingToolType =
+  | 'NONE'
+  | 'TRENDLINE'
+  | 'RAY'
+  | 'HORIZONTAL'
+  | 'VERTICAL_LINE'
+  | 'CHANNEL'
+  | 'RECTANGLE'
+  | 'FIBONACCI'
+  | 'FIBONACCI_EXTENSION'
+  | 'MEASURE'
+  | 'TEXT';
 
 export interface DrawingPoint {
   index: number;
@@ -13,4 +24,6 @@ export interface DrawingItem {
   color: string;
   lineWidth: number;
   completed: boolean;
+  text?: string;
 }
+

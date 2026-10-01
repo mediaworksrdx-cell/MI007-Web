@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useCallback, useState, useLayoutEffect } from 'react';
-import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels } from '@/lib/types';
+import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels, StrategyPayoffOverlay } from '@/lib/types';
 import { isOverlay } from '@/lib/types';
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
 import { renderChart } from '@/lib/chartRenderer';
@@ -15,6 +15,7 @@ interface CandlestickCanvasProps {
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;
+  strategyOverlay?: StrategyPayoffOverlay;
   indicators: IndicatorConfig[];
   indicatorResults: Map<IndicatorType, unknown>;
   currentPriceOverride?: number;
@@ -30,7 +31,7 @@ const VISIBLE_CANDLES_BASE = 60;
 
 export function CandlestickCanvas({
   candles, chartType, showVolume, showVolumePanel,
-  showSmcOverlay, showVolumeProfile, showFnoOverlay, fnoLevels,
+  showSmcOverlay, showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
   currentPriceOverride, timeframe, className = '',
   activeDrawingTool = 'NONE',
@@ -143,6 +144,7 @@ export function CandlestickCanvas({
         chartType, showVolume, showVolumePanel,
         showSmcOverlay, showVolumeProfile,
         showFnoOverlay, fnoLevels,
+        strategyOverlay,
         indicators, indicatorResults,
         currentPriceOverride, timeframe,
         drawings,
@@ -153,7 +155,7 @@ export function CandlestickCanvas({
       dpr
     );
   }, [candles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
-      showFnoOverlay, fnoLevels,
+      showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, drawingInProgress,
       clampedStart, clampedEnd, crosshair, size, dpr, clockTick]);
@@ -168,10 +170,20 @@ export function CandlestickCanvas({
     if (drawingInProgress && activeDrawingTool !== 'NONE') {
       const pt = getPointFromEvent(e.clientX, e.clientY);
       if (pt) {
-        setDrawingInProgress(prev => prev ? {
-          ...prev,
-          points: [prev.points[0], { index: pt.index, time: pt.time, price: pt.price }],
-        } : null);
+        setDrawingInProgress(prev => {
+          if (!prev) return null;
+          const is3Point = prev.tool === 'CHANNEL' || prev.tool === 'FIBONACCI_EXTENSION';
+          if (is3Point && prev.points.length >= 2) {
+            return {
+              ...prev,
+              points: [prev.points[0], prev.points[1], { index: pt.index, time: pt.time, price: pt.price }],
+            };
+          }
+          return {
+            ...prev,
+            points: [prev.points[0], { index: pt.index, time: pt.time, price: pt.price }],
+          };
+        });
       }
     }
   }, [drawingInProgress, activeDrawingTool, getPointFromEvent]);
@@ -185,36 +197,72 @@ export function CandlestickCanvas({
     const pt = getPointFromEvent(e.clientX, e.clientY);
     if (!pt) return;
 
-    if (activeDrawingTool === 'HORIZONTAL') {
+    // 1-Point Tools: HORIZONTAL, VERTICAL_LINE, TEXT
+    if (activeDrawingTool === 'HORIZONTAL' || activeDrawingTool === 'VERTICAL_LINE') {
       onAddDrawing?.({
         id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-        tool: 'HORIZONTAL',
+        tool: activeDrawingTool,
         points: [{ index: pt.index, time: pt.time, price: pt.price }],
-        color: '#2563EB',
+        color: activeDrawingTool === 'HORIZONTAL' ? '#2563EB' : '#9333EA',
         lineWidth: 2,
         completed: true,
       });
       return;
     }
 
-    // Two-point tools: TRENDLINE, RECTANGLE, FIBONACCI
+    if (activeDrawingTool === 'TEXT') {
+      const text = window.prompt('Enter annotation text:', 'Key Level');
+      if (text && text.trim()) {
+        onAddDrawing?.({
+          id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          tool: 'TEXT',
+          points: [{ index: pt.index, time: pt.time, price: pt.price }],
+          text: text.trim(),
+          color: '#1E293B',
+          lineWidth: 1,
+          completed: true,
+        });
+      }
+      return;
+    }
+
+    const is3PointTool = activeDrawingTool === 'CHANNEL' || activeDrawingTool === 'FIBONACCI_EXTENSION';
+
     if (!drawingInProgress) {
+      // First point
       setDrawingInProgress({
         id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         tool: activeDrawingTool,
         points: [{ index: pt.index, time: pt.time, price: pt.price }],
-        color: activeDrawingTool === 'RECTANGLE' ? '#059669' : '#2563EB',
+        color: activeDrawingTool === 'RECTANGLE' ? '#059669' :
+               activeDrawingTool === 'CHANNEL' ? '#4F46E5' :
+               activeDrawingTool === 'FIBONACCI_EXTENSION' ? '#D97706' :
+               activeDrawingTool === 'MEASURE' ? '#0284C7' :
+               activeDrawingTool === 'RAY' ? '#EA580C' : '#2563EB',
         lineWidth: 2,
         completed: false,
       });
     } else {
-      const finished: DrawingItem = {
-        ...drawingInProgress,
-        points: [drawingInProgress.points[0], { index: pt.index, time: pt.time, price: pt.price }],
-        completed: true,
-      };
-      onAddDrawing?.(finished);
-      setDrawingInProgress(null);
+      if (is3PointTool && drawingInProgress.points.length === 1) {
+        // Second point of 3-point tool
+        setDrawingInProgress({
+          ...drawingInProgress,
+          points: [drawingInProgress.points[0], { index: pt.index, time: pt.time, price: pt.price }],
+        });
+      } else {
+        // Final point (point 2 for 2-point tools, point 3 for 3-point tools)
+        const newPoints = is3PointTool
+          ? [drawingInProgress.points[0], drawingInProgress.points[1], { index: pt.index, time: pt.time, price: pt.price }]
+          : [drawingInProgress.points[0], { index: pt.index, time: pt.time, price: pt.price }];
+
+        const finished: DrawingItem = {
+          ...drawingInProgress,
+          points: newPoints,
+          completed: true,
+        };
+        onAddDrawing?.(finished);
+        setDrawingInProgress(null);
+      }
     }
   }, [activeDrawingTool, drawingInProgress, getPointFromEvent, onAddDrawing]);
 

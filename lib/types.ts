@@ -151,6 +151,17 @@ export interface FnoOverlayLevels {
   enabled: boolean;
 }
 
+export interface StrategyPayoffOverlay {
+  enabled: boolean;
+  strategyName: string;
+  breakevenPoints: number[];
+  maxProfitZone?: { low: number; high: number };
+  maxLossZone?: { low: number; high: number };
+  maxProfit?: number;
+  maxLoss?: number;
+  targetPrice?: number;
+}
+
 export interface ChartOptions {
   chartType: ChartType;
   showVolume: boolean;
@@ -159,6 +170,7 @@ export interface ChartOptions {
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;
+  strategyOverlay?: StrategyPayoffOverlay;
   indicators: IndicatorConfig[];
   indicatorResults: Map<IndicatorType, unknown>;
   currentPriceOverride?: number;
@@ -166,6 +178,7 @@ export interface ChartOptions {
   drawings?: import('./drawingTypes').DrawingItem[];
   activeDrawing?: import('./drawingTypes').DrawingItem | null;
 }
+
 
 export interface ViewState {
   startIdx: number;

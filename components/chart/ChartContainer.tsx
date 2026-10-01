@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Timeframe, MarketType, INSTRUMENTS } from '@/lib/types';
-import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels } from '@/lib/types';
+import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels, StrategyPayoffOverlay } from '@/lib/types';
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
 import {
   INDICATOR_DEFAULTS,
@@ -47,6 +47,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [showSmcOverlay, setShowSmcOverlay] = useState(true);
   const [showVolumeProfile, setShowVolumeProfile] = useState(false);
   const [showFnoOverlay, setShowFnoOverlay] = useState(false);
+  const [selectedStrategy, setSelectedStrategy] = useState<string>('NONE');
   const [activeIndicators, setActiveIndicators] = useState<IndicatorType[]>(['EMA']);
   const [customConfigs, setCustomConfigs] = useState<Partial<Record<IndicatorType, Partial<IndicatorConfig>>>>({});
   const [editingIndicator, setEditingIndicator] = useState<IndicatorType | null>(null);
@@ -363,6 +364,49 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     };
   }, [displayPrice, lastCandle?.close, showFnoOverlay]);
 
+  // Options Strategy Payoff Overlay (Bull Call Spread, Bear Put Spread, Long Straddle, Iron Condor — Parity with Android FnoOverlayLayer)
+  const strategyOverlay: StrategyPayoffOverlay | undefined = useMemo(() => {
+    if (!selectedStrategy || selectedStrategy === 'NONE') return undefined;
+    const price = displayPrice || lastCandle?.close || 1000;
+    const step = price > 50000 ? 1000 : price > 10000 ? 100 : price > 2000 ? 50 : price > 500 ? 20 : price > 100 ? 5 : 1;
+    const atm = Math.round(price / step) * step;
+
+    if (selectedStrategy === 'BULL_CALL_SPREAD') {
+      return {
+        enabled: true,
+        strategyName: 'Bull Call Spread',
+        breakevenPoints: [atm + step * 0.4],
+        maxProfitZone: { low: atm + step, high: atm + step * 4 },
+        maxLossZone: { low: atm - step * 4, high: atm },
+      };
+    } else if (selectedStrategy === 'BEAR_PUT_SPREAD') {
+      return {
+        enabled: true,
+        strategyName: 'Bear Put Spread',
+        breakevenPoints: [atm - step * 0.4],
+        maxProfitZone: { low: atm - step * 4, high: atm - step },
+        maxLossZone: { low: atm, high: atm + step * 4 },
+      };
+    } else if (selectedStrategy === 'LONG_STRADDLE') {
+      return {
+        enabled: true,
+        strategyName: 'Long Straddle',
+        breakevenPoints: [atm - step * 1.5, atm + step * 1.5],
+        maxProfitZone: { low: atm + step * 2, high: atm + step * 5 },
+        maxLossZone: { low: atm - step * 0.8, high: atm + step * 0.8 },
+      };
+    } else if (selectedStrategy === 'IRON_CONDOR') {
+      return {
+        enabled: true,
+        strategyName: 'Iron Condor',
+        breakevenPoints: [atm - step * 1.2, atm + step * 1.2],
+        maxProfitZone: { low: atm - step, high: atm + step },
+        maxLossZone: { low: atm - step * 4, high: atm - step * 2 },
+      };
+    }
+    return undefined;
+  }, [selectedStrategy, displayPrice, lastCandle?.close]);
+
   return (
     <div className="flex flex-col h-full rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs relative">
       {/* ── Top Dropdown Toolbar ── */}
@@ -375,6 +419,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         showSmcOverlay={showSmcOverlay}
         showVolumeProfile={showVolumeProfile}
         showFnoOverlay={showFnoOverlay}
+        selectedStrategy={selectedStrategy}
         activeIndicators={activeIndicators}
         engineStatus={status}
         isLiveFromEngine={isLiveFromEngine}
@@ -392,6 +437,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         onToggleSmcOverlay={() => setShowSmcOverlay(v => !v)}
         onToggleVolumeProfile={() => setShowVolumeProfile(v => !v)}
         onToggleFnoOverlay={() => setShowFnoOverlay(v => !v)}
+        onSelectStrategy={setSelectedStrategy}
         onToggleIndicator={toggleIndicator}
         onOpenIndicatorSettings={t => setEditingIndicator(t)}
       />
@@ -456,6 +502,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           showVolumeProfile={showVolumeProfile}
           showFnoOverlay={showFnoOverlay}
           fnoLevels={fnoLevels}
+          strategyOverlay={strategyOverlay}
           indicators={indicatorConfigs}
           indicatorResults={indicatorResults}
           currentPriceOverride={displayPrice}
