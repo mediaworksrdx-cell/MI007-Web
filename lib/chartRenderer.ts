@@ -1132,10 +1132,30 @@ export function renderChart(
     ctx.save();
     ctx.beginPath(); ctx.rect(0, 0, chartW, chartH); ctx.clip();
 
+    // Helper to calculate X coordinate for a drawing point with time-anchor fallback
+    const getPointX = (pt: { index: number; time?: number }) => {
+      let idx = pt.index;
+      if (pt.time && candles.length > 0) {
+        if (candles[idx]?.openTime !== pt.time) {
+          let bestIdx = idx;
+          let minDiff = Infinity;
+          for (let i = 0; i < candles.length; i++) {
+            const diff = Math.abs(candles[i].openTime - pt.time);
+            if (diff < minDiff) {
+              minDiff = diff;
+              bestIdx = i;
+            }
+          }
+          idx = bestIdx;
+        }
+      }
+      return (idx - startIdx) * candleW + candleW / 2;
+    };
+
     for (const item of allDrawings) {
       if (!item.points || item.points.length === 0) continue;
       const p1 = item.points[0];
-      const x1 = (p1.index - startIdx) * candleW + candleW / 2;
+      const x1 = getPointX(p1);
       const y1 = priceToY(p1.price);
       const color = item.color || '#2563EB';
 
@@ -1182,7 +1202,7 @@ export function renderChart(
         ctx.restore();
       } else if (item.points.length >= 2) {
         const p2 = item.points[1];
-        const x2 = (p2.index - startIdx) * candleW + candleW / 2;
+        const x2 = getPointX(p2);
         const y2 = priceToY(p2.price);
 
         if (item.tool === 'TRENDLINE') {

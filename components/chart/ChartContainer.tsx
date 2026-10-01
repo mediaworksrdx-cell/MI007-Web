@@ -318,6 +318,18 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
       } catch {}
       return next;
     });
+    // Auto-revert back to Cursor / Pan & Crosshair mode
+    setActiveDrawingTool('NONE');
+  }, [selectedSymbol]);
+
+  const handleUpdateDrawing = useCallback((item: DrawingItem) => {
+    setDrawings(prev => {
+      const next = prev.map(d => d.id === item.id ? item : d);
+      try {
+        localStorage.setItem(`mi007_drawings_${selectedSymbol}`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   }, [selectedSymbol]);
 
   const handleClearDrawings = useCallback(() => {
@@ -510,7 +522,9 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           activeDrawingTool={activeDrawingTool}
           drawings={drawings}
           onAddDrawing={handleAddDrawing}
+          onUpdateDrawing={handleUpdateDrawing}
           onUndoDrawing={handleUndoDrawing}
+          onDrawingToolChange={setActiveDrawingTool}
           className="h-full"
         />
       </div>

@@ -349,18 +349,35 @@ export function ChartToolbar({
           )}
         </div>
 
-        {/* 4. Drawing Tools Dropdown */}
+        {/* 4. Pan & Crosshair Primary Tool Button */}
+        <button
+          onClick={() => {
+            onDrawingToolChange('NONE');
+            setOpenMenu(null);
+          }}
+          title="Pan & Crosshair Mode (Esc)"
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
+            activeDrawingTool === 'NONE'
+              ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-1 ring-emerald-600 font-bold'
+              : 'border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-800'
+          }`}
+        >
+          <span className="font-mono text-sm leading-none font-bold text-emerald-600">✛</span>
+          <span className="font-bold text-xs">Pan & Crosshair</span>
+        </button>
+
+        {/* 5. Drawing Tools Dropdown */}
         <div className="relative">
           <button
             onClick={() => setOpenMenu(openMenu === 'DRAWING' ? null : 'DRAWING')}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
               activeDrawingTool !== 'NONE'
-                ? 'border-blue-600 bg-blue-50 text-blue-800 ring-1 ring-blue-600'
+                ? 'border-blue-600 bg-blue-50 text-blue-800 ring-1 ring-blue-600 font-bold'
                 : 'border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-800'
             }`}
           >
             <span>✏️</span>
-            <span className="font-bold">{activeDrawingTool !== 'NONE' ? currentDrawingMeta.label : 'Drawing'}</span>
+            <span className="font-bold text-xs">{activeDrawingTool !== 'NONE' ? currentDrawingMeta.label : 'Draw Tools'}</span>
             <span className="text-[10px] text-slate-400">▼</span>
           </button>
 

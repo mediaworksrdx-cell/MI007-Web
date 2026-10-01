@@ -24,7 +24,9 @@ interface CandlestickCanvasProps {
   activeDrawingTool?: DrawingToolType;
   drawings?: DrawingItem[];
   onAddDrawing?: (drawing: DrawingItem) => void;
+  onUpdateDrawing?: (drawing: DrawingItem) => void;
   onUndoDrawing?: () => void;
+  onDrawingToolChange?: (tool: DrawingToolType) => void;
 }
 
 const VISIBLE_CANDLES_BASE = 60;
@@ -37,7 +39,9 @@ export function CandlestickCanvas({
   activeDrawingTool = 'NONE',
   drawings = [],
   onAddDrawing,
+  onUpdateDrawing,
   onUndoDrawing,
+  onDrawingToolChange,
 }: CandlestickCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -160,6 +164,12 @@ export function CandlestickCanvas({
       drawings, drawingInProgress,
       clampedStart, clampedEnd, crosshair, size, dpr, clockTick]);
 
+  // Mouse dragging and endpoint adjustment refs
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef<number>(0);
+  const dragStartScrollRef = useRef<number>(0);
+  const adjustingRef = useRef<{ drawingId: string; pointIdx: number } | null>(null);
+
   // Pointer events
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = canvasRef.current!.getBoundingClientRect();
@@ -167,6 +177,34 @@ export function CandlestickCanvas({
     const y = e.clientY - rect.top;
     setCrosshair({ x, y });
 
+    // 1. If currently adjusting an existing drawing endpoint
+    if (adjustingRef.current) {
+      const pt = getPointFromEvent(e.clientX, e.clientY);
+      if (pt) {
+        const target = drawings.find(d => d.id === adjustingRef.current!.drawingId);
+        if (target) {
+          const updatedPoints = [...target.points];
+          updatedPoints[adjustingRef.current.pointIdx] = {
+            index: pt.index,
+            time: pt.time,
+            price: pt.price,
+          };
+          onUpdateDrawing?.({ ...target, points: updatedPoints });
+        }
+      }
+      return;
+    }
+
+    // 2. If currently dragging mouse to pan chart
+    if (isDraggingRef.current && (!activeDrawingTool || activeDrawingTool === 'NONE')) {
+      const dx = e.clientX - dragStartXRef.current;
+      const candlePixels = Math.max(1, (size.w - 58) / visibleCount);
+      const deltaCandleCount = -dx / candlePixels;
+      setScrollOffset(Math.max(0, Math.min(candles.length - visibleCount, dragStartScrollRef.current + deltaCandleCount)));
+      return;
+    }
+
+    // 3. If in-progress drawing preview rubber-band
     if (drawingInProgress && activeDrawingTool !== 'NONE') {
       const pt = getPointFromEvent(e.clientX, e.clientY);
       if (pt) {
@@ -186,16 +224,85 @@ export function CandlestickCanvas({
         });
       }
     }
-  }, [drawingInProgress, activeDrawingTool, getPointFromEvent]);
+  }, [activeDrawingTool, candles.length, drawings, drawingInProgress, getPointFromEvent, onUpdateDrawing, size.w, visibleCount]);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (adjustingRef.current) {
+      adjustingRef.current = null;
+      try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+    }
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+    }
+  }, []);
 
   const handlePointerLeave = useCallback(() => {
-    setCrosshair(null);
+    if (!isDraggingRef.current && !adjustingRef.current) {
+      setCrosshair(null);
+    }
   }, []);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!activeDrawingTool || activeDrawingTool === 'NONE') return;
     const pt = getPointFromEvent(e.clientX, e.clientY);
     if (!pt) return;
+
+    if (!activeDrawingTool || activeDrawingTool === 'NONE') {
+      // 1. Check if clicking near any existing drawing endpoint to adjust it
+      const rect = canvasRef.current!.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
+      const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
+      const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
+      const chartH = size.h - panelH - 22;
+      const chartW = size.w - 58;
+      const visCnt = clampedEnd - clampedStart;
+      const candleW = visCnt > 0 ? chartW / visCnt : 1;
+
+      let pMin = Infinity, pMax = -Infinity;
+      for (let i = clampedStart; i < Math.min(clampedEnd, candles.length); i++) {
+        pMin = Math.min(pMin, candles[i].low);
+        pMax = Math.max(pMax, candles[i].high);
+      }
+      const pad = (pMax - pMin) * 0.05 || 1;
+      pMin -= pad; pMax += pad;
+      const pRange = pMax - pMin;
+
+      let targetAdjust: { drawingId: string; pointIdx: number } | null = null;
+      for (const d of drawings) {
+        for (let i = 0; i < d.points.length; i++) {
+          const p = d.points[i];
+          let idx = p.index;
+          if (p.time && candles[idx]?.openTime !== p.time) {
+            for (let ci = 0; ci < candles.length; ci++) {
+              if (candles[ci].openTime === p.time) { idx = ci; break; }
+            }
+          }
+          const ptX = (idx - clampedStart) * candleW + candleW / 2;
+          const ptY = chartH * (1 - (p.price - pMin) / pRange);
+          if (Math.hypot(x - ptX, y - ptY) <= 15) {
+            targetAdjust = { drawingId: d.id, pointIdx: i };
+            break;
+          }
+        }
+        if (targetAdjust) break;
+      }
+
+      if (targetAdjust) {
+        adjustingRef.current = targetAdjust;
+        try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}
+        return;
+      }
+
+      // 2. Otherwise start mouse pan drag
+      isDraggingRef.current = true;
+      dragStartXRef.current = e.clientX;
+      dragStartScrollRef.current = scrollOffset;
+      try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}
+      return;
+    }
 
     // 1-Point Tools: HORIZONTAL, VERTICAL_LINE, TEXT
     if (activeDrawingTool === 'HORIZONTAL' || activeDrawingTool === 'VERTICAL_LINE') {
@@ -207,6 +314,7 @@ export function CandlestickCanvas({
         lineWidth: 2,
         completed: true,
       });
+      onDrawingToolChange?.('NONE');
       return;
     }
 
@@ -222,6 +330,7 @@ export function CandlestickCanvas({
           lineWidth: 1,
           completed: true,
         });
+        onDrawingToolChange?.('NONE');
       }
       return;
     }
@@ -262,22 +371,24 @@ export function CandlestickCanvas({
         };
         onAddDrawing?.(finished);
         setDrawingInProgress(null);
+        onDrawingToolChange?.('NONE');
       }
     }
-  }, [activeDrawingTool, drawingInProgress, getPointFromEvent, onAddDrawing]);
+  }, [activeDrawingTool, candles, clampedEnd, clampedStart, drawings, drawingInProgress, getPointFromEvent, indicators, onAddDrawing, onDrawingToolChange, scrollOffset, showVolumePanel, size]);
 
   // Cancel drawing on Escape or Undo on Ctrl+Z
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setDrawingInProgress(null);
+        onDrawingToolChange?.('NONE');
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
         onUndoDrawing?.();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onUndoDrawing]);
+  }, [onDrawingToolChange, onUndoDrawing]);
 
   // Wheel zoom + scroll
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -317,6 +428,7 @@ export function CandlestickCanvas({
         className="chart block w-full h-full select-none cursor-crosshair"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerLeave}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
