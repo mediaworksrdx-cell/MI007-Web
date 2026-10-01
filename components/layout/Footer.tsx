@@ -33,11 +33,10 @@ export function Footer() {
               </div>
             </div>
             <p className="text-[14px] text-black font-medium leading-relaxed">
-              Institutional-grade quantitative analytics across Indian, American, and Gulf financial markets.
+              Institutional-grade quantitative analytics across Indian and Gulf financial markets by Synthetix Analytics.
             </p>
             <div className="flex gap-2 mt-1">
-              <span className="rounded-sm border border-slate-300 bg-white px-2 py-0.5 text-[12px] text-black font-bold font-mono tracking-wide shadow-xs">🇮🇳 NSE/BSE</span>
-              <span className="rounded-sm border border-slate-300 bg-white px-2 py-0.5 text-[12px] text-black font-bold font-mono tracking-wide shadow-xs">🇺🇸 NYSE/NASDAQ</span>
+              <span className="rounded-sm border border-slate-300 bg-white px-2 py-0.5 text-[12px] text-black font-bold font-mono tracking-wide shadow-xs">🇮🇳 NSE/BSE (HQ)</span>
               <span className="rounded-sm border border-slate-300 bg-white px-2 py-0.5 text-[12px] text-black font-bold font-mono tracking-wide shadow-xs">🇦🇪 DFM/ADX</span>
             </div>
           </div>
@@ -66,7 +65,6 @@ export function Footer() {
             <h4 className="text-[14px] font-black tracking-widest text-black uppercase mb-3">Coverage</h4>
             <ul className="flex flex-col gap-2 text-[15px] text-black font-medium">
               <li>🇮🇳 NIFTY 50 · BANKNIFTY · SENSEX</li>
-              <li>🇺🇸 S&P 500 · NASDAQ 100 · DJIA</li>
               <li>🇦🇪 DFMGI · ADXGI · FTSE ADX 15</li>
             </ul>
           </div>
@@ -86,7 +84,7 @@ export function Footer() {
         {/* Bottom strip */}
         <div className="h-[1px] w-full bg-slate-200 mt-8 mb-4" />
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[13px] text-black font-semibold">
-          <span>© 2026 Market Intelligence AI — MI007. All rights reserved.</span>
+          <span>© 2026 Synthetix Analytics · Market Intelligence AI (MI007). Chennai — HQ.</span>
           <div className="flex items-center gap-1 mono font-bold">
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
             <span>System Operational · Multi-Region Infrastructure</span>

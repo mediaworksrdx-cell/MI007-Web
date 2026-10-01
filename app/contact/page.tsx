@@ -9,21 +9,12 @@ import { useMarket } from '@/lib/marketContext';
 const DESKS = [
   {
     flag: '🇮🇳',
-    city: 'Mumbai',
-    address: 'Bandra-Kurla Complex (BKC), Mumbai, Maharashtra 400051',
+    city: 'Chennai (HQ)',
+    address: 'Chennai, Tamil Nadu, India',
     zone: 'IST (UTC+5:30)',
-    hours: 'Mon–Fri: 09:00–16:30 IST',
-    focus: 'NSE/BSE Equities · Nifty F&O · Currency Derivatives',
+    hours: 'Mon–Fri: 09:00–18:00 IST',
+    focus: 'Synthetix Analytics HQ · NSE/BSE Equities · Nifty F&O · Derivatives',
     color: '#FF9800',
-  },
-  {
-    flag: '🇺🇸',
-    city: 'New York',
-    address: 'One World Trade Center, New York, NY 10007',
-    zone: 'EST (UTC-5)',
-    hours: 'Mon–Fri: 09:30–16:00 EST',
-    focus: 'S&P 500 · NASDAQ · US Equities · Options',
-    color: '#00B0FF',
   },
   {
     flag: '🇦🇪',
@@ -61,11 +52,11 @@ export default function ContactPage() {
               <span className="mono text-[11px] font-bold tracking-widest text-cyan-800 uppercase">Institutional Inquiries</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
-              Contact <span className="text-emerald-700">Market Intelligence AI — MI007</span>
+              Contact <span className="text-emerald-700">Synthetix Analytics</span>
             </h1>
             <p className="text-black text-base leading-relaxed font-medium">
-              API integration requests, institutional licensing, quantitative research partnerships,
-              and enterprise deployments — reach the right desk for your market.
+              Market Intelligence AI — MI007 institutional licensing, API integration, quantitative research partnerships,
+              and enterprise deployments.
             </p>
           </div>
         </section>
@@ -83,7 +74,7 @@ export default function ContactPage() {
                   <div className="text-4xl mb-4">✅</div>
                   <h3 className="font-bold text-emerald-800 text-lg mb-2">Message Received</h3>
                   <p className="text-black text-sm font-medium">
-                    Your inquiry has been submitted. A member of the Market Intelligence AI — MI007 institutional desk will
+                    Your inquiry has been submitted. A member of the Synthetix Analytics institutional desk will
                     respond within 1–2 business days.
                   </p>
                   <button
@@ -138,10 +129,8 @@ export default function ContactPage() {
                         onChange={e => setForm(f => ({ ...f, marketFocus: e.target.value }))}
                         className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-[13px] text-black font-semibold outline-none focus:border-emerald-600 transition-all shadow-xs"
                       >
-                        <option value="INDIA">🇮🇳 India — NSE / BSE</option>
-                        <option value="USA">🇺🇸 USA — NYSE / NASDAQ</option>
+                        <option value="INDIA">🇮🇳 India — NSE / BSE (HQ)</option>
                         <option value="UAE">🇦🇪 UAE — DFM / ADX</option>
-                        <option value="MULTI">🌐 Multi-Market</option>
                       </select>
                     </div>
                   </div>
@@ -173,27 +162,73 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* ── Regional Desks ── */}
-          <div className="lg:col-span-2 flex flex-col gap-4">
-            <h2 className="text-xl font-black text-slate-900 mb-2">Global Desks</h2>
+          {/* ── Regional Desks & Direct Contact (Matches User's Image Exactly) ── */}
+          <div className="lg:col-span-2 flex flex-col gap-5">
+            {/* ── HQ & Direct Contact Card ── */}
+            <div className="rounded-2xl border border-slate-200 bg-white/95 p-6 sm:p-7 flex flex-col gap-6 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent pointer-events-none" />
 
-            {DESKS.map(({ flag, city, address, zone, hours, focus, color }) => (
-              <div key={city} className="rounded-xl border border-slate-200 bg-white/95 p-5 flex flex-col gap-3 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{flag}</span>
-                  <div>
-                    <div className="font-bold text-slate-900 text-[14px]">{city} Desk</div>
-                    <div className="text-[10px] text-slate-500 mono">{zone}</div>
-                  </div>
-                  <div className="ml-auto h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+              {/* CHENNAI — HQ */}
+              <div>
+                <div className="mono text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                  CHENNAI — HQ
                 </div>
-                <p className="text-[11px] text-slate-600 mono leading-relaxed">📍 {address}</p>
-                <p className="text-[11px] text-slate-500">🕐 {hours}</p>
-                <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-800 mono font-medium">
-                  {focus}
+                <div className="text-[17px] font-bold text-slate-900 leading-tight">
+                  Chennai, Tamil Nadu
+                </div>
+                <div className="text-[17px] font-bold text-slate-900">
+                  India
                 </div>
               </div>
-            ))}
+
+              {/* DIRECT CONTACT */}
+              <div>
+                <div className="mono text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                  DIRECT CONTACT
+                </div>
+                <div className="flex flex-col gap-1">
+                  <a
+                    href="mailto:care@synthetixanalytics.com"
+                    className="text-[17px] font-bold text-slate-900 hover:text-emerald-600 transition-colors"
+                  >
+                    care@synthetixanalytics.com
+                  </a>
+                  <a
+                    href="tel:+918838202279"
+                    className="text-[17px] font-bold text-slate-900 hover:text-emerald-600 transition-colors"
+                  >
+                    +91 8838202279
+                  </a>
+                </div>
+              </div>
+
+              {/* SECURITY NOTICE BOX */}
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-5">
+                <div className="mono text-[11px] font-black tracking-widest text-amber-500 uppercase mb-2">
+                  SECURITY NOTICE
+                </div>
+                <p className="text-[13px] text-slate-600 leading-relaxed font-normal">
+                  All communications are encrypted using bank-grade protocols. Your data is isolated according to institutional privacy standards.
+                </p>
+              </div>
+            </div>
+
+            {/* UAE Desk */}
+            <div className="rounded-xl border border-slate-200 bg-white/95 p-5 flex flex-col gap-3 shadow-xs">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🇦🇪</span>
+                <div>
+                  <div className="font-bold text-slate-900 text-[14px]">Dubai Desk (UAE)</div>
+                  <div className="text-[10px] text-slate-500 mono">GST (UTC+4)</div>
+                </div>
+                <div className="ml-auto h-2 w-2 rounded-full bg-emerald-500" />
+              </div>
+              <p className="text-[11px] text-slate-600 mono leading-relaxed">📍 Dubai International Financial Centre (DIFC), Dubai, UAE</p>
+              <p className="text-[11px] text-slate-500">🕐 Mon–Fri: 10:00–14:00 GST</p>
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-800 mono font-medium">
+                DFM · ADX · MENA Equities · Gulf Markets
+              </div>
+            </div>
 
             {/* Support SLA */}
             <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-5 shadow-xs">
