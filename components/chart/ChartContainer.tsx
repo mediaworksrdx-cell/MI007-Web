@@ -49,6 +49,13 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [customConfigs, setCustomConfigs] = useState<Partial<Record<IndicatorType, Partial<IndicatorConfig>>>>({});
   const [editingIndicator, setEditingIndicator] = useState<IndicatorType | null>(null);
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('mi007_indicator_configs');
+      if (saved) setCustomConfigs(JSON.parse(saved));
+    } catch {}
+  }, []);
+
   const [candles, setCandles] = useState<Candle[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | undefined>();
   const [isLoadingCandles, setIsLoadingCandles] = useState(true);
@@ -277,19 +284,55 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   }, []);
 
   const handleSaveIndicatorConfig = useCallback((updated: IndicatorConfig) => {
-    setCustomConfigs(prev => ({
-      ...prev,
-      [updated.type]: updated,
-    }));
+    setCustomConfigs(prev => {
+      const next = { ...prev, [updated.type]: updated };
+      try {
+        localStorage.setItem('mi007_indicator_configs', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   }, []);
 
+  // Load drawings from localStorage per symbol
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`mi007_drawings_${selectedSymbol}`);
+      if (saved) {
+        setDrawings(JSON.parse(saved));
+      } else {
+        setDrawings([]);
+      }
+    } catch {
+      setDrawings([]);
+    }
+  }, [selectedSymbol]);
+
   const handleAddDrawing = useCallback((item: DrawingItem) => {
-    setDrawings(prev => [...prev, item]);
-  }, []);
+    setDrawings(prev => {
+      const next = [...prev, item];
+      try {
+        localStorage.setItem(`mi007_drawings_${selectedSymbol}`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, [selectedSymbol]);
 
   const handleClearDrawings = useCallback(() => {
     setDrawings([]);
-  }, []);
+    try {
+      localStorage.removeItem(`mi007_drawings_${selectedSymbol}`);
+    } catch {}
+  }, [selectedSymbol]);
+
+  const handleUndoDrawing = useCallback(() => {
+    setDrawings(prev => {
+      const next = prev.slice(0, -1);
+      try {
+        localStorage.setItem(`mi007_drawings_${selectedSymbol}`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, [selectedSymbol]);
 
   const lastCandle = candles[candles.length - 1] ?? null;
   const quote = useMemo(() => getMockQuote(market, selectedSymbol), [market, selectedSymbol]);
@@ -322,6 +365,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         onChartTypeChange={setChartType}
         onDrawingToolChange={setActiveDrawingTool}
         onClearDrawings={handleClearDrawings}
+        onUndoDrawing={handleUndoDrawing}
         onToggleVolume={() => setShowVolume(v => !v)}
         onToggleVolumePanel={() => setShowVolumePanel(v => !v)}
         onToggleSmcOverlay={() => setShowSmcOverlay(v => !v)}
@@ -395,6 +439,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           activeDrawingTool={activeDrawingTool}
           drawings={drawings}
           onAddDrawing={handleAddDrawing}
+          onUndoDrawing={handleUndoDrawing}
           className="h-full"
         />
       </div>
@@ -402,6 +447,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
       {/* ── Indicator Settings Modal ── */}
       {currentEditingConfig && (
         <IndicatorSettingsModal
+          key={currentEditingConfig.type}
           indicator={currentEditingConfig}
           isOpen={!!editingIndicator}
           onClose={() => setEditingIndicator(null)}

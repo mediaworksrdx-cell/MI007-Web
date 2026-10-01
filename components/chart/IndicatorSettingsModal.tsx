@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { IndicatorConfig, IndicatorType, INDICATOR_DEFAULTS } from '@/lib/types';
+import React, { useState, useEffect } from 'react';
+import { IndicatorConfig, INDICATOR_DEFAULTS } from '@/lib/types';
 
 interface IndicatorSettingsModalProps {
   indicator: IndicatorConfig;
@@ -21,9 +21,19 @@ export function IndicatorSettingsModal({ indicator, isOpen, onClose, onSave }: I
   const [color, setColor] = useState(indicator.color);
   const [secondaryColor, setSecondaryColor] = useState(indicator.secondaryColor);
 
+  useEffect(() => {
+    setPeriod(indicator.period);
+    setSecondaryPeriod(indicator.secondaryPeriod);
+    setTertiaryPeriod(indicator.tertiaryPeriod);
+    setMultiplier(indicator.multiplier);
+    setColor(indicator.color);
+    setSecondaryColor(indicator.secondaryColor);
+  }, [indicator]);
+
   const hasSecondary = ['MACD', 'STOCHASTIC', 'ICHIMOKU'].includes(indicator.type);
   const hasTertiary = ['MACD', 'ICHIMOKU'].includes(indicator.type);
   const hasMultiplier = ['BOLLINGER_BANDS', 'SUPERTREND'].includes(indicator.type);
+  const hasSecondaryColor = ['STOCHASTIC', 'MACD', 'ICHIMOKU', 'BOLLINGER_BANDS'].includes(indicator.type);
 
   const handleReset = () => {
     setPeriod(defaultMeta.period);
@@ -133,7 +143,7 @@ export function IndicatorSettingsModal({ indicator, isOpen, onClose, onSave }: I
             </div>
           )}
 
-          {/* Color Selection */}
+          {/* Primary Color Selection */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
               Line Color
@@ -148,6 +158,24 @@ export function IndicatorSettingsModal({ indicator, isOpen, onClose, onSave }: I
               <span className="font-mono text-xs text-slate-600 font-bold">{color.toUpperCase()}</span>
             </div>
           </div>
+
+          {/* Secondary Color Selection */}
+          {hasSecondaryColor && (
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                {indicator.type === 'MACD' ? 'Signal Line Color' : 'Secondary Line / Band Color'}
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={secondaryColor}
+                  onChange={e => setSecondaryColor(e.target.value)}
+                  className="w-9 h-9 rounded-lg border border-slate-200 cursor-pointer p-0.5"
+                />
+                <span className="font-mono text-xs text-slate-600 font-bold">{secondaryColor.toUpperCase()}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Buttons */}

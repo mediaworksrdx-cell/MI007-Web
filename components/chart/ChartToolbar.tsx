@@ -51,6 +51,7 @@ interface ChartToolbarProps {
   onChartTypeChange: (type: ChartType) => void;
   onDrawingToolChange: (tool: DrawingToolType) => void;
   onClearDrawings: () => void;
+  onUndoDrawing?: () => void;
   onToggleVolume: () => void;
   onToggleVolumePanel: () => void;
   onToggleSmcOverlay: () => void;
@@ -64,7 +65,7 @@ export function ChartToolbar({
   showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
   activeIndicators,
   engineStatus, isLiveFromEngine, currency = '₹', displayPrice, displayChange, displayChangePct,
-  onTimeframeChange, onChartTypeChange, onDrawingToolChange, onClearDrawings,
+  onTimeframeChange, onChartTypeChange, onDrawingToolChange, onClearDrawings, onUndoDrawing,
   onToggleVolume, onToggleVolumePanel, onToggleSmcOverlay, onToggleVolumeProfile,
   onToggleIndicator, onOpenIndicatorSettings,
 }: ChartToolbarProps) {
@@ -365,6 +366,18 @@ export function ChartToolbar({
               ))}
 
               <div className="my-1 border-t border-slate-100" />
+              {onUndoDrawing && (
+                <button
+                  onClick={() => {
+                    onUndoDrawing();
+                    setOpenMenu(null);
+                  }}
+                  className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <span>↩️</span>
+                  <span>Undo Last (Ctrl+Z)</span>
+                </button>
+              )}
               <button
                 onClick={() => {
                   onClearDrawings();

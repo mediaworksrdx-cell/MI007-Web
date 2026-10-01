@@ -21,6 +21,7 @@ interface CandlestickCanvasProps {
   activeDrawingTool?: DrawingToolType;
   drawings?: DrawingItem[];
   onAddDrawing?: (drawing: DrawingItem) => void;
+  onUndoDrawing?: () => void;
 }
 
 const VISIBLE_CANDLES_BASE = 60;
@@ -33,6 +34,7 @@ export function CandlestickCanvas({
   activeDrawingTool = 'NONE',
   drawings = [],
   onAddDrawing,
+  onUndoDrawing,
 }: CandlestickCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -203,16 +205,18 @@ export function CandlestickCanvas({
     }
   }, [activeDrawingTool, drawingInProgress, getPointFromEvent, onAddDrawing]);
 
-  // Cancel drawing on Escape
+  // Cancel drawing on Escape or Undo on Ctrl+Z
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setDrawingInProgress(null);
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        onUndoDrawing?.();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [onUndoDrawing]);
 
   // Wheel zoom + scroll
   const handleWheel = useCallback((e: WheelEvent) => {

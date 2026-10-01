@@ -504,6 +504,10 @@ export function renderChart(
     pMin = Math.min(pMin, candles[i].low);
     pMax = Math.max(pMax, candles[i].high);
   }
+  if (options.currentPriceOverride && options.currentPriceOverride > 0 && endIdx >= candles.length) {
+    pMin = Math.min(pMin, options.currentPriceOverride);
+    pMax = Math.max(pMax, options.currentPriceOverride);
+  }
   const pad = (pMax - pMin) * 0.05 || 1;
   pMin -= pad; pMax += pad;
   const pRange = pMax - pMin;
@@ -983,10 +987,32 @@ export function renderChart(
     ctx.fillStyle = PANEL_BG; ctx.fillRect(0, panelOffset, chartW+RM, pH);
     ctx.strokeStyle = PANEL_SEP; ctx.lineWidth = 1*dpr;
     ctx.beginPath(); ctx.moveTo(0, panelOffset); ctx.lineTo(chartW+RM, panelOffset); ctx.stroke();
-    // Label
+    // Label with live value
+    const baseLabel = `${INDICATOR_DEFAULTS[cfg.type].label}${cfg.period > 0 ? ` (${cfg.period})` : ''}`;
+    let valSnippet = '';
+    if (cfg.type === 'RSI') {
+      const rsiArr = result as (number|null)[];
+      const lv = rsiArr[Math.min(endIdx - 1, rsiArr.length - 1)];
+      if (lv !== null && lv !== undefined) valSnippet = `: ${lv.toFixed(1)}`;
+    } else if (cfg.type === 'MACD') {
+      const mR = result as MACDResult;
+      const li = Math.min(endIdx - 1, mR.macdLine.length - 1);
+      const lm = mR.macdLine[li], ls = mR.signalLine[li], lh = mR.histogram[li];
+      if (lm !== null && lm !== undefined) valSnippet = `: ${lm.toFixed(2)} / Sig ${ls?.toFixed(2) ?? '-'} / Hist ${lh?.toFixed(2) ?? '-'}`;
+    } else if (cfg.type === 'STOCHASTIC') {
+      const stR = result as StochasticResult;
+      const li = Math.min(endIdx - 1, stR.kLine.length - 1);
+      const lk = stR.kLine[li], ld = stR.dLine[li];
+      if (lk !== null && lk !== undefined) valSnippet = `: %K ${lk.toFixed(1)} / %D ${ld?.toFixed(1) ?? '-'}`;
+    } else if (Array.isArray(result)) {
+      const arr = result as (number|null)[];
+      const lv = arr[Math.min(endIdx - 1, arr.length - 1)];
+      if (lv !== null && lv !== undefined) valSnippet = `: ${formatPrice(lv)}`;
+    }
+
     ctx.font = `bold ${9*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle = cfg.color;
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText(INDICATOR_DEFAULTS[cfg.type].label, 4*dpr, panelOffset+3*dpr);
+    ctx.fillText(`${baseLabel}${valSnippet}`, 4*dpr, panelOffset+3*dpr);
 
     if (!result) {
       ctx.font = `${11*dpr}px sans-serif`; ctx.fillStyle = '#94A3B8';
@@ -1000,6 +1026,8 @@ export function renderChart(
     const dT = panelOffset + padding;
 
     function drawPanelLine(vals: (number|null)[], minV: number, range: number, color: string, sw=1.2) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, panelOffset, chartW, pH); ctx.clip();
       ctx.beginPath(); let s = false;
       for (let i = startIdx; i < Math.min(endIdx, vals.length); i++) {
         const v = vals[i]; if (v === null) { s=false; continue; }
@@ -1009,6 +1037,7 @@ export function renderChart(
         if (!s) { ctx.moveTo(x,y); s=true; } else ctx.lineTo(x,y);
       }
       ctx.strokeStyle = color; ctx.lineWidth = sw*dpr; ctx.stroke();
+      ctx.restore();
     }
 
     switch (cfg.type) {
@@ -1035,30 +1064,37 @@ export function renderChart(
         if (minV >= maxV) break;
         const range = maxV - minV;
         const zeroY = dT + dH * (1 - (0-minV)/range);
-        ctx.strokeStyle='#333333'; ctx.lineWidth=0.5*dpr; ctx.beginPath(); ctx.moveTo(0,zeroY); ctx.lineTo(chartW,zeroY); ctx.stroke();
+        ctx.save(); ctx.setLineDash([3*dpr,3*dpr]); ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8*dpr;
+        ctx.beginPath(); ctx.moveTo(0,zeroY); ctx.lineTo(chartW,zeroY); ctx.stroke();
+        ctx.setLineDash([]); ctx.restore();
         // Histogram
         const barW = candleW * 0.5;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, panelOffset, chartW, pH); ctx.clip();
         for (let i = startIdx; i < Math.min(endIdx, m.histogram.length); i++) {
           const v = m.histogram[i]; if (v===null) continue;
           const li = i-startIdx; const x = li*candleW+(candleW-barW)/2;
           const barY = dT + dH * (1 - (v-minV)/range);
           const top = Math.min(barY, zeroY), h = Math.abs(barY - zeroY);
-          ctx.fillStyle = v >= 0 ? 'rgba(0,230,118,0.5)' : 'rgba(255,23,68,0.5)';
+          ctx.fillStyle = v >= 0 ? 'rgba(0,163,92,0.6)' : 'rgba(225,29,72,0.6)';
           ctx.fillRect(x, top, barW, h);
         }
-        drawPanelLine(m.macdLine, minV, range, cfg.color, 1);
-        drawPanelLine(m.signalLine, minV, range, cfg.tertiaryColor, 1);
+        ctx.restore();
+        drawPanelLine(m.macdLine, minV, range, cfg.color, 1.2);
+        drawPanelLine(m.signalLine, minV, range, cfg.tertiaryColor, 1.2);
         break;
       }
       case 'STOCHASTIC': {
         const st = result as StochasticResult;
         const y80 = dT+dH*(1-80/100), y20 = dT+dH*(1-20/100);
         ctx.save(); ctx.setLineDash([3*dpr,3*dpr]); ctx.lineWidth=0.5*dpr;
-        ctx.strokeStyle='rgba(255,23,68,0.3)'; ctx.beginPath(); ctx.moveTo(0,y80); ctx.lineTo(chartW,y80); ctx.stroke();
-        ctx.strokeStyle='rgba(0,230,118,0.3)'; ctx.beginPath(); ctx.moveTo(0,y20); ctx.lineTo(chartW,y20); ctx.stroke();
+        ctx.strokeStyle='rgba(225,29,72,0.35)'; ctx.beginPath(); ctx.moveTo(0,y80); ctx.lineTo(chartW,y80); ctx.stroke();
+        ctx.strokeStyle='rgba(0,163,92,0.35)'; ctx.beginPath(); ctx.moveTo(0,y20); ctx.lineTo(chartW,y20); ctx.stroke();
         ctx.setLineDash([]); ctx.restore();
-        drawPanelLine(st.kLine, 0, 100, cfg.color, 1);
-        drawPanelLine(st.dLine, 0, 100, cfg.secondaryColor, 1);
+        ctx.font=`${7.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle='#64748B'; ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.fillText('80', chartW+4*dpr, y80); ctx.fillText('20', chartW+4*dpr, y20);
+        drawPanelLine(st.kLine, 0, 100, cfg.color, 1.2);
+        drawPanelLine(st.dLine, 0, 100, cfg.secondaryColor, 1.2);
         break;
       }
       case 'CVD': {
@@ -1071,19 +1107,24 @@ export function renderChart(
         minV=Math.min(minV,0); maxV=Math.max(maxV,0);
         const range = maxV - minV; if (range<=0) break;
         const zeroY = dT+dH*(1-(0-minV)/range);
-        ctx.strokeStyle='#37474F'; ctx.lineWidth=0.8*dpr; ctx.beginPath(); ctx.moveTo(0,zeroY); ctx.lineTo(chartW,zeroY); ctx.stroke();
+        ctx.save(); ctx.setLineDash([3*dpr,3*dpr]); ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8*dpr;
+        ctx.beginPath(); ctx.moveTo(0,zeroY); ctx.lineTo(chartW,zeroY); ctx.stroke();
+        ctx.setLineDash([]); ctx.restore();
         // Delta bars
         const barW = candleW*0.45;
         let maxDelta = 1;
         for (let i = startIdx; i < Math.min(endIdx, cvd.deltaBars.length); i++) { const v=cvd.deltaBars[i]; if(v!==null) maxDelta=Math.max(maxDelta,Math.abs(v)); }
         const maxBarH = dH * 0.25;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, panelOffset, chartW, pH); ctx.clip();
         for (let i = startIdx; i < Math.min(endIdx, cvd.deltaBars.length); i++) {
           const d = cvd.deltaBars[i]; if(d===null) continue;
           const li=i-startIdx; const x=li*candleW+(candleW-barW)/2;
           const bH3 = Math.max(1, Math.abs(d)/maxDelta * maxBarH);
-          ctx.fillStyle = d>=0 ? 'rgba(0,230,118,0.4)' : 'rgba(255,23,68,0.4)';
+          ctx.fillStyle = d>=0 ? 'rgba(0,163,92,0.5)' : 'rgba(225,29,72,0.5)';
           ctx.fillRect(x, d>=0?zeroY-bH3:zeroY, barW, bH3);
         }
+        ctx.restore();
         drawPanelLine(cvd.cvdLine, minV, range, cfg.color, 1.5);
         break;
       }
@@ -1109,21 +1150,23 @@ export function renderChart(
   // ── LAYER 10: Crosshair ───────────────────────────────────────────────
   if (crosshair) {
     const cx = Math.max(0, Math.min(chartW, crosshair.x));
-    const cy = Math.max(0, Math.min(chartH, crosshair.y));
+    const cy = Math.max(0, Math.min(H, crosshair.y));
     ctx.save(); ctx.setLineDash([4*dpr, 4*dpr]);
     ctx.strokeStyle = CROSSHAIR_COLOR; ctx.lineWidth = 0.8*dpr;
-    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, chartH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(chartW, cy); ctx.stroke();
     ctx.setLineDash([]);
-    // Price label on right
-    const price = pMax - (cy / chartH) * pRange;
-    const pTxt = formatPrice(price);
-    ctx.font = `bold ${9*dpr}px "JetBrains Mono",monospace`;
-    const pMeas = ctx.measureText(pTxt);
-    const pLW = pMeas.width + 8*dpr, pLH = 9*dpr + 4*dpr;
-    ctx.fillStyle = LABEL_BG; ctx.fillRect(chartW, cy-pLH/2, pLW, pLH);
-    ctx.fillStyle = '#FFFFFF'; ctx.textAlign='left'; ctx.textBaseline='middle';
-    ctx.fillText(pTxt, chartW+4*dpr, cy);
+    // Price label on right (only when inside main chart)
+    if (cy <= chartH) {
+      const price = pMax - (cy / chartH) * pRange;
+      const pTxt = formatPrice(price);
+      ctx.font = `bold ${9*dpr}px "JetBrains Mono",monospace`;
+      const pMeas = ctx.measureText(pTxt);
+      const pLW = pMeas.width + 8*dpr, pLH = 9*dpr + 4*dpr;
+      ctx.fillStyle = LABEL_BG; ctx.fillRect(chartW, cy-pLH/2, pLW, pLH);
+      ctx.fillStyle = '#FFFFFF'; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillText(pTxt, chartW+4*dpr, cy);
+    }
     // Time label on bottom
     const cidx = startIdx + Math.floor(cx / candleW);
     if (cidx >= 0 && cidx < candles.length) {
