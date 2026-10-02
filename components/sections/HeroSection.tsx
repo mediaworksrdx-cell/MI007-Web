@@ -322,7 +322,7 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="inline-flex items-center justify-center mb-6"
         >
-          <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl sm:rounded-3xl bg-slate-950 border-2 border-slate-800 flex items-center justify-center p-2.5 sm:p-3 shadow-xl shadow-black/20 hover:scale-105 hover:border-amber-500/50 transition-all duration-300">
+          <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl sm:rounded-3xl bg-[#0A192F] border-2 border-blue-900/60 flex items-center justify-center p-2.5 sm:p-3 shadow-xl shadow-blue-950/30 hover:scale-105 hover:border-amber-500/50 transition-all duration-300">
             <Image
               src="/images/logo-falcon-transparent.png"
               alt="Market Intelligence AI — MI007"

@@ -52,9 +52,9 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       }`}
     >
       <div className="mx-auto flex h-16 sm:h-18 max-w-[1600px] items-center justify-between px-4 lg:px-6">
-        {/* ── Logo with Bold Black Background Badge ── */}
+        {/* ── Logo with Midnight Blue Background Badge ── */}
         <Link href="/" className="flex items-center gap-2.5 sm:gap-3.5 select-none group min-w-0">
-          <div className="relative h-10 w-10 sm:h-12 sm:w-12 md:h-13 md:w-13 flex-shrink-0 flex items-center justify-center rounded-xl sm:rounded-2xl bg-slate-950 border border-slate-800 shadow-[0_4px_16px_rgba(0,0,0,0.25)] p-1 sm:p-1.5 group-hover:border-amber-500/50 group-hover:scale-105 transition-all">
+          <div className="relative h-10 w-10 sm:h-12 sm:w-12 md:h-13 md:w-13 flex-shrink-0 flex items-center justify-center rounded-xl sm:rounded-2xl bg-[#0A192F] border border-blue-900/60 shadow-[0_4px_16px_rgba(10,25,47,0.35)] p-1 sm:p-1.5 group-hover:border-amber-500/50 group-hover:scale-105 transition-all">
             <Image
               src="/images/logo-falcon-transparent.png"
               alt="Market Intelligence AI — MI007"
@@ -69,7 +69,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               <span className="font-extrabold text-[14px] xs:text-[15px] sm:text-[17px] tracking-tight text-slate-950 uppercase font-sans truncate">
                 Market Intelligence <span className="text-emerald-600 font-black">AI</span>
               </span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] mono font-black bg-slate-950 text-amber-400 tracking-wider shadow-xs border border-amber-500/30 shrink-0">
+              <span className="px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] mono font-black bg-[#0A192F] text-amber-400 tracking-wider shadow-xs border border-amber-500/30 shrink-0">
                 MI007
               </span>
             </div>

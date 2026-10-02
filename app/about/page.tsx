@@ -177,7 +177,7 @@ export default function AboutPage() {
         <section className="border-t border-slate-200 bg-slate-50/70 backdrop-blur-xl">
           <div className="mx-auto max-w-3xl px-6 py-16 text-center">
             <div className="mb-5 flex justify-center">
-              <div className="h-16 w-16 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center p-2 shadow-lg">
+              <div className="h-16 w-16 rounded-2xl bg-[#0A192F] border border-blue-900/60 flex items-center justify-center p-2 shadow-lg shadow-blue-950/25">
                 <Image
                   src="/images/logo-falcon-transparent.png"
                   alt="Market Intelligence AI — MI007"
