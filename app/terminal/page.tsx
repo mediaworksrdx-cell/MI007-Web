@@ -225,13 +225,13 @@ export default function TerminalPage() {
             {/* ── Outer Bezel Header ── */}
             <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-slate-200 relative z-10">
               <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-                <div className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl border border-blue-900/60 bg-[#0A192F] shadow-md shadow-blue-950/20 p-1 sm:p-1.5 flex-shrink-0">
+                <div className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl border border-amber-400 bg-gradient-to-b from-amber-50 via-amber-100/90 to-amber-200/80 shadow-md shadow-amber-500/15 p-1 sm:p-1.5 flex-shrink-0">
                   <Image
                     src="/images/logo-falcon-transparent.png"
                     alt="Market Intelligence AI — MI007"
                     width={44}
                     height={44}
-                    className="object-contain drop-shadow-[0_0_8px_rgba(0,255,136,0.3)]"
+                    className="object-contain drop-shadow-[0_2px_8px_rgba(180,83,9,0.3)]"
                   />
                 </div>
                 <div className="min-w-0">

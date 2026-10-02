@@ -9,13 +9,13 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-1 flex flex-col gap-3">
             <div className="flex items-center gap-3.5">
-              <div className="h-14 w-14 rounded-2xl bg-[#0A192F] border border-blue-900/60 flex items-center justify-center p-1.5 shadow-md shadow-blue-950/20 flex-shrink-0">
+              <div className="h-14 w-14 rounded-2xl border border-amber-400 bg-gradient-to-b from-amber-50 via-amber-100/90 to-amber-200/80 flex items-center justify-center p-1.5 shadow-md shadow-amber-500/15 flex-shrink-0">
                 <Image
                   src="/images/logo-falcon-transparent.png"
                   alt="Market Intelligence AI — MI007"
                   width={46}
                   height={46}
-                  className="object-contain drop-shadow-[0_0_8px_rgba(0,255,136,0.25)]"
+                  className="object-contain drop-shadow-[0_2px_8px_rgba(180,83,9,0.3)]"
                 />
               </div>
               <div>
@@ -23,7 +23,7 @@ export function Footer() {
                   <span className="font-extrabold text-[16px] text-slate-950 uppercase font-sans">
                     Market Intelligence <span className="text-emerald-600 font-black">AI</span>
                   </span>
-                  <span className="px-1.5 py-0.5 rounded text-[10.5px] mono font-black bg-[#0A192F] text-amber-400 border border-amber-500/30">
+                  <span className="px-2 py-0.5 rounded-md text-[10.5px] mono font-black bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 border border-amber-400/80">
                     MI007
                   </span>
                 </div>

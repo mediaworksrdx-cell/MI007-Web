@@ -52,15 +52,15 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       }`}
     >
       <div className="mx-auto flex h-16 sm:h-18 max-w-[1600px] items-center justify-between px-4 lg:px-6">
-        {/* ── Logo with Midnight Blue Background Badge ── */}
+        {/* ── Logo with Luxury Gold Crest Background Badge (Larger size) ── */}
         <Link href="/" className="flex items-center gap-2.5 sm:gap-3.5 select-none group min-w-0">
-          <div className="relative h-10 w-10 sm:h-12 sm:w-12 md:h-13 md:w-13 flex-shrink-0 flex items-center justify-center rounded-xl sm:rounded-2xl bg-[#0A192F] border border-blue-900/60 shadow-[0_4px_16px_rgba(10,25,47,0.35)] p-1 sm:p-1.5 group-hover:border-amber-500/50 group-hover:scale-105 transition-all">
+          <div className="relative h-11 w-11 sm:h-13 sm:w-13 md:h-14 md:w-14 flex-shrink-0 flex items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-b from-amber-50 via-amber-100/90 to-amber-200/80 border-2 border-amber-400 shadow-[0_4px_16px_rgba(217,119,6,0.22)] p-1 group-hover:border-amber-500 group-hover:scale-105 transition-all">
             <Image
               src="/images/logo-falcon-transparent.png"
               alt="Market Intelligence AI — MI007"
-              width={44}
-              height={44}
-              className="object-contain drop-shadow-[0_0_10px_rgba(0,255,136,0.3)]"
+              width={52}
+              height={52}
+              className="object-contain drop-shadow-[0_2px_8px_rgba(180,83,9,0.3)]"
               priority
             />
           </div>
@@ -69,7 +69,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               <span className="font-extrabold text-[14px] xs:text-[15px] sm:text-[17px] tracking-tight text-slate-950 uppercase font-sans truncate">
                 Market Intelligence <span className="text-emerald-600 font-black">AI</span>
               </span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] mono font-black bg-[#0A192F] text-amber-400 tracking-wider shadow-xs border border-amber-500/30 shrink-0">
+              <span className="px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] mono font-black bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 tracking-wider shadow-xs border border-amber-400/80 shrink-0">
                 MI007
               </span>
             </div>

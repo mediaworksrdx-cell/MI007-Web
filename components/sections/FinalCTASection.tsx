@@ -24,14 +24,14 @@ export default function FinalCTASection() {
         transition={{ duration: 0.8, ease: 'easeOut' }}
         className="flex flex-col items-center text-center max-w-3xl mx-auto w-full relative z-10 p-10 sm:p-16 rounded-3xl border border-slate-200 bg-white/80 backdrop-blur-2xl shadow-xl"
       >
-        {/* Falcon Emblem Logo on Midnight Blue Background */}
-        <div className="mb-6 relative h-28 w-28 rounded-3xl bg-[#0A192F] border border-blue-900/60 flex items-center justify-center p-3 shadow-2xl shadow-blue-950/30 flex-shrink-0">
+        {/* Falcon Emblem Logo on Luxury Gold Background */}
+        <div className="mb-6 relative h-28 w-28 rounded-3xl bg-gradient-to-b from-amber-50 via-amber-100/90 to-amber-200/80 border-2 border-amber-400 flex items-center justify-center p-3 shadow-2xl shadow-amber-500/25 flex-shrink-0">
           <Image
             src="/images/logo-falcon-transparent.png"
             alt="Market Intelligence AI — MI007"
             width={96}
             height={96}
-            className="object-contain drop-shadow-[0_0_20px_rgba(0,255,136,0.35)]"
+            className="object-contain drop-shadow-[0_4px_16px_rgba(180,83,9,0.35)]"
           />
         </div>
 
