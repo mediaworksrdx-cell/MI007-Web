@@ -301,18 +301,20 @@ export default function HeroSection() {
       </motion.div>
 
       {/* ── 3. MARKET INTELLIGENCE AI TEXT NARRATIVE (BELOW STATS BAR) ── */}
-      <div className="w-full max-w-5xl mx-auto text-center relative z-20 px-4 sm:px-6 pointer-events-auto">
+      <div className="w-full max-w-5xl mx-auto flex flex-col items-center text-center relative z-20 px-4 sm:px-6 pointer-events-auto">
         {/* A Synthetix Analytics Product */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.25 }}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/95 px-3.5 py-1 shadow-xs mb-5 backdrop-blur-xs"
+          className="w-full flex justify-center mb-4 sm:mb-5"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-          <span className="mono text-[11px] font-bold tracking-widest text-slate-700 uppercase">
-            A Synthetix Analytics Product
-          </span>
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/95 px-3.5 py-1 shadow-xs backdrop-blur-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+            <span className="mono text-[11px] font-bold tracking-widest text-slate-700 uppercase">
+              A Synthetix Analytics Product
+            </span>
+          </div>
         </motion.div>
 
         {/* Cyber-Falcon Emblem Logo (Only Logo as requested) */}
@@ -320,7 +322,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, scale: 0.9, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="inline-flex items-center justify-center mb-6"
+          className="w-full flex justify-center mb-6"
         >
           <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-amber-50 via-amber-100/90 to-amber-200/80 border-2 border-amber-400 flex items-center justify-center p-2.5 sm:p-3 shadow-xl shadow-amber-500/25 hover:scale-105 hover:border-amber-500 transition-all duration-300">
             <Image
