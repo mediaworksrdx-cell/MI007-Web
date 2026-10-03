@@ -16,7 +16,6 @@ interface NavbarProps {
 
 const NAV_LINKS = [
   { href: '/',          label: 'Home' },
-  { href: '/terminal',  label: 'Terminal' },
   { href: '/about',     label: 'About' },
   { href: '/contact',   label: 'Contact' },
 ];
@@ -108,12 +107,14 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               className="hidden sm:flex"
             />
           )}
-          <Link
-            href="/terminal"
-            className="hidden sm:flex items-center gap-1.5 rounded-md border border-emerald-600/30 bg-emerald-50 px-3.5 py-1.5 text-[14px] font-bold text-emerald-700 transition-all duration-200 hover:bg-emerald-100 hover:border-emerald-600/50 mono tracking-wide"
-          >
-            ⚡ LAUNCH TERMINAL
-          </Link>
+          {!isTerminalOrDashboard && (
+            <Link
+              href="/terminal"
+              className="hidden sm:flex items-center gap-1.5 rounded-md border border-emerald-600/30 bg-emerald-50 px-3.5 py-1.5 text-[14px] font-bold text-emerald-700 transition-all duration-200 hover:bg-emerald-100 hover:border-emerald-600/50 mono tracking-wide"
+            >
+              ⚡ LAUNCH TERMINAL
+            </Link>
+          )}
 
           {/* Mobile hamburger - 44x44px minimum touch target for iOS & Android */}
           <button
@@ -156,13 +157,15 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               {label}
             </Link>
           ))}
-          <Link
-            href="/terminal"
-            onClick={() => setMenuOpen(false)}
-            className="mt-1 flex items-center justify-center gap-1.5 rounded-xl border border-emerald-600/30 bg-emerald-50 px-3.5 py-3 text-[15px] font-bold text-emerald-700 mono min-h-[44px] active:bg-emerald-100"
-          >
-            ⚡ LAUNCH TERMINAL
-          </Link>
+          {!isTerminalOrDashboard && (
+            <Link
+              href="/terminal"
+              onClick={() => setMenuOpen(false)}
+              className="mt-1 flex items-center justify-center gap-1.5 rounded-xl border border-emerald-600/30 bg-emerald-50 px-3.5 py-3 text-[15px] font-bold text-emerald-700 mono min-h-[44px] active:bg-emerald-100"
+            >
+              ⚡ LAUNCH TERMINAL
+            </Link>
+          )}
         </div>
       )}
     </header>

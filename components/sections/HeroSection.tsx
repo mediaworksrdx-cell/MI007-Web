@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface HudItem {
   top?: string;
@@ -371,13 +372,13 @@ export default function HeroSection() {
           transition={{ duration: 0.7, delay: 0.45 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-8 w-full max-w-md sm:max-w-none mx-auto"
         >
-          <a
-            href="#terminal"
+          <Link
+            href="/terminal"
             className="w-full sm:w-auto px-6 sm:px-9 py-3.5 sm:py-4 min-h-[48px] rounded-xl border border-emerald-600 bg-emerald-600 text-white font-mono text-[14px] sm:text-[17px] font-extrabold tracking-widest uppercase shadow-md hover:bg-emerald-500 hover:scale-[1.03] transition-all duration-300 text-center cursor-pointer flex items-center justify-center gap-2 group active:bg-emerald-700"
           >
-            <span>⚡ EXPLORE THE SYSTEM</span>
+            <span>⚡ ENTER THE SYSTEM</span>
             <span className="inline-block transition-transform duration-200 group-hover:translate-x-1.5">→</span>
-          </a>
+          </Link>
 
           <a
             href="#movement"
