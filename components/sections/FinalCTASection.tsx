@@ -35,12 +35,6 @@ export default function FinalCTASection() {
           />
         </div>
 
-        {/* Status Pill */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-50 text-emerald-800 text-[13px] font-mono mb-6 uppercase tracking-widest font-bold">
-          <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-          MARKET INTELLIGENCE AI — MI007
-        </div>
-
         <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 leading-tight mb-4">
           Step Into <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-800 to-emerald-700">Market Intelligence AI</span>
           <span className="block mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-amber-600">MI007</span>
