@@ -114,41 +114,6 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* ── Rendering Architecture Diagram ── */}
-        <section className="border-y border-slate-200 bg-slate-50/60 backdrop-blur-xl">
-          <div className="mx-auto max-w-4xl px-6 py-16">
-            <h2 className="text-2xl font-black text-slate-900 mb-2 text-center">Chart Rendering Layers</h2>
-            <p className="text-black text-sm text-center mb-10 font-semibold">10-layer compositing architecture — bottom to top.</p>
-            <div className="flex flex-col gap-2.5">
-              {[
-                { n: '01', label: 'Grid', color: '#64748B', desc: 'Price & time grid with institutional spacing' },
-                { n: '02', label: 'Volume Profile (VPVR)', color: '#0EA5E9', desc: 'Volume-at-price distribution heatmap' },
-                { n: '03', label: 'SMC Overlays', color: '#2563EB', desc: 'Order blocks, fair value gaps, liquidity sweeps' },
-                { n: '04', label: 'Volume Bars', color: '#059669', desc: 'Bull/bear volume bars with transparency' },
-                { n: '05', label: 'Candlesticks / Bars', color: '#059669', desc: 'OHLC candles, Heikin-Ashi, Line, Area' },
-                { n: '05b', label: 'Real-Time Price Line', color: '#059669', desc: 'Live dashed price guideline + badge' },
-                { n: '06', label: 'Indicator Overlays', color: '#9333EA', desc: 'EMA, SMA, Bollinger Bands, VWAP, Supertrend' },
-                { n: '07', label: 'F&O Walls', color: '#D97706', desc: 'Gamma exposure & dealer position walls' },
-                { n: '08', label: 'User Drawings', color: '#0284C7', desc: 'Trendlines, Fibonacci, rectangles, text' },
-                { n: '09', label: 'Crosshair', color: '#334155', desc: 'Precision crosshair with price & time labels' },
-                { n: '10', label: 'Sub-Panel Indicators', color: '#0284C7', desc: 'RSI, MACD, Stochastic, ATR, OBV, CVD' },
-              ].map(({ n, label, color, desc }) => (
-                <div key={n} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 rounded-xl border border-slate-200 bg-white/90 px-3.5 sm:px-4 py-2.5 sm:py-3 hover:border-slate-300 transition-all shadow-xs">
-                  <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-                    <span className="mono text-[10px] font-black text-slate-400 w-5 shrink-0">{n}</span>
-                    <div
-                      className="h-2.5 w-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: color }}
-                    />
-                    <span className="mono text-[13px] font-bold text-slate-900 w-auto sm:w-48 shrink-0">{label}</span>
-                  </div>
-                  <span className="text-[12px] text-slate-600 sm:ml-auto pl-7 sm:pl-0">{desc}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ── Market Coverage ── */}
         <section className="mx-auto max-w-6xl px-6 py-20">
           <h2 className="text-3xl font-black text-slate-900 mb-2 text-center">Multi-Region Coverage</h2>
