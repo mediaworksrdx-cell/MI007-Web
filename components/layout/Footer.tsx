@@ -67,6 +67,14 @@ export function Footer() {
               <li>🇺🇸 S&P 500 · NASDAQ 100 · DOW JONES</li>
               <li>🇮🇳 NIFTY 50 · BANKNIFTY · SENSEX</li>
               <li>🇦🇪 DFMGI · ADXGI · FTSE ADX 15</li>
+              <li className="flex items-center gap-2 text-slate-700">
+                <span>🇪🇺 DAX · FTSE 100 · CAC 40</span>
+                <span className="text-[10px] mono font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-300">COMING SOON</span>
+              </li>
+              <li className="flex items-center gap-2 text-slate-700">
+                <span>🇦🇺 ASX 200 · SPI 200</span>
+                <span className="text-[10px] mono font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-300">COMING SOON</span>
+              </li>
             </ul>
           </div>
 
