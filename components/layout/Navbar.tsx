@@ -23,7 +23,7 @@ const NAV_LINKS = [
 export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange }: NavbarProps) {
   const pathname = usePathname();
   const context = useMarket();
-  const market = propMarket ?? context.market ?? 'INDIA';
+  const market = propMarket ?? context.market ?? 'USA';
   const isTerminalOrDashboard = pathname.startsWith('/terminal') || pathname.startsWith('/dashboard');
 
   const handleMarketChange = (m: MarketType) => {

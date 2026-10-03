@@ -23,14 +23,6 @@ interface CandleData {
 
 const SYMBOLS_DATA = [
   {
-    name: 'NIFTY 50',
-    basePrice: 24842.5,
-    spread: 0.5,
-    currency: '₹',
-    change: '+1.40%',
-    isPositive: true,
-  },
-  {
     name: 'S&P 500',
     basePrice: 5864.2,
     spread: 0.25,
@@ -39,11 +31,11 @@ const SYMBOLS_DATA = [
     isPositive: true,
   },
   {
-    name: 'BTC/USD',
-    basePrice: 68410.0,
-    spread: 5.0,
-    currency: '$',
-    change: '+3.24%',
+    name: 'NIFTY 50',
+    basePrice: 24842.5,
+    spread: 0.5,
+    currency: '₹',
+    change: '+1.40%',
     isPositive: true,
   },
   {
@@ -52,6 +44,14 @@ const SYMBOLS_DATA = [
     spread: 0.1,
     currency: 'AED ',
     change: '+1.15%',
+    isPositive: true,
+  },
+  {
+    name: 'BTC/USD',
+    basePrice: 68410.0,
+    spread: 5.0,
+    currency: '$',
+    change: '+3.24%',
     isPositive: true,
   },
 ];

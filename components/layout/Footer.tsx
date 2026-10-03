@@ -36,9 +36,10 @@ export function Footer() {
               </div>
             </div>
             <p className="text-[14px] text-black font-medium leading-relaxed">
-              Institutional-grade quantitative analytics across Indian and Gulf financial markets.
+              Institutional-grade quantitative analytics across US, Indian, and Gulf financial markets.
             </p>
-            <div className="flex gap-2 mt-1">
+            <div className="flex flex-wrap gap-2 mt-1">
+              <span className="rounded-sm border border-slate-300 bg-white px-2 py-0.5 text-[12px] text-black font-bold font-mono tracking-wide shadow-xs">🇺🇸 NYSE/NASDAQ</span>
               <span className="rounded-sm border border-slate-300 bg-white px-2 py-0.5 text-[12px] text-black font-bold font-mono tracking-wide shadow-xs">🇮🇳 NSE/BSE (HQ)</span>
               <span className="rounded-sm border border-slate-300 bg-white px-2 py-0.5 text-[12px] text-black font-bold font-mono tracking-wide shadow-xs">🇦🇪 DFM/ADX</span>
             </div>

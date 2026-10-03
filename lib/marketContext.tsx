@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MarketType, MARKETS } from './types';
@@ -10,18 +10,18 @@ interface MarketContextType {
 }
 
 const MarketContext = createContext<MarketContextType>({
-  market: 'INDIA',
+  market: 'USA',
   setMarket: () => {},
-  currency: '₹',
+  currency: '$',
 });
 
 export function MarketProvider({ children }: { children: React.ReactNode }) {
-  const [market, setMarketState] = useState<MarketType>('INDIA');
+  const [market, setMarketState] = useState<MarketType>('USA');
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem('mi007_market') as MarketType;
-      if (saved && ['INDIA', 'USA', 'UAE'].includes(saved)) {
+      if (saved && ['USA', 'INDIA', 'UAE'].includes(saved)) {
         setMarketState(saved);
       }
     } catch {
@@ -38,7 +38,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const currency = MARKETS[market]?.currency || '₹';
+  const currency = MARKETS[market]?.currency || '$';
 
   return (
     <MarketContext.Provider value={{ market, setMarket, currency }}>

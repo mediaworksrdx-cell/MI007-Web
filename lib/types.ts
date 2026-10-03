@@ -1,6 +1,6 @@
 // ─── Market Intelligence 007 — Core TypeScript Types ───────────────────────
 
-export type MarketType = 'INDIA' | 'USA' | 'UAE';
+export type MarketType = 'USA' | 'INDIA' | 'UAE';
 export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1H' | '4H' | '1D' | '1W' | '1M';
 
 export interface Candle {
@@ -249,17 +249,17 @@ export interface MarketIndex {
 }
 
 export const MARKETS: Record<MarketType, { label: string; flag: string; currency: string; indices: string[] }> = {
-  INDIA: {
-    label: 'INDIA',
-    flag: '🇮🇳',
-    currency: '₹',
-    indices: ['NIFTY 50', 'BANKNIFTY', 'SENSEX'],
-  },
   USA: {
     label: 'USA',
     flag: '🇺🇸',
     currency: '$',
     indices: ['S&P 500', 'NASDAQ 100', 'DOW JONES'],
+  },
+  INDIA: {
+    label: 'INDIA',
+    flag: '🇮🇳',
+    currency: '₹',
+    indices: ['NIFTY 50', 'BANKNIFTY', 'SENSEX'],
   },
   UAE: {
     label: 'UAE',
@@ -270,19 +270,19 @@ export const MARKETS: Record<MarketType, { label: string; flag: string; currency
 };
 
 export const INSTRUMENTS: Record<MarketType, Instrument[]> = {
-  INDIA: [
-    { symbol: 'NIFTY', name: 'NIFTY 50', exchange: 'NSE', currency: '₹', market: 'INDIA' },
-    { symbol: 'BANKNIFTY', name: 'BANK NIFTY', exchange: 'NSE', currency: '₹', market: 'INDIA' },
-    { symbol: 'RELIANCE', name: 'Reliance Industries', exchange: 'NSE', currency: '₹', market: 'INDIA' },
-    { symbol: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', currency: '₹', market: 'INDIA' },
-    { symbol: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', currency: '₹', market: 'INDIA' },
-  ],
   USA: [
     { symbol: 'SPX', name: 'S&P 500', exchange: 'NYSE', currency: '$', market: 'USA' },
     { symbol: 'NDX', name: 'NASDAQ 100', exchange: 'NASDAQ', currency: '$', market: 'USA' },
     { symbol: 'AAPL', name: 'Apple Inc.', exchange: 'NASDAQ', currency: '$', market: 'USA' },
     { symbol: 'NVDA', name: 'NVIDIA Corp.', exchange: 'NASDAQ', currency: '$', market: 'USA' },
     { symbol: 'TSLA', name: 'Tesla Inc.', exchange: 'NASDAQ', currency: '$', market: 'USA' },
+  ],
+  INDIA: [
+    { symbol: 'NIFTY', name: 'NIFTY 50', exchange: 'NSE', currency: '₹', market: 'INDIA' },
+    { symbol: 'BANKNIFTY', name: 'BANK NIFTY', exchange: 'NSE', currency: '₹', market: 'INDIA' },
+    { symbol: 'RELIANCE', name: 'Reliance Industries', exchange: 'NSE', currency: '₹', market: 'INDIA' },
+    { symbol: 'TCS', name: 'Tata Consultancy', exchange: 'NSE', currency: '₹', market: 'INDIA' },
+    { symbol: 'HDFCBANK', name: 'HDFC Bank', exchange: 'NSE', currency: '₹', market: 'INDIA' },
   ],
   UAE: [
     { symbol: 'DFMGI', name: 'DFM General Index', exchange: 'DFM', currency: 'AED', market: 'UAE' },

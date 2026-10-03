@@ -29,17 +29,25 @@ const PILLARS = [
   {
     icon: '🌐',
     title: 'High-Availability Infrastructure',
-    desc: 'Distributed edge deployment with regional nodes co-located with NSE (Chennai/Mumbai) and DFM (Dubai) data centers for minimal round-trip latency.',
+    desc: 'Distributed edge deployment with regional nodes co-located with NYSE/NASDAQ (New York), NSE (Chennai/Mumbai), and DFM (Dubai) data centers for minimal round-trip latency.',
     color: '#AB47BC',
   },
 ];
 
 const REGIONS = [
   {
+    flag: '🇺🇸',
+    name: 'USA — NYSE / NASDAQ',
+    city: 'New York, USA',
+    description: 'Direct optical interconnects to Wall Street and New Jersey data centers with institutional microstructure coverage across the NYSE, NASDAQ, S&P 500, NASDAQ 100, and mega-cap equity derivatives.',
+    instruments: 'S&P 500, NASDAQ 100, DOW JONES, NVDA, AAPL, MSFT, TSLA, AMZN',
+    color: '#0284C7',
+  },
+  {
     flag: '🇮🇳',
     name: 'India — NSE / BSE (HQ)',
     city: 'Chennai, Tamil Nadu',
-    description: 'Global headquarters in Chennai with full coverage of the National Stock Exchange (NSE) and Bombay Stock Exchange (BSE), including all F&O instruments, NIFTY 50, BANK NIFTY, MIDCAP 150, and sectoral indices.',
+    description: 'Global engineering headquarters in Chennai with full coverage of the National Stock Exchange (NSE) and Bombay Stock Exchange (BSE), including all F&O instruments, NIFTY 50, BANK NIFTY, MIDCAP 150, and sectoral indices.',
     instruments: 'NIFTY 50, BANK NIFTY, SENSEX, NIFTY IT, NIFTY PHARMA, NIFTY AUTO',
     color: '#FF9800',
   },
@@ -117,8 +125,8 @@ export default function AboutPage() {
         {/* ── Market Coverage ── */}
         <section className="mx-auto max-w-6xl px-6 py-20">
           <h2 className="text-3xl font-black text-slate-900 mb-2 text-center">Multi-Region Coverage</h2>
-          <p className="text-slate-600 text-sm text-center mb-10 font-normal">Co-located infrastructure across Indian and Gulf financial hubs.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto">
+          <p className="text-slate-600 text-sm text-center mb-10 font-normal">Co-located infrastructure across US, Indian, and Gulf financial hubs.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-6xl mx-auto">
             {REGIONS.map(({ flag, name, city, description, instruments, color }) => (
               <div key={name} className="rounded-xl border border-slate-200 bg-white/90 p-6 flex flex-col gap-4 shadow-sm">
                 <div className="flex items-start gap-3">

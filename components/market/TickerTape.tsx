@@ -21,8 +21,8 @@ const MACRO_ITEMS = [
 
 export function TickerTape({ market: propMarket, currency: propCurrency }: TickerTapeProps) {
   const context = useMarket();
-  const activeMarket = propMarket ?? context.market ?? 'INDIA';
-  const currency = propCurrency ?? context.currency ?? MARKETS[activeMarket]?.currency ?? '₹';
+  const activeMarket = propMarket ?? context.market ?? 'USA';
+  const currency = propCurrency ?? context.currency ?? MARKETS[activeMarket]?.currency ?? '$';
 
   // Stable, static market data without random fluctuations
   const displayItems = useMemo(() => {

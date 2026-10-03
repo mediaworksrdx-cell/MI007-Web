@@ -9,8 +9,8 @@ interface MarketToggleProps {
 }
 
 const markets: { key: MarketType; label: string; flag: string }[] = [
-  { key: 'INDIA', label: 'INDIA', flag: '🇮🇳' },
   { key: 'USA',   label: 'USA',   flag: '🇺🇸' },
+  { key: 'INDIA', label: 'INDIA', flag: '🇮🇳' },
   { key: 'UAE',   label: 'UAE',   flag: '🇦🇪' },
 ];
 
