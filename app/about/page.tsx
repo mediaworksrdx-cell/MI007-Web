@@ -18,9 +18,9 @@ const MI_EDGE = [
   },
   {
     icon: '🌐',
-    title: 'Dual-Market Dominance',
-    tag: 'US & Indian Equities',
-    desc: 'Instant, AI-driven cross-border intelligence bridging US and Indian equities.',
+    title: '3-Market Dominance',
+    tag: 'US, India & UAE',
+    desc: 'Instant, AI-driven cross-border intelligence bridging US, Indian, and UAE equities.',
     border: 'border-sky-200/80',
     bg: 'from-sky-50/80 to-sky-100/30',
   },
@@ -44,8 +44,8 @@ const TRADING_STYLES = [
   {
     icon: '📊',
     title: 'Intraday Momentum',
-    badge: 'Dual Time Zones',
-    desc: 'Real-time volume spikes and volatility breakouts across both execution time zones.',
+    badge: '3 Time Zones',
+    desc: 'Real-time volume spikes and volatility breakouts across all three execution time zones.',
   },
   {
     icon: '🌊',
@@ -152,7 +152,7 @@ export default function AboutPage() {
                 <div className="text-xs text-slate-600 font-bold uppercase tracking-wider mt-1">Front-Line Experience</div>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <div className="mono text-2xl sm:text-3xl font-black text-emerald-700">Dual-Market</div>
+                <div className="mono text-2xl sm:text-3xl font-black text-emerald-700">3 Markets</div>
                 <div className="text-xs text-slate-600 font-bold uppercase tracking-wider mt-1">US • India • UAE</div>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
