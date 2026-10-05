@@ -18,8 +18,8 @@ const MI_EDGE = [
   },
   {
     icon: '🌐',
-    title: '3-Market Dominance',
-    tag: 'US, India & UAE',
+    title: 'Tri-Market Dominance',
+    tag: 'US, India & UAE Equities',
     desc: 'Instant, AI-driven cross-border intelligence bridging US, Indian, and UAE equities.',
     border: 'border-sky-200/80',
     bg: 'from-sky-50/80 to-sky-100/30',
