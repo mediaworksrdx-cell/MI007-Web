@@ -9,13 +9,13 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-1 flex flex-col gap-3">
             <div className="flex items-center gap-3.5">
-              <div className="h-14 w-14 rounded-2xl border border-amber-400 bg-gradient-to-b from-amber-50 via-amber-100/90 to-amber-200/80 flex items-center justify-center p-1.5 shadow-md shadow-amber-500/15 flex-shrink-0">
+              <div className="h-14 w-14 rounded-2xl border border-sky-300/80 overflow-hidden shadow-md shadow-sky-500/15 flex-shrink-0 flex items-center justify-center">
                 <Image
-                  src="/images/logo-falcon-transparent.png"
+                  src="/images/logo-falcon-gradient.png"
                   alt="Market Intelligence AI — MI007"
-                  width={46}
-                  height={46}
-                  className="object-contain drop-shadow-[0_2px_8px_rgba(180,83,9,0.3)]"
+                  width={56}
+                  height={56}
+                  className="w-full h-full object-cover"
                 />
               </div>
               <div>

@@ -318,20 +318,20 @@ export default function HeroSection() {
           </div>
         </motion.div>
 
-        {/* Cyber-Falcon Emblem Logo (Only Logo as requested) */}
+        {/* Cyber-Falcon Emblem Logo with Light Blur Gradient */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           className="w-full flex justify-center mb-6"
         >
-          <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-amber-50 via-amber-100/90 to-amber-200/80 border-2 border-amber-400 flex items-center justify-center p-2.5 sm:p-3 shadow-xl shadow-amber-500/25 hover:scale-105 hover:border-amber-500 transition-all duration-300">
+          <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-2xl sm:rounded-3xl overflow-hidden border border-sky-300/80 shadow-2xl shadow-sky-500/20 hover:scale-105 hover:border-sky-400 transition-all duration-300 flex items-center justify-center">
             <Image
-              src="/images/logo-falcon-transparent.png"
+              src="/images/logo-falcon-gradient.png"
               alt="Market Intelligence AI — MI007"
-              width={80}
-              height={80}
-              className="object-contain drop-shadow-[0_4px_16px_rgba(180,83,9,0.35)]"
+              width={112}
+              height={112}
+              className="w-full h-full object-cover"
               priority
             />
           </div>
