@@ -46,13 +46,13 @@ export function ThemeSwitcher() {
             {/* Bright Section */}
             <div>
               <div className="flex items-center justify-between mb-1 px-1">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400/90">
-                  ☀️ Bright Palettes (Light)
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-sky-400/90">
+                  ☀️ Bright Palettes (Light Blue & Ivory)
                 </span>
                 <span className="text-[9px] font-mono opacity-60">2 Options</span>
               </div>
               <div className="grid grid-cols-1 gap-1.5">
-                {[THEMES.quartz, THEMES.champagne].map((t) => {
+                {[THEMES.lightblue, THEMES.ivory].map((t) => {
                   const isActive = theme === t.id;
                   return (
                     <button
@@ -60,7 +60,7 @@ export function ThemeSwitcher() {
                       onClick={() => setTheme(t.id)}
                       className={`group relative flex items-center justify-between p-2 rounded-xl border transition-all duration-200 text-left ${
                         isActive
-                          ? 'theme-switcher-item-active shadow-md ring-1 ring-amber-400/50'
+                          ? 'theme-switcher-item-active shadow-md ring-1 ring-sky-400/50'
                           : 'theme-switcher-item-inactive hover:scale-[1.01]'
                       }`}
                     >
@@ -88,7 +88,7 @@ export function ThemeSwitcher() {
                             <span className="text-[12.5px] font-bold tracking-tight truncate">
                               {t.name}
                             </span>
-                            <span className="text-[8.5px] px-1 py-0.2 rounded font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <span className="text-[8.5px] px-1 py-0.2 rounded font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
                               {t.badge}
                             </span>
                           </div>
@@ -116,13 +116,13 @@ export function ThemeSwitcher() {
             {/* Dark Section */}
             <div>
               <div className="flex items-center justify-between mb-1 px-1 pt-1 border-t border-white/5">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400/90">
-                  🌑 Dark Palettes (Dark)
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-300">
+                  🌑 Dark Palettes (Metallic Grey & Techno Blue)
                 </span>
                 <span className="text-[9px] font-mono opacity-60">2 Options</span>
               </div>
               <div className="grid grid-cols-1 gap-1.5">
-                {[THEMES.obsidian, THEMES.cyberpunk].map((t) => {
+                {[THEMES.metallic, THEMES.techno].map((t) => {
                   const isActive = theme === t.id;
                   return (
                     <button

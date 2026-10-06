@@ -27,119 +27,123 @@
 
 /* ══════════════════════════════════════════════════════════════════════════════
    THEME PALETTE DEFINITIONS (2 Bright & 2 Dark Themes)
-   BRIGHT 1: Fintech Quartz — Clean Cool Daylight Luxe
-   BRIGHT 2: Champagne Gold — Warm Ivory & Sovereign Gold
-   DARK 1:   Obsidian Terminal — Deep Institutional Dark Pro
-   DARK 2:   Cyberpunk Matrix — Neon Violet & Synthetic Pink
+   BRIGHT 1: Light Blue — Airy Ice Blue Daylight Luxe
+   BRIGHT 2: Ivory — Warm Linen & Sovereign Gold
+   DARK 1:   Metallic Grey — Brushed Titanium & Industrial Steel
+   DARK 2:   Techno Blue — Deep Cyber Navy & Neon Cobalt
    ══════════════════════════════════════════════════════════════════════════════ */
 
 :root,
+html[data-theme="lightblue"],
 html[data-theme="quartz"] {
-  --color-bg-midnight: #F8FAFC;
+  --color-bg-midnight: #F0F7FF;
   --color-surface-card: #FFFFFF;
-  --color-surface-variant: #F1F5F9;
-  --color-border-navy: rgba(0, 0, 0, 0.08);
+  --color-surface-variant: #E0F2FE;
+  --color-border-navy: rgba(2, 132, 199, 0.16);
   --color-mint-green: #059669;
   --color-crimson-red: #E11D48;
   --color-accent-cyan: #0284C7;
-  --color-cyber-gold: #D97706;
-  --color-chart-bg: #FFFFFF;
+  --color-cyber-gold: #0284C7;
+  --color-chart-bg: #F0F7FF;
   --color-text-primary: #0F172A;
-  --color-text-secondary: #475569;
+  --color-text-secondary: #0369A1;
   --color-text-muted: #64748B;
   --color-bull-green: #059669;
   --color-bear-red: #E11D48;
-  --color-glass-white: rgba(255, 255, 255, 0.85);
+  --color-glass-white: rgba(255, 255, 255, 0.90);
 
-  --theme-page-bg: #F8FAFC;
+  --theme-page-bg: #F0F7FF;
   --theme-page-text: #0F172A;
   --theme-card-bg: #FFFFFF;
-  --theme-card-border: rgba(0, 0, 0, 0.08);
-  --theme-navbar-bg: rgba(255, 255, 255, 0.94);
-  --theme-footer-bg: rgba(248, 250, 252, 0.85);
+  --theme-card-border: rgba(2, 132, 199, 0.16);
+  --theme-navbar-bg: rgba(240, 247, 255, 0.95);
+  --theme-footer-bg: rgba(234, 244, 254, 0.95);
   --theme-ticker-bg: rgba(255, 255, 255, 0.95);
   --theme-switcher-bg: #FFFFFF;
 }
 
+html[data-theme="ivory"],
 html[data-theme="champagne"] {
-  --color-bg-midnight: #FAF7F2;
+  --color-bg-midnight: #FAF7EE;
   --color-surface-card: #FFFFFF;
-  --color-surface-variant: #F4EFE6;
-  --color-border-navy: rgba(217, 119, 6, 0.18);
+  --color-surface-variant: #F4EFE0;
+  --color-border-navy: rgba(217, 119, 6, 0.20);
   --color-mint-green: #15803D;
   --color-crimson-red: #B91C1C;
   --color-accent-cyan: #D97706;
   --color-cyber-gold: #D97706;
-  --color-chart-bg: #FAF7F2;
+  --color-chart-bg: #FAF7EE;
   --color-text-primary: #1C1917;
   --color-text-secondary: #78350F;
   --color-text-muted: #78716C;
   --color-bull-green: #15803D;
   --color-bear-red: #B91C1C;
-  --color-glass-white: rgba(255, 255, 255, 0.9);
+  --color-glass-white: rgba(255, 255, 255, 0.92);
 
-  --theme-page-bg: #FAF7F2;
+  --theme-page-bg: #FAF7EE;
   --theme-page-text: #1C1917;
   --theme-card-bg: #FFFFFF;
-  --theme-card-border: rgba(217, 119, 6, 0.18);
-  --theme-navbar-bg: rgba(250, 247, 242, 0.94);
-  --theme-footer-bg: rgba(245, 239, 230, 0.9);
+  --theme-card-border: rgba(217, 119, 6, 0.20);
+  --theme-navbar-bg: rgba(250, 247, 238, 0.95);
+  --theme-footer-bg: rgba(245, 240, 228, 0.95);
   --theme-ticker-bg: rgba(255, 255, 255, 0.95);
-  --theme-switcher-bg: #FAF7F2;
+  --theme-switcher-bg: #FAF7EE;
 }
 
+html[data-theme="metallic"],
 html[data-theme="obsidian"] {
-  --color-bg-midnight: #060A11;
-  --color-surface-card: #0D1524;
-  --color-surface-variant: #131E33;
-  --color-border-navy: rgba(255, 255, 255, 0.08);
-  --color-mint-green: #00E699;
-  --color-crimson-red: #FF3B69;
-  --color-accent-cyan: #00D8F6;
-  --color-cyber-gold: #FFB020;
-  --color-chart-bg: #060A11;
-  --color-text-primary: #F8FAFC;
-  --color-text-secondary: #94A3B8;
-  --color-text-muted: #64748B;
-  --color-bull-green: #00E699;
-  --color-bear-red: #FF3B69;
-  --color-glass-white: rgba(13, 21, 36, 0.8);
-
-  --theme-page-bg: #060A11;
-  --theme-page-text: #F8FAFC;
-  --theme-card-bg: #0D1524;
-  --theme-card-border: rgba(255, 255, 255, 0.09);
-  --theme-navbar-bg: rgba(6, 10, 17, 0.92);
-  --theme-footer-bg: rgba(9, 14, 24, 0.92);
-  --theme-ticker-bg: rgba(13, 21, 36, 0.95);
-  --theme-switcher-bg: #0D1524;
-}
-
-html[data-theme="cyberpunk"] {
-  --color-bg-midnight: #0A0612;
-  --color-surface-card: #130C22;
-  --color-surface-variant: #1E1235;
-  --color-border-navy: rgba(236, 72, 153, 0.25);
+  --color-bg-midnight: #14171E;
+  --color-surface-card: #1F2430;
+  --color-surface-variant: #28303F;
+  --color-border-navy: rgba(148, 163, 184, 0.22);
   --color-mint-green: #10B981;
   --color-crimson-red: #F43F5E;
-  --color-accent-cyan: #EC4899;
-  --color-cyber-gold: #FACC15;
-  --color-chart-bg: #0A0612;
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #E879F9;
-  --color-text-muted: #A855F7;
+  --color-accent-cyan: #94A3B8;
+  --color-cyber-gold: #CBD5E1;
+  --color-chart-bg: #14171E;
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
   --color-bull-green: #10B981;
   --color-bear-red: #F43F5E;
-  --color-glass-white: rgba(19, 12, 34, 0.85);
+  --color-glass-white: rgba(31, 36, 48, 0.85);
 
-  --theme-page-bg: #0A0612;
+  --theme-page-bg: #14171E;
+  --theme-page-text: #F8FAFC;
+  --theme-card-bg: #1F2430;
+  --theme-card-border: rgba(148, 163, 184, 0.22);
+  --theme-navbar-bg: rgba(20, 23, 30, 0.95);
+  --theme-footer-bg: rgba(16, 19, 25, 0.95);
+  --theme-ticker-bg: rgba(31, 36, 48, 0.95);
+  --theme-switcher-bg: #1F2430;
+}
+
+html[data-theme="techno"],
+html[data-theme="cyberpunk"] {
+  --color-bg-midnight: #040916;
+  --color-surface-card: #0A152E;
+  --color-surface-variant: #102046;
+  --color-border-navy: rgba(0, 210, 255, 0.25);
+  --color-mint-green: #00E699;
+  --color-crimson-red: #FF3B69;
+  --color-accent-cyan: #00D2FF;
+  --color-cyber-gold: #38BDF8;
+  --color-chart-bg: #040916;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #60A5FA;
+  --color-text-muted: #38BDF8;
+  --color-bull-green: #00E699;
+  --color-bear-red: #FF3B69;
+  --color-glass-white: rgba(10, 21, 46, 0.85);
+
+  --theme-page-bg: #040916;
   --theme-page-text: #FFFFFF;
-  --theme-card-bg: #130C22;
-  --theme-card-border: rgba(236, 72, 153, 0.28);
-  --theme-navbar-bg: rgba(10, 6, 18, 0.92);
-  --theme-footer-bg: rgba(15, 9, 28, 0.92);
-  --theme-ticker-bg: rgba(19, 12, 34, 0.95);
-  --theme-switcher-bg: #130C22;
+  --theme-card-bg: #0A152E;
+  --theme-card-border: rgba(0, 210, 255, 0.25);
+  --theme-navbar-bg: rgba(4, 9, 22, 0.95);
+  --theme-footer-bg: rgba(3, 7, 18, 0.95);
+  --theme-ticker-bg: rgba(10, 21, 46, 0.95);
+  --theme-switcher-bg: #0A152E;
 }
 
 @keyframes ticker {
@@ -225,82 +229,115 @@ body {
 }
 
 /* ── Adaptive styling across dark candidate modes ── */
-html:not([data-theme="quartz"]) {
+html[data-theme="metallic"],
+html[data-theme="techno"],
+html[data-theme="obsidian"],
+html[data-theme="cyberpunk"] {
   color-scheme: dark;
 }
 
-html:not([data-theme="quartz"]) body {
+html[data-theme="metallic"] body,
+html[data-theme="techno"] body,
+html[data-theme="obsidian"] body,
+html[data-theme="cyberpunk"] body {
   background-color: var(--theme-page-bg) !important;
   color: var(--theme-page-text) !important;
 }
 
 /* Card surfaces */
-html:not([data-theme="quartz"]) .bg-white,
-html:not([data-theme="quartz"]) [class*="bg-white/"] {
+html[data-theme="metallic"] .bg-white,
+html[data-theme="techno"] .bg-white,
+html[data-theme="metallic"] [class*="bg-white/"],
+html[data-theme="techno"] [class*="bg-white/"] {
   background-color: var(--theme-card-bg) !important;
 }
 
-html:not([data-theme="quartz"]) .bg-slate-50,
-html:not([data-theme="quartz"]) .bg-slate-100,
-html:not([data-theme="quartz"]) [class*="bg-slate-50/"],
-html:not([data-theme="quartz"]) [class*="bg-slate-100/"] {
+html[data-theme="metallic"] .bg-slate-50,
+html[data-theme="techno"] .bg-slate-50,
+html[data-theme="metallic"] .bg-slate-100,
+html[data-theme="techno"] .bg-slate-100,
+html[data-theme="metallic"] [class*="bg-slate-50/"],
+html[data-theme="techno"] [class*="bg-slate-50/"],
+html[data-theme="metallic"] [class*="bg-slate-100/"],
+html[data-theme="techno"] [class*="bg-slate-100/"] {
   background-color: var(--color-surface-variant) !important;
 }
 
 /* Borders */
-html:not([data-theme="quartz"]) .border-slate-200,
-html:not([data-theme="quartz"]) .border-slate-300,
-html:not([data-theme="quartz"]) [class*="border-slate-200/"],
-html:not([data-theme="quartz"]) [class*="border-slate-300/"] {
+html[data-theme="metallic"] .border-slate-200,
+html[data-theme="techno"] .border-slate-200,
+html[data-theme="metallic"] .border-slate-300,
+html[data-theme="techno"] .border-slate-300,
+html[data-theme="metallic"] [class*="border-slate-200/"],
+html[data-theme="techno"] [class*="border-slate-200/"],
+html[data-theme="metallic"] [class*="border-slate-300/"],
+html[data-theme="techno"] [class*="border-slate-300/"] {
   border-color: var(--theme-card-border) !important;
 }
 
 /* Typography adjustments for dark modes */
-html:not([data-theme="quartz"]) .text-black,
-html:not([data-theme="quartz"]) .text-slate-900,
-html:not([data-theme="quartz"]) .text-slate-950,
-html:not([data-theme="quartz"]) .text-slate-800 {
+html[data-theme="metallic"] .text-black,
+html[data-theme="techno"] .text-black,
+html[data-theme="metallic"] .text-slate-900,
+html[data-theme="techno"] .text-slate-900,
+html[data-theme="metallic"] .text-slate-950,
+html[data-theme="techno"] .text-slate-950,
+html[data-theme="metallic"] .text-slate-800,
+html[data-theme="techno"] .text-slate-800 {
   color: var(--theme-page-text) !important;
 }
 
-html:not([data-theme="quartz"]) .text-slate-700,
-html:not([data-theme="quartz"]) .text-slate-600 {
+html[data-theme="metallic"] .text-slate-700,
+html[data-theme="techno"] .text-slate-700,
+html[data-theme="metallic"] .text-slate-600,
+html[data-theme="techno"] .text-slate-600 {
   color: var(--color-text-secondary) !important;
 }
 
-html:not([data-theme="quartz"]) .text-slate-500,
-html:not([data-theme="quartz"]) .text-slate-400 {
+html[data-theme="metallic"] .text-slate-500,
+html[data-theme="techno"] .text-slate-500,
+html[data-theme="metallic"] .text-slate-400,
+html[data-theme="techno"] .text-slate-400 {
   color: var(--color-text-muted) !important;
 }
 
 /* Navbar & Ticker */
-html:not([data-theme="quartz"]) header {
+html[data-theme="metallic"] header,
+html[data-theme="techno"] header {
   background-color: var(--theme-navbar-bg) !important;
   border-color: var(--theme-card-border) !important;
 }
 
 /* Footer */
-html:not([data-theme="quartz"]) footer {
+html[data-theme="metallic"] footer,
+html[data-theme="techno"] footer {
   background-color: var(--theme-footer-bg) !important;
   border-color: var(--theme-card-border) !important;
 }
 
 /* Hover and active states */
-html:not([data-theme="quartz"]) .hover\:bg-slate-100:hover,
-html:not([data-theme="quartz"]) .hover\:bg-slate-200:hover,
-html:not([data-theme="quartz"]) .hover\:bg-slate-50:hover,
-html:not([data-theme="quartz"]) .active\:bg-slate-100:active {
+html[data-theme="metallic"] .hover\:bg-slate-100:hover,
+html[data-theme="techno"] .hover\:bg-slate-100:hover,
+html[data-theme="metallic"] .hover\:bg-slate-200:hover,
+html[data-theme="techno"] .hover\:bg-slate-200:hover,
+html[data-theme="metallic"] .hover\:bg-slate-50:hover,
+html[data-theme="techno"] .hover\:bg-slate-50:hover,
+html[data-theme="metallic"] .active\:bg-slate-100:active,
+html[data-theme="techno"] .active\:bg-slate-100:active {
   background-color: var(--color-surface-variant) !important;
 }
 
 /* Scrollbars in dark mode */
-html:not([data-theme="quartz"]) ::-webkit-scrollbar-track {
+html[data-theme="metallic"] ::-webkit-scrollbar-track,
+html[data-theme="techno"] ::-webkit-scrollbar-track {
   background: var(--theme-page-bg);
 }
-html:not([data-theme="quartz"]) ::-webkit-scrollbar-thumb {
+html[data-theme="metallic"] ::-webkit-scrollbar-thumb,
+html[data-theme="techno"] ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
 }
-html:not([data-theme="quartz"]) ::-webkit-scrollbar-thumb:hover {
+html[data-theme="metallic"] ::-webkit-scrollbar-thumb:hover,
+html[data-theme="techno"] ::-webkit-scrollbar-thumb:hover {
   background: var(--color-accent-cyan);
 }
 

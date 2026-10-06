@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type AppTheme = 'quartz' | 'champagne' | 'obsidian' | 'cyberpunk';
+export type AppTheme = 'lightblue' | 'ivory' | 'metallic' | 'techno';
 
 export interface ThemeConfig {
   id: AppTheme;
@@ -21,64 +21,64 @@ export interface ThemeConfig {
 }
 
 export const THEMES: Record<AppTheme, ThemeConfig> = {
-  quartz: {
-    id: 'quartz',
-    name: 'Fintech Quartz',
-    tagline: 'Clean Cool Daylight Luxe',
+  lightblue: {
+    id: 'lightblue',
+    name: 'Light Blue',
+    tagline: 'Airy Ice Blue Daylight Luxe',
     badge: 'Bright 1',
     mode: 'light',
     palette: {
-      bg: '#F8FAFC',
+      bg: '#F0F7FF',
       card: '#FFFFFF',
       accent: '#0284C7',
       bull: '#059669',
       bear: '#DC2626',
-      border: 'rgba(0, 0, 0, 0.08)',
+      border: 'rgba(2, 132, 199, 0.16)',
     },
   },
-  champagne: {
-    id: 'champagne',
-    name: 'Champagne Gold',
-    tagline: 'Warm Ivory & Sovereign Gold',
+  ivory: {
+    id: 'ivory',
+    name: 'Ivory',
+    tagline: 'Warm Linen & Sovereign Gold',
     badge: 'Bright 2',
     mode: 'light',
     palette: {
-      bg: '#FAF7F2',
+      bg: '#FAF7EE',
       card: '#FFFFFF',
       accent: '#D97706',
       bull: '#15803D',
       bear: '#B91C1C',
-      border: 'rgba(217, 119, 6, 0.18)',
+      border: 'rgba(217, 119, 6, 0.20)',
     },
   },
-  obsidian: {
-    id: 'obsidian',
-    name: 'Obsidian Terminal',
-    tagline: 'Deep Institutional Dark Pro',
+  metallic: {
+    id: 'metallic',
+    name: 'Metallic Grey',
+    tagline: 'Brushed Titanium & Industrial Steel',
     badge: 'Dark 1',
     mode: 'dark',
     palette: {
-      bg: '#060A11',
-      card: '#0D1524',
-      accent: '#00D8F6',
-      bull: '#00E699',
-      bear: '#FF3B69',
-      border: 'rgba(255, 255, 255, 0.08)',
+      bg: '#14171E',
+      card: '#1F2430',
+      accent: '#94A3B8',
+      bull: '#10B981',
+      bear: '#F43F5E',
+      border: 'rgba(148, 163, 184, 0.22)',
     },
   },
-  cyberpunk: {
-    id: 'cyberpunk',
-    name: 'Cyberpunk Matrix',
-    tagline: 'Neon Violet & Synthetic Pink',
+  techno: {
+    id: 'techno',
+    name: 'Techno Blue',
+    tagline: 'Deep Cyber Navy & Neon Cobalt',
     badge: 'Dark 2',
     mode: 'dark',
     palette: {
-      bg: '#0A0612',
-      card: '#130C22',
-      accent: '#EC4899',
-      bull: '#10B981',
-      bear: '#F43F5E',
-      border: 'rgba(236, 72, 153, 0.25)',
+      bg: '#040916',
+      card: '#0A152E',
+      accent: '#00D2FF',
+      bull: '#00E699',
+      bear: '#FF3B69',
+      border: 'rgba(0, 210, 255, 0.25)',
     },
   },
 };
@@ -95,17 +95,23 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const STORAGE_KEY = 'mi007_active_theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<AppTheme>('quartz');
+  const [theme, setThemeState] = useState<AppTheme>('lightblue');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Read stored theme from localStorage or document attribute
+    // Read stored theme from localStorage or document attribute with legacy migration
     const stored = (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null);
-    let initialTheme: AppTheme = 'quartz';
+    let initialTheme: AppTheme = 'lightblue';
     if (stored && THEMES[stored as AppTheme]) {
       initialTheme = stored as AppTheme;
-    } else if (stored === 'falcon') {
-      initialTheme = 'champagne';
+    } else if (stored === 'quartz') {
+      initialTheme = 'lightblue';
+    } else if (stored === 'champagne' || stored === 'falcon') {
+      initialTheme = 'ivory';
+    } else if (stored === 'obsidian') {
+      initialTheme = 'metallic';
+    } else if (stored === 'cyberpunk') {
+      initialTheme = 'techno';
     }
 
     setThemeState(initialTheme);
@@ -121,7 +127,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const currentThemeConfig = THEMES[theme] || THEMES.quartz;
+  const currentThemeConfig = THEMES[theme] || THEMES.lightblue;
   const isDark = currentThemeConfig.mode === 'dark';
 
   return (

@@ -148,11 +148,11 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                 </div>
 
                 {/* Bright section */}
-                <div className="px-2 pt-1 pb-0.5 text-[10px] font-mono font-bold tracking-wider text-amber-700 uppercase flex items-center gap-1">
+                <div className="px-2 pt-1 pb-0.5 text-[10px] font-mono font-bold tracking-wider text-sky-700 uppercase flex items-center gap-1">
                   <span>☀️ 2 Bright Palettes</span>
                 </div>
                 <div className="flex flex-col gap-1 mb-2">
-                  {[THEMES.quartz, THEMES.champagne].map((t) => {
+                  {[THEMES.lightblue, THEMES.ivory].map((t) => {
                     const isActive = theme === t.id;
                     return (
                       <button
@@ -164,7 +164,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                         }}
                         className={`flex items-center justify-between p-2 rounded-xl text-left transition-all ${
                           isActive
-                            ? 'bg-amber-50/90 font-bold text-slate-950 border border-amber-300 shadow-2xs'
+                            ? 'bg-sky-50/90 font-bold text-slate-950 border border-sky-300 shadow-2xs'
                             : 'hover:bg-slate-50 text-slate-700 font-medium border border-transparent'
                         }`}
                       >
@@ -180,7 +180,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                           </div>
                         </div>
                         {isActive && (
-                          <span className="text-amber-600 text-xs font-black">✓</span>
+                          <span className="text-sky-600 text-xs font-black">✓</span>
                         )}
                       </button>
                     );
@@ -188,11 +188,11 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                 </div>
 
                 {/* Dark section */}
-                <div className="px-2 pt-1 pb-0.5 text-[10px] font-mono font-bold tracking-wider text-cyan-700 uppercase flex items-center gap-1 border-t border-slate-100">
+                <div className="px-2 pt-1 pb-0.5 text-[10px] font-mono font-bold tracking-wider text-slate-600 uppercase flex items-center gap-1 border-t border-slate-100">
                   <span>🌑 2 Dark Palettes</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  {[THEMES.obsidian, THEMES.cyberpunk].map((t) => {
+                  {[THEMES.metallic, THEMES.techno].map((t) => {
                     const isActive = theme === t.id;
                     return (
                       <button
@@ -204,7 +204,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                         }}
                         className={`flex items-center justify-between p-2 rounded-xl text-left transition-all ${
                           isActive
-                            ? 'bg-cyan-50/90 font-bold text-slate-950 border border-cyan-300 shadow-2xs'
+                            ? 'bg-slate-100/90 font-bold text-slate-950 border border-slate-400 shadow-2xs'
                             : 'hover:bg-slate-50 text-slate-700 font-medium border border-transparent'
                         }`}
                       >
@@ -282,17 +282,17 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             </div>
 
             <div>
-              <span className="text-[9.5px] font-mono uppercase font-bold tracking-wider text-amber-700 block mb-1">
+              <span className="text-[9.5px] font-mono uppercase font-bold tracking-wider text-sky-700 block mb-1">
                 ☀️ 2 Bright
               </span>
               <div className="grid grid-cols-2 gap-1.5">
-                {[THEMES.quartz, THEMES.champagne].map((t) => (
+                {[THEMES.lightblue, THEMES.ivory].map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setTheme(t.id)}
                     className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] font-mono font-bold transition-all text-left ${
                       theme === t.id
-                        ? 'border-amber-500 bg-amber-500/10 text-amber-950 font-black'
+                        ? 'border-sky-500 bg-sky-500/10 text-sky-950 font-black'
                         : 'border-slate-200/80 text-slate-700 hover:bg-slate-100/50'
                     }`}
                   >
@@ -301,24 +301,24 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                       style={{ backgroundColor: t.palette.accent }}
                     />
                     <span className="truncate">{t.name.split(' ')[0]}</span>
-                    {theme === t.id && <span className="ml-auto text-[11px] text-amber-600">✓</span>}
+                    {theme === t.id && <span className="ml-auto text-[11px] text-sky-600">✓</span>}
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <span className="text-[9.5px] font-mono uppercase font-bold tracking-wider text-cyan-700 block mb-1">
+              <span className="text-[9.5px] font-mono uppercase font-bold tracking-wider text-slate-600 block mb-1">
                 🌑 2 Dark
               </span>
               <div className="grid grid-cols-2 gap-1.5">
-                {[THEMES.obsidian, THEMES.cyberpunk].map((t) => (
+                {[THEMES.metallic, THEMES.techno].map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setTheme(t.id)}
                     className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] font-mono font-bold transition-all text-left ${
                       theme === t.id
-                        ? 'border-cyan-500 bg-cyan-500/10 text-cyan-950 font-black'
+                        ? 'border-slate-500 bg-slate-500/10 text-slate-950 font-black'
                         : 'border-slate-200/80 text-slate-700 hover:bg-slate-100/50'
                     }`}
                   >

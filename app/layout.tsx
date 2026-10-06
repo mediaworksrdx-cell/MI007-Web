@@ -28,10 +28,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               try {
                 var saved = localStorage.getItem('mi007_active_theme');
-                if (saved && (saved === 'obsidian' || saved === 'quartz' || saved === 'cyberpunk' || saved === 'falcon')) {
+                if (saved && (saved === 'lightblue' || saved === 'ivory' || saved === 'metallic' || saved === 'techno')) {
                   document.documentElement.setAttribute('data-theme', saved);
+                } else if (saved === 'quartz') {
+                  document.documentElement.setAttribute('data-theme', 'lightblue');
+                } else if (saved === 'champagne' || saved === 'falcon') {
+                  document.documentElement.setAttribute('data-theme', 'ivory');
+                } else if (saved === 'obsidian') {
+                  document.documentElement.setAttribute('data-theme', 'metallic');
+                } else if (saved === 'cyberpunk') {
+                  document.documentElement.setAttribute('data-theme', 'techno');
                 } else {
-                  document.documentElement.setAttribute('data-theme', 'obsidian');
+                  document.documentElement.setAttribute('data-theme', 'lightblue');
                 }
               } catch (e) {}
             `,
