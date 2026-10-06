@@ -4,65 +4,74 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { MarketType, MARKETS } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
+
+const WHAT_WE_DO = [
+  {
+    icon: '🌐',
+    title: 'Global-Market Coverage',
+    tag: 'Worldwide Traded Instruments',
+    desc: 'Seamless analysis across traded instruments around the globe.',
+    border: 'border-sky-200/80',
+    bg: 'from-sky-50/80 to-sky-100/30',
+  },
+  {
+    icon: '🤖',
+    title: 'AI-Driven Analytics',
+    tag: 'Machine Learning',
+    desc: 'Advanced machine learning algorithms that spot anomalies, chart patterns, and sentiment shifts before they become mainstream news.',
+    border: 'border-emerald-200/80',
+    bg: 'from-emerald-50/80 to-emerald-100/30',
+  },
+];
 
 const MI_EDGE = [
   {
     icon: '🛡️',
     title: 'Battle-Tested DNA',
-    tag: '30+ Years Heritage',
-    desc: 'Built on three decades of institutional trading, risk management, and quantitative strategy.',
-    border: 'border-emerald-200/80',
-    bg: 'from-emerald-50/80 to-emerald-100/30',
+    tag: 'Decades of Lineage',
+    desc: 'Built on understanding of decades of institutional trading, risk management, and quantitative strategy.',
   },
   {
-    icon: '🌐',
-    title: 'Tri-Market Dominance',
-    tag: 'US, India & UAE Equities',
-    desc: 'Instant, AI-driven cross-border intelligence bridging US, Indian, and UAE equities.',
-    border: 'border-sky-200/80',
-    bg: 'from-sky-50/80 to-sky-100/30',
+    icon: '🌍',
+    title: 'Global Markets Presence',
+    tag: 'Cross-Border Feed',
+    desc: 'Instant, AI-driven cross-border intelligence across major financial hubs.',
   },
   {
     icon: '⚡',
     title: 'Unfair Advantage',
     tag: 'Alpha Detection',
-    desc: 'High-precision algorithmic insights that detect alpha before the retail market even wakes up.',
-    border: 'border-amber-200/80',
-    bg: 'from-amber-50/80 to-amber-100/30',
+    desc: 'High-precision algorithmic insights that detect alpha before the markets wake up.',
   },
-];
-
-const TRADING_STYLES = [
   {
-    icon: '⚡',
+    icon: '⏱️',
     title: 'High-Speed Scalping',
-    badge: 'Sub-Minute Execution',
+    tag: 'Sub-Minute Routing',
     desc: 'Sub-minute liquidity routing and immediate order-book anomaly detection.',
   },
   {
     icon: '📊',
     title: 'Intraday Momentum',
-    badge: '3 Time Zones',
-    desc: 'Real-time volume spikes and volatility breakouts across all three execution time zones.',
+    tag: 'Volatility Breakouts',
+    desc: 'Real-time volume spikes and volatility breakouts across both execution time zones.',
   },
   {
     icon: '🌊',
     title: 'Swing Trading',
-    badge: 'Multi-Day Forecasts',
+    tag: 'Macro ML Forecasts',
     desc: 'Multi-day trend predictions driven by macro sentiment shifts and machine learning.',
   },
   {
     icon: '🎯',
     title: 'Options Architecture',
-    badge: 'Derivatives & IV',
-    desc: 'Advanced implied volatility analytics, unusual options activity tracking, and dynamic spread modeling.',
+    tag: 'Derivatives & IV',
+    desc: 'Advanced implied volatility analytics, unusual options activity tracking, and dynamic spread modelling.',
   },
   {
     icon: '💎',
     title: 'Long-Term Alpha',
-    badge: 'Fundamental AI',
+    tag: 'Algorithmic Screener',
     desc: 'Algorithmic fundamental screening to identify deeply mispriced, high-growth equity assets.',
   },
 ];
@@ -74,7 +83,6 @@ const REGIONS = [
     city: 'New York, USA',
     description: 'Direct optical interconnects to Wall Street and New Jersey data centers with institutional microstructure coverage across the NYSE, NASDAQ, S&P 500, NASDAQ 100, and mega-cap equity derivatives.',
     instruments: 'S&P 500, NASDAQ 100, DOW JONES, NVDA, AAPL, MSFT, TSLA, AMZN',
-    color: '#0284C7',
   },
   {
     flag: '🇮🇳',
@@ -82,7 +90,6 @@ const REGIONS = [
     city: 'Chennai, Tamil Nadu',
     description: 'Global engineering headquarters in Chennai with full coverage of the National Stock Exchange (NSE) and Bombay Stock Exchange (BSE), including all F&O instruments, NIFTY 50, BANK NIFTY, MIDCAP 150, and sectoral indices.',
     instruments: 'NIFTY 50, BANK NIFTY, SENSEX, NIFTY IT, NIFTY PHARMA, NIFTY AUTO',
-    color: '#FF9800',
   },
   {
     flag: '🇦🇪',
@@ -90,7 +97,6 @@ const REGIONS = [
     city: 'Dubai, UAE',
     description: 'Comprehensive coverage of the Dubai Financial Market (DFM) and Abu Dhabi Securities Exchange (ADX), including GCC blue chips and DIFC-listed instruments.',
     instruments: 'DFMGI, ADXGI, EMAAR, FAB, DEWA, ALDAR, ETISALAT',
-    color: '#00E676',
   },
 ];
 
@@ -105,10 +111,11 @@ export default function AboutPage() {
         {/* ── Hero ── */}
         <section className="border-b border-slate-200 bg-slate-50/70 backdrop-blur-sm py-20 lg:py-24">
           <div className="mx-auto max-w-4xl px-6 text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-4 py-1.5 shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-              <span className="text-slate-800 text-xs font-bold mono tracking-widest uppercase">
-                Autonomous Market Intelligence
+            {/* Tech Platform / Study Notice Pill */}
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50/90 px-4 py-1.5 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse" />
+              <span className="text-amber-950 text-xs font-bold mono tracking-widest uppercase">
+                Study &amp; Research Technology Platform
               </span>
             </div>
             
@@ -117,66 +124,77 @@ export default function AboutPage() {
             </h1>
 
             <p className="text-lg md:text-xl text-slate-900 leading-relaxed font-semibold max-w-3xl mx-auto mb-5">
-              The premier market intelligence platform engineered to revolutionize how you navigate the US, Indian, and UAE stock markets.
+              The premier market intelligence platform engineered to revolutionize how you navigate markets.
             </p>
 
-            <p className="text-black text-base md:text-lg leading-relaxed max-w-3xl mx-auto font-medium">
-              We bridge the gap between complex financial data and actionable trading clarity. By fusing cutting-edge artificial intelligence with deep financial expertise, MI-007 delivers institutional-grade market intelligence directly to retail investors, day traders, and portfolio managers worldwide.
+            <p className="text-slate-800 text-base md:text-lg leading-relaxed max-w-3xl mx-auto font-medium mb-8">
+              MI-007 delivers institutional-grade market intelligence directly to retail investors, day traders, and portfolio managers worldwide.
             </p>
+
+            {/* Informational & Risk Disclaimer Banner */}
+            <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200/90 bg-white/95 p-4 shadow-sm text-left flex items-start gap-3">
+              <span className="text-xl shrink-0 mt-0.5">ℹ️</span>
+              <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-medium">
+                <strong className="text-slate-950 font-bold">Important Notice:</strong> MI-007 Market Intelligence is a technology platform built purely for the purpose of study and information, empowering users to make their own decisions at their own risks.
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* ── Founder Story & Mission ── */}
+        {/* ── Who We Are ── */}
         <section className="mx-auto max-w-5xl px-6 py-20 border-b border-slate-200/80">
           <div className="rounded-3xl border border-slate-200 bg-white/90 p-8 sm:p-12 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-sky-100/50 via-cyan-50/30 to-transparent pointer-events-none rounded-bl-full" />
             
             <div className="relative z-10 max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-md bg-amber-100 border border-amber-300/80 px-3 py-1 text-xs font-bold text-amber-950 mono uppercase tracking-wider mb-5">
-                30+ Years Market Lineage
+              <div className="inline-flex items-center gap-2 rounded-md bg-slate-100 border border-slate-300 px-3 py-1 text-xs font-bold text-slate-800 mono uppercase tracking-wider mb-5">
+                Our Genesis
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-5 leading-snug">
-                Forged on the Front Lines of Institutional Trading
+                Who We Are
               </h2>
               <p className="text-base sm:text-lg text-slate-800 font-medium leading-relaxed mb-6">
-                Forged by founders with over 30 years of raw, front-line experience in the US and Indian stock markets, MI-007 is a high-octane market intelligence platform designed for those who refuse to settle for lagging indicators and institutional scraps.
+                MI-007 was founded by a team of Quantitative Analysts, Data Scientists, Veteran Investors and Traders who shared a common problem which is the sheer volume of market noise.
               </p>
-              <p className="text-base sm:text-lg text-slate-800 font-medium leading-relaxed">
-                We don’t just aggregate data; we weaponize advanced artificial intelligence to decode complex global financial ecosystems, turning chaotic market noise into asymmetric trading advantages.
+              <p className="text-base sm:text-lg text-slate-800 font-medium leading-relaxed mb-6">
+                Crucial insights are often buried under oceans of raw data, accessible only to Institutions of scale.
+              </p>
+              <p className="text-base sm:text-lg text-emerald-800 font-semibold leading-relaxed">
+                We built MI-007 to level the playing field, providing intelligence across global markets to the common investors as well.
               </p>
             </div>
 
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-slate-200">
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <div className="mono text-2xl sm:text-3xl font-black text-slate-950">30+ Years</div>
-                <div className="text-xs text-slate-600 font-bold uppercase tracking-wider mt-1">Front-Line Experience</div>
+                <div className="mono text-2xl sm:text-3xl font-black text-slate-950">Decades</div>
+                <div className="text-xs text-slate-600 font-bold uppercase tracking-wider mt-1">Quant &amp; Trading Heritage</div>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <div className="mono text-2xl sm:text-3xl font-black text-emerald-700">3 Markets</div>
-                <div className="text-xs text-slate-600 font-bold uppercase tracking-wider mt-1">US • India • UAE</div>
+                <div className="mono text-2xl sm:text-3xl font-black text-emerald-700">Global</div>
+                <div className="text-xs text-slate-600 font-bold uppercase tracking-wider mt-1">Cross-Border Data</div>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <div className="mono text-2xl sm:text-3xl font-black text-sky-700">Sub-ms Alpha</div>
-                <div className="text-xs text-slate-600 font-bold uppercase tracking-wider mt-1">Pre-Market Advantage</div>
+                <div className="mono text-2xl sm:text-3xl font-black text-sky-700">Fair Game</div>
+                <div className="text-xs text-slate-600 font-bold uppercase tracking-wider mt-1">Level Playing Field</div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── The MI-007 Edge ── */}
+        {/* ── What We Do ── */}
         <section className="mx-auto max-w-6xl px-6 py-20 border-b border-slate-200/80">
-          <div className="mb-12 text-center">
+          <div className="mb-12 text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-4 py-1 shadow-xs mb-3">
-              <span className="text-slate-800 text-xs font-bold mono tracking-widest uppercase">Proprietary Advantage</span>
+              <span className="text-slate-800 text-xs font-bold mono tracking-widest uppercase">Continuous Execution</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">The MI-007 Edge</h2>
-            <p className="text-black text-sm sm:text-base font-semibold max-w-xl mx-auto mt-2">
-              Three core pillars that separate institutional-grade alpha from everyday market noise.
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-4">What We Do</h2>
+            <p className="text-slate-800 text-base sm:text-lg font-medium leading-relaxed">
+              We track, analyse, and decode market movements around the clock. Whether you are looking for momentum shifts in Wall Street tech giants or breakout trends in Dalal Street blue-chips, MI-007 is your eyes and ears on the ground.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {MI_EDGE.map(({ icon, title, tag, desc, border, bg }) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {WHAT_WE_DO.map(({ icon, title, tag, desc, border, bg }) => (
               <div
                 key={title}
                 className={`rounded-2xl border ${border} bg-gradient-to-b ${bg} p-7 hover:shadow-md transition-all flex flex-col justify-between`}
@@ -196,20 +214,41 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* ── Supported Trading Styles ── */}
-        <section className="mx-auto max-w-6xl px-6 py-20 border-b border-slate-200/80">
-          <div className="mb-12 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-4 py-1 shadow-xs mb-3">
-              <span className="text-slate-800 text-xs font-bold mono tracking-widest uppercase">Multi-Horizon Execution</span>
+        {/* ── Our Mission ── */}
+        <section className="mx-auto max-w-5xl px-6 py-20 border-b border-slate-200/80">
+          <div className="rounded-3xl border border-emerald-200 bg-gradient-to-b from-emerald-50/70 via-white to-slate-50 p-8 sm:p-12 shadow-sm text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-100/80 px-4 py-1 text-xs font-bold text-emerald-950 mono uppercase tracking-wider mb-5">
+              Core Purpose
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Supported Trading Styles</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-6">
+              Our Mission
+            </h2>
+            <h3 className="text-xl sm:text-2xl font-extrabold text-emerald-800 mb-6">
+              To democratize financial intelligence.
+            </h3>
+            <p className="text-base sm:text-lg text-slate-800 font-medium leading-relaxed max-w-3xl mx-auto mb-6">
+              We believe that every investor deserves access to sharp, timely, and unbiased data.
+            </p>
+            <p className="text-base sm:text-lg text-slate-900 font-semibold leading-relaxed max-w-3xl mx-auto">
+              Our Team and MI-007 are committed to empower you with the tools, clarity, confidence to build long-term wealth.
+            </p>
+          </div>
+        </section>
+
+        {/* ── The MI-007 Edge ── */}
+        <section className="mx-auto max-w-6xl px-6 py-20 border-b border-slate-200/80">
+          <div className="mb-12 text-center max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-4 py-1 shadow-xs mb-3">
+              <span className="text-slate-800 text-xs font-bold mono tracking-widest uppercase">Institutional Capabilities</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">The MI-007 Edge</h2>
             <p className="text-black text-sm sm:text-base font-semibold max-w-xl mx-auto mt-2">
-              Whether executing sub-minute liquidity routing or long-term algorithmic alpha, MI-007 is calibrated for your strategy.
+              Eight tactical pillars designed to strip away noise and reveal actionable alpha.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {TRADING_STYLES.map(({ icon, title, badge, desc }) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {MI_EDGE.map(({ icon, title, tag, desc }) => (
               <div
                 key={title}
                 className="rounded-2xl border border-slate-200 bg-white/95 p-6 hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between"
@@ -219,12 +258,12 @@ export default function AboutPage() {
                     <span className="text-2xl p-2 rounded-xl bg-slate-100 border border-slate-200/70 inline-flex items-center justify-center">
                       {icon}
                     </span>
-                    <span className="text-[10.5px] mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-                      {badge}
+                    <span className="text-[10px] mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                      {tag}
                     </span>
                   </div>
-                  <h3 className="font-bold text-slate-900 text-lg mb-2">{title}</h3>
-                  <p className="text-[13.5px] text-slate-700 leading-relaxed font-medium">{desc}</p>
+                  <h3 className="font-bold text-slate-900 text-base mb-2">{title}</h3>
+                  <p className="text-[13px] text-slate-700 leading-relaxed font-medium">{desc}</p>
                 </div>
               </div>
             ))}
