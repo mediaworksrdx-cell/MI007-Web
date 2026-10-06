@@ -220,11 +220,11 @@ export default function MarketTerminalSection() {
     // ── 1. Themed Chart Surface ──
     const chartBg = isDark
       ? theme === 'techno'
-        ? '#040916'
-        : '#14171E'
+        ? '#122347'
+        : '#232B3A'
       : theme === 'ivory'
-      ? '#FAF7EE'
-      : '#F0F7FF';
+      ? '#FAF0DB'
+      : '#E0F2FE';
 
     ctx.fillStyle = chartBg;
     ctx.fillRect(0, 0, w, h);
@@ -380,11 +380,11 @@ export default function MarketTerminalSection() {
     // ── 6. Subpanels: RSI (14) & MACD ──
     const subBg = isDark
       ? theme === 'techno'
-        ? '#0A152E'
-        : '#1F2430'
+        ? '#1A3366'
+        : '#303B4F'
       : theme === 'ivory'
-      ? '#F4EFE0'
-      : 'rgba(224, 242, 254, 0.7)';
+      ? '#F5E5C0'
+      : '#BAE6FD';
     const subBorder = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
     const textSub = isDark ? '#94A3B8' : '#475569';
 
