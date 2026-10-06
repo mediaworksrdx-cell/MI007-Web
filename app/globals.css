@@ -26,11 +26,11 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   THEME PALETTE DEFINITIONS (4 Candidate Themes)
-   1. Quartz: Clean Modern Luxe Light
-   2. Obsidian: Deep Institutional Dark
-   3. Cyberpunk: High-Frequency Neon DeFi
-   4. Falcon: Midnight Navy & Champagne Gold
+   THEME PALETTE DEFINITIONS (2 Bright & 2 Dark Themes)
+   BRIGHT 1: Fintech Quartz — Clean Cool Daylight Luxe
+   BRIGHT 2: Champagne Gold — Warm Ivory & Sovereign Gold
+   DARK 1:   Obsidian Terminal — Deep Institutional Dark Pro
+   DARK 2:   Cyberpunk Matrix — Neon Violet & Synthetic Pink
    ══════════════════════════════════════════════════════════════════════════════ */
 
 :root,
@@ -61,6 +61,33 @@ html[data-theme="quartz"] {
   --theme-switcher-bg: #FFFFFF;
 }
 
+html[data-theme="champagne"] {
+  --color-bg-midnight: #FAF7F2;
+  --color-surface-card: #FFFFFF;
+  --color-surface-variant: #F4EFE6;
+  --color-border-navy: rgba(217, 119, 6, 0.18);
+  --color-mint-green: #15803D;
+  --color-crimson-red: #B91C1C;
+  --color-accent-cyan: #D97706;
+  --color-cyber-gold: #D97706;
+  --color-chart-bg: #FAF7F2;
+  --color-text-primary: #1C1917;
+  --color-text-secondary: #78350F;
+  --color-text-muted: #78716C;
+  --color-bull-green: #15803D;
+  --color-bear-red: #B91C1C;
+  --color-glass-white: rgba(255, 255, 255, 0.9);
+
+  --theme-page-bg: #FAF7F2;
+  --theme-page-text: #1C1917;
+  --theme-card-bg: #FFFFFF;
+  --theme-card-border: rgba(217, 119, 6, 0.18);
+  --theme-navbar-bg: rgba(250, 247, 242, 0.94);
+  --theme-footer-bg: rgba(245, 239, 230, 0.9);
+  --theme-ticker-bg: rgba(255, 255, 255, 0.95);
+  --theme-switcher-bg: #FAF7F2;
+}
+
 html[data-theme="obsidian"] {
   --color-bg-midnight: #060A11;
   --color-surface-card: #0D1524;
@@ -89,57 +116,30 @@ html[data-theme="obsidian"] {
 }
 
 html[data-theme="cyberpunk"] {
-  --color-bg-midnight: #050508;
-  --color-surface-card: #0E0E17;
-  --color-surface-variant: #191529;
-  --color-border-navy: rgba(168, 85, 247, 0.25);
+  --color-bg-midnight: #0A0612;
+  --color-surface-card: #130C22;
+  --color-surface-variant: #1E1235;
+  --color-border-navy: rgba(236, 72, 153, 0.25);
   --color-mint-green: #10B981;
   --color-crimson-red: #F43F5E;
   --color-accent-cyan: #EC4899;
   --color-cyber-gold: #FACC15;
-  --color-chart-bg: #050508;
+  --color-chart-bg: #0A0612;
   --color-text-primary: #FFFFFF;
-  --color-text-secondary: #C084FC;
-  --color-text-muted: #94A3B8;
+  --color-text-secondary: #E879F9;
+  --color-text-muted: #A855F7;
   --color-bull-green: #10B981;
   --color-bear-red: #F43F5E;
-  --color-glass-white: rgba(14, 14, 23, 0.8);
+  --color-glass-white: rgba(19, 12, 34, 0.85);
 
-  --theme-page-bg: #050508;
+  --theme-page-bg: #0A0612;
   --theme-page-text: #FFFFFF;
-  --theme-card-bg: #0E0E17;
-  --theme-card-border: rgba(168, 85, 247, 0.28);
-  --theme-navbar-bg: rgba(5, 5, 8, 0.92);
-  --theme-footer-bg: rgba(10, 10, 18, 0.92);
-  --theme-ticker-bg: rgba(14, 14, 23, 0.95);
-  --theme-switcher-bg: #0E0E17;
-}
-
-html[data-theme="falcon"] {
-  --color-bg-midnight: #070D18;
-  --color-surface-card: #0F1A2E;
-  --color-surface-variant: #16243D;
-  --color-border-navy: rgba(245, 158, 11, 0.22);
-  --color-mint-green: #10B981;
-  --color-crimson-red: #EF4444;
-  --color-accent-cyan: #F59E0B;
-  --color-cyber-gold: #F59E0B;
-  --color-chart-bg: #070D18;
-  --color-text-primary: #F8F9FA;
-  --color-text-secondary: #CBD5E1;
-  --color-text-muted: #94A3B8;
-  --color-bull-green: #10B981;
-  --color-bear-red: #EF4444;
-  --color-glass-white: rgba(15, 26, 46, 0.8);
-
-  --theme-page-bg: #070D18;
-  --theme-page-text: #F8F9FA;
-  --theme-card-bg: #0F1A2E;
-  --theme-card-border: rgba(245, 158, 11, 0.22);
-  --theme-navbar-bg: rgba(7, 13, 24, 0.92);
-  --theme-footer-bg: rgba(10, 18, 32, 0.92);
-  --theme-ticker-bg: rgba(15, 26, 46, 0.95);
-  --theme-switcher-bg: #0F1A2E;
+  --theme-card-bg: #130C22;
+  --theme-card-border: rgba(236, 72, 153, 0.28);
+  --theme-navbar-bg: rgba(10, 6, 18, 0.92);
+  --theme-footer-bg: rgba(15, 9, 28, 0.92);
+  --theme-ticker-bg: rgba(19, 12, 34, 0.95);
+  --theme-switcher-bg: #130C22;
 }
 
 @keyframes ticker {

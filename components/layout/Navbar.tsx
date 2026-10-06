@@ -141,13 +141,18 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             </button>
 
             {themeDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2">
                 <div className="px-2 py-1 mb-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-500 font-bold uppercase">
-                  <span>Select Theme</span>
-                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-black">4 Styles</span>
+                  <span>Theme Selection</span>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-black">2 Bright · 2 Dark</span>
                 </div>
-                <div className="flex flex-col gap-1">
-                  {(Object.values(THEMES) as typeof currentThemeConfig[]).map((t) => {
+
+                {/* Bright section */}
+                <div className="px-2 pt-1 pb-0.5 text-[10px] font-mono font-bold tracking-wider text-amber-700 uppercase flex items-center gap-1">
+                  <span>☀️ 2 Bright Palettes</span>
+                </div>
+                <div className="flex flex-col gap-1 mb-2">
+                  {[THEMES.quartz, THEMES.champagne].map((t) => {
                     const isActive = theme === t.id;
                     return (
                       <button
@@ -159,7 +164,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                         }}
                         className={`flex items-center justify-between p-2 rounded-xl text-left transition-all ${
                           isActive
-                            ? 'bg-emerald-50/80 font-bold text-slate-950 border border-emerald-300 shadow-2xs'
+                            ? 'bg-amber-50/90 font-bold text-slate-950 border border-amber-300 shadow-2xs'
                             : 'hover:bg-slate-50 text-slate-700 font-medium border border-transparent'
                         }`}
                       >
@@ -175,7 +180,47 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                           </div>
                         </div>
                         {isActive && (
-                          <span className="text-emerald-600 text-xs font-black">✓</span>
+                          <span className="text-amber-600 text-xs font-black">✓</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Dark section */}
+                <div className="px-2 pt-1 pb-0.5 text-[10px] font-mono font-bold tracking-wider text-cyan-700 uppercase flex items-center gap-1 border-t border-slate-100">
+                  <span>🌑 2 Dark Palettes</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {[THEMES.obsidian, THEMES.cyberpunk].map((t) => {
+                    const isActive = theme === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          setTheme(t.id);
+                          setThemeDropdownOpen(false);
+                        }}
+                        className={`flex items-center justify-between p-2 rounded-xl text-left transition-all ${
+                          isActive
+                            ? 'bg-cyan-50/90 font-bold text-slate-950 border border-cyan-300 shadow-2xs'
+                            : 'hover:bg-slate-50 text-slate-700 font-medium border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex items-center -space-x-1 shrink-0">
+                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.bg }} />
+                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.accent }} />
+                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.bull }} />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold truncate">{t.name}</span>
+                            <span className="text-[10px] text-slate-500 truncate mono">{t.tagline}</span>
+                          </div>
+                        </div>
+                        {isActive && (
+                          <span className="text-cyan-600 text-xs font-black">✓</span>
                         )}
                       </button>
                     );
@@ -226,28 +271,66 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       {menuOpen && (
         <div className="md:hidden border-t border-slate-200 bg-white/98 backdrop-blur-xl px-4 py-3 pb-6 safe-bottom flex flex-col gap-2 shadow-xl max-h-[calc(100dvh-5.5rem)] overflow-y-auto">
           {/* Mobile Theme Selector Bar */}
-          <div className="py-2 border-b border-slate-200/80 mb-1">
-            <span className="text-[11px] font-mono uppercase font-bold tracking-wider opacity-70 block mb-1.5">
-              🎨 Candidate Theme
-            </span>
-            <div className="grid grid-cols-2 gap-1.5">
-              {(Object.values(THEMES) as typeof currentThemeConfig[]).map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setTheme(t.id)}
-                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] font-mono font-bold transition-all text-left ${
-                    theme === t.id
-                      ? 'border-cyan-500 bg-cyan-500/10'
-                      : 'border-slate-200/70 hover:bg-slate-100/50'
-                  }`}
-                >
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: t.palette.accent }}
-                  />
-                  <span className="truncate">{t.name.split(' ')[0]}</span>
-                </button>
-              ))}
+          <div className="py-2.5 border-b border-slate-200/80 mb-1 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-mono uppercase font-bold tracking-wider text-slate-700">
+                🎨 Palette Choice
+              </span>
+              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-black">
+                2 Bright · 2 Dark
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[9.5px] font-mono uppercase font-bold tracking-wider text-amber-700 block mb-1">
+                ☀️ 2 Bright
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[THEMES.quartz, THEMES.champagne].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTheme(t.id)}
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] font-mono font-bold transition-all text-left ${
+                      theme === t.id
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-950 font-black'
+                        : 'border-slate-200/80 text-slate-700 hover:bg-slate-100/50'
+                    }`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/20"
+                      style={{ backgroundColor: t.palette.accent }}
+                    />
+                    <span className="truncate">{t.name.split(' ')[0]}</span>
+                    {theme === t.id && <span className="ml-auto text-[11px] text-amber-600">✓</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[9.5px] font-mono uppercase font-bold tracking-wider text-cyan-700 block mb-1">
+                🌑 2 Dark
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[THEMES.obsidian, THEMES.cyberpunk].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTheme(t.id)}
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] font-mono font-bold transition-all text-left ${
+                      theme === t.id
+                        ? 'border-cyan-500 bg-cyan-500/10 text-cyan-950 font-black'
+                        : 'border-slate-200/80 text-slate-700 hover:bg-slate-100/50'
+                    }`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/20"
+                      style={{ backgroundColor: t.palette.accent }}
+                    />
+                    <span className="truncate">{t.name.split(' ')[0]}</span>
+                    {theme === t.id && <span className="ml-auto text-[11px] text-cyan-600">✓</span>}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

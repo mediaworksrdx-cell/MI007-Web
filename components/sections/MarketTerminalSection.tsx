@@ -61,8 +61,7 @@ export default function MarketTerminalSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true, margin: '-100px' });
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { theme } = useAppTheme();
-  const isDark = theme !== 'quartz';
+  const { theme, isDark } = useAppTheme();
 
   const [activeSymbolIdx, setActiveSymbolIdx] = useState(0);
   const [timeframe, setTimeframe] = useState('15m');
@@ -221,10 +220,10 @@ export default function MarketTerminalSection() {
     // ── 1. Themed Chart Surface ──
     const chartBg = isDark
       ? theme === 'cyberpunk'
-        ? '#090912'
-        : theme === 'falcon'
-        ? '#091222'
-        : '#080E18'
+        ? '#0A0612'
+        : '#060A11'
+      : theme === 'champagne'
+      ? '#FAF7F2'
       : '#FFFFFF';
 
     ctx.fillStyle = chartBg;
@@ -381,10 +380,10 @@ export default function MarketTerminalSection() {
     // ── 6. Subpanels: RSI (14) & MACD ──
     const subBg = isDark
       ? theme === 'cyberpunk'
-        ? '#0E0E18'
-        : theme === 'falcon'
-        ? '#0F1A2E'
+        ? '#130C22'
         : '#0D1524'
+      : theme === 'champagne'
+      ? '#F4EFE6'
       : 'rgba(248, 250, 252, 0.95)';
     const subBorder = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
     const textSub = isDark ? '#94A3B8' : '#475569';
