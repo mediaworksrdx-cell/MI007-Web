@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -8,6 +8,7 @@ import { MarketToggle } from '@/components/market/MarketToggle';
 import { TickerTape } from '@/components/market/TickerTape';
 import { MarketType } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
+import { useAppTheme, THEMES, AppTheme } from '@/lib/themeContext';
 
 interface NavbarProps {
   market?: MarketType;
@@ -23,8 +24,24 @@ const NAV_LINKS = [
 export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange }: NavbarProps) {
   const pathname = usePathname();
   const context = useMarket();
+  const { theme, setTheme, currentThemeConfig } = useAppTheme();
   const market = propMarket ?? context.market ?? 'USA';
   const isTerminalOrDashboard = pathname.startsWith('/terminal') || pathname.startsWith('/dashboard');
+
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
+  const themeDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (themeDropdownRef.current && !themeDropdownRef.current.contains(event.target as Node)) {
+        setThemeDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleMarketChange = (m: MarketType) => {
     if (propOnMarketChange) {
@@ -32,9 +49,6 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
     }
     context.setMarket(m);
   };
-
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 12);
@@ -98,8 +112,79 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           })}
         </nav>
 
-        {/* ── Market Toggle + CTA ── */}
+        {/* ── Market Toggle + Theme Quick Switch + CTA ── */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* ── Prominent Theme Selector Dropdown ── */}
+          <div className="relative" ref={themeDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setThemeDropdownOpen((v) => !v)}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-300 bg-white/95 hover:bg-slate-50 text-slate-900 text-[12px] sm:text-[13px] font-mono font-bold shadow-xs transition-all hover:border-slate-400 active:scale-95"
+              title="Click to change theme palette"
+              aria-label="Theme selector"
+            >
+              <span className="text-sm">🎨</span>
+              <span className="hidden sm:inline font-bold">Theme:</span>
+              <span className="capitalize text-emerald-700 font-black">{currentThemeConfig.name.split(' ')[0]}</span>
+              <span
+                className="w-2.5 h-2.5 rounded-full ring-1 ring-black/20 shrink-0 ml-0.5"
+                style={{ backgroundColor: currentThemeConfig.palette.accent }}
+              />
+              <svg
+                className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${themeDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {themeDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="px-2 py-1 mb-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-500 font-bold uppercase">
+                  <span>Select Theme</span>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-black">4 Styles</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {(Object.values(THEMES) as typeof currentThemeConfig[]).map((t) => {
+                    const isActive = theme === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          setTheme(t.id);
+                          setThemeDropdownOpen(false);
+                        }}
+                        className={`flex items-center justify-between p-2 rounded-xl text-left transition-all ${
+                          isActive
+                            ? 'bg-emerald-50/80 font-bold text-slate-950 border border-emerald-300 shadow-2xs'
+                            : 'hover:bg-slate-50 text-slate-700 font-medium border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex items-center -space-x-1 shrink-0">
+                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.bg }} />
+                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.accent }} />
+                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.bull }} />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold truncate">{t.name}</span>
+                            <span className="text-[10px] text-slate-500 truncate mono">{t.tagline}</span>
+                          </div>
+                        </div>
+                        {isActive && (
+                          <span className="text-emerald-600 text-xs font-black">✓</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
           {isTerminalOrDashboard && (
             <MarketToggle
               selected={market}
@@ -139,7 +224,33 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
       {/* ── Mobile Menu with iOS Safe Area Handling ── */}
       {menuOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white/98 backdrop-blur-xl px-4 py-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] flex flex-col gap-2 shadow-xl max-h-[calc(100dvh-5.5rem)] overflow-y-auto">
+        <div className="md:hidden border-t border-slate-200 bg-white/98 backdrop-blur-xl px-4 py-3 pb-6 safe-bottom flex flex-col gap-2 shadow-xl max-h-[calc(100dvh-5.5rem)] overflow-y-auto">
+          {/* Mobile Theme Selector Bar */}
+          <div className="py-2 border-b border-slate-200/80 mb-1">
+            <span className="text-[11px] font-mono uppercase font-bold tracking-wider opacity-70 block mb-1.5">
+              🎨 Candidate Theme
+            </span>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(Object.values(THEMES) as typeof currentThemeConfig[]).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTheme(t.id)}
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] font-mono font-bold transition-all text-left ${
+                    theme === t.id
+                      ? 'border-cyan-500 bg-cyan-500/10'
+                      : 'border-slate-200/70 hover:bg-slate-100/50'
+                  }`}
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: t.palette.accent }}
+                  />
+                  <span className="truncate">{t.name.split(' ')[0]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {isTerminalOrDashboard && (
             <MarketToggle selected={market} onChange={handleMarketChange} className="w-full justify-center mb-2" />
           )}

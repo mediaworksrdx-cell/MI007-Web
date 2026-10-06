@@ -2,6 +2,7 @@
 
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useAppTheme } from '@/lib/themeContext';
 
 interface CandleData {
   time: string;
@@ -60,6 +61,8 @@ export default function MarketTerminalSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true, margin: '-100px' });
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { theme } = useAppTheme();
+  const isDark = theme !== 'quartz';
 
   const [activeSymbolIdx, setActiveSymbolIdx] = useState(0);
   const [timeframe, setTimeframe] = useState('15m');
@@ -215,12 +218,20 @@ export default function MarketTerminalSection() {
 
     ctx.clearRect(0, 0, w, h);
 
-    // ── 1. Pure Crisp White Chart Surface (Zero Harsh Grids) ──
-    ctx.fillStyle = '#FFFFFF';
+    // ── 1. Themed Chart Surface ──
+    const chartBg = isDark
+      ? theme === 'cyberpunk'
+        ? '#090912'
+        : theme === 'falcon'
+        ? '#091222'
+        : '#080E18'
+      : '#FFFFFF';
+
+    ctx.fillStyle = chartBg;
     ctx.fillRect(0, 0, w, h);
 
     // Subtle horizontal price level references only
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+    ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)';
     ctx.lineWidth = 1;
     for (let step = 1; step <= 4; step++) {
       const y = (mainH / 5) * step;
@@ -231,7 +242,7 @@ export default function MarketTerminalSection() {
     }
 
     // Right axis boundary line
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+    ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
     ctx.beginPath();
     ctx.moveTo(w - 70, 0);
     ctx.lineTo(w - 70, h);
@@ -368,23 +379,33 @@ export default function MarketTerminalSection() {
     ctx.stroke();
 
     // ── 6. Subpanels: RSI (14) & MACD ──
+    const subBg = isDark
+      ? theme === 'cyberpunk'
+        ? '#0E0E18'
+        : theme === 'falcon'
+        ? '#0F1A2E'
+        : '#0D1524'
+      : 'rgba(248, 250, 252, 0.95)';
+    const subBorder = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+    const textSub = isDark ? '#94A3B8' : '#475569';
+
     if (showRsi) {
-      ctx.fillStyle = 'rgba(248, 250, 252, 0.95)';
+      ctx.fillStyle = subBg;
       ctx.fillRect(0, rsiY, w - 70, 58);
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+      ctx.strokeStyle = subBorder;
       ctx.beginPath();
       ctx.moveTo(0, rsiY);
       ctx.lineTo(w - 70, rsiY);
       ctx.stroke();
 
-      ctx.fillStyle = '#475569';
+      ctx.fillStyle = textSub;
       ctx.font = 'bold 12px monospace';
       ctx.fillText('RSI (14)', 12, rsiY + 16);
       ctx.fillStyle = '#0284C7';
       ctx.fillText('62.8', 75, rsiY + 16);
 
       // Oversold / Overbought levels
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
       ctx.setLineDash([2, 2]);
       ctx.beginPath();
       ctx.moveTo(0, rsiY + 18);
@@ -410,15 +431,15 @@ export default function MarketTerminalSection() {
     }
 
     if (showMacd) {
-      ctx.fillStyle = 'rgba(248, 250, 252, 0.95)';
+      ctx.fillStyle = subBg;
       ctx.fillRect(0, macdY, w - 70, 58);
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+      ctx.strokeStyle = subBorder;
       ctx.beginPath();
       ctx.moveTo(0, macdY);
       ctx.lineTo(w - 70, macdY);
       ctx.stroke();
 
-      ctx.fillStyle = '#475569';
+      ctx.fillStyle = textSub;
       ctx.font = 'bold 12px monospace';
       ctx.fillText('MACD (12, 26, 9)', 12, macdY + 16);
 
@@ -490,7 +511,7 @@ export default function MarketTerminalSection() {
       const y = getY(p);
       ctx.fillText(p.toFixed(p > 1000 ? 0 : 2), w - 62, y + 4);
     }
-  }, [candles, showRsi, showMacd, showPatterns, showSignals, hoverPosition]);
+  }, [candles, showRsi, showMacd, showPatterns, showSignals, hoverPosition, theme, isDark]);
 
   // Handle pointer hover on canvas
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {

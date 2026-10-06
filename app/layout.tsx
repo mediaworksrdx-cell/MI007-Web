@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import GlobalMarketCanvasFX from '@/components/fx/GlobalMarketCanvasFX';
 import { MarketProvider } from '@/lib/marketContext';
+import { ThemeProvider } from '@/lib/themeContext';
+import { ThemeSwitcher } from '@/components/ui/ThemeSwitcher';
 
 export const metadata: Metadata = {
   title: 'Market Intelligence AI — MI007',
@@ -14,13 +16,27 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: 'cover',
-  themeColor: '#FFFFFF',
+  themeColor: '#060A11',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="light">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var saved = localStorage.getItem('mi007_active_theme');
+                if (saved && (saved === 'obsidian' || saved === 'quartz' || saved === 'cyberpunk' || saved === 'falcon')) {
+                  document.documentElement.setAttribute('data-theme', saved);
+                } else {
+                  document.documentElement.setAttribute('data-theme', 'obsidian');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -28,12 +44,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="bg-white text-slate-900 antialiased min-h-screen flex flex-col relative">
-        {/* Site-Wide 60fps Floating Candlesticks, Price Badges & Up/Down Arrows Parallax Engine */}
-        <GlobalMarketCanvasFX />
-        <MarketProvider>
-          {children}
-        </MarketProvider>
+      <body className="antialiased min-h-screen flex flex-col relative transition-colors duration-200">
+        <ThemeProvider>
+          {/* Site-Wide 60fps Floating Candlesticks, Price Badges & Up/Down Arrows Parallax Engine */}
+          <GlobalMarketCanvasFX />
+          <MarketProvider>
+            {children}
+          </MarketProvider>
+          {/* Client Theme Switcher floating dock */}
+          <ThemeSwitcher />
+        </ThemeProvider>
       </body>
     </html>
   );
