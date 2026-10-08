@@ -11,7 +11,6 @@ import { useMarket } from '@/lib/marketContext';
 import { useAppTheme, THEMES, ThemeConfig } from '@/lib/themeContext';
 import { SettingsModal } from '@/components/ui/SettingsModal';
 import { LoginModal } from '@/components/auth/LoginModal';
-import { ExplainerTooltip } from '@/components/ui/ExplainerTooltip';
 
 interface NavbarProps {
   market?: MarketType;
@@ -144,20 +143,13 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
           {/* ── Exactly 1 Single Launch Terminal Button ── */}
           {!isTerminalOrDashboard && (
-            <ExplainerTooltip
-              title="Interactive Terminal"
-              description="Open the full institutional terminal workspace with multi-timeframe candlestick charts and liquidity sweep detection."
-              badge="WORKSPACE"
-              position="bottom"
+            <Link
+              href="/terminal"
+              className="launch-terminal-btn hidden sm:inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] font-mono font-bold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95"
             >
-              <Link
-                href="/terminal"
-                className="launch-terminal-btn hidden sm:inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] font-mono font-bold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95"
-              >
-                <span className="text-amber-300">⚡</span>
-                <span>LAUNCH TERMINAL</span>
-              </Link>
-            </ExplainerTooltip>
+              <span className="text-amber-300">⚡</span>
+              <span>LAUNCH TERMINAL</span>
+            </Link>
           )}
 
           {/* ── 1 Unified Icon for Settings & Login (Like Top Platforms) ── */}

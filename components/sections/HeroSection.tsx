@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ExplainerTooltip } from '@/components/ui/ExplainerTooltip';
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -136,45 +135,20 @@ export default function HeroSection() {
         <div className="w-full rounded-2xl border-2 hero-stats-panel px-4 sm:px-8 py-3 sm:py-4 shadow-lg flex flex-col xl:flex-row items-center justify-between gap-3 sm:gap-4 xl:gap-6 mono overflow-hidden relative">
           {/* Left: Momentum Telemetry (Static High-Priority) */}
           <div className="flex items-center flex-wrap sm:flex-nowrap justify-center xl:justify-start gap-3 sm:gap-6 shrink-0 text-center sm:text-left">
-            <ExplainerTooltip
-              title="Bull Momentum Delta"
-              description="Aggregated order book ratio measuring aggressive market buy orders actively lifting the ask and consuming overhead liquidity."
-              badge="MOMENTUM"
-              position="top"
-            >
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-extrabold text-[12px] xs:text-[14px] sm:text-[15px] tracking-wide hero-stats-label">BULL MOMENTUM:</span>
-                <strong className="font-mono font-black text-emerald-500 text-[14px] xs:text-[16px] sm:text-[18px]">+{bullDelta}%</strong>
-              </div>
-            </ExplainerTooltip>
-
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-extrabold text-[12px] xs:text-[14px] sm:text-[15px] tracking-wide hero-stats-label">BULL MOMENTUM:</span>
+              <strong className="font-mono font-black text-emerald-500 text-[14px] xs:text-[16px] sm:text-[18px]">+{bullDelta}%</strong>
+            </div>
             <span className="hero-stats-pipe font-bold hidden sm:inline text-lg">|</span>
-
-            <ExplainerTooltip
-              title="Bear Resistance Wall"
-              description="Cumulative depth of passive sell limit orders defending institutional supply zones and resistance thresholds."
-              badge="RESISTANCE"
-              position="top"
-            >
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-extrabold text-[12px] xs:text-[14px] sm:text-[15px] tracking-wide hero-stats-label">BEAR RESISTANCE:</span>
-                <strong className="font-mono font-black text-rose-500 text-[14px] xs:text-[16px] sm:text-[18px]">{bearDelta}%</strong>
-              </div>
-            </ExplainerTooltip>
-
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-extrabold text-[12px] xs:text-[14px] sm:text-[15px] tracking-wide hero-stats-label">BEAR RESISTANCE:</span>
+              <strong className="font-mono font-black text-rose-500 text-[14px] xs:text-[16px] sm:text-[18px]">{bearDelta}%</strong>
+            </div>
             <span className="hero-stats-pipe font-bold hidden md:inline text-lg">|</span>
-
-            <ExplainerTooltip
-              title="Equilibrium POC"
-              description="Volume-Weighted Average Price (VWAP) convergence where bid and ask volumes achieve temporary statistical balance."
-              badge="FAIR VALUE"
-              position="top"
-            >
-              <div className="hidden md:flex items-center gap-2">
-                <span className="font-extrabold text-[14px] sm:text-[15px] tracking-wide hero-stats-label">EQUILIBRIUM:</span>
-                <strong className="font-mono font-black text-[16px] sm:text-[18px] hero-stats-val">24,842.50</strong>
-              </div>
-            </ExplainerTooltip>
+            <div className="hidden md:flex items-center gap-2">
+              <span className="font-extrabold text-[14px] sm:text-[15px] tracking-wide hero-stats-label">EQUILIBRIUM:</span>
+              <strong className="font-mono font-black text-[16px] sm:text-[18px] hero-stats-val">24,842.50</strong>
+            </div>
           </div>
 
           {/* Central Divider */}
@@ -182,17 +156,10 @@ export default function HeroSection() {
 
           {/* Right: Global L3 Feed with Infinite Marquee (Contained, Never Overflows) */}
           <div className="w-full xl:w-auto xl:flex-1 min-w-0 flex items-center gap-3 sm:gap-4 overflow-hidden relative">
-            <ExplainerTooltip
-              title="Global Level-3 Data Stream"
-              description="Direct multi-exchange feed delivering sub-millisecond price ticks, volume deltas, and institutional tape flow."
-              badge="FEED"
-              position="top"
-            >
-              <div className="flex items-center gap-2 text-emerald-500 text-[14px] sm:text-[15px] font-black tracking-wide shrink-0">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>GLOBAL L3 FEED</span>
-              </div>
-            </ExplainerTooltip>
+            <div className="flex items-center gap-2 text-emerald-500 text-[14px] sm:text-[15px] font-black tracking-wide shrink-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>GLOBAL L3 FEED</span>
+            </div>
 
             {/* Edge fade masks */}
             <div className="absolute left-[130px] sm:left-[150px] top-0 bottom-0 w-6 z-10 pointer-events-none hidden sm:block hero-marquee-fade-left" />
