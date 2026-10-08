@@ -6,17 +6,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ExplainerTooltip } from '@/components/ui/ExplainerTooltip';
 
-interface HudItem {
-  top?: string;
-  left?: string;
-  right?: string;
-  bottom?: string;
-  label: string;
-  hudClass: string;
-  dotColor: string;
-  center?: boolean;
-}
-
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -34,31 +23,6 @@ export default function HeroSection() {
     }, 2400);
     return () => clearInterval(timer);
   }, []);
-
-  const heroHuds: HudItem[] = [
-    {
-      top: '25%',
-      left: '7%',
-      label: `BULL ACCUMULATION // +${bullDelta}% ▲`,
-      hudClass: 'video-hud-bull',
-      dotColor: '#00FF88',
-    },
-    {
-      top: '25%',
-      right: '7%',
-      label: `BEAR DISTRIBUTION // ${bearDelta}% ▼`,
-      hudClass: 'video-hud-bear',
-      dotColor: '#FF2E5B',
-    },
-    {
-      bottom: '22%',
-      left: '50%',
-      label: 'ORDER BLOCK RE-TEST // 24,810',
-      hudClass: 'video-hud-cyan',
-      dotColor: '#00E5FF',
-      center: true,
-    },
-  ];
 
   // 3D Parallax Tilt with Mouse
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -137,35 +101,7 @@ export default function HeroSection() {
             }}
           />
 
-          {/* Holographic Telemetry HUD Badges Composed Over the Video (Hidden on mobile to avoid badge collisions) */}
-          {heroHuds.map((hud, idx) => (
-            <div
-              key={idx}
-              className={`hidden sm:flex absolute px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full border backdrop-blur-xl mono text-xs sm:text-sm font-black shadow-2xl ${hud.hudClass} ${
-                hud.center ? '-translate-x-1/2' : ''
-              }`}
-              style={{
-                top: hud.top,
-                left: hud.left,
-                right: hud.right,
-                bottom: hud.bottom,
-              }}
-            >
-              <div className="flex items-center gap-2 whitespace-nowrap">
-                <span
-                  className="w-2 h-2 rounded-full animate-ping"
-                  style={{ backgroundColor: hud.dotColor }}
-                />
-                <span className="font-mono tracking-wider font-extrabold">{hud.label}</span>
-              </div>
-            </div>
-          ))}
 
-          {/* Frame Top Corner Badge */}
-          <div className="absolute top-3.5 sm:top-7 left-3.5 sm:left-9 z-20 px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full border backdrop-blur-xl mono text-[10px] sm:text-xs font-bold flex items-center gap-1.5 sm:gap-2 video-overlay-ctrl shadow-lg">
-            <span className="w-2 h-2 rounded-full bg-[#00FF88] animate-pulse shadow-[0_0_8px_#00FF88]" />
-            <span className="font-mono tracking-wider font-extrabold text-white">LIVE MARKET FEED // 60FPS</span>
-          </div>
 
           {/* Video Audio & Playback Controls Floating on Video Bottom-Right */}
           <div className="absolute bottom-3 sm:bottom-7 right-3 sm:right-9 z-20 flex items-center gap-1.5 sm:gap-2.5 pointer-events-auto">
