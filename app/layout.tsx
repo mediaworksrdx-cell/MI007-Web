@@ -3,7 +3,6 @@ import './globals.css';
 import GlobalMarketCanvasFX from '@/components/fx/GlobalMarketCanvasFX';
 import { MarketProvider } from '@/lib/marketContext';
 import { ThemeProvider } from '@/lib/themeContext';
-import { ThemeSwitcher } from '@/components/ui/ThemeSwitcher';
 
 export const metadata: Metadata = {
   title: 'Market Intelligence AI — MI007',
@@ -28,19 +27,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               try {
                 var saved = localStorage.getItem('mi007_active_theme');
-                if (saved && (saved === 'lightblue' || saved === 'ivory' || saved === 'metallic' || saved === 'techno')) {
-                  document.documentElement.setAttribute('data-theme', saved);
-                } else if (saved === 'quartz') {
-                  document.documentElement.setAttribute('data-theme', 'lightblue');
+                var theme = 'arctic';
+                if (saved === 'arctic' || saved === 'ivory' || saved === 'graphite' || saved === 'capital') {
+                  theme = saved;
+                } else if (saved === 'lightblue' || saved === 'quartz') {
+                  theme = 'arctic';
                 } else if (saved === 'champagne' || saved === 'falcon') {
-                  document.documentElement.setAttribute('data-theme', 'ivory');
-                } else if (saved === 'obsidian') {
-                  document.documentElement.setAttribute('data-theme', 'metallic');
-                } else if (saved === 'cyberpunk') {
-                  document.documentElement.setAttribute('data-theme', 'techno');
-                } else {
-                  document.documentElement.setAttribute('data-theme', 'lightblue');
+                  theme = 'ivory';
+                } else if (saved === 'metallic' || saved === 'obsidian') {
+                  theme = 'graphite';
+                } else if (saved === 'techno' || saved === 'cyberpunk') {
+                  theme = 'capital';
                 }
+                document.documentElement.setAttribute('data-theme', theme);
               } catch (e) {}
             `,
           }}
@@ -59,8 +58,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <MarketProvider>
             {children}
           </MarketProvider>
-          {/* Client Theme Switcher floating dock */}
-          <ThemeSwitcher />
         </ThemeProvider>
       </body>
     </html>

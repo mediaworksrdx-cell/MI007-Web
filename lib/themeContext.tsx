@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type AppTheme = 'lightblue' | 'ivory' | 'metallic' | 'techno';
+export type AppTheme = 'arctic' | 'ivory' | 'graphite' | 'capital';
 
 export interface ThemeConfig {
   id: AppTheme;
@@ -13,7 +13,11 @@ export interface ThemeConfig {
   palette: {
     bg: string;
     card: string;
+    surface: string;
     accent: string;
+    accentSecondary: string;
+    text: string;
+    textMuted: string;
     bull: string;
     bear: string;
     border: string;
@@ -21,64 +25,80 @@ export interface ThemeConfig {
 }
 
 export const THEMES: Record<AppTheme, ThemeConfig> = {
-  lightblue: {
-    id: 'lightblue',
-    name: 'Light Blue',
-    tagline: 'Vibrant Arctic Sky Blue & Electric Cerulean',
-    badge: 'Bright 1',
+  arctic: {
+    id: 'arctic',
+    name: 'Arctic Intelligence',
+    tagline: 'Modern Institutional Research Terminal',
+    badge: 'Institutional Light',
     mode: 'light',
     palette: {
-      bg: '#E0F2FE',
+      bg: '#EDF5FA',
       card: '#FFFFFF',
-      accent: '#0284C7',
+      surface: '#F4F9FD',
+      accent: '#0891B2',
+      accentSecondary: '#0F2744',
+      text: '#0B192C',
+      textMuted: '#475569',
       bull: '#059669',
       bear: '#DC2626',
-      border: 'rgba(2, 132, 199, 0.32)',
+      border: 'rgba(8, 145, 178, 0.18)',
     },
   },
   ivory: {
     id: 'ivory',
-    name: 'Ivory',
-    tagline: 'Warm Radiant Ivory & Sovereign Honey Gold',
-    badge: 'Bright 2',
+    name: 'Executive Ivory',
+    tagline: 'Luxury Investment Banking & Research',
+    badge: 'Executive Light',
     mode: 'light',
     palette: {
-      bg: '#FAF0DB',
+      bg: '#F7F4EB',
       card: '#FFFFFF',
-      accent: '#D97706',
+      surface: '#FAF7F0',
+      accent: '#166534',
+      accentSecondary: '#C5A059',
+      text: '#1A1A1A',
+      textMuted: '#525252',
       bull: '#15803D',
       bear: '#B91C1C',
-      border: 'rgba(217, 119, 6, 0.35)',
+      border: 'rgba(22, 101, 52, 0.16)',
     },
   },
-  metallic: {
-    id: 'metallic',
-    name: 'Metallic Grey',
-    tagline: 'Light Gunmetal Slate & Brushed Platinum',
-    badge: 'Dark 1',
+  graphite: {
+    id: 'graphite',
+    name: 'Institutional Graphite',
+    tagline: 'Bloomberg-Style Institutional Terminal',
+    badge: 'Institutional Dark',
     mode: 'dark',
     palette: {
-      bg: '#232B3A',
-      card: '#303B4F',
-      accent: '#CBD5E1',
+      bg: '#181C24',
+      card: '#222733',
+      surface: '#282F3E',
+      accent: '#10B981',
+      accentSecondary: '#94A3B8',
+      text: '#F8FAFC',
+      textMuted: '#94A3B8',
       bull: '#10B981',
       bear: '#F43F5E',
-      border: 'rgba(203, 213, 225, 0.30)',
+      border: 'rgba(148, 163, 184, 0.18)',
     },
   },
-  techno: {
-    id: 'techno',
-    name: 'Techno Blue',
-    tagline: 'Luminous Cobalt Blue & Electric Neon Cyan',
-    badge: 'Dark 2',
+  capital: {
+    id: 'capital',
+    name: 'AI Capital',
+    tagline: 'Advanced AI Financial Intelligence Platform',
+    badge: 'AI Capital Dark',
     mode: 'dark',
     palette: {
-      bg: '#122347',
-      card: '#1A3366',
-      accent: '#00F0FF',
-      bull: '#00E699',
-      bear: '#FF3B69',
-      border: 'rgba(0, 240, 255, 0.38)',
+      bg: '#0B132B',
+      card: '#131E3D',
+      surface: '#18264D',
+      accent: '#2563EB',
+      accentSecondary: '#06B6D4',
+      text: '#FFFFFF',
+      textMuted: '#94A3B8',
+      bull: '#10B981',
+      bear: '#EF4444',
+      border: 'rgba(37, 99, 235, 0.22)',
     },
   },
 };
@@ -95,23 +115,23 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const STORAGE_KEY = 'mi007_active_theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<AppTheme>('lightblue');
+  const [theme, setThemeState] = useState<AppTheme>('arctic');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     // Read stored theme from localStorage or document attribute with legacy migration
     const stored = (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null);
-    let initialTheme: AppTheme = 'lightblue';
+    let initialTheme: AppTheme = 'arctic';
     if (stored && THEMES[stored as AppTheme]) {
       initialTheme = stored as AppTheme;
-    } else if (stored === 'quartz') {
-      initialTheme = 'lightblue';
+    } else if (stored === 'lightblue' || stored === 'quartz') {
+      initialTheme = 'arctic';
     } else if (stored === 'champagne' || stored === 'falcon') {
       initialTheme = 'ivory';
-    } else if (stored === 'obsidian') {
-      initialTheme = 'metallic';
-    } else if (stored === 'cyberpunk') {
-      initialTheme = 'techno';
+    } else if (stored === 'metallic' || stored === 'obsidian') {
+      initialTheme = 'graphite';
+    } else if (stored === 'techno' || stored === 'cyberpunk') {
+      initialTheme = 'capital';
     }
 
     setThemeState(initialTheme);
@@ -127,7 +147,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const currentThemeConfig = THEMES[theme] || THEMES.lightblue;
+  const currentThemeConfig = THEMES[theme] || THEMES.arctic;
   const isDark = currentThemeConfig.mode === 'dark';
 
   return (

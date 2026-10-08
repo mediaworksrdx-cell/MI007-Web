@@ -52,7 +52,7 @@ export function ThemeSwitcher() {
                 <span className="text-[9px] font-mono opacity-60">2 Options</span>
               </div>
               <div className="grid grid-cols-1 gap-1.5">
-                {[THEMES.lightblue, THEMES.ivory].map((t) => {
+                {[THEMES.arctic, THEMES.ivory].map((t) => {
                   const isActive = theme === t.id;
                   return (
                     <button
@@ -117,12 +117,12 @@ export function ThemeSwitcher() {
             <div>
               <div className="flex items-center justify-between mb-1 px-1 pt-1 border-t border-white/5">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  🌑 Dark Palettes (Metallic Grey & Techno Blue)
+                  🌑 Dark Palettes (Institutional Graphite & AI Capital)
                 </span>
                 <span className="text-[9px] font-mono opacity-60">2 Options</span>
               </div>
               <div className="grid grid-cols-1 gap-1.5">
-                {[THEMES.metallic, THEMES.techno].map((t) => {
+                {[THEMES.graphite, THEMES.capital].map((t) => {
                   const isActive = theme === t.id;
                   return (
                     <button

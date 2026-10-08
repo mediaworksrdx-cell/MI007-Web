@@ -34,116 +34,120 @@
    ══════════════════════════════════════════════════════════════════════════════ */
 
 :root,
+html[data-theme="arctic"],
 html[data-theme="lightblue"],
 html[data-theme="quartz"] {
-  --color-bg-midnight: #E0F2FE;
+  --color-bg-midnight: #EDF5FA;
   --color-surface-card: #FFFFFF;
-  --color-surface-variant: #BAE6FD;
-  --color-border-navy: rgba(2, 132, 199, 0.30);
+  --color-surface-variant: #F4F9FD;
+  --color-border-navy: rgba(8, 145, 178, 0.20);
   --color-mint-green: #059669;
-  --color-crimson-red: #E11D48;
-  --color-accent-cyan: #0284C7;
-  --color-cyber-gold: #0284C7;
-  --color-chart-bg: #E0F2FE;
-  --color-text-primary: #082F49;
-  --color-text-secondary: #0369A1;
-  --color-text-muted: #0284C7;
+  --color-crimson-red: #DC2626;
+  --color-accent-cyan: #0891B2;
+  --color-cyber-gold: #0F2744;
+  --color-chart-bg: #EDF5FA;
+  --color-text-primary: #0B192C;
+  --color-text-secondary: #334155;
+  --color-text-muted: #475569;
   --color-bull-green: #059669;
-  --color-bear-red: #E11D48;
-  --color-glass-white: rgba(255, 255, 255, 0.95);
+  --color-bear-red: #DC2626;
+  --color-glass-white: rgba(255, 255, 255, 0.98);
 
-  --theme-page-bg: #E0F2FE;
-  --theme-page-text: #082F49;
+  --theme-page-bg: #EDF5FA;
+  --theme-page-text: #0B192C;
   --theme-card-bg: #FFFFFF;
-  --theme-card-border: rgba(2, 132, 199, 0.28);
-  --theme-navbar-bg: rgba(224, 242, 254, 0.95);
-  --theme-footer-bg: rgba(186, 230, 253, 0.95);
-  --theme-ticker-bg: rgba(255, 255, 255, 0.95);
+  --theme-card-border: rgba(8, 145, 178, 0.18);
+  --theme-navbar-bg: rgba(237, 245, 250, 0.96);
+  --theme-footer-bg: rgba(244, 249, 253, 0.98);
+  --theme-ticker-bg: #FFFFFF;
   --theme-switcher-bg: #FFFFFF;
 }
 
 html[data-theme="ivory"],
-html[data-theme="champagne"] {
-  --color-bg-midnight: #FAF0DB;
+html[data-theme="champagne"],
+html[data-theme="falcon"] {
+  --color-bg-midnight: #F7F4EB;
   --color-surface-card: #FFFFFF;
-  --color-surface-variant: #F5E5C0;
-  --color-border-navy: rgba(217, 119, 6, 0.35);
+  --color-surface-variant: #FAF7F0;
+  --color-border-navy: rgba(22, 101, 52, 0.18);
   --color-mint-green: #15803D;
   --color-crimson-red: #B91C1C;
-  --color-accent-cyan: #D97706;
-  --color-cyber-gold: #D97706;
-  --color-chart-bg: #FAF0DB;
-  --color-text-primary: #291505;
-  --color-text-secondary: #92400E;
-  --color-text-muted: #B45309;
+  --color-accent-cyan: #166534;
+  --color-cyber-gold: #C5A059;
+  --color-chart-bg: #F7F4EB;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #404040;
+  --color-text-muted: #525252;
   --color-bull-green: #15803D;
   --color-bear-red: #B91C1C;
-  --color-glass-white: rgba(255, 255, 255, 0.95);
+  --color-glass-white: rgba(255, 255, 255, 0.98);
 
-  --theme-page-bg: #FAF0DB;
-  --theme-page-text: #291505;
+  --theme-page-bg: #F7F4EB;
+  --theme-page-text: #1A1A1A;
   --theme-card-bg: #FFFFFF;
-  --theme-card-border: rgba(217, 119, 6, 0.32);
-  --theme-navbar-bg: rgba(250, 240, 219, 0.95);
-  --theme-footer-bg: rgba(245, 229, 192, 0.95);
-  --theme-ticker-bg: rgba(255, 255, 255, 0.95);
-  --theme-switcher-bg: #FAF0DB;
+  --theme-card-border: rgba(22, 101, 52, 0.16);
+  --theme-navbar-bg: rgba(247, 244, 235, 0.96);
+  --theme-footer-bg: rgba(250, 247, 240, 0.98);
+  --theme-ticker-bg: #FFFFFF;
+  --theme-switcher-bg: #FFFFFF;
 }
 
+html[data-theme="graphite"],
 html[data-theme="metallic"],
 html[data-theme="obsidian"] {
-  --color-bg-midnight: #232B3A;
-  --color-surface-card: #303B4F;
-  --color-surface-variant: #3C4961;
-  --color-border-navy: rgba(203, 213, 225, 0.30);
+  --color-bg-midnight: #181C24;
+  --color-surface-card: #222733;
+  --color-surface-variant: #282F3E;
+  --color-border-navy: rgba(148, 163, 184, 0.18);
   --color-mint-green: #10B981;
   --color-crimson-red: #F43F5E;
-  --color-accent-cyan: #CBD5E1;
-  --color-cyber-gold: #E2E8F0;
-  --color-chart-bg: #232B3A;
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #E2E8F0;
-  --color-text-muted: #CBD5E1;
+  --color-accent-cyan: #10B981;
+  --color-cyber-gold: #94A3B8;
+  --color-chart-bg: #181C24;
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
   --color-bull-green: #10B981;
   --color-bear-red: #F43F5E;
-  --color-glass-white: rgba(48, 59, 79, 0.90);
+  --color-glass-white: rgba(34, 39, 51, 0.92);
 
-  --theme-page-bg: #232B3A;
-  --theme-page-text: #FFFFFF;
-  --theme-card-bg: #303B4F;
-  --theme-card-border: rgba(203, 213, 225, 0.30);
-  --theme-navbar-bg: rgba(35, 43, 58, 0.95);
-  --theme-footer-bg: rgba(29, 36, 49, 0.95);
-  --theme-ticker-bg: rgba(48, 59, 79, 0.95);
-  --theme-switcher-bg: #303B4F;
+  --theme-page-bg: #181C24;
+  --theme-page-text: #F8FAFC;
+  --theme-card-bg: #222733;
+  --theme-card-border: rgba(148, 163, 184, 0.18);
+  --theme-navbar-bg: rgba(24, 28, 36, 0.96);
+  --theme-footer-bg: rgba(20, 23, 30, 0.98);
+  --theme-ticker-bg: rgba(34, 39, 51, 0.96);
+  --theme-switcher-bg: #222733;
 }
 
+html[data-theme="capital"],
 html[data-theme="techno"],
 html[data-theme="cyberpunk"] {
-  --color-bg-midnight: #122347;
-  --color-surface-card: #1A3366;
-  --color-surface-variant: #234282;
-  --color-border-navy: rgba(0, 240, 255, 0.38);
-  --color-mint-green: #00E699;
-  --color-crimson-red: #FF3B69;
-  --color-accent-cyan: #00F0FF;
-  --color-cyber-gold: #38BDF8;
-  --color-chart-bg: #122347;
+  --color-bg-midnight: #0B132B;
+  --color-surface-card: #131E3D;
+  --color-surface-variant: #18264D;
+  --color-border-navy: rgba(37, 99, 235, 0.22);
+  --color-mint-green: #10B981;
+  --color-crimson-red: #EF4444;
+  --color-accent-cyan: #2563EB;
+  --color-cyber-gold: #06B6D4;
+  --color-chart-bg: #0B132B;
   --color-text-primary: #FFFFFF;
-  --color-text-secondary: #93C5FD;
-  --color-text-muted: #60A5FA;
-  --color-bull-green: #00E699;
-  --color-bear-red: #FF3B69;
-  --color-glass-white: rgba(26, 51, 102, 0.90);
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
+  --color-bull-green: #10B981;
+  --color-bear-red: #EF4444;
+  --color-glass-white: rgba(19, 30, 61, 0.92);
 
-  --theme-page-bg: #122347;
+  --theme-page-bg: #0B132B;
   --theme-page-text: #FFFFFF;
-  --theme-card-bg: #1A3366;
-  --theme-card-border: rgba(0, 240, 255, 0.38);
-  --theme-navbar-bg: rgba(18, 35, 71, 0.95);
-  --theme-footer-bg: rgba(14, 27, 56, 0.95);
-  --theme-ticker-bg: rgba(26, 51, 102, 0.95);
-  --theme-switcher-bg: #1A3366;
+  --theme-card-bg: #131E3D;
+  --theme-card-border: rgba(37, 99, 235, 0.22);
+  --theme-navbar-bg: rgba(11, 19, 43, 0.96);
+  --theme-footer-bg: rgba(8, 14, 32, 0.98);
+  --theme-ticker-bg: rgba(19, 30, 61, 0.96);
+  --theme-switcher-bg: #131E3D;
 }
 
 @keyframes ticker {
@@ -229,6 +233,8 @@ body {
 }
 
 /* ── Adaptive styling across dark candidate modes ── */
+html[data-theme="graphite"],
+html[data-theme="capital"],
 html[data-theme="metallic"],
 html[data-theme="techno"],
 html[data-theme="obsidian"],
@@ -236,143 +242,173 @@ html[data-theme="cyberpunk"] {
   color-scheme: dark;
 }
 
-html[data-theme="lightblue"] body {
-  background: radial-gradient(ellipse at 50% 0%, #BAE6FD 0%, #E0F2FE 45%, #E0F2FE 100%) !important;
+/* ── Enterprise Clean Surfaces (No childish gradients or excessive glow) ── */
+html body {
+  background-color: var(--theme-page-bg) !important;
   color: var(--theme-page-text) !important;
 }
 
-html[data-theme="ivory"] body {
-  background: radial-gradient(ellipse at 50% 0%, #FDE68A 0%, #FAF0DB 45%, #FAF0DB 100%) !important;
-  color: var(--theme-page-text) !important;
+/* Refined 1px borders and subtle institutional elevation */
+html[data-theme="arctic"] .bg-white,
+html[data-theme="lightblue"] .bg-white,
+html[data-theme="quartz"] .bg-white {
+  border-color: rgba(8, 145, 178, 0.18) !important;
+  box-shadow: 0 4px 16px -2px rgba(8, 145, 178, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04) !important;
 }
 
-html[data-theme="metallic"] body,
-html[data-theme="obsidian"] body {
-  background: radial-gradient(ellipse at 50% 0%, #2F394D 0%, #232B3A 45%, #232B3A 100%) !important;
-  color: var(--theme-page-text) !important;
+html[data-theme="ivory"] .bg-white,
+html[data-theme="champagne"] .bg-white,
+html[data-theme="falcon"] .bg-white {
+  border-color: rgba(22, 101, 52, 0.16) !important;
+  box-shadow: 0 4px 16px -2px rgba(22, 101, 52, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04) !important;
 }
 
-html[data-theme="techno"] body,
-html[data-theme="cyberpunk"] body {
-  background: radial-gradient(ellipse at 50% 0%, #1F3B77 0%, #122347 45%, #122347 100%) !important;
-  color: var(--theme-page-text) !important;
-}
-
-/* Vibrant bright card borders and glowing depth */
-html[data-theme="lightblue"] .bg-white {
-  border-color: rgba(2, 132, 199, 0.32) !important;
-  box-shadow: 0 10px 30px -5px rgba(2, 132, 199, 0.16), 0 0 0 1px rgba(2, 132, 199, 0.22) !important;
-}
-
-html[data-theme="ivory"] .bg-white {
-  border-color: rgba(217, 119, 6, 0.35) !important;
-  box-shadow: 0 10px 30px -5px rgba(217, 119, 6, 0.16), 0 0 0 1px rgba(217, 119, 6, 0.24) !important;
-}
-
-/* Card surfaces */
+/* Dark Theme Card Surfaces */
+html[data-theme="graphite"] .bg-white,
+html[data-theme="capital"] .bg-white,
 html[data-theme="metallic"] .bg-white,
 html[data-theme="techno"] .bg-white,
+html[data-theme="obsidian"] .bg-white,
+html[data-theme="cyberpunk"] .bg-white,
+html[data-theme="graphite"] [class*="bg-white/"],
+html[data-theme="capital"] [class*="bg-white/"],
 html[data-theme="metallic"] [class*="bg-white/"],
 html[data-theme="techno"] [class*="bg-white/"] {
   background-color: var(--theme-card-bg) !important;
+  border-color: var(--theme-card-border) !important;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45) !important;
 }
 
+html[data-theme="graphite"] .bg-slate-50,
+html[data-theme="capital"] .bg-slate-50,
+html[data-theme="graphite"] .bg-slate-100,
+html[data-theme="capital"] .bg-slate-100,
 html[data-theme="metallic"] .bg-slate-50,
 html[data-theme="techno"] .bg-slate-50,
 html[data-theme="metallic"] .bg-slate-100,
 html[data-theme="techno"] .bg-slate-100,
-html[data-theme="metallic"] [class*="bg-slate-50/"],
-html[data-theme="techno"] [class*="bg-slate-50/"],
-html[data-theme="metallic"] [class*="bg-slate-100/"],
-html[data-theme="techno"] [class*="bg-slate-100/"] {
+html[data-theme="graphite"] [class*="bg-slate-50/"],
+html[data-theme="capital"] [class*="bg-slate-50/"],
+html[data-theme="graphite"] [class*="bg-slate-100/"],
+html[data-theme="capital"] [class*="bg-slate-100/"] {
   background-color: var(--color-surface-variant) !important;
 }
 
 /* Borders */
+html[data-theme="graphite"] .border-slate-200,
+html[data-theme="capital"] .border-slate-200,
+html[data-theme="graphite"] .border-slate-300,
+html[data-theme="capital"] .border-slate-300,
 html[data-theme="metallic"] .border-slate-200,
 html[data-theme="techno"] .border-slate-200,
 html[data-theme="metallic"] .border-slate-300,
 html[data-theme="techno"] .border-slate-300,
-html[data-theme="metallic"] [class*="border-slate-200/"],
-html[data-theme="techno"] [class*="border-slate-200/"],
-html[data-theme="metallic"] [class*="border-slate-300/"],
-html[data-theme="techno"] [class*="border-slate-300/"] {
+html[data-theme="graphite"] [class*="border-slate-200/"],
+html[data-theme="capital"] [class*="border-slate-200/"],
+html[data-theme="graphite"] [class*="border-slate-300/"],
+html[data-theme="capital"] [class*="border-slate-300/"] {
   border-color: var(--theme-card-border) !important;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   PRO-LEVEL TYPOGRAPHY SYSTEM (4 TAILORED THEMES)
+   PRO-LEVEL TYPOGRAPHY SYSTEM (4 INSTITUTIONAL ENTERPRISE THEMES)
    ══════════════════════════════════════════════════════════════════════════════ */
 
-/* ── 1. LIGHT BLUE: Deep High-Contrast Navy Typography ── */
+/* ── 1. ARCTIC INTELLIGENCE: Dark Navy + Slate Gray Typography ── */
+html[data-theme="arctic"] .text-black,
+html[data-theme="arctic"] .text-slate-950,
+html[data-theme="arctic"] .text-slate-900,
 html[data-theme="lightblue"] .text-black,
 html[data-theme="lightblue"] .text-slate-950,
 html[data-theme="lightblue"] .text-slate-900 {
-  color: #082F49 !important;
+  color: #0B192C !important;
 }
+html[data-theme="arctic"] .text-slate-800,
+html[data-theme="arctic"] .text-slate-700,
 html[data-theme="lightblue"] .text-slate-800,
 html[data-theme="lightblue"] .text-slate-700 {
-  color: #0F172A !important;
-}
-html[data-theme="lightblue"] .text-slate-600 {
   color: #1E293B !important;
 }
-html[data-theme="lightblue"] .text-slate-500,
+html[data-theme="arctic"] .text-slate-600,
+html[data-theme="arctic"] .text-slate-500,
+html[data-theme="lightblue"] .text-slate-600,
+html[data-theme="lightblue"] .text-slate-500 {
+  color: #475569 !important;
+}
+html[data-theme="arctic"] .text-slate-400,
 html[data-theme="lightblue"] .text-slate-400 {
-  color: #334155 !important;
+  color: #64748B !important;
 }
 
-/* ── 2. IVORY: Warm Sovereign Espresso & Bronze Typography ── */
+/* ── 2. EXECUTIVE IVORY: Charcoal/Black + Muted Slate Typography ── */
 html[data-theme="ivory"] .text-black,
 html[data-theme="ivory"] .text-slate-950,
 html[data-theme="ivory"] .text-slate-900 {
-  color: #1C1917 !important;
+  color: #1A1A1A !important;
 }
 html[data-theme="ivory"] .text-slate-800,
 html[data-theme="ivory"] .text-slate-700 {
-  color: #292524 !important;
+  color: #262626 !important;
 }
-html[data-theme="ivory"] .text-slate-600 {
-  color: #44403C !important;
+html[data-theme="ivory"] .text-slate-600,
+html[data-theme="ivory"] .text-slate-500 {
+  color: #525252 !important;
 }
-html[data-theme="ivory"] .text-slate-500,
 html[data-theme="ivory"] .text-slate-400 {
-  color: #57534E !important;
+  color: #737373 !important;
 }
 
-/* ── 3. METALLIC GREY: Crisp Brilliant White & Platinum Silver Typography ── */
+/* ── 3. INSTITUTIONAL GRAPHITE: Off-White + Cool Gray Typography ── */
+html[data-theme="graphite"] .text-black,
+html[data-theme="graphite"] .text-slate-950,
+html[data-theme="graphite"] .text-slate-900,
+html[data-theme="graphite"] .text-slate-800,
 html[data-theme="metallic"] .text-black,
 html[data-theme="metallic"] .text-slate-950,
 html[data-theme="metallic"] .text-slate-900,
 html[data-theme="metallic"] .text-slate-800 {
-  color: #FFFFFF !important;
+  color: #F8FAFC !important;
 }
+html[data-theme="graphite"] .text-slate-700,
+html[data-theme="graphite"] .text-slate-600,
 html[data-theme="metallic"] .text-slate-700,
 html[data-theme="metallic"] .text-slate-600 {
   color: #E2E8F0 !important;
 }
+html[data-theme="graphite"] .text-slate-500,
+html[data-theme="graphite"] .text-slate-400,
 html[data-theme="metallic"] .text-slate-500,
 html[data-theme="metallic"] .text-slate-400 {
-  color: #CBD5E1 !important;
+  color: #94A3B8 !important;
 }
 
-/* ── 4. TECHNO BLUE: Pure White & Electric Ice Cyan Typography ── */
+/* ── 4. AI CAPITAL: Pure White + Cool Blue-Gray Typography ── */
+html[data-theme="capital"] .text-black,
+html[data-theme="capital"] .text-slate-950,
+html[data-theme="capital"] .text-slate-900,
+html[data-theme="capital"] .text-slate-800,
 html[data-theme="techno"] .text-black,
 html[data-theme="techno"] .text-slate-950,
 html[data-theme="techno"] .text-slate-900,
 html[data-theme="techno"] .text-slate-800 {
   color: #FFFFFF !important;
 }
+html[data-theme="capital"] .text-slate-700,
+html[data-theme="capital"] .text-slate-600,
 html[data-theme="techno"] .text-slate-700,
 html[data-theme="techno"] .text-slate-600 {
   color: #E0F2FE !important;
 }
+html[data-theme="capital"] .text-slate-500,
+html[data-theme="capital"] .text-slate-400,
 html[data-theme="techno"] .text-slate-500,
 html[data-theme="techno"] .text-slate-400 {
-  color: #BAE6FD !important;
+  color: #94A3B8 !important;
 }
 
 /* Navbar & Ticker */
+html[data-theme="graphite"] header,
+html[data-theme="capital"] header,
 html[data-theme="metallic"] header,
 html[data-theme="techno"] header {
   background-color: var(--theme-navbar-bg) !important;
@@ -380,6 +416,8 @@ html[data-theme="techno"] header {
 }
 
 /* Footer */
+html[data-theme="graphite"] footer,
+html[data-theme="capital"] footer,
 html[data-theme="metallic"] footer,
 html[data-theme="techno"] footer {
   background-color: var(--theme-footer-bg) !important;
@@ -387,26 +425,40 @@ html[data-theme="techno"] footer {
 }
 
 /* Hover and active states */
+html[data-theme="graphite"] .hover\:bg-slate-100:hover,
+html[data-theme="capital"] .hover\:bg-slate-100:hover,
 html[data-theme="metallic"] .hover\:bg-slate-100:hover,
 html[data-theme="techno"] .hover\:bg-slate-100:hover,
+html[data-theme="graphite"] .hover\:bg-slate-200:hover,
+html[data-theme="capital"] .hover\:bg-slate-200:hover,
 html[data-theme="metallic"] .hover\:bg-slate-200:hover,
 html[data-theme="techno"] .hover\:bg-slate-200:hover,
+html[data-theme="graphite"] .hover\:bg-slate-50:hover,
+html[data-theme="capital"] .hover\:bg-slate-50:hover,
 html[data-theme="metallic"] .hover\:bg-slate-50:hover,
 html[data-theme="techno"] .hover\:bg-slate-50:hover,
+html[data-theme="graphite"] .active\:bg-slate-100:active,
+html[data-theme="capital"] .active\:bg-slate-100:active,
 html[data-theme="metallic"] .active\:bg-slate-100:active,
 html[data-theme="techno"] .active\:bg-slate-100:active {
   background-color: var(--color-surface-variant) !important;
 }
 
 /* Scrollbars in dark mode */
+html[data-theme="graphite"] ::-webkit-scrollbar-track,
+html[data-theme="capital"] ::-webkit-scrollbar-track,
 html[data-theme="metallic"] ::-webkit-scrollbar-track,
 html[data-theme="techno"] ::-webkit-scrollbar-track {
   background: var(--theme-page-bg);
 }
+html[data-theme="graphite"] ::-webkit-scrollbar-thumb,
+html[data-theme="capital"] ::-webkit-scrollbar-thumb,
 html[data-theme="metallic"] ::-webkit-scrollbar-thumb,
 html[data-theme="techno"] ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
 }
+html[data-theme="graphite"] ::-webkit-scrollbar-thumb:hover,
+html[data-theme="capital"] ::-webkit-scrollbar-thumb:hover,
 html[data-theme="metallic"] ::-webkit-scrollbar-thumb:hover,
 html[data-theme="techno"] ::-webkit-scrollbar-thumb:hover {
   background: var(--color-accent-cyan);
