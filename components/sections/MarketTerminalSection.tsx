@@ -549,7 +549,7 @@ export default function MarketTerminalSection() {
             </span>
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-2 page-heading">
-            The Living Product Terminal
+            Product Terminal
           </h2>
           <p className="text-[17px] sm:text-[19px] font-medium max-w-xl mx-auto page-subtitle">
             Interactive candlestick intelligence with real-time liquidity sweep detection, automated pattern recognition, and instantaneous AI microstructure inspection.
