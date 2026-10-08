@@ -626,46 +626,51 @@ header {
 footer {
   background-color: var(--theme-footer-bg) !important;
   border-color: var(--theme-footer-border) !important;
-  color: var(--theme-footer-text) !important;
+  color: #FFFFFF !important;
 }
 
 .footer-brand-title {
-  color: var(--theme-footer-text) !important;
+  color: #FFFFFF !important;
 }
 
 .footer-brand-subtitle {
-  color: var(--theme-card-text-muted) !important;
+  color: #CBD5E1 !important;
 }
 
 .footer-chip {
-  background-color: rgba(148, 163, 184, 0.14) !important;
-  border: 1px solid rgba(148, 163, 184, 0.3) !important;
-  color: var(--theme-footer-text) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: #FFFFFF !important;
 }
 
 .footer-heading {
-  color: var(--theme-footer-text) !important;
+  color: #FFFFFF !important;
 }
 
 .footer-link {
-  color: var(--theme-card-text-muted) !important;
+  color: #F8FAFC !important;
+  opacity: 0.95;
 }
 .footer-link:hover {
-  color: #059669 !important;
+  color: #34D399 !important;
+  opacity: 1;
 }
 
-.footer-list {
-  color: var(--theme-card-text-muted) !important;
+.footer-list,
+.footer-list li,
+.footer-list span {
+  color: #F1F5F9 !important;
 }
 
 .footer-coming-soon {
-  background-color: rgba(245, 158, 11, 0.15) !important;
-  border: 1px solid rgba(245, 158, 11, 0.45) !important;
-  color: #F59E0B !important;
+  background-color: rgba(245, 158, 11, 0.2) !important;
+  border: 1px solid rgba(245, 158, 11, 0.5) !important;
+  color: #FBBF24 !important;
 }
 
-.footer-copy {
-  color: var(--theme-card-text-muted) !important;
+.footer-copy,
+.footer-copy span {
+  color: #CBD5E1 !important;
 }
 
 html[data-theme="graphite"] footer,

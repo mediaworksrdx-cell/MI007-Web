@@ -20,26 +20,26 @@ export function Footer() {
               </div>
               <div>
                 <div className="leading-none">
-                  <span className="font-extrabold text-[16px] uppercase font-sans tracking-tight footer-brand-title">
+                  <span className="font-extrabold text-[16px] uppercase font-sans tracking-tight footer-brand-title text-white">
                     Market Intelligence - 007
                   </span>
                 </div>
-                <div className="text-[11px] tracking-[0.18em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle">
+                <div className="text-[11px] tracking-[0.18em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-200">
                   Autonomous Market Intelligence
                 </div>
-                <div className="text-[10.5px] font-bold text-emerald-500 uppercase tracking-wider mono mt-1">
+                <div className="text-[10.5px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1">
                   A Synthetix Analytics Product
                 </div>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
-              <span className="footer-chip rounded-md px-2.5 py-1 text-[11px] font-bold font-mono tracking-wide shadow-2xs border">
+              <span className="footer-chip rounded-md px-2.5 py-1 text-[11px] font-bold font-mono tracking-wide shadow-2xs border text-white">
                 🇺🇸 NYSE/NASDAQ
               </span>
-              <span className="footer-chip rounded-md px-2.5 py-1 text-[11px] font-bold font-mono tracking-wide shadow-2xs border">
+              <span className="footer-chip rounded-md px-2.5 py-1 text-[11px] font-bold font-mono tracking-wide shadow-2xs border text-white">
                 🇮🇳 NSE/BSE (HQ)
               </span>
-              <span className="footer-chip rounded-md px-2.5 py-1 text-[11px] font-bold font-mono tracking-wide shadow-2xs border">
+              <span className="footer-chip rounded-md px-2.5 py-1 text-[11px] font-bold font-mono tracking-wide shadow-2xs border text-white">
                 🇦🇪 DFM/ADX
               </span>
             </div>
@@ -47,7 +47,7 @@ export function Footer() {
 
           {/* Platform */}
           <div>
-            <h4 className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading">Platform</h4>
+            <h4 className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading text-white">Platform</h4>
             <ul className="flex flex-col gap-2">
               {[
                 { href: '/', label: 'Home' },
@@ -55,7 +55,7 @@ export function Footer() {
                 { href: '/contact', label: 'Contact' },
               ].map(({ href, label }) => (
                 <li key={href}>
-                  <Link href={href} className="text-[15px] font-semibold footer-link transition-colors">
+                  <Link href={href} className="text-[15px] font-semibold footer-link text-white transition-colors">
                     {label}
                   </Link>
                 </li>
@@ -65,8 +65,8 @@ export function Footer() {
 
           {/* Markets */}
           <div>
-            <h4 className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading">Coverage</h4>
-            <ul className="flex flex-col gap-2 text-[15px] font-medium footer-list">
+            <h4 className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading text-white">Coverage</h4>
+            <ul className="flex flex-col gap-2 text-[15px] font-semibold footer-list text-white">
               <li>🇺🇸 S&P 500 · NASDAQ 100 · DOW JONES</li>
               <li>🇮🇳 NIFTY 50 · BANKNIFTY · SENSEX</li>
               <li>🇦🇪 DFMGI · ADXGI · FTSE ADX 15</li>
@@ -83,8 +83,8 @@ export function Footer() {
 
           {/* Legal / Compliance */}
           <div>
-            <h4 className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading">Legal</h4>
-            <ul className="flex flex-col gap-2 text-[15px] font-medium leading-relaxed footer-list">
+            <h4 className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading text-white">Legal</h4>
+            <ul className="flex flex-col gap-2 text-[15px] font-semibold leading-relaxed footer-list text-white">
               <li>For informational purposes only.</li>
               <li>Not financial or investment advice.</li>
               <li>Market data may be delayed.</li>
@@ -94,8 +94,8 @@ export function Footer() {
         </div>
 
         {/* Bottom strip */}
-        <div className="h-[1px] w-full border-t border-current opacity-20 mt-8 mb-4" />
-        <div className="text-[13px] font-semibold text-center sm:text-left footer-copy">
+        <div className="h-[1px] w-full border-t border-white/20 mt-8 mb-4" />
+        <div className="text-[13px] font-semibold text-center sm:text-left footer-copy text-slate-300">
           <span>© 2026 Synthetix Analytics</span>
         </div>
       </div>
