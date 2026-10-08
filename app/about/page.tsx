@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -12,16 +11,12 @@ const WHAT_WE_DO = [
     title: 'Global-Market Coverage',
     tag: 'Worldwide Traded Instruments',
     desc: 'Seamless analysis across traded instruments around the globe.',
-    border: 'border-sky-200/80',
-    bg: 'from-sky-50/80 to-sky-100/30',
   },
   {
     icon: '🤖',
     title: 'AI-Driven Analytics',
     tag: 'Machine Learning',
     desc: 'Advanced machine learning algorithms that spot anomalies, chart patterns, and sentiment shifts before they become mainstream news.',
-    border: 'border-emerald-200/80',
-    bg: 'from-emerald-50/80 to-emerald-100/30',
   },
 ];
 
@@ -137,105 +132,109 @@ export default function AboutPage() {
 
       <main className="min-h-screen pt-[88px] relative z-10 bg-transparent">
         {/* ── Hero ── */}
-        <section className="border-b border-slate-200 bg-slate-50/70 backdrop-blur-sm py-20 lg:py-24">
+        <section className="py-20 lg:py-24">
           <div className="mx-auto max-w-4xl px-6 text-center">
             {/* Tech Platform / Study Notice Pill */}
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50/90 px-4 py-1.5 shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse" />
-              <span className="text-amber-950 text-xs font-bold mono tracking-widest uppercase">
-                Study &amp; Research Technology Platform
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+              <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
+                01 // STUDY &amp; RESEARCH TECHNOLOGY PLATFORM
               </span>
             </div>
             
-            <h1 className="mb-6 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-tight">
-              Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-800 to-emerald-700">Market Intelligence - 007</span>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4 page-heading">
+              Welcome to <span className="font-extrabold text-emerald-600">Market Intelligence - 007</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-slate-900 leading-relaxed font-semibold max-w-3xl mx-auto mb-5">
+            <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle mb-4">
               The premier market intelligence platform engineered to revolutionize how you navigate markets.
             </p>
 
-            <p className="text-slate-800 text-base md:text-lg leading-relaxed max-w-3xl mx-auto font-medium mb-8">
+            <p className="text-[15px] sm:text-[16px] max-w-2xl mx-auto leading-relaxed font-normal page-subtitle mb-8 opacity-90">
               Market Intelligence - 007 delivers institutional-grade market intelligence directly to retail investors, day traders, and portfolio managers worldwide.
             </p>
 
             {/* Informational & Risk Disclaimer Banner */}
-            <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200/90 bg-white/95 p-4 shadow-sm text-left flex items-start gap-3">
+            <div className="mx-auto max-w-2xl rounded-2xl border inst-card p-4 shadow-md text-left flex items-start gap-3">
               <span className="text-xl shrink-0 mt-0.5">ℹ️</span>
-              <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-medium">
-                <strong className="text-slate-950 font-bold">Important Notice:</strong> Market Intelligence - 007 is a technology platform built purely for the purpose of study and information, empowering users to make their own decisions at their own risks.
+              <p className="text-xs sm:text-[13px] inst-card-text leading-relaxed font-medium">
+                <strong className="font-bold text-emerald-500">Important Notice:</strong> Market Intelligence - 007 is a technology platform built purely for the purpose of study and information, empowering users to make their own decisions at their own risks.
               </p>
             </div>
           </div>
         </section>
 
         {/* ── Who We Are ── */}
-        <section className="mx-auto max-w-5xl px-6 py-20 border-b border-slate-200/80">
-          <div className="rounded-3xl border border-slate-200 bg-white/90 p-8 sm:p-12 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-sky-100/50 via-cyan-50/30 to-transparent pointer-events-none rounded-bl-full" />
-            
+        <section className="mx-auto max-w-5xl px-6 py-20">
+          <div className="rounded-3xl border-2 inst-card p-8 sm:p-12 shadow-xl relative overflow-hidden">
             <div className="relative z-10 max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-md bg-slate-100 border border-slate-300 px-3 py-1 text-xs font-bold text-slate-800 mono uppercase tracking-wider mb-5">
-                Our Genesis
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-4 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
+                  OUR GENESIS
+                </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-5 leading-snug">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-4 inst-card-text">
                 Who We Are
               </h2>
-              <p className="text-base sm:text-lg text-slate-800 font-medium leading-relaxed mb-6">
+              <p className="text-[17px] sm:text-[19px] leading-relaxed font-medium inst-card-text mb-4 opacity-95">
                 MI-007 was founded by a team of Quantitative Analysts, Data Scientists, Veteran Investors and Traders who shared a common problem which is the sheer volume of market noise.
               </p>
-              <p className="text-base sm:text-lg text-slate-800 font-medium leading-relaxed mb-6">
+              <p className="text-[15px] sm:text-[16px] leading-relaxed font-normal inst-card-text-muted mb-4">
                 Crucial insights are often buried under oceans of raw data, accessible only to Institutions of scale.
               </p>
-              <p className="text-base sm:text-lg text-emerald-800 font-semibold leading-relaxed">
+              <p className="text-[16px] sm:text-[17px] text-emerald-500 font-bold leading-relaxed">
                 We built MI-007 to level the playing field, providing intelligence across global markets to the common investors as well.
               </p>
             </div>
 
-            <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-slate-200">
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <div className="mono text-2xl sm:text-3xl font-black text-slate-950">Decades</div>
-                <div className="text-xs text-slate-600 font-bold uppercase tracking-wider mt-1">Quant &amp; Trading Heritage</div>
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-[var(--theme-card-border)]">
+              <div className="p-4 rounded-2xl border inst-subcard shadow-xs">
+                <div className="mono text-2xl sm:text-3xl font-black inst-card-text">Decades</div>
+                <div className="text-xs inst-card-text-muted font-bold uppercase tracking-wider mt-1">Quant &amp; Trading Heritage</div>
               </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <div className="mono text-2xl sm:text-3xl font-black text-emerald-700">Global</div>
-                <div className="text-xs text-slate-600 font-bold uppercase tracking-wider mt-1">Cross-Border Data</div>
+              <div className="p-4 rounded-2xl border inst-subcard shadow-xs">
+                <div className="mono text-2xl sm:text-3xl font-black text-emerald-500">Global</div>
+                <div className="text-xs inst-card-text-muted font-bold uppercase tracking-wider mt-1">Cross-Border Data</div>
               </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <div className="mono text-2xl sm:text-3xl font-black text-sky-700">Fair Game</div>
-                <div className="text-xs text-slate-600 font-bold uppercase tracking-wider mt-1">Level Playing Field</div>
+              <div className="p-4 rounded-2xl border inst-subcard shadow-xs">
+                <div className="mono text-2xl sm:text-3xl font-black text-sky-400">Fair Game</div>
+                <div className="text-xs inst-card-text-muted font-bold uppercase tracking-wider mt-1">Level Playing Field</div>
               </div>
             </div>
           </div>
         </section>
 
         {/* ── What We Do ── */}
-        <section className="mx-auto max-w-6xl px-6 py-20 border-b border-slate-200/80">
+        <section className="mx-auto max-w-6xl px-6 py-20">
           <div className="mb-12 text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-4 py-1 shadow-xs mb-3">
-              <span className="text-slate-800 text-xs font-bold mono tracking-widest uppercase">Continuous Execution</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
+                CONTINUOUS EXECUTION
+              </span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-4">What We Do</h2>
-            <p className="text-slate-800 text-base sm:text-lg font-medium leading-relaxed">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 page-heading">What We Do</h2>
+            <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle">
               We track, analyse, and decode market movements around the clock. Whether you are looking for momentum shifts in Wall Street tech giants or breakout trends in Dalal Street blue-chips, MI-007 is your eyes and ears on the ground.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {WHAT_WE_DO.map(({ icon, title, tag, desc, border, bg }) => (
+            {WHAT_WE_DO.map(({ icon, title, tag, desc }) => (
               <div
                 key={title}
-                className={`rounded-2xl border ${border} bg-gradient-to-b ${bg} p-7 hover:shadow-md transition-all flex flex-col justify-between`}
+                className="rounded-2xl border-2 inst-card p-7 hover:shadow-xl transition-all flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-3xl">{icon}</span>
-                    <span className="text-[11px] mono font-bold px-2.5 py-0.5 rounded-full bg-white/90 border border-slate-200 text-slate-800 shadow-2xs">
+                    <span className="text-[11px] mono font-bold px-2.5 py-0.5 rounded-full border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] inst-card-text shadow-2xs">
                       {tag}
                     </span>
                   </div>
-                  <h3 className="font-black text-slate-950 text-xl mb-3 tracking-tight">{title}</h3>
-                  <p className="text-[14px] text-slate-800 leading-relaxed font-medium">{desc}</p>
+                  <h3 className="font-black inst-card-text text-xl mb-3 tracking-tight">{title}</h3>
+                  <p className="text-[14px] inst-card-text-muted leading-relaxed font-medium">{desc}</p>
                 </div>
               </div>
             ))}
@@ -243,34 +242,40 @@ export default function AboutPage() {
         </section>
 
         {/* ── Our Mission ── */}
-        <section className="mx-auto max-w-5xl px-6 py-20 border-b border-slate-200/80">
-          <div className="rounded-3xl border border-emerald-200 bg-gradient-to-b from-emerald-50/70 via-white to-slate-50 p-8 sm:p-12 shadow-sm text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-100/80 px-4 py-1 text-xs font-bold text-emerald-950 mono uppercase tracking-wider mb-5">
-              Core Purpose
+        <section className="mx-auto max-w-5xl px-6 py-20">
+          <div className="rounded-3xl border-2 inst-card p-8 sm:p-12 shadow-xl text-center">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-4 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
+                CORE PURPOSE
+              </span>
             </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-4 inst-card-text">
               Our Mission
             </h2>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-emerald-800 mb-6">
+            <h3 className="text-xl sm:text-2xl font-black text-emerald-500 mb-4">
               To democratize financial intelligence.
             </h3>
-            <p className="text-base sm:text-lg text-slate-800 font-medium leading-relaxed max-w-3xl mx-auto mb-6">
+            <p className="text-[17px] sm:text-[19px] inst-card-text font-medium leading-relaxed max-w-3xl mx-auto mb-4">
               We believe that every investor deserves access to sharp, timely, and unbiased data.
             </p>
-            <p className="text-base sm:text-lg text-slate-900 font-semibold leading-relaxed max-w-3xl mx-auto">
-              Our Team and MI-007 are committed to empower you with the tools, clarity, confidence to build long-term wealth.
+            <p className="text-[15px] sm:text-[16px] inst-card-text-muted font-normal leading-relaxed max-w-3xl mx-auto">
+              Our Team and MI-007 are committed to empower you with the tools, clarity, and confidence to build long-term wealth.
             </p>
           </div>
         </section>
 
         {/* ── The MI-007 Edge ── */}
-        <section className="mx-auto max-w-6xl px-6 py-20 border-b border-slate-200/80">
+        <section className="mx-auto max-w-6xl px-6 py-20">
           <div className="mb-12 text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-4 py-1 shadow-xs mb-3">
-              <span className="text-slate-800 text-xs font-bold mono tracking-widest uppercase">Institutional Capabilities</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+              <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
+                INSTITUTIONAL CAPABILITIES
+              </span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">The MI-007 Edge</h2>
-            <p className="text-black text-sm sm:text-base font-semibold max-w-xl mx-auto mt-2">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 page-heading">The MI-007 Edge</h2>
+            <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle">
               Eight tactical pillars designed to strip away noise and reveal actionable alpha.
             </p>
           </div>
@@ -279,19 +284,19 @@ export default function AboutPage() {
             {MI_EDGE.map(({ icon, title, tag, desc }) => (
               <div
                 key={title}
-                className="rounded-2xl border border-slate-200 bg-white/95 p-6 hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between"
+                className="rounded-2xl border-2 inst-card p-6 hover:shadow-xl hover:scale-[1.02] transition-all flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl p-2 rounded-xl bg-slate-100 border border-slate-200/70 inline-flex items-center justify-center">
+                    <span className="text-2xl p-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] inline-flex items-center justify-center">
                       {icon}
                     </span>
-                    <span className="text-[10px] mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                    <span className="text-[10px] mono font-bold px-2 py-0.5 rounded-md border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] inst-card-text">
                       {tag}
                     </span>
                   </div>
-                  <h3 className="font-bold text-slate-900 text-base mb-2">{title}</h3>
-                  <p className="text-[13px] text-slate-700 leading-relaxed font-medium">{desc}</p>
+                  <h3 className="font-bold inst-card-text text-base mb-2">{title}</h3>
+                  <p className="text-[13px] inst-card-text-muted leading-relaxed font-medium">{desc}</p>
                 </div>
               </div>
             ))}
@@ -301,25 +306,31 @@ export default function AboutPage() {
         {/* ── Multi-Region Coverage ── */}
         <section className="mx-auto max-w-6xl px-6 py-20">
           <div className="mb-12 text-center">
-            <h2 className="text-3xl font-black text-slate-900 mb-2">Multi-Region Coverage</h2>
-            <p className="text-slate-600 text-sm font-normal">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
+                GLOBAL TRADING CORRIDORS
+              </span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 page-heading">Multi-Region Coverage</h2>
+            <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle">
               Co-located infrastructure across US, Indian, and Gulf financial hubs.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-6xl mx-auto">
             {REGIONS.map(({ flag, name, city, description, instruments }) => (
-              <div key={name} className="rounded-xl border border-slate-200 bg-white/90 p-6 flex flex-col gap-4 shadow-sm">
+              <div key={name} className="rounded-2xl border-2 inst-card p-6 flex flex-col gap-4 shadow-xl">
                 <div className="flex items-start gap-3">
                   <span className="text-3xl">{flag}</span>
                   <div>
-                    <div className="font-bold text-slate-900 text-[15px]">{name}</div>
-                    <div className="text-[11px] text-slate-500 mono font-medium">📍 {city}</div>
+                    <div className="font-bold inst-card-text text-[15px]">{name}</div>
+                    <div className="text-[11px] inst-card-text-muted mono font-medium">📍 {city}</div>
                   </div>
                 </div>
-                <p className="text-[12.5px] text-slate-600 leading-relaxed">{description}</p>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <div className="text-[10px] text-slate-500 font-bold mono tracking-widest uppercase mb-1.5">Instruments</div>
-                  <div className="text-[12px] text-slate-900 mono font-medium leading-relaxed">{instruments}</div>
+                <p className="text-[12.5px] inst-card-text-muted leading-relaxed">{description}</p>
+                <div className="rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] p-3">
+                  <div className="text-[10px] inst-card-text-muted font-bold mono tracking-widest uppercase mb-1.5">Instruments</div>
+                  <div className="text-[12px] inst-card-text mono font-medium leading-relaxed">{instruments}</div>
                 </div>
               </div>
             ))}
@@ -327,8 +338,8 @@ export default function AboutPage() {
         </section>
 
         {/* ── Quant Philosophy ── */}
-        <section className="border-t border-slate-200 bg-slate-50/70 backdrop-blur-xl">
-          <div className="mx-auto max-w-3xl px-6 py-16 text-center">
+        <section className="py-16">
+          <div className="mx-auto max-w-3xl px-6 text-center">
             <div className="mb-5 flex justify-center">
               <div className="h-16 w-16 rounded-2xl border border-sky-300/80 overflow-hidden shadow-lg shadow-sky-500/20 flex items-center justify-center">
                 <Image
@@ -340,28 +351,28 @@ export default function AboutPage() {
                 />
               </div>
             </div>
-            <blockquote className="text-lg md:text-xl italic font-semibold text-slate-800 leading-relaxed">
+            <blockquote className="text-lg md:text-xl italic font-semibold page-heading leading-relaxed">
               &ldquo;The best trading decisions are made not on emotion, but on the precise mathematical
               analysis of price, volume, and order flow — across every market on earth.&rdquo;
             </blockquote>
-            <p className="mt-4 text-slate-500 text-sm font-medium">— Market Intelligence - 007 Leadership Team</p>
+            <p className="mt-4 page-subtitle text-sm font-medium">— Market Intelligence - 007 Leadership Team</p>
           </div>
         </section>
 
         {/* ── Disclaimer & Terms of Use ── */}
-        <section className="border-t border-slate-200 bg-slate-100/70 py-20">
+        <section className="py-20">
           <div className="mx-auto max-w-5xl px-6">
             <div className="mb-12 text-center max-w-3xl mx-auto">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-1 shadow-xs mb-3">
-                <span className="w-2 h-2 rounded-full bg-amber-600" />
-                <span className="text-amber-950 text-xs font-bold mono tracking-widest uppercase">
-                  Compliance &amp; Legal Framework
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse" />
+                <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
+                  COMPLIANCE &amp; LEGAL FRAMEWORK
                 </span>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-3">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 page-heading">
                 Disclaimer &amp; Terms of Use
               </h2>
-              <p className="text-slate-600 text-sm sm:text-base font-medium leading-relaxed">
+              <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle">
                 Important disclosures regarding data limitations, non-advisory status, and user risk assumption.
               </p>
             </div>
@@ -370,27 +381,27 @@ export default function AboutPage() {
               {DISCLAIMER_TERMS.map(({ number, title, text }) => (
                 <div
                   key={number}
-                  className={`rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-xs hover:border-slate-300 transition-all ${
+                  className={`rounded-2xl border-2 inst-card p-6 sm:p-7 shadow-xl hover:shadow-2xl transition-all ${
                     number === '05' ? 'md:col-span-2' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="mono text-xs font-black px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200">
+                    <span className="mono text-xs font-black px-2.5 py-1 rounded-md border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] inst-card-text">
                       {number}
                     </span>
-                    <h3 className="text-base sm:text-lg font-bold text-slate-950 tracking-tight">
+                    <h3 className="text-base sm:text-lg font-bold inst-card-text tracking-tight">
                       {title}
                     </h3>
                   </div>
-                  <p className="text-xs sm:text-[13.5px] text-slate-700 leading-relaxed font-medium">
+                  <p className="text-xs sm:text-[13.5px] inst-card-text-muted leading-relaxed font-medium">
                     {text}
                   </p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-8 rounded-xl border border-slate-200 bg-white/80 p-4 text-center">
-              <p className="text-xs mono text-slate-600 font-semibold">
+            <div className="mt-8 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] p-4 text-center">
+              <p className="text-xs mono inst-card-text-muted font-semibold">
                 By accessing MI-007, you acknowledge that you have read, understood, and agreed to these terms.
               </p>
             </div>

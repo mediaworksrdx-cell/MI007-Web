@@ -112,18 +112,18 @@ const TOKEN_EXPLANATIONS: Record<string, TokenDetail> = {
 };
 
 const tokenTypes = [
-  { text: 'PRICE ACTION', color: 'text-slate-900 font-bold' },
-  { text: 'RSI 64.2', color: 'text-cyan-700' },
-  { text: 'EMA 21 CROSS', color: 'text-blue-700' },
-  { text: 'MACD HIST', color: 'text-emerald-700' },
-  { text: 'VOLUME 3.4M', color: 'text-purple-700' },
-  { text: 'BULL DELTA', color: 'text-emerald-700' },
-  { text: 'BEAR SWEEP', color: 'text-rose-700' },
-  { text: 'SUPPORT 24.8K', color: 'text-amber-700' },
-  { text: 'TREND +1.40%', color: 'text-emerald-700' },
-  { text: 'MOMENTUM AI', color: 'text-cyan-700' },
-  { text: 'ORDER BLOCK', color: 'text-amber-700' },
-  { text: 'FVG GAP ZONE', color: 'text-emerald-700' },
+  { text: 'PRICE ACTION', color: 'token-chip-txt-white' },
+  { text: 'RSI 64.2', color: 'token-chip-txt-cyan' },
+  { text: 'EMA 21 CROSS', color: 'token-chip-txt-blue' },
+  { text: 'MACD HIST', color: 'token-chip-txt-green' },
+  { text: 'VOLUME 3.4M', color: 'token-chip-txt-purple' },
+  { text: 'BULL DELTA', color: 'token-chip-txt-green' },
+  { text: 'BEAR SWEEP', color: 'token-chip-txt-red' },
+  { text: 'SUPPORT 24.8K', color: 'token-chip-txt-amber' },
+  { text: 'TREND +1.40%', color: 'token-chip-txt-green' },
+  { text: 'MOMENTUM AI', color: 'token-chip-txt-teal' },
+  { text: 'ORDER BLOCK', color: 'token-chip-txt-amber' },
+  { text: 'FVG GAP ZONE', color: 'token-chip-txt-green' },
 ];
 
 interface ActiveTokenInfo {

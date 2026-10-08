@@ -487,6 +487,114 @@ html[data-theme="cyberpunk"] .ticker-tape-fade-right {
   border-color: #DC2626 !important;
 }
 
+/* Institutional Generic Card Utilities (Matching Home) */
+.inst-card {
+  background-color: var(--theme-card-bg) !important;
+  border-color: var(--theme-card-border) !important;
+  color: var(--theme-card-text) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--theme-card-border) !important;
+}
+
+.inst-subcard {
+  background-color: var(--theme-card-surface) !important;
+  border-color: var(--theme-card-border) !important;
+  color: var(--theme-card-text) !important;
+}
+
+.inst-card-text {
+  color: var(--theme-card-text) !important;
+}
+
+.inst-card-text-muted {
+  color: var(--theme-card-text-muted) !important;
+}
+
+/* ── Token Chip High-Contrast Visibility System ──
+   In Light Theme: cards are dark (#101827 / #172033), so text is vivid, bright, and glowing.
+   In Dark Theme: cards are light (#F1F4F9 / #EAF1FA), so text is deep, rich, and high-contrast.
+*/
+.token-chip-txt-white { color: #FFFFFF !important; font-weight: 800; }
+.token-chip-txt-cyan { color: #38BDF8 !important; font-weight: 700; }
+.token-chip-txt-blue { color: #60A5FA !important; font-weight: 700; }
+.token-chip-txt-green { color: #34D399 !important; font-weight: 700; }
+.token-chip-txt-purple { color: #C084FC !important; font-weight: 700; }
+.token-chip-txt-red { color: #F87171 !important; font-weight: 700; }
+.token-chip-txt-amber { color: #FBBF24 !important; font-weight: 700; }
+.token-chip-txt-teal { color: #2DD4BF !important; font-weight: 700; }
+
+/* In Dark Themes (where cards are light #F1F4F9 or #EAF1FA) */
+html[data-theme="graphite"] .token-chip-txt-white,
+html[data-theme="metallic"] .token-chip-txt-white,
+html[data-theme="capital"] .token-chip-txt-white,
+html[data-theme="techno"] .token-chip-txt-white,
+html[data-theme="obsidian"] .token-chip-txt-white,
+html[data-theme="cyberpunk"] .token-chip-txt-white {
+  color: #0F172A !important;
+}
+
+html[data-theme="graphite"] .token-chip-txt-cyan,
+html[data-theme="metallic"] .token-chip-txt-cyan,
+html[data-theme="capital"] .token-chip-txt-cyan,
+html[data-theme="techno"] .token-chip-txt-cyan,
+html[data-theme="obsidian"] .token-chip-txt-cyan,
+html[data-theme="cyberpunk"] .token-chip-txt-cyan {
+  color: #0284C7 !important;
+}
+
+html[data-theme="graphite"] .token-chip-txt-blue,
+html[data-theme="metallic"] .token-chip-txt-blue,
+html[data-theme="capital"] .token-chip-txt-blue,
+html[data-theme="techno"] .token-chip-txt-blue,
+html[data-theme="obsidian"] .token-chip-txt-blue,
+html[data-theme="cyberpunk"] .token-chip-txt-blue {
+  color: #1D4ED8 !important;
+}
+
+html[data-theme="graphite"] .token-chip-txt-green,
+html[data-theme="metallic"] .token-chip-txt-green,
+html[data-theme="capital"] .token-chip-txt-green,
+html[data-theme="techno"] .token-chip-txt-green,
+html[data-theme="obsidian"] .token-chip-txt-green,
+html[data-theme="cyberpunk"] .token-chip-txt-green {
+  color: #059669 !important;
+}
+
+html[data-theme="graphite"] .token-chip-txt-purple,
+html[data-theme="metallic"] .token-chip-txt-purple,
+html[data-theme="capital"] .token-chip-txt-purple,
+html[data-theme="techno"] .token-chip-txt-purple,
+html[data-theme="obsidian"] .token-chip-txt-purple,
+html[data-theme="cyberpunk"] .token-chip-txt-purple {
+  color: #7E22CE !important;
+}
+
+html[data-theme="graphite"] .token-chip-txt-red,
+html[data-theme="metallic"] .token-chip-txt-red,
+html[data-theme="capital"] .token-chip-txt-red,
+html[data-theme="techno"] .token-chip-txt-red,
+html[data-theme="obsidian"] .token-chip-txt-red,
+html[data-theme="cyberpunk"] .token-chip-txt-red {
+  color: #DC2626 !important;
+}
+
+html[data-theme="graphite"] .token-chip-txt-amber,
+html[data-theme="metallic"] .token-chip-txt-amber,
+html[data-theme="capital"] .token-chip-txt-amber,
+html[data-theme="techno"] .token-chip-txt-amber,
+html[data-theme="obsidian"] .token-chip-txt-amber,
+html[data-theme="cyberpunk"] .token-chip-txt-amber {
+  color: #B45309 !important;
+}
+
+html[data-theme="graphite"] .token-chip-txt-teal,
+html[data-theme="metallic"] .token-chip-txt-teal,
+html[data-theme="capital"] .token-chip-txt-teal,
+html[data-theme="techno"] .token-chip-txt-teal,
+html[data-theme="obsidian"] .token-chip-txt-teal,
+html[data-theme="cyberpunk"] .token-chip-txt-teal {
+  color: #0F766E !important;
+}
+
 /* Hero Stats Bar L3 Marquee Edge Fade Masks */
 html[data-theme="arctic"] .hero-marquee-fade-left,
 html[data-theme="lightblue"] .hero-marquee-fade-left,

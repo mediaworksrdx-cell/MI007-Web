@@ -61,7 +61,7 @@ const UAE_WATCHLIST = [
   { symbol: 'SALIK', name: 'Salik Company', base: 3.65, sector: 'Transport', changePct: 1.15 },
 ];
 
-// ─── 100% Deterministic, Static Mini Sparkline (Never Moves or Twitches) ────
+// ─── 100% Deterministic, Static Mini Sparkline ────
 function Sparkline({ symbol, up }: { symbol?: string; up: boolean }) {
   const seed = (symbol || 'SYM').split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
   const pts = Array.from({ length: 12 }, (_, i) => {
@@ -110,22 +110,22 @@ function IndexTile({
   return (
     <Link
       href={`/chart/${symbol}?market=${market}`}
-      className="rounded-xl border border-white/60 bg-white/60 backdrop-blur-md p-3.5 flex flex-col gap-1.5 hover:border-emerald-500 hover:bg-white/80 hover:shadow-md transition-all shadow-sm group"
+      className="rounded-xl border inst-subcard p-3.5 flex flex-col gap-1.5 hover:border-emerald-500 hover:shadow-md transition-all shadow-sm group"
     >
       <div className="flex items-start justify-between">
         <div>
-          <span className="mono text-[16px] font-black text-black group-hover:text-emerald-600 transition-colors tracking-wide">
+          <span className="mono text-[16px] font-black inst-card-text group-hover:text-emerald-500 transition-colors tracking-wide">
             {symbol}
           </span>
-          <div className="text-[14px] text-slate-700 font-bold">{name}</div>
+          <div className="text-[14px] inst-card-text-muted font-bold">{name}</div>
         </div>
         <Sparkline symbol={symbol} up={up} />
       </div>
       <div className="flex items-end justify-between mt-1">
-        <span className="mono text-[17px] font-black text-slate-900">
+        <span className="mono text-[17px] font-black inst-card-text">
           {currency}{base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
-        <span className={`mono text-[14px] font-bold ${up ? 'text-emerald-600' : 'text-rose-600'}`}>
+        <span className={`mono text-[14px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
           {up ? '▲' : '▼'} {Math.abs(changePct).toFixed(2)}%
         </span>
       </div>
@@ -156,27 +156,27 @@ function WatchlistRow({
   return (
     <Link
       href={`/chart/${symbol}?market=${market}`}
-      className="flex items-center gap-2 sm:gap-3.5 px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl border border-white/60 bg-white/60 backdrop-blur-md hover:border-emerald-500 hover:bg-white/80 hover:shadow-md transition-all shadow-sm group min-w-0"
+      className="flex items-center gap-2 sm:gap-3.5 px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl border inst-subcard hover:border-emerald-500 hover:shadow-md transition-all shadow-sm group min-w-0"
     >
       {/* Symbol badge */}
-      <div className="flex h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-lg border border-white/80 bg-white/80 shadow-xs">
-        <span className="mono text-[12px] sm:text-[13px] font-black text-black group-hover:text-emerald-600 transition-colors">{symbol.slice(0, 3)}</span>
+      <div className="flex h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xs">
+        <span className="mono text-[12px] sm:text-[13px] font-black inst-card-text group-hover:text-emerald-500 transition-colors">{symbol.slice(0, 3)}</span>
       </div>
 
       <div className="flex-1 min-w-0">
-        <span className="mono text-[14px] sm:text-[16px] font-black text-black group-hover:text-emerald-600 transition-colors truncate block">{symbol}</span>
-        <div className="text-[12px] sm:text-[14px] text-slate-700 font-bold truncate">{name}</div>
+        <span className="mono text-[14px] sm:text-[16px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate block">{symbol}</span>
+        <div className="text-[12px] sm:text-[14px] inst-card-text-muted font-bold truncate">{name}</div>
       </div>
 
       <div className="hidden md:block">
-        <span className="rounded px-2.5 py-0.5 text-[12px] font-black text-black border border-slate-300 bg-white/70 mono">{sector}</span>
+        <span className="rounded px-2.5 py-0.5 text-[12px] font-bold inst-card-text border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] mono">{sector}</span>
       </div>
 
       <div className="text-right flex-shrink-0">
-        <div className="mono text-[14px] sm:text-[16px] font-black text-slate-900">
+        <div className="mono text-[14px] sm:text-[16px] font-black inst-card-text">
           {currency}{base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
-        <div className={`mono text-[12px] sm:text-[14px] font-bold ${up ? 'text-emerald-600' : 'text-rose-600'}`}>
+        <div className={`mono text-[12px] sm:text-[14px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
           {up ? '+' : ''}{changePct.toFixed(2)}%
         </div>
       </div>
@@ -186,7 +186,7 @@ function WatchlistRow({
       </div>
 
       {/* Chart arrow */}
-      <div className="flex-shrink-0 text-black group-hover:text-emerald-600 transition-colors text-base font-black pl-0.5">›</div>
+      <div className="flex-shrink-0 inst-card-text group-hover:text-emerald-500 transition-colors text-base font-black pl-0.5">›</div>
     </Link>
   );
 }
@@ -196,10 +196,10 @@ function SectionHeader({ title, badge }: { title: string; badge?: string }) {
   return (
     <div className="flex items-center justify-between mb-3 mt-6">
       <div className="flex items-center gap-2">
-        <span className="mono text-[16px] font-black text-black tracking-widest uppercase">{title}</span>
-        {badge && <span className="rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[12.5px] mono font-bold text-black">{badge}</span>}
+        <span className="mono text-[15px] sm:text-[16px] font-black inst-card-text tracking-widest uppercase">{title}</span>
+        {badge && <span className="rounded-full border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] px-2.5 py-0.5 text-[11.5px] sm:text-[12.5px] mono font-bold inst-card-text">{badge}</span>}
       </div>
-      <span className="text-[14px] mono font-bold text-emerald-600 hover:text-emerald-700 transition-colors tracking-wider cursor-pointer">DETAILED VIEW</span>
+      <span className="text-[13px] sm:text-[14px] mono font-bold text-emerald-500 hover:text-emerald-400 transition-colors tracking-wider cursor-pointer">DETAILED VIEW</span>
     </div>
   );
 }
@@ -223,7 +223,7 @@ export default function TerminalPage() {
             <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 pointer-events-none" />
 
             {/* ── Outer Bezel Header ── */}
-            <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-slate-200 relative z-10">
+            <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-[var(--theme-card-border)] relative z-10">
               <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
                 <div className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl border border-sky-300/80 overflow-hidden shadow-md shadow-sky-500/15 flex-shrink-0">
                   <Image
@@ -235,17 +235,17 @@ export default function TerminalPage() {
                   />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="mono text-[16px] sm:text-[23px] font-black text-slate-900 tracking-wider uppercase truncate">
+                  <h1 className="mono text-[17px] sm:text-[23px] font-black inst-card-text tracking-wider uppercase truncate">
                     Market Intelligence - 007
                   </h1>
-                  <p className="text-[12px] sm:text-[14px] text-slate-600 font-medium mt-0.5 truncate">Autonomous Market Intelligence & Quantitative Microstructure</p>
+                  <p className="text-[12px] sm:text-[14px] inst-card-text-muted font-medium mt-0.5 truncate">Autonomous Market Intelligence & Quantitative Microstructure</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg border border-slate-200 bg-white text-[13px] sm:text-[15px] mono text-slate-900 font-bold shadow-xs">
+                <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[13px] sm:text-[15px] mono inst-card-text font-bold shadow-xs">
                   <span>{MARKETS[market].flag}</span>
-                  <span className="text-slate-900 font-black">{MARKETS[market].label}</span>
+                  <span className="inst-card-text font-black">{MARKETS[market].label}</span>
                 </div>
               </div>
             </div>
@@ -292,16 +292,16 @@ export default function TerminalPage() {
                   <Link
                     key={c.symbol}
                     href={`/chart/${c.symbol}`}
-                    className="rounded-xl border border-white/60 bg-white/60 backdrop-blur-md p-3 hover:border-emerald-500 hover:bg-white/80 transition-all shadow-sm flex flex-col gap-1 group"
+                    className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="mono text-[14px] font-black text-black group-hover:text-emerald-600 transition-colors">{c.symbol}</span>
+                      <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors">{c.symbol}</span>
                     </div>
-                    <div className="text-[12px] text-slate-600 font-bold truncate">{c.name}</div>
-                    <div className="mono text-[14px] font-black text-slate-900 mt-1">
+                    <div className="text-[12px] inst-card-text-muted font-bold truncate">{c.name}</div>
+                    <div className="mono text-[14px] font-black inst-card-text mt-1">
                       ${c.base.toLocaleString(undefined, { minimumFractionDigits: c.base < 1 ? 4 : 2, maximumFractionDigits: c.base < 1 ? 7 : 2 })}
                     </div>
-                    <div className={`mono text-[12px] font-bold ${up ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <div className={`mono text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
                       {up ? '▲' : '▼'} {Math.abs(c.changePct).toFixed(2)}%
                     </div>
                   </Link>

@@ -47,21 +47,21 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
 
       <main className="pt-28 h-screen flex flex-col bg-transparent relative z-10">
         {/* ── Breadcrumb / Back nav ── */}
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50/90 px-4 py-2.5 flex-shrink-0 shadow-xs">
+        <div className="flex items-center gap-3 border-b border-[var(--theme-page-border)] bg-[var(--theme-ticker-bg)] px-4 py-2.5 flex-shrink-0 shadow-xs">
           <Link
             href="/terminal"
-            className="flex items-center gap-1.5 text-[14px] mono font-bold text-black hover:text-black transition-colors"
+            className="flex items-center gap-1.5 text-[14px] mono font-bold text-[var(--theme-page-text)] hover:text-emerald-500 transition-colors"
           >
             ← TERMINAL
           </Link>
-          <span className="text-slate-400 font-bold">|</span>
-          <span className="mono text-[14px] font-black text-emerald-700 tracking-widest">{cleanSym}</span>
-          <span className="mono text-[13px] text-black font-bold">{marketBadge}</span>
+          <span className="text-[var(--theme-page-border)] font-bold">|</span>
+          <span className="mono text-[14px] font-black text-emerald-500 tracking-widest">{cleanSym}</span>
+          <span className="mono text-[13px] text-[var(--theme-page-text)] font-bold">{marketBadge}</span>
 
           {/* Live badge */}
           <div className="ml-auto flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
-            <span className="mono text-[12px] text-emerald-700 font-bold tracking-widest">LIVE CHART</span>
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="mono text-[12px] text-emerald-500 font-bold tracking-widest">LIVE CHART</span>
           </div>
         </div>
 
