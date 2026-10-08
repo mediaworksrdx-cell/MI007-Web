@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import GlobalMarketCanvasFX from '@/components/fx/GlobalMarketCanvasFX';
 import { MarketProvider } from '@/lib/marketContext';
 import { ThemeProvider } from '@/lib/themeContext';
 
@@ -53,8 +52,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="antialiased min-h-screen flex flex-col relative transition-colors duration-200">
         <ThemeProvider>
-          {/* Site-Wide 60fps Floating Candlesticks, Price Badges & Up/Down Arrows Parallax Engine */}
-          <GlobalMarketCanvasFX />
           <MarketProvider>
             {children}
           </MarketProvider>

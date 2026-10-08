@@ -17,7 +17,7 @@ export default function HeroScene({ scrollProgress }: HeroSceneProps) {
   const bearBodyRef = useRef<THREE.Mesh>(null);
   const bullWickRef = useRef<THREE.Group>(null);
   const bearWickRef = useRef<THREE.Group>(null);
-  const particlesRef = useRef<THREE.Points>(null);
+
   const historicalGroupRef = useRef<THREE.Group>(null);
   const greenPedestalRef = useRef<THREE.Mesh>(null);
   const redPedestalRef = useRef<THREE.Mesh>(null);
@@ -51,37 +51,7 @@ export default function HeroScene({ scrollProgress }: HeroSceneProps) {
     return list;
   }, []);
 
-  // ── 2. Atmospheric Optical Dust Embers ──
-  const dustData = useMemo(() => {
-    const count = 1200;
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
 
-    const cGreen = new THREE.Color('#10B981');
-    const cEmerald = new THREE.Color('#059669');
-    const cRed = new THREE.Color('#EF4444');
-    const cCrimson = new THREE.Color('#DC2626');
-
-    for (let i = 0; i < count; i++) {
-      const x = (Math.random() - 0.5) * 45;
-      const y = Math.random() * 28 - 6;
-      const z = (Math.random() - 0.5) * 44 - 6;
-
-      positions[i * 3] = x;
-      positions[i * 3 + 1] = y;
-      positions[i * 3 + 2] = z;
-
-      // Green and red embers
-      const isGreen = Math.random() > 0.5;
-      const col = isGreen
-        ? (Math.random() > 0.5 ? cGreen : cEmerald)
-        : (Math.random() > 0.5 ? cRed : cCrimson);
-      colors[i * 3] = col.r;
-      colors[i * 3 + 1] = col.g;
-      colors[i * 3 + 2] = col.b;
-    }
-    return { positions, colors };
-  }, []);
 
   // ── 3. Traveling Bezier Price Flow Lines ──
   const priceCurves = useMemo(() => {
@@ -174,21 +144,7 @@ export default function HeroScene({ scrollProgress }: HeroSceneProps) {
       }
     }
 
-    // E. Atmospheric Dust Float
-    if (particlesRef.current) {
-      const geom = particlesRef.current.geometry;
-      const posAttr = geom.attributes.position;
-      const count = posAttr.count;
 
-      for (let i = 0; i < count; i += 4) {
-        let y = posAttr.getY(i);
-        y += delta * 0.5;
-        if (y > 22) y = -6;
-        posAttr.setY(i, y);
-      }
-      posAttr.needsUpdate = true;
-      particlesRef.current.rotation.y = time * 0.01;
-    }
   });
 
   return (
@@ -426,26 +382,6 @@ export default function HeroScene({ scrollProgress }: HeroSceneProps) {
         />
       </mesh>
 
-      {/* ── 6. ATMOSPHERIC OPTICAL DUST EMBERS ── */}
-      <points ref={particlesRef}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[dustData.positions, 3]}
-          />
-          <bufferAttribute
-            attach="attributes-color"
-            args={[dustData.colors, 3]}
-          />
-        </bufferGeometry>
-        <pointsMaterial
-          size={0.065}
-          vertexColors
-          transparent
-          opacity={0.35}
-          sizeAttenuation
-        />
-      </points>
     </group>
   );
 }
