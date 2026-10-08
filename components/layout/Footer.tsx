@@ -9,11 +9,11 @@ export function Footer() {
           {/* Brand Column */}
           <div className="md:col-span-1 flex flex-col gap-3">
             <div className="flex items-center gap-3.5">
-              <div className="h-14 w-14 rounded-2xl border border-sky-300/80 overflow-hidden shadow-md shadow-sky-500/15 flex-shrink-0 flex items-center justify-center">
+              <div className="h-14 w-24 rounded-2xl border border-sky-300/80 overflow-hidden shadow-md shadow-sky-500/15 flex-shrink-0 flex items-center justify-center">
                 <Image
-                  src="/images/logo-falcon-gradient.png"
+                  src="/images/logo-falcon-rect.png"
                   alt="Market Intelligence - 007"
-                  width={56}
+                  width={96}
                   height={56}
                   className="w-full h-full object-cover"
                 />

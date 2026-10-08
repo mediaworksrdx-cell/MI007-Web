@@ -91,11 +91,11 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       <div className="mx-auto flex h-16 sm:h-18 max-w-[1600px] items-center justify-between px-4 lg:px-6">
         {/* ── Recreated Cyber Falcon Logo with Light Blur Gradient Badge ── */}
         <Link href="/" className="flex items-center gap-2.5 sm:gap-3.5 select-none group min-w-0">
-          <div className="relative h-11 w-11 sm:h-13 sm:w-13 md:h-14 md:w-14 flex-shrink-0 flex items-center justify-center rounded-xl sm:rounded-2xl overflow-hidden border border-sky-300/80 shadow-[0_4px_16px_rgba(14,165,233,0.18)] group-hover:border-sky-400 group-hover:scale-105 transition-all">
+          <div className="relative h-11 w-18 sm:h-13 sm:w-22 md:h-14 md:w-24 flex-shrink-0 flex items-center justify-center rounded-xl sm:rounded-2xl overflow-hidden border border-sky-300/80 shadow-[0_4px_16px_rgba(14,165,233,0.18)] group-hover:border-sky-400 group-hover:scale-105 transition-all">
             <Image
-              src="/images/logo-falcon-gradient.png"
+              src="/images/logo-falcon-rect.png"
               alt="Market Intelligence - 007"
-              width={56}
+              width={96}
               height={56}
               className="w-full h-full object-cover"
               priority
