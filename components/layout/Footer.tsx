@@ -20,12 +20,12 @@ export function Footer() {
               </div>
               <div>
                 <div className="leading-none">
-                  <span className="font-extrabold text-[16px] uppercase font-sans tracking-tight footer-brand-title text-white">
+                  <span className="font-extrabold text-[16px] uppercase font-sans tracking-tight footer-brand-title text-white whitespace-nowrap">
                     Market Intelligence - 007
                   </span>
                 </div>
 
-                <div className="text-[11px] tracking-[0.18em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-200">
+                <div className="text-[11px] tracking-[0.18em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-200 whitespace-nowrap">
                   <span>Autonomous Market Intelligence</span>
                 </div>
 

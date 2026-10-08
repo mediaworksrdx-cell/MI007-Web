@@ -35,8 +35,11 @@ export default function FinalCTASection() {
           />
         </div>
 
-        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight mb-4 final-cta-title">
-          Step Into <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">Market Intelligence - 007</span>
+        <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight mb-4 final-cta-title flex flex-col items-center justify-center gap-1">
+          <span>Step Into</span>
+          <span className="whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">
+            Market Intelligence - 007
+          </span>
         </h2>
 
         <p className="text-[17px] sm:text-[19px] max-w-lg mb-8 font-medium leading-relaxed final-cta-subtitle">

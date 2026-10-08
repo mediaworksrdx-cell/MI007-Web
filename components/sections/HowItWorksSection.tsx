@@ -24,7 +24,7 @@ export default function HowItWorksSection() {
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
+            <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text whitespace-nowrap">
               03 // MARKET INTELLIGENCE - 007 ANALYSIS
             </span>
           </div>

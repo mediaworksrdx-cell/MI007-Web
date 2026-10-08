@@ -273,14 +273,13 @@ export default function HeroSection() {
           </div>
         </motion.div>
 
-        {/* Main Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.35 }}
-          className="text-[26px] xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[-0.03em] leading-[1.1] sm:leading-none mb-4 sm:mb-6 break-words page-heading"
+          className="text-[19px] xs:text-[26px] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-[-0.02em] leading-tight mb-4 sm:mb-6 page-heading"
         >
-          <span className="hero-title-gradient">
+          <span className="hero-title-gradient whitespace-nowrap inline-block">
             MARKET INTELLIGENCE - 007
           </span>
         </motion.h1>

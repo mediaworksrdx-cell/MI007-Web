@@ -142,8 +142,11 @@ export default function AboutPage() {
               </span>
             </div>
             
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4 page-heading">
-              Welcome to <span className="font-extrabold text-emerald-600">Market Intelligence - 007</span>
+            <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4 page-heading flex flex-col items-center justify-center gap-1">
+              <span>Welcome to</span>
+              <span className="whitespace-nowrap font-extrabold text-emerald-600">
+                Market Intelligence - 007
+              </span>
             </h1>
 
             <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle mb-4">

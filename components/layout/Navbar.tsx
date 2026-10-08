@@ -103,11 +103,11 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           </div>
           <div className="flex flex-col leading-tight min-w-0">
             <div>
-              <span className="navbar-brand-title font-extrabold text-[15px] xs:text-[16px] sm:text-[18px] tracking-tight uppercase font-sans truncate">
+              <span className="navbar-brand-title font-extrabold text-[15px] xs:text-[16px] sm:text-[18px] tracking-tight uppercase font-sans whitespace-nowrap">
                 Market Intelligence - 007
               </span>
             </div>
-            <span className="navbar-brand-subtitle hidden xs:block text-[9px] sm:text-[11px] tracking-[0.15em] sm:tracking-[0.2em] font-extrabold uppercase font-mono mt-0.5 truncate">
+            <span className="navbar-brand-subtitle hidden xs:block text-[9px] sm:text-[11px] tracking-[0.15em] sm:tracking-[0.2em] font-extrabold uppercase font-mono mt-0.5 whitespace-nowrap">
               Autonomous Market Intelligence
             </span>
           </div>
