@@ -4,7 +4,7 @@ import { MarketProvider } from '@/lib/marketContext';
 import { ThemeProvider } from '@/lib/themeContext';
 
 export const metadata: Metadata = {
-  title: 'Market Intelligence AI — MI007',
+  title: 'Market Intelligence - 007',
   description: 'Autonomous Market Intelligence & Institutional-grade quantitative analytics across India, USA & UAE financial markets.',
   icons: { icon: '/favicon.png', apple: '/logo-falcon.png' },
 };

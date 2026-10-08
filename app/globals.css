@@ -628,20 +628,44 @@ footer {
   border-color: var(--theme-footer-border) !important;
   color: var(--theme-footer-text) !important;
 }
-footer h4,
-footer .text-slate-950,
-footer .text-black {
+
+.footer-brand-title {
   color: var(--theme-footer-text) !important;
 }
-footer .text-slate-700,
-footer .text-slate-600,
-footer .text-slate-500,
-footer p,
-footer li {
+
+.footer-brand-subtitle {
   color: var(--theme-card-text-muted) !important;
 }
-footer a:hover {
+
+.footer-chip {
+  background-color: rgba(148, 163, 184, 0.14) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  color: var(--theme-footer-text) !important;
+}
+
+.footer-heading {
+  color: var(--theme-footer-text) !important;
+}
+
+.footer-link {
+  color: var(--theme-card-text-muted) !important;
+}
+.footer-link:hover {
   color: #059669 !important;
+}
+
+.footer-list {
+  color: var(--theme-card-text-muted) !important;
+}
+
+.footer-coming-soon {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  border: 1px solid rgba(245, 158, 11, 0.45) !important;
+  color: #F59E0B !important;
+}
+
+.footer-copy {
+  color: var(--theme-card-text-muted) !important;
 }
 
 html[data-theme="graphite"] footer,
@@ -649,32 +673,13 @@ html[data-theme="metallic"] footer {
   background-color: #14171E !important;
   border-color: rgba(148, 163, 184, 0.35) !important;
 }
-html[data-theme="graphite"] footer .text-slate-900,
-html[data-theme="graphite"] footer .text-black,
-html[data-theme="graphite"] footer h4 {
-  color: #F8FAFC !important;
-}
-html[data-theme="graphite"] footer .text-slate-600,
-html[data-theme="graphite"] footer .text-slate-500,
-html[data-theme="graphite"] footer p {
-  color: #94A3B8 !important;
-}
 
 html[data-theme="capital"] footer,
 html[data-theme="techno"] footer {
   background-color: #080F22 !important;
   border-color: rgba(37, 99, 235, 0.25) !important;
 }
-html[data-theme="capital"] footer .text-slate-900,
-html[data-theme="capital"] footer .text-black,
-html[data-theme="capital"] footer h4 {
-  color: #FFFFFF !important;
-}
-html[data-theme="capital"] footer .text-slate-600,
-html[data-theme="capital"] footer .text-slate-500,
-html[data-theme="capital"] footer p {
-  color: #94A3B8 !important;
-}
+
 
 /* Scrollbars in dark mode */
 html[data-theme="graphite"] ::-webkit-scrollbar-track,

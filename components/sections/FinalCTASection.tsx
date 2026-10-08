@@ -28,7 +28,7 @@ export default function FinalCTASection() {
         <div className="mb-6 relative h-28 w-28 sm:h-32 sm:w-32 rounded-3xl overflow-hidden border border-sky-300/80 shadow-2xl shadow-sky-500/20 flex-shrink-0 flex items-center justify-center">
           <Image
             src="/images/logo-falcon-gradient.png"
-            alt="Market Intelligence AI — MI007"
+            alt="Market Intelligence - 007"
             width={128}
             height={128}
             className="w-full h-full object-cover"
@@ -36,8 +36,7 @@ export default function FinalCTASection() {
         </div>
 
         <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight mb-4 final-cta-title">
-          Step Into <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">Market Intelligence AI</span>
-          <span className="block mt-2 font-mono text-2xl sm:text-3xl font-extrabold text-amber-500">MI007</span>
+          Step Into <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">Market Intelligence - 007</span>
         </h2>
 
         <p className="text-[17px] sm:text-[19px] max-w-lg mb-8 font-medium leading-relaxed final-cta-subtitle">

@@ -328,7 +328,7 @@ export default function HeroSection() {
           <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-2xl sm:rounded-3xl overflow-hidden border border-sky-300/80 shadow-2xl shadow-sky-500/20 hover:scale-105 hover:border-sky-400 transition-all duration-300 flex items-center justify-center">
             <Image
               src="/images/logo-falcon-gradient.png"
-              alt="Market Intelligence AI — MI007"
+              alt="Market Intelligence - 007"
               width={112}
               height={112}
               className="w-full h-full object-cover"
@@ -345,13 +345,7 @@ export default function HeroSection() {
           className="text-[26px] xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[-0.03em] leading-[1.1] sm:leading-none mb-4 sm:mb-6 break-words page-heading"
         >
           <span className="hero-title-gradient">
-            MARKET INTELLIGENCE
-          </span>
-          <span className="inline-block ml-2 sm:ml-4 font-mono text-emerald-600 drop-shadow-[0_0_25px_rgba(5,150,105,0.4)]">
-            AI
-          </span>
-          <span className="inline-block ml-2 sm:ml-4 text-xl xs:text-2xl sm:text-4xl md:text-5xl font-mono font-black text-amber-500 tracking-wider">
-            MI007
+            MARKET INTELLIGENCE - 007
           </span>
         </motion.h1>
 

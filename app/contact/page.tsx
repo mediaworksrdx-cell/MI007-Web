@@ -55,7 +55,7 @@ export default function ContactPage() {
               Contact <span className="text-emerald-700">Synthetix Analytics</span>
             </h1>
             <p className="text-black text-base leading-relaxed font-medium">
-              Market Intelligence AI — MI007 institutional licensing, API integration, quantitative research partnerships,
+              Market Intelligence - 007 institutional licensing, API integration, quantitative research partnerships,
               and enterprise deployments.
             </p>
           </div>

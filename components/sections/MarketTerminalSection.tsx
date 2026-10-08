@@ -545,7 +545,7 @@ export default function MarketTerminalSection() {
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
             <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
-              05 // MARKET INTELLIGENCE AI — MI007 TERMINAL
+              05 // MARKET INTELLIGENCE - 007 TERMINAL
             </span>
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-2 page-heading">

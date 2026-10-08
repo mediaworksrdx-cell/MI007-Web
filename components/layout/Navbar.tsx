@@ -94,7 +94,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           <div className="relative h-11 w-11 sm:h-13 sm:w-13 md:h-14 md:w-14 flex-shrink-0 flex items-center justify-center rounded-xl sm:rounded-2xl overflow-hidden border border-sky-300/80 shadow-[0_4px_16px_rgba(14,165,233,0.18)] group-hover:border-sky-400 group-hover:scale-105 transition-all">
             <Image
               src="/images/logo-falcon-gradient.png"
-              alt="Market Intelligence AI — MI007"
+              alt="Market Intelligence - 007"
               width={56}
               height={56}
               className="w-full h-full object-cover"
@@ -102,12 +102,9 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             />
           </div>
           <div className="flex flex-col leading-tight min-w-0">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="navbar-brand-title font-extrabold text-[14px] xs:text-[15px] sm:text-[17px] tracking-tight uppercase font-sans truncate">
-                Market Intelligence <span className="text-emerald-600 font-black">AI</span>
-              </span>
-              <span className="px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] mono font-black bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 tracking-wider shadow-xs border border-amber-400/80 shrink-0">
-                MI007
+            <div>
+              <span className="navbar-brand-title font-extrabold text-[15px] xs:text-[16px] sm:text-[18px] tracking-tight uppercase font-sans truncate">
+                Market Intelligence - 007
               </span>
             </div>
             <span className="navbar-brand-subtitle hidden xs:block text-[9px] sm:text-[11px] tracking-[0.15em] sm:tracking-[0.2em] font-extrabold uppercase font-mono mt-0.5 truncate">

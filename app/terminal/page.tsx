@@ -228,7 +228,7 @@ export default function TerminalPage() {
                 <div className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl border border-sky-300/80 overflow-hidden shadow-md shadow-sky-500/15 flex-shrink-0">
                   <Image
                     src="/images/logo-falcon-gradient.png"
-                    alt="Market Intelligence AI — MI007"
+                    alt="Market Intelligence - 007"
                     width={56}
                     height={56}
                     className="w-full h-full object-cover"
@@ -236,7 +236,7 @@ export default function TerminalPage() {
                 </div>
                 <div className="min-w-0">
                   <h1 className="mono text-[16px] sm:text-[23px] font-black text-slate-900 tracking-wider uppercase truncate">
-                    Market Intelligence AI <span className="text-amber-600">MI007</span>
+                    Market Intelligence - 007
                   </h1>
                   <p className="text-[12px] sm:text-[14px] text-slate-600 font-medium mt-0.5 truncate">Autonomous Market Intelligence & Quantitative Microstructure</p>
                 </div>

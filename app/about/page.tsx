@@ -148,7 +148,7 @@ export default function AboutPage() {
             </div>
             
             <h1 className="mb-6 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-tight">
-              Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-800 to-emerald-700">MI-007</span>
+              Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-950 via-slate-800 to-emerald-700">Market Intelligence - 007</span>
             </h1>
 
             <p className="text-lg md:text-xl text-slate-900 leading-relaxed font-semibold max-w-3xl mx-auto mb-5">
@@ -156,14 +156,14 @@ export default function AboutPage() {
             </p>
 
             <p className="text-slate-800 text-base md:text-lg leading-relaxed max-w-3xl mx-auto font-medium mb-8">
-              MI-007 delivers institutional-grade market intelligence directly to retail investors, day traders, and portfolio managers worldwide.
+              Market Intelligence - 007 delivers institutional-grade market intelligence directly to retail investors, day traders, and portfolio managers worldwide.
             </p>
 
             {/* Informational & Risk Disclaimer Banner */}
             <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200/90 bg-white/95 p-4 shadow-sm text-left flex items-start gap-3">
               <span className="text-xl shrink-0 mt-0.5">ℹ️</span>
               <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-medium">
-                <strong className="text-slate-950 font-bold">Important Notice:</strong> MI-007 Market Intelligence is a technology platform built purely for the purpose of study and information, empowering users to make their own decisions at their own risks.
+                <strong className="text-slate-950 font-bold">Important Notice:</strong> Market Intelligence - 007 is a technology platform built purely for the purpose of study and information, empowering users to make their own decisions at their own risks.
               </p>
             </div>
           </div>
@@ -333,7 +333,7 @@ export default function AboutPage() {
               <div className="h-16 w-16 rounded-2xl border border-sky-300/80 overflow-hidden shadow-lg shadow-sky-500/20 flex items-center justify-center">
                 <Image
                   src="/images/logo-falcon-gradient.png"
-                  alt="Market Intelligence AI — MI007"
+                  alt="Market Intelligence - 007"
                   width={64}
                   height={64}
                   className="w-full h-full object-cover"
@@ -344,7 +344,7 @@ export default function AboutPage() {
               &ldquo;The best trading decisions are made not on emotion, but on the precise mathematical
               analysis of price, volume, and order flow — across every market on earth.&rdquo;
             </blockquote>
-            <p className="mt-4 text-slate-500 text-sm font-medium">— Market Intelligence AI — MI-007 Leadership Team</p>
+            <p className="mt-4 text-slate-500 text-sm font-medium">— Market Intelligence - 007 Leadership Team</p>
           </div>
         </section>
 
