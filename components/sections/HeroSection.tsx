@@ -170,67 +170,67 @@ export default function HeroSection() {
               <div className="l3-marquee-track flex items-center gap-6 whitespace-nowrap text-[14px] sm:text-[15px] font-semibold hero-l3-stream">
                 {/* Loop Sequence 1 */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-black font-bold">NIFTY 50</span>
-                  <span className="text-black font-black">24,842.50</span>{' '}
-                  <span className="text-emerald-600 font-black">+1.40%</span>
+                  <span className="hero-stats-label font-bold">NIFTY 50</span>
+                  <span className="hero-stats-val font-black">24,842.50</span>{' '}
+                  <span className="text-emerald-500 font-black">+1.40%</span>
                 </div>
-                <span className="text-slate-300 font-bold">•</span>
+                <span className="hero-stats-pipe font-bold">•</span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-black font-bold">S&P 500</span>
-                  <span className="text-black font-black">5,864.20</span>{' '}
-                  <span className="text-emerald-600 font-black">+0.82%</span>
+                  <span className="hero-stats-label font-bold">S&P 500</span>
+                  <span className="hero-stats-val font-black">5,864.20</span>{' '}
+                  <span className="text-emerald-500 font-black">+0.82%</span>
                 </div>
-                <span className="text-slate-300 font-bold">•</span>
+                <span className="hero-stats-pipe font-bold">•</span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-black font-bold">BTC</span>
-                  <span className="text-black font-black">$68,410</span>{' '}
-                  <span className="text-emerald-600 font-black">+3.24%</span>
+                  <span className="hero-stats-label font-bold">BTC</span>
+                  <span className="hero-stats-val font-black">$68,410</span>{' '}
+                  <span className="text-emerald-500 font-black">+3.24%</span>
                 </div>
-                <span className="text-slate-300 font-bold">•</span>
+                <span className="hero-stats-pipe font-bold">•</span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-black font-bold">NASDAQ</span>
-                  <span className="text-black font-black">18,240</span>{' '}
-                  <span className="text-emerald-600 font-black">+0.65%</span>
+                  <span className="hero-stats-label font-bold">NASDAQ</span>
+                  <span className="hero-stats-val font-black">18,240</span>{' '}
+                  <span className="text-emerald-500 font-black">+0.65%</span>
                 </div>
-                <span className="text-slate-300 font-bold">•</span>
+                <span className="hero-stats-pipe font-bold">•</span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-black font-bold">GOLD</span>
-                  <span className="text-black font-black">$2,648</span>{' '}
-                  <span className="text-emerald-600 font-black">+0.45%</span>
+                  <span className="hero-stats-label font-bold">GOLD</span>
+                  <span className="hero-stats-val font-black">$2,648</span>{' '}
+                  <span className="text-emerald-500 font-black">+0.45%</span>
                 </div>
-                <span className="text-slate-300 font-bold">•</span>
+                <span className="hero-stats-pipe font-bold">•</span>
 
                 {/* Loop Sequence 2 (Seamless duplication) */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-black font-bold">NIFTY 50</span>
-                  <span className="text-black font-black">24,842.50</span>{' '}
-                  <span className="text-emerald-600 font-black">+1.40%</span>
+                  <span className="hero-stats-label font-bold">NIFTY 50</span>
+                  <span className="hero-stats-val font-black">24,842.50</span>{' '}
+                  <span className="text-emerald-500 font-black">+1.40%</span>
                 </div>
-                <span className="text-slate-300 font-bold">•</span>
+                <span className="hero-stats-pipe font-bold">•</span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-black font-bold">S&P 500</span>
-                  <span className="text-black font-black">5,864.20</span>{' '}
-                  <span className="text-emerald-600 font-black">+0.82%</span>
+                  <span className="hero-stats-label font-bold">S&P 500</span>
+                  <span className="hero-stats-val font-black">5,864.20</span>{' '}
+                  <span className="text-emerald-500 font-black">+0.82%</span>
                 </div>
-                <span className="text-slate-300 font-bold">•</span>
+                <span className="hero-stats-pipe font-bold">•</span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-black font-bold">BTC</span>
-                  <span className="text-black font-black">$68,410</span>{' '}
-                  <span className="text-emerald-600 font-black">+3.24%</span>
+                  <span className="hero-stats-label font-bold">BTC</span>
+                  <span className="hero-stats-val font-black">$68,410</span>{' '}
+                  <span className="text-emerald-500 font-black">+3.24%</span>
                 </div>
-                <span className="text-slate-300 font-bold">•</span>
+                <span className="hero-stats-pipe font-bold">•</span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-black font-bold">NASDAQ</span>
-                  <span className="text-black font-black">18,240</span>{' '}
-                  <span className="text-emerald-600 font-black">+0.65%</span>
+                  <span className="hero-stats-label font-bold">NASDAQ</span>
+                  <span className="hero-stats-val font-black">18,240</span>{' '}
+                  <span className="text-emerald-500 font-black">+0.65%</span>
                 </div>
-                <span className="text-slate-300 font-bold">•</span>
+                <span className="hero-stats-pipe font-bold">•</span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-black font-bold">GOLD</span>
-                  <span className="text-black font-black">$2,648</span>{' '}
-                  <span className="text-emerald-600 font-black">+0.45%</span>
+                  <span className="hero-stats-label font-bold">GOLD</span>
+                  <span className="hero-stats-val font-black">$2,648</span>{' '}
+                  <span className="text-emerald-500 font-black">+0.45%</span>
                 </div>
-                <span className="text-slate-300 font-bold">•</span>
+                <span className="hero-stats-pipe font-bold">•</span>
               </div>
             </div>
           </div>
