@@ -320,7 +320,7 @@ export default function WhySection() {
                   : { top: `${activeToken.rect.bottom + 10}px` }),
                 width: `${popoverWidth}px`,
               }}
-              className="pointer-events-auto rounded-xl border border-emerald-500/50 bg-slate-950/50 text-white p-4 shadow-2xl backdrop-blur-xl ring-1 ring-white/20"
+              className="pointer-events-auto rounded-xl border border-emerald-500/50 bg-slate-950/95 text-white p-4 shadow-2xl backdrop-blur-xl ring-1 ring-white/20"
             >
               {/* Header row: category badge + live indicator */}
               <div className="flex items-center justify-between gap-2 mb-2">
