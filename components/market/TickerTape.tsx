@@ -35,7 +35,7 @@ export function TickerTape({ market: propMarket, currency: propCurrency }: Ticke
 
   return (
     <div
-      className="w-full overflow-hidden border-b border-slate-200 bg-white/95 backdrop-blur-md select-none relative z-40 flex items-center shadow-xs"
+      className="w-full overflow-hidden border-b select-none relative z-40 flex items-center shadow-xs ticker-tape-container"
       style={{
         height: '36px',
         maxHeight: '36px',
@@ -70,8 +70,8 @@ export function TickerTape({ market: propMarket, currency: propCurrency }: Ticke
       {/* Marquee viewport container spanning full ribbon */}
       <div className="flex-1 overflow-hidden relative h-full flex items-center">
         {/* Edge gradient fade masks for smooth ribbon entry/exit */}
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+        <div className="absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none ticker-tape-fade-left" />
+        <div className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none ticker-tape-fade-right" />
 
         {/* Rolling Ribbon Belt */}
         <div className="ticker-ribbon-belt pl-3">
@@ -86,15 +86,15 @@ export function TickerTape({ market: propMarket, currency: propCurrency }: Ticke
               <Link
                 key={`${item.symbol}-${idx}`}
                 href={isMacro ? '#' : href}
-                className={`inline-flex items-center gap-2 px-3 text-[14px] mono shrink-0 whitespace-nowrap transition-colors rounded py-0.5 ${
-                  isMacro ? 'cursor-default' : 'cursor-pointer hover:bg-slate-200/70 hover:scale-[1.02]'
+                className={`inline-flex items-center gap-2 px-3 text-[14px] mono shrink-0 whitespace-nowrap transition-colors rounded py-0.5 ticker-tape-item ${
+                  isMacro ? 'cursor-default' : 'cursor-pointer hover:opacity-80 hover:scale-[1.02]'
                 }`}
               >
-                <span className="font-black text-black tracking-wider group-hover:text-emerald-700">
+                <span className="font-black tracking-wider ticker-tape-sym">
                   {item.symbol}
                 </span>
 
-                <span className="font-black text-slate-900">
+                <span className="font-black ticker-tape-val">
                   {displayVal
                     ? displayVal
                     : `${currency}${item.price.toLocaleString(undefined, {
@@ -113,7 +113,7 @@ export function TickerTape({ market: propMarket, currency: propCurrency }: Ticke
                     {Math.abs(item.changePct).toFixed(2)}%
                   </span>
                 )}
-                <span className="text-slate-300 ml-2 font-normal">|</span>
+                <span className="ticker-tape-pipe ml-2 font-normal">|</span>
               </Link>
             );
           })}

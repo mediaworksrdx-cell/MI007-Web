@@ -196,42 +196,42 @@ export default function HeroSection() {
         transition={{ duration: 0.7, delay: 0.2 }}
         className="w-full relative z-20 pointer-events-auto hero-theatre-gutter mt-7 mb-12 sm:mb-16"
       >
-        <div className="w-full rounded-2xl border-2 border-slate-200/90 bg-white/95 backdrop-blur-2xl px-4 sm:px-8 py-3 sm:py-4 shadow-lg flex flex-col xl:flex-row items-center justify-between gap-3 sm:gap-4 xl:gap-6 mono overflow-hidden relative">
+        <div className="w-full rounded-2xl border-2 hero-stats-panel px-4 sm:px-8 py-3 sm:py-4 shadow-lg flex flex-col xl:flex-row items-center justify-between gap-3 sm:gap-4 xl:gap-6 mono overflow-hidden relative">
           {/* Left: Momentum Telemetry (Static High-Priority) */}
           <div className="flex items-center flex-wrap sm:flex-nowrap justify-center xl:justify-start gap-3 sm:gap-6 shrink-0 text-center sm:text-left">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="text-black font-extrabold text-[12px] xs:text-[14px] sm:text-[15px] tracking-wide">BULL MOMENTUM:</span>
-              <strong className="font-mono font-black text-emerald-600 text-[14px] xs:text-[16px] sm:text-[18px]">+{bullDelta}%</strong>
+              <span className="font-extrabold text-[12px] xs:text-[14px] sm:text-[15px] tracking-wide hero-stats-label">BULL MOMENTUM:</span>
+              <strong className="font-mono font-black text-emerald-500 text-[14px] xs:text-[16px] sm:text-[18px]">+{bullDelta}%</strong>
             </div>
-            <span className="text-slate-300 font-bold hidden sm:inline text-lg">|</span>
+            <span className="hero-stats-pipe font-bold hidden sm:inline text-lg">|</span>
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="text-black font-extrabold text-[12px] xs:text-[14px] sm:text-[15px] tracking-wide">BEAR RESISTANCE:</span>
-              <strong className="font-mono font-black text-rose-600 text-[14px] xs:text-[16px] sm:text-[18px]">{bearDelta}%</strong>
+              <span className="font-extrabold text-[12px] xs:text-[14px] sm:text-[15px] tracking-wide hero-stats-label">BEAR RESISTANCE:</span>
+              <strong className="font-mono font-black text-rose-500 text-[14px] xs:text-[16px] sm:text-[18px]">{bearDelta}%</strong>
             </div>
-            <span className="text-slate-300 font-bold hidden md:inline text-lg">|</span>
+            <span className="hero-stats-pipe font-bold hidden md:inline text-lg">|</span>
             <div className="hidden md:flex items-center gap-2">
-              <span className="text-black font-extrabold text-[14px] sm:text-[15px] tracking-wide">EQUILIBRIUM:</span>
-              <strong className="font-mono font-black text-black text-[16px] sm:text-[18px]">24,842.50</strong>
+              <span className="font-extrabold text-[14px] sm:text-[15px] tracking-wide hero-stats-label">EQUILIBRIUM:</span>
+              <strong className="font-mono font-black text-[16px] sm:text-[18px] hero-stats-val">24,842.50</strong>
             </div>
           </div>
 
           {/* Central Divider */}
-          <div className="hidden xl:block w-px h-8 bg-slate-300 shrink-0" />
+          <div className="hidden xl:block w-px h-8 hero-stats-divider shrink-0" />
 
           {/* Right: Global L3 Feed with Infinite Marquee (Contained, Never Overflows) */}
           <div className="w-full xl:w-auto xl:flex-1 min-w-0 flex items-center gap-3 sm:gap-4 overflow-hidden relative">
-            <div className="flex items-center gap-2 text-emerald-700 text-[14px] sm:text-[15px] font-black tracking-wide shrink-0">
+            <div className="flex items-center gap-2 text-emerald-500 text-[14px] sm:text-[15px] font-black tracking-wide shrink-0">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>GLOBAL L3 FEED</span>
             </div>
 
             {/* Edge fade masks */}
-            <div className="absolute left-[130px] sm:left-[150px] top-0 bottom-0 w-6 bg-gradient-to-r from-white via-white/80 to-transparent z-10 pointer-events-none hidden sm:block" />
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none hidden sm:block" />
+            <div className="absolute left-[130px] sm:left-[150px] top-0 bottom-0 w-6 z-10 pointer-events-none hidden sm:block hero-marquee-fade-left" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 z-10 pointer-events-none hidden sm:block hero-marquee-fade-right" />
 
             {/* Scrolling Ticker Stream (Contained within boundaries) */}
             <div className="flex-1 min-w-0 overflow-hidden">
-              <div className="l3-marquee-track flex items-center gap-6 whitespace-nowrap text-[14px] sm:text-[15px] font-semibold text-black">
+              <div className="l3-marquee-track flex items-center gap-6 whitespace-nowrap text-[14px] sm:text-[15px] font-semibold hero-l3-stream">
                 {/* Loop Sequence 1 */}
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="text-black font-bold">NIFTY 50</span>
@@ -310,9 +310,9 @@ export default function HeroSection() {
           transition={{ duration: 0.5, delay: 0.25 }}
           className="w-full flex justify-center mb-4 sm:mb-5"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/95 px-3.5 py-1 shadow-xs backdrop-blur-xs">
+          <div className="inline-flex items-center gap-2 rounded-full border px-3.5 py-1 shadow-xs backdrop-blur-xs hero-brand-pill">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-            <span className="mono text-[11px] font-bold tracking-widest text-slate-700 uppercase">
+            <span className="mono text-[11px] font-bold tracking-widest uppercase hero-brand-pill-text">
               A Synthetix Analytics Product
             </span>
           </div>
@@ -342,9 +342,9 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.35 }}
-          className="text-[26px] xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[-0.03em] text-slate-900 leading-[1.1] sm:leading-none mb-4 sm:mb-6 break-words"
+          className="text-[26px] xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[-0.03em] leading-[1.1] sm:leading-none mb-4 sm:mb-6 break-words page-heading"
         >
-          <span className="bg-gradient-to-r from-slate-950 via-slate-800 to-emerald-700 bg-clip-text text-transparent">
+          <span className="hero-title-gradient">
             MARKET INTELLIGENCE
           </span>
           <span className="inline-block ml-2 sm:ml-4 font-mono text-emerald-600 drop-shadow-[0_0_25px_rgba(5,150,105,0.4)]">
@@ -360,7 +360,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.4 }}
-          className="text-[15px] sm:text-[19px] md:text-[21px] text-black font-medium max-w-3xl mx-auto mb-6 sm:mb-10 leading-relaxed px-2 sm:px-0"
+          className="text-[15px] sm:text-[19px] md:text-[21px] font-medium max-w-3xl mx-auto mb-6 sm:mb-10 leading-relaxed px-2 sm:px-0 page-subtitle"
         >
           For a Smarter Tomorrow. Multi-dimensional technical synthesis and real-time liquidity sweep detection engineered for institutional execution.
         </motion.p>
@@ -382,7 +382,7 @@ export default function HeroSection() {
 
           <a
             href="#movement"
-            className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 min-h-[48px] rounded-xl border border-slate-300 bg-white text-slate-800 font-mono text-[14px] sm:text-[17px] font-bold tracking-widest uppercase backdrop-blur-xl transition-all duration-300 hover:bg-slate-100 hover:border-slate-400 text-center cursor-pointer shadow-sm active:bg-slate-200 flex items-center justify-center"
+            className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 min-h-[48px] rounded-xl border hero-secondary-btn font-mono text-[14px] sm:text-[17px] font-bold tracking-widest uppercase backdrop-blur-xl transition-all duration-300 text-center cursor-pointer shadow-sm flex items-center justify-center"
           >
             DISCOVER THE FORCES
           </a>

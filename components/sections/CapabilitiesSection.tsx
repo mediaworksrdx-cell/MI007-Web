@@ -33,21 +33,20 @@ export default function CapabilitiesSection() {
           transition={{ duration: 0.8 }}
           className="text-center mb-10"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-slate-200 bg-slate-100 backdrop-blur-md mb-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-            <span className="mono text-[13px] tracking-[0.25em] text-black uppercase font-black">
+            <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
               04 // MARKET INTELLIGENCE AI — MI007 ENGINES
             </span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-3">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 page-heading">
             The Global <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-emerald-600 to-teal-700">Algorithmic Core</span>
           </h2>
-          <p className="text-[17px] sm:text-[19px] text-black font-medium max-w-xl mx-auto leading-relaxed">
+          <p className="text-[17px] sm:text-[19px] font-medium max-w-xl mx-auto leading-relaxed page-subtitle">
             Institution-Grade Intelligence for a Smarter Tomorrow. Eight specialized quantitative engines operating simultaneously across global financial exchanges.
           </p>
         </motion.div>
-
 
         {/* 8 Engine Modular Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -59,27 +58,27 @@ export default function CapabilitiesSection() {
               transition={{ delay: idx * 0.05, duration: 0.5 }}
               onMouseEnter={() => setHoveredIdx(idx)}
               onMouseLeave={() => setHoveredIdx(null)}
-              className="p-5 rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-xl flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all duration-300 relative group overflow-hidden shadow-xs"
+              className="p-5 rounded-2xl border engine-card flex flex-col justify-between hover:shadow-md transition-all duration-300 relative group overflow-hidden shadow-xs"
               style={{
                 boxShadow: hoveredIdx === idx ? `0 0 25px ${eng.color}25` : undefined,
               }}
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="mono text-[13px] text-black font-black">MOD // {eng.id}</span>
+                  <span className="mono text-[13px] font-black engine-mod-id">MOD // {eng.id}</span>
                   <span className="text-lg" style={{ color: eng.color }}>{eng.icon}</span>
                 </div>
-                <h3 className="text-[17px] font-bold text-slate-900 mb-2 tracking-wide font-sans">
+                <h3 className="text-[17px] font-bold mb-2 tracking-wide font-sans engine-card-title">
                   {eng.title}
                 </h3>
-                <p className="text-[14px] text-black font-medium leading-relaxed font-sans">
+                <p className="text-[14px] font-medium leading-relaxed font-sans engine-card-desc">
                   {eng.desc}
                 </p>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-[13px] mono text-black font-bold">
-                <span>STATUS</span>
-                <span className="text-emerald-700 font-bold">ONLINE</span>
+              <div className="mt-5 pt-3 border-t border-white/10 flex items-center justify-between text-[13px] mono font-bold">
+                <span className="opacity-70">STATUS</span>
+                <span className="text-emerald-500 font-bold">ONLINE</span>
               </div>
             </motion.div>
           ))}

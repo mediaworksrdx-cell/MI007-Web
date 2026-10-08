@@ -218,7 +218,7 @@ export default function TerminalPage() {
       <main className="min-h-screen pt-28 sm:pt-32 relative z-20 bg-transparent pb-20">
         {/* ── Master Cockpit Layer ── */}
         <div className="mx-auto max-w-7xl px-3 sm:px-4 py-4 sm:py-8 relative z-20 isolate">
-          <div className="relative rounded-2xl border-2 border-slate-200/80 bg-white/50 backdrop-blur-xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.1),0_0_0_1px_rgba(0,0,0,0.03)] p-3.5 sm:p-6 lg:p-9 overflow-hidden">
+          <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-3.5 sm:p-6 lg:p-9 overflow-hidden">
             {/* Top Outer Hairline Accent */}
             <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 pointer-events-none" />
 

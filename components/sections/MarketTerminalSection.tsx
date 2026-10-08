@@ -225,8 +225,8 @@ export default function MarketTerminalSection() {
         ? '#EAF1FA'
         : '#F1F4F9' // graphite
       : theme === 'ivory'
-      ? '#18221D'
-      : '#0E1726'; // arctic
+      ? '#172033'
+      : '#101827'; // arctic
 
     ctx.fillStyle = chartBg;
     ctx.fillRect(0, 0, w, h);
@@ -384,9 +384,7 @@ export default function MarketTerminalSection() {
       ? theme === 'capital'
         ? '#D9E6F5'
         : '#E2E8F0' // graphite
-      : theme === 'ivory'
-      ? '#222E27'
-      : '#162238'; // arctic
+      : '#202B3D'; // secondary dark surface for light themes
     const subBorder = cardIsLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
     const textSub = cardIsLight ? '#475569' : '#94A3B8';
 
@@ -544,14 +542,16 @@ export default function MarketTerminalSection() {
       <div className="max-w-[1550px] mx-auto px-4 w-full pointer-events-auto">
         {/* Section Heading */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-50 text-emerald-800 text-[13px] font-mono mb-3 uppercase tracking-widest font-bold">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-            05 // MARKET INTELLIGENCE AI — MI007 TERMINAL
+            <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
+              05 // MARKET INTELLIGENCE AI — MI007 TERMINAL
+            </span>
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-2 page-heading">
             The Living Product Terminal
           </h2>
-          <p className="text-[17px] sm:text-[19px] text-black font-medium max-w-xl mx-auto">
+          <p className="text-[17px] sm:text-[19px] font-medium max-w-xl mx-auto page-subtitle">
             Interactive candlestick intelligence with real-time liquidity sweep detection, automated pattern recognition, and instantaneous AI microstructure inspection.
           </p>
         </div>
@@ -561,7 +561,7 @@ export default function MarketTerminalSection() {
           initial={{ opacity: 0, scale: 0.98 }}
           animate={isInView ? { opacity: 1, scale: 1 } : {}}
           transition={{ duration: 0.8 }}
-          className="w-full rounded-2xl overflow-hidden border-2 border-slate-200 bg-white/95 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.06)] flex flex-col relative"
+          className="w-full rounded-2xl overflow-hidden border-2 terminal-frame shadow-xl flex flex-col relative"
         >
           {/* Top Control Bar: Symbols + Toggles + Live Status */}
           <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 p-3 sm:p-4 border-b border-slate-200 bg-slate-50/90 text-[13px] sm:text-[14px] font-mono">

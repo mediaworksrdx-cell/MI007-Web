@@ -37,59 +37,81 @@
 html[data-theme="arctic"],
 html[data-theme="lightblue"],
 html[data-theme="quartz"] {
-  --color-bg-midnight: #EDF5FA;
-  --color-surface-card: #0E1726;
-  --color-surface-variant: #162238;
-  --color-border-navy: rgba(30, 58, 95, 0.65);
-  --color-mint-green: #10B981;
-  --color-crimson-red: #F43F5E;
-  --color-accent-cyan: #0891B2;
+  --color-bg-midnight: #F4F7FA;
+  --color-surface-card: #101827;
+  --color-surface-variant: #202B3D;
+  --color-border-navy: #CBD5E1;
+  --color-mint-green: #059669;
+  --color-crimson-red: #DC2626;
+  --color-accent-cyan: #0F766E;
   --color-cyber-gold: #0F2744;
-  --color-chart-bg: #0E1726;
-  --color-text-primary: #F8FAFC;
-  --color-text-secondary: #E2E8F0;
-  --color-text-muted: #94A3B8;
-  --color-bull-green: #10B981;
-  --color-bear-red: #F43F5E;
-  --color-glass-white: rgba(14, 23, 38, 0.95);
+  --color-chart-bg: #101827;
+  --color-text-primary: #111827;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748B;
+  --color-bull-green: #059669;
+  --color-bear-red: #DC2626;
+  --color-glass-white: rgba(16, 24, 39, 0.95);
 
-  --theme-page-bg: #EDF5FA;
-  --theme-page-text: #0B192C;
-  --theme-card-bg: #0E1726;
-  --theme-card-border: rgba(30, 58, 95, 0.65);
-  --theme-navbar-bg: rgba(237, 245, 250, 0.96);
-  --theme-footer-bg: #0E1726;
-  --theme-ticker-bg: #0E1726;
-  --theme-switcher-bg: #0E1726;
+  --theme-page-bg: #F4F7FA;
+  --theme-page-text: #111827;
+  --theme-page-subtitle: #475569;
+  --theme-page-border: #CBD5E1;
+  --theme-navbar-bg: rgba(244, 247, 250, 0.96);
+  --theme-ticker-bg: #F4F7FA;
+  --theme-ticker-text: #111827;
+  --theme-ticker-border: #CBD5E1;
+
+  --theme-card-bg: #101827;
+  --theme-card-surface: #202B3D;
+  --theme-card-border: #202B3D;
+  --theme-card-text: #F8FAFC;
+  --theme-card-text-muted: #94A3B8;
+
+  --theme-footer-bg: #101827;
+  --theme-footer-text: #F8FAFC;
+  --theme-footer-border: #202B3D;
+  --theme-switcher-bg: #101827;
 }
 
 html[data-theme="ivory"],
 html[data-theme="champagne"],
 html[data-theme="falcon"] {
-  --color-bg-midnight: #F7F4EB;
-  --color-surface-card: #18221D;
-  --color-surface-variant: #222E27;
-  --color-border-navy: rgba(34, 60, 48, 0.65);
-  --color-mint-green: #22C55E;
-  --color-crimson-red: #EF4444;
-  --color-accent-cyan: #166534;
+  --color-bg-midnight: #F8F5ED;
+  --color-surface-card: #172033;
+  --color-surface-variant: #202B3D;
+  --color-border-navy: #CBD5E1;
+  --color-mint-green: #059669;
+  --color-crimson-red: #DC2626;
+  --color-accent-cyan: #0F766E;
   --color-cyber-gold: #C5A059;
-  --color-chart-bg: #18221D;
-  --color-text-primary: #FDFCFA;
-  --color-text-secondary: #E7E5E0;
-  --color-text-muted: #A8A29E;
-  --color-bull-green: #22C55E;
-  --color-bear-red: #EF4444;
-  --color-glass-white: rgba(24, 34, 29, 0.95);
+  --color-chart-bg: #172033;
+  --color-text-primary: #111827;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748B;
+  --color-bull-green: #059669;
+  --color-bear-red: #DC2626;
+  --color-glass-white: rgba(23, 32, 51, 0.95);
 
-  --theme-page-bg: #F7F4EB;
-  --theme-page-text: #1A1A1A;
-  --theme-card-bg: #18221D;
-  --theme-card-border: rgba(34, 60, 48, 0.65);
-  --theme-navbar-bg: rgba(247, 244, 235, 0.96);
-  --theme-footer-bg: #18221D;
-  --theme-ticker-bg: #18221D;
-  --theme-switcher-bg: #18221D;
+  --theme-page-bg: #F8F5ED;
+  --theme-page-text: #111827;
+  --theme-page-subtitle: #475569;
+  --theme-page-border: #CBD5E1;
+  --theme-navbar-bg: rgba(248, 245, 237, 0.96);
+  --theme-ticker-bg: #F8F5ED;
+  --theme-ticker-text: #111827;
+  --theme-ticker-border: #CBD5E1;
+
+  --theme-card-bg: #172033;
+  --theme-card-surface: #202B3D;
+  --theme-card-border: #202B3D;
+  --theme-card-text: #F8FAFC;
+  --theme-card-text-muted: #94A3B8;
+
+  --theme-footer-bg: #172033;
+  --theme-footer-text: #F8FAFC;
+  --theme-footer-border: #202B3D;
+  --theme-switcher-bg: #172033;
 }
 
 html[data-theme="graphite"],
@@ -113,11 +135,22 @@ html[data-theme="obsidian"] {
 
   --theme-page-bg: #181C24;
   --theme-page-text: #F8FAFC;
-  --theme-card-bg: #F1F4F9;
-  --theme-card-border: rgba(148, 163, 184, 0.45);
+  --theme-page-subtitle: #94A3B8;
+  --theme-page-border: rgba(148, 163, 184, 0.45);
   --theme-navbar-bg: rgba(24, 28, 36, 0.96);
+  --theme-ticker-bg: #181C24;
+  --theme-ticker-text: #F8FAFC;
+  --theme-ticker-border: rgba(148, 163, 184, 0.45);
+
+  --theme-card-bg: #F1F4F9;
+  --theme-card-surface: #E2E8F0;
+  --theme-card-border: rgba(148, 163, 184, 0.45);
+  --theme-card-text: #0F172A;
+  --theme-card-text-muted: #475569;
+
   --theme-footer-bg: #14171E;
-  --theme-ticker-bg: #F1F4F9;
+  --theme-footer-text: #F8FAFC;
+  --theme-footer-border: rgba(148, 163, 184, 0.35);
   --theme-switcher-bg: #222733;
 }
 
@@ -142,11 +175,22 @@ html[data-theme="cyberpunk"] {
 
   --theme-page-bg: #0B132B;
   --theme-page-text: #FFFFFF;
-  --theme-card-bg: #EAF1FA;
-  --theme-card-border: rgba(37, 99, 235, 0.28);
+  --theme-page-subtitle: #94A3B8;
+  --theme-page-border: rgba(37, 99, 235, 0.28);
   --theme-navbar-bg: rgba(11, 19, 43, 0.96);
+  --theme-ticker-bg: #0B132B;
+  --theme-ticker-text: #FFFFFF;
+  --theme-ticker-border: rgba(37, 99, 235, 0.28);
+
+  --theme-card-bg: #EAF1FA;
+  --theme-card-surface: #D9E6F5;
+  --theme-card-border: rgba(37, 99, 235, 0.28);
+  --theme-card-text: #0A1931;
+  --theme-card-text-muted: #3B5278;
+
   --theme-footer-bg: #080F22;
-  --theme-ticker-bg: #EAF1FA;
+  --theme-footer-text: #FFFFFF;
+  --theme-footer-border: rgba(37, 99, 235, 0.25);
   --theme-switcher-bg: #131E3D;
 }
 
@@ -257,464 +301,272 @@ html[data-theme="cyberpunk"] {
      - Light / White text for section headings on the dark page background
    ══════════════════════════════════════════════════════════════════════════════ */
 
-/* ── 1. Page Background & Global Reset ── */
+/* ── 1. Page Background & Global Section Reset ── */
+html,
+body,
 html body {
   background-color: var(--theme-page-bg) !important;
   color: var(--theme-page-text) !important;
 }
 
-/* ── 2. LIGHT THEMES: Light Background → DARK Cards & Panels → LIGHT Card Text ── */
-
-/* Arctic Intelligence (Light Theme) Card Surfaces */
-html[data-theme="arctic"] .bg-white,
-html[data-theme="arctic"] [class*="bg-white/"],
-html[data-theme="lightblue"] .bg-white,
-html[data-theme="lightblue"] [class*="bg-white/"] {
-  background-color: #0E1726 !important;
-  border-color: rgba(30, 58, 95, 0.65) !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(30, 58, 95, 0.45) !important;
-  color: #F8FAFC !important;
+/* Ensure no section wrapper leaves dark background slabs behind */
+section,
+main,
+#hero,
+#movement,
+#ai-analysis,
+#intelligence-engine,
+#terminal,
+#market-intelligence,
+#final-cta {
+  background-color: transparent !important;
 }
 
-html[data-theme="arctic"] .bg-slate-50,
-html[data-theme="arctic"] .bg-slate-100,
-html[data-theme="arctic"] [class*="bg-slate-50/"],
-html[data-theme="arctic"] [class*="bg-slate-100/"],
-html[data-theme="lightblue"] .bg-slate-50,
-html[data-theme="lightblue"] .bg-slate-100,
-html[data-theme="lightblue"] [class*="bg-slate-50/"],
-html[data-theme="lightblue"] [class*="bg-slate-100/"] {
-  background-color: #162238 !important;
-  border-color: rgba(30, 58, 95, 0.65) !important;
-  color: #F8FAFC !important;
+/* ── 2. Page-Level Headings & Typography (Outside Cards) ── */
+.page-heading,
+section h1,
+section h2,
+#hero h1 {
+  color: var(--theme-page-text) !important;
 }
 
-/* Executive Ivory (Light Theme) Card Surfaces */
-html[data-theme="ivory"] .bg-white,
-html[data-theme="ivory"] [class*="bg-white/"],
-html[data-theme="champagne"] .bg-white,
-html[data-theme="champagne"] [class*="bg-white/"],
-html[data-theme="falcon"] .bg-white {
-  background-color: #18221D !important;
-  border-color: rgba(34, 60, 48, 0.65) !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(34, 60, 48, 0.45) !important;
-  color: #FDFCFA !important;
+.page-subtitle,
+section p.page-subtitle,
+#hero p.page-subtitle {
+  color: var(--theme-page-subtitle) !important;
 }
 
-html[data-theme="ivory"] .bg-slate-50,
-html[data-theme="ivory"] .bg-slate-100,
-html[data-theme="ivory"] [class*="bg-slate-50/"],
-html[data-theme="ivory"] [class*="bg-slate-100/"],
-html[data-theme="champagne"] .bg-slate-50,
-html[data-theme="champagne"] .bg-slate-100,
-html[data-theme="champagne"] [class*="bg-slate-50/"],
-html[data-theme="champagne"] [class*="bg-slate-100/"] {
-  background-color: #222E27 !important;
-  border-color: rgba(34, 60, 48, 0.65) !important;
-  color: #FDFCFA !important;
+.page-section-pill {
+  background-color: var(--theme-ticker-bg) !important;
+  border-color: var(--theme-page-border) !important;
 }
 
-/* Subtle dark-gray/blue borders for Light Themes */
-html[data-theme="arctic"] .border-slate-200,
-html[data-theme="arctic"] .border-slate-300,
-html[data-theme="arctic"] [class*="border-slate-200/"],
-html[data-theme="arctic"] [class*="border-slate-300/"],
-html[data-theme="lightblue"] .border-slate-200,
-html[data-theme="lightblue"] .border-slate-300 {
-  border-color: rgba(30, 58, 95, 0.65) !important;
+.page-section-pill-text {
+  color: var(--theme-page-text) !important;
 }
 
-html[data-theme="ivory"] .border-slate-200,
-html[data-theme="ivory"] .border-slate-300,
-html[data-theme="ivory"] [class*="border-slate-200/"],
-html[data-theme="ivory"] [class*="border-slate-300/"],
-html[data-theme="champagne"] .border-slate-200,
-html[data-theme="champagne"] .border-slate-300 {
-  border-color: rgba(34, 60, 48, 0.65) !important;
+.hero-brand-pill {
+  background-color: var(--theme-ticker-bg) !important;
+  border-color: var(--theme-page-border) !important;
 }
 
-/* Light Theme: Card Text (LIGHT FOREGROUND TEXT on dark cards) */
-html[data-theme="arctic"] .bg-white .text-black,
-html[data-theme="arctic"] [class*="bg-white/"] .text-black,
-html[data-theme="arctic"] .bg-white .text-slate-950,
-html[data-theme="arctic"] [class*="bg-white/"] .text-slate-950,
-html[data-theme="arctic"] .bg-white .text-slate-900,
-html[data-theme="arctic"] [class*="bg-white/"] .text-slate-900,
-html[data-theme="arctic"] .bg-white .text-slate-800,
-html[data-theme="arctic"] [class*="bg-white/"] .text-slate-800,
-html[data-theme="arctic"] .bg-slate-50 .text-black,
-html[data-theme="arctic"] [class*="bg-slate-50/"] .text-black,
-html[data-theme="arctic"] .bg-slate-100 .text-black,
-html[data-theme="arctic"] [class*="bg-slate-100/"] .text-black,
-html[data-theme="arctic"] .bg-slate-50 .text-slate-900,
-html[data-theme="arctic"] .bg-slate-100 .text-slate-900,
-html[data-theme="arctic"] .bg-white h1,
-html[data-theme="arctic"] .bg-white h2,
-html[data-theme="arctic"] .bg-white h3,
-html[data-theme="arctic"] .bg-white h4,
-html[data-theme="arctic"] [class*="bg-white/"] h1,
-html[data-theme="arctic"] [class*="bg-white/"] h2,
-html[data-theme="arctic"] [class*="bg-white/"] h3,
-html[data-theme="arctic"] [class*="bg-white/"] h4,
-html[data-theme="lightblue"] .bg-white .text-black,
-html[data-theme="lightblue"] [class*="bg-white/"] .text-black,
-html[data-theme="lightblue"] .bg-white .text-slate-900,
-html[data-theme="lightblue"] [class*="bg-white/"] .text-slate-900 {
-  color: #F8FAFC !important;
+.hero-brand-pill-text {
+  color: var(--theme-page-subtitle) !important;
 }
 
-html[data-theme="arctic"] .bg-white .text-slate-700,
-html[data-theme="arctic"] [class*="bg-white/"] .text-slate-700,
-html[data-theme="arctic"] .bg-white .text-slate-600,
-html[data-theme="arctic"] [class*="bg-white/"] .text-slate-600,
-html[data-theme="lightblue"] .bg-white .text-slate-700,
-html[data-theme="lightblue"] .bg-white .text-slate-600 {
-  color: #E2E8F0 !important;
+.hero-title-gradient {
+  background-image: linear-gradient(to right, var(--theme-page-text), var(--theme-page-subtitle), #059669);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-html[data-theme="arctic"] .bg-white .text-slate-500,
-html[data-theme="arctic"] [class*="bg-white/"] .text-slate-500,
-html[data-theme="arctic"] .bg-white .text-slate-400,
-html[data-theme="arctic"] [class*="bg-white/"] .text-slate-400,
-html[data-theme="lightblue"] .bg-white .text-slate-500,
-html[data-theme="lightblue"] .bg-white .text-slate-400 {
-  color: #94A3B8 !important;
+.hero-secondary-btn {
+  background-color: var(--theme-ticker-bg) !important;
+  border-color: var(--theme-page-border) !important;
+  color: var(--theme-page-text) !important;
+}
+.hero-secondary-btn:hover {
+  background-color: var(--theme-card-surface) !important;
+  color: var(--theme-card-text) !important;
 }
 
-html[data-theme="ivory"] .bg-white .text-black,
-html[data-theme="ivory"] [class*="bg-white/"] .text-black,
-html[data-theme="ivory"] .bg-white .text-slate-950,
-html[data-theme="ivory"] [class*="bg-white/"] .text-slate-950,
-html[data-theme="ivory"] .bg-white .text-slate-900,
-html[data-theme="ivory"] [class*="bg-white/"] .text-slate-900,
-html[data-theme="ivory"] .bg-white .text-slate-800,
-html[data-theme="ivory"] [class*="bg-white/"] .text-slate-800,
-html[data-theme="ivory"] .bg-slate-50 .text-black,
-html[data-theme="ivory"] [class*="bg-slate-50/"] .text-black,
-html[data-theme="ivory"] .bg-slate-100 .text-black,
-html[data-theme="ivory"] [class*="bg-slate-100/"] .text-black,
-html[data-theme="ivory"] .bg-slate-50 .text-slate-900,
-html[data-theme="ivory"] .bg-slate-100 .text-slate-900,
-html[data-theme="ivory"] .bg-white h1,
-html[data-theme="ivory"] .bg-white h2,
-html[data-theme="ivory"] .bg-white h3,
-html[data-theme="ivory"] .bg-white h4,
-html[data-theme="ivory"] [class*="bg-white/"] h1,
-html[data-theme="ivory"] [class*="bg-white/"] h2,
-html[data-theme="ivory"] [class*="bg-white/"] h3,
-html[data-theme="ivory"] [class*="bg-white/"] h4,
-html[data-theme="champagne"] .bg-white .text-black,
-html[data-theme="champagne"] [class*="bg-white/"] .text-black,
-html[data-theme="champagne"] .bg-white .text-slate-900,
-html[data-theme="champagne"] [class*="bg-white/"] .text-slate-900 {
-  color: #FDFCFA !important;
+/* ── 3. Market Ticker Ribbon: Light Background with Dark Text in Light Themes ── */
+.ticker-tape-container {
+  background-color: var(--theme-ticker-bg) !important;
+  border-color: var(--theme-ticker-border) !important;
+  color: var(--theme-ticker-text) !important;
 }
 
-html[data-theme="ivory"] .bg-white .text-slate-700,
-html[data-theme="ivory"] [class*="bg-white/"] .text-slate-700,
-html[data-theme="ivory"] .bg-white .text-slate-600,
-html[data-theme="ivory"] [class*="bg-white/"] .text-slate-600,
-html[data-theme="champagne"] .bg-white .text-slate-700,
-html[data-theme="champagne"] .bg-white .text-slate-600 {
-  color: #E7E5E0 !important;
+.ticker-tape-sym,
+.ticker-tape-val {
+  color: var(--theme-ticker-text) !important;
 }
 
-html[data-theme="ivory"] .bg-white .text-slate-500,
-html[data-theme="ivory"] [class*="bg-white/"] .text-slate-500,
-html[data-theme="ivory"] .bg-white .text-slate-400,
-html[data-theme="ivory"] [class*="bg-white/"] .text-slate-400,
-html[data-theme="champagne"] .bg-white .text-slate-500,
-html[data-theme="champagne"] .bg-white .text-slate-400 {
-  color: #A8A29E !important;
+.ticker-tape-pipe {
+  color: var(--theme-page-border) !important;
 }
 
-/* Light Theme: Page-Level Text Outside Cards (DARK text on light background) */
-html[data-theme="arctic"] section > div > div > h2,
-html[data-theme="arctic"] section > div > div > p,
-html[data-theme="arctic"] section h1,
-html[data-theme="arctic"] section h2,
-html[data-theme="lightblue"] section h1,
-html[data-theme="lightblue"] section h2 {
-  color: #0B192C !important;
+html[data-theme="arctic"] .ticker-tape-fade-left,
+html[data-theme="lightblue"] .ticker-tape-fade-left,
+html[data-theme="quartz"] .ticker-tape-fade-left {
+  background: linear-gradient(to right, #F4F7FA, transparent) !important;
+}
+html[data-theme="arctic"] .ticker-tape-fade-right,
+html[data-theme="lightblue"] .ticker-tape-fade-right,
+html[data-theme="quartz"] .ticker-tape-fade-right {
+  background: linear-gradient(to left, #F4F7FA, transparent) !important;
 }
 
-html[data-theme="ivory"] section > div > div > h2,
-html[data-theme="ivory"] section > div > div > p,
-html[data-theme="ivory"] section h1,
-html[data-theme="ivory"] section h2,
-html[data-theme="champagne"] section h1,
-html[data-theme="champagne"] section h2 {
-  color: #1A1A1A !important;
+html[data-theme="ivory"] .ticker-tape-fade-left,
+html[data-theme="champagne"] .ticker-tape-fade-left,
+html[data-theme="falcon"] .ticker-tape-fade-left {
+  background: linear-gradient(to right, #F8F5ED, transparent) !important;
+}
+html[data-theme="ivory"] .ticker-tape-fade-right,
+html[data-theme="champagne"] .ticker-tape-fade-right,
+html[data-theme="falcon"] .ticker-tape-fade-right {
+  background: linear-gradient(to left, #F8F5ED, transparent) !important;
 }
 
-
-/* ── 3. DARK THEMES: Dark Background → LIGHT Cards & Panels → DARK Card Text ── */
-
-/* Institutional Graphite (Dark Theme) Card Surfaces */
-html[data-theme="graphite"] .bg-white,
-html[data-theme="graphite"] [class*="bg-white/"],
-html[data-theme="metallic"] .bg-white,
-html[data-theme="metallic"] [class*="bg-white/"],
-html[data-theme="obsidian"] .bg-white {
-  background-color: #F1F4F9 !important;
-  border-color: rgba(148, 163, 184, 0.45) !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(148, 163, 184, 0.35) !important;
-  color: #0F172A !important;
+html[data-theme="graphite"] .ticker-tape-fade-left,
+html[data-theme="metallic"] .ticker-tape-fade-left,
+html[data-theme="obsidian"] .ticker-tape-fade-left {
+  background: linear-gradient(to right, #181C24, transparent) !important;
+}
+html[data-theme="graphite"] .ticker-tape-fade-right,
+html[data-theme="metallic"] .ticker-tape-fade-right,
+html[data-theme="obsidian"] .ticker-tape-fade-right {
+  background: linear-gradient(to left, #181C24, transparent) !important;
 }
 
-html[data-theme="graphite"] .bg-slate-50,
-html[data-theme="graphite"] .bg-slate-100,
-html[data-theme="graphite"] [class*="bg-slate-50/"],
-html[data-theme="graphite"] [class*="bg-slate-100/"],
-html[data-theme="metallic"] .bg-slate-50,
-html[data-theme="metallic"] .bg-slate-100,
-html[data-theme="metallic"] [class*="bg-slate-50/"],
-html[data-theme="metallic"] [class*="bg-slate-100/"] {
-  background-color: #E2E8F0 !important;
-  border-color: rgba(148, 163, 184, 0.45) !important;
-  color: #0F172A !important;
+html[data-theme="capital"] .ticker-tape-fade-left,
+html[data-theme="techno"] .ticker-tape-fade-left,
+html[data-theme="cyberpunk"] .ticker-tape-fade-left {
+  background: linear-gradient(to right, #0B132B, transparent) !important;
+}
+html[data-theme="capital"] .ticker-tape-fade-right,
+html[data-theme="techno"] .ticker-tape-fade-right,
+html[data-theme="cyberpunk"] .ticker-tape-fade-right {
+  background: linear-gradient(to left, #0B132B, transparent) !important;
 }
 
-/* AI Capital (Dark Theme) Card Surfaces */
-html[data-theme="capital"] .bg-white,
-html[data-theme="capital"] [class*="bg-white/"],
-html[data-theme="techno"] .bg-white,
-html[data-theme="techno"] [class*="bg-white/"],
-html[data-theme="cyberpunk"] .bg-white {
-  background-color: #EAF1FA !important;
-  border-color: rgba(37, 99, 235, 0.28) !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(37, 99, 235, 0.25) !important;
-  color: #0A1931 !important;
-}
-
-html[data-theme="capital"] .bg-slate-50,
-html[data-theme="capital"] .bg-slate-100,
-html[data-theme="capital"] [class*="bg-slate-50/"],
-html[data-theme="capital"] [class*="bg-slate-100/"],
-html[data-theme="techno"] .bg-slate-50,
-html[data-theme="techno"] .bg-slate-100,
-html[data-theme="techno"] [class*="bg-slate-50/"],
-html[data-theme="techno"] [class*="bg-slate-100/"] {
-  background-color: #D9E6F5 !important;
-  border-color: rgba(37, 99, 235, 0.28) !important;
-  color: #0A1931 !important;
-}
-
-/* Subtle medium-gray borders for Dark Themes */
-html[data-theme="graphite"] .border-slate-200,
-html[data-theme="graphite"] .border-slate-300,
-html[data-theme="graphite"] [class*="border-slate-200/"],
-html[data-theme="graphite"] [class*="border-slate-300/"],
-html[data-theme="metallic"] .border-slate-200,
-html[data-theme="metallic"] .border-slate-300 {
-  border-color: rgba(148, 163, 184, 0.45) !important;
-}
-
-html[data-theme="capital"] .border-slate-200,
-html[data-theme="capital"] .border-slate-300,
-html[data-theme="capital"] [class*="border-slate-200/"],
-html[data-theme="capital"] [class*="border-slate-300/"],
-html[data-theme="techno"] .border-slate-200,
-html[data-theme="techno"] .border-slate-300 {
-  border-color: rgba(37, 99, 235, 0.28) !important;
-}
-
-/* Dark Theme: Card Text (DARK FOREGROUND TEXT on light cards) */
-html[data-theme="graphite"] .bg-white .text-black,
-html[data-theme="graphite"] [class*="bg-white/"] .text-black,
-html[data-theme="graphite"] .bg-white .text-slate-950,
-html[data-theme="graphite"] [class*="bg-white/"] .text-slate-950,
-html[data-theme="graphite"] .bg-white .text-slate-900,
-html[data-theme="graphite"] [class*="bg-white/"] .text-slate-900,
-html[data-theme="graphite"] .bg-white .text-slate-800,
-html[data-theme="graphite"] [class*="bg-white/"] .text-slate-800,
-html[data-theme="graphite"] .bg-slate-50 .text-black,
-html[data-theme="graphite"] [class*="bg-slate-50/"] .text-black,
-html[data-theme="graphite"] .bg-slate-100 .text-black,
-html[data-theme="graphite"] [class*="bg-slate-100/"] .text-black,
-html[data-theme="graphite"] .bg-slate-50 .text-slate-900,
-html[data-theme="graphite"] .bg-slate-100 .text-slate-900,
-html[data-theme="graphite"] .bg-white h1,
-html[data-theme="graphite"] .bg-white h2,
-html[data-theme="graphite"] .bg-white h3,
-html[data-theme="graphite"] .bg-white h4,
-html[data-theme="graphite"] [class*="bg-white/"] h1,
-html[data-theme="graphite"] [class*="bg-white/"] h2,
-html[data-theme="graphite"] [class*="bg-white/"] h3,
-html[data-theme="graphite"] [class*="bg-white/"] h4,
-html[data-theme="metallic"] .bg-white .text-black,
-html[data-theme="metallic"] [class*="bg-white/"] .text-black,
-html[data-theme="metallic"] .bg-white .text-slate-900,
-html[data-theme="metallic"] [class*="bg-white/"] .text-slate-900 {
-  color: #0F172A !important;
-}
-
-html[data-theme="graphite"] .bg-white .text-slate-700,
-html[data-theme="graphite"] [class*="bg-white/"] .text-slate-700,
-html[data-theme="graphite"] .bg-white .text-slate-600,
-html[data-theme="graphite"] [class*="bg-white/"] .text-slate-600,
-html[data-theme="metallic"] .bg-white .text-slate-700,
-html[data-theme="metallic"] .bg-white .text-slate-600 {
-  color: #1E293B !important;
-}
-
-html[data-theme="graphite"] .bg-white .text-slate-500,
-html[data-theme="graphite"] [class*="bg-white/"] .text-slate-500,
-html[data-theme="graphite"] .bg-white .text-slate-400,
-html[data-theme="graphite"] [class*="bg-white/"] .text-slate-400,
-html[data-theme="metallic"] .bg-white .text-slate-500,
-html[data-theme="metallic"] .bg-white .text-slate-400 {
-  color: #475569 !important;
-}
-
-html[data-theme="capital"] .bg-white .text-black,
-html[data-theme="capital"] [class*="bg-white/"] .text-black,
-html[data-theme="capital"] .bg-white .text-slate-950,
-html[data-theme="capital"] [class*="bg-white/"] .text-slate-950,
-html[data-theme="capital"] .bg-white .text-slate-900,
-html[data-theme="capital"] [class*="bg-white/"] .text-slate-900,
-html[data-theme="capital"] .bg-white .text-slate-800,
-html[data-theme="capital"] [class*="bg-white/"] .text-slate-800,
-html[data-theme="capital"] .bg-slate-50 .text-black,
-html[data-theme="capital"] [class*="bg-slate-50/"] .text-black,
-html[data-theme="capital"] .bg-slate-100 .text-black,
-html[data-theme="capital"] [class*="bg-slate-100/"] .text-black,
-html[data-theme="capital"] .bg-slate-50 .text-slate-900,
-html[data-theme="capital"] .bg-slate-100 .text-slate-900,
-html[data-theme="capital"] .bg-white h1,
-html[data-theme="capital"] .bg-white h2,
-html[data-theme="capital"] .bg-white h3,
-html[data-theme="capital"] .bg-white h4,
-html[data-theme="capital"] [class*="bg-white/"] h1,
-html[data-theme="capital"] [class*="bg-white/"] h2,
-html[data-theme="capital"] [class*="bg-white/"] h3,
-html[data-theme="capital"] [class*="bg-white/"] h4,
-html[data-theme="techno"] .bg-white .text-black,
-html[data-theme="techno"] [class*="bg-white/"] .text-black,
-html[data-theme="techno"] .bg-white .text-slate-900,
-html[data-theme="techno"] [class*="bg-white/"] .text-slate-900 {
-  color: #0A1931 !important;
-}
-
-html[data-theme="capital"] .bg-white .text-slate-700,
-html[data-theme="capital"] [class*="bg-white/"] .text-slate-700,
-html[data-theme="capital"] .bg-white .text-slate-600,
-html[data-theme="capital"] [class*="bg-white/"] .text-slate-600,
-html[data-theme="techno"] .bg-white .text-slate-700,
-html[data-theme="techno"] .bg-white .text-slate-600 {
-  color: #152238 !important;
-}
-
-html[data-theme="capital"] .bg-white .text-slate-500,
-html[data-theme="capital"] [class*="bg-white/"] .text-slate-500,
-html[data-theme="capital"] .bg-white .text-slate-400,
-html[data-theme="capital"] [class*="bg-white/"] .text-slate-400,
-html[data-theme="techno"] .bg-white .text-slate-500,
-html[data-theme="techno"] .bg-white .text-slate-400 {
-  color: #3B5278 !important;
-}
-
-/* Dark Theme: Page-Level Text Outside Cards (LIGHT text on dark background) */
-html[data-theme="graphite"] section > div > div > h2,
-html[data-theme="graphite"] section > div > div > p,
-html[data-theme="graphite"] section h1,
-html[data-theme="graphite"] section h2,
-html[data-theme="metallic"] section h1,
-html[data-theme="metallic"] section h2 {
-  color: #F8FAFC !important;
-}
-
-html[data-theme="capital"] section > div > div > h2,
-html[data-theme="capital"] section > div > div > p,
-html[data-theme="capital"] section h1,
-html[data-theme="capital"] section h2,
-html[data-theme="techno"] section h1,
-html[data-theme="techno"] section h2 {
-  color: #FFFFFF !important;
-}
-
-/* Navbar Headers */
-html[data-theme="arctic"] header {
-  background-color: var(--theme-navbar-bg) !important;
-  border-color: rgba(30, 58, 95, 0.25) !important;
-}
-html[data-theme="arctic"] header .text-black,
-html[data-theme="arctic"] header .text-slate-950,
-html[data-theme="arctic"] header .text-slate-800,
-html[data-theme="arctic"] header .text-slate-700 {
-  color: #0B192C !important;
-}
-
-html[data-theme="ivory"] header {
-  background-color: var(--theme-navbar-bg) !important;
-  border-color: rgba(34, 60, 48, 0.25) !important;
-}
-html[data-theme="ivory"] header .text-black,
-html[data-theme="ivory"] header .text-slate-950,
-html[data-theme="ivory"] header .text-slate-800,
-html[data-theme="ivory"] header .text-slate-700 {
-  color: #1A1A1A !important;
-}
-
-html[data-theme="graphite"] header,
-html[data-theme="metallic"] header {
-  background-color: var(--theme-navbar-bg) !important;
+/* ── 4. Major Institutional Cards & Panels (Strict Visual Contrast System) ── */
+.hero-stats-panel,
+.highway-corridor-panel,
+.forces-card,
+.quant-split-panel,
+.engine-card,
+.terminal-frame,
+.why-token-chip,
+.final-cta-card,
+.terminal-page-panel {
+  background-color: var(--theme-card-bg) !important;
   border-color: var(--theme-card-border) !important;
-}
-html[data-theme="graphite"] header .text-black,
-html[data-theme="graphite"] header .text-slate-950,
-html[data-theme="graphite"] header .text-slate-800,
-html[data-theme="graphite"] header .text-slate-700 {
-  color: #F8FAFC !important;
+  color: var(--theme-card-text) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--theme-card-border) !important;
 }
 
-html[data-theme="capital"] header,
-html[data-theme="techno"] header {
-  background-color: var(--theme-navbar-bg) !important;
+/* Secondary Subpanels & Inner Boxes */
+.highway-hud-bar,
+.highway-callout-tag,
+.highway-detail-box,
+.quant-metric-box,
+.quant-insight-box,
+.quant-summary-bar {
+  background-color: var(--theme-card-surface) !important;
   border-color: var(--theme-card-border) !important;
-}
-html[data-theme="capital"] header .text-black,
-html[data-theme="capital"] header .text-slate-950,
-html[data-theme="capital"] header .text-slate-800,
-html[data-theme="capital"] header .text-slate-700 {
-  color: #FFFFFF !important;
+  color: var(--theme-card-text) !important;
 }
 
-/* Suppress white gradient edge fades on dark card surfaces */
-html[data-theme="arctic"] .hero-theatre-gutter .from-white,
-html[data-theme="ivory"] .hero-theatre-gutter .from-white {
-  display: none !important;
+/* Card Text Specifics */
+.hero-stats-label,
+.hero-stats-val,
+.hero-l3-stream,
+.engine-card-title,
+.engine-card-desc,
+.forces-card-desc,
+.final-cta-title,
+.final-cta-subtitle {
+  color: var(--theme-card-text) !important;
 }
 
-/* Footer Styling */
-html[data-theme="arctic"] footer {
-  background-color: #0E1726 !important;
-  border-color: rgba(30, 58, 95, 0.65) !important;
-}
-html[data-theme="arctic"] footer .text-slate-900,
-html[data-theme="arctic"] footer .text-black,
-html[data-theme="arctic"] footer h4 {
-  color: #F8FAFC !important;
-}
-html[data-theme="arctic"] footer .text-slate-600,
-html[data-theme="arctic"] footer .text-slate-500,
-html[data-theme="arctic"] footer p {
-  color: #94A3B8 !important;
+.hero-stats-pipe,
+.hero-stats-divider,
+.forces-card-idx,
+.engine-mod-id,
+.final-cta-badge-note {
+  color: var(--theme-card-text-muted) !important;
 }
 
-html[data-theme="ivory"] footer {
-  background-color: #18221D !important;
-  border-color: rgba(34, 60, 48, 0.65) !important;
+/* Active Quant Panel Accents */
+.quant-panel-active-bull {
+  border-color: #059669 !important;
 }
-html[data-theme="ivory"] footer .text-slate-900,
-html[data-theme="ivory"] footer .text-black,
-html[data-theme="ivory"] footer h4 {
-  color: #FDFCFA !important;
+.quant-panel-active-bear {
+  border-color: #DC2626 !important;
 }
-html[data-theme="ivory"] footer .text-slate-600,
-html[data-theme="ivory"] footer .text-slate-500,
-html[data-theme="ivory"] footer p {
-  color: #A8A29E !important;
+
+/* Hero Stats Bar L3 Marquee Edge Fade Masks */
+html[data-theme="arctic"] .hero-marquee-fade-left,
+html[data-theme="lightblue"] .hero-marquee-fade-left,
+html[data-theme="quartz"] .hero-marquee-fade-left {
+  background: linear-gradient(to right, #101827, transparent) !important;
+}
+html[data-theme="arctic"] .hero-marquee-fade-right,
+html[data-theme="lightblue"] .hero-marquee-fade-right,
+html[data-theme="quartz"] .hero-marquee-fade-right {
+  background: linear-gradient(to left, #101827, transparent) !important;
+}
+
+html[data-theme="ivory"] .hero-marquee-fade-left,
+html[data-theme="champagne"] .hero-marquee-fade-left,
+html[data-theme="falcon"] .hero-marquee-fade-left {
+  background: linear-gradient(to right, #172033, transparent) !important;
+}
+html[data-theme="ivory"] .hero-marquee-fade-right,
+html[data-theme="champagne"] .hero-marquee-fade-right,
+html[data-theme="falcon"] .hero-marquee-fade-right {
+  background: linear-gradient(to left, #172033, transparent) !important;
+}
+
+html[data-theme="graphite"] .hero-marquee-fade-left,
+html[data-theme="metallic"] .hero-marquee-fade-left,
+html[data-theme="obsidian"] .hero-marquee-fade-left {
+  background: linear-gradient(to right, #F1F4F9, transparent) !important;
+}
+html[data-theme="graphite"] .hero-marquee-fade-right,
+html[data-theme="metallic"] .hero-marquee-fade-right,
+html[data-theme="obsidian"] .hero-marquee-fade-right {
+  background: linear-gradient(to left, #F1F4F9, transparent) !important;
+}
+
+html[data-theme="capital"] .hero-marquee-fade-left,
+html[data-theme="techno"] .hero-marquee-fade-left,
+html[data-theme="cyberpunk"] .hero-marquee-fade-left {
+  background: linear-gradient(to right, #EAF1FA, transparent) !important;
+}
+html[data-theme="capital"] .hero-marquee-fade-right,
+html[data-theme="techno"] .hero-marquee-fade-right,
+html[data-theme="cyberpunk"] .hero-marquee-fade-right {
+  background: linear-gradient(to left, #EAF1FA, transparent) !important;
+}
+
+/* ── 5. Header / Navbar ── */
+header {
+  background-color: var(--theme-navbar-bg) !important;
+  border-color: var(--theme-page-border) !important;
+}
+header a,
+header span,
+header button {
+  color: var(--theme-page-text) !important;
+}
+header .text-emerald-600 {
+  color: #059669 !important;
+}
+
+/* ── 6. Footer ── */
+.footer-panel,
+footer {
+  background-color: var(--theme-footer-bg) !important;
+  border-color: var(--theme-footer-border) !important;
+  color: var(--theme-footer-text) !important;
+}
+footer h4,
+footer .text-slate-950,
+footer .text-black {
+  color: var(--theme-footer-text) !important;
+}
+footer .text-slate-700,
+footer .text-slate-600,
+footer .text-slate-500,
+footer p,
+footer li {
+  color: var(--theme-card-text-muted) !important;
+}
+footer a:hover {
+  color: #059669 !important;
 }
 
 html[data-theme="graphite"] footer,
@@ -928,35 +780,8 @@ button, a, input, select, textarea {
   border-right: 1.5px solid rgba(255, 255, 255, 0.35);
 }
 
-/* ── Global Small Text Solid Black Readability Rules ──────────────────────── */
-.text-slate-400,
-.text-slate-500,
-.text-slate-600,
-.text-slate-700,
-.text-gray-400,
-.text-gray-500,
-.text-gray-600,
-.text-gray-700,
-.text-zinc-400,
-.text-zinc-500,
-.text-zinc-600,
-.text-text-muted,
-.text-text-secondary {
-  color: #000000 !important;
-}
-
-/* Ensure small text tags, captions, metadata labels, and small font-size classes are solid crisp black */
-small,
-.text-xs:not([class*="text-emerald"]):not([class*="text-rose"]):not([class*="text-green"]):not([class*="text-red"]):not([class*="text-amber"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-purple"]):not([class*="text-mint"]):not([class*="text-crimson"]):not([class*="text-white"]),
-.text-sm:not([class*="text-emerald"]):not([class*="text-rose"]):not([class*="text-green"]):not([class*="text-red"]):not([class*="text-amber"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-purple"]):not([class*="text-mint"]):not([class*="text-crimson"]):not([class*="text-white"]),
-[class*="text-[10px]"]:not([class*="text-emerald"]):not([class*="text-rose"]):not([class*="text-green"]):not([class*="text-red"]):not([class*="text-amber"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-purple"]):not([class*="text-mint"]):not([class*="text-crimson"]):not([class*="text-white"]),
-[class*="text-[11px]"]:not([class*="text-emerald"]):not([class*="text-rose"]):not([class*="text-green"]):not([class*="text-red"]):not([class*="text-amber"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-purple"]):not([class*="text-mint"]):not([class*="text-crimson"]):not([class*="text-white"]),
-[class*="text-[12px]"]:not([class*="text-emerald"]):not([class*="text-rose"]):not([class*="text-green"]):not([class*="text-red"]):not([class*="text-amber"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-purple"]):not([class*="text-mint"]):not([class*="text-crimson"]):not([class*="text-white"]),
-[class*="text-[13px]"]:not([class*="text-emerald"]):not([class*="text-rose"]):not([class*="text-green"]):not([class*="text-red"]):not([class*="text-amber"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-purple"]):not([class*="text-mint"]):not([class*="text-crimson"]):not([class*="text-white"]),
-[class*="text-[14px]"]:not([class*="text-emerald"]):not([class*="text-rose"]):not([class*="text-green"]):not([class*="text-red"]):not([class*="text-amber"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-purple"]):not([class*="text-mint"]):not([class*="text-crimson"]):not([class*="text-white"]),
-[class*="text-[15px]"]:not([class*="text-emerald"]):not([class*="text-rose"]):not([class*="text-green"]):not([class*="text-red"]):not([class*="text-amber"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-purple"]):not([class*="text-mint"]):not([class*="text-crimson"]):not([class*="text-white"]) {
-  color: #000000;
-}
+/* ── Global Contrast System ──────────────────────── */
+/* Handled adaptively by theme card tokens and page text tokens */
 
 /* ── Hero Video Theatre Exact 1.5-inch Gutters (Not till end of screen) ─────── */
 .hero-theatre-gutter {

@@ -47,9 +47,9 @@ export default function WhySection() {
       className="relative min-h-screen bg-transparent z-10 py-28 flex flex-col items-center justify-center overflow-hidden pointer-events-none"
     >
       <div className="max-w-5xl mx-auto px-6 w-full text-center relative z-10 mb-12 pointer-events-auto">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-slate-200 bg-slate-100 backdrop-blur-md mb-3">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
           <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-          <span className="mono text-[13px] tracking-[0.25em] text-black uppercase font-black">
+          <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
             06 // MARKET INTELLIGENCE AI — MI007
           </span>
         </div>
@@ -58,11 +58,11 @@ export default function WhySection() {
           initial={{ opacity: 0, y: 25 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
-          className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4"
+          className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-4 page-heading"
         >
-          Convergence Into a <span className="font-extrabold text-emerald-700">Singular Layer</span>
+          Convergence Into a <span className="font-extrabold text-emerald-600">Singular Layer</span>
         </motion.h2>
-        <p className="text-[17px] sm:text-[19px] text-black font-medium max-w-xl mx-auto leading-relaxed">
+        <p className="text-[17px] sm:text-[19px] font-medium max-w-xl mx-auto leading-relaxed page-subtitle">
           Where thousands of isolated micro-signals unite into one coherent, institutional-grade perspective.
         </p>
       </div>
@@ -80,7 +80,7 @@ export default function WhySection() {
                 delay: token.delay,
                 ease: 'easeOut',
               }}
-              className="w-full h-11 flex items-center justify-center px-1.5 sm:px-2.5 rounded-xl border border-slate-200/90 bg-white/95 backdrop-blur-md text-[10.5px] sm:text-[11.5px] lg:text-[12px] font-mono font-bold tracking-tight whitespace-nowrap text-center shadow-xs hover:border-emerald-500/60 hover:shadow-md transition-all overflow-hidden"
+              className="w-full h-11 flex items-center justify-center px-1.5 sm:px-2.5 rounded-xl border why-token-chip text-[10.5px] sm:text-[11.5px] lg:text-[12px] font-mono font-bold tracking-tight whitespace-nowrap text-center shadow-xs hover:shadow-md transition-all overflow-hidden"
             >
               <span className={token.color}>{token.text}</span>
             </motion.div>
@@ -90,7 +90,7 @@ export default function WhySection() {
 
       {/* Atmospheric Conclusion */}
       <div className="max-w-2xl mx-auto px-6 w-full text-center mt-12 relative z-10 pointer-events-auto">
-        <div className="text-3xl sm:text-4xl md:text-5xl font-light text-slate-900 flex flex-col gap-2">
+        <div className="text-3xl sm:text-4xl md:text-5xl font-light page-heading flex flex-col gap-2">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -102,7 +102,7 @@ export default function WhySection() {
             initial={{ opacity: 0, y: 15 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 1.1, duration: 0.6 }}
-            className="text-black font-semibold"
+            className="font-semibold"
           >
             Multiple dimensions.
           </motion.div>
@@ -110,7 +110,7 @@ export default function WhySection() {
             initial={{ opacity: 0, y: 15 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 1.4, duration: 0.6 }}
-            className="font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-700 to-slate-900"
+            className="font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-500"
           >
             One living intelligence system.
           </motion.div>
