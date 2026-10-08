@@ -150,7 +150,7 @@ export default function AboutPage() {
             </h1>
 
             <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle mb-4">
-              The premier market intelligence platform engineered to revolutionize how you navigate markets.
+              <strong className="font-bold text-emerald-500">Intelligence Beyond the Noise.</strong> The premier market intelligence platform engineered to revolutionize how you navigate markets.
             </p>
 
             <p className="text-[15px] sm:text-[16px] max-w-2xl mx-auto leading-relaxed font-normal page-subtitle mb-8 opacity-90">
@@ -177,9 +177,12 @@ export default function AboutPage() {
                   OUR GENESIS
                 </span>
               </div>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-4 inst-card-text">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-2 inst-card-text">
                 Who We Are
               </h2>
+              <div className="text-[15px] sm:text-[17px] font-bold text-emerald-500 mb-4 tracking-wide">
+                Intelligence Beyond the Noise
+              </div>
               <p className="text-[17px] sm:text-[19px] leading-relaxed font-medium inst-card-text mb-4 opacity-95">
                 MI-007 was founded by a team of Quantitative Analysts, Data Scientists, Veteran Investors and Traders who shared a common problem which is the sheer volume of market noise.
               </p>

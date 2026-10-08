@@ -4,8 +4,8 @@ import { MarketProvider } from '@/lib/marketContext';
 import { ThemeProvider } from '@/lib/themeContext';
 
 export const metadata: Metadata = {
-  title: 'Market Intelligence - 007',
-  description: 'Autonomous Market Intelligence & Institutional-grade quantitative analytics across India, USA & UAE financial markets.',
+  title: 'Market Intelligence - 007 | Intelligence Beyond the Noise',
+  description: 'Intelligence Beyond the Noise. Institutional-grade quantitative analytics and multi-market microstructure telemetry across India, USA & UAE financial markets.',
   icons: { icon: '/favicon.png', apple: '/logo-falcon.png' },
 };
 

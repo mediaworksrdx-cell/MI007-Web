@@ -44,7 +44,7 @@ export default function CapabilitiesSection() {
             The Global <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-emerald-600 to-teal-700">Algorithmic Core</span>
           </h2>
           <p className="text-[17px] sm:text-[19px] font-medium max-w-xl mx-auto leading-relaxed page-subtitle">
-            Institution-Grade Intelligence for a Smarter Tomorrow. Eight specialized quantitative engines operating simultaneously across global financial exchanges.
+            <strong className="font-bold text-emerald-500">Intelligence Beyond the Noise.</strong> Eight specialized quantitative engines operating simultaneously across global financial exchanges.
           </p>
         </motion.div>
 

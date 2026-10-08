@@ -238,7 +238,7 @@ export default function TerminalPage() {
                   <h1 className="mono text-[17px] sm:text-[23px] font-black inst-card-text tracking-wider uppercase whitespace-nowrap">
                     Market Intelligence - 007
                   </h1>
-                  <p className="text-[12px] sm:text-[14px] inst-card-text-muted font-medium mt-0.5 truncate">Autonomous Market Intelligence & Quantitative Microstructure</p>
+                  <p className="text-[12px] sm:text-[14px] inst-card-text-muted font-medium mt-0.5 truncate">Intelligence Beyond the Noise · Quantitative Microstructure</p>
                 </div>
               </div>
 

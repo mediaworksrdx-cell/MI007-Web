@@ -26,7 +26,7 @@ export function Footer() {
                 </div>
 
                 <div className="text-[11px] tracking-[0.18em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-200 whitespace-nowrap">
-                  <span>Autonomous Market Intelligence</span>
+                  <span>Intelligence Beyond the Noise</span>
                 </div>
 
                 <div className="text-[10.5px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1">

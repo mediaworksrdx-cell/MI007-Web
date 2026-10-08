@@ -108,7 +108,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               </span>
             </div>
             <span className="navbar-brand-subtitle hidden xs:block text-[9px] sm:text-[11px] tracking-[0.15em] sm:tracking-[0.2em] font-extrabold uppercase font-mono mt-0.5 whitespace-nowrap">
-              Autonomous Market Intelligence
+              Intelligence Beyond the Noise
             </span>
           </div>
         </Link>

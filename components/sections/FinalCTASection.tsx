@@ -43,7 +43,7 @@ export default function FinalCTASection() {
         </h2>
 
         <p className="text-[17px] sm:text-[19px] max-w-lg mb-8 font-medium leading-relaxed final-cta-subtitle">
-          Institution-Grade Intelligence for a Smarter Tomorrow. Join quantitative desks and algorithmic traders operating at sub-millisecond precision.
+          <strong className="font-bold text-emerald-400">Intelligence Beyond the Noise.</strong> Join quantitative desks and algorithmic traders operating at sub-millisecond precision.
         </p>
 
         {/* Clean Glowing CTA Button */}

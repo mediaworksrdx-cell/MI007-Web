@@ -40,7 +40,7 @@ export default function ContactPage() {
               Contact <span className="font-extrabold text-emerald-600">Synthetix Analytics</span>
             </h1>
             <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle">
-              Market Intelligence - 007 institutional licensing, API integration, quantitative research partnerships, and enterprise deployments.
+              <strong className="font-bold text-emerald-500">Intelligence Beyond the Noise.</strong> Market Intelligence - 007 institutional licensing, API integration, quantitative research partnerships, and enterprise deployments.
             </p>
           </div>
         </section>

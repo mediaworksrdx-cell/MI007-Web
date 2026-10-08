@@ -291,7 +291,7 @@ export default function HeroSection() {
           transition={{ duration: 0.7, delay: 0.4 }}
           className="text-[15px] sm:text-[19px] md:text-[21px] font-medium max-w-3xl mx-auto mb-6 sm:mb-10 leading-relaxed px-2 sm:px-0 page-subtitle"
         >
-          For a Smarter Tomorrow. Multi-dimensional technical synthesis and real-time liquidity sweep detection engineered for institutional execution.
+          <strong className="font-bold text-emerald-500">Intelligence Beyond the Noise.</strong> Multi-dimensional technical synthesis and real-time liquidity sweep detection engineered for institutional execution.
         </motion.p>
 
         {/* Action Buttons */}
