@@ -8,7 +8,7 @@ import { MarketToggle } from '@/components/market/MarketToggle';
 import { TickerTape } from '@/components/market/TickerTape';
 import { MarketType } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
-import { useAppTheme } from '@/lib/themeContext';
+import { useAppTheme, THEMES, ThemeConfig } from '@/lib/themeContext';
 import { SettingsModal } from '@/components/ui/SettingsModal';
 import { LoginModal } from '@/components/auth/LoginModal';
 
@@ -26,7 +26,7 @@ const NAV_LINKS = [
 export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange }: NavbarProps) {
   const pathname = usePathname();
   const context = useMarket();
-  const { currentThemeConfig } = useAppTheme();
+  const { theme, setTheme, currentThemeConfig } = useAppTheme();
   const market = propMarket ?? context.market ?? 'USA';
   const isTerminalOrDashboard = pathname.startsWith('/terminal') || pathname.startsWith('/dashboard');
 
@@ -34,7 +34,10 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [userSession, setUserSession] = useState<{ name: string; role: string; deskId: string } | null>(null);
+
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -44,6 +47,27 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       }
     } catch {}
   }, []);
+
+  // Click outside & Escape key handler to close Account/Settings dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAccountMenuOpen(false);
+    };
+
+    if (accountMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [accountMenuOpen]);
 
   const handleMarketChange = (m: MarketType) => {
     if (propOnMarketChange) {
@@ -60,10 +84,8 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? 'bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm'
-          : 'bg-white/90 backdrop-blur-sm border-b border-slate-200/60'
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
+        scrolled ? 'shadow-sm backdrop-blur-md' : 'backdrop-blur-sm'
       }`}
     >
       <div className="mx-auto flex h-16 sm:h-18 max-w-[1600px] items-center justify-between px-4 lg:px-6">
@@ -81,20 +103,20 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           </div>
           <div className="flex flex-col leading-tight min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-extrabold text-[14px] xs:text-[15px] sm:text-[17px] tracking-tight text-slate-950 uppercase font-sans truncate">
+              <span className="navbar-brand-title font-extrabold text-[14px] xs:text-[15px] sm:text-[17px] tracking-tight uppercase font-sans truncate">
                 Market Intelligence <span className="text-emerald-600 font-black">AI</span>
               </span>
               <span className="px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] mono font-black bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 tracking-wider shadow-xs border border-amber-400/80 shrink-0">
                 MI007
               </span>
             </div>
-            <span className="hidden xs:block text-[9px] sm:text-[11px] tracking-[0.15em] sm:tracking-[0.2em] text-slate-700 font-extrabold uppercase font-mono mt-0.5 truncate">
+            <span className="navbar-brand-subtitle hidden xs:block text-[9px] sm:text-[11px] tracking-[0.15em] sm:tracking-[0.2em] font-extrabold uppercase font-mono mt-0.5 truncate">
               Autonomous Market Intelligence
             </span>
           </div>
         </Link>
 
-        {/* ── Desktop Nav Links ── */}
+        {/* ── Desktop Nav Links (High Contrast, Clear Active State) ── */}
         <nav className="hidden md:flex items-center gap-1.5">
           {NAV_LINKS.map(({ href, label }) => {
             const isActive = pathname === href;
@@ -102,10 +124,8 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               <Link
                 key={href}
                 href={href}
-                className={`px-3.5 py-1.5 rounded-md text-[15px] font-bold transition-all duration-150 ${
-                  isActive
-                    ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
-                    : 'text-black hover:text-black hover:bg-slate-100'
+                className={`px-3.5 py-1.5 rounded-lg text-[14px] font-bold transition-all duration-150 ${
+                  isActive ? 'nav-link-active' : 'nav-link-inactive'
                 }`}
               >
                 {label}
@@ -114,8 +134,8 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           })}
         </nav>
 
-        {/* ── Top-Right Institutional Cluster: Terminal CTA + Settings (with Themes) + Login ── */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* ── Top-Right Institutional Cluster: MarketToggle + Single Terminal CTA + 1 Unified Account/Settings Icon ── */}
+        <div className="flex items-center gap-2 sm:gap-3">
           {isTerminalOrDashboard && (
             <MarketToggle
               selected={market}
@@ -123,77 +143,178 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               className="hidden sm:flex"
             />
           )}
+
+          {/* ── Exactly 1 Single Launch Terminal Button ── */}
           {!isTerminalOrDashboard && (
             <Link
               href="/terminal"
-              className="hidden sm:flex items-center gap-1.5 rounded-lg border border-emerald-600/30 bg-emerald-50 px-3 py-1.5 text-[13px] font-bold text-emerald-700 transition-all duration-200 hover:bg-emerald-100 hover:border-emerald-600/50 mono tracking-wide"
+              className="launch-terminal-btn hidden sm:inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] font-mono font-bold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95"
             >
-              ⚡ LAUNCH TERMINAL
+              <span className="text-amber-300">⚡</span>
+              <span>LAUNCH TERMINAL</span>
             </Link>
           )}
 
-          {/* ── Settings Button (Houses 4 Themes & System Preferences) ── */}
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-300/80 bg-white/95 hover:bg-slate-50 text-slate-800 text-[12px] sm:text-[13px] font-mono font-bold shadow-2xs transition-all hover:border-slate-400 active:scale-95 cursor-pointer"
-            title="Open System Settings & Themes"
-            aria-label="Settings"
-          >
-            <span className="text-sm">⚙️</span>
-            <span className="hidden sm:inline">Settings</span>
-            <span
-              className="w-2 h-2 rounded-full ring-1 ring-black/20 shrink-0 ml-0.5"
-              style={{ backgroundColor: currentThemeConfig.palette.accent }}
-              title={`Active: ${currentThemeConfig.name}`}
-            />
-          </button>
-
-          {/* ── Login / Client Portal Button ── */}
-          {userSession ? (
+          {/* ── 1 Unified Icon for Settings & Login (Like Top Platforms) ── */}
+          <div className="relative" ref={accountMenuRef}>
             <button
               type="button"
-              onClick={() => setLoginOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-emerald-500/50 bg-emerald-50/90 text-emerald-800 text-[12px] sm:text-[13px] font-mono font-bold shadow-2xs transition-all hover:bg-emerald-100 active:scale-95 cursor-pointer"
-              title={`Connected as ${userSession.name} (${userSession.deskId})`}
+              onClick={() => setAccountMenuOpen((v) => !v)}
+              className={`account-menu-btn relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
+                accountMenuOpen ? 'ring-2 ring-emerald-500' : ''
+              }`}
+              title={userSession ? `${userSession.name} · Settings & Themes` : 'Account, Settings & Themes'}
+              aria-label="Account, Settings and Themes"
+              aria-expanded={accountMenuOpen}
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="truncate max-w-[85px] sm:max-w-none">{userSession.name}</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setLoginOpen(true)}
-              className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg border border-amber-500/50 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-[12px] sm:text-[13px] font-mono font-black shadow-xs transition-all active:scale-95 cursor-pointer"
-              title="Institutional Client Portal Login"
-            >
-              <span>👤</span>
-              <span>Login</span>
-            </button>
-          )}
+              {/* Institutional User Profile Silhouette */}
+              <svg
+                className="w-5 h-5 transition-transform duration-200"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
 
-          {isTerminalOrDashboard && (
-            <MarketToggle
-              selected={market}
-              onChange={handleMarketChange}
-              className="hidden sm:flex"
-            />
-          )}
-          {!isTerminalOrDashboard && (
-            <Link
-              href="/terminal"
-              className="hidden sm:flex items-center gap-1.5 rounded-md border border-emerald-600/30 bg-emerald-50 px-3.5 py-1.5 text-[14px] font-bold text-emerald-700 transition-all duration-200 hover:bg-emerald-100 hover:border-emerald-600/50 mono tracking-wide"
-            >
-              ⚡ LAUNCH TERMINAL
-            </Link>
-          )}
+              {/* Status / Active Theme Pip */}
+              <span
+                className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white shadow-xs ${
+                  userSession ? 'bg-emerald-500 animate-pulse' : ''
+                }`}
+                style={!userSession ? { backgroundColor: currentThemeConfig.palette.accent } : undefined}
+                title={userSession ? `Connected: ${userSession.name}` : `Theme: ${currentThemeConfig.name}`}
+              />
+            </button>
+
+            {/* ── Unified Account, Settings & Themes Dropdown Menu ── */}
+            {accountMenuOpen && (
+              <div className="account-settings-dropdown absolute right-0 mt-2.5 w-72 sm:w-80 rounded-2xl p-3 flex flex-col gap-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                {/* 1. Account / Session Section */}
+                {userSession ? (
+                  <div className="account-dropdown-user-card p-3 rounded-xl border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-emerald-500 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        DESK CONNECTED
+                      </span>
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-500">
+                        {userSession.deskId}
+                      </span>
+                    </div>
+                    <div className="font-extrabold text-[15px] truncate">{userSession.name}</div>
+                    <div className="text-[11px] font-mono opacity-70 truncate">{userSession.role}</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        localStorage.removeItem('mi007_user_session');
+                        setUserSession(null);
+                      }}
+                      className="mt-2.5 w-full py-1.5 px-3 rounded-lg border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[11px] font-mono font-bold transition-all text-center cursor-pointer"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      setLoginOpen(true);
+                    }}
+                    className="account-dropdown-login-btn w-full p-2.5 rounded-xl border flex items-center gap-3 transition-all cursor-pointer text-left group"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-base shrink-0 shadow-xs">
+                      👤
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-[13px] tracking-tight group-hover:text-emerald-500 transition-colors">
+                          Client Portal Login
+                        </span>
+                        <span className="text-xs font-mono opacity-60">→</span>
+                      </div>
+                      <p className="text-[11px] opacity-70 leading-tight mt-0.5">
+                        Access proprietary quant desk
+                      </p>
+                    </div>
+                  </button>
+                )}
+
+                {/* Divider */}
+                <div className="w-full h-px opacity-20 bg-current my-0.5" />
+
+                {/* 2. Theme & Appearance (Quick 4-Theme Selector) */}
+                <div>
+                  <div className="flex items-center justify-between px-1 mb-1.5">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-60">
+                      THEME & APPEARANCE
+                    </span>
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-current opacity-70">
+                      {currentThemeConfig.mode.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(Object.values(THEMES) as ThemeConfig[]).map((t) => {
+                      const isActive = theme === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setTheme(t.id)}
+                          className={`flex items-center gap-2 p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                            isActive
+                              ? 'account-theme-active font-extrabold border-emerald-500 ring-1 ring-emerald-500'
+                              : 'account-theme-inactive border-transparent hover:border-current opacity-80 hover:opacity-100'
+                          }`}
+                        >
+                          <span
+                            className="w-3.5 h-3.5 rounded-full shrink-0 border border-black/30 shadow-2xs"
+                            style={{ backgroundColor: t.palette.bg }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[11.5px] leading-tight truncate">{t.name}</div>
+                            <div className="text-[9.5px] font-mono opacity-60">{t.mode}</div>
+                          </div>
+                          {isActive && <span className="text-emerald-500 text-xs font-bold">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="w-full h-px opacity-20 bg-current my-0.5" />
+
+                {/* 3. Settings Modal Trigger */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccountMenuOpen(false);
+                    setSettingsOpen(true);
+                  }}
+                  className="account-dropdown-settings-btn w-full p-2 rounded-lg border flex items-center justify-between text-left transition-all cursor-pointer opacity-85 hover:opacity-100 group"
+                >
+                  <div className="flex items-center gap-2 text-[12px] font-mono font-bold">
+                    <span>⚙️</span>
+                    <span>System Settings & Audio</span>
+                  </div>
+                  <span className="text-xs font-mono opacity-60 group-hover:translate-x-0.5 transition-transform">→</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Mobile hamburger - 44x44px minimum touch target for iOS & Android */}
           <button
             type="button"
             aria-label="Toggle navigation menu"
-            className="md:hidden flex items-center justify-center min-h-[44px] min-w-[44px] p-2 text-slate-700 hover:text-slate-950 rounded-xl active:bg-slate-100 touch-manipulation cursor-pointer"
-            onClick={() => setMenuOpen(v => !v)}
+            className="md:hidden flex items-center justify-center min-h-[44px] min-w-[44px] p-2 rounded-xl touch-manipulation cursor-pointer opacity-80 hover:opacity-100"
+            onClick={() => setMenuOpen((v) => !v)}
           >
             <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
               {menuOpen ? (
@@ -206,21 +327,21 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
         </div>
       </div>
 
-      {/* ── Seamless Horizontal Micro Ticker Ribbon Loop (Synchronized with Market Toggle) ── */}
+      {/* ── Seamless Horizontal Micro Ticker Ribbon Loop ── */}
       <TickerTape market={market} />
 
       {/* ── Mobile Menu with iOS Safe Area Handling ── */}
       {menuOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white/98 backdrop-blur-xl px-4 py-3 pb-6 safe-bottom flex flex-col gap-2 shadow-xl max-h-[calc(100dvh-5.5rem)] overflow-y-auto">
-          {/* Mobile Quick Action Buttons: Settings & Login */}
-          <div className="py-2.5 border-b border-slate-200/80 mb-2 flex items-center gap-2">
+        <div className="md:hidden mobile-drawer-panel border-t px-4 py-3 pb-6 safe-bottom flex flex-col gap-2 shadow-xl max-h-[calc(100dvh-5.5rem)] overflow-y-auto">
+          {/* Mobile Quick Action Buttons: Combined Settings & Login */}
+          <div className="py-2.5 border-b border-current opacity-90 mb-2 flex items-center gap-2">
             <button
               type="button"
               onClick={() => {
                 setMenuOpen(false);
                 setSettingsOpen(true);
               }}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-[13px] font-mono font-bold active:scale-95 cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-current text-[13px] font-mono font-bold active:scale-95 cursor-pointer opacity-80 hover:opacity-100"
             >
               <span>⚙️</span>
               <span>Settings & Themes</span>
@@ -241,27 +362,28 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           {isTerminalOrDashboard && (
             <MarketToggle selected={market} onChange={handleMarketChange} className="w-full justify-center mb-2" />
           )}
+
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
               onClick={() => setMenuOpen(false)}
               className={`block px-3.5 py-3 rounded-xl text-[16px] font-bold min-h-[44px] flex items-center transition-colors ${
-                pathname === href
-                  ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
-                  : 'text-black hover:text-black hover:bg-slate-50 active:bg-slate-100'
+                pathname === href ? 'nav-link-active' : 'nav-link-inactive'
               }`}
             >
               {label}
             </Link>
           ))}
+
           {!isTerminalOrDashboard && (
             <Link
               href="/terminal"
               onClick={() => setMenuOpen(false)}
-              className="mt-1 flex items-center justify-center gap-1.5 rounded-xl border border-emerald-600/30 bg-emerald-50 px-3.5 py-3 text-[15px] font-bold text-emerald-700 mono min-h-[44px] active:bg-emerald-100"
+              className="launch-terminal-btn mt-1 flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-3 text-[15px] font-bold mono min-h-[44px]"
             >
-              ⚡ LAUNCH TERMINAL
+              <span className="text-amber-300">⚡</span>
+              <span>LAUNCH TERMINAL</span>
             </Link>
           )}
         </div>

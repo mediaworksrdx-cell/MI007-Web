@@ -536,15 +536,90 @@ html[data-theme="cyberpunk"] .hero-marquee-fade-right {
 header {
   background-color: var(--theme-navbar-bg) !important;
   border-color: var(--theme-page-border) !important;
-}
-header a,
-header span,
-header button {
   color: var(--theme-page-text) !important;
 }
-header .text-emerald-600 {
-  color: #059669 !important;
+
+.navbar-brand-title {
+  color: var(--theme-page-text) !important;
 }
+
+.navbar-brand-subtitle {
+  color: var(--theme-page-subtitle) !important;
+}
+
+.nav-link-active {
+  background-color: var(--theme-card-bg) !important;
+  color: var(--theme-card-text) !important;
+  border: 1px solid var(--theme-card-border) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+.nav-link-inactive {
+  color: var(--theme-page-text) !important;
+}
+.nav-link-inactive:hover {
+  color: #059669 !important;
+  background-color: rgba(148, 163, 184, 0.12) !important;
+}
+
+.launch-terminal-btn {
+  background-color: #059669 !important;
+  border: 1px solid #047857 !important;
+  color: #FFFFFF !important;
+}
+.launch-terminal-btn:hover {
+  background-color: #047857 !important;
+  border-color: #065F46 !important;
+  color: #FFFFFF !important;
+}
+
+/* ── 5b. Unified Account & Settings Dropdown ── */
+.account-menu-btn {
+  background-color: var(--theme-card-bg) !important;
+  border-color: var(--theme-card-border) !important;
+  color: var(--theme-card-text) !important;
+}
+.account-menu-btn:hover {
+  border-color: #059669 !important;
+}
+
+.account-settings-dropdown {
+  background-color: var(--theme-card-bg) !important;
+  border-color: var(--theme-card-border) !important;
+  color: var(--theme-card-text) !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--theme-card-border) !important;
+}
+
+.account-dropdown-user-card,
+.account-dropdown-login-btn,
+.account-dropdown-settings-btn {
+  background-color: var(--theme-card-surface) !important;
+  border-color: var(--theme-card-border) !important;
+  color: var(--theme-card-text) !important;
+}
+.account-dropdown-login-btn:hover,
+.account-dropdown-settings-btn:hover {
+  border-color: #059669 !important;
+}
+
+.account-theme-active {
+  background-color: var(--theme-card-surface) !important;
+  color: var(--theme-card-text) !important;
+}
+.account-theme-inactive {
+  background-color: transparent !important;
+  color: var(--theme-card-text) !important;
+}
+.account-theme-inactive:hover {
+  background-color: var(--theme-card-surface) !important;
+}
+
+.mobile-drawer-panel {
+  background-color: var(--theme-navbar-bg) !important;
+  border-color: var(--theme-page-border) !important;
+  color: var(--theme-page-text) !important;
+}
+
 
 /* ── 6. Footer ── */
 .footer-panel,
