@@ -217,20 +217,22 @@ export default function MarketTerminalSection() {
 
     ctx.clearRect(0, 0, w, h);
 
-    // ── 1. Themed Chart Surface ──
-    const chartBg = isDark
+    // ── 1. Themed Chart Surface (Inverted: Light cards in Dark themes, Dark cards in Light themes) ──
+    const cardIsLight = theme === 'graphite' || theme === 'capital';
+
+    const chartBg = cardIsLight
       ? theme === 'capital'
-        ? '#0B132B'
-        : '#181C24' // graphite
+        ? '#EAF1FA'
+        : '#F1F4F9' // graphite
       : theme === 'ivory'
-      ? '#F7F4EB'
-      : '#EDF5FA'; // arctic
+      ? '#18221D'
+      : '#0E1726'; // arctic
 
     ctx.fillStyle = chartBg;
     ctx.fillRect(0, 0, w, h);
 
-    // Subtle horizontal price level references only
-    ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)';
+    // Subtle horizontal price level references
+    ctx.strokeStyle = cardIsLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
     ctx.lineWidth = 1;
     for (let step = 1; step <= 4; step++) {
       const y = (mainH / 5) * step;
@@ -241,7 +243,7 @@ export default function MarketTerminalSection() {
     }
 
     // Right axis boundary line
-    ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+    ctx.strokeStyle = cardIsLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
     ctx.beginPath();
     ctx.moveTo(w - 70, 0);
     ctx.lineTo(w - 70, h);
@@ -378,15 +380,15 @@ export default function MarketTerminalSection() {
     ctx.stroke();
 
     // ── 6. Subpanels: RSI (14) & MACD ──
-    const subBg = isDark
+    const subBg = cardIsLight
       ? theme === 'capital'
-        ? '#131E3D'
-        : '#222733' // graphite
+        ? '#D9E6F5'
+        : '#E2E8F0' // graphite
       : theme === 'ivory'
-      ? '#FAF7F0'
-      : '#F4F9FD'; // arctic
-    const subBorder = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
-    const textSub = isDark ? '#94A3B8' : '#475569';
+      ? '#222E27'
+      : '#162238'; // arctic
+    const subBorder = cardIsLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+    const textSub = cardIsLight ? '#475569' : '#94A3B8';
 
     if (showRsi) {
       ctx.fillStyle = subBg;
@@ -502,7 +504,7 @@ export default function MarketTerminalSection() {
     }
 
     // ── 9. Right Price Axis Labels ──
-    ctx.fillStyle = '#64748B';
+    ctx.fillStyle = cardIsLight ? '#475569' : '#94A3B8';
     ctx.font = '12px monospace';
     ctx.textAlign = 'left';
     for (let step = 0; step <= 5; step++) {

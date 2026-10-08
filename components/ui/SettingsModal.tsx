@@ -33,7 +33,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const themeList: {
     id: AppTheme;
     name: string;
-    category: 'LIGHT' | 'DARK';
+    category: 'LIGHT THEME' | 'DARK THEME';
     badge: string;
     feel: string;
     accentHex: string;
@@ -44,46 +44,46 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     {
       id: 'arctic',
       name: 'Arctic Intelligence',
-      category: 'LIGHT',
-      badge: 'Light 1',
-      feel: 'Clean, analytical institutional research terminal',
+      category: 'LIGHT THEME',
+      badge: 'Light Theme',
+      feel: 'Light Arctic background + dark navy cards + light foreground text',
       accentHex: '#0891B2',
       bgHex: '#EDF5FA',
-      panelHex: '#FFFFFF',
-      bullHex: '#059669',
+      panelHex: '#0E1726',
+      bullHex: '#10B981',
     },
     {
       id: 'ivory',
       name: 'Executive Ivory',
-      category: 'LIGHT',
-      badge: 'Light 2',
-      feel: 'Luxury investment bank, executive research platform',
+      category: 'LIGHT THEME',
+      badge: 'Light Theme',
+      feel: 'Warm ivory background + deep charcoal cards + light foreground text',
       accentHex: '#166534',
       bgHex: '#F7F4EB',
-      panelHex: '#FFFFFF',
-      bullHex: '#15803D',
+      panelHex: '#18221D',
+      bullHex: '#22C55E',
     },
     {
       id: 'graphite',
       name: 'Institutional Graphite',
-      category: 'DARK',
-      badge: 'Dark 1',
-      feel: 'Bloomberg-style institutional terminal, technical & serious',
-      accentHex: '#10B981',
+      category: 'DARK THEME',
+      badge: 'Dark Theme',
+      feel: 'Graphite background + light silver cards + dark foreground text',
+      accentHex: '#0D9488',
       bgHex: '#181C24',
-      panelHex: '#222733',
-      bullHex: '#10B981',
+      panelHex: '#F1F4F9',
+      bullHex: '#059669',
     },
     {
       id: 'capital',
       name: 'AI Capital',
-      category: 'DARK',
-      badge: 'Dark 2',
-      feel: 'Advanced AI financial intelligence, futuristic & institutional',
+      category: 'DARK THEME',
+      badge: 'Dark Theme',
+      feel: 'Midnight blue background + light blue-gray cards + dark foreground text',
       accentHex: '#2563EB',
       bgHex: '#0B132B',
-      panelHex: '#131E3D',
-      bullHex: '#10B981',
+      panelHex: '#EAF1FA',
+      bullHex: '#059669',
     },
   ];
 

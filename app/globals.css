@@ -38,86 +38,86 @@ html[data-theme="arctic"],
 html[data-theme="lightblue"],
 html[data-theme="quartz"] {
   --color-bg-midnight: #EDF5FA;
-  --color-surface-card: #FFFFFF;
-  --color-surface-variant: #F4F9FD;
-  --color-border-navy: rgba(8, 145, 178, 0.20);
-  --color-mint-green: #059669;
-  --color-crimson-red: #DC2626;
+  --color-surface-card: #0E1726;
+  --color-surface-variant: #162238;
+  --color-border-navy: rgba(30, 58, 95, 0.65);
+  --color-mint-green: #10B981;
+  --color-crimson-red: #F43F5E;
   --color-accent-cyan: #0891B2;
   --color-cyber-gold: #0F2744;
-  --color-chart-bg: #EDF5FA;
-  --color-text-primary: #0B192C;
-  --color-text-secondary: #334155;
-  --color-text-muted: #475569;
-  --color-bull-green: #059669;
-  --color-bear-red: #DC2626;
-  --color-glass-white: rgba(255, 255, 255, 0.98);
+  --color-chart-bg: #0E1726;
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #E2E8F0;
+  --color-text-muted: #94A3B8;
+  --color-bull-green: #10B981;
+  --color-bear-red: #F43F5E;
+  --color-glass-white: rgba(14, 23, 38, 0.95);
 
   --theme-page-bg: #EDF5FA;
   --theme-page-text: #0B192C;
-  --theme-card-bg: #FFFFFF;
-  --theme-card-border: rgba(8, 145, 178, 0.18);
+  --theme-card-bg: #0E1726;
+  --theme-card-border: rgba(30, 58, 95, 0.65);
   --theme-navbar-bg: rgba(237, 245, 250, 0.96);
-  --theme-footer-bg: rgba(244, 249, 253, 0.98);
-  --theme-ticker-bg: #FFFFFF;
-  --theme-switcher-bg: #FFFFFF;
+  --theme-footer-bg: #0E1726;
+  --theme-ticker-bg: #0E1726;
+  --theme-switcher-bg: #0E1726;
 }
 
 html[data-theme="ivory"],
 html[data-theme="champagne"],
 html[data-theme="falcon"] {
   --color-bg-midnight: #F7F4EB;
-  --color-surface-card: #FFFFFF;
-  --color-surface-variant: #FAF7F0;
-  --color-border-navy: rgba(22, 101, 52, 0.18);
-  --color-mint-green: #15803D;
-  --color-crimson-red: #B91C1C;
+  --color-surface-card: #18221D;
+  --color-surface-variant: #222E27;
+  --color-border-navy: rgba(34, 60, 48, 0.65);
+  --color-mint-green: #22C55E;
+  --color-crimson-red: #EF4444;
   --color-accent-cyan: #166534;
   --color-cyber-gold: #C5A059;
-  --color-chart-bg: #F7F4EB;
-  --color-text-primary: #1A1A1A;
-  --color-text-secondary: #404040;
-  --color-text-muted: #525252;
-  --color-bull-green: #15803D;
-  --color-bear-red: #B91C1C;
-  --color-glass-white: rgba(255, 255, 255, 0.98);
+  --color-chart-bg: #18221D;
+  --color-text-primary: #FDFCFA;
+  --color-text-secondary: #E7E5E0;
+  --color-text-muted: #A8A29E;
+  --color-bull-green: #22C55E;
+  --color-bear-red: #EF4444;
+  --color-glass-white: rgba(24, 34, 29, 0.95);
 
   --theme-page-bg: #F7F4EB;
   --theme-page-text: #1A1A1A;
-  --theme-card-bg: #FFFFFF;
-  --theme-card-border: rgba(22, 101, 52, 0.16);
+  --theme-card-bg: #18221D;
+  --theme-card-border: rgba(34, 60, 48, 0.65);
   --theme-navbar-bg: rgba(247, 244, 235, 0.96);
-  --theme-footer-bg: rgba(250, 247, 240, 0.98);
-  --theme-ticker-bg: #FFFFFF;
-  --theme-switcher-bg: #FFFFFF;
+  --theme-footer-bg: #18221D;
+  --theme-ticker-bg: #18221D;
+  --theme-switcher-bg: #18221D;
 }
 
 html[data-theme="graphite"],
 html[data-theme="metallic"],
 html[data-theme="obsidian"] {
   --color-bg-midnight: #181C24;
-  --color-surface-card: #222733;
-  --color-surface-variant: #282F3E;
-  --color-border-navy: rgba(148, 163, 184, 0.18);
-  --color-mint-green: #10B981;
-  --color-crimson-red: #F43F5E;
-  --color-accent-cyan: #10B981;
-  --color-cyber-gold: #94A3B8;
-  --color-chart-bg: #181C24;
-  --color-text-primary: #F8FAFC;
-  --color-text-secondary: #CBD5E1;
-  --color-text-muted: #94A3B8;
-  --color-bull-green: #10B981;
-  --color-bear-red: #F43F5E;
-  --color-glass-white: rgba(34, 39, 51, 0.92);
+  --color-surface-card: #F1F4F9;
+  --color-surface-variant: #E2E8F0;
+  --color-border-navy: rgba(148, 163, 184, 0.45);
+  --color-mint-green: #059669;
+  --color-crimson-red: #DC2626;
+  --color-accent-cyan: #0D9488;
+  --color-cyber-gold: #64748B;
+  --color-chart-bg: #F1F4F9;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #1E293B;
+  --color-text-muted: #475569;
+  --color-bull-green: #059669;
+  --color-bear-red: #DC2626;
+  --color-glass-white: rgba(241, 244, 249, 0.95);
 
   --theme-page-bg: #181C24;
   --theme-page-text: #F8FAFC;
-  --theme-card-bg: #222733;
-  --theme-card-border: rgba(148, 163, 184, 0.18);
+  --theme-card-bg: #F1F4F9;
+  --theme-card-border: rgba(148, 163, 184, 0.45);
   --theme-navbar-bg: rgba(24, 28, 36, 0.96);
-  --theme-footer-bg: rgba(20, 23, 30, 0.98);
-  --theme-ticker-bg: rgba(34, 39, 51, 0.96);
+  --theme-footer-bg: #14171E;
+  --theme-ticker-bg: #F1F4F9;
   --theme-switcher-bg: #222733;
 }
 
@@ -125,28 +125,28 @@ html[data-theme="capital"],
 html[data-theme="techno"],
 html[data-theme="cyberpunk"] {
   --color-bg-midnight: #0B132B;
-  --color-surface-card: #131E3D;
-  --color-surface-variant: #18264D;
-  --color-border-navy: rgba(37, 99, 235, 0.22);
-  --color-mint-green: #10B981;
-  --color-crimson-red: #EF4444;
+  --color-surface-card: #EAF1FA;
+  --color-surface-variant: #D9E6F5;
+  --color-border-navy: rgba(37, 99, 235, 0.28);
+  --color-mint-green: #059669;
+  --color-crimson-red: #DC2626;
   --color-accent-cyan: #2563EB;
-  --color-cyber-gold: #06B6D4;
-  --color-chart-bg: #0B132B;
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #CBD5E1;
-  --color-text-muted: #94A3B8;
-  --color-bull-green: #10B981;
-  --color-bear-red: #EF4444;
-  --color-glass-white: rgba(19, 30, 61, 0.92);
+  --color-cyber-gold: #0284C7;
+  --color-chart-bg: #EAF1FA;
+  --color-text-primary: #0A1931;
+  --color-text-secondary: #152238;
+  --color-text-muted: #3B5278;
+  --color-bull-green: #059669;
+  --color-bear-red: #DC2626;
+  --color-glass-white: rgba(234, 241, 250, 0.95);
 
   --theme-page-bg: #0B132B;
   --theme-page-text: #FFFFFF;
-  --theme-card-bg: #131E3D;
-  --theme-card-border: rgba(37, 99, 235, 0.22);
+  --theme-card-bg: #EAF1FA;
+  --theme-card-border: rgba(37, 99, 235, 0.28);
   --theme-navbar-bg: rgba(11, 19, 43, 0.96);
-  --theme-footer-bg: rgba(8, 14, 32, 0.98);
-  --theme-ticker-bg: rgba(19, 30, 61, 0.96);
+  --theme-footer-bg: #080F22;
+  --theme-ticker-bg: #EAF1FA;
   --theme-switcher-bg: #131E3D;
 }
 
@@ -242,206 +242,511 @@ html[data-theme="cyberpunk"] {
   color-scheme: dark;
 }
 
-/* ── Enterprise Clean Surfaces (No childish gradients or excessive glow) ── */
+/* ══════════════════════════════════════════════════════════════════════════════
+   STRICT VISUAL INVERSION SYSTEM (DARK THEMES vs LIGHT THEMES)
+   • LIGHT THEMES (Arctic Intelligence & Executive Ivory):
+     - Light Background (Soft Arctic Blue / Warm Ivory)
+     - DARK Cards & Panels (Dark Navy / Deep Charcoal Forest)
+     - LIGHT / White Foreground Text on those dark cards
+     - Dark text for section headings on the light page background
+
+   • DARK THEMES (Institutional Graphite & AI Capital):
+     - Dark Background (Deep Graphite / Midnight Blue)
+     - LIGHT Cards & Panels (Light Silver / Light Blue-Gray)
+     - DARK Foreground Text on those light cards
+     - Light / White text for section headings on the dark page background
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Page Background & Global Reset ── */
 html body {
   background-color: var(--theme-page-bg) !important;
   color: var(--theme-page-text) !important;
 }
 
-/* Refined 1px borders and subtle institutional elevation */
+/* ── 2. LIGHT THEMES: Light Background → DARK Cards & Panels → LIGHT Card Text ── */
+
+/* Arctic Intelligence (Light Theme) Card Surfaces */
 html[data-theme="arctic"] .bg-white,
+html[data-theme="arctic"] [class*="bg-white/"],
 html[data-theme="lightblue"] .bg-white,
-html[data-theme="quartz"] .bg-white {
-  border-color: rgba(8, 145, 178, 0.18) !important;
-  box-shadow: 0 4px 16px -2px rgba(8, 145, 178, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+html[data-theme="lightblue"] [class*="bg-white/"] {
+  background-color: #0E1726 !important;
+  border-color: rgba(30, 58, 95, 0.65) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(30, 58, 95, 0.45) !important;
+  color: #F8FAFC !important;
 }
 
+html[data-theme="arctic"] .bg-slate-50,
+html[data-theme="arctic"] .bg-slate-100,
+html[data-theme="arctic"] [class*="bg-slate-50/"],
+html[data-theme="arctic"] [class*="bg-slate-100/"],
+html[data-theme="lightblue"] .bg-slate-50,
+html[data-theme="lightblue"] .bg-slate-100,
+html[data-theme="lightblue"] [class*="bg-slate-50/"],
+html[data-theme="lightblue"] [class*="bg-slate-100/"] {
+  background-color: #162238 !important;
+  border-color: rgba(30, 58, 95, 0.65) !important;
+  color: #F8FAFC !important;
+}
+
+/* Executive Ivory (Light Theme) Card Surfaces */
 html[data-theme="ivory"] .bg-white,
+html[data-theme="ivory"] [class*="bg-white/"],
 html[data-theme="champagne"] .bg-white,
+html[data-theme="champagne"] [class*="bg-white/"],
 html[data-theme="falcon"] .bg-white {
-  border-color: rgba(22, 101, 52, 0.16) !important;
-  box-shadow: 0 4px 16px -2px rgba(22, 101, 52, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  background-color: #18221D !important;
+  border-color: rgba(34, 60, 48, 0.65) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(34, 60, 48, 0.45) !important;
+  color: #FDFCFA !important;
 }
 
-/* Dark Theme Card Surfaces */
+html[data-theme="ivory"] .bg-slate-50,
+html[data-theme="ivory"] .bg-slate-100,
+html[data-theme="ivory"] [class*="bg-slate-50/"],
+html[data-theme="ivory"] [class*="bg-slate-100/"],
+html[data-theme="champagne"] .bg-slate-50,
+html[data-theme="champagne"] .bg-slate-100,
+html[data-theme="champagne"] [class*="bg-slate-50/"],
+html[data-theme="champagne"] [class*="bg-slate-100/"] {
+  background-color: #222E27 !important;
+  border-color: rgba(34, 60, 48, 0.65) !important;
+  color: #FDFCFA !important;
+}
+
+/* Subtle dark-gray/blue borders for Light Themes */
+html[data-theme="arctic"] .border-slate-200,
+html[data-theme="arctic"] .border-slate-300,
+html[data-theme="arctic"] [class*="border-slate-200/"],
+html[data-theme="arctic"] [class*="border-slate-300/"],
+html[data-theme="lightblue"] .border-slate-200,
+html[data-theme="lightblue"] .border-slate-300 {
+  border-color: rgba(30, 58, 95, 0.65) !important;
+}
+
+html[data-theme="ivory"] .border-slate-200,
+html[data-theme="ivory"] .border-slate-300,
+html[data-theme="ivory"] [class*="border-slate-200/"],
+html[data-theme="ivory"] [class*="border-slate-300/"],
+html[data-theme="champagne"] .border-slate-200,
+html[data-theme="champagne"] .border-slate-300 {
+  border-color: rgba(34, 60, 48, 0.65) !important;
+}
+
+/* Light Theme: Card Text (LIGHT FOREGROUND TEXT on dark cards) */
+html[data-theme="arctic"] .bg-white .text-black,
+html[data-theme="arctic"] [class*="bg-white/"] .text-black,
+html[data-theme="arctic"] .bg-white .text-slate-950,
+html[data-theme="arctic"] [class*="bg-white/"] .text-slate-950,
+html[data-theme="arctic"] .bg-white .text-slate-900,
+html[data-theme="arctic"] [class*="bg-white/"] .text-slate-900,
+html[data-theme="arctic"] .bg-white .text-slate-800,
+html[data-theme="arctic"] [class*="bg-white/"] .text-slate-800,
+html[data-theme="arctic"] .bg-slate-50 .text-black,
+html[data-theme="arctic"] [class*="bg-slate-50/"] .text-black,
+html[data-theme="arctic"] .bg-slate-100 .text-black,
+html[data-theme="arctic"] [class*="bg-slate-100/"] .text-black,
+html[data-theme="arctic"] .bg-slate-50 .text-slate-900,
+html[data-theme="arctic"] .bg-slate-100 .text-slate-900,
+html[data-theme="arctic"] .bg-white h1,
+html[data-theme="arctic"] .bg-white h2,
+html[data-theme="arctic"] .bg-white h3,
+html[data-theme="arctic"] .bg-white h4,
+html[data-theme="arctic"] [class*="bg-white/"] h1,
+html[data-theme="arctic"] [class*="bg-white/"] h2,
+html[data-theme="arctic"] [class*="bg-white/"] h3,
+html[data-theme="arctic"] [class*="bg-white/"] h4,
+html[data-theme="lightblue"] .bg-white .text-black,
+html[data-theme="lightblue"] [class*="bg-white/"] .text-black,
+html[data-theme="lightblue"] .bg-white .text-slate-900,
+html[data-theme="lightblue"] [class*="bg-white/"] .text-slate-900 {
+  color: #F8FAFC !important;
+}
+
+html[data-theme="arctic"] .bg-white .text-slate-700,
+html[data-theme="arctic"] [class*="bg-white/"] .text-slate-700,
+html[data-theme="arctic"] .bg-white .text-slate-600,
+html[data-theme="arctic"] [class*="bg-white/"] .text-slate-600,
+html[data-theme="lightblue"] .bg-white .text-slate-700,
+html[data-theme="lightblue"] .bg-white .text-slate-600 {
+  color: #E2E8F0 !important;
+}
+
+html[data-theme="arctic"] .bg-white .text-slate-500,
+html[data-theme="arctic"] [class*="bg-white/"] .text-slate-500,
+html[data-theme="arctic"] .bg-white .text-slate-400,
+html[data-theme="arctic"] [class*="bg-white/"] .text-slate-400,
+html[data-theme="lightblue"] .bg-white .text-slate-500,
+html[data-theme="lightblue"] .bg-white .text-slate-400 {
+  color: #94A3B8 !important;
+}
+
+html[data-theme="ivory"] .bg-white .text-black,
+html[data-theme="ivory"] [class*="bg-white/"] .text-black,
+html[data-theme="ivory"] .bg-white .text-slate-950,
+html[data-theme="ivory"] [class*="bg-white/"] .text-slate-950,
+html[data-theme="ivory"] .bg-white .text-slate-900,
+html[data-theme="ivory"] [class*="bg-white/"] .text-slate-900,
+html[data-theme="ivory"] .bg-white .text-slate-800,
+html[data-theme="ivory"] [class*="bg-white/"] .text-slate-800,
+html[data-theme="ivory"] .bg-slate-50 .text-black,
+html[data-theme="ivory"] [class*="bg-slate-50/"] .text-black,
+html[data-theme="ivory"] .bg-slate-100 .text-black,
+html[data-theme="ivory"] [class*="bg-slate-100/"] .text-black,
+html[data-theme="ivory"] .bg-slate-50 .text-slate-900,
+html[data-theme="ivory"] .bg-slate-100 .text-slate-900,
+html[data-theme="ivory"] .bg-white h1,
+html[data-theme="ivory"] .bg-white h2,
+html[data-theme="ivory"] .bg-white h3,
+html[data-theme="ivory"] .bg-white h4,
+html[data-theme="ivory"] [class*="bg-white/"] h1,
+html[data-theme="ivory"] [class*="bg-white/"] h2,
+html[data-theme="ivory"] [class*="bg-white/"] h3,
+html[data-theme="ivory"] [class*="bg-white/"] h4,
+html[data-theme="champagne"] .bg-white .text-black,
+html[data-theme="champagne"] [class*="bg-white/"] .text-black,
+html[data-theme="champagne"] .bg-white .text-slate-900,
+html[data-theme="champagne"] [class*="bg-white/"] .text-slate-900 {
+  color: #FDFCFA !important;
+}
+
+html[data-theme="ivory"] .bg-white .text-slate-700,
+html[data-theme="ivory"] [class*="bg-white/"] .text-slate-700,
+html[data-theme="ivory"] .bg-white .text-slate-600,
+html[data-theme="ivory"] [class*="bg-white/"] .text-slate-600,
+html[data-theme="champagne"] .bg-white .text-slate-700,
+html[data-theme="champagne"] .bg-white .text-slate-600 {
+  color: #E7E5E0 !important;
+}
+
+html[data-theme="ivory"] .bg-white .text-slate-500,
+html[data-theme="ivory"] [class*="bg-white/"] .text-slate-500,
+html[data-theme="ivory"] .bg-white .text-slate-400,
+html[data-theme="ivory"] [class*="bg-white/"] .text-slate-400,
+html[data-theme="champagne"] .bg-white .text-slate-500,
+html[data-theme="champagne"] .bg-white .text-slate-400 {
+  color: #A8A29E !important;
+}
+
+/* Light Theme: Page-Level Text Outside Cards (DARK text on light background) */
+html[data-theme="arctic"] section > div > div > h2,
+html[data-theme="arctic"] section > div > div > p,
+html[data-theme="arctic"] section h1,
+html[data-theme="arctic"] section h2,
+html[data-theme="lightblue"] section h1,
+html[data-theme="lightblue"] section h2 {
+  color: #0B192C !important;
+}
+
+html[data-theme="ivory"] section > div > div > h2,
+html[data-theme="ivory"] section > div > div > p,
+html[data-theme="ivory"] section h1,
+html[data-theme="ivory"] section h2,
+html[data-theme="champagne"] section h1,
+html[data-theme="champagne"] section h2 {
+  color: #1A1A1A !important;
+}
+
+
+/* ── 3. DARK THEMES: Dark Background → LIGHT Cards & Panels → DARK Card Text ── */
+
+/* Institutional Graphite (Dark Theme) Card Surfaces */
 html[data-theme="graphite"] .bg-white,
-html[data-theme="capital"] .bg-white,
-html[data-theme="metallic"] .bg-white,
-html[data-theme="techno"] .bg-white,
-html[data-theme="obsidian"] .bg-white,
-html[data-theme="cyberpunk"] .bg-white,
 html[data-theme="graphite"] [class*="bg-white/"],
-html[data-theme="capital"] [class*="bg-white/"],
+html[data-theme="metallic"] .bg-white,
 html[data-theme="metallic"] [class*="bg-white/"],
-html[data-theme="techno"] [class*="bg-white/"] {
-  background-color: var(--theme-card-bg) !important;
-  border-color: var(--theme-card-border) !important;
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45) !important;
+html[data-theme="obsidian"] .bg-white {
+  background-color: #F1F4F9 !important;
+  border-color: rgba(148, 163, 184, 0.45) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(148, 163, 184, 0.35) !important;
+  color: #0F172A !important;
 }
 
 html[data-theme="graphite"] .bg-slate-50,
-html[data-theme="capital"] .bg-slate-50,
 html[data-theme="graphite"] .bg-slate-100,
-html[data-theme="capital"] .bg-slate-100,
-html[data-theme="metallic"] .bg-slate-50,
-html[data-theme="techno"] .bg-slate-50,
-html[data-theme="metallic"] .bg-slate-100,
-html[data-theme="techno"] .bg-slate-100,
 html[data-theme="graphite"] [class*="bg-slate-50/"],
-html[data-theme="capital"] [class*="bg-slate-50/"],
 html[data-theme="graphite"] [class*="bg-slate-100/"],
-html[data-theme="capital"] [class*="bg-slate-100/"] {
-  background-color: var(--color-surface-variant) !important;
+html[data-theme="metallic"] .bg-slate-50,
+html[data-theme="metallic"] .bg-slate-100,
+html[data-theme="metallic"] [class*="bg-slate-50/"],
+html[data-theme="metallic"] [class*="bg-slate-100/"] {
+  background-color: #E2E8F0 !important;
+  border-color: rgba(148, 163, 184, 0.45) !important;
+  color: #0F172A !important;
 }
 
-/* Borders */
+/* AI Capital (Dark Theme) Card Surfaces */
+html[data-theme="capital"] .bg-white,
+html[data-theme="capital"] [class*="bg-white/"],
+html[data-theme="techno"] .bg-white,
+html[data-theme="techno"] [class*="bg-white/"],
+html[data-theme="cyberpunk"] .bg-white {
+  background-color: #EAF1FA !important;
+  border-color: rgba(37, 99, 235, 0.28) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(37, 99, 235, 0.25) !important;
+  color: #0A1931 !important;
+}
+
+html[data-theme="capital"] .bg-slate-50,
+html[data-theme="capital"] .bg-slate-100,
+html[data-theme="capital"] [class*="bg-slate-50/"],
+html[data-theme="capital"] [class*="bg-slate-100/"],
+html[data-theme="techno"] .bg-slate-50,
+html[data-theme="techno"] .bg-slate-100,
+html[data-theme="techno"] [class*="bg-slate-50/"],
+html[data-theme="techno"] [class*="bg-slate-100/"] {
+  background-color: #D9E6F5 !important;
+  border-color: rgba(37, 99, 235, 0.28) !important;
+  color: #0A1931 !important;
+}
+
+/* Subtle medium-gray borders for Dark Themes */
 html[data-theme="graphite"] .border-slate-200,
-html[data-theme="capital"] .border-slate-200,
 html[data-theme="graphite"] .border-slate-300,
-html[data-theme="capital"] .border-slate-300,
-html[data-theme="metallic"] .border-slate-200,
-html[data-theme="techno"] .border-slate-200,
-html[data-theme="metallic"] .border-slate-300,
-html[data-theme="techno"] .border-slate-300,
 html[data-theme="graphite"] [class*="border-slate-200/"],
-html[data-theme="capital"] [class*="border-slate-200/"],
 html[data-theme="graphite"] [class*="border-slate-300/"],
-html[data-theme="capital"] [class*="border-slate-300/"] {
-  border-color: var(--theme-card-border) !important;
+html[data-theme="metallic"] .border-slate-200,
+html[data-theme="metallic"] .border-slate-300 {
+  border-color: rgba(148, 163, 184, 0.45) !important;
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   PRO-LEVEL TYPOGRAPHY SYSTEM (4 INSTITUTIONAL ENTERPRISE THEMES)
-   ══════════════════════════════════════════════════════════════════════════════ */
-
-/* ── 1. ARCTIC INTELLIGENCE: Dark Navy + Slate Gray Typography ── */
-html[data-theme="arctic"] .text-black,
-html[data-theme="arctic"] .text-slate-950,
-html[data-theme="arctic"] .text-slate-900,
-html[data-theme="lightblue"] .text-black,
-html[data-theme="lightblue"] .text-slate-950,
-html[data-theme="lightblue"] .text-slate-900 {
-  color: #0B192C !important;
+html[data-theme="capital"] .border-slate-200,
+html[data-theme="capital"] .border-slate-300,
+html[data-theme="capital"] [class*="border-slate-200/"],
+html[data-theme="capital"] [class*="border-slate-300/"],
+html[data-theme="techno"] .border-slate-200,
+html[data-theme="techno"] .border-slate-300 {
+  border-color: rgba(37, 99, 235, 0.28) !important;
 }
-html[data-theme="arctic"] .text-slate-800,
-html[data-theme="arctic"] .text-slate-700,
-html[data-theme="lightblue"] .text-slate-800,
-html[data-theme="lightblue"] .text-slate-700 {
+
+/* Dark Theme: Card Text (DARK FOREGROUND TEXT on light cards) */
+html[data-theme="graphite"] .bg-white .text-black,
+html[data-theme="graphite"] [class*="bg-white/"] .text-black,
+html[data-theme="graphite"] .bg-white .text-slate-950,
+html[data-theme="graphite"] [class*="bg-white/"] .text-slate-950,
+html[data-theme="graphite"] .bg-white .text-slate-900,
+html[data-theme="graphite"] [class*="bg-white/"] .text-slate-900,
+html[data-theme="graphite"] .bg-white .text-slate-800,
+html[data-theme="graphite"] [class*="bg-white/"] .text-slate-800,
+html[data-theme="graphite"] .bg-slate-50 .text-black,
+html[data-theme="graphite"] [class*="bg-slate-50/"] .text-black,
+html[data-theme="graphite"] .bg-slate-100 .text-black,
+html[data-theme="graphite"] [class*="bg-slate-100/"] .text-black,
+html[data-theme="graphite"] .bg-slate-50 .text-slate-900,
+html[data-theme="graphite"] .bg-slate-100 .text-slate-900,
+html[data-theme="graphite"] .bg-white h1,
+html[data-theme="graphite"] .bg-white h2,
+html[data-theme="graphite"] .bg-white h3,
+html[data-theme="graphite"] .bg-white h4,
+html[data-theme="graphite"] [class*="bg-white/"] h1,
+html[data-theme="graphite"] [class*="bg-white/"] h2,
+html[data-theme="graphite"] [class*="bg-white/"] h3,
+html[data-theme="graphite"] [class*="bg-white/"] h4,
+html[data-theme="metallic"] .bg-white .text-black,
+html[data-theme="metallic"] [class*="bg-white/"] .text-black,
+html[data-theme="metallic"] .bg-white .text-slate-900,
+html[data-theme="metallic"] [class*="bg-white/"] .text-slate-900 {
+  color: #0F172A !important;
+}
+
+html[data-theme="graphite"] .bg-white .text-slate-700,
+html[data-theme="graphite"] [class*="bg-white/"] .text-slate-700,
+html[data-theme="graphite"] .bg-white .text-slate-600,
+html[data-theme="graphite"] [class*="bg-white/"] .text-slate-600,
+html[data-theme="metallic"] .bg-white .text-slate-700,
+html[data-theme="metallic"] .bg-white .text-slate-600 {
   color: #1E293B !important;
 }
-html[data-theme="arctic"] .text-slate-600,
-html[data-theme="arctic"] .text-slate-500,
-html[data-theme="lightblue"] .text-slate-600,
-html[data-theme="lightblue"] .text-slate-500 {
+
+html[data-theme="graphite"] .bg-white .text-slate-500,
+html[data-theme="graphite"] [class*="bg-white/"] .text-slate-500,
+html[data-theme="graphite"] .bg-white .text-slate-400,
+html[data-theme="graphite"] [class*="bg-white/"] .text-slate-400,
+html[data-theme="metallic"] .bg-white .text-slate-500,
+html[data-theme="metallic"] .bg-white .text-slate-400 {
   color: #475569 !important;
 }
-html[data-theme="arctic"] .text-slate-400,
-html[data-theme="lightblue"] .text-slate-400 {
-  color: #64748B !important;
+
+html[data-theme="capital"] .bg-white .text-black,
+html[data-theme="capital"] [class*="bg-white/"] .text-black,
+html[data-theme="capital"] .bg-white .text-slate-950,
+html[data-theme="capital"] [class*="bg-white/"] .text-slate-950,
+html[data-theme="capital"] .bg-white .text-slate-900,
+html[data-theme="capital"] [class*="bg-white/"] .text-slate-900,
+html[data-theme="capital"] .bg-white .text-slate-800,
+html[data-theme="capital"] [class*="bg-white/"] .text-slate-800,
+html[data-theme="capital"] .bg-slate-50 .text-black,
+html[data-theme="capital"] [class*="bg-slate-50/"] .text-black,
+html[data-theme="capital"] .bg-slate-100 .text-black,
+html[data-theme="capital"] [class*="bg-slate-100/"] .text-black,
+html[data-theme="capital"] .bg-slate-50 .text-slate-900,
+html[data-theme="capital"] .bg-slate-100 .text-slate-900,
+html[data-theme="capital"] .bg-white h1,
+html[data-theme="capital"] .bg-white h2,
+html[data-theme="capital"] .bg-white h3,
+html[data-theme="capital"] .bg-white h4,
+html[data-theme="capital"] [class*="bg-white/"] h1,
+html[data-theme="capital"] [class*="bg-white/"] h2,
+html[data-theme="capital"] [class*="bg-white/"] h3,
+html[data-theme="capital"] [class*="bg-white/"] h4,
+html[data-theme="techno"] .bg-white .text-black,
+html[data-theme="techno"] [class*="bg-white/"] .text-black,
+html[data-theme="techno"] .bg-white .text-slate-900,
+html[data-theme="techno"] [class*="bg-white/"] .text-slate-900 {
+  color: #0A1931 !important;
 }
 
-/* ── 2. EXECUTIVE IVORY: Charcoal/Black + Muted Slate Typography ── */
-html[data-theme="ivory"] .text-black,
-html[data-theme="ivory"] .text-slate-950,
-html[data-theme="ivory"] .text-slate-900 {
-  color: #1A1A1A !important;
-}
-html[data-theme="ivory"] .text-slate-800,
-html[data-theme="ivory"] .text-slate-700 {
-  color: #262626 !important;
-}
-html[data-theme="ivory"] .text-slate-600,
-html[data-theme="ivory"] .text-slate-500 {
-  color: #525252 !important;
-}
-html[data-theme="ivory"] .text-slate-400 {
-  color: #737373 !important;
+html[data-theme="capital"] .bg-white .text-slate-700,
+html[data-theme="capital"] [class*="bg-white/"] .text-slate-700,
+html[data-theme="capital"] .bg-white .text-slate-600,
+html[data-theme="capital"] [class*="bg-white/"] .text-slate-600,
+html[data-theme="techno"] .bg-white .text-slate-700,
+html[data-theme="techno"] .bg-white .text-slate-600 {
+  color: #152238 !important;
 }
 
-/* ── 3. INSTITUTIONAL GRAPHITE: Off-White + Cool Gray Typography ── */
-html[data-theme="graphite"] .text-black,
-html[data-theme="graphite"] .text-slate-950,
-html[data-theme="graphite"] .text-slate-900,
-html[data-theme="graphite"] .text-slate-800,
-html[data-theme="metallic"] .text-black,
-html[data-theme="metallic"] .text-slate-950,
-html[data-theme="metallic"] .text-slate-900,
-html[data-theme="metallic"] .text-slate-800 {
+html[data-theme="capital"] .bg-white .text-slate-500,
+html[data-theme="capital"] [class*="bg-white/"] .text-slate-500,
+html[data-theme="capital"] .bg-white .text-slate-400,
+html[data-theme="capital"] [class*="bg-white/"] .text-slate-400,
+html[data-theme="techno"] .bg-white .text-slate-500,
+html[data-theme="techno"] .bg-white .text-slate-400 {
+  color: #3B5278 !important;
+}
+
+/* Dark Theme: Page-Level Text Outside Cards (LIGHT text on dark background) */
+html[data-theme="graphite"] section > div > div > h2,
+html[data-theme="graphite"] section > div > div > p,
+html[data-theme="graphite"] section h1,
+html[data-theme="graphite"] section h2,
+html[data-theme="metallic"] section h1,
+html[data-theme="metallic"] section h2 {
   color: #F8FAFC !important;
 }
-html[data-theme="graphite"] .text-slate-700,
-html[data-theme="graphite"] .text-slate-600,
-html[data-theme="metallic"] .text-slate-700,
-html[data-theme="metallic"] .text-slate-600 {
-  color: #E2E8F0 !important;
-}
-html[data-theme="graphite"] .text-slate-500,
-html[data-theme="graphite"] .text-slate-400,
-html[data-theme="metallic"] .text-slate-500,
-html[data-theme="metallic"] .text-slate-400 {
-  color: #94A3B8 !important;
-}
 
-/* ── 4. AI CAPITAL: Pure White + Cool Blue-Gray Typography ── */
-html[data-theme="capital"] .text-black,
-html[data-theme="capital"] .text-slate-950,
-html[data-theme="capital"] .text-slate-900,
-html[data-theme="capital"] .text-slate-800,
-html[data-theme="techno"] .text-black,
-html[data-theme="techno"] .text-slate-950,
-html[data-theme="techno"] .text-slate-900,
-html[data-theme="techno"] .text-slate-800 {
+html[data-theme="capital"] section > div > div > h2,
+html[data-theme="capital"] section > div > div > p,
+html[data-theme="capital"] section h1,
+html[data-theme="capital"] section h2,
+html[data-theme="techno"] section h1,
+html[data-theme="techno"] section h2 {
   color: #FFFFFF !important;
 }
-html[data-theme="capital"] .text-slate-700,
-html[data-theme="capital"] .text-slate-600,
-html[data-theme="techno"] .text-slate-700,
-html[data-theme="techno"] .text-slate-600 {
-  color: #E0F2FE !important;
+
+/* Navbar Headers */
+html[data-theme="arctic"] header {
+  background-color: var(--theme-navbar-bg) !important;
+  border-color: rgba(30, 58, 95, 0.25) !important;
 }
-html[data-theme="capital"] .text-slate-500,
-html[data-theme="capital"] .text-slate-400,
-html[data-theme="techno"] .text-slate-500,
-html[data-theme="techno"] .text-slate-400 {
-  color: #94A3B8 !important;
+html[data-theme="arctic"] header .text-black,
+html[data-theme="arctic"] header .text-slate-950,
+html[data-theme="arctic"] header .text-slate-800,
+html[data-theme="arctic"] header .text-slate-700 {
+  color: #0B192C !important;
 }
 
-/* Navbar & Ticker */
+html[data-theme="ivory"] header {
+  background-color: var(--theme-navbar-bg) !important;
+  border-color: rgba(34, 60, 48, 0.25) !important;
+}
+html[data-theme="ivory"] header .text-black,
+html[data-theme="ivory"] header .text-slate-950,
+html[data-theme="ivory"] header .text-slate-800,
+html[data-theme="ivory"] header .text-slate-700 {
+  color: #1A1A1A !important;
+}
+
 html[data-theme="graphite"] header,
+html[data-theme="metallic"] header {
+  background-color: var(--theme-navbar-bg) !important;
+  border-color: var(--theme-card-border) !important;
+}
+html[data-theme="graphite"] header .text-black,
+html[data-theme="graphite"] header .text-slate-950,
+html[data-theme="graphite"] header .text-slate-800,
+html[data-theme="graphite"] header .text-slate-700 {
+  color: #F8FAFC !important;
+}
+
 html[data-theme="capital"] header,
-html[data-theme="metallic"] header,
 html[data-theme="techno"] header {
   background-color: var(--theme-navbar-bg) !important;
   border-color: var(--theme-card-border) !important;
 }
-
-/* Footer */
-html[data-theme="graphite"] footer,
-html[data-theme="capital"] footer,
-html[data-theme="metallic"] footer,
-html[data-theme="techno"] footer {
-  background-color: var(--theme-footer-bg) !important;
-  border-color: var(--theme-card-border) !important;
+html[data-theme="capital"] header .text-black,
+html[data-theme="capital"] header .text-slate-950,
+html[data-theme="capital"] header .text-slate-800,
+html[data-theme="capital"] header .text-slate-700 {
+  color: #FFFFFF !important;
 }
 
-/* Hover and active states */
-html[data-theme="graphite"] .hover\:bg-slate-100:hover,
-html[data-theme="capital"] .hover\:bg-slate-100:hover,
-html[data-theme="metallic"] .hover\:bg-slate-100:hover,
-html[data-theme="techno"] .hover\:bg-slate-100:hover,
-html[data-theme="graphite"] .hover\:bg-slate-200:hover,
-html[data-theme="capital"] .hover\:bg-slate-200:hover,
-html[data-theme="metallic"] .hover\:bg-slate-200:hover,
-html[data-theme="techno"] .hover\:bg-slate-200:hover,
-html[data-theme="graphite"] .hover\:bg-slate-50:hover,
-html[data-theme="capital"] .hover\:bg-slate-50:hover,
-html[data-theme="metallic"] .hover\:bg-slate-50:hover,
-html[data-theme="techno"] .hover\:bg-slate-50:hover,
-html[data-theme="graphite"] .active\:bg-slate-100:active,
-html[data-theme="capital"] .active\:bg-slate-100:active,
-html[data-theme="metallic"] .active\:bg-slate-100:active,
-html[data-theme="techno"] .active\:bg-slate-100:active {
-  background-color: var(--color-surface-variant) !important;
+/* Suppress white gradient edge fades on dark card surfaces */
+html[data-theme="arctic"] .hero-theatre-gutter .from-white,
+html[data-theme="ivory"] .hero-theatre-gutter .from-white {
+  display: none !important;
+}
+
+/* Footer Styling */
+html[data-theme="arctic"] footer {
+  background-color: #0E1726 !important;
+  border-color: rgba(30, 58, 95, 0.65) !important;
+}
+html[data-theme="arctic"] footer .text-slate-900,
+html[data-theme="arctic"] footer .text-black,
+html[data-theme="arctic"] footer h4 {
+  color: #F8FAFC !important;
+}
+html[data-theme="arctic"] footer .text-slate-600,
+html[data-theme="arctic"] footer .text-slate-500,
+html[data-theme="arctic"] footer p {
+  color: #94A3B8 !important;
+}
+
+html[data-theme="ivory"] footer {
+  background-color: #18221D !important;
+  border-color: rgba(34, 60, 48, 0.65) !important;
+}
+html[data-theme="ivory"] footer .text-slate-900,
+html[data-theme="ivory"] footer .text-black,
+html[data-theme="ivory"] footer h4 {
+  color: #FDFCFA !important;
+}
+html[data-theme="ivory"] footer .text-slate-600,
+html[data-theme="ivory"] footer .text-slate-500,
+html[data-theme="ivory"] footer p {
+  color: #A8A29E !important;
+}
+
+html[data-theme="graphite"] footer,
+html[data-theme="metallic"] footer {
+  background-color: #14171E !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+}
+html[data-theme="graphite"] footer .text-slate-900,
+html[data-theme="graphite"] footer .text-black,
+html[data-theme="graphite"] footer h4 {
+  color: #F8FAFC !important;
+}
+html[data-theme="graphite"] footer .text-slate-600,
+html[data-theme="graphite"] footer .text-slate-500,
+html[data-theme="graphite"] footer p {
+  color: #94A3B8 !important;
+}
+
+html[data-theme="capital"] footer,
+html[data-theme="techno"] footer {
+  background-color: #080F22 !important;
+  border-color: rgba(37, 99, 235, 0.25) !important;
+}
+html[data-theme="capital"] footer .text-slate-900,
+html[data-theme="capital"] footer .text-black,
+html[data-theme="capital"] footer h4 {
+  color: #FFFFFF !important;
+}
+html[data-theme="capital"] footer .text-slate-600,
+html[data-theme="capital"] footer .text-slate-500,
+html[data-theme="capital"] footer p {
+  color: #94A3B8 !important;
 }
 
 /* Scrollbars in dark mode */
