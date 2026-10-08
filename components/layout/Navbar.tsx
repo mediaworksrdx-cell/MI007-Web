@@ -8,7 +8,9 @@ import { MarketToggle } from '@/components/market/MarketToggle';
 import { TickerTape } from '@/components/market/TickerTape';
 import { MarketType } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
-import { useAppTheme, THEMES, AppTheme } from '@/lib/themeContext';
+import { useAppTheme } from '@/lib/themeContext';
+import { SettingsModal } from '@/components/ui/SettingsModal';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 interface NavbarProps {
   market?: MarketType;
@@ -24,23 +26,23 @@ const NAV_LINKS = [
 export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange }: NavbarProps) {
   const pathname = usePathname();
   const context = useMarket();
-  const { theme, setTheme, currentThemeConfig } = useAppTheme();
+  const { currentThemeConfig } = useAppTheme();
   const market = propMarket ?? context.market ?? 'USA';
   const isTerminalOrDashboard = pathname.startsWith('/terminal') || pathname.startsWith('/dashboard');
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
-  const themeDropdownRef = useRef<HTMLDivElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [userSession, setUserSession] = useState<{ name: string; role: string; deskId: string } | null>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (themeDropdownRef.current && !themeDropdownRef.current.contains(event.target as Node)) {
-        setThemeDropdownOpen(false);
+    try {
+      const stored = localStorage.getItem('mi007_user_session');
+      if (stored) {
+        setUserSession(JSON.parse(stored));
       }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    } catch {}
   }, []);
 
   const handleMarketChange = (m: MarketType) => {
@@ -112,123 +114,63 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           })}
         </nav>
 
-        {/* ── Market Toggle + Theme Quick Switch + CTA ── */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* ── Prominent Theme Selector Dropdown ── */}
-          <div className="relative" ref={themeDropdownRef}>
+        {/* ── Top-Right Institutional Cluster: Terminal CTA + Settings (with Themes) + Login ── */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {isTerminalOrDashboard && (
+            <MarketToggle
+              selected={market}
+              onChange={handleMarketChange}
+              className="hidden sm:flex"
+            />
+          )}
+          {!isTerminalOrDashboard && (
+            <Link
+              href="/terminal"
+              className="hidden sm:flex items-center gap-1.5 rounded-lg border border-emerald-600/30 bg-emerald-50 px-3 py-1.5 text-[13px] font-bold text-emerald-700 transition-all duration-200 hover:bg-emerald-100 hover:border-emerald-600/50 mono tracking-wide"
+            >
+              ⚡ LAUNCH TERMINAL
+            </Link>
+          )}
+
+          {/* ── Settings Button (Houses 4 Themes & System Preferences) ── */}
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-300/80 bg-white/95 hover:bg-slate-50 text-slate-800 text-[12px] sm:text-[13px] font-mono font-bold shadow-2xs transition-all hover:border-slate-400 active:scale-95 cursor-pointer"
+            title="Open System Settings & Themes"
+            aria-label="Settings"
+          >
+            <span className="text-sm">⚙️</span>
+            <span className="hidden sm:inline">Settings</span>
+            <span
+              className="w-2 h-2 rounded-full ring-1 ring-black/20 shrink-0 ml-0.5"
+              style={{ backgroundColor: currentThemeConfig.palette.accent }}
+              title={`Active: ${currentThemeConfig.name}`}
+            />
+          </button>
+
+          {/* ── Login / Client Portal Button ── */}
+          {userSession ? (
             <button
               type="button"
-              onClick={() => setThemeDropdownOpen((v) => !v)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-300 bg-white/95 hover:bg-slate-50 text-slate-900 text-[12px] sm:text-[13px] font-mono font-bold shadow-xs transition-all hover:border-slate-400 active:scale-95"
-              title="Click to change theme palette"
-              aria-label="Theme selector"
+              onClick={() => setLoginOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-emerald-500/50 bg-emerald-50/90 text-emerald-800 text-[12px] sm:text-[13px] font-mono font-bold shadow-2xs transition-all hover:bg-emerald-100 active:scale-95 cursor-pointer"
+              title={`Connected as ${userSession.name} (${userSession.deskId})`}
             >
-              <span className="text-sm">🎨</span>
-              <span className="hidden sm:inline font-bold">Theme:</span>
-              <span className="capitalize text-emerald-700 font-black">{currentThemeConfig.name.split(' ')[0]}</span>
-              <span
-                className="w-2.5 h-2.5 rounded-full ring-1 ring-black/20 shrink-0 ml-0.5"
-                style={{ backgroundColor: currentThemeConfig.palette.accent }}
-              />
-              <svg
-                className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${themeDropdownOpen ? 'rotate-180' : ''}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-              </svg>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="truncate max-w-[85px] sm:max-w-none">{userSession.name}</span>
             </button>
-
-            {themeDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2">
-                <div className="px-2 py-1 mb-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-500 font-bold uppercase">
-                  <span>Theme Selection</span>
-                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-black">2 Bright · 2 Dark</span>
-                </div>
-
-                {/* Bright section */}
-                <div className="px-2 pt-1 pb-0.5 text-[10px] font-mono font-bold tracking-wider text-sky-700 uppercase flex items-center gap-1">
-                  <span>☀️ 2 Bright Palettes</span>
-                </div>
-                <div className="flex flex-col gap-1 mb-2">
-                  {[THEMES.lightblue, THEMES.ivory].map((t) => {
-                    const isActive = theme === t.id;
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => {
-                          setTheme(t.id);
-                          setThemeDropdownOpen(false);
-                        }}
-                        className={`flex items-center justify-between p-2 rounded-xl text-left transition-all ${
-                          isActive
-                            ? 'bg-sky-50/90 font-bold text-slate-950 border border-sky-300 shadow-2xs'
-                            : 'hover:bg-slate-50 text-slate-700 font-medium border border-transparent'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="flex items-center -space-x-1 shrink-0">
-                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.bg }} />
-                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.accent }} />
-                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.bull }} />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-bold truncate">{t.name}</span>
-                            <span className="text-[10px] text-slate-500 truncate mono">{t.tagline}</span>
-                          </div>
-                        </div>
-                        {isActive && (
-                          <span className="text-sky-600 text-xs font-black">✓</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Dark section */}
-                <div className="px-2 pt-1 pb-0.5 text-[10px] font-mono font-bold tracking-wider text-slate-600 uppercase flex items-center gap-1 border-t border-slate-100">
-                  <span>🌑 2 Dark Palettes</span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  {[THEMES.metallic, THEMES.techno].map((t) => {
-                    const isActive = theme === t.id;
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => {
-                          setTheme(t.id);
-                          setThemeDropdownOpen(false);
-                        }}
-                        className={`flex items-center justify-between p-2 rounded-xl text-left transition-all ${
-                          isActive
-                            ? 'bg-slate-100/90 font-bold text-slate-950 border border-slate-400 shadow-2xs'
-                            : 'hover:bg-slate-50 text-slate-700 font-medium border border-transparent'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="flex items-center -space-x-1 shrink-0">
-                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.bg }} />
-                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.accent }} />
-                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: t.palette.bull }} />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-bold truncate">{t.name}</span>
-                            <span className="text-[10px] text-slate-500 truncate mono">{t.tagline}</span>
-                          </div>
-                        </div>
-                        {isActive && (
-                          <span className="text-cyan-600 text-xs font-black">✓</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setLoginOpen(true)}
+              className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg border border-amber-500/50 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-[12px] sm:text-[13px] font-mono font-black shadow-xs transition-all active:scale-95 cursor-pointer"
+              title="Institutional Client Portal Login"
+            >
+              <span>👤</span>
+              <span>Login</span>
+            </button>
+          )}
 
           {isTerminalOrDashboard && (
             <MarketToggle
@@ -270,68 +212,30 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       {/* ── Mobile Menu with iOS Safe Area Handling ── */}
       {menuOpen && (
         <div className="md:hidden border-t border-slate-200 bg-white/98 backdrop-blur-xl px-4 py-3 pb-6 safe-bottom flex flex-col gap-2 shadow-xl max-h-[calc(100dvh-5.5rem)] overflow-y-auto">
-          {/* Mobile Theme Selector Bar */}
-          <div className="py-2.5 border-b border-slate-200/80 mb-1 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono uppercase font-bold tracking-wider text-slate-700">
-                🎨 Palette Choice
-              </span>
-              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-black">
-                2 Bright · 2 Dark
-              </span>
-            </div>
-
-            <div>
-              <span className="text-[9.5px] font-mono uppercase font-bold tracking-wider text-sky-700 block mb-1">
-                ☀️ 2 Bright
-              </span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {[THEMES.lightblue, THEMES.ivory].map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTheme(t.id)}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] font-mono font-bold transition-all text-left ${
-                      theme === t.id
-                        ? 'border-sky-500 bg-sky-500/10 text-sky-950 font-black'
-                        : 'border-slate-200/80 text-slate-700 hover:bg-slate-100/50'
-                    }`}
-                  >
-                    <span
-                      className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/20"
-                      style={{ backgroundColor: t.palette.accent }}
-                    />
-                    <span className="truncate">{t.name.split(' ')[0]}</span>
-                    {theme === t.id && <span className="ml-auto text-[11px] text-sky-600">✓</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <span className="text-[9.5px] font-mono uppercase font-bold tracking-wider text-slate-600 block mb-1">
-                🌑 2 Dark
-              </span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {[THEMES.metallic, THEMES.techno].map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTheme(t.id)}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] font-mono font-bold transition-all text-left ${
-                      theme === t.id
-                        ? 'border-slate-500 bg-slate-500/10 text-slate-950 font-black'
-                        : 'border-slate-200/80 text-slate-700 hover:bg-slate-100/50'
-                    }`}
-                  >
-                    <span
-                      className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/20"
-                      style={{ backgroundColor: t.palette.accent }}
-                    />
-                    <span className="truncate">{t.name.split(' ')[0]}</span>
-                    {theme === t.id && <span className="ml-auto text-[11px] text-cyan-600">✓</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Mobile Quick Action Buttons: Settings & Login */}
+          <div className="py-2.5 border-b border-slate-200/80 mb-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setSettingsOpen(true);
+              }}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-[13px] font-mono font-bold active:scale-95 cursor-pointer"
+            >
+              <span>⚙️</span>
+              <span>Settings & Themes</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setLoginOpen(true);
+              }}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 text-[13px] font-mono font-black shadow-xs active:scale-95 cursor-pointer"
+            >
+              <span>👤</span>
+              <span className="truncate">{userSession ? userSession.name : 'Client Login'}</span>
+            </button>
           </div>
 
           {isTerminalOrDashboard && (
@@ -362,6 +266,14 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           )}
         </div>
       )}
+
+      {/* ── Settings Modal & Login Modal ── */}
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <LoginModal
+        isOpen={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        onLoginSuccess={(u) => setUserSession(u)}
+      />
     </header>
   );
 }

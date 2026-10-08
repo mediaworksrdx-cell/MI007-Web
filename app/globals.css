@@ -300,30 +300,76 @@ html[data-theme="techno"] [class*="border-slate-300/"] {
   border-color: var(--theme-card-border) !important;
 }
 
-/* Typography adjustments for dark modes */
+/* ══════════════════════════════════════════════════════════════════════════════
+   PRO-LEVEL TYPOGRAPHY SYSTEM (4 TAILORED THEMES)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. LIGHT BLUE: Deep High-Contrast Navy Typography ── */
+html[data-theme="lightblue"] .text-black,
+html[data-theme="lightblue"] .text-slate-950,
+html[data-theme="lightblue"] .text-slate-900 {
+  color: #082F49 !important;
+}
+html[data-theme="lightblue"] .text-slate-800,
+html[data-theme="lightblue"] .text-slate-700 {
+  color: #0F172A !important;
+}
+html[data-theme="lightblue"] .text-slate-600 {
+  color: #1E293B !important;
+}
+html[data-theme="lightblue"] .text-slate-500,
+html[data-theme="lightblue"] .text-slate-400 {
+  color: #334155 !important;
+}
+
+/* ── 2. IVORY: Warm Sovereign Espresso & Bronze Typography ── */
+html[data-theme="ivory"] .text-black,
+html[data-theme="ivory"] .text-slate-950,
+html[data-theme="ivory"] .text-slate-900 {
+  color: #1C1917 !important;
+}
+html[data-theme="ivory"] .text-slate-800,
+html[data-theme="ivory"] .text-slate-700 {
+  color: #292524 !important;
+}
+html[data-theme="ivory"] .text-slate-600 {
+  color: #44403C !important;
+}
+html[data-theme="ivory"] .text-slate-500,
+html[data-theme="ivory"] .text-slate-400 {
+  color: #57534E !important;
+}
+
+/* ── 3. METALLIC GREY: Crisp Brilliant White & Platinum Silver Typography ── */
 html[data-theme="metallic"] .text-black,
-html[data-theme="techno"] .text-black,
-html[data-theme="metallic"] .text-slate-900,
-html[data-theme="techno"] .text-slate-900,
 html[data-theme="metallic"] .text-slate-950,
-html[data-theme="techno"] .text-slate-950,
-html[data-theme="metallic"] .text-slate-800,
-html[data-theme="techno"] .text-slate-800 {
-  color: var(--theme-page-text) !important;
+html[data-theme="metallic"] .text-slate-900,
+html[data-theme="metallic"] .text-slate-800 {
+  color: #FFFFFF !important;
 }
-
 html[data-theme="metallic"] .text-slate-700,
-html[data-theme="techno"] .text-slate-700,
-html[data-theme="metallic"] .text-slate-600,
-html[data-theme="techno"] .text-slate-600 {
-  color: var(--color-text-secondary) !important;
+html[data-theme="metallic"] .text-slate-600 {
+  color: #E2E8F0 !important;
+}
+html[data-theme="metallic"] .text-slate-500,
+html[data-theme="metallic"] .text-slate-400 {
+  color: #CBD5E1 !important;
 }
 
-html[data-theme="metallic"] .text-slate-500,
+/* ── 4. TECHNO BLUE: Pure White & Electric Ice Cyan Typography ── */
+html[data-theme="techno"] .text-black,
+html[data-theme="techno"] .text-slate-950,
+html[data-theme="techno"] .text-slate-900,
+html[data-theme="techno"] .text-slate-800 {
+  color: #FFFFFF !important;
+}
+html[data-theme="techno"] .text-slate-700,
+html[data-theme="techno"] .text-slate-600 {
+  color: #E0F2FE !important;
+}
 html[data-theme="techno"] .text-slate-500,
-html[data-theme="metallic"] .text-slate-400,
 html[data-theme="techno"] .text-slate-400 {
-  color: var(--color-text-muted) !important;
+  color: #BAE6FD !important;
 }
 
 /* Navbar & Ticker */
