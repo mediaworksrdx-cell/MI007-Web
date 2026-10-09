@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { MarketType, MARKETS, INSTRUMENTS } from '@/lib/types';
@@ -225,18 +226,18 @@ export default function TerminalPage() {
             {/* ── Outer Bezel Header ── */}
             <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-[var(--theme-card-border)] relative z-10">
               <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-                <div className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl border border-sky-300/80 overflow-hidden shadow-md shadow-sky-500/15 flex-shrink-0">
-                  <Image
-                    src="/images/logo-falcon-gradient.png"
-                    alt="Market Intelligence - 007"
+                <div className="flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center flex-shrink-0 overflow-visible">
+                  <Falcon3DLogo
+                    src="/images/logo-falcon-transparent.png"
+                    alt="Market Intelligence MI- 007"
                     width={56}
                     height={56}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 </div>
                 <div className="min-w-0">
                   <h1 className="mono text-[17px] sm:text-[23px] font-black inst-card-text tracking-wider uppercase whitespace-nowrap">
-                    Market Intelligence - 007
+                    Market Intelligence MI- 007
                   </h1>
                   <p className="text-[12px] sm:text-[14px] inst-card-text-muted font-medium mt-0.5 truncate">Intelligence Beyond the Noise · Quantitative Microstructure</p>
                 </div>

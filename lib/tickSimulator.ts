@@ -1,4 +1,4 @@
-// ─── Market Intelligence 007 — Real-Time Tick Simulator ─────────────────────
+// ─── Market Intelligence MI- 007 — Real-Time Tick Simulator ─────────────────
 import { Candle, MarketType } from './types';
 
 export type TickCallback = (candle: Candle, isNew: boolean) => void;

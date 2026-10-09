@@ -1,4 +1,4 @@
-// ─── Market Intelligence 007 — Realistic Mock Data Generator ────────────────
+// ─── Market Intelligence MI- 007 — Realistic Mock Data Generator ─────────────
 import { Candle, MarketType } from './types';
 
 /** Base prices for different instruments */

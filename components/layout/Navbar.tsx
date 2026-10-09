@@ -11,6 +11,7 @@ import { useMarket } from '@/lib/marketContext';
 import { useAppTheme, THEMES, ThemeConfig } from '@/lib/themeContext';
 import { SettingsModal } from '@/components/ui/SettingsModal';
 import { LoginModal } from '@/components/auth/LoginModal';
+import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 
 interface NavbarProps {
   market?: MarketType;
@@ -36,6 +37,8 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [userSession, setUserSession] = useState<{ name: string; role: string; deskId: string } | null>(null);
+
+  const [brandHovered, setBrandHovered] = useState(false);
 
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
@@ -89,22 +92,29 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       }`}
     >
       <div className="mx-auto flex h-16 sm:h-18 max-w-[1600px] items-center justify-between px-4 lg:px-6">
-        {/* ── Recreated Cyber Falcon Logo with Light Blur Gradient Badge ── */}
-        <Link href="/" className="flex items-center gap-2.5 sm:gap-3.5 select-none group min-w-0">
-          <div className="relative h-11 w-18 sm:h-13 sm:w-22 md:h-14 md:w-24 flex-shrink-0 flex items-center justify-center rounded-xl sm:rounded-2xl overflow-hidden border border-sky-300/80 shadow-[0_4px_16px_rgba(14,165,233,0.18)] group-hover:border-sky-400 group-hover:scale-105 transition-all">
-            <Image
-              src="/images/logo-falcon-rect.png"
-              alt="Market Intelligence - 007"
-              width={96}
+        {/* ── Cyber Falcon Logo with Interactive 3D Pop-Up (Zero Background) ── */}
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 sm:gap-3.5 select-none group min-w-0"
+          onMouseEnter={() => setBrandHovered(true)}
+          onMouseLeave={() => setBrandHovered(false)}
+        >
+          <div className="relative h-11 w-11 sm:h-12 sm:w-12 md:h-13 md:w-13 flex-shrink-0 flex items-center justify-center overflow-visible">
+            <Falcon3DLogo
+              src="/images/logo-falcon-transparent.png"
+              alt="Market Intelligence MI- 007"
+              width={56}
               height={56}
-              className="w-full h-full object-cover"
               priority
+              className="w-full h-full object-contain"
+              popoutScale={1.35}
+              isHoveredExternal={brandHovered}
             />
           </div>
           <div className="flex flex-col leading-tight min-w-0">
             <div>
-              <span className="navbar-brand-title font-extrabold text-[15px] xs:text-[16px] sm:text-[18px] tracking-tight uppercase font-sans whitespace-nowrap">
-                Market Intelligence - 007
+              <span className="navbar-brand-title font-black text-[15px] xs:text-[16px] sm:text-[18px] tracking-tight uppercase font-sans whitespace-nowrap">
+                MARKET INTELLIGENCE MI- 007
               </span>
             </div>
             <span className="navbar-brand-subtitle hidden xs:block text-[9px] sm:text-[11px] tracking-[0.15em] sm:tracking-[0.2em] font-extrabold uppercase font-mono mt-0.5 whitespace-nowrap">

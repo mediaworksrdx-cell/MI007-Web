@@ -4,6 +4,7 @@ import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 
 export default function FinalCTASection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -24,21 +25,22 @@ export default function FinalCTASection() {
         transition={{ duration: 0.8, ease: 'easeOut' }}
         className="flex flex-col items-center text-center max-w-3xl mx-auto w-full relative z-10 p-10 sm:p-16 rounded-3xl border final-cta-card shadow-xl"
       >
-        {/* Recreated Falcon Emblem Logo with Light Blur Gradient */}
-        <div className="mb-6 relative h-28 w-28 sm:h-32 sm:w-32 rounded-3xl overflow-hidden border border-sky-300/80 shadow-2xl shadow-sky-500/20 flex-shrink-0 flex items-center justify-center">
-          <Image
-            src="/images/logo-falcon-gradient.png"
-            alt="Market Intelligence - 007"
+        {/* Falcon Emblem Logo with Interactive 3D Pop-Up (Zero Background) */}
+        <div className="mb-6 relative h-28 w-28 sm:h-32 sm:w-32 flex-shrink-0 flex items-center justify-center overflow-visible">
+          <Falcon3DLogo
+            src="/images/logo-falcon-transparent.png"
+            alt="Market Intelligence MI- 007"
             width={128}
             height={128}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
+            popoutScale={1.4}
           />
         </div>
 
         <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight mb-4 final-cta-title flex flex-col items-center justify-center gap-1">
           <span>Step Into</span>
           <span className="whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">
-            Market Intelligence - 007
+            Market Intelligence MI- 007
           </span>
         </h2>
 

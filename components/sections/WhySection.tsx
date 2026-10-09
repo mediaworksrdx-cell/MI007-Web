@@ -89,7 +89,7 @@ const TOKEN_EXPLANATIONS: Record<string, TokenDetail> = {
     title: 'Proprietary Quantitative AI Score',
     category: 'SYNTHETIX QUANT',
     categoryColor: 'text-cyan-200 border-cyan-500/60 bg-cyan-950/80',
-    description: 'Synthetix 007 proprietary multi-dimensional machine learning score synthesizing tape velocity, order book imbalance, volatility smile, and sentiment vectors into a unified index.',
+    description: 'Synthetix MI007 proprietary multi-dimensional machine learning score synthesizing tape velocity, order book imbalance, volatility smile, and sentiment vectors into a unified index.',
     signal: 'Quant confidence index: 94.2% directional conviction score.',
     formulaOrRule: 'Multi-Factor Neural Tensor across 40+ Micro-Indicators',
   },
@@ -245,7 +245,7 @@ export default function WhySection() {
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
           <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
           <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text whitespace-nowrap">
-            06 // MARKET INTELLIGENCE - 007
+            06 // MARKET INTELLIGENCE MI- 007
           </span>
         </div>
 

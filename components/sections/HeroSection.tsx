@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -261,14 +262,15 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="w-full flex justify-center mb-6"
         >
-          <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-2xl sm:rounded-3xl overflow-hidden border border-sky-300/80 shadow-2xl shadow-sky-500/20 hover:scale-105 hover:border-sky-400 transition-all duration-300 flex items-center justify-center">
-            <Image
-              src="/images/logo-falcon-gradient.png"
-              alt="Market Intelligence - 007"
+          <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex items-center justify-center overflow-visible">
+            <Falcon3DLogo
+              src="/images/logo-falcon-transparent.png"
+              alt="Market Intelligence MI- 007"
               width={112}
               height={112}
-              className="w-full h-full object-cover"
               priority
+              className="w-full h-full object-contain"
+              popoutScale={1.4}
             />
           </div>
         </motion.div>
@@ -280,7 +282,7 @@ export default function HeroSection() {
           className="text-[19px] xs:text-[26px] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-[-0.02em] leading-tight mb-4 sm:mb-6 page-heading"
         >
           <span className="hero-title-gradient whitespace-nowrap inline-block">
-            MARKET INTELLIGENCE - 007
+            MARKET INTELLIGENCE MI- 007
           </span>
         </motion.h1>
 

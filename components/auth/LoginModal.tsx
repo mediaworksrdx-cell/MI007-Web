@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -67,7 +68,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
       const demoUser = {
         name: 'ALPHA-QUANT',
         role: 'Tier-1 Institutional Desk',
-        deskId: 'HQ-DESK-007',
+        deskId: 'HQ-DESK-MI007',
       };
       if (typeof window !== 'undefined') {
         localStorage.setItem('mi007_user_session', JSON.stringify(demoUser));
@@ -110,19 +111,20 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
 
         {/* Header with Falcon Crest Badge */}
         <div className="flex flex-col items-center text-center mb-5">
-          <div className="relative mb-3 flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200/90 border-2 border-amber-400 shadow-[0_4px_16px_rgba(217,119,6,0.3)]">
-            <Image
-              src="/images/branding/falcon-crest.png"
+          <div className="relative mb-3 flex items-center justify-center h-14 w-14 overflow-visible">
+            <Falcon3DLogo
+              src="/images/logo-falcon-transparent.png"
               alt="MI007 Falcon"
-              width={42}
-              height={42}
-              className="object-contain drop-shadow-[0_2px_6px_rgba(180,83,9,0.35)]"
+              width={48}
+              height={48}
               priority
+              className="object-contain"
+              popoutScale={1.35}
             />
           </div>
           <div className="flex items-center gap-1.5 mb-1">
             <span className="mono text-[10px] uppercase font-black tracking-widest text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-              MI-007 SECURE ACCESS
+              MI007 SECURE ACCESS
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white font-sans">

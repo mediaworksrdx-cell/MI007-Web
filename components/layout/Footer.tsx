@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 
 export function Footer() {
   return (
@@ -9,19 +10,20 @@ export function Footer() {
           {/* Brand Column */}
           <div className="md:col-span-1 flex flex-col gap-3">
             <div className="flex items-center gap-3.5">
-              <div className="h-14 w-24 rounded-2xl border border-sky-300/80 overflow-hidden shadow-md shadow-sky-500/15 flex-shrink-0 flex items-center justify-center">
-                <Image
-                  src="/images/logo-falcon-rect.png"
-                  alt="Market Intelligence - 007"
-                  width={96}
+              <div className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0 flex items-center justify-center overflow-visible">
+                <Falcon3DLogo
+                  src="/images/logo-falcon-transparent.png"
+                  alt="Market Intelligence MI- 007"
+                  width={56}
                   height={56}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
+                  popoutScale={1.35}
                 />
               </div>
               <div>
                 <div className="leading-none">
                   <span className="font-extrabold text-[16px] uppercase font-sans tracking-tight footer-brand-title text-white whitespace-nowrap">
-                    Market Intelligence - 007
+                    MARKET INTELLIGENCE MI- 007
                   </span>
                 </div>
 

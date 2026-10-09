@@ -217,16 +217,17 @@ export default function MarketTerminalSection() {
 
     ctx.clearRect(0, 0, w, h);
 
-    // ── 1. Themed Chart Surface (Inverted: Light cards in Dark themes, Dark cards in Light themes) ──
-    const cardIsLight = theme === 'graphite' || theme === 'capital';
+    // ── 1. Themed Chart Surface ──
+    const cardIsLight = theme === 'capital' || theme === 'azure';
 
-    const chartBg = cardIsLight
-      ? theme === 'capital'
-        ? '#EAF1FA'
-        : '#F1F4F9' // graphite
-      : theme === 'ivory'
-      ? '#172033'
-      : '#101827'; // arctic
+    const chartBg =
+      theme === 'capital' || theme === 'azure'
+        ? '#E8DFCD' // warm champagne (Midnight Azure)
+        : theme === 'ivory'
+        ? '#244832' // forest green (Executive Ivory)
+        : theme === 'graphite'
+        ? '#303943' // graphite (Institutional Graphite)
+        : '#17365C'; // deep navy (Arctic Sky)
 
     ctx.fillStyle = chartBg;
     ctx.fillRect(0, 0, w, h);
@@ -380,13 +381,16 @@ export default function MarketTerminalSection() {
     ctx.stroke();
 
     // ── 6. Subpanels: RSI (14) & MACD ──
-    const subBg = cardIsLight
-      ? theme === 'capital'
-        ? '#D9E6F5'
-        : '#E2E8F0' // graphite
-      : '#202B3D'; // secondary dark surface for light themes
-    const subBorder = cardIsLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
-    const textSub = cardIsLight ? '#475569' : '#94A3B8';
+    const subBg =
+      theme === 'capital' || theme === 'azure'
+        ? '#DED3BE'
+        : theme === 'ivory'
+        ? '#2E5A3F'
+        : theme === 'graphite'
+        ? '#3C4753'
+        : '#204470';
+    const subBorder = cardIsLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)';
+    const textSub = cardIsLight ? '#26374A' : '#A6BED8';
 
     if (showRsi) {
       ctx.fillStyle = subBg;
@@ -502,7 +506,7 @@ export default function MarketTerminalSection() {
     }
 
     // ── 9. Right Price Axis Labels ──
-    ctx.fillStyle = cardIsLight ? '#475569' : '#94A3B8';
+    ctx.fillStyle = cardIsLight ? '#26374A' : '#A6BED8';
     ctx.font = '12px monospace';
     ctx.textAlign = 'left';
     for (let step = 0; step <= 5; step++) {
@@ -545,7 +549,7 @@ export default function MarketTerminalSection() {
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
             <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text whitespace-nowrap">
-              05 // MARKET INTELLIGENCE - 007 TERMINAL
+              05 // MARKET INTELLIGENCE MI- 007 TERMINAL
             </span>
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-2 page-heading">

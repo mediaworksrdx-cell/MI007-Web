@@ -4,7 +4,7 @@ import { MarketProvider } from '@/lib/marketContext';
 import { ThemeProvider } from '@/lib/themeContext';
 
 export const metadata: Metadata = {
-  title: 'Market Intelligence - 007 | Intelligence Beyond the Noise',
+  title: 'Market Intelligence MI- 007 | Intelligence Beyond the Noise',
   description: 'Intelligence Beyond the Noise. Institutional-grade quantitative analytics and multi-market microstructure telemetry across India, USA & UAE financial markets.',
   icons: { icon: '/favicon.png', apple: '/logo-falcon.png' },
 };
@@ -29,6 +29,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 var theme = 'arctic';
                 if (saved === 'arctic' || saved === 'ivory' || saved === 'graphite' || saved === 'capital') {
                   theme = saved;
+                } else if (saved === 'azure') {
+                  theme = 'capital';
                 } else if (saved === 'lightblue' || saved === 'quartz') {
                   theme = 'arctic';
                 } else if (saved === 'champagne' || saved === 'falcon') {

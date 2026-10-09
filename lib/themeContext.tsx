@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type AppTheme = 'arctic' | 'ivory' | 'graphite' | 'capital';
+export type AppTheme = 'arctic' | 'ivory' | 'graphite' | 'capital' | 'azure';
 
 export interface ThemeConfig {
   id: AppTheme;
@@ -24,81 +24,100 @@ export interface ThemeConfig {
   };
 }
 
-export const THEMES: Record<AppTheme, ThemeConfig> = {
+export const THEMES: Record<string, ThemeConfig> = {
   arctic: {
     id: 'arctic',
-    name: 'Arctic Intelligence',
-    tagline: 'Light Background · Dark Navy Cards · Light Text',
-    badge: 'Light Theme',
+    name: 'Arctic Sky',
+    tagline: 'Soft Sky Blue · Deep Navy Cards · Soft Ivory Text',
+    badge: 'Sky Palette',
     mode: 'light',
     palette: {
-      bg: '#F4F7FA',
-      card: '#101827',
-      surface: '#202B3D',
-      accent: '#0F766E',
-      accentSecondary: '#111827',
-      text: '#F8FAFC',
-      textMuted: '#94A3B8',
+      bg: '#DCEAF2',
+      card: '#17365C',
+      surface: '#204470',
+      accent: '#65A9D6',
+      accentSecondary: '#17365C',
+      text: '#F2F0E8',
+      textMuted: '#A6BED8',
       bull: '#059669',
       bear: '#DC2626',
-      border: '#CBD5E1',
+      border: '#204470',
     },
   },
   ivory: {
     id: 'ivory',
     name: 'Executive Ivory',
-    tagline: 'Ivory Background · Deep Charcoal Cards · Light Text',
-    badge: 'Light Theme',
+    tagline: 'Warm Ivory · Forest Green Cards · Cream Text',
+    badge: 'Forest Palette',
     mode: 'light',
     palette: {
-      bg: '#F8F5ED',
-      card: '#172033',
-      surface: '#202B3D',
-      accent: '#0F766E',
-      accentSecondary: '#C5A059',
-      text: '#F8FAFC',
-      textMuted: '#94A3B8',
-      bull: '#059669',
-      bear: '#DC2626',
-      border: '#CBD5E1',
+      bg: '#F5F0E5',
+      card: '#244832',
+      surface: '#2F593F',
+      accent: '#B79A63',
+      accentSecondary: '#244832',
+      text: '#F8F3E9',
+      textMuted: '#A8C2B1',
+      bull: '#10B981',
+      bear: '#E11D48',
+      border: '#2F593F',
     },
   },
   graphite: {
     id: 'graphite',
     name: 'Institutional Graphite',
-    tagline: 'Graphite Background · Light Silver Cards · Dark Text',
-    badge: 'Dark Theme',
-    mode: 'dark',
+    tagline: 'Silver Gray · Graphite Cards · Cool Silver Text',
+    badge: 'Graphite Palette',
+    mode: 'light',
     palette: {
-      bg: '#181C24',
-      card: '#F1F4F9',
-      surface: '#E2E8F0',
-      accent: '#0D9488',
-      accentSecondary: '#64748B',
-      text: '#0F172A',
-      textMuted: '#475569',
+      bg: '#E3E5E7',
+      card: '#303943',
+      surface: '#3C4753',
+      accent: '#70B7A0',
+      accentSecondary: '#303943',
+      text: '#E9EDF0',
+      textMuted: '#9DA9B5',
       bull: '#059669',
       bear: '#DC2626',
-      border: 'rgba(148, 163, 184, 0.45)',
+      border: '#3C4753',
     },
   },
   capital: {
     id: 'capital',
-    name: 'AI Capital',
-    tagline: 'Midnight Background · Light Blue-Gray Cards · Dark Text',
-    badge: 'Dark Theme',
+    name: 'Midnight Azure',
+    tagline: 'Midnight Navy · Warm Champagne Cards · Slate Navy Text',
+    badge: 'Midnight Palette',
     mode: 'dark',
     palette: {
-      bg: '#0B132B',
-      card: '#EAF1FA',
-      surface: '#D9E6F5',
-      accent: '#2563EB',
-      accentSecondary: '#0284C7',
-      text: '#0A1931',
-      textMuted: '#3B5278',
+      bg: '#14243A',
+      card: '#E8DFCD',
+      surface: '#DED3BE',
+      accent: '#65B9D8',
+      accentSecondary: '#3E86A8',
+      text: '#26374A',
+      textMuted: '#4B6178',
       bull: '#059669',
       bear: '#DC2626',
-      border: 'rgba(37, 99, 235, 0.28)',
+      border: '#DED3BE',
+    },
+  },
+  azure: {
+    id: 'capital',
+    name: 'Midnight Azure',
+    tagline: 'Midnight Navy · Warm Champagne Cards · Slate Navy Text',
+    badge: 'Midnight Palette',
+    mode: 'dark',
+    palette: {
+      bg: '#14243A',
+      card: '#E8DFCD',
+      surface: '#DED3BE',
+      accent: '#65B9D8',
+      accentSecondary: '#3E86A8',
+      text: '#26374A',
+      textMuted: '#4B6178',
+      bull: '#059669',
+      bear: '#DC2626',
+      border: '#DED3BE',
     },
   },
 };
@@ -122,15 +141,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Read stored theme from localStorage or document attribute with legacy migration
     const stored = (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null);
     let initialTheme: AppTheme = 'arctic';
-    if (stored && THEMES[stored as AppTheme]) {
-      initialTheme = stored as AppTheme;
+    if (stored && THEMES[stored]) {
+      initialTheme = (stored === 'azure' ? 'capital' : stored) as AppTheme;
     } else if (stored === 'lightblue' || stored === 'quartz') {
       initialTheme = 'arctic';
     } else if (stored === 'champagne' || stored === 'falcon') {
       initialTheme = 'ivory';
     } else if (stored === 'metallic' || stored === 'obsidian') {
       initialTheme = 'graphite';
-    } else if (stored === 'techno' || stored === 'cyberpunk') {
+    } else if (stored === 'techno' || stored === 'cyberpunk' || stored === 'azure') {
       initialTheme = 'capital';
     }
 

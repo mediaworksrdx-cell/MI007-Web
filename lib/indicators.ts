@@ -1,4 +1,4 @@
-// ─── Market Intelligence 007 — Technical Indicator Math ─────────────────────
+// ─── Market Intelligence MI- 007 — Technical Indicator Math ──────────────────
 import { Candle } from './types';
 
 /** Simple Moving Average */

@@ -1,9 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useMarket } from '@/lib/marketContext';
+
+const ContactCalmZoneViewer = dynamic(
+  () => import('@/components/3d/scenes/ContactCalmZoneViewer'),
+  { ssr: false }
+);
 
 export default function ContactPage() {
   const { market, setMarket } = useMarket();
@@ -40,10 +46,14 @@ export default function ContactPage() {
               Contact <span className="font-extrabold text-emerald-600">Synthetix Analytics</span>
             </h1>
             <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle">
-              <strong className="font-bold text-emerald-500">Intelligence Beyond the Noise.</strong> Market Intelligence - 007 institutional licensing, API integration, quantitative research partnerships, and enterprise deployments.
+              <strong className="font-bold text-emerald-500">Intelligence Beyond the Noise.</strong> Market Intelligence MI- 007 institutional licensing, API integration, quantitative research partnerships, and enterprise deployments.
             </p>
           </div>
         </section>
+
+        <div className="mx-auto max-w-6xl px-6 py-2">
+          <ContactCalmZoneViewer />
+        </div>
 
         <div className="mx-auto max-w-6xl px-6 py-6 grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* ── Form Outer Chassis ── */}

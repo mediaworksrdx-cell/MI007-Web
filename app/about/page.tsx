@@ -1,9 +1,16 @@
 'use client';
 
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
+import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useMarket } from '@/lib/marketContext';
+
+const AboutArchitectureViewer = dynamic(
+  () => import('@/components/3d/scenes/AboutArchitectureViewer'),
+  { ssr: false }
+);
 
 const WHAT_WE_DO = [
   {
@@ -99,7 +106,7 @@ const DISCLAIMER_TERMS = [
   {
     number: '01',
     title: 'For Informational & Study Purposes Only',
-    text: 'MI 007 (a brand of Synthetix Analytics) is a technology platform provided strictly for general informational and study purposes. The information, reports, and AI-generated insights provided do not constitute investment, legal, tax, or accounting advice. MI 007 is not a licensed securities dealer, broker, investment adviser, or financial service provider. We strongly urge you to consult with a licensed financial professional before making any investment decisions.',
+    text: 'MI007 (a brand of Synthetix Analytics) is a technology platform provided strictly for general informational and study purposes. The information, reports, and AI-generated insights provided do not constitute investment, legal, tax, or accounting advice. MI007 is not a licensed securities dealer, broker, investment adviser, or financial service provider. We strongly urge you to consult with a licensed financial professional before making any investment decisions.',
   },
   {
     number: '02',
@@ -145,7 +152,7 @@ export default function AboutPage() {
             <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4 page-heading flex flex-col items-center justify-center gap-1">
               <span>Welcome to</span>
               <span className="whitespace-nowrap font-extrabold text-emerald-600">
-                Market Intelligence - 007
+                Market Intelligence MI- 007
               </span>
             </h1>
 
@@ -154,14 +161,14 @@ export default function AboutPage() {
             </p>
 
             <p className="text-[15px] sm:text-[16px] max-w-2xl mx-auto leading-relaxed font-normal page-subtitle mb-8 opacity-90">
-              Market Intelligence - 007 delivers institutional-grade market intelligence directly to retail investors, day traders, and portfolio managers worldwide.
+              Market Intelligence MI- 007 delivers institutional-grade market intelligence directly to retail investors, day traders, and portfolio managers worldwide.
             </p>
 
             {/* Informational & Risk Disclaimer Banner */}
             <div className="mx-auto max-w-2xl rounded-2xl border inst-card p-4 shadow-md text-left flex items-start gap-3">
               <span className="text-xl shrink-0 mt-0.5">ℹ️</span>
               <p className="text-xs sm:text-[13px] inst-card-text leading-relaxed font-medium">
-                <strong className="font-bold text-emerald-500">Important Notice:</strong> Market Intelligence - 007 is a technology platform built purely for the purpose of study and information, empowering users to make their own decisions at their own risks.
+                <strong className="font-bold text-emerald-500">Important Notice:</strong> Market Intelligence MI- 007 is a technology platform built purely for the purpose of study and information, empowering users to make their own decisions at their own risks.
               </p>
             </div>
           </div>
@@ -184,13 +191,13 @@ export default function AboutPage() {
                 Intelligence Beyond the Noise
               </div>
               <p className="text-[17px] sm:text-[19px] leading-relaxed font-medium inst-card-text mb-4 opacity-95">
-                MI-007 was founded by a team of Quantitative Analysts, Data Scientists, Veteran Investors and Traders who shared a common problem which is the sheer volume of market noise.
+                MI007 was founded by a team of Quantitative Analysts, Data Scientists, Veteran Investors and Traders who shared a common problem which is the sheer volume of market noise.
               </p>
               <p className="text-[15px] sm:text-[16px] leading-relaxed font-normal inst-card-text-muted mb-4">
                 Crucial insights are often buried under oceans of raw data, accessible only to Institutions of scale.
               </p>
               <p className="text-[16px] sm:text-[17px] text-emerald-500 font-bold leading-relaxed">
-                We built MI-007 to level the playing field, providing intelligence across global markets to the common investors as well.
+                We built MI007 to level the playing field, providing intelligence across global markets to the common investors as well.
               </p>
             </div>
 
@@ -211,6 +218,11 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* ── 3D Spatial Architecture Exploration ── */}
+        <section className="mx-auto max-w-6xl px-6">
+          <AboutArchitectureViewer />
+        </section>
+
         {/* ── What We Do ── */}
         <section className="mx-auto max-w-6xl px-6 py-20">
           <div className="mb-12 text-center max-w-3xl mx-auto">
@@ -222,7 +234,7 @@ export default function AboutPage() {
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 page-heading">What We Do</h2>
             <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle">
-              We track, analyse, and decode market movements around the clock. Whether you are looking for momentum shifts in Wall Street tech giants or breakout trends in Dalal Street blue-chips, MI-007 is your eyes and ears on the ground.
+              We track, analyse, and decode market movements around the clock. Whether you are looking for momentum shifts in Wall Street tech giants or breakout trends in Dalal Street blue-chips, MI007 is your eyes and ears on the ground.
             </p>
           </div>
 
@@ -266,12 +278,12 @@ export default function AboutPage() {
               We believe that every investor deserves access to sharp, timely, and unbiased data.
             </p>
             <p className="text-[15px] sm:text-[16px] inst-card-text-muted font-normal leading-relaxed max-w-3xl mx-auto">
-              Our Team and MI-007 are committed to empower you with the tools, clarity, and confidence to build long-term wealth.
+              Our Team and MI007 are committed to empower you with the tools, clarity, and confidence to build long-term wealth.
             </p>
           </div>
         </section>
 
-        {/* ── The MI-007 Edge ── */}
+        {/* ── The MI007 Edge ── */}
         <section className="mx-auto max-w-6xl px-6 py-20">
           <div className="mb-12 text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
@@ -280,7 +292,7 @@ export default function AboutPage() {
                 INSTITUTIONAL CAPABILITIES
               </span>
             </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 page-heading">The MI-007 Edge</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-3 page-heading">The MI007 Edge</h2>
             <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle">
               Eight tactical pillars designed to strip away noise and reveal actionable alpha.
             </p>
@@ -347,13 +359,13 @@ export default function AboutPage() {
         <section className="py-16">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <div className="mb-5 flex justify-center">
-              <div className="h-16 w-16 rounded-2xl border border-sky-300/80 overflow-hidden shadow-lg shadow-sky-500/20 flex items-center justify-center">
-                <Image
-                  src="/images/logo-falcon-gradient.png"
-                  alt="Market Intelligence - 007"
+              <div className="h-16 w-16 flex items-center justify-center overflow-visible">
+                <Falcon3DLogo
+                  src="/images/logo-falcon-transparent.png"
+                  alt="Market Intelligence MI- 007"
                   width={64}
                   height={64}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               </div>
             </div>
@@ -361,7 +373,7 @@ export default function AboutPage() {
               &ldquo;The best trading decisions are made not on emotion, but on the precise mathematical
               analysis of price, volume, and order flow — across every market on earth.&rdquo;
             </blockquote>
-            <p className="mt-4 page-subtitle text-sm font-medium">— Market Intelligence - 007 Leadership Team</p>
+            <p className="mt-4 page-subtitle text-sm font-medium">— Market Intelligence MI- 007 Leadership Team</p>
           </div>
         </section>
 
@@ -408,7 +420,7 @@ export default function AboutPage() {
 
             <div className="mt-8 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] p-4 text-center">
               <p className="text-xs mono inst-card-text-muted font-semibold">
-                By accessing MI-007, you acknowledge that you have read, understood, and agreed to these terms.
+                By accessing MI007, you acknowledge that you have read, understood, and agreed to these terms.
               </p>
             </div>
           </div>

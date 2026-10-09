@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // chartRenderer.ts — 10-Layer Canvas Chart Engine
-// Pixel-perfect translation of Android Market Intelligence 007 chart layers
+// Pixel-perfect translation of Android Market Intelligence MI- 007 chart layers
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ── Types ──────────────────────────────────────────────────────────────────

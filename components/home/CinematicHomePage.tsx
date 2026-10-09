@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { MarketType } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
 import HeroSection from '../sections/HeroSection';
 import AboutSection from '../sections/AboutSection';
@@ -13,47 +13,74 @@ import MarketTerminalSection from '../sections/MarketTerminalSection';
 import WhySection from '../sections/WhySection';
 import FinalCTASection from '../sections/FinalCTASection';
 
+// Dynamically import the 3D Spatial Financial Operating Environment (SSR false for WebGL/WebGPU)
+const SpatialEngineCanvas = dynamic(
+  () => import('@/components/3d/core/SpatialEngineCanvas'),
+  { ssr: false }
+);
+
 export default function CinematicHomePage() {
   const { market, setMarket } = useMarket();
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Synchronize browser window scroll position with the 3D Cinematic Camera Director (0.00 to 1.00)
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollHeight > 0) {
+        const progress = Math.max(0, Math.min(1, window.scrollY / scrollHeight));
+        setScrollProgress(progress);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <div className="relative min-h-screen bg-transparent text-slate-900 overflow-x-hidden font-sans">
-      {/* Institutional Top Navbar */}
-      <Navbar market={market} onMarketChange={setMarket} />
+      {/* ── LIVING 3D PROCEDURAL SPATIAL FINANCIAL OPERATING ENVIRONMENT ── */}
+      <SpatialEngineCanvas scrollProgress={scrollProgress} />
 
-      {/* 7 Connected Cinematic Sections Flow */}
+      {/* Institutional Top Navbar */}
+      <div className="relative z-40">
+        <Navbar market={market} onMarketChange={setMarket} />
+      </div>
+
+      {/* 7 Connected Cinematic Sections Flow — 100% Functional Baseline Preserved */}
       <div className="relative w-full z-10">
-        {/* 01. Hero */}
+        {/* 01. Hero — Includes opening cinematic video & live telemetry */}
         <div id="hero" style={{ minHeight: '100vh', pointerEvents: 'auto' }}>
           <HeroSection />
         </div>
 
-        {/* 02. Market Movement */}
+        {/* 02. Market Movement — The Infinite Candlestick Avenue */}
         <div id="movement" className="bg-transparent" style={{ minHeight: '100vh', pointerEvents: 'auto' }}>
           <AboutSection />
         </div>
 
-        {/* 03. AI Analysis */}
+        {/* 03. AI Analysis — Bull Acceleration vs Bear Capitulation */}
         <div id="ai-analysis" className="bg-transparent" style={{ minHeight: '100vh', pointerEvents: 'auto' }}>
           <HowItWorksSection />
         </div>
 
-        {/* 04. Intelligence Engine */}
+        {/* 04. Intelligence Engine — The 8 Algorithmic Modules */}
         <div id="intelligence-engine" className="bg-transparent" style={{ minHeight: '100vh', pointerEvents: 'auto' }}>
           <CapabilitiesSection />
         </div>
 
-        {/* 05. Interactive Terminal */}
+        {/* 05. Interactive Terminal — Real-time Multi-Exchange Execution */}
         <div id="terminal" className="bg-transparent" style={{ minHeight: '100vh', pointerEvents: 'auto' }}>
           <MarketTerminalSection />
         </div>
 
-        {/* 06. Market Intelligence */}
+        {/* 06. Market Intelligence — Quantitative Microstructure Reasoning */}
         <div id="market-intelligence" className="bg-transparent" style={{ minHeight: '100vh', pointerEvents: 'auto' }}>
           <WhySection />
         </div>
 
-        {/* 07. Final CTA */}
+        {/* 07. Final CTA — Institutional Access */}
         <div id="final-cta" className="bg-transparent" style={{ minHeight: '100vh', pointerEvents: 'auto' }}>
           <FinalCTASection />
         </div>
