@@ -117,41 +117,41 @@ html[data-theme="falcon"] {
 html[data-theme="graphite"],
 html[data-theme="metallic"],
 html[data-theme="obsidian"] {
-  --color-bg-midnight: #E3E5E7;
-  --color-surface-card: #303943;
-  --color-surface-variant: #3C4753;
-  --color-border-navy: #C6CACD;
-  --color-mint-green: #059669;
+  --color-bg-midnight: #181C24;
+  --color-surface-card: #28303C;
+  --color-surface-variant: #343E4C;
+  --color-border-navy: #3D4856;
+  --color-mint-green: #10B981;
   --color-crimson-red: #DC2626;
   --color-accent-cyan: #70B7A0;
   --color-cyber-gold: #70B7A0;
-  --color-chart-bg: #303943;
-  --color-text-primary: #1E252D;
-  --color-text-secondary: #535D67;
-  --color-text-muted: #6D7781;
-  --color-bull-green: #059669;
+  --color-chart-bg: #28303C;
+  --color-text-primary: #E9EDF0;
+  --color-text-secondary: #9DA9B5;
+  --color-text-muted: #73808E;
+  --color-bull-green: #10B981;
   --color-bear-red: #DC2626;
-  --color-glass-white: rgba(48, 57, 67, 0.95);
+  --color-glass-white: rgba(40, 48, 60, 0.95);
 
-  --theme-page-bg: #E3E5E7;
-  --theme-page-text: #1E252D;
-  --theme-page-subtitle: #535D67;
-  --theme-page-border: #C6CACD;
-  --theme-navbar-bg: rgba(227, 229, 231, 0.96);
-  --theme-ticker-bg: #E3E5E7;
-  --theme-ticker-text: #1E252D;
-  --theme-ticker-border: #C6CACD;
+  --theme-page-bg: #181C24;
+  --theme-page-text: #E9EDF0;
+  --theme-page-subtitle: #9DA9B5;
+  --theme-page-border: #3D4856;
+  --theme-navbar-bg: rgba(24, 28, 36, 0.96);
+  --theme-ticker-bg: #181C24;
+  --theme-ticker-text: #E9EDF0;
+  --theme-ticker-border: #3D4856;
 
-  --theme-card-bg: #303943;
-  --theme-card-surface: #3C4753;
-  --theme-card-border: #4B5765;
+  --theme-card-bg: #28303C;
+  --theme-card-surface: #343E4C;
+  --theme-card-border: #424E5E;
   --theme-card-text: #E9EDF0;
   --theme-card-text-muted: #9DA9B5;
 
-  --theme-footer-bg: #252C34;
+  --theme-footer-bg: #12151B;
   --theme-footer-text: #E9EDF0;
-  --theme-footer-border: #3C4753;
-  --theme-switcher-bg: #303943;
+  --theme-footer-border: #343E4C;
+  --theme-switcher-bg: #28303C;
 }
 
 html[data-theme="capital"],
