@@ -236,12 +236,12 @@ export default function TerminalPage() {
             {/* ── Outer Bezel Header ── */}
             <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-[var(--theme-card-border)] relative z-10">
               <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-                <div className="flex h-14 w-14 sm:h-18 sm:w-18 items-center justify-center flex-shrink-0 overflow-visible">
+                <div className="flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center flex-shrink-0 overflow-visible">
                   <Falcon3DLogo
                     src="/images/logo-falcon-transparent.png"
                     alt="Market Intelligence MI- 007"
-                    width={72}
-                    height={72}
+                    width={52}
+                    height={52}
                     className="w-full h-full object-contain"
                   />
                 </div>

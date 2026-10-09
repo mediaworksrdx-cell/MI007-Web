@@ -111,15 +111,15 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
 
         {/* Header with Falcon Crest Badge */}
         <div className="flex flex-col items-center text-center mb-5">
-          <div className="relative mb-3 flex items-center justify-center h-18 w-18 sm:h-20 sm:w-20 overflow-visible">
+          <div className="relative mb-3 flex items-center justify-center h-12 w-12 sm:h-14 sm:w-14 overflow-visible">
             <Falcon3DLogo
               src="/images/logo-falcon-transparent.png"
               alt="MI007 Falcon"
-              width={64}
-              height={64}
+              width={48}
+              height={48}
               priority
               className="object-contain"
-              popoutScale={1.35}
+              popoutScale={1.08}
             />
           </div>
           <div className="flex items-center gap-1.5 mb-1">
