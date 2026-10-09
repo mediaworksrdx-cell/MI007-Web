@@ -9,16 +9,21 @@ interface Falcon3DCanvasWrapperProps {
   isHovered: boolean;
   mousePos: { x: number; y: number };
   accentColor?: string;
+  isNavbar?: boolean;
 }
 
 export default function Falcon3DCanvasWrapper({
   isHovered,
   mousePos,
   accentColor = '#65B9D8',
+  isNavbar = false,
 }: Falcon3DCanvasWrapperProps) {
   return (
     <Canvas
-      camera={{ position: [0, 0, 4.3], fov: 42 }}
+      camera={{
+        position: [0, isNavbar ? -0.06 : 0, isNavbar ? 4.4 : 4.3],
+        fov: isNavbar ? 39 : 42,
+      }}
       dpr={[1, 2]}
       gl={{
         alpha: true,
@@ -44,8 +49,10 @@ export default function Falcon3DCanvasWrapper({
           isHovered={isHovered}
           mousePos={mousePos}
           accentColor={accentColor}
+          isNavbar={isNavbar}
         />
       </Suspense>
     </Canvas>
   );
 }
+

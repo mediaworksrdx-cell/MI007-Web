@@ -107,7 +107,8 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               height={56}
               priority
               className="w-full h-full object-contain"
-              popoutScale={1.35}
+              popoutScale={1.18}
+              isNavbar={true}
               isHoveredExternal={brandHovered}
             />
           </div>

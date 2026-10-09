@@ -22,6 +22,7 @@ export interface Falcon3DLogoProps {
   popoutScale?: number;
   isHoveredExternal?: boolean;
   onHoverChange?: (hovered: boolean) => void;
+  isNavbar?: boolean;
 }
 
 export function Falcon3DLogo({
@@ -35,6 +36,7 @@ export function Falcon3DLogo({
   popoutScale = 1.35,
   isHoveredExternal,
   onHoverChange,
+  isNavbar = false,
 }: Falcon3DLogoProps) {
   const [internalHovered, setInternalHovered] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -103,9 +105,11 @@ export function Falcon3DLogo({
         }`}
         style={{
           transform: isHovered
-            ? `scale(${popoutScale}) translateZ(35px) rotateY(${mousePos.x * 20}deg) rotateX(${-mousePos.y * 15}deg)`
+            ? (isNavbar
+                ? `scale(${popoutScale}) translateY(3px) rotateY(${mousePos.x * 12}deg)`
+                : `scale(${popoutScale}) translateZ(35px) rotateY(${mousePos.x * 20}deg) rotateX(${-mousePos.y * 15}deg)`)
             : 'scale(1) translateZ(0px)',
-          transformOrigin: 'center center',
+          transformOrigin: isNavbar ? 'top center' : 'center center',
           transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease',
         }}
       >
@@ -122,32 +126,54 @@ export function Falcon3DLogo({
       {/* ── True 3D Volumetric Pop-Up Model (Pre-mounted WebGL, Zero background) ── */}
       {isMounted && (
         <div
-          className={`absolute inset-0 pointer-events-none transition-all duration-300 z-50 flex items-center justify-center bg-transparent ${
+          className={`absolute pointer-events-none transition-all duration-300 z-50 flex items-center justify-center bg-transparent ${
             isHovered
               ? 'opacity-100 drop-shadow-[0_16px_36px_rgba(14,165,233,0.45)]'
               : 'opacity-0 pointer-events-none'
           }`}
-          style={{
-            transform: isHovered
-              ? `scale(${popoutScale}) translateZ(45px)`
-              : 'scale(0.85) translateZ(0px)',
-            transformOrigin: 'center center',
-          }}
+          style={
+            isNavbar
+              ? {
+                  top: '0px',
+                  left: '50%',
+                  transform: isHovered
+                    ? `translateX(-50%) translateY(3px) scale(${popoutScale})`
+                    : 'translateX(-50%) translateY(0px) scale(0.9)',
+                  transformOrigin: 'top center',
+                  width: '110px',
+                  height: '110px',
+                }
+              : {
+                  inset: 0,
+                  transform: isHovered
+                    ? `scale(${popoutScale}) translateZ(45px)`
+                    : 'scale(0.85) translateZ(0px)',
+                  transformOrigin: 'center center',
+                }
+          }
         >
           {/* Expanded 3D Canvas Box for zero-clipping 360 spin */}
           <div
             className="relative flex items-center justify-center bg-transparent pointer-events-none"
-            style={{
-              width: '200%',
-              height: '200%',
-              minWidth: '140px',
-              minHeight: '140px',
-            }}
+            style={
+              isNavbar
+                ? {
+                    width: '100%',
+                    height: '100%',
+                  }
+                : {
+                    width: '200%',
+                    height: '200%',
+                    minWidth: '140px',
+                    minHeight: '140px',
+                  }
+            }
           >
             <DynamicFalcon3DCanvas
               isHovered={isHovered}
               mousePos={mousePos}
               accentColor={accentColor}
+              isNavbar={isNavbar}
             />
           </div>
         </div>
