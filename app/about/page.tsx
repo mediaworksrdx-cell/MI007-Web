@@ -7,11 +7,6 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useMarket } from '@/lib/marketContext';
 
-const AboutArchitectureViewer = dynamic(
-  () => import('@/components/3d/scenes/AboutArchitectureViewer'),
-  { ssr: false }
-);
-
 const WHAT_WE_DO = [
   {
     icon: '🌐',
@@ -216,11 +211,6 @@ export default function AboutPage() {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* ── 3D Spatial Architecture Exploration ── */}
-        <section className="mx-auto max-w-6xl px-6">
-          <AboutArchitectureViewer />
         </section>
 
         {/* ── What We Do ── */}

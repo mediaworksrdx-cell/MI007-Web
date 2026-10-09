@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import React from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useMarket } from '@/lib/marketContext';
@@ -13,42 +12,15 @@ import MarketTerminalSection from '../sections/MarketTerminalSection';
 import WhySection from '../sections/WhySection';
 import FinalCTASection from '../sections/FinalCTASection';
 
-// Dynamically import the 3D Spatial Financial Operating Environment (SSR false for WebGL/WebGPU)
-const SpatialEngineCanvas = dynamic(
-  () => import('@/components/3d/core/SpatialEngineCanvas'),
-  { ssr: false }
-);
-
 export default function CinematicHomePage() {
   const { market, setMarket } = useMarket();
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  // Synchronize browser window scroll position with the 3D Cinematic Camera Director (0.00 to 1.00)
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (scrollHeight > 0) {
-        const progress = Math.max(0, Math.min(1, window.scrollY / scrollHeight));
-        setScrollProgress(progress);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   return (
     <div className="relative min-h-screen bg-transparent text-slate-900 overflow-x-hidden font-sans">
-      {/* ── LIVING 3D PROCEDURAL SPATIAL FINANCIAL OPERATING ENVIRONMENT ── */}
-      <SpatialEngineCanvas scrollProgress={scrollProgress} />
-
       {/* Institutional Top Navbar */}
-      <div className="relative z-40">
-        <Navbar market={market} onMarketChange={setMarket} />
-      </div>
+      <Navbar market={market} onMarketChange={setMarket} />
 
-      {/* 7 Connected Cinematic Sections Flow — 100% Functional Baseline Preserved */}
+      {/* 7 Connected Cinematic Sections Flow */}
       <div className="relative w-full z-10">
         {/* 01. Hero — Includes opening cinematic video & live telemetry */}
         <div id="hero" style={{ minHeight: '100vh', pointerEvents: 'auto' }}>
