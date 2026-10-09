@@ -345,25 +345,27 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* ── Quant Philosophy ── */}
+        {/* ── Quant Philosophy Card ── */}
         <section className="py-16">
-          <div className="mx-auto max-w-3xl px-6 text-center">
-            <div className="mb-5 flex justify-center">
-              <div className="h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center overflow-visible">
-                <Falcon3DLogo
-                  src="/images/logo-falcon-transparent.png"
-                  alt="Market Intelligence MI- 007"
-                  width={80}
-                  height={80}
-                  className="w-full h-full object-contain"
-                />
+          <div className="mx-auto max-w-3xl px-6">
+            <div className="rounded-3xl border-2 inst-card p-8 sm:p-12 shadow-xl text-center">
+              <div className="mb-5 flex justify-center">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center">
+                  <Falcon3DLogo
+                    src="/images/logo-falcon-transparent.png"
+                    alt="Market Intelligence MI- 007"
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
               </div>
+              <blockquote className="text-lg md:text-xl italic font-semibold inst-card-text leading-relaxed">
+                &ldquo;The best trading decisions are made not on emotion, but on the precise mathematical
+                analysis of price, volume, and order flow — across every market on earth.&rdquo;
+              </blockquote>
+              <p className="mt-4 inst-card-text-muted text-sm font-medium">— Market Intelligence MI- 007 Leadership Team</p>
             </div>
-            <blockquote className="text-lg md:text-xl italic font-semibold page-heading leading-relaxed">
-              &ldquo;The best trading decisions are made not on emotion, but on the precise mathematical
-              analysis of price, volume, and order flow — across every market on earth.&rdquo;
-            </blockquote>
-            <p className="mt-4 page-subtitle text-sm font-medium">— Market Intelligence MI- 007 Leadership Team</p>
           </div>
         </section>
 
