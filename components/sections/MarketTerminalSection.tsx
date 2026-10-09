@@ -218,10 +218,10 @@ export default function MarketTerminalSection() {
     ctx.clearRect(0, 0, w, h);
 
     // ── 1. Themed Chart Surface ──
-    const cardIsLight = theme === 'capital' || theme === 'azure';
+    const cardIsLight = theme === 'capital';
 
     const chartBg =
-      theme === 'capital' || theme === 'azure'
+      theme === 'capital'
         ? '#E8DFCD' // warm champagne (Midnight Azure)
         : theme === 'ivory'
         ? '#244832' // forest green (Executive Ivory)
@@ -382,7 +382,7 @@ export default function MarketTerminalSection() {
 
     // ── 6. Subpanels: RSI (14) & MACD ──
     const subBg =
-      theme === 'capital' || theme === 'azure'
+      theme === 'capital'
         ? '#DED3BE'
         : theme === 'ivory'
         ? '#2E5A3F'

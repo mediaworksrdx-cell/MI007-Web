@@ -53,7 +53,7 @@ export function ThemeSwitcher() {
           {/* Theme List */}
           <div className="grid grid-cols-1 gap-2">
             {themeList.map((t) => {
-              const isActive = theme === t.id || (theme === 'azure' && t.id === 'capital');
+              const isActive = theme === t.id;
               return (
                 <button
                   key={t.id}

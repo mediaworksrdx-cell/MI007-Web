@@ -56,7 +56,7 @@ export function Falcon3DLogo({
       ? '#B79A63' // muted gold
       : theme === 'graphite'
       ? '#70B7A0' // muted emerald
-      : theme === 'capital' || theme === 'azure'
+      : theme === 'capital'
       ? '#65B9D8' // cyan
       : '#65A9D6'; // arctic sky blue
 

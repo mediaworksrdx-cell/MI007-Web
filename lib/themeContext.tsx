@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type AppTheme = 'arctic' | 'ivory' | 'graphite' | 'capital' | 'azure';
+export type AppTheme = 'arctic' | 'ivory' | 'graphite' | 'capital';
 
 export interface ThemeConfig {
   id: AppTheme;
@@ -24,7 +24,7 @@ export interface ThemeConfig {
   };
 }
 
-export const THEMES: Record<string, ThemeConfig> = {
+export const THEMES: Record<AppTheme, ThemeConfig> = {
   arctic: {
     id: 'arctic',
     name: 'Arctic Sky',
@@ -101,25 +101,6 @@ export const THEMES: Record<string, ThemeConfig> = {
       border: '#DED3BE',
     },
   },
-  azure: {
-    id: 'capital',
-    name: 'Midnight Azure',
-    tagline: 'Midnight Navy · Warm Champagne Cards · Slate Navy Text',
-    badge: 'Midnight Palette',
-    mode: 'dark',
-    palette: {
-      bg: '#14243A',
-      card: '#E8DFCD',
-      surface: '#DED3BE',
-      accent: '#65B9D8',
-      accentSecondary: '#3E86A8',
-      text: '#26374A',
-      textMuted: '#4B6178',
-      bull: '#059669',
-      bear: '#DC2626',
-      border: '#DED3BE',
-    },
-  },
 };
 
 interface ThemeContextType {
@@ -141,7 +122,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Read stored theme from localStorage or document attribute with legacy migration
     const stored = (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null);
     let initialTheme: AppTheme = 'arctic';
-    if (stored && THEMES[stored]) {
+    if (stored && (THEMES as Record<string, ThemeConfig>)[stored]) {
       initialTheme = (stored === 'azure' ? 'capital' : stored) as AppTheme;
     } else if (stored === 'lightblue' || stored === 'quartz') {
       initialTheme = 'arctic';
