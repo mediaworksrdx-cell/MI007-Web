@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { MarketType, MARKETS } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
 import { getTickerData } from '@/lib/mockData';
+import { useTradeEngine } from '@/lib/tradeEngineContext';
+import { normalizeSymbolKey } from '@/lib/tradeEngineClient';
 
 interface TickerTapeProps {
   market?: MarketType;
@@ -21,14 +23,42 @@ const MACRO_ITEMS = [
 
 export function TickerTape({ market: propMarket, currency: propCurrency }: TickerTapeProps) {
   const context = useMarket();
+  const { livePrices, macroData } = useTradeEngine();
   const activeMarket = propMarket ?? context.market ?? 'USA';
   const currency = propCurrency ?? context.currency ?? MARKETS[activeMarket]?.currency ?? '$';
 
-  // Stable, static market data without random fluctuations
+  // Live real-time market data merged from trade engine
   const displayItems = useMemo(() => {
     const baseList = getTickerData(activeMarket);
-    return [...baseList, ...MACRO_ITEMS];
-  }, [activeMarket]);
+    const updatedBase = baseList.map(item => {
+      const cleanKey = normalizeSymbolKey(item.symbol);
+      const live =
+        livePrices.get(cleanKey) ||
+        livePrices.get(item.symbol.toUpperCase()) ||
+        livePrices.get(item.symbol);
+
+      if (live) {
+        return {
+          symbol: item.symbol,
+          price: live.price,
+          change: live.change,
+          changePct: live.changePct,
+          tickDirection: live.tickDirection,
+          lastUpdated: live.lastUpdated,
+        };
+      }
+      return item;
+    });
+
+    const updatedMacros = MACRO_ITEMS.map(m => {
+      const found = macroData.find(
+        md => md.symbol.toUpperCase() === m.symbol.toUpperCase()
+      );
+      return found ? { ...m, displayVal: found.value } : m;
+    });
+
+    return [...updatedBase, ...updatedMacros];
+  }, [activeMarket, livePrices, macroData]);
 
   // Duplicate data array for seamless 50% translation marquee
   const items = [...displayItems, ...displayItems];

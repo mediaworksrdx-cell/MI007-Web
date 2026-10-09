@@ -139,6 +139,14 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   // Track last save timestamp to throttle IndexedDB writes during active ticks
   const lastSaveTimeRef = useRef<number>(0);
 
+  // Sync current price immediately from Trade Engine if available
+  useEffect(() => {
+    const live = getSymbolPrice(selectedSymbol);
+    if (live && live.price > 0) {
+      setCurrentPrice(live.price);
+    }
+  }, [selectedSymbol, getSymbolPrice]);
+
   // Listen to live WebSocket ticks from the Trade Engine with clock-aligned candle formation
   useEffect(() => {
     const unsub = subscribeToTicks((tick) => {

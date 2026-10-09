@@ -8,6 +8,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { MarketType, MARKETS, INSTRUMENTS } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
+import { useTradeEngine } from '@/lib/tradeEngineContext';
 
 // ─── India watchlist with stable realistic closing data ────────────────────────
 const INDIA_INDICES = [
@@ -106,7 +107,11 @@ function IndexTile({
   currency: string;
   market: MarketType;
 }) {
-  const up = changePct >= 0;
+  const { getSymbolPrice } = useTradeEngine();
+  const live = getSymbolPrice(symbol);
+  const price = live ? live.price : base;
+  const currentPct = live ? live.changePct : changePct;
+  const up = currentPct >= 0;
 
   return (
     <Link
@@ -124,10 +129,10 @@ function IndexTile({
       </div>
       <div className="flex items-end justify-between mt-1">
         <span className="mono text-[17px] font-black inst-card-text">
-          {currency}{base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {currency}{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
         <span className={`mono text-[14px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
-          {up ? '▲' : '▼'} {Math.abs(changePct).toFixed(2)}%
+          {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
         </span>
       </div>
     </Link>
@@ -152,7 +157,11 @@ function WatchlistRow({
   currency: string;
   market: MarketType;
 }) {
-  const up = changePct >= 0;
+  const { getSymbolPrice } = useTradeEngine();
+  const live = getSymbolPrice(symbol);
+  const price = live ? live.price : base;
+  const currentPct = live ? live.changePct : changePct;
+  const up = currentPct >= 0;
 
   return (
     <Link
@@ -175,10 +184,10 @@ function WatchlistRow({
 
       <div className="text-right flex-shrink-0">
         <div className="mono text-[14px] sm:text-[16px] font-black inst-card-text">
-          {currency}{base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {currency}{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
         <div className={`mono text-[12px] sm:text-[14px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
-          {up ? '+' : ''}{changePct.toFixed(2)}%
+          {up ? '+' : ''}{currentPct.toFixed(2)}%
         </div>
       </div>
 
@@ -207,6 +216,7 @@ function SectionHeader({ title, badge }: { title: string; badge?: string }) {
 
 export default function TerminalPage() {
   const { market, setMarket, currency } = useMarket();
+  const { getSymbolPrice } = useTradeEngine();
 
   // Market data per region
   const indices = market === 'INDIA' ? INDIA_INDICES : market === 'USA' ? USA_INDICES : UAE_INDICES;
@@ -288,7 +298,10 @@ export default function TerminalPage() {
             <SectionHeader title="Crypto Intelligence" badge="24/7 GLOBAL" />
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
               {CRYPTO.map(c => {
-                const up = c.changePct >= 0;
+                const live = getSymbolPrice(c.symbol);
+                const price = live ? live.price : c.base;
+                const currentPct = live ? live.changePct : c.changePct;
+                const up = currentPct >= 0;
                 return (
                   <Link
                     key={c.symbol}
@@ -300,10 +313,10 @@ export default function TerminalPage() {
                     </div>
                     <div className="text-[12px] inst-card-text-muted font-bold truncate">{c.name}</div>
                     <div className="mono text-[14px] font-black inst-card-text mt-1">
-                      ${c.base.toLocaleString(undefined, { minimumFractionDigits: c.base < 1 ? 4 : 2, maximumFractionDigits: c.base < 1 ? 7 : 2 })}
+                      ${price.toLocaleString(undefined, { minimumFractionDigits: price < 1 ? 4 : 2, maximumFractionDigits: price < 1 ? 7 : 2 })}
                     </div>
                     <div className={`mono text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
-                      {up ? '▲' : '▼'} {Math.abs(c.changePct).toFixed(2)}%
+                      {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
                     </div>
                   </Link>
                 );

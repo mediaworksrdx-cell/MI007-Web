@@ -1,10 +1,11 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
+import { useTradeEngine } from '@/lib/tradeEngineContext';
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -14,6 +15,37 @@ export default function HeroSection() {
   const [bearDelta, setBearDelta] = useState(-8.24);
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
+
+  const { getSymbolPrice } = useTradeEngine();
+
+  const nifty = getSymbolPrice('NIFTY') || getSymbolPrice('NIFTY 50');
+  const sp500 = getSymbolPrice('SPX') || getSymbolPrice('S&P 500');
+  const btc = getSymbolPrice('BTC');
+  const nasdaq = getSymbolPrice('NDX') || getSymbolPrice('NASDAQ 100') || getSymbolPrice('NASDAQ');
+  const gold = getSymbolPrice('GOLD') || getSymbolPrice('XAU/USD');
+
+  const niftyPrice = nifty ? nifty.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '22,453.60';
+  const niftyChg = nifty ? nifty.changePct : 0.99;
+
+  const spPrice = sp500 ? sp500.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '5,864.20';
+  const spChg = sp500 ? sp500.changePct : 0.82;
+
+  const btcPrice = btc ? `$${btc.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '$83,651';
+  const btcChg = btc ? btc.changePct : 1.24;
+
+  const ndxPrice = nasdaq ? nasdaq.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '18,240';
+  const ndxChg = nasdaq ? nasdaq.changePct : 0.65;
+
+  const goldPrice = gold ? `$${gold.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '$2,648';
+  const goldChg = gold ? gold.changePct : 0.45;
+
+  const heroStreamItems = useMemo(() => [
+    { symbol: 'NIFTY 50', price: niftyPrice, chg: niftyChg },
+    { symbol: 'S&P 500', price: spPrice, chg: spChg },
+    { symbol: 'BTC', price: btcPrice, chg: btcChg },
+    { symbol: 'NASDAQ', price: ndxPrice, chg: ndxChg },
+    { symbol: 'GOLD', price: goldPrice, chg: goldChg },
+  ], [niftyPrice, niftyChg, spPrice, spChg, btcPrice, btcChg, ndxPrice, ndxChg, goldPrice, goldChg]);
 
   // Live Micro-Telemetry Ticks
   useEffect(() => {
@@ -148,7 +180,7 @@ export default function HeroSection() {
             <span className="hero-stats-pipe font-bold hidden md:inline text-lg">|</span>
             <div className="hidden md:flex items-center gap-2">
               <span className="font-extrabold text-[14px] sm:text-[15px] tracking-wide hero-stats-label">EQUILIBRIUM:</span>
-              <strong className="font-mono font-black text-[16px] sm:text-[18px] hero-stats-val">24,842.50</strong>
+              <strong className="font-mono font-black text-[16px] sm:text-[18px] hero-stats-val">{niftyPrice}</strong>
             </div>
           </div>
 
@@ -170,68 +202,38 @@ export default function HeroSection() {
             <div className="flex-1 min-w-0 overflow-hidden">
               <div className="l3-marquee-track flex items-center gap-6 whitespace-nowrap text-[14px] sm:text-[15px] font-semibold hero-l3-stream">
                 {/* Loop Sequence 1 */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="hero-stats-label font-bold">NIFTY 50</span>
-                  <span className="hero-stats-val font-black">24,842.50</span>{' '}
-                  <span className="text-emerald-500 font-black">+1.40%</span>
-                </div>
-                <span className="hero-stats-pipe font-bold">•</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="hero-stats-label font-bold">S&P 500</span>
-                  <span className="hero-stats-val font-black">5,864.20</span>{' '}
-                  <span className="text-emerald-500 font-black">+0.82%</span>
-                </div>
-                <span className="hero-stats-pipe font-bold">•</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="hero-stats-label font-bold">BTC</span>
-                  <span className="hero-stats-val font-black">$68,410</span>{' '}
-                  <span className="text-emerald-500 font-black">+3.24%</span>
-                </div>
-                <span className="hero-stats-pipe font-bold">•</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="hero-stats-label font-bold">NASDAQ</span>
-                  <span className="hero-stats-val font-black">18,240</span>{' '}
-                  <span className="text-emerald-500 font-black">+0.65%</span>
-                </div>
-                <span className="hero-stats-pipe font-bold">•</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="hero-stats-label font-bold">GOLD</span>
-                  <span className="hero-stats-val font-black">$2,648</span>{' '}
-                  <span className="text-emerald-500 font-black">+0.45%</span>
-                </div>
-                <span className="hero-stats-pipe font-bold">•</span>
+                {heroStreamItems.map((item, i) => {
+                  const isUp = item.chg >= 0;
+                  return (
+                    <React.Fragment key={`seq1-${item.symbol}-${i}`}>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="hero-stats-label font-bold">{item.symbol}</span>
+                        <span className="hero-stats-val font-black">{item.price}</span>{' '}
+                        <span className={`font-black ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          {isUp ? '+' : ''}{item.chg.toFixed(2)}%
+                        </span>
+                      </div>
+                      <span className="hero-stats-pipe font-bold">•</span>
+                    </React.Fragment>
+                  );
+                })}
 
                 {/* Loop Sequence 2 (Seamless duplication) */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="hero-stats-label font-bold">NIFTY 50</span>
-                  <span className="hero-stats-val font-black">24,842.50</span>{' '}
-                  <span className="text-emerald-500 font-black">+1.40%</span>
-                </div>
-                <span className="hero-stats-pipe font-bold">•</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="hero-stats-label font-bold">S&P 500</span>
-                  <span className="hero-stats-val font-black">5,864.20</span>{' '}
-                  <span className="text-emerald-500 font-black">+0.82%</span>
-                </div>
-                <span className="hero-stats-pipe font-bold">•</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="hero-stats-label font-bold">BTC</span>
-                  <span className="hero-stats-val font-black">$68,410</span>{' '}
-                  <span className="text-emerald-500 font-black">+3.24%</span>
-                </div>
-                <span className="hero-stats-pipe font-bold">•</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="hero-stats-label font-bold">NASDAQ</span>
-                  <span className="hero-stats-val font-black">18,240</span>{' '}
-                  <span className="text-emerald-500 font-black">+0.65%</span>
-                </div>
-                <span className="hero-stats-pipe font-bold">•</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="hero-stats-label font-bold">GOLD</span>
-                  <span className="hero-stats-val font-black">$2,648</span>{' '}
-                  <span className="text-emerald-500 font-black">+0.45%</span>
-                </div>
-                <span className="hero-stats-pipe font-bold">•</span>
+                {heroStreamItems.map((item, i) => {
+                  const isUp = item.chg >= 0;
+                  return (
+                    <React.Fragment key={`seq2-${item.symbol}-${i}`}>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="hero-stats-label font-bold">{item.symbol}</span>
+                        <span className="hero-stats-val font-black">{item.price}</span>{' '}
+                        <span className={`font-black ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          {isUp ? '+' : ''}{item.chg.toFixed(2)}%
+                        </span>
+                      </div>
+                      <span className="hero-stats-pipe font-bold">•</span>
+                    </React.Fragment>
+                  );
+                })}
               </div>
             </div>
           </div>

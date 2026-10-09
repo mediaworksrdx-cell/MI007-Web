@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { MarketProvider } from '@/lib/marketContext';
 import { ThemeProvider } from '@/lib/themeContext';
+import { TradeEngineProvider } from '@/lib/tradeEngineContext';
 
 export const metadata: Metadata = {
   title: 'Market Intelligence MI- 007 | Intelligence Beyond the Noise',
@@ -55,7 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="antialiased min-h-screen flex flex-col relative transition-colors duration-200">
         <ThemeProvider>
           <MarketProvider>
-            {children}
+            <TradeEngineProvider>
+              {children}
+            </TradeEngineProvider>
           </MarketProvider>
         </ThemeProvider>
       </body>
