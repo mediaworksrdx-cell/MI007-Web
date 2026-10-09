@@ -21,8 +21,8 @@ export default function Falcon3DCanvasWrapper({
   return (
     <Canvas
       camera={{
-        position: [0, 0, isNavbar ? 4.7 : 4.3],
-        fov: isNavbar ? 37 : 42,
+        position: [0, 0, isNavbar ? 4.7 : 5.2],
+        fov: isNavbar ? 37 : 44,
       }}
       dpr={[1, 2]}
       gl={{

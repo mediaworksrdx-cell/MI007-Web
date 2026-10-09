@@ -349,12 +349,12 @@ export default function AboutPage() {
         <section className="py-16">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <div className="mb-5 flex justify-center">
-              <div className="h-16 w-16 flex items-center justify-center overflow-visible">
+              <div className="h-28 w-28 sm:h-32 sm:w-32 flex items-center justify-center overflow-visible">
                 <Falcon3DLogo
                   src="/images/logo-falcon-transparent.png"
                   alt="Market Intelligence MI- 007"
-                  width={64}
-                  height={64}
+                  width={112}
+                  height={112}
                   className="w-full h-full object-contain"
                 />
               </div>

@@ -26,14 +26,14 @@ export default function FinalCTASection() {
         className="flex flex-col items-center text-center max-w-3xl mx-auto w-full relative z-10 p-10 sm:p-16 rounded-3xl border final-cta-card shadow-xl"
       >
         {/* Falcon Emblem Logo with Interactive 3D Pop-Up (Zero Background) */}
-        <div className="mb-6 relative h-28 w-28 sm:h-32 sm:w-32 flex-shrink-0 flex items-center justify-center overflow-visible">
+        <div className="mb-6 relative h-36 w-36 sm:h-44 sm:w-44 md:h-48 md:w-48 flex-shrink-0 flex items-center justify-center overflow-visible">
           <Falcon3DLogo
             src="/images/logo-falcon-transparent.png"
             alt="Market Intelligence MI- 007"
-            width={128}
-            height={128}
+            width={160}
+            height={160}
             className="w-full h-full object-contain"
-            popoutScale={1.4}
+            popoutScale={1.35}
           />
         </div>
 

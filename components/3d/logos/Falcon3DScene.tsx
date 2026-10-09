@@ -100,10 +100,10 @@ export default function Falcon3DScene({
     }
   });
 
-  // Scale: navbar gets 1.04 to fit cleanly within header; regular sections get 1.32
+  // Scale: navbar gets 1.02; regular sections get 1.18 for generous headroom and zero edge clipping
   const sceneScale: [number, number, number] = isNavbar
-    ? [1.04, 1.04, 1.04]
-    : [1.32, 1.32, 1.32];
+    ? [1.02, 1.02, 1.02]
+    : [1.18, 1.18, 1.18];
 
   // Y-offset: centered vertically
   const groupPosY = 0;

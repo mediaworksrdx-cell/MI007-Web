@@ -99,15 +99,15 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           onMouseEnter={() => setBrandHovered(true)}
           onMouseLeave={() => setBrandHovered(false)}
         >
-          <div className="relative z-50 h-11 w-11 sm:h-12 sm:w-12 md:h-13 md:w-13 flex-shrink-0 flex items-center justify-center overflow-visible">
+          <div className="relative z-50 h-12 w-12 sm:h-13 sm:w-13 md:h-14 md:w-14 flex-shrink-0 flex items-center justify-center overflow-visible">
             <Falcon3DLogo
               src="/images/logo-falcon-transparent.png"
               alt="Market Intelligence MI- 007"
-              width={56}
-              height={56}
+              width={58}
+              height={58}
               priority
               className="w-full h-full object-contain"
-              popoutScale={1.14}
+              popoutScale={1.12}
               isNavbar={true}
               isHoveredExternal={brandHovered}
             />

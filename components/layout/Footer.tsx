@@ -10,12 +10,12 @@ export function Footer() {
           {/* Brand Column */}
           <div className="md:col-span-1 flex flex-col gap-3">
             <div className="flex items-center gap-3.5">
-              <div className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0 flex items-center justify-center overflow-visible">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 flex items-center justify-center overflow-visible">
                 <Falcon3DLogo
                   src="/images/logo-falcon-transparent.png"
                   alt="Market Intelligence MI- 007"
-                  width={56}
-                  height={56}
+                  width={72}
+                  height={72}
                   className="w-full h-full object-contain"
                   popoutScale={1.35}
                 />

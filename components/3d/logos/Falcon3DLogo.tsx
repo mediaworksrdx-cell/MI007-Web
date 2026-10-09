@@ -161,10 +161,10 @@ export function Falcon3DLogo({
                     height: '100%',
                   }
                 : {
-                    width: '200%',
-                    height: '200%',
-                    minWidth: '160px',
-                    minHeight: '160px',
+                    width: '260%',
+                    height: '260%',
+                    minWidth: '240px',
+                    minHeight: '240px',
                   }
             }
           >
