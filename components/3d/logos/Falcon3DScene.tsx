@@ -61,7 +61,7 @@ export default function Falcon3DScene({
 
     // 1. Full 360-degree pop-up spin with banking depth tilt
     if (isSpinningRef.current) {
-      spinProgressRef.current += delta * 2.2; // ~1.4s complete revolution
+      spinProgressRef.current += delta * 1.15; // ~0.87s smooth full revolution
       if (spinProgressRef.current >= 1.0) {
         spinProgressRef.current = 1.0;
         isSpinningRef.current = false;
@@ -72,22 +72,26 @@ export default function Falcon3DScene({
       const eased = 1 - Math.pow(1 - p, 3);
       const spinAngle = eased * Math.PI * 2; // 0 to 360 degrees
       // Controlled banking tilt so wings stay within screen boundaries
-      const bankAngle = Math.sin(p * Math.PI) * (isNavbar ? 0.18 : 0.26);
+      const bankAngle = Math.sin(p * Math.PI) * (isNavbar ? 0.14 : 0.22);
 
       group.rotation.y = spinAngle;
       group.rotation.x = bankAngle;
-      group.position.z = THREE.MathUtils.lerp(0, isNavbar ? 0.35 : 0.55, Math.sin(p * Math.PI));
+      group.position.z = THREE.MathUtils.lerp(0, isNavbar ? 0.25 : 0.55, Math.sin(p * Math.PI));
     } else {
       // 2. Interactive Cursor Parallax Tracking when front-facing (displaying true logo)
-      const targetRotY = isHovered ? mousePos.x * 0.45 : 0;
-      const targetRotX = isHovered ? -mousePos.y * 0.35 : 0;
-      const targetPosZ = isHovered ? (isNavbar ? 0.3 : 0.45) : 0;
+      const targetRotY = isHovered ? mousePos.x * 0.42 : 0;
+      const targetRotX = isHovered ? -mousePos.y * 0.32 : 0;
+      const targetPosZ = isHovered ? (isNavbar ? 0.2 : 0.45) : 0;
 
       // Smooth inertial damping to target
       group.rotation.y = THREE.MathUtils.damp(group.rotation.y, targetRotY, 9, delta);
       group.rotation.x = THREE.MathUtils.damp(group.rotation.x, targetRotX, 9, delta);
       group.position.z = THREE.MathUtils.damp(group.position.z, targetPosZ, 9, delta);
     }
+
+    // Holographic breathing float when hovered
+    const hoverBob = isHovered ? Math.sin(state.clock.elapsedTime * 2.8) * 0.025 : 0;
+    group.position.y = THREE.MathUtils.damp(group.position.y, groupPosY + hoverBob, 8, delta);
 
     // Specular key light movement tracking mouse
     if (keyLightRef.current) {
@@ -96,13 +100,13 @@ export default function Falcon3DScene({
     }
   });
 
-  // Scale: navbar gets 1.12 to prevent any overflow above the screen; regular sections get 1.3
+  // Scale: navbar gets 1.04 to fit cleanly within header; regular sections get 1.32
   const sceneScale: [number, number, number] = isNavbar
-    ? [1.12, 1.12, 1.12]
+    ? [1.04, 1.04, 1.04]
     : [1.32, 1.32, 1.32];
 
-  // Y-offset: slightly lowered in navbar so the top wingtips stay comfortably within the screen
-  const groupPosY = isNavbar ? -0.06 : 0;
+  // Y-offset: centered vertically
+  const groupPosY = 0;
 
   return (
     <group ref={groupRef} scale={sceneScale} position={[0, groupPosY, 0]}>
@@ -128,7 +132,7 @@ export default function Falcon3DScene({
 
       {/* ── 1. Front Textured Falcon Face (Original Artwork with 100% Fidelity) ── */}
       {texture && (
-        <mesh position={[0, 0, 0.035]}>
+        <mesh position={[0, 0, 0.05]}>
           <planeGeometry args={[2.2, 2.2]} />
           <meshStandardMaterial
             map={texture}
@@ -144,7 +148,7 @@ export default function Falcon3DScene({
 
       {/* ── 2. Back Textured Falcon Face (Visible during 360 Spin, Zero Background) ── */}
       {texture && (
-        <mesh position={[0, 0, -0.035]} rotation={[0, Math.PI, 0]}>
+        <mesh position={[0, 0, -0.05]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={[2.2, 2.2]} />
           <meshStandardMaterial
             map={texture}
@@ -158,31 +162,22 @@ export default function Falcon3DScene({
         </mesh>
       )}
 
-      {/* ── 3. Depth Bevel Slices (Creates Real 3D Physical Thickness in Silhouette) ── */}
+      {/* ── 3. Multi-Layer Volumetric Slices for Substantial 3D Physical Thickness ── */}
       {texture && (
         <>
-          <mesh position={[0, 0, 0.018]}>
-            <planeGeometry args={[2.18, 2.18]} />
-            <meshStandardMaterial
-              map={texture}
-              transparent={true}
-              alphaTest={0.02}
-              color="#0F172A"
-              roughness={0.6}
-              metalness={0.8}
-            />
-          </mesh>
-          <mesh position={[0, 0, -0.018]}>
-            <planeGeometry args={[2.18, 2.18]} />
-            <meshStandardMaterial
-              map={texture}
-              transparent={true}
-              alphaTest={0.02}
-              color="#0F172A"
-              roughness={0.6}
-              metalness={0.8}
-            />
-          </mesh>
+          {[-0.035, -0.018, 0, 0.018, 0.035].map((z, idx) => (
+            <mesh key={idx} position={[0, 0, z]}>
+              <planeGeometry args={[2.18, 2.18]} />
+              <meshStandardMaterial
+                map={texture}
+                transparent={true}
+                alphaTest={0.015}
+                color={idx === 2 ? '#1E293B' : '#0F172A'}
+                roughness={0.5}
+                metalness={0.8}
+              />
+            </mesh>
+          ))}
         </>
       )}
     </group>

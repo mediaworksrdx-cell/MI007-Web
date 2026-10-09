@@ -89,27 +89,26 @@ export function Falcon3DLogo({
       onMouseEnter={handleMouseEnter}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={`relative select-none cursor-pointer group flex items-center justify-center bg-transparent ${containerClassName}`}
+      className={`relative select-none cursor-pointer group flex items-center justify-center bg-transparent w-full h-full ${containerClassName}`}
       style={{
         perspective: '1200px',
         transformStyle: 'preserve-3d',
       }}
-      title="Hover to activate MI007 3D Falcon Hologram"
     >
       {/* ── Base 2D Logo Image (Transparent Falcon, zero background) ── */}
       <div
         className={`w-full h-full flex items-center justify-center transition-all duration-300 pointer-events-none bg-transparent ${
           isHovered
-            ? 'opacity-0 scale-110 drop-shadow-[0_16px_32px_rgba(14,165,233,0.45)]'
+            ? 'opacity-0 scale-105 drop-shadow-[0_16px_32px_rgba(14,165,233,0.45)]'
             : 'opacity-100 scale-100'
         }`}
         style={{
           transform: isHovered
             ? (isNavbar
-                ? `scale(${popoutScale}) translateY(3px) rotateY(${mousePos.x * 12}deg)`
+                ? `scale(${popoutScale}) rotateY(${mousePos.x * 12}deg)`
                 : `scale(${popoutScale}) translateZ(35px) rotateY(${mousePos.x * 20}deg) rotateX(${-mousePos.y * 15}deg)`)
             : 'scale(1) translateZ(0px)',
-          transformOrigin: isNavbar ? 'top center' : 'center center',
+          transformOrigin: 'center center',
           transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease',
         }}
       >
@@ -134,14 +133,14 @@ export function Falcon3DLogo({
           style={
             isNavbar
               ? {
-                  top: '0px',
+                  top: '50%',
                   left: '50%',
                   transform: isHovered
-                    ? `translateX(-50%) translateY(3px) scale(${popoutScale})`
-                    : 'translateX(-50%) translateY(0px) scale(0.9)',
-                  transformOrigin: 'top center',
-                  width: '110px',
-                  height: '110px',
+                    ? `translate(-50%, -50%) scale(${popoutScale})`
+                    : 'translate(-50%, -50%) scale(0.9)',
+                  transformOrigin: 'center center',
+                  width: '84px',
+                  height: '84px',
                 }
               : {
                   inset: 0,
@@ -164,8 +163,8 @@ export function Falcon3DLogo({
                 : {
                     width: '200%',
                     height: '200%',
-                    minWidth: '140px',
-                    minHeight: '140px',
+                    minWidth: '160px',
+                    minHeight: '160px',
                   }
             }
           >
