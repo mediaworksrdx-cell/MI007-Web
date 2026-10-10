@@ -2,6 +2,7 @@
 
 import { motion, useInView } from 'framer-motion';
 import { useRef, useState } from 'react';
+import { Icon3D } from '@/components/ui/Icon3D';
 
 export default function HowItWorksSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,9 +55,12 @@ export default function HowItWorksSection() {
 
             {/* Top Badge & Metric */}
             <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-white/10">
-              <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 border-emerald-500 bg-emerald-500/10 text-emerald-400 mono text-[12px] sm:text-[14px] font-bold flex items-center gap-2 shadow-xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                <span>BULL ACCUMULATION // +12.48% ▲</span>
+              <div className="flex items-center gap-2.5">
+                <Icon3D name="trend" size="sm" glowColor="rgba(16, 185, 129, 0.4)" />
+                <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 border-emerald-500 bg-emerald-500/10 text-emerald-400 mono text-[12px] sm:text-[14px] font-bold flex items-center gap-2 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span>BULL ACCUMULATION // +12.48% ▲</span>
+                </div>
               </div>
               <div className="text-left sm:text-right">
                 <span className="mono text-[11px] sm:text-[13px] opacity-70 font-black block">BUY DELTA</span>
@@ -124,9 +128,12 @@ export default function HowItWorksSection() {
 
             {/* Top Badge & Metric */}
             <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-white/10">
-              <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 border-rose-500 bg-rose-500/10 text-rose-400 mono text-[12px] sm:text-[14px] font-bold flex items-center gap-2 shadow-xs">
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                <span>BEAR DISTRIBUTION // -8.24% ▼</span>
+              <div className="flex items-center gap-2.5">
+                <Icon3D name="risk" size="sm" glowColor="rgba(244, 63, 94, 0.4)" />
+                <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border-2 border-rose-500 bg-rose-500/10 text-rose-400 mono text-[12px] sm:text-[14px] font-bold flex items-center gap-2 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                  <span>BEAR DISTRIBUTION // -8.24% ▼</span>
+                </div>
               </div>
               <div className="text-left sm:text-right">
                 <span className="mono text-[11px] sm:text-[13px] opacity-70 font-black block">SELL DELTA</span>

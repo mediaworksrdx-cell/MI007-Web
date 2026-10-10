@@ -39,7 +39,7 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
 
   const [market, setMarket] = useState<MarketType>(defaultMarket);
 
-  const marketBadge = isCrypto ? '🌐 24/7 CRYPTO' : `${MARKETS[market].flag} ${MARKETS[market].label}`;
+  const marketBadge = isCrypto ? 'GLOBAL 24/7 CRYPTO' : `${MARKETS[market].flag} ${MARKETS[market].label}`;
 
   return (
     <>

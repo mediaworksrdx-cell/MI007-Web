@@ -6,67 +6,90 @@ import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useMarket } from '@/lib/marketContext';
+import { Icon3D, Icon3DName } from '@/components/ui/Icon3D';
 
-const WHAT_WE_DO = [
+const WHAT_WE_DO: {
+  icon3d: Icon3DName;
+  glowColor: string;
+  title: string;
+  tag: string;
+  desc: string;
+}[] = [
   {
-    icon: '🌐',
+    icon3d: 'globe',
+    glowColor: 'rgba(6, 182, 212, 0.4)',
     title: 'Global-Market Coverage',
     tag: 'Worldwide Traded Instruments',
     desc: 'Seamless analysis across traded instruments around the globe.',
   },
   {
-    icon: '🤖',
+    icon3d: 'robot',
+    glowColor: 'rgba(16, 185, 129, 0.4)',
     title: 'AI-Driven Analytics',
     tag: 'Machine Learning',
     desc: 'Advanced machine learning algorithms that spot anomalies, chart patterns, and sentiment shifts before they become mainstream news.',
   },
 ];
 
-const MI_EDGE = [
+const MI_EDGE: {
+  icon3d: Icon3DName;
+  glowColor: string;
+  title: string;
+  tag: string;
+  desc: string;
+}[] = [
   {
-    icon: '🛡️',
+    icon3d: 'shield',
+    glowColor: 'rgba(16, 185, 129, 0.4)',
     title: 'Battle-Tested DNA',
     tag: 'Decades of Lineage',
     desc: 'Built on understanding of decades of institutional trading, risk management, and quantitative strategy.',
   },
   {
-    icon: '🌍',
+    icon3d: 'globe',
+    glowColor: 'rgba(2, 132, 199, 0.4)',
     title: 'Global Markets Presence',
     tag: 'Cross-Border Feed',
     desc: 'Instant, AI-driven cross-border intelligence across major financial hubs.',
   },
   {
-    icon: '⚡',
+    icon3d: 'lightning',
+    glowColor: 'rgba(245, 158, 11, 0.4)',
     title: 'Unfair Advantage',
     tag: 'Alpha Detection',
     desc: 'High-precision algorithmic insights that detect alpha before the markets wake up.',
   },
   {
-    icon: '⏱️',
+    icon3d: 'clock',
+    glowColor: 'rgba(249, 115, 22, 0.4)',
     title: 'High-Speed Scalping',
     tag: 'Sub-Minute Routing',
     desc: 'Sub-minute liquidity routing and immediate order-book anomaly detection.',
   },
   {
-    icon: '📊',
+    icon3d: 'chart',
+    glowColor: 'rgba(16, 185, 129, 0.4)',
     title: 'Intraday Momentum',
     tag: 'Volatility Breakouts',
     desc: 'Real-time volume spikes and volatility breakouts across both execution time zones.',
   },
   {
-    icon: '🌊',
+    icon3d: 'wave',
+    glowColor: 'rgba(59, 130, 246, 0.4)',
     title: 'Swing Trading',
     tag: 'Macro ML Forecasts',
     desc: 'Multi-day trend predictions driven by macro sentiment shifts and machine learning.',
   },
   {
-    icon: '🎯',
+    icon3d: 'target',
+    glowColor: 'rgba(244, 63, 94, 0.4)',
     title: 'Options Architecture',
     tag: 'Derivatives & IV',
     desc: 'Advanced implied volatility analytics, unusual options activity tracking, and dynamic spread modelling.',
   },
   {
-    icon: '💎',
+    icon3d: 'diamond',
+    glowColor: 'rgba(56, 189, 248, 0.4)',
     title: 'Long-Term Alpha',
     tag: 'Algorithmic Screener',
     desc: 'Algorithmic fundamental screening to identify deeply mispriced, high-growth equity assets.',
@@ -160,8 +183,8 @@ export default function AboutPage() {
             </p>
 
             {/* Informational & Risk Disclaimer Banner */}
-            <div className="mx-auto max-w-2xl rounded-2xl border inst-card p-4 shadow-md text-left flex items-start gap-3">
-              <span className="text-xl shrink-0 mt-0.5">ℹ️</span>
+            <div className="mx-auto max-w-2xl rounded-2xl border inst-card p-4 shadow-md text-left flex items-start gap-3.5">
+              <Icon3D name="info" size="sm" glowColor="rgba(2, 132, 199, 0.4)" />
               <p className="text-xs sm:text-[13px] inst-card-text leading-relaxed font-medium">
                 <strong className="font-bold text-emerald-500">Important Notice:</strong> Market Intelligence MI- 007 is a technology platform built purely for the purpose of study and information, empowering users to make their own decisions at their own risks.
               </p>
@@ -229,15 +252,15 @@ export default function AboutPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {WHAT_WE_DO.map(({ icon, title, tag, desc }) => (
+            {WHAT_WE_DO.map(({ icon3d, glowColor, title, tag, desc }) => (
               <div
                 key={title}
                 className="rounded-2xl border-2 inst-card p-7 hover:shadow-xl transition-all flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-3xl">{icon}</span>
-                    <span className="text-[11px] mono font-bold px-2.5 py-0.5 rounded-full border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] inst-card-text shadow-2xs">
+                  <div className="flex items-center justify-between mb-5">
+                    <Icon3D name={icon3d} size="lg" glowColor={glowColor} />
+                    <span className="text-[11px] mono font-bold px-3 py-1 rounded-full border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] inst-card-text shadow-2xs">
                       {tag}
                     </span>
                   </div>
@@ -289,17 +312,15 @@ export default function AboutPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {MI_EDGE.map(({ icon, title, tag, desc }) => (
+            {MI_EDGE.map(({ icon3d, glowColor, title, tag, desc }) => (
               <div
                 key={title}
                 className="rounded-2xl border-2 inst-card p-6 hover:shadow-xl hover:scale-[1.02] transition-all flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl p-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] inline-flex items-center justify-center">
-                      {icon}
-                    </span>
-                    <span className="text-[10px] mono font-bold px-2 py-0.5 rounded-md border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] inst-card-text">
+                  <div className="flex items-center justify-between mb-4">
+                    <Icon3D name={icon3d} size="md" glowColor={glowColor} />
+                    <span className="text-[10px] mono font-bold px-2.5 py-1 rounded-md border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] inst-card-text">
                       {tag}
                     </span>
                   </div>
@@ -332,7 +353,13 @@ export default function AboutPage() {
                   <span className="text-3xl">{flag}</span>
                   <div>
                     <div className="font-bold inst-card-text text-[15px]">{name}</div>
-                    <div className="text-[11px] inst-card-text-muted mono font-medium">📍 {city}</div>
+                    <div className="text-[11px] inst-card-text-muted mono font-medium flex items-center gap-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400 shrink-0">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      <span>{city}</span>
+                    </div>
                   </div>
                 </div>
                 <p className="text-[12.5px] inst-card-text-muted leading-relaxed">{description}</p>

@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { useMarket } from '@/lib/marketContext';
+import { Icon3D } from '@/components/ui/Icon3D';
 
 export default function ContactPage() {
   const { market, setMarket } = useMarket();
@@ -55,8 +56,10 @@ export default function ContactPage() {
               <h2 className="text-xl sm:text-2xl font-black inst-card-text mb-6">Send an Institutional Inquiry</h2>
 
               {submitted ? (
-                <div className="rounded-xl border border-emerald-500/40 inst-subcard p-8 text-center">
-                  <div className="text-4xl mb-4">✅</div>
+                <div className="rounded-xl border border-emerald-500/40 inst-subcard p-8 text-center flex flex-col items-center">
+                  <div className="mb-4">
+                    <Icon3D name="shield" size="lg" glowColor="rgba(16, 185, 129, 0.45)" />
+                  </div>
                   <h3 className="font-bold text-emerald-500 text-lg mb-2">Inquiry Received</h3>
                   <p className="inst-card-text-muted text-sm font-medium">
                     Your inquiry has been submitted. A member of the Synthetix Analytics institutional desk will respond within 1–2 business days.
@@ -149,7 +152,10 @@ export default function ContactPage() {
                     type="submit"
                     className="flex items-center justify-center gap-2 rounded-lg border border-emerald-600 bg-emerald-600 px-6 py-3 text-[13px] font-bold text-white hover:bg-emerald-500 hover:shadow-md transition-all mono tracking-wide cursor-pointer"
                   >
-                    ⚡ SUBMIT INQUIRY
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                    <span>SUBMIT INQUIRY</span>
                   </button>
 
                   <p className="text-[11px] inst-card-text-muted text-center mt-1">
@@ -221,8 +227,20 @@ export default function ContactPage() {
                 </div>
                 <div className="ml-auto h-2 w-2 rounded-full bg-emerald-500" />
               </div>
-              <p className="text-[11px] inst-card-text-muted mono leading-relaxed">📍 Dubai International Financial Centre (DIFC), Dubai, UAE</p>
-              <p className="text-[11px] inst-card-text-muted">🕐 Mon–Fri: 10:00–14:00 GST</p>
+              <div className="flex items-center gap-1.5 text-[11px] inst-card-text-muted mono leading-relaxed">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400 shrink-0">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span>Dubai International Financial Centre (DIFC), Dubai, UAE</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] inst-card-text-muted">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 shrink-0">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                <span>Mon–Fri: 10:00–14:00 GST</span>
+              </div>
               <div className="rounded-md border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] px-3 py-2 text-[11px] inst-card-text mono font-medium">
                 DFM · ADX · MENA Equities · Gulf Markets
               </div>
@@ -230,8 +248,11 @@ export default function ContactPage() {
 
             {/* Support SLA */}
             <div className="rounded-xl border border-amber-500/40 inst-subcard p-5 shadow-xs">
-              <h3 className="mono text-[12px] font-bold text-amber-500 mb-3 tracking-widest uppercase">
-                ⚡ Enterprise SLA
+              <h3 className="mono text-[12px] font-bold text-amber-500 mb-3 tracking-widest uppercase flex items-center gap-1.5">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+                <span>Enterprise SLA</span>
               </h3>
               <ul className="flex flex-col gap-2 text-[11px] inst-card-text-muted">
                 <li>• Standard inquiries: 1–2 business days</li>

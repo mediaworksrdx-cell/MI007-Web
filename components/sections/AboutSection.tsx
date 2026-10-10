@@ -2,13 +2,20 @@
 
 import { motion, useInView } from 'framer-motion';
 import { useRef, useState } from 'react';
+import { Icon3D, Icon3DName } from '@/components/ui/Icon3D';
 
-const forces = [
-  { id: 'LIQUIDITY', desc: 'Hidden buy & sell pools swept by institutional algorithms', color: 'text-mint-green' },
-  { id: 'MOMENTUM', desc: 'Velocity of price displacement across micro-timeframes', color: 'text-accent-cyan' },
-  { id: 'ABSORPTION', desc: 'Large limit orders holding key structural levels', color: 'text-cyber-gold' },
-  { id: 'STRUCTURE', desc: 'Higher timeframe order blocks guiding directional bias', color: 'text-purple-600' },
-  { id: 'INTELLIGENCE', desc: 'Synthesized probability vectors informing execution', color: 'text-emerald-700' },
+const forces: {
+  id: string;
+  desc: string;
+  color: string;
+  icon3d: Icon3DName;
+  glow: string;
+}[] = [
+  { id: 'LIQUIDITY', desc: 'Hidden buy & sell pools swept by institutional algorithms', color: 'text-mint-green', icon3d: 'wave', glow: 'rgba(6, 182, 212, 0.4)' },
+  { id: 'MOMENTUM', desc: 'Velocity of price displacement across micro-timeframes', color: 'text-accent-cyan', icon3d: 'lightning', glow: 'rgba(245, 158, 11, 0.4)' },
+  { id: 'ABSORPTION', desc: 'Large limit orders holding key structural levels', color: 'text-cyber-gold', icon3d: 'shield', glow: 'rgba(16, 185, 129, 0.4)' },
+  { id: 'STRUCTURE', desc: 'Higher timeframe order blocks guiding directional bias', color: 'text-purple-600', icon3d: 'pattern', glow: 'rgba(168, 85, 247, 0.4)' },
+  { id: 'INTELLIGENCE', desc: 'Synthesized probability vectors informing execution', color: 'text-emerald-700', icon3d: 'robot', glow: 'rgba(16, 185, 129, 0.4)' },
 ];
 
 export default function AboutSection() {
@@ -170,7 +177,10 @@ export default function AboutSection() {
               transition={{ delay: i * 0.08, duration: 0.5 }}
               className="flex flex-col p-5 rounded-2xl border forces-card shadow-xs hover:shadow-md transition-all duration-300"
             >
-              <span className="mono text-[13px] forces-card-idx font-black mb-2">0{i + 1}</span>
+              <div className="flex items-center justify-between mb-3">
+                <span className="mono text-[13px] forces-card-idx font-black">0{i + 1}</span>
+                <Icon3D name={force.icon3d} size="sm" glowColor={force.glow} />
+              </div>
               <h3 className={`text-[15px] font-mono font-bold tracking-widest ${force.color} mb-2 uppercase`}>
                 {force.id}
               </h3>

@@ -140,24 +140,30 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
           <button
             type="button"
             onClick={() => setActiveTab('institutional')}
-            className={`py-2 rounded-lg font-bold transition-all ${
+            className={`py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'institutional'
                 ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            🏛️ Institutional Desk
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L2 7V9H22V7L12 2ZM4 11V19H7V11H4ZM10 11V19H14V11H10ZM17 11V19H20V11H17ZM2 21V23H22V21H2Z" />
+            </svg>
+            <span>Institutional Desk</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('retail')}
-            className={`py-2 rounded-lg font-bold transition-all ${
+            className={`py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'retail'
                 ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            ⚡ Pro Trader
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            <span>Pro Trader</span>
           </button>
         </div>
 
@@ -178,8 +184,11 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
                 {activeTab === 'institutional' ? 'Institutional Desk ID / Work Email' : 'Account Email'}
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-                  ✉️
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                  </svg>
                 </span>
                 <input
                   type="email"
@@ -206,8 +215,11 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
                 </a>
               </div>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-                  🔒
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
                 </span>
                 <input
                   type={showKey ? 'text' : 'password'}
@@ -257,7 +269,10 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
                   </>
                 ) : (
                   <>
-                    <span>⚡ Authenticate & Launch Cockpit</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                    <span>Authenticate & Launch Cockpit</span>
                   </>
                 )}
               </button>
@@ -268,7 +283,11 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
                 disabled={isLoading}
                 className="w-full py-2.5 rounded-xl border border-slate-700 hover:border-slate-500 bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>🔑 Instant Demo Trader Access (One-Click)</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="7.5" cy="15.5" r="5.5" />
+                  <path d="m21 2-9.6 9.6M15.5 7.5l3 3M18.5 4.5l3 3" />
+                </svg>
+                <span>Instant Demo Trader Access (One-Click)</span>
               </button>
             </div>
           </form>

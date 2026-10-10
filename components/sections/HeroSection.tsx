@@ -142,7 +142,20 @@ export default function HeroSection() {
               title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
               className="px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border backdrop-blur-xl text-xs sm:text-sm font-mono font-bold hover:border-[#00FF88] transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer shadow-xl video-overlay-ctrl min-h-[38px] sm:min-h-[44px]"
             >
-              <span>{isMuted ? '🔇' : '🔊'}</span>
+              <span>
+                {isMuted ? (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" opacity="0.3" />
+                    <line x1="23" y1="9" x2="17" y2="15" />
+                    <line x1="17" y1="9" x2="23" y2="15" />
+                  </svg>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" opacity="0.3" />
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  </svg>
+                )}
+              </span>
               <span className="text-white tracking-wider font-black hidden xs:inline">{isMuted ? 'SOUND OFF' : 'SOUND ON'}</span>
             </button>
 
@@ -151,7 +164,18 @@ export default function HeroSection() {
               title={isPlaying ? 'Pause Video' : 'Play Video'}
               className="p-1.5 px-2.5 sm:px-4 sm:py-2 rounded-xl border backdrop-blur-xl text-xs sm:text-sm font-mono font-bold hover:border-[#00FF88] transition-all cursor-pointer shadow-xl flex items-center gap-1.5 sm:gap-2 video-overlay-ctrl min-h-[38px] sm:min-h-[44px]"
             >
-              <span>{isPlaying ? '⏸' : '▶'}</span>
+              <span>
+                {isPlaying ? (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1.5" />
+                    <rect x="14" y="4" width="4" height="16" rx="1.5" />
+                  </svg>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                  </svg>
+                )}
+              </span>
               <span className="text-white tracking-wider font-black hidden xs:inline">{isPlaying ? 'PAUSE' : 'PLAY'}</span>
             </button>
           </div>
@@ -330,7 +354,10 @@ export default function HeroSection() {
             href="/terminal"
             className="w-full sm:w-auto px-6 sm:px-9 py-3.5 sm:py-4 min-h-[48px] rounded-xl border border-emerald-600 bg-emerald-600 text-white font-mono text-[14px] sm:text-[17px] font-extrabold tracking-widest uppercase shadow-md hover:bg-emerald-500 hover:scale-[1.03] transition-all duration-300 text-center cursor-pointer flex items-center justify-center gap-2 group active:bg-emerald-700"
           >
-            <span>⚡ ENTER THE SYSTEM</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-amber-300">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            <span>ENTER THE SYSTEM</span>
             <span className="inline-block transition-transform duration-200 group-hover:translate-x-1.5">→</span>
           </Link>
 

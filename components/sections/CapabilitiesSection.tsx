@@ -2,16 +2,23 @@
 
 import { motion, useInView } from 'framer-motion';
 import { useRef, useState } from 'react';
+import { Icon3D, Icon3DName } from '@/components/ui/Icon3D';
 
-const engines = [
-  { id: '01', title: 'Pattern Recognition', icon: '◈', color: '#00FF88', desc: 'Real-time detection of Order Blocks, FVGs, and Liquidity Sweeps.' },
-  { id: '02', title: 'Technical Indicators', icon: '📊', color: '#00E5FF', desc: 'Adaptive EMAs, VWAP bands, RSI dynamic zones, and MACD divergence.' },
-  { id: '03', title: 'Trend Topology', icon: '↗', color: '#FFD600', desc: 'Quantifying trend persistence and momentum acceleration vectors.' },
-  { id: '04', title: 'Volume Footprint', icon: '▦', color: '#B388FF', desc: 'Decomposing buying vs. selling delta across individual candle bars.' },
-  { id: '05', title: 'Support & Resistance', icon: '⬡', color: '#00FF88', desc: 'Automated high-timeframe structural pivots and defense zones.' },
-  { id: '06', title: 'Market Microstructure', icon: '◎', color: '#00E5FF', desc: 'Level 2 depth aggregation and passive limit replenishment analysis.' },
-  { id: '07', title: 'Bull / Bear Delta', icon: '⚖', color: '#FFD600', desc: 'Real-time directional pressure measuring aggressive market orders.' },
-  { id: '08', title: 'Risk Probability', icon: '⛊', color: '#FF5252', desc: 'Dynamic stop-loss and take-profit invalidation modeling.' },
+const engines: {
+  id: string;
+  title: string;
+  icon3d: Icon3DName;
+  color: string;
+  desc: string;
+}[] = [
+  { id: '01', title: 'Pattern Recognition', icon3d: 'pattern', color: '#00FF88', desc: 'Real-time detection of Order Blocks, FVGs, and Liquidity Sweeps.' },
+  { id: '02', title: 'Technical Indicators', icon3d: 'chart', color: '#00E5FF', desc: 'Adaptive EMAs, VWAP bands, RSI dynamic zones, and MACD divergence.' },
+  { id: '03', title: 'Trend Topology', icon3d: 'trend', color: '#FFD600', desc: 'Quantifying trend persistence and momentum acceleration vectors.' },
+  { id: '04', title: 'Volume Footprint', icon3d: 'footprint', color: '#B388FF', desc: 'Decomposing buying vs. selling delta across individual candle bars.' },
+  { id: '05', title: 'Support & Resistance', icon3d: 'support', color: '#00FF88', desc: 'Automated high-timeframe structural pivots and defense zones.' },
+  { id: '06', title: 'Market Microstructure', icon3d: 'microstructure', color: '#00E5FF', desc: 'Level 2 depth aggregation and passive limit replenishment analysis.' },
+  { id: '07', title: 'Bull / Bear Delta', icon3d: 'scale', color: '#FFD600', desc: 'Real-time directional pressure measuring aggressive market orders.' },
+  { id: '08', title: 'Risk Probability', icon3d: 'risk', color: '#FF5252', desc: 'Dynamic stop-loss and take-profit invalidation modeling.' },
 ];
 
 export default function CapabilitiesSection() {
@@ -64,9 +71,9 @@ export default function CapabilitiesSection() {
               }}
             >
               <div>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-3.5">
                   <span className="mono text-[13px] font-black engine-mod-id">MOD // {eng.id}</span>
-                  <span className="text-lg" style={{ color: eng.color }}>{eng.icon}</span>
+                  <Icon3D name={eng.icon3d} size="sm" glowColor={`${eng.color}40`} />
                 </div>
                 <h3 className="text-[17px] font-bold mb-2 tracking-wide font-sans engine-card-title">
                   {eng.title}

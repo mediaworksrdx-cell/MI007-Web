@@ -60,7 +60,10 @@ export default function FinalCTASection() {
           href="/terminal"
           className="group px-8 py-3.5 sm:px-9 sm:py-4 bg-emerald-600 text-white rounded-xl text-[14px] sm:text-[16px] font-mono font-black uppercase tracking-widest shadow-md hover:bg-emerald-500 hover:shadow-lg hover:scale-[1.03] transition-all duration-300 inline-flex items-center gap-2"
         >
-          <span>⚡ ENTER THE SYSTEM</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-amber-300">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+          <span>ENTER THE SYSTEM</span>
           <span className="inline-block transition-transform duration-200 group-hover:translate-x-1">
             →
           </span>

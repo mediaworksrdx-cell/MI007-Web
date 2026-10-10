@@ -18,11 +18,11 @@ const TIMEFRAMES: { value: Timeframe; label: string }[] = [
 ];
 
 const CHART_TYPES: { value: ChartType; label: string; icon: string }[] = [
-  { value: 'CANDLESTICK',   label: 'Candlestick', icon: '🕯️' },
+  { value: 'CANDLESTICK',   label: 'Candlestick', icon: '❚' },
   { value: 'HOLLOW_CANDLE', label: 'Hollow Candle', icon: '▯' },
-  { value: 'LINE',          label: 'Line Chart', icon: '📈' },
-  { value: 'AREA',          label: 'Area Mountain', icon: '🏔️' },
-  { value: 'HEIKIN_ASHI',   label: 'Heikin-Ashi', icon: '⚖️' },
+  { value: 'LINE',          label: 'Line Chart', icon: '∿' },
+  { value: 'AREA',          label: 'Area Mountain', icon: '▲' },
+  { value: 'HEIKIN_ASHI',   label: 'Heikin-Ashi', icon: 'HA' },
 ];
 
 const DRAWING_TOOLS: { value: DrawingToolType; label: string; icon: string }[] = [
@@ -35,8 +35,8 @@ const DRAWING_TOOLS: { value: DrawingToolType; label: string; icon: string }[] =
   { value: 'RECTANGLE',           label: 'Support/Resistance Box (2 clicks)', icon: '▭' },
   { value: 'FIBONACCI',           label: 'Fibonacci Retracement (2 clicks)', icon: '≡' },
   { value: 'FIBONACCI_EXTENSION', label: 'Fib Extension Targets (3 clicks)', icon: '⤢' },
-  { value: 'MEASURE',             label: 'Price Range & Bars (2 clicks)', icon: '📐' },
-  { value: 'TEXT',                label: 'Text Annotation (1 click)', icon: '🔤' },
+  { value: 'MEASURE',             label: 'Price Range & Bars (2 clicks)', icon: '↔' },
+  { value: 'TEXT',                label: 'Text Annotation (1 click)', icon: 'T' },
 ];
 
 const STRATEGIES = [
@@ -133,7 +133,10 @@ export function ChartToolbar({
                 : 'border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-800'
             }`}
           >
-            <span>⏱️</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
             <span>{timeframe}</span>
             <span className="text-[10px] text-slate-400">▼</span>
           </button>
@@ -214,7 +217,11 @@ export function ChartToolbar({
                 : 'border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-800'
             }`}
           >
-            <span>📈</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
             <span className="font-bold">Indicators</span>
             {activeIndicators.length > 0 && (
               <span className="h-4 px-1.5 rounded-full bg-emerald-600 text-white font-mono text-[10px] font-bold flex items-center justify-center">
@@ -275,7 +282,10 @@ export function ChartToolbar({
                                   title="Settings"
                                   className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200/60"
                                 >
-                                  ⚙️
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                  </svg>
                                 </button>
                               )}
                               <input
@@ -328,7 +338,10 @@ export function ChartToolbar({
                                   title="Settings"
                                   className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200/60"
                                 >
-                                  ⚙️
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                  </svg>
                                 </button>
                               )}
                               <input
@@ -376,7 +389,10 @@ export function ChartToolbar({
                 : 'border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-800'
             }`}
           >
-            <span>✏️</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 19l7-7 3 3-7 7-3-3z" />
+              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+            </svg>
             <span className="font-bold text-xs">{activeDrawingTool !== 'NONE' ? currentDrawingMeta.label : 'Draw Tools'}</span>
             <span className="text-[10px] text-slate-400">▼</span>
           </button>
@@ -412,7 +428,10 @@ export function ChartToolbar({
                   }}
                   className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
                 >
-                  <span>↩️</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1 4 1 10 7 10" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                  </svg>
                   <span>Undo Last (Ctrl+Z)</span>
                 </button>
               )}
@@ -423,7 +442,10 @@ export function ChartToolbar({
                 }}
                 className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"
               >
-                <span>🗑️</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
                 <span>Clear All Drawings</span>
               </button>
             </div>
@@ -488,7 +510,11 @@ export function ChartToolbar({
                     : 'border-slate-200 text-slate-500 hover:border-slate-300'
                 }`}
               >
-                <span>🎯</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <circle cx="12" cy="12" r="6" />
+                  <circle cx="12" cy="12" r="2" />
+                </svg>
                 <span>{selectedStrategy && selectedStrategy !== 'NONE' ? selectedStrategy.replace(/_/g, ' ') : 'STRAT'}</span>
                 <span className="text-[9px]">▾</span>
               </button>
