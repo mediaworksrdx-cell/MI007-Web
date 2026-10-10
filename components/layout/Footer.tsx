@@ -6,35 +6,35 @@ export function Footer() {
   return (
     <footer className="border-t footer-panel mt-auto">
       <div className="mx-auto max-w-[1600px] px-6 py-10">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
           {/* Brand Column */}
-          <div className="md:col-span-1 flex flex-col gap-3">
-            <div className="flex items-center gap-3.5">
-              <div className="h-11 w-11 sm:h-12 sm:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
+          <div className="md:col-span-5 lg:col-span-4 flex flex-col gap-3">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <div className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 flex-shrink-0 flex items-center justify-center overflow-visible">
                 <Falcon3DLogo
                   src="/images/logo-falcon-transparent.png"
                   alt="Market Intelligence MI- 007"
-                  width={48}
-                  height={48}
+                  width={112}
+                  height={112}
                   className="w-full h-full object-contain"
-                  popoutScale={1.08}
+                  popoutScale={1.1}
                 />
               </div>
-              <div>
-                <div className="text-[10px] font-mono font-black text-emerald-400 tracking-[0.25em] uppercase leading-none mb-1">
+              <div className="min-w-0">
+                <div className="text-[10.5px] sm:text-[11.5px] font-mono font-black text-emerald-400 tracking-[0.25em] uppercase leading-none mb-1">
                   MI-007
                 </div>
-                <div className="leading-none">
-                  <span className="font-extrabold text-[15px] sm:text-[16px] uppercase font-sans tracking-tight footer-brand-title text-white whitespace-nowrap">
+                <div className="leading-tight">
+                  <span className="font-extrabold text-[16px] sm:text-[18px] md:text-[19px] uppercase font-sans tracking-tight footer-brand-title text-white whitespace-nowrap">
                     MARKET INTELLIGENCE
                   </span>
                 </div>
 
-                <div className="text-[10.5px] tracking-[0.18em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-200 whitespace-nowrap">
+                <div className="text-[11px] sm:text-[12px] tracking-[0.18em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-200 whitespace-nowrap">
                   <span>Intelligence Beyond the Noise</span>
                 </div>
 
-                <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1">
+                <div className="text-[10px] sm:text-[10.5px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1">
                   <span>A Synthetix Analytics Product</span>
                 </div>
               </div>
@@ -55,7 +55,7 @@ export function Footer() {
           </div>
 
           {/* Platform Column */}
-          <div>
+          <div className="md:col-span-2 lg:col-span-2">
             <h4 className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading text-white">
               Platform
             </h4>
@@ -79,7 +79,7 @@ export function Footer() {
           </div>
 
           {/* Coverage Column */}
-          <div>
+          <div className="md:col-span-3 lg:col-span-3">
             <h4 className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading text-white">
               Coverage
             </h4>
@@ -109,7 +109,7 @@ export function Footer() {
           </div>
 
           {/* Legal / Compliance Column */}
-          <div>
+          <div className="md:col-span-2 lg:col-span-3">
             <h4 className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading text-white">
               Legal
             </h4>
