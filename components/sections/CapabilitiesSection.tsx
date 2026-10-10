@@ -75,11 +75,6 @@ export default function CapabilitiesSection() {
                   {eng.desc}
                 </p>
               </div>
-
-              <div className="mt-5 pt-3 border-t border-white/10 flex items-center justify-between text-[13px] mono font-bold">
-                <span className="opacity-70">STATUS</span>
-                <span className="text-emerald-500 font-bold">ONLINE</span>
-              </div>
             </motion.div>
           ))}
         </div>

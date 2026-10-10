@@ -77,30 +77,30 @@ html[data-theme="quartz"] {
 html[data-theme="ivory"],
 html[data-theme="champagne"],
 html[data-theme="falcon"] {
-  --color-bg-midnight: #F5F0E5;
+  --color-bg-midnight: #C9DED0;
   --color-surface-card: #244832;
   --color-surface-variant: #2E5A3F;
-  --color-border-navy: #DDD6C8;
-  --color-mint-green: #10B981;
+  --color-border-navy: #B2CAB8;
+  --color-mint-green: #047857;
   --color-crimson-red: #E11D48;
   --color-accent-cyan: #B79A63;
   --color-cyber-gold: #B79A63;
   --color-chart-bg: #244832;
-  --color-text-primary: #1C3024;
-  --color-text-secondary: #4A5E52;
-  --color-text-muted: #63776B;
-  --color-bull-green: #10B981;
+  --color-text-primary: #12281A;
+  --color-text-secondary: #334D3D;
+  --color-text-muted: #4F6858;
+  --color-bull-green: #047857;
   --color-bear-red: #E11D48;
   --color-glass-white: rgba(36, 72, 50, 0.95);
 
-  --theme-page-bg: #F5F0E5;
-  --theme-page-text: #1C3024;
-  --theme-page-subtitle: #4A5E52;
-  --theme-page-border: #DDD6C8;
-  --theme-navbar-bg: rgba(245, 240, 229, 0.96);
-  --theme-ticker-bg: #F5F0E5;
-  --theme-ticker-text: #1C3024;
-  --theme-ticker-border: #DDD6C8;
+  --theme-page-bg: #C9DED0;
+  --theme-page-text: #12281A;
+  --theme-page-subtitle: #334D3D;
+  --theme-page-border: #B2CAB8;
+  --theme-navbar-bg: rgba(201, 222, 208, 0.96);
+  --theme-ticker-bg: #C9DED0;
+  --theme-ticker-text: #12281A;
+  --theme-ticker-border: #B2CAB8;
 
   --theme-card-bg: #244832;
   --theme-card-surface: #2E5A3F;
@@ -402,12 +402,12 @@ html[data-theme="quartz"] .ticker-tape-fade-right {
 html[data-theme="ivory"] .ticker-tape-fade-left,
 html[data-theme="champagne"] .ticker-tape-fade-left,
 html[data-theme="falcon"] .ticker-tape-fade-left {
-  background: linear-gradient(to right, #F5F0E5, transparent) !important;
+  background: linear-gradient(to right, #C9DED0, transparent) !important;
 }
 html[data-theme="ivory"] .ticker-tape-fade-right,
 html[data-theme="champagne"] .ticker-tape-fade-right,
 html[data-theme="falcon"] .ticker-tape-fade-right {
-  background: linear-gradient(to left, #F5F0E5, transparent) !important;
+  background: linear-gradient(to left, #C9DED0, transparent) !important;
 }
 
 html[data-theme="graphite"] .ticker-tape-fade-left,

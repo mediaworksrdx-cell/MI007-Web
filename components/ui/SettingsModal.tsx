@@ -54,14 +54,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     },
     {
       id: 'ivory',
-      name: 'Executive Ivory',
+      name: 'Executive Sage',
       category: 'LIGHT THEME',
       badge: 'Light Theme',
-      feel: 'Warm ivory canvas + forest green cards + cream text',
+      feel: 'Dark light green canvas + forest green cards + cream text',
       accentHex: '#B79A63',
-      bgHex: '#F5F0E5',
+      bgHex: '#C9DED0',
       panelHex: '#244832',
-      bullHex: '#10B981',
+      bullHex: '#047857',
     },
     {
       id: 'graphite',
