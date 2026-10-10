@@ -91,37 +91,39 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
         scrolled ? 'shadow-sm backdrop-blur-md' : 'backdrop-blur-sm'
       }`}
     >
-      <div className="mx-auto flex h-16 sm:h-18 max-w-[1600px] items-center justify-between px-4 lg:px-6">
+      <div className="mx-auto flex h-18 sm:h-20 max-w-[1600px] items-center justify-between px-4 lg:px-6">
         {/* ── Cyber Falcon Logo with Interactive 3D Pop-Up (Zero Background) ── */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 sm:gap-3.5 select-none group min-w-0"
+          className="flex items-center gap-3 sm:gap-4 select-none group min-w-0"
           onMouseEnter={() => setBrandHovered(true)}
           onMouseLeave={() => setBrandHovered(false)}
         >
-          <div className="relative z-50 h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 flex-shrink-0 flex items-center justify-center overflow-visible">
+          <div className="relative z-50 h-13 w-13 sm:h-15 sm:w-15 md:h-16 md:w-16 flex-shrink-0 flex items-center justify-center overflow-visible">
             <Falcon3DLogo
               src="/images/logo-falcon-transparent.png"
               alt="Market Intelligence MI- 007"
-              width={48}
-              height={48}
+              width={64}
+              height={64}
               priority
               className="w-full h-full object-contain"
-              popoutScale={1.05}
+              popoutScale={1.1}
               isNavbar={true}
               isHoveredExternal={brandHovered}
             />
           </div>
           <div className="flex flex-col leading-tight min-w-0 justify-center">
-            <span className="text-[9px] sm:text-[10px] font-mono font-black text-emerald-500 tracking-[0.25em] uppercase leading-none mb-0.5">
+            {/* MI-007 High Contrast Top Indicator */}
+            <span className="navbar-brand-badge font-mono font-black text-[11px] sm:text-[12.5px] tracking-[0.22em] uppercase leading-none mb-1">
               MI-007
             </span>
             <div>
-              <span className="navbar-brand-title font-black text-[14px] xs:text-[15px] sm:text-[17px] tracking-tight uppercase font-sans whitespace-nowrap">
+              <span className="navbar-brand-title font-black text-[15px] sm:text-[18px] tracking-tight uppercase font-sans whitespace-nowrap">
                 MARKET INTELLIGENCE
               </span>
             </div>
-            <span className="navbar-brand-subtitle hidden xs:block text-[8.5px] sm:text-[10px] tracking-[0.16em] sm:tracking-[0.18em] font-extrabold uppercase font-mono mt-0.5 whitespace-nowrap">
+            {/* Tagline Always Visible */}
+            <span className="navbar-brand-subtitle block text-[9.5px] sm:text-[11px] tracking-[0.16em] sm:tracking-[0.18em] font-extrabold uppercase font-mono mt-1 whitespace-nowrap">
               Intelligence Beyond the Noise
             </span>
           </div>

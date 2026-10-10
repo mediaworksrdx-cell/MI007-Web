@@ -637,6 +637,18 @@ header {
   color: var(--theme-page-text) !important;
 }
 
+.navbar-brand-badge {
+  color: #047857 !important;
+  font-weight: 900;
+}
+
+html[data-theme="capital"] .navbar-brand-badge,
+html[data-theme="azure"] .navbar-brand-badge,
+html[data-theme="techno"] .navbar-brand-badge,
+html[data-theme="cyberpunk"] .navbar-brand-badge {
+  color: #34D399 !important;
+}
+
 .navbar-brand-title {
   color: var(--theme-page-text) !important;
 }
