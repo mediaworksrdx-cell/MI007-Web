@@ -55,7 +55,7 @@ export function Falcon3DLogo({
   // Theme-coordinated rim glow
   const accentColor =
     theme === 'ivory'
-      ? '#B79A63' // muted gold
+      ? '#34D399' // radiant emerald mint
       : theme === 'graphite'
       ? '#70B7A0' // muted emerald
       : theme === 'capital'

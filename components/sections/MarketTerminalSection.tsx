@@ -224,7 +224,7 @@ export default function MarketTerminalSection() {
       theme === 'capital'
         ? '#E8DFCD' // warm champagne (Midnight Azure)
         : theme === 'ivory'
-        ? '#244832' // forest green (Executive Ivory)
+        ? '#0E2016' // deep dark emerald card (Dark Emerald)
         : theme === 'graphite'
         ? '#303943' // graphite (Institutional Graphite)
         : '#17365C'; // deep navy (Arctic Sky)
@@ -385,7 +385,7 @@ export default function MarketTerminalSection() {
       theme === 'capital'
         ? '#DED3BE'
         : theme === 'ivory'
-        ? '#2E5A3F'
+        ? '#152E20'
         : theme === 'graphite'
         ? '#3C4753'
         : '#204470';
