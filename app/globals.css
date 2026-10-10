@@ -28,7 +28,7 @@
 /* ══════════════════════════════════════════════════════════════════════════════
    THEME PALETTE DEFINITIONS (Four Distinct Premium Themes)
    1. Arctic Sky: Soft sky blue canvas (#DCEAF2) · Deep navy cards (#17365C) · Soft ivory text (#F2F0E8) · Sky blue accent (#65A9D6)
-   2. Dark Emerald: Dark forest obsidian canvas (#07130B) · Rich dark emerald cards (#0E2016) · Light mint text (#F0FAF4) · Radiant light green accent (#34D399)
+   2. Executive Ivory: Warm ivory canvas (#F5F0E5) · Forest green cards (#204230) · Cream text (#F8F4EB) · Emerald mint accent (#10B981)
    3. Institutional Graphite: Silver gray canvas (#E3E5E7) · Graphite cards (#303943) · Cool silver text (#E9EDF0) · Muted emerald accent (#70B7A0)
    4. Midnight Azure: Midnight navy canvas (#14243A) · Warm champagne cards (#E8DFCD) · Slate navy text (#26374A) · Controlled cyan accent (#65B9D8)
    ══════════════════════════════════════════════════════════════════════════════ */
@@ -77,41 +77,41 @@ html[data-theme="quartz"] {
 html[data-theme="ivory"],
 html[data-theme="champagne"],
 html[data-theme="falcon"] {
-  --color-bg-midnight: #07130B;
-  --color-surface-card: #0E2016;
-  --color-surface-variant: #152E20;
-  --color-border-navy: #1C3D29;
-  --color-mint-green: #34D399;
-  --color-crimson-red: #F87171;
-  --color-accent-cyan: #34D399;
+  --color-bg-midnight: #F5F0E5;
+  --color-surface-card: #204230;
+  --color-surface-variant: #29543C;
+  --color-border-navy: #D8D0C2;
+  --color-mint-green: #047857;
+  --color-crimson-red: #E11D48;
+  --color-accent-cyan: #10B981;
   --color-cyber-gold: #10B981;
-  --color-chart-bg: #0E2016;
-  --color-text-primary: #F0FAF4;
-  --color-text-secondary: #A2C5B0;
-  --color-text-muted: #6E977E;
-  --color-bull-green: #34D399;
-  --color-bear-red: #F87171;
-  --color-glass-white: rgba(14, 32, 22, 0.94);
+  --color-chart-bg: #204230;
+  --color-text-primary: #14281D;
+  --color-text-secondary: #3D5545;
+  --color-text-muted: #587161;
+  --color-bull-green: #047857;
+  --color-bear-red: #E11D48;
+  --color-glass-white: rgba(32, 66, 48, 0.95);
 
-  --theme-page-bg: #07130B;
-  --theme-page-text: #F0FAF4;
-  --theme-page-subtitle: #A2C5B0;
-  --theme-page-border: #1C3D29;
-  --theme-navbar-bg: rgba(7, 19, 11, 0.96);
-  --theme-ticker-bg: #07130B;
-  --theme-ticker-text: #F0FAF4;
-  --theme-ticker-border: #1C3D29;
+  --theme-page-bg: #F5F0E5;
+  --theme-page-text: #14281D;
+  --theme-page-subtitle: #3D5545;
+  --theme-page-border: #D8D0C2;
+  --theme-navbar-bg: rgba(245, 240, 229, 0.96);
+  --theme-ticker-bg: #F5F0E5;
+  --theme-ticker-text: #14281D;
+  --theme-ticker-border: #D8D0C2;
 
-  --theme-card-bg: #0E2016;
-  --theme-card-surface: #152E20;
-  --theme-card-border: #234B34;
-  --theme-card-text: #F0FAF4;
-  --theme-card-text-muted: #95BCA3;
+  --theme-card-bg: #204230;
+  --theme-card-surface: #29543C;
+  --theme-card-border: #386A4D;
+  --theme-card-text: #F8F4EB;
+  --theme-card-text-muted: #A3C7B0;
 
-  --theme-footer-bg: #09170E;
-  --theme-footer-text: #F0FAF4;
-  --theme-footer-border: #1C3D29;
-  --theme-switcher-bg: #0E2016;
+  --theme-footer-bg: #162E21;
+  --theme-footer-text: #F8F4EB;
+  --theme-footer-border: #29543C;
+  --theme-switcher-bg: #204230;
 }
 
 html[data-theme="graphite"],
@@ -402,12 +402,12 @@ html[data-theme="quartz"] .ticker-tape-fade-right {
 html[data-theme="ivory"] .ticker-tape-fade-left,
 html[data-theme="champagne"] .ticker-tape-fade-left,
 html[data-theme="falcon"] .ticker-tape-fade-left {
-  background: linear-gradient(to right, #07130B, transparent) !important;
+  background: linear-gradient(to right, #F5F0E5, transparent) !important;
 }
 html[data-theme="ivory"] .ticker-tape-fade-right,
 html[data-theme="champagne"] .ticker-tape-fade-right,
 html[data-theme="falcon"] .ticker-tape-fade-right {
-  background: linear-gradient(to left, #07130B, transparent) !important;
+  background: linear-gradient(to left, #F5F0E5, transparent) !important;
 }
 
 html[data-theme="graphite"] .ticker-tape-fade-left,
@@ -598,12 +598,12 @@ html[data-theme="quartz"] .hero-marquee-fade-right {
 html[data-theme="ivory"] .hero-marquee-fade-left,
 html[data-theme="champagne"] .hero-marquee-fade-left,
 html[data-theme="falcon"] .hero-marquee-fade-left {
-  background: linear-gradient(to right, #0E2016, transparent) !important;
+  background: linear-gradient(to right, #204230, transparent) !important;
 }
 html[data-theme="ivory"] .hero-marquee-fade-right,
 html[data-theme="champagne"] .hero-marquee-fade-right,
 html[data-theme="falcon"] .hero-marquee-fade-right {
-  background: linear-gradient(to left, #0E2016, transparent) !important;
+  background: linear-gradient(to left, #204230, transparent) !important;
 }
 
 html[data-theme="graphite"] .hero-marquee-fade-left,
@@ -791,8 +791,8 @@ html[data-theme="arctic"] footer {
 html[data-theme="ivory"] footer,
 html[data-theme="champagne"] footer,
 html[data-theme="falcon"] footer {
-  background-color: #09170E !important;
-  border-color: #1C3D29 !important;
+  background-color: #162E21 !important;
+  border-color: #29543C !important;
 }
 
 html[data-theme="graphite"] footer,
@@ -812,27 +812,18 @@ html[data-theme="techno"] footer {
 /* Scrollbars in dark mode */
 html[data-theme="graphite"] ::-webkit-scrollbar-track,
 html[data-theme="capital"] ::-webkit-scrollbar-track,
-html[data-theme="ivory"] ::-webkit-scrollbar-track,
-html[data-theme="champagne"] ::-webkit-scrollbar-track,
-html[data-theme="falcon"] ::-webkit-scrollbar-track,
 html[data-theme="metallic"] ::-webkit-scrollbar-track,
 html[data-theme="techno"] ::-webkit-scrollbar-track {
   background: var(--theme-page-bg);
 }
 html[data-theme="graphite"] ::-webkit-scrollbar-thumb,
 html[data-theme="capital"] ::-webkit-scrollbar-thumb,
-html[data-theme="ivory"] ::-webkit-scrollbar-thumb,
-html[data-theme="champagne"] ::-webkit-scrollbar-thumb,
-html[data-theme="falcon"] ::-webkit-scrollbar-thumb,
 html[data-theme="metallic"] ::-webkit-scrollbar-thumb,
 html[data-theme="techno"] ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
 }
 html[data-theme="graphite"] ::-webkit-scrollbar-thumb:hover,
 html[data-theme="capital"] ::-webkit-scrollbar-thumb:hover,
-html[data-theme="ivory"] ::-webkit-scrollbar-thumb:hover,
-html[data-theme="champagne"] ::-webkit-scrollbar-thumb:hover,
-html[data-theme="falcon"] ::-webkit-scrollbar-thumb:hover,
 html[data-theme="metallic"] ::-webkit-scrollbar-thumb:hover,
 html[data-theme="techno"] ::-webkit-scrollbar-thumb:hover {
   background: var(--color-accent-cyan);
