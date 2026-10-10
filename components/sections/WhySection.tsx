@@ -598,7 +598,7 @@ export default function WhySection() {
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
           <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
           <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text whitespace-nowrap">
-            06 // MARKET INTELLIGENCE MI- 007
+            06 // MI-007 · MARKET INTELLIGENCE
           </span>
         </div>
 

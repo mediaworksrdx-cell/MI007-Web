@@ -21,17 +21,20 @@ export function Footer() {
                 />
               </div>
               <div>
+                <div className="text-[10px] font-mono font-black text-emerald-400 tracking-[0.25em] uppercase leading-none mb-1">
+                  MI-007
+                </div>
                 <div className="leading-none">
-                  <span className="font-extrabold text-[16px] uppercase font-sans tracking-tight footer-brand-title text-white whitespace-nowrap">
-                    MARKET INTELLIGENCE MI- 007
+                  <span className="font-extrabold text-[15px] sm:text-[16px] uppercase font-sans tracking-tight footer-brand-title text-white whitespace-nowrap">
+                    MARKET INTELLIGENCE
                   </span>
                 </div>
 
-                <div className="text-[11px] tracking-[0.18em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-200 whitespace-nowrap">
+                <div className="text-[10.5px] tracking-[0.18em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-200 whitespace-nowrap">
                   <span>Intelligence Beyond the Noise</span>
                 </div>
 
-                <div className="text-[10.5px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1">
+                <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1">
                   <span>A Synthetix Analytics Product</span>
                 </div>
               </div>

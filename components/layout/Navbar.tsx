@@ -112,13 +112,16 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               isHoveredExternal={brandHovered}
             />
           </div>
-          <div className="flex flex-col leading-tight min-w-0">
+          <div className="flex flex-col leading-tight min-w-0 justify-center">
+            <span className="text-[9px] sm:text-[10px] font-mono font-black text-emerald-500 tracking-[0.25em] uppercase leading-none mb-0.5">
+              MI-007
+            </span>
             <div>
-              <span className="navbar-brand-title font-black text-[15px] xs:text-[16px] sm:text-[18px] tracking-tight uppercase font-sans whitespace-nowrap">
-                MARKET INTELLIGENCE MI- 007
+              <span className="navbar-brand-title font-black text-[14px] xs:text-[15px] sm:text-[17px] tracking-tight uppercase font-sans whitespace-nowrap">
+                MARKET INTELLIGENCE
               </span>
             </div>
-            <span className="navbar-brand-subtitle hidden xs:block text-[9px] sm:text-[11px] tracking-[0.15em] sm:tracking-[0.2em] font-extrabold uppercase font-mono mt-0.5 whitespace-nowrap">
+            <span className="navbar-brand-subtitle hidden xs:block text-[8.5px] sm:text-[10px] tracking-[0.16em] sm:tracking-[0.18em] font-extrabold uppercase font-mono mt-0.5 whitespace-nowrap">
               Intelligence Beyond the Noise
             </span>
           </div>

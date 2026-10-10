@@ -277,25 +277,46 @@ export default function HeroSection() {
           </div>
         </motion.div>
 
+        {/* MI-007 Top Header Indicator */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.32 }}
+          className="mono text-[12px] xs:text-[13px] sm:text-[16px] md:text-[18px] lg:text-[20px] font-black tracking-[0.35em] sm:tracking-[0.4em] uppercase text-emerald-500 mb-2 sm:mb-3"
+        >
+          MI-007
+        </motion.div>
+
+        {/* MARKET INTELLIGENCE (Same Row) */}
         <motion.h1
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.35 }}
-          className="text-[19px] xs:text-[26px] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-[-0.02em] leading-tight mb-4 sm:mb-6 page-heading"
+          className="text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-[-0.02em] leading-tight page-heading"
         >
           <span className="hero-title-gradient whitespace-nowrap inline-block">
-            MARKET INTELLIGENCE MI- 007
+            MARKET INTELLIGENCE
           </span>
         </motion.h1>
 
-        {/* Subtitle */}
+        {/* Tagline down below Market Intelligence */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.38 }}
+          className="mono text-[11px] xs:text-[12px] sm:text-[15px] md:text-[17px] font-extrabold uppercase tracking-[0.22em] sm:tracking-[0.28em] text-emerald-500 mt-2.5 sm:mt-3.5 mb-3 sm:mb-5"
+        >
+          Intelligence Beyond the Noise
+        </motion.div>
+
+        {/* Subtitle / Description */}
         <motion.p
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.4 }}
-          className="text-[15px] sm:text-[19px] md:text-[21px] font-medium max-w-3xl mx-auto mb-6 sm:mb-10 leading-relaxed px-2 sm:px-0 page-subtitle"
+          transition={{ duration: 0.7, delay: 0.42 }}
+          className="text-[15px] sm:text-[18px] md:text-[20px] font-medium max-w-3xl mx-auto mb-6 sm:mb-10 leading-relaxed px-2 sm:px-0 page-subtitle"
         >
-          <strong className="font-bold text-emerald-500">Intelligence Beyond the Noise.</strong> Multi-dimensional technical synthesis and real-time liquidity sweep detection engineered for institutional execution.
+          Multi-dimensional technical synthesis and real-time liquidity sweep detection engineered for institutional execution.
         </motion.p>
 
         {/* Action Buttons */}

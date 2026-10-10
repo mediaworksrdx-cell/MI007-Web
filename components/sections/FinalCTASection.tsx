@@ -37,15 +37,22 @@ export default function FinalCTASection() {
           />
         </div>
 
-        <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight mb-3 sm:mb-4 final-cta-title flex flex-col items-center justify-center gap-1">
+        <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight mb-2 sm:mb-3 final-cta-title flex flex-col items-center justify-center gap-1">
+          <span className="mono text-[11px] sm:text-[13px] tracking-[0.3em] uppercase font-black text-emerald-400 mb-0.5">
+            MI-007
+          </span>
           <span>Step Into</span>
           <span className="whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">
-            Market Intelligence MI- 007
+            Market Intelligence
           </span>
         </h2>
 
-        <p className="text-[15px] sm:text-[17px] max-w-lg mb-6 sm:mb-8 font-medium leading-relaxed final-cta-subtitle">
-          <strong className="font-bold text-emerald-400">Intelligence Beyond the Noise.</strong> Join quantitative desks and algorithmic traders operating at sub-millisecond precision.
+        <div className="mono text-[11px] sm:text-[13px] font-extrabold uppercase tracking-[0.22em] text-emerald-400 mb-2 sm:mb-3">
+          Intelligence Beyond the Noise
+        </div>
+
+        <p className="text-[14px] sm:text-[16px] max-w-lg mb-6 sm:mb-8 font-medium leading-relaxed final-cta-subtitle">
+          Join quantitative desks and algorithmic traders operating at sub-millisecond precision.
         </p>
 
         {/* Clean Glowing CTA Button */}
