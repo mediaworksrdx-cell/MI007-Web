@@ -141,6 +141,11 @@ export function CompanyAnalysisView({
 
             <Link
               href={`/chart/${company.symbol}?market=${company.market}&from=screener`}
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  sessionStorage.setItem('mi007_return_tab', 'screener');
+                }
+              }}
               className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 mono text-[12.5px] font-black tracking-wide hover:bg-emerald-400 transition-colors shadow-xs"
             >
               Live Chart ↗

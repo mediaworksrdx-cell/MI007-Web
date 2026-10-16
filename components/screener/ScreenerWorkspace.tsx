@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useTransition } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useMarket } from '@/lib/marketContext';
 import { MarketRegion, CompanyFundamental, SavedScreen, VisualFilter, CustomRatio, Watchlist, ScreeningAlert } from '@/lib/screener/types';
 import { MASTER_COMPANIES, getCompaniesByMarket, getSectors } from '@/lib/screener/data';
@@ -94,6 +95,36 @@ export function ScreenerWorkspace() {
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const [customRatios, setCustomRatios] = useState<CustomRatio[]>([]);
   const [alerts, setAlerts] = useState<ScreeningAlert[]>([]);
+
+  const searchParams = useSearchParams();
+
+  // Force activeTab to 'screener' (the Stock Screener table) when arriving with ?tab=screener or returning from chart
+  useEffect(() => {
+    const tabParam = searchParams?.get('tab');
+    if (tabParam === 'screener') {
+      setActiveTab('screener');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const handleReturnToScreener = () => {
+      if (typeof window !== 'undefined') {
+        const returnTab = sessionStorage.getItem('mi007_return_tab');
+        if (returnTab === 'screener') {
+          sessionStorage.removeItem('mi007_return_tab');
+          setActiveTab('screener');
+        }
+      }
+    };
+
+    handleReturnToScreener();
+    window.addEventListener('popstate', handleReturnToScreener);
+    window.addEventListener('pageshow', handleReturnToScreener);
+    return () => {
+      window.removeEventListener('popstate', handleReturnToScreener);
+      window.removeEventListener('pageshow', handleReturnToScreener);
+    };
+  }, []);
 
   // Sync with client-side localStorage
   useEffect(() => {

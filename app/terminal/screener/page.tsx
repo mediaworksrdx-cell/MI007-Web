@@ -1,7 +1,7 @@
 // ─── MI007 Institutional Stock Screener Terminal Page ────────────────────────
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -82,7 +82,9 @@ export default function ScreenerTerminalPage() {
             </div>
 
             {/* Master Screener Workspace */}
-            <ScreenerWorkspace />
+            <Suspense fallback={<div className="p-8 text-center text-slate-400 mono text-[13px]">Loading Institutional Screener...</div>}>
+              <ScreenerWorkspace />
+            </Suspense>
           </div>
         </div>
       </main>

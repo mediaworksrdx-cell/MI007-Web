@@ -230,6 +230,11 @@ export function WatchlistsView({
 
                         <Link
                           href={`/chart/${comp.symbol}?market=${comp.market}&from=screener`}
+                          onClick={() => {
+                            if (typeof window !== 'undefined') {
+                              sessionStorage.setItem('mi007_return_tab', 'screener');
+                            }
+                          }}
                           className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] text-[11px] font-bold hover:text-white transition-all"
                         >
                           Chart ↗

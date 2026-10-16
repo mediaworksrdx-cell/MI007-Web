@@ -52,9 +52,14 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
           {isFromScreener ? (
             <>
               <Link
-                href="/terminal/screener"
+                href="/terminal/screener?tab=screener"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('mi007_return_tab', 'screener');
+                  }
+                }}
                 className="flex items-center gap-1.5 text-[13.5px] mono font-black text-emerald-400 hover:text-emerald-300 transition-colors"
-                title="Return to Stock Screener"
+                title="Return to Stock Screener Table"
               >
                 ← BACK TO SCREENER
               </Link>
