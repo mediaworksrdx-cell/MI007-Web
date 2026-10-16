@@ -67,6 +67,18 @@ export function TopToolbar({
               <span className={`w-2 h-2 rounded-full ${tradeEngineStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : tradeEngineStatus === 'connecting' ? 'bg-amber-400 animate-pulse' : 'bg-rose-400'}`} />
               <span>{tradeEngineStatus === 'connected' ? 'KITE LIVE' : tradeEngineStatus === 'connecting' ? 'KITE CONNECTING' : 'KITE OFFLINE'}</span>
             </div>
+
+            {activeTab !== 'screener' && (
+              <button
+                type="button"
+                onClick={() => onChangeTab('screener')}
+                className="px-3 py-1 rounded-lg border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500 hover:text-slate-950 mono text-[11.5px] font-black transition-all flex items-center gap-1.5 shadow-xs cursor-pointer group"
+                title="Return to Stock Screener"
+              >
+                <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
+                <span>BACK TO SCREENER</span>
+              </button>
+            )}
           </div>
 
           {/* Market selector */}

@@ -10,12 +10,14 @@ import { QueryNode, CompanyFundamental } from '@/lib/screener/types';
 interface CustomQueryBuilderViewProps {
   initialQuery: string;
   onApplyQuery: (query: string) => void;
+  onBackToScreener?: () => void;
   companies?: CompanyFundamental[];
 }
 
 export function CustomQueryBuilderView({
   initialQuery,
   onApplyQuery,
+  onBackToScreener,
   companies = MASTER_COMPANIES,
 }: CustomQueryBuilderViewProps) {
   const [queryText, setQueryText] = useState(initialQuery);
@@ -58,16 +60,29 @@ export function CustomQueryBuilderView({
     <div className="flex flex-col gap-6 animate-in fade-in duration-150">
       {/* Header */}
       <div className="p-6 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-            <h2 className="mono text-[18px] sm:text-[22px] font-black inst-card-text uppercase tracking-wide">
-              Advanced Financial Query Lab
-            </h2>
+        <div className="flex items-center gap-3.5 min-w-0">
+          {onBackToScreener && (
+            <button
+              type="button"
+              onClick={onBackToScreener}
+              className="px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-1.5 mono text-[12px] font-bold shadow-xs shrink-0 group cursor-pointer"
+              title="Back to Screener"
+            >
+              <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
+              <span>BACK</span>
+            </button>
+          )}
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+              <h2 className="mono text-[18px] sm:text-[22px] font-black inst-card-text uppercase tracking-wide">
+                Advanced Financial Query Lab
+              </h2>
+            </div>
+            <p className="text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">
+              Construct complex multi-variable compound screens using safe AST parsing. Test logic interactively before applying.
+            </p>
           </div>
-          <p className="text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">
-            Construct complex multi-variable compound screens using safe AST parsing. Test logic interactively before applying.
-          </p>
         </div>
 
         <button

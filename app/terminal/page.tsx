@@ -236,6 +236,15 @@ export default function TerminalPage() {
             {/* ── Outer Bezel Header ── */}
             <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-[var(--theme-card-border)] relative z-10">
               <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                <Link
+                  href="/"
+                  className="px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-2 mono text-[12px] font-bold shadow-xs shrink-0 group"
+                  title="Return to Home"
+                >
+                  <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
+                  <span className="font-black">HOME</span>
+                </Link>
+
                 <div className="flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center flex-shrink-0 overflow-visible">
                   <Falcon3DLogo
                     src="/images/logo-falcon-transparent.png"

@@ -373,6 +373,7 @@ export function ScreenerWorkspace() {
             setCurrentQuery(s.query);
             setActiveTab('screener');
           }}
+          onBackToScreener={() => setActiveTab('screener')}
         />
       )}
 
@@ -384,6 +385,7 @@ export function ScreenerWorkspace() {
             setCurrentQuery(q);
             setActiveTab('screener');
           }}
+          onBackToScreener={() => setActiveTab('screener')}
           companies={marketCompanies}
         />
       )}
@@ -397,6 +399,7 @@ export function ScreenerWorkspace() {
             setCurrentQuery(s.query);
             setActiveTab('screener');
           }}
+          onBackToScreener={() => setActiveTab('screener')}
           onDuplicateScreen={(s) => {
             const copy: SavedScreen = {
               ...s,
@@ -422,6 +425,7 @@ export function ScreenerWorkspace() {
           watchlists={watchlists}
           companies={allCompaniesEnriched}
           onSelectCompany={handleOpenCompanyAnalysis}
+          onBackToScreener={() => setActiveTab('screener')}
           onRemoveSymbol={(wlId, sym) => {
             const updated = toggleSymbolInWatchlist(wlId, sym);
             setWatchlists(updated);
@@ -459,6 +463,7 @@ export function ScreenerWorkspace() {
         <PeerComparisonView
           initialSymbols={peerSymbols}
           onSelectCompany={handleOpenCompanyAnalysis}
+          onBackToScreener={() => setActiveTab('screener')}
           companies={allCompaniesEnriched}
         />
       )}
@@ -467,6 +472,7 @@ export function ScreenerWorkspace() {
       {activeTab === 'alerts' && (
         <ScreeningAlertsView
           alerts={alerts}
+          onBackToScreener={() => setActiveTab('screener')}
           onToggleAlert={(id) => {
             const updated = toggleAlertStatus(id);
             setAlerts(updated);

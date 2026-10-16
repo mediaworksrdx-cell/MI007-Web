@@ -51,10 +51,11 @@ export function CompanyAnalysisView({
           <button
             type="button"
             onClick={onBackToScreener}
-            className="w-10 h-10 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center justify-center text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 transition-colors shrink-0"
+            className="px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-1.5 mono text-[12px] font-bold shadow-xs shrink-0 group cursor-pointer"
             title="Back to Screener"
           >
-            ←
+            <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
+            <span>BACK</span>
           </button>
 
           <div>
