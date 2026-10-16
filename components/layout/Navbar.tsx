@@ -18,11 +18,15 @@ interface NavbarProps {
   onMarketChange?: (m: MarketType) => void;
 }
 
-const NAV_LINKS = [
-  { href: '/',                  label: 'Home' },
-  { href: '/terminal/screener', label: 'Screener' },
-  { href: '/about',             label: 'About' },
-  { href: '/contact',           label: 'Contact' },
+const PUBLIC_NAV_LINKS = [
+  { href: '/',        label: 'Home' },
+  { href: '/about',   label: 'About' },
+  { href: '/contact', label: 'Contact' },
+];
+
+const TERMINAL_NAV_LINKS = [
+  { href: '/terminal',          label: 'Market Cockpit' },
+  { href: '/terminal/screener', label: 'Stock Screener' },
 ];
 
 export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange }: NavbarProps) {
@@ -132,7 +136,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
         {/* ── Desktop Nav Links (High Contrast, Clear Active State) ── */}
         <nav className="hidden md:flex items-center gap-1.5">
-          {NAV_LINKS.map(({ href, label }) => {
+          {(isTerminalOrDashboard ? TERMINAL_NAV_LINKS : PUBLIC_NAV_LINKS).map(({ href, label }) => {
             const isActive = pathname === href;
             return (
               <Link
@@ -391,7 +395,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             <MarketToggle selected={market} onChange={handleMarketChange} className="w-full justify-center mb-2" />
           )}
 
-          {NAV_LINKS.map(({ href, label }) => (
+          {(isTerminalOrDashboard ? TERMINAL_NAV_LINKS : PUBLIC_NAV_LINKS).map(({ href, label }) => (
             <Link
               key={href}
               href={href}

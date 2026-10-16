@@ -1,6 +1,5 @@
-// ─── Direct Screener Route (/screener) ─────────────────────────────────────────
-import ScreenerPage from '../terminal/screener/page';
+import { redirect } from 'next/navigation';
 
-export default function DirectScreenerRoute() {
-  return <ScreenerPage />;
+export default function ScreenerRedirect() {
+  redirect('/terminal/screener');
 }

@@ -254,18 +254,29 @@ export default function TerminalPage() {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                <Link
-                  href="/terminal/screener"
-                  className="px-3.5 py-1.5 rounded-lg bg-emerald-500 text-slate-950 mono text-[12px] sm:text-[13px] font-black tracking-wider hover:bg-emerald-400 transition-all shadow-xs flex items-center gap-1.5"
-                >
-                  <span>⚡</span>
-                  <span>STOCK SCREENER</span>
-                </Link>
                 <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[13px] sm:text-[15px] mono inst-card-text font-bold shadow-xs">
                   <span>{MARKETS[market].flag}</span>
                   <span className="inst-card-text font-black">{MARKETS[market].label}</span>
                 </div>
               </div>
+            </div>
+
+            {/* ── Terminal Suite Module Tabs ── */}
+            <div className="flex items-center gap-2 mb-6 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
+              <Link
+                href="/terminal"
+                className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-black tracking-wide text-center transition-all bg-emerald-500 text-slate-950 shadow-xs flex items-center justify-center gap-2"
+              >
+                <span>⚡</span>
+                <span>MARKET COCKPIT</span>
+              </Link>
+              <Link
+                href="/terminal/screener"
+                className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-white hover:bg-white/5 flex items-center justify-center gap-2"
+              >
+                <span>🔍</span>
+                <span>STOCK SCREENER</span>
+              </Link>
             </div>
 
             {/* ── Screener Terminal Banner ── */}
