@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npx tsx scripts/verify-institutional-audit.ts",
+    "test:unit": "npx tsx scripts/test-screener.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
