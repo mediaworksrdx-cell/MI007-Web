@@ -185,7 +185,7 @@ export function PeerComparisonView({
                         <button
                           type="button"
                           onClick={() => onSelectCompany(c.symbol)}
-                          className="font-black text-[14px] text-white hover:text-emerald-400 hover:underline transition-colors"
+                          className="font-black text-[14px] text-[var(--theme-card-text)] hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline transition-colors cursor-pointer"
                         >
                           {c.symbol}
                         </button>

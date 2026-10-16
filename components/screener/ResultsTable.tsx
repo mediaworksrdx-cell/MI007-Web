@@ -104,7 +104,7 @@ function Range52WBar({ current, low, high, currency = '₹' }: { current: number
     <div className="flex flex-col gap-1 w-28 sm:w-32 py-0.5">
       <div className="flex items-center justify-between text-[9.5px] mono text-[var(--theme-card-text-muted)]">
         <span>{currency}{Math.round(low)}</span>
-        <span className="font-bold text-white">{currency}{Math.round(current)}</span>
+        <span className="font-bold text-[var(--theme-card-text)]">{currency}{Math.round(current)}</span>
         <span>{currency}{Math.round(high)}</span>
       </div>
       <div className="w-full h-1.5 rounded-full bg-slate-800 border border-slate-700/60 relative overflow-hidden">
@@ -578,8 +578,8 @@ export function ResultsTable({
       {/* Pagination & Status Footer */}
       <div className="flex flex-wrap items-center justify-between px-4 py-3 bg-[var(--theme-card-surface)] text-[12px] mono gap-2">
         <div className="text-[var(--theme-card-text-muted)]">
-          Page <span className="text-white font-bold">{page}</span> of{' '}
-          <span className="text-white font-bold">{totalPages}</span> ·{' '}
+          Page <span className="text-[var(--theme-card-text)] font-bold">{page}</span> of{' '}
+          <span className="text-[var(--theme-card-text)] font-bold">{totalPages}</span> ·{' '}
           {displayedCompanies.length} Total Rows
         </div>
 

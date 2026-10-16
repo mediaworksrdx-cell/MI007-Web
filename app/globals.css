@@ -673,6 +673,8 @@ html[data-theme="quartz"] {
   }
 
   /* Prevent Inadvertent White Text on White Cards */
+  button.text-white:not(.bg-rose-500):not(.bg-emerald-600):not(.bg-emerald-500):not(.bg-slate-900):not(.bg-black):not(.launch-terminal-btn),
+  button .text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *),
   td.text-white,
   tr.text-white,
   p.text-white,

@@ -115,7 +115,7 @@ export function ScreeningAlertsView({
                 </button>
               </div>
 
-              <h3 className="mono text-[15px] font-black text-white">
+              <h3 className="mono text-[15px] font-black text-[var(--theme-card-text)]">
                 {alert.name}
               </h3>
 

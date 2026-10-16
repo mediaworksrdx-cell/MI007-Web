@@ -111,7 +111,7 @@ export function TechnicalAnalysisView({
               </div>
             </div>
             <div className="text-[12.5px] text-[var(--theme-card-text-muted)] font-medium mt-0.5">
-              Sector: <span className="font-bold text-[var(--theme-card-text)]">{company.sector}</span> · 52W High: <span className="font-bold text-white">₹{company.high52W}</span> · 52W Low: <span className="font-bold text-white">₹{company.low52W}</span>
+              Sector: <span className="font-bold text-[var(--theme-card-text)]">{company.sector}</span> · 52W High: <span className="font-bold text-[var(--theme-card-text)]">₹{company.high52W}</span> · 52W Low: <span className="font-bold text-[var(--theme-card-text)]">₹{company.low52W}</span>
             </div>
           </div>
         </div>
@@ -146,23 +146,23 @@ export function TechnicalAnalysisView({
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 p-3 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xs mono text-[12px]">
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">Date</span>
-          <span className="font-black text-white">{activeCandle.time || new Date(activeCandle.openTime).toISOString().slice(0, 10)}</span>
+          <span className="font-black text-[var(--theme-card-text)]">{activeCandle.time || new Date(activeCandle.openTime).toISOString().slice(0, 10)}</span>
         </div>
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">Open</span>
-          <span className="font-black text-white">₹{activeCandle.open.toFixed(2)}</span>
+          <span className="font-black text-[var(--theme-card-text)]">₹{activeCandle.open.toFixed(2)}</span>
         </div>
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">High</span>
-          <span className="font-black text-emerald-400">₹{activeCandle.high.toFixed(2)}</span>
+          <span className="font-black text-emerald-700 dark:text-emerald-400">₹{activeCandle.high.toFixed(2)}</span>
         </div>
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">Low</span>
-          <span className="font-black text-rose-400">₹{activeCandle.low.toFixed(2)}</span>
+          <span className="font-black text-rose-700 dark:text-rose-400">₹{activeCandle.low.toFixed(2)}</span>
         </div>
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">Close / LTP</span>
-          <span className={`font-black ${activeCandle.close >= activeCandle.open ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <span className={`font-black ${activeCandle.close >= activeCandle.open ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
             ₹{activeCandle.close.toFixed(2)}
           </span>
         </div>
@@ -547,7 +547,7 @@ export function TechnicalAnalysisView({
                 }`}
               >
                 <div className="flex items-center justify-between gap-1 mb-1">
-                  <span className="mono text-[12px] font-black text-white">{sig.strategyName}</span>
+                  <span className="mono text-[12px] font-black text-[var(--theme-card-text)]">{sig.strategyName}</span>
                   <span
                     className={`mono text-[10px] font-black px-1.5 py-0.2 rounded ${
                       isBull

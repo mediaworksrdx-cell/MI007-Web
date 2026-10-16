@@ -157,7 +157,7 @@ export function TechnicalStrategyScreenerView({
                 : 'border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] hover:border-slate-500'
             }`}
           >
-            <div className="mono text-[12px] font-black text-white truncate">
+            <div className="mono text-[12px] font-black text-[var(--theme-card-text)] truncate">
               All 10 Strategies
             </div>
             <div className="text-[10px] mono text-[var(--theme-card-text-muted)] mt-1">
@@ -180,8 +180,8 @@ export function TechnicalStrategyScreenerView({
                 }`}
               >
                 <div className="flex items-center justify-between gap-1">
-                  <span className="mono text-[11px] font-black text-white truncate">{s.name}</span>
-                  <span className="text-[9px] mono px-1 rounded bg-slate-800 text-emerald-400 font-bold shrink-0">
+                  <span className="mono text-[11px] font-black text-[var(--theme-card-text)] truncate">{s.name}</span>
+                  <span className="text-[9px] mono px-1.5 py-0.2 rounded bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-emerald-400 font-bold shrink-0">
                     {matchesCount}
                   </span>
                 </div>
@@ -234,7 +234,7 @@ export function TechnicalStrategyScreenerView({
                         : dir === 'bearish'
                         ? 'bg-rose-500 text-white font-black'
                         : 'bg-emerald-500 text-slate-950 font-black'
-                      : 'text-[var(--theme-card-text-muted)] hover:text-white'
+                      : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
                   }`}
                 >
                   {dir === 'ALL' ? 'All Directions' : dir === 'bullish' ? '▲ Bullish Signals' : '▼ Bearish Signals'}
@@ -252,7 +252,7 @@ export function TechnicalStrategyScreenerView({
                   className={`px-2.5 py-1 rounded-lg mono text-[11px] font-bold transition-all cursor-pointer ${
                     categoryFilter === cat
                       ? 'bg-emerald-500 text-slate-950 font-black'
-                      : 'text-[var(--theme-card-text-muted)] hover:text-white'
+                      : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
                   }`}
                 >
                   {cat}
@@ -328,7 +328,7 @@ export function TechnicalStrategyScreenerView({
                           <button
                             type="button"
                             onClick={() => onSelectCompany(res.symbol)}
-                            className="font-black text-[13px] text-white hover:text-emerald-400 transition-colors hover:underline text-left"
+                            className="font-black text-[13px] text-[var(--theme-card-text)] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors hover:underline text-left cursor-pointer"
                           >
                             {res.symbol}
                           </button>
@@ -340,7 +340,7 @@ export function TechnicalStrategyScreenerView({
 
                       {/* Strategy */}
                       <td className="py-2.5 px-3 whitespace-nowrap">
-                        <span className="font-bold text-white text-[12px]">
+                        <span className="font-bold text-[var(--theme-card-text)] text-[12px]">
                           {res.strategyName}
                         </span>
                       </td>
@@ -350,10 +350,10 @@ export function TechnicalStrategyScreenerView({
                         <span
                           className={`px-2 py-0.5 rounded-full border text-[11px] font-black ${
                             isBull
-                              ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400'
+                              ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
                               : isBear
-                              ? 'border-rose-500/50 bg-rose-500/15 text-rose-400'
-                              : 'border-slate-700 bg-slate-800 text-slate-400'
+                              ? 'border-rose-500/50 bg-rose-500/15 text-rose-700 dark:text-rose-400'
+                              : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400'
                           }`}
                         >
                           {isBull ? '▲ BULLISH' : isBear ? '▼ BEARISH' : 'NEUTRAL'}
@@ -361,25 +361,25 @@ export function TechnicalStrategyScreenerView({
                       </td>
 
                       {/* LTP */}
-                      <td className="py-2.5 px-3 text-right font-black text-white whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-right font-black text-[var(--theme-card-text)] whitespace-nowrap">
                         ₹{res.currentPrice.toFixed(2)}
                       </td>
 
                       {/* Trigger Price */}
-                      <td className="py-2.5 px-3 text-right text-[var(--theme-card-text-muted)] whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-semibold whitespace-nowrap">
                         ₹{res.triggerPrice.toFixed(2)}
                       </td>
 
                       {/* Win Rate */}
                       <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                        <span className="font-bold text-emerald-400">
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400">
                           {res.historicalWinRate ? `${res.historicalWinRate}%` : '64.2%'}
                         </span>
                       </td>
 
                       {/* Explanation */}
                       <td className="py-2.5 px-3 max-w-[340px]">
-                        <p className="text-[11.5px] leading-relaxed text-[var(--theme-card-text-muted)] line-clamp-2">
+                        <p className="text-[11.5px] leading-relaxed text-[var(--theme-card-text)] opacity-90 line-clamp-2">
                           {res.explanation}
                         </p>
                       </td>
@@ -391,7 +391,7 @@ export function TechnicalStrategyScreenerView({
                             <button
                               type="button"
                               onClick={() => onOpenBacktest(res.symbol, res.strategyId)}
-                              className="px-2 py-0.5 rounded border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 text-[11px] font-bold transition-all cursor-pointer"
+                              className="px-2 py-0.5 rounded border border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 text-[11px] font-bold transition-all cursor-pointer"
                               title="Run Historical Backtest"
                             >
                               Backtest
@@ -404,7 +404,7 @@ export function TechnicalStrategyScreenerView({
                                 sessionStorage.setItem('mi007_return_tab', 'screener');
                               }
                             }}
-                            className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-white text-[11px] font-bold transition-all"
+                            className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] text-[11px] font-bold transition-all"
                           >
                             Chart ↗
                           </Link>

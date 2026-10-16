@@ -186,35 +186,35 @@ export function WatchlistsView({
                         </div>
                       </td>
 
-                      <td className="py-3 px-4 text-right font-black text-white">
+                      <td className="py-3 px-4 text-right font-black text-[var(--theme-card-text)]">
                         {comp.currencySymbol}{currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
 
-                      <td className={`py-3 px-4 text-right font-bold ${priceChangePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <td className={`py-3 px-4 text-right font-bold ${priceChangePct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
                         {priceChangePct >= 0 ? '+' : ''}{priceChangePct.toFixed(2)}%
                       </td>
 
-                      <td className="py-3 px-4 text-right font-medium">
+                      <td className="py-3 px-4 text-right font-medium text-[var(--theme-card-text)]">
                         {pe ? `${pe.toFixed(1)}x` : '—'}
                       </td>
 
-                    <td className="py-3 px-4 text-right font-bold text-emerald-400">
+                    <td className="py-3 px-4 text-right font-bold text-emerald-700 dark:text-emerald-400">
                       {comp.roce ? `${comp.roce.toFixed(1)}%` : '—'}
                     </td>
 
-                    <td className="py-3 px-4 text-right font-bold text-white">
+                    <td className="py-3 px-4 text-right font-bold text-[var(--theme-card-text)]">
                       {comp.roe ? `${comp.roe.toFixed(1)}%` : '—'}
                     </td>
 
-                    <td className="py-3 px-4 text-right font-medium">
+                    <td className="py-3 px-4 text-right font-medium text-[var(--theme-card-text)]">
                       {comp.salesGrowth3Y ? `${comp.salesGrowth3Y.toFixed(1)}%` : '—'}
                     </td>
 
-                    <td className="py-3 px-4 text-right font-medium">
+                    <td className="py-3 px-4 text-right font-medium text-[var(--theme-card-text)]">
                       {comp.debtToEquity !== null ? `${comp.debtToEquity.toFixed(2)}x` : '—'}
                     </td>
 
-                    <td className="py-3 px-4 text-right font-medium">
+                    <td className="py-3 px-4 text-right font-medium text-[var(--theme-card-text)]">
                       {comp.dividendYield ? `${comp.dividendYield.toFixed(2)}%` : '—'}
                     </td>
 
@@ -223,7 +223,7 @@ export function WatchlistsView({
                         <button
                           type="button"
                           onClick={() => onSelectCompany(comp.symbol)}
-                          className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-emerald-400 text-[11px] font-bold hover:border-emerald-500 transition-all"
+                          className="px-2 py-0.5 rounded border border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-500 hover:text-slate-950 transition-all cursor-pointer"
                         >
                           Analyze
                         </button>
@@ -235,7 +235,7 @@ export function WatchlistsView({
                               sessionStorage.setItem('mi007_return_tab', 'screener');
                             }
                           }}
-                          className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] text-[11px] font-bold hover:text-white transition-all"
+                          className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] text-[11px] font-bold hover:text-[var(--theme-card-text)] transition-all"
                         >
                           Chart ↗
                         </Link>

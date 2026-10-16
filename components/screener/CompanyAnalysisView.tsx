@@ -653,7 +653,7 @@ export function CompanyAnalysisView({
                 <tr>
                   <td className="py-2 px-3 font-bold text-[var(--theme-card-text)]">EPS in {company.currencySymbol}</td>
                   {company.quarterlyResults.map((q) => (
-                    <td key={q.quarter} className="py-2 px-3 text-right font-bold text-white">
+                    <td key={q.quarter} className="py-2 px-3 text-right font-bold text-[var(--theme-card-text)]">
                       {q.eps.toFixed(2)}
                     </td>
                   ))}
@@ -737,7 +737,7 @@ export function CompanyAnalysisView({
                 <tr>
                   <td className="py-2 px-3 font-bold text-[var(--theme-card-text)]">EPS in {company.currencySymbol}</td>
                   {company.annualProfitLoss.map((pl) => (
-                    <td key={pl.year} className="py-2 px-3 text-right font-bold text-white">
+                    <td key={pl.year} className="py-2 px-3 text-right font-bold text-[var(--theme-card-text)]">
                       {pl.eps.toFixed(2)}
                     </td>
                   ))}
@@ -745,7 +745,7 @@ export function CompanyAnalysisView({
                 <tr>
                   <td className="py-2 px-3 text-[var(--theme-card-text-muted)]">Dividend Payout %</td>
                   {company.annualProfitLoss.map((pl) => (
-                    <td key={pl.year} className="py-2 px-3 text-right text-emerald-300">
+                    <td key={pl.year} className="py-2 px-3 text-right text-[var(--theme-card-text)] font-semibold">
                       {pl.dividendPayoutPct.toFixed(1)}%
                     </td>
                   ))}
@@ -802,7 +802,7 @@ export function CompanyAnalysisView({
                     </td>
                   ))}
                 </tr>
-                <tr className="bg-[var(--theme-card-surface)] font-black text-white">
+                <tr className="bg-[var(--theme-card-surface)] font-black text-[var(--theme-card-text)]">
                   <td className="py-2.5 px-3">Total Liabilities</td>
                   {company.balanceSheet.map((bs) => (
                     <td key={bs.year} className="py-2.5 px-3 text-right font-black">
@@ -811,9 +811,9 @@ export function CompanyAnalysisView({
                   ))}
                 </tr>
                 <tr>
-                  <td className="py-2 px-3 font-bold text-emerald-400">Fixed Assets</td>
+                  <td className="py-2 px-3 font-bold text-emerald-700 dark:text-emerald-400">Fixed Assets</td>
                   {company.balanceSheet.map((bs) => (
-                    <td key={bs.year} className="py-2 px-3 text-right font-bold text-emerald-400">
+                    <td key={bs.year} className="py-2 px-3 text-right font-bold text-emerald-700 dark:text-emerald-400">
                       {bs.fixedAssets.toLocaleString()}
                     </td>
                   ))}
@@ -834,7 +834,7 @@ export function CompanyAnalysisView({
                     </td>
                   ))}
                 </tr>
-                <tr className="bg-[var(--theme-card-surface)] font-black text-white">
+                <tr className="bg-[var(--theme-card-surface)] font-black text-[var(--theme-card-text)]">
                   <td className="py-2.5 px-3">Total Assets</td>
                   {company.balanceSheet.map((bs) => (
                     <td key={bs.year} className="py-2.5 px-3 text-right font-black">
@@ -886,7 +886,7 @@ export function CompanyAnalysisView({
                     </td>
                   ))}
                 </tr>
-                <tr className="bg-[var(--theme-card-surface)] font-bold text-white">
+                <tr className="bg-[var(--theme-card-surface)] font-bold text-[var(--theme-card-text)]">
                   <td className="py-2.5 px-3">Net Cash Flow</td>
                   {company.cashFlow.map((cf) => (
                     <td key={cf.year} className="py-2.5 px-3 text-right font-black">
@@ -895,7 +895,7 @@ export function CompanyAnalysisView({
                   ))}
                 </tr>
                 {company.cashFlow.some((cf) => cf.freeCashFlow !== undefined) && (
-                  <tr className="bg-emerald-500/10 font-bold text-emerald-400">
+                  <tr className="bg-emerald-500/10 font-bold text-emerald-700 dark:text-emerald-400">
                     <td className="py-2.5 px-3">Free Cash Flow (FCF)</td>
                     {company.cashFlow.map((cf) => (
                       <td key={cf.year} className="py-2.5 px-3 text-right font-black">
@@ -925,9 +925,9 @@ export function CompanyAnalysisView({
               </thead>
               <tbody className="divide-y divide-[var(--theme-card-border)]/40 tabular-nums">
                 <tr>
-                  <td className="py-2.5 px-3 font-bold text-emerald-400">ROCE %</td>
+                  <td className="py-2.5 px-3 font-bold text-emerald-700 dark:text-emerald-400">ROCE %</td>
                   {company.historicalRatios.map((r) => (
-                    <td key={r.year} className="py-2.5 px-3 text-right font-bold text-emerald-400">
+                    <td key={r.year} className="py-2.5 px-3 text-right font-bold text-emerald-700 dark:text-emerald-400">
                       {r.rocePct.toFixed(1)}%
                     </td>
                   ))}
@@ -964,7 +964,7 @@ export function CompanyAnalysisView({
                     </td>
                   ))}
                 </tr>
-                <tr className="bg-[var(--theme-card-surface)] font-bold text-white">
+                <tr className="bg-[var(--theme-card-surface)] font-bold text-[var(--theme-card-text)]">
                   <td className="py-2.5 px-3">Cash Conversion Cycle</td>
                   {company.historicalRatios.map((r) => (
                     <td key={r.year} className="py-2.5 px-3 text-right font-black">
@@ -1011,7 +1011,7 @@ export function CompanyAnalysisView({
                 <tr>
                   <td className="py-2.5 px-3 font-bold text-[var(--theme-card-text)]">FIIs (Foreign Institutions)</td>
                   {company.shareholdingPattern.map((sh) => (
-                    <td key={sh.quarter} className="py-2.5 px-3 text-right font-bold text-white">
+                    <td key={sh.quarter} className="py-2.5 px-3 text-right font-bold text-[var(--theme-card-text)]">
                       {sh.fii.toFixed(2)}%
                     </td>
                   ))}
@@ -1019,7 +1019,7 @@ export function CompanyAnalysisView({
                 <tr>
                   <td className="py-2.5 px-3 font-bold text-[var(--theme-card-text)]">DIIs (Mutual Funds & DII)</td>
                   {company.shareholdingPattern.map((sh) => (
-                    <td key={sh.quarter} className="py-2.5 px-3 text-right font-bold text-white">
+                    <td key={sh.quarter} className="py-2.5 px-3 text-right font-bold text-[var(--theme-card-text)]">
                       {sh.dii.toFixed(2)}%
                     </td>
                   ))}
