@@ -3,9 +3,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { METRIC_DEFINITIONS } from '@/lib/screener/metrics';
-import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
+import { parseQuery } from '@/lib/screener/queryEngine';
 import { MASTER_COMPANIES } from '@/lib/screener/data';
-import { QueryNode, CompanyFundamental } from '@/lib/screener/types';
+import { CompanyFundamental } from '@/lib/screener/types';
 
 interface CustomQueryBuilderViewProps {
   initialQuery: string;
@@ -18,24 +18,14 @@ export function CustomQueryBuilderView({
   initialQuery,
   onApplyQuery,
   onBackToScreener,
-  companies = MASTER_COMPANIES,
+  companies: _companies = MASTER_COMPANIES,
 }: CustomQueryBuilderViewProps) {
   const [queryText, setQueryText] = useState(initialQuery);
-  const [testSymbol, setTestSymbol] = useState(companies[0]?.symbol || 'TCS');
   const [metricFilter, setMetricFilter] = useState('');
 
   const parseResult = useMemo(() => {
     return parseQuery(queryText);
   }, [queryText]);
-
-  const testCompany = useMemo(() => {
-    return companies.find((c) => c.symbol === testSymbol) || companies[0];
-  }, [testSymbol, companies]);
-
-  const testPassed = useMemo(() => {
-    if (!parseResult.valid || !parseResult.ast || !testCompany) return false;
-    return evaluateNode(parseResult.ast, testCompany);
-  }, [parseResult, testCompany]);
 
   const filteredMetrics = METRIC_DEFINITIONS.filter((m) => {
     if (!metricFilter) return true;
@@ -80,7 +70,7 @@ export function CustomQueryBuilderView({
               </h2>
             </div>
             <p className="text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">
-              Construct complex multi-variable compound screens using safe AST parsing. Test logic interactively before applying.
+              Construct complex multi-variable compound screens using boolean and arithmetic operators.
             </p>
           </div>
         </div>
@@ -89,17 +79,17 @@ export function CustomQueryBuilderView({
           type="button"
           onClick={() => onApplyQuery(queryText)}
           disabled={!parseResult.valid}
-          className="px-6 py-2.5 rounded-xl bg-emerald-500 text-slate-950 mono text-[13px] font-black tracking-wide hover:bg-emerald-400 disabled:opacity-50 transition-all shadow-sm shrink-0"
+          className="px-6 py-2.5 rounded-xl bg-emerald-500 text-slate-950 mono text-[13px] font-black tracking-wide hover:bg-emerald-400 disabled:opacity-50 transition-all shadow-sm shrink-0 cursor-pointer"
         >
           Apply to Main Screener ▶
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Query Editor & Test Runner (7 cols) */}
+        {/* Left Column: Query Editor (7 cols) */}
         <div className="lg:col-span-7 flex flex-col gap-6">
           {/* Query Textarea Box */}
-          <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-sm">
+          <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-sm flex flex-col flex-1">
             <div className="flex items-center justify-between mb-2">
               <span className="mono text-[13px] font-black inst-card-text uppercase tracking-wider">
                 Financial Logic Expression
@@ -109,75 +99,17 @@ export function CustomQueryBuilderView({
               </span>
             </div>
             <textarea
-              rows={7}
+              rows={14}
               value={queryText}
               onChange={(e) => setQueryText(e.target.value)}
               placeholder={`Market Capitalization > 5000\nAND Sales Growth 5Y > 15\nAND ROCE > 18\nAND Debt to Equity < 0.5`}
-              className="w-full font-mono text-[14px] leading-relaxed p-4 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-emerald-300 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-bold resize-y"
+              className="w-full font-mono text-[14px] leading-relaxed p-4 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-emerald-300 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-bold resize-y flex-1"
               spellCheck={false}
             />
 
-            {/* Validation Feedback */}
-            <div className="mt-3 p-3 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center justify-between text-[12px] mono">
-              <div>
-                <span className="text-[var(--theme-card-text-muted)] font-bold mr-2">AST PARSER:</span>
-                {parseResult.valid ? (
-                  <span className="text-emerald-400 font-black">
-                    ✓ VALID — Safe Abstract Syntax Tree Generated
-                  </span>
-                ) : (
-                  <span className="text-rose-400 font-black">
-                    ✕ ERROR — {parseResult.error}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Interactive Company Simulation Runner */}
-          <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <span className="mono text-[13px] font-black inst-card-text uppercase tracking-wider">
-                Interactive Test Evaluator
-              </span>
-              <select
-                value={testSymbol}
-                onChange={(e) => setTestSymbol(e.target.value)}
-                className="px-3 py-1 rounded-lg mono text-[12px] font-bold border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] focus:outline-none"
-              >
-                {companies.map((c) => (
-                  <option key={c.symbol} value={c.symbol}>
-                    Test on: {c.symbol} ({c.name})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {testCompany && (
-              <div className="p-4 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center justify-between">
-                <div>
-                  <div className="mono text-[15px] font-black text-white">
-                    {testCompany.symbol} — {testCompany.name}
-                  </div>
-                  <div className="mono text-[12px] text-[var(--theme-card-text-muted)] mt-0.5">
-                    Sector: {testCompany.sector} · MCap: {testCompany.currencySymbol}{testCompany.marketCap.toLocaleString()} Cr
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <span className="mono text-[11px] font-bold text-[var(--theme-card-text-muted)] block uppercase">
-                    Evaluation Result
-                  </span>
-                  <span
-                    className={`mono text-[16px] font-black px-3 py-1 rounded-lg inline-block mt-1 ${
-                      testPassed
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                        : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                    }`}
-                  >
-                    {testPassed ? '✓ PASSES SCREEN' : '✕ DOES NOT PASS'}
-                  </span>
-                </div>
+            {!parseResult.valid && parseResult.error && (
+              <div className="mt-3 p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 text-[12px] mono font-bold">
+                ✕ Syntax Error: {parseResult.error}
               </div>
             )}
           </div>
