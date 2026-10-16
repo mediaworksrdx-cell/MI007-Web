@@ -14,8 +14,8 @@ interface TopToolbarProps {
   savedScreens: SavedScreen[];
   selectedScreenId?: string;
   onSelectSavedScreen: (screen: SavedScreen) => void;
-  onOpenSaveModal: () => void;
-  onOpenCustomRatioModal: () => void;
+  onOpenSaveModal?: () => void;
+  onOpenCustomRatioModal?: () => void;
   onOpenSearchModal: () => void;
   activeTab: string;
   onChangeTab: (tab: any) => void;
@@ -32,8 +32,8 @@ export function TopToolbar({
   savedScreens,
   selectedScreenId,
   onSelectSavedScreen,
-  onOpenSaveModal,
-  onOpenCustomRatioModal,
+  onOpenSaveModal: _onOpenSaveModal,
+  onOpenCustomRatioModal: _onOpenCustomRatioModal,
   onOpenSearchModal,
   activeTab,
   onChangeTab,
@@ -114,26 +114,6 @@ export function TopToolbar({
               </option>
             ))}
           </select>
-
-          {/* Custom Ratio Creator */}
-          <button
-            type="button"
-            onClick={onOpenCustomRatioModal}
-            className="px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12.5px] font-bold hover:border-emerald-500 hover:text-emerald-400 transition-all shadow-xs"
-            title="Create Custom Ratio"
-          >
-            + Ratio Formula
-          </button>
-
-          {/* Save Screen Button */}
-          <button
-            type="button"
-            onClick={onOpenSaveModal}
-            className="px-3.5 py-1.5 rounded-xl bg-emerald-500 text-slate-950 mono text-[12.5px] font-black hover:bg-emerald-400 transition-colors shadow-xs flex items-center gap-1.5"
-          >
-            <span>💾</span>
-            <span>Save Screen</span>
-          </button>
         </div>
       </div>
 
