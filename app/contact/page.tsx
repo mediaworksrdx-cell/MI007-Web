@@ -86,7 +86,7 @@ export default function ContactPage() {
                         type="text"
                         value={form.name}
                         onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                        placeholder="Arjun Sharma"
+                        placeholder="Enter full name"
                         className="rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] px-4 py-2.5 text-[13px] inst-card-text font-semibold placeholder:text-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-xs"
                       />
                     </div>
@@ -99,7 +99,7 @@ export default function ContactPage() {
                         type="email"
                         value={form.email}
                         onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                        placeholder="arjun@institution.com"
+                        placeholder="Enter institutional email"
                         className="rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] px-4 py-2.5 text-[13px] inst-card-text font-semibold placeholder:text-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-xs"
                       />
                     </div>
@@ -114,7 +114,7 @@ export default function ContactPage() {
                         type="text"
                         value={form.org}
                         onChange={(e) => setForm((f) => ({ ...f, org: e.target.value }))}
-                        placeholder="Institutional Capital Management"
+                        placeholder="Organization or fund name"
                         className="rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] px-4 py-2.5 text-[13px] inst-card-text font-semibold placeholder:text-slate-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-xs"
                       />
                     </div>
