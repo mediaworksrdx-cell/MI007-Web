@@ -33,33 +33,33 @@ interface TradeEngineContextValue {
   subscribeToTicks: (callback: (tick: TradeEngineTick) => void) => () => void;
 }
 
-const WS_URL = process.env.NEXT_PUBLIC_TRADE_ENGINE_WS || 'ws://20.80.83.151/ws';
+const WS_URL = process.env.NEXT_PUBLIC_TRADE_ENGINE_WS || 'ws://138.91.105.85/ws';
 
 // Baseline initial instruments to seed the engine immediately before first network tick
 const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number; changePct: number }> = [
-  // India
-  { symbol: 'NIFTY 50', price: 22453.60, change: 221.80, changePct: 0.99 },
-  { symbol: 'NIFTY', price: 22453.60, change: 221.80, changePct: 0.99 },
-  { symbol: 'BANKNIFTY', price: 55171.00, change: 655.95, changePct: 1.20 },
-  { symbol: 'BANK NIFTY', price: 55171.00, change: 655.95, changePct: 1.20 },
-  { symbol: 'SENSEX', price: 72281.13, change: 687.89, changePct: 0.96 },
-  { symbol: 'FINNIFTY', price: 24924.90, change: 284.45, changePct: 1.15 },
-  { symbol: 'RELIANCE', price: 1265.40, change: 14.40, changePct: 1.15 },
-  { symbol: 'TCS', price: 3892.50, change: 32.80, changePct: 0.85 },
-  { symbol: 'HDFCBANK', price: 1782.30, change: 24.95, changePct: 1.42 },
-  { symbol: 'INFY', price: 1885.60, change: 30.60, changePct: 1.65 },
+  // India (Zerodha Kite Connected Live Tickers)
+  { symbol: 'NIFTY 50', price: 22960.75, change: -36.60, changePct: -0.16 },
+  { symbol: 'NIFTY', price: 22960.75, change: -36.60, changePct: -0.16 },
+  { symbol: 'BANKNIFTY', price: 55551.60, change: -258.90, changePct: -0.46 },
+  { symbol: 'BANK NIFTY', price: 55551.60, change: -258.90, changePct: -0.46 },
+  { symbol: 'SENSEX', price: 74183.80, change: -131.81, changePct: -0.18 },
+  { symbol: 'FINNIFTY', price: 25196.60, change: -167.60, changePct: -0.66 },
+  { symbol: 'RELIANCE', price: 1196.40, change: -18.60, changePct: -1.53 },
+  { symbol: 'TCS', price: 2426.00, change: 76.00, changePct: 3.23 },
+  { symbol: 'HDFCBANK', price: 729.90, change: 3.05, changePct: 0.42 },
+  { symbol: 'INFY', price: 1152.05, change: 42.05, changePct: 3.79 },
   { symbol: 'TITAN', price: 3480.00, change: 71.60, changePct: 2.10 },
   { symbol: 'BAJFINANCE', price: 7120.40, change: -32.20, changePct: -0.45 },
   { symbol: 'POLYCAB', price: 5840.20, change: 184.00, changePct: 3.25 },
   { symbol: 'DIXON', price: 13950.00, change: 549.00, changePct: 4.10 },
   { symbol: 'CDSL', price: 1580.40, change: 28.70, changePct: 1.85 },
   { symbol: 'DEEPAKNTR', price: 2280.00, change: -14.90, changePct: -0.65 },
-  { symbol: 'ITC', price: 472.50, change: 6.70, changePct: 1.45 },
-  { symbol: 'SBIN', price: 814.20, change: 11.60, changePct: 1.45 },
-  { symbol: 'TATAMOTORS', price: 924.50, change: 14.30, changePct: 1.57 },
-  { symbol: 'LT', price: 3665.00, change: 39.90, changePct: 1.10 },
-  { symbol: 'ICICIBANK', price: 1284.60, change: 4.80, changePct: 0.35 },
-  { symbol: 'BHARTIARTL', price: 1682.40, change: 10.20, changePct: 0.56 },
+  { symbol: 'ITC', price: 261.40, change: -2.50, changePct: -0.95 },
+  { symbol: 'SBIN', price: 954.55, change: -5.45, changePct: -0.57 },
+  { symbol: 'TATAMOTORS', price: 283.70, change: -3.35, changePct: -1.17 },
+  { symbol: 'LT', price: 3617.00, change: -15.00, changePct: -0.41 },
+  { symbol: 'ICICIBANK', price: 1383.00, change: -6.40, changePct: -0.46 },
+  { symbol: 'BHARTIARTL', price: 1882.80, change: 28.80, changePct: 1.55 },
 
   // USA
   { symbol: 'SPX', price: 5864.20, change: 48.20, changePct: 0.82 },
@@ -449,11 +449,15 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   const getSymbolPrice = useCallback((symbol: string): LiveSymbolData | undefined => {
     if (!symbol) return undefined;
     const cleanKey = normalizeSymbolKey(symbol);
+    const upper = symbol.toUpperCase().trim();
     return (
       livePrices.get(cleanKey) ||
       livePrices.get(symbol) ||
-      livePrices.get(symbol.toUpperCase()) ||
-      livePrices.get(symbol.replace(/\s+/g, ''))
+      livePrices.get(upper) ||
+      livePrices.get(`${cleanKey}.NS`) ||
+      livePrices.get(`${upper}.NS`) ||
+      livePrices.get(symbol.replace(/\s+/g, '')) ||
+      livePrices.get(symbol.replace(/\.NS$/, ''))
     );
   }, [livePrices]);
 

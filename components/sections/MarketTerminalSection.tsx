@@ -3,6 +3,7 @@
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useAppTheme } from '@/lib/themeContext';
+import { useTradeEngine } from '@/lib/tradeEngineContext';
 
 interface CandleData {
   time: string;
@@ -25,6 +26,7 @@ interface CandleData {
 const SYMBOLS_DATA = [
   {
     name: 'S&P 500',
+    symbol: 'SPX',
     basePrice: 5864.2,
     spread: 0.25,
     currency: '$',
@@ -33,22 +35,25 @@ const SYMBOLS_DATA = [
   },
   {
     name: 'NIFTY 50',
-    basePrice: 24842.5,
+    symbol: 'NIFTY',
+    basePrice: 22960.75,
     spread: 0.5,
     currency: '₹',
-    change: '+1.40%',
-    isPositive: true,
+    change: '-0.16%',
+    isPositive: false,
   },
   {
-    name: 'DFM GENERAL',
-    basePrice: 4921.1,
-    spread: 0.1,
-    currency: 'AED ',
-    change: '+1.15%',
-    isPositive: true,
+    name: 'RELIANCE',
+    symbol: 'RELIANCE',
+    basePrice: 1196.4,
+    spread: 0.25,
+    currency: '₹',
+    change: '-1.53%',
+    isPositive: false,
   },
   {
     name: 'BTC/USD',
+    symbol: 'BTC',
     basePrice: 68410.0,
     spread: 5.0,
     currency: '$',
@@ -62,6 +67,7 @@ export default function MarketTerminalSection() {
   const isInView = useInView(containerRef, { once: true, margin: '-100px' });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { theme, isDark } = useAppTheme();
+  const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
 
   const [activeSymbolIdx, setActiveSymbolIdx] = useState(0);
   const [timeframe, setTimeframe] = useState('15m');
@@ -75,9 +81,24 @@ export default function MarketTerminalSection() {
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
   const [pinnedCandle, setPinnedCandle] = useState<CandleData | null>(null);
 
+  // Raw symbol item
+  const rawSymbol = SYMBOLS_DATA[activeSymbolIdx];
+
+  // Dynamically resolve live price from Trade Engine
+  const live = getSymbolPrice(rawSymbol.symbol) || getSymbolPrice(rawSymbol.name);
+  const activeSymbol = useMemo(() => {
+    if (!live || !live.price) return rawSymbol;
+    return {
+      ...rawSymbol,
+      basePrice: live.price,
+      change: `${live.changePct >= 0 ? '+' : ''}${live.changePct.toFixed(2)}%`,
+      isPositive: live.changePct >= 0,
+      isLiveTick: true,
+    };
+  }, [rawSymbol, live]);
+
   // Candlestick Array
   const [candles, setCandles] = useState<CandleData[]>([]);
-  const activeSymbol = SYMBOLS_DATA[activeSymbolIdx];
 
   // Generate synthetic candles for the selected symbol
   const generateInitialData = useCallback((base: number) => {
@@ -622,13 +643,17 @@ export default function MarketTerminalSection() {
               </button>
             </div>
 
-            {/* Live Symbol Price */}
+            {/* Live Symbol Price & Kite Connection Status */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>KITE LIVE</span>
+              </span>
               <span className="text-slate-900 font-bold text-[15px] sm:text-[17px]">
                 {activeSymbol.currency}
-                {candles[candles.length - 1]?.close.toLocaleString() || activeSymbol.basePrice}
+                {(live?.price ?? candles[candles.length - 1]?.close ?? activeSymbol.basePrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
-              <span className="text-emerald-700 font-bold text-[13px] sm:text-[14px]">
+              <span className={`font-bold text-[13px] sm:text-[14px] ${activeSymbol.isPositive ? 'text-emerald-700' : 'text-rose-600'}`}>
                 {activeSymbol.change}
               </span>
               <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-600 animate-ping" />

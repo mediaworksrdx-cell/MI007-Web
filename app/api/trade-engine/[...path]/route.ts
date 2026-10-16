@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'http://20.80.83.151';
+const TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
 
 export const dynamic = 'force-dynamic';
 
