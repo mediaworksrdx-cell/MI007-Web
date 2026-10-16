@@ -239,7 +239,7 @@ export default function TerminalPage() {
                 <div className="flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center flex-shrink-0 overflow-visible">
                   <Falcon3DLogo
                     src="/images/logo-falcon-transparent.png"
-                    alt="Market Intelligence MI- 007"
+                    alt="MARKET INTELLIGENCE MI-007"
                     width={52}
                     height={52}
                     className="w-full h-full object-contain"
@@ -247,7 +247,7 @@ export default function TerminalPage() {
                 </div>
                 <div className="min-w-0">
                   <h1 className="mono text-[17px] sm:text-[23px] font-black inst-card-text tracking-wider uppercase whitespace-nowrap">
-                    Market Intelligence MI- 007
+                    MARKET INTELLIGENCE MI-007
                   </h1>
                   <p className="text-[12px] sm:text-[14px] inst-card-text-muted font-medium mt-0.5 truncate">Intelligence Beyond the Noise · Quantitative Microstructure</p>
                 </div>

@@ -291,7 +291,7 @@ export default function HeroSection() {
           <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex items-center justify-center overflow-visible">
             <Falcon3DLogo
               src="/images/logo-falcon-transparent.png"
-              alt="Market Intelligence MI- 007"
+              alt="MARKET INTELLIGENCE MI-007"
               width={112}
               height={112}
               priority
@@ -301,17 +301,7 @@ export default function HeroSection() {
           </div>
         </motion.div>
 
-        {/* MI-007 Top Header Indicator */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.32 }}
-          className="mono text-[12px] xs:text-[13px] sm:text-[16px] md:text-[18px] lg:text-[20px] font-black tracking-[0.35em] sm:tracking-[0.4em] uppercase text-emerald-500 mb-2 sm:mb-3"
-        >
-          MI-007
-        </motion.div>
-
-        {/* MARKET INTELLIGENCE (Same Row) */}
+        {/* MARKET INTELLIGENCE MI-007 */}
         <motion.h1
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -319,7 +309,7 @@ export default function HeroSection() {
           className="text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-[-0.02em] leading-tight page-heading"
         >
           <span className="hero-title-gradient whitespace-nowrap inline-block">
-            MARKET INTELLIGENCE
+            MARKET INTELLIGENCE MI-007
           </span>
         </motion.h1>
 

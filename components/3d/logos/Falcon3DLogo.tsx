@@ -27,7 +27,7 @@ export interface Falcon3DLogoProps {
 
 export function Falcon3DLogo({
   src = '/images/logo-falcon-transparent.png',
-  alt = 'Market Intelligence MI- 007 Falcon',
+  alt = 'MARKET INTELLIGENCE MI-007 Falcon',
   width = 64,
   height = 64,
   priority = false,

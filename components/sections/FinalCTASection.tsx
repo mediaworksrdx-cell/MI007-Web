@@ -29,7 +29,7 @@ export default function FinalCTASection() {
         <div className="mb-4 sm:mb-5 relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 flex items-center justify-center">
           <Falcon3DLogo
             src="/images/logo-falcon-transparent.png"
-            alt="Market Intelligence MI- 007"
+            alt="MARKET INTELLIGENCE MI-007"
             width={96}
             height={96}
             className="w-full h-full object-contain"
@@ -38,12 +38,9 @@ export default function FinalCTASection() {
         </div>
 
         <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight mb-2 sm:mb-3 final-cta-title flex flex-col items-center justify-center gap-1">
-          <span className="mono text-[11px] sm:text-[13px] tracking-[0.3em] uppercase font-black text-emerald-400 mb-0.5">
-            MI-007
-          </span>
           <span>Step Into</span>
           <span className="whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">
-            Market Intelligence
+            MARKET INTELLIGENCE MI-007
           </span>
         </h2>
 

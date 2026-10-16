@@ -114,7 +114,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
           <div className="relative mb-3 flex items-center justify-center h-12 w-12 sm:h-14 sm:w-14 overflow-visible">
             <Falcon3DLogo
               src="/images/logo-falcon-transparent.png"
-              alt="MI007 Falcon"
+              alt="MARKET INTELLIGENCE MI-007 Falcon"
               width={48}
               height={48}
               priority
@@ -123,8 +123,8 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
             />
           </div>
           <div className="flex items-center gap-1.5 mb-1">
-            <span className="mono text-[10px] uppercase font-black tracking-widest text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-              MI007 SECURE ACCESS
+            <span className="mono text-[10px] uppercase font-black tracking-widest text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+              MARKET INTELLIGENCE MI-007 SECURE ACCESS
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white font-sans">

@@ -57,8 +57,8 @@ export function TopToolbar({
         {/* Title and Market Selector */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="mono text-[16px] sm:text-[18px] font-black inst-card-text tracking-wide uppercase">
-              MI-007 Stock Screener
+            <span className="mono text-[15px] sm:text-[17px] font-black inst-card-text tracking-wide uppercase">
+              MARKET INTELLIGENCE MI-007 · STOCK SCREENER
             </span>
             <span className="mono text-[10.5px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
               Institutional Terminal

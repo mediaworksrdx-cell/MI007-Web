@@ -13,7 +13,7 @@ export function Footer() {
               <div className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 flex-shrink-0 flex items-center justify-center overflow-visible">
                 <Falcon3DLogo
                   src="/images/logo-falcon-transparent.png"
-                  alt="Market Intelligence MI- 007"
+                  alt="MARKET INTELLIGENCE MI-007"
                   width={112}
                   height={112}
                   className="w-full h-full object-contain"
@@ -21,12 +21,9 @@ export function Footer() {
                 />
               </div>
               <div className="min-w-0">
-                <div className="text-[10.5px] sm:text-[11.5px] font-mono font-black text-emerald-400 tracking-[0.25em] uppercase leading-none mb-1">
-                  MI-007
-                </div>
                 <div className="leading-tight">
-                  <span className="font-extrabold text-[16px] sm:text-[18px] md:text-[19px] uppercase font-sans tracking-tight footer-brand-title text-white whitespace-nowrap">
-                    MARKET INTELLIGENCE
+                  <span className="font-extrabold text-[15px] sm:text-[17px] md:text-[18px] uppercase font-sans tracking-tight footer-brand-title text-white whitespace-nowrap">
+                    MARKET INTELLIGENCE MI-007
                   </span>
                 </div>
 

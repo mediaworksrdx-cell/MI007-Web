@@ -107,7 +107,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           <div className="relative z-50 h-13 w-13 sm:h-15 sm:w-15 md:h-16 md:w-16 flex-shrink-0 flex items-center justify-center overflow-visible">
             <Falcon3DLogo
               src="/images/logo-falcon-transparent.png"
-              alt="Market Intelligence MI- 007"
+              alt="MARKET INTELLIGENCE MI-007"
               width={64}
               height={64}
               priority
@@ -118,17 +118,11 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             />
           </div>
           <div className="flex flex-col leading-tight min-w-0 justify-center">
-            {/* MI-007 High Contrast Top Indicator */}
-            <span className="navbar-brand-badge font-mono font-black text-[11px] sm:text-[12.5px] tracking-[0.22em] uppercase leading-none mb-1">
-              MI-007
+            <span className="navbar-brand-title font-black text-[13.5px] xs:text-[15px] sm:text-[17px] md:text-[18px] tracking-tight uppercase font-sans whitespace-nowrap">
+              MARKET INTELLIGENCE MI-007
             </span>
-            <div>
-              <span className="navbar-brand-title font-black text-[15px] sm:text-[18px] tracking-tight uppercase font-sans whitespace-nowrap">
-                MARKET INTELLIGENCE
-              </span>
-            </div>
             {/* Tagline Always Visible */}
-            <span className="navbar-brand-subtitle block text-[9.5px] sm:text-[11px] tracking-[0.16em] sm:tracking-[0.18em] font-extrabold uppercase font-mono mt-1 whitespace-nowrap">
+            <span className="navbar-brand-subtitle block text-[9px] xs:text-[9.5px] sm:text-[11px] tracking-[0.16em] sm:tracking-[0.18em] font-extrabold uppercase font-mono mt-0.5 whitespace-nowrap">
               Intelligence Beyond the Noise
             </span>
           </div>
