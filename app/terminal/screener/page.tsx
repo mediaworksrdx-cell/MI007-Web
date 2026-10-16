@@ -19,7 +19,7 @@ export default function ScreenerTerminalPage() {
 
       <main className="min-h-screen pt-28 sm:pt-32 relative z-20 bg-transparent pb-24">
         {/* ── Master Cockpit Layer (Identical Terminal Shell) ── */}
-        <div className="mx-auto max-w-[1700px] px-3 sm:px-4 lg:px-6 relative z-20 isolate">
+        <div className="mx-auto max-w-[1600px] px-3 sm:px-4 lg:px-6 relative z-20 isolate">
           <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-3.5 sm:p-6 lg:p-8 overflow-hidden">
             {/* Top Outer Hairline Accent */}
             <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 pointer-events-none" />

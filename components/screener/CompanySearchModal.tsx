@@ -43,8 +43,8 @@ export function CompanySearchModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative w-full max-w-xl rounded-2xl border-2 terminal-page-panel shadow-2xl overflow-hidden bg-[var(--theme-card-bg)] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="relative w-full max-w-2xl rounded-2xl border-2 terminal-page-panel shadow-2xl overflow-hidden bg-[var(--theme-card-bg)] flex flex-col my-auto max-h-[85vh]">
         {/* Search Input Bar */}
         <div className="p-4 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center gap-3">
           <svg className="w-5 h-5 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -57,11 +57,11 @@ export function CompanySearchModal({
             placeholder="Search company or ticker (e.g. RELIANCE, TCS, AAPL, EMAAR)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-transparent mono text-[15px] font-bold text-[var(--theme-card-text)] placeholder-slate-400 focus:outline-none"
+            className="w-full bg-transparent mono text-[14px] sm:text-[15px] font-bold text-[var(--theme-card-text)] placeholder:text-slate-400 focus:outline-none min-w-0"
           />
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors shrink-0"
           >
             ✕
           </button>
@@ -83,28 +83,28 @@ export function CompanySearchModal({
                 }}
                 className="flex items-center justify-between p-3 rounded-xl hover:bg-emerald-500/10 cursor-pointer transition-colors group"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center justify-center mono text-[12px] font-black text-emerald-400">
+                <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
+                  <div className="w-9 h-9 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center justify-center mono text-[12px] font-black text-emerald-400 shrink-0">
                     {comp.symbol.slice(0, 3)}
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="mono text-[14px] font-black text-[var(--theme-card-text)] group-hover:text-emerald-400 transition-colors">
                         {comp.symbol}
                       </span>
-                      <span className="mono text-[11px] font-bold px-1.5 py-0.2 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)]">
+                      <span className="mono text-[11px] font-bold px-1.5 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] inline-flex items-center leading-none">
                         {comp.exchange}
                       </span>
                     </div>
-                    <div className="text-[12px] text-[var(--theme-card-text-muted)] font-medium truncate max-w-xs">
+                    <div className="text-[12px] text-[var(--theme-card-text-muted)] font-medium truncate">
                       {comp.name} · {comp.sector}
                     </div>
                   </div>
                 </div>
 
-                <div className="text-right">
+                <div className="text-right shrink-0 min-w-[120px] tabular-nums">
                   <div className="mono text-[14px] font-black text-[var(--theme-card-text)]">
-                    {comp.currencySymbol}{comp.currentPrice.toLocaleString()}
+                    {comp.currencySymbol}{comp.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   <div className={`mono text-[11.5px] font-bold ${comp.priceChangePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                     {comp.priceChangePct >= 0 ? '+' : ''}{comp.priceChangePct.toFixed(2)}%

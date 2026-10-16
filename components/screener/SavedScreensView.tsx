@@ -84,7 +84,7 @@ export function SavedScreensView({
                         {screen.name}
                       </span>
                       {screen.isPredefined && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)]">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] inline-flex items-center leading-none">
                           System
                         </span>
                       )}

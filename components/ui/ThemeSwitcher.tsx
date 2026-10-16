@@ -101,7 +101,7 @@ export function ThemeSwitcher() {
                           {t.name}
                         </span>
                         <span
-                          className="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold border"
+                          className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold border leading-none"
                           style={{
                             color: t.palette.accent,
                             borderColor: `${t.palette.accent}60`,

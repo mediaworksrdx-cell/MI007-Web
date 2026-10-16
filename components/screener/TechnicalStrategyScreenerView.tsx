@@ -181,7 +181,7 @@ export function TechnicalStrategyScreenerView({
               >
                 <div className="flex items-center justify-between gap-1">
                   <span className="mono text-[11px] font-black text-[var(--theme-card-text)] truncate">{s.name}</span>
-                  <span className="text-[9px] mono px-1.5 py-0.2 rounded bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-emerald-400 font-bold shrink-0">
+                  <span className="text-[9px] mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-emerald-400 font-bold shrink-0 leading-none">
                     {matchesCount}
                   </span>
                 </div>

@@ -237,7 +237,7 @@ export function ResultsTable({
               title={p.description}
             >
               <span>{p.label}</span>
-              <span className={`text-[9px] px-1 py-0.2 rounded font-black ${isActive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'}`}>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded font-black leading-none ${isActive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'}`}>
                 {p.badge}
               </span>
             </button>

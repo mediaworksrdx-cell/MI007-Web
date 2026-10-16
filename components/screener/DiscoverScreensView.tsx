@@ -270,7 +270,7 @@ export function DiscoverScreensView({
               <span>{cat}</span>
               {isMyStrat && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-black leading-none ${
                     isActive
                       ? 'bg-slate-950 text-emerald-400'
                       : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'

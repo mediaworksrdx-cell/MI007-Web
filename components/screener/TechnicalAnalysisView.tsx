@@ -549,7 +549,7 @@ export function TechnicalAnalysisView({
                 <div className="flex items-center justify-between gap-1 mb-1">
                   <span className="mono text-[12px] font-black text-[var(--theme-card-text)]">{sig.strategyName}</span>
                   <span
-                    className={`mono text-[10px] font-black px-1.5 py-0.2 rounded ${
+                    className={`mono text-[10px] font-black px-1.5 py-0.5 rounded leading-none ${
                       isBull
                         ? 'bg-emerald-500 text-slate-950'
                         : isBear
