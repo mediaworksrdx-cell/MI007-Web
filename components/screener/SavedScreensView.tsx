@@ -109,7 +109,7 @@ export function SavedScreensView({
                   </td>
 
                   <td className="py-3 px-4">
-                    <pre className="text-[11.5px] text-emerald-300 font-bold whitespace-pre-wrap max-w-xs line-clamp-2">
+                    <pre className="text-[11.5px] text-[var(--theme-card-text)] font-bold whitespace-pre-wrap max-w-xs line-clamp-2">
                       {screen.query}
                     </pre>
                   </td>

@@ -124,7 +124,7 @@ export function QueryEditor({
           value={query}
           onChange={handleTextChange}
           placeholder={`Enter financial screening conditions, e.g.:\nMarket Capitalization > 5000\nAND Sales Growth 5Y > 15\nAND ROCE > 18\nAND Debt to Equity < 0.5\nAND Interest Coverage Ratio > 5`}
-          className="w-full font-mono text-[14px] leading-relaxed p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-emerald-300 placeholder-slate-400/80 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-y shadow-inner"
+          className="w-full font-mono text-[14px] leading-relaxed p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-y shadow-inner"
           spellCheck={false}
         />
 

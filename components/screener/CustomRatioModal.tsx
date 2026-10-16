@@ -159,7 +159,7 @@ export function CustomRatioModal({
               placeholder="e.g. Free Cash Flow / Market Capitalization * 100"
               value={formula}
               onChange={(e) => setFormula(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl text-[14px] mono border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-emerald-300 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-bold resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl text-[14px] mono border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500 font-bold resize-none"
             />
             {/* Validation Feedback */}
             <div className="mt-1 flex items-center justify-between text-[11.5px] mono">

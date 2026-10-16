@@ -103,7 +103,7 @@ export function CustomQueryBuilderView({
               value={queryText}
               onChange={(e) => setQueryText(e.target.value)}
               placeholder={`Market Capitalization > 5000\nAND Sales Growth 5Y > 15\nAND ROCE > 18\nAND Debt to Equity < 0.5`}
-              className="w-full font-mono text-[14px] leading-relaxed p-4 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-emerald-300 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-bold resize-y flex-1"
+              className="w-full font-mono text-[14px] leading-relaxed p-4 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500 font-bold resize-y flex-1"
               spellCheck={false}
             />
 

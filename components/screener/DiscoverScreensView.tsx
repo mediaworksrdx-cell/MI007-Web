@@ -130,7 +130,7 @@ export function DiscoverScreensView({
                 <span className="mono text-[10px] font-bold text-[var(--theme-card-text-muted)] uppercase tracking-wider block mb-1">
                   Conditions
                 </span>
-                <pre className="mono text-[11.5px] font-bold text-emerald-300 whitespace-pre-wrap line-clamp-3">
+                <pre className="mono text-[11.5px] font-bold text-[var(--theme-card-text)] whitespace-pre-wrap line-clamp-3">
                   {screen.query}
                 </pre>
               </div>

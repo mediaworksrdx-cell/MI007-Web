@@ -128,7 +128,7 @@ export function SaveScreenModal({
               <span>QUERY EXPRESSION</span>
               <span className="text-emerald-400">{matchCount} Companies Matching</span>
             </div>
-            <pre className="mono text-[12px] text-emerald-300 font-bold whitespace-pre-wrap max-h-24 overflow-y-auto">
+            <pre className="mono text-[12px] text-[var(--theme-card-text)] font-bold whitespace-pre-wrap max-h-24 overflow-y-auto">
               {currentQuery || 'All Companies (No filter)'}
             </pre>
           </div>
