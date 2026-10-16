@@ -47,6 +47,10 @@ import { BacktestingView } from './BacktestingView';
 import { StrategyId } from '@/lib/screener/technicalStrategies';
 
 export function ScreenerWorkspace() {
+  const searchParams = useSearchParams();
+  const urlSymbol = searchParams?.get('symbol')?.toUpperCase();
+  const urlTab = searchParams?.get('tab') as any;
+
   const { market: globalMarket, setMarket: setGlobalMarket } = useMarket();
   const [market, setMarket] = useState<MarketRegion>((globalMarket as MarketRegion) || 'INDIA');
   const [activeTab, setActiveTab] = useState<
@@ -61,7 +65,11 @@ export function ScreenerWorkspace() {
     | 'peers'
     | 'backtesting'
     | 'alerts'
-  >('screener');
+  >(
+    urlTab && ['screener', 'technicalScreener', 'queryBuilder', 'discover', 'saved', 'watchlists', 'analysis', 'technicalAnalysis', 'peers', 'backtesting', 'alerts'].includes(urlTab)
+      ? urlTab
+      : 'screener'
+  );
   const [activeViewPreset, setActiveViewPreset] = useState<TableViewPreset>('overview');
   const [backtestStrategyId, setBacktestStrategyId] = useState<StrategyId>('ma_alignment');
 
@@ -81,8 +89,9 @@ export function ScreenerWorkspace() {
   const [selectedColumns, setSelectedColumns] = useState<string[]>(DEFAULT_COLUMNS);
 
   // Active Company Selection
-  const [selectedSymbol, setSelectedSymbol] = useState<string>('RELIANCE');
+  const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol || 'RELIANCE');
   const [peerSymbols, setPeerSymbols] = useState<string[]>(['TCS', 'INFY']);
+  const prevMarketRef = React.useRef<MarketRegion>(market);
 
   // Modals State
   const [columnModalOpen, setColumnModalOpen] = useState(false);
@@ -96,14 +105,18 @@ export function ScreenerWorkspace() {
   const [customRatios, setCustomRatios] = useState<CustomRatio[]>([]);
   const [alerts, setAlerts] = useState<ScreeningAlert[]>([]);
 
-  const searchParams = useSearchParams();
-
   // Sync tab and symbol from URL parameters or session storage return flags
   useEffect(() => {
     const tabParam = searchParams?.get('tab');
     const symbolParam = searchParams?.get('symbol');
     if (symbolParam) {
-      setSelectedSymbol(symbolParam.toUpperCase());
+      const clean = symbolParam.toUpperCase();
+      setSelectedSymbol(clean);
+      const comp = MASTER_COMPANIES.find((c) => c.symbol.toUpperCase() === clean);
+      if (comp && comp.market) {
+        setMarket(comp.market);
+        prevMarketRef.current = comp.market;
+      }
     }
     if (tabParam) {
       setActiveTab(tabParam as any);
@@ -116,8 +129,14 @@ export function ScreenerWorkspace() {
         const returnTab = sessionStorage.getItem('mi007_return_tab');
         const returnSymbol = sessionStorage.getItem('mi007_return_symbol');
         if (returnSymbol) {
-          setSelectedSymbol(returnSymbol.toUpperCase());
+          const clean = returnSymbol.toUpperCase();
+          setSelectedSymbol(clean);
           sessionStorage.removeItem('mi007_return_symbol');
+          const comp = MASTER_COMPANIES.find((c) => c.symbol.toUpperCase() === clean);
+          if (comp && comp.market) {
+            setMarket(comp.market);
+            prevMarketRef.current = comp.market;
+          }
         }
         if (returnTab) {
           sessionStorage.removeItem('mi007_return_tab');
@@ -144,23 +163,29 @@ export function ScreenerWorkspace() {
     setSelectedColumns(getColumnPreferences());
   }, []);
 
-  // Update market when global market switches
+  // Update market only when user actually switches the global market from the navbar
   useEffect(() => {
-    if (globalMarket && ['INDIA', 'USA', 'UAE'].includes(globalMarket)) {
+    if (globalMarket && ['INDIA', 'USA', 'UAE'].includes(globalMarket) && globalMarket !== prevMarketRef.current) {
+      prevMarketRef.current = globalMarket as MarketRegion;
       setMarket(globalMarket as MarketRegion);
-      // Pick sensible default symbol per market
-      if (globalMarket === 'INDIA') setSelectedSymbol('RELIANCE');
-      else if (globalMarket === 'USA') setSelectedSymbol('AAPL');
-      else if (globalMarket === 'UAE') setSelectedSymbol('EMAAR');
+
+      // Only pick default symbol if current selectedSymbol does not belong to new market
+      const comps = getCompaniesByMarket(globalMarket as MarketRegion);
+      const exists = comps.some((c) => c.symbol.toUpperCase() === selectedSymbol.toUpperCase());
+      if (!exists && comps.length > 0) {
+        setSelectedSymbol(comps[0].symbol);
+      }
     }
-  }, [globalMarket]);
+  }, [globalMarket, selectedSymbol]);
 
   const handleMarketChange = (newMarket: MarketRegion) => {
+    prevMarketRef.current = newMarket;
     setMarket(newMarket);
     setGlobalMarket(newMarket);
     setSectorFilter('ALL');
     const comps = getCompaniesByMarket(newMarket);
-    if (comps.length > 0) {
+    const exists = comps.some((c) => c.symbol.toUpperCase() === selectedSymbol.toUpperCase());
+    if (!exists && comps.length > 0) {
       setSelectedSymbol(comps[0].symbol);
     }
   };
