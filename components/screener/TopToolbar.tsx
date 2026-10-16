@@ -41,13 +41,16 @@ export function TopToolbar({
 }: TopToolbarProps) {
   const TABS = [
     { id: 'screener', label: '1. Stock Screener' },
-    { id: 'discover', label: '2. Discover Screens' },
+    { id: 'technicalScreener', label: '2. Technical Strategies' },
     { id: 'queryBuilder', label: '3. Query Builder' },
-    { id: 'saved', label: '4. Saved Screens' },
-    { id: 'watchlists', label: '5. Watchlists' },
-    { id: 'analysis', label: `6. Company Analysis ${selectedSymbol ? `(${selectedSymbol})` : ''}` },
-    { id: 'peers', label: '7. Peer Comparison' },
-    { id: 'alerts', label: '8. Screening Alerts' },
+    { id: 'discover', label: '4. Discover Screens' },
+    { id: 'saved', label: '5. Saved Screens' },
+    { id: 'watchlists', label: '6. Watchlists' },
+    { id: 'analysis', label: `7. Company Analysis ${selectedSymbol ? `(${selectedSymbol})` : ''}` },
+    { id: 'technicalAnalysis', label: `8. Technical Analysis ${selectedSymbol ? `(${selectedSymbol})` : ''}` },
+    { id: 'peers', label: '9. Peer Matrix' },
+    { id: 'backtesting', label: '10. Backtesting' },
+    { id: 'alerts', label: '11. Alerts' },
   ];
 
   return (

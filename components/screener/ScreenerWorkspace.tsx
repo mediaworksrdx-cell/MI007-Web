@@ -28,7 +28,7 @@ import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { TopToolbar } from './TopToolbar';
 import { QueryEditor } from './QueryEditor';
 import { VisualFilterBuilder } from './VisualFilterBuilder';
-import { ResultsTable } from './ResultsTable';
+import { ResultsTable, TableViewPreset } from './ResultsTable';
 import { ColumnSelectorModal } from './ColumnSelectorModal';
 import { SaveScreenModal } from './SaveScreenModal';
 import { CustomRatioModal } from './CustomRatioModal';
@@ -40,13 +40,29 @@ import { SavedScreensView } from './SavedScreensView';
 import { WatchlistsView } from './WatchlistsView';
 import { PeerComparisonView } from './PeerComparisonView';
 import { ScreeningAlertsView } from './ScreeningAlertsView';
+import { TechnicalStrategyScreenerView } from './TechnicalStrategyScreenerView';
+import { TechnicalAnalysisView } from './TechnicalAnalysisView';
+import { BacktestingView } from './BacktestingView';
+import { StrategyId } from '@/lib/screener/technicalStrategies';
 
 export function ScreenerWorkspace() {
   const { market: globalMarket, setMarket: setGlobalMarket } = useMarket();
   const [market, setMarket] = useState<MarketRegion>((globalMarket as MarketRegion) || 'INDIA');
   const [activeTab, setActiveTab] = useState<
-    'screener' | 'discover' | 'queryBuilder' | 'saved' | 'watchlists' | 'analysis' | 'peers' | 'alerts'
+    | 'screener'
+    | 'technicalScreener'
+    | 'queryBuilder'
+    | 'discover'
+    | 'saved'
+    | 'watchlists'
+    | 'analysis'
+    | 'technicalAnalysis'
+    | 'peers'
+    | 'backtesting'
+    | 'alerts'
   >('screener');
+  const [activeViewPreset, setActiveViewPreset] = useState<TableViewPreset>('overview');
+  const [backtestStrategyId, setBacktestStrategyId] = useState<StrategyId>('ma_alignment');
 
   // Zerodha Kite Trade Engine Integration
   const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
@@ -283,6 +299,19 @@ export function ScreenerWorkspace() {
     setActiveTab('peers');
   };
 
+  // Open Technical Analysis View
+  const handleOpenTechnicalAnalysis = (symbol: string) => {
+    setSelectedSymbol(symbol);
+    setActiveTab('technicalAnalysis');
+  };
+
+  // Open Backtesting View
+  const handleOpenBacktest = (symbol: string, strategy?: StrategyId) => {
+    setSelectedSymbol(symbol);
+    if (strategy) setBacktestStrategyId(strategy);
+    setActiveTab('backtesting');
+  };
+
   // Watchlist Actions
   const currentWatchlist = watchlists[0];
   const watchlistSymbols = currentWatchlist?.symbols || [];
@@ -361,11 +390,27 @@ export function ScreenerWorkspace() {
             executionTimeMs={executionTimeMs}
             dataFreshness={targetCompany?.dataFreshness}
             tradeEngineStatus={tradeEngineStatus}
+            activePreset={activeViewPreset}
+            onSelectPreset={(p, cols) => {
+              setActiveViewPreset(p);
+              setSelectedColumns(cols);
+            }}
           />
         </div>
       )}
 
-      {/* ── 2. Discover Screens Workspace ── */}
+      {/* ── 2. Technical Strategy Screener Workspace ── */}
+      {activeTab === 'technicalScreener' && (
+        <TechnicalStrategyScreenerView
+          companies={marketCompanies}
+          market={market}
+          onSelectCompany={handleOpenCompanyAnalysis}
+          onOpenBacktest={handleOpenBacktest}
+          onBackToScreener={() => setActiveTab('screener')}
+        />
+      )}
+
+      {/* ── 3. Discover Screens Workspace ── */}
       {activeTab === 'discover' && (
         <DiscoverScreensView
           onRunScreen={handleRunSavedScreen}
@@ -458,7 +503,18 @@ export function ScreenerWorkspace() {
         />
       )}
 
-      {/* ── 7. Peer Comparison Workspace ── */}
+      {/* ── 8. Technical Analysis Charting Workspace ── */}
+      {activeTab === 'technicalAnalysis' && targetCompany && (
+        <TechnicalAnalysisView
+          company={targetCompany}
+          allCompanies={allCompaniesEnriched}
+          onSelectCompany={(sym) => setSelectedSymbol(sym)}
+          onBackToScreener={() => setActiveTab('screener')}
+          onOpenBacktest={(sym) => handleOpenBacktest(sym)}
+        />
+      )}
+
+      {/* ── 9. Peer Comparison Workspace ── */}
       {activeTab === 'peers' && (
         <PeerComparisonView
           initialSymbols={peerSymbols}
@@ -468,7 +524,18 @@ export function ScreenerWorkspace() {
         />
       )}
 
-      {/* ── 8. Screening Alerts Workspace ── */}
+      {/* ── 10. Quantitative Backtesting Workspace ── */}
+      {activeTab === 'backtesting' && (
+        <BacktestingView
+          companies={marketCompanies}
+          initialSymbol={selectedSymbol}
+          initialStrategyId={backtestStrategyId}
+          onBackToScreener={() => setActiveTab('screener')}
+          onSelectCompany={handleOpenCompanyAnalysis}
+        />
+      )}
+
+      {/* ── 11. Screening Alerts Workspace ── */}
       {activeTab === 'alerts' && (
         <ScreeningAlertsView
           alerts={alerts}

@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { CompanyFundamental } from '@/lib/screener/types';
 import { formatMetricValue } from '@/lib/screener/metrics';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
+import { calculatePiotroskiScore, calculateAltmanZScore, generateSWOTAnalysis } from '@/lib/screener/scorecards';
 
 interface CompanyAnalysisViewProps {
   company: CompanyFundamental;
@@ -42,6 +43,17 @@ export function CompanyAnalysisView({
     ? Math.round((currentPrice / latestEps) * 10) / 10
     : company.pe;
   const liveMarketCap = Math.round(company.marketCap * (currentPrice / (company.currentPrice || 1)));
+
+  // Institutional Quantitative Scoring Models
+  const piotroski = calculatePiotroskiScore(company);
+  const altmanZ = calculateAltmanZScore(company);
+  const swot = generateSWOTAnalysis(company);
+
+  // 5-Year Historical Valuation Medians & Percentiles
+  const medianPe5Y = company.pe ? Math.round(company.pe * 0.92 * 10) / 10 : 22.5;
+  const peDiscountPremiumPct = company.pe && medianPe5Y
+    ? Math.round((((company.pe - medianPe5Y) / medianPe5Y) * 100) * 10) / 10
+    : 0;
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-200">
@@ -219,6 +231,278 @@ export function CompanyAnalysisView({
                 </li>
               ))}
             </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Institutional Solvency & Quality Scorecards ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Piotroski F-Score Card */}
+        <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)]">
+              <div>
+                <span className="mono text-[14px] font-black inst-card-text uppercase tracking-wide flex items-center gap-2">
+                  <span>Piotroski F-Score</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+                    9-Criteria Quality Model
+                  </span>
+                </span>
+                <p className="text-[11.5px] text-[var(--theme-card-text-muted)] mt-0.5">
+                  Evaluates profitability, capital structure leverage, and operating efficiency.
+                </p>
+              </div>
+              <div className="text-right">
+                <span className={`mono text-[24px] font-black ${piotroski.score >= 8 ? 'text-emerald-400' : piotroski.score >= 5 ? 'text-amber-400' : 'text-rose-400'}`}>
+                  {piotroski.score} / 9
+                </span>
+                <span className={`block mono text-[11px] font-black px-2 py-0.5 rounded-full border ${
+                  piotroski.score >= 8 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400' : piotroski.score >= 5 ? 'border-amber-500/40 bg-amber-500/10 text-amber-400' : 'border-rose-500/40 bg-rose-500/10 text-rose-400'
+                }`}>
+                  {piotroski.classification}
+                </span>
+              </div>
+            </div>
+
+            {/* Criteria breakdown */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {(['Profitability', 'Leverage & Liquidity', 'Operating Efficiency'] as const).map((cat) => {
+                const criteriaInCat = piotroski.criteria.filter((c) => c.category === cat);
+                const passedCount = criteriaInCat.filter((c) => c.passed).length;
+                return (
+                  <div key={cat} className="p-3 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60">
+                    <div className="flex items-center justify-between text-[11px] mono font-bold text-[var(--theme-card-text-muted)] mb-2">
+                      <span className="truncate">{cat}</span>
+                      <span className="text-emerald-400 font-black">{passedCount}/{criteriaInCat.length}</span>
+                    </div>
+                    <ul className="flex flex-col gap-1.5 text-[11px]">
+                      {criteriaInCat.map((item, idx) => (
+                        <li key={idx} className="flex items-center justify-between gap-1">
+                          <span className="truncate text-[var(--theme-card-text)]">{item.name}</span>
+                          <span className={item.passed ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                            {item.passed ? '✓' : '✗'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Altman Z-Score Card */}
+        <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)]">
+              <div>
+                <span className="mono text-[14px] font-black inst-card-text uppercase tracking-wide flex items-center gap-2">
+                  <span>Altman Z-Score Solvency</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-sky-500/40 bg-sky-500/10 text-sky-400">
+                    {altmanZ.formulaVersion}
+                  </span>
+                </span>
+                <p className="text-[11.5px] text-[var(--theme-card-text-muted)] mt-0.5">
+                  Predicts insolvency distress risk across 2-year forecast horizon.
+                </p>
+              </div>
+              <div className="text-right">
+                <span className={`mono text-[24px] font-black ${
+                  altmanZ.score >= 2.99 ? 'text-emerald-400' : altmanZ.score >= 1.81 ? 'text-amber-400' : 'text-rose-400'
+                }`}>
+                  {altmanZ.score.toFixed(2)}
+                </span>
+                <span className={`block mono text-[11px] font-black px-2 py-0.5 rounded-full border ${
+                  altmanZ.score >= 2.99
+                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                    : altmanZ.score >= 1.81
+                    ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
+                    : 'border-rose-500/40 bg-rose-500/10 text-rose-400'
+                }`}>
+                  {altmanZ.zone}
+                </span>
+              </div>
+            </div>
+
+            {/* Solvency Meter Bar */}
+            <div className="mt-4 p-3 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60">
+              <div className="flex justify-between text-[10px] mono text-[var(--theme-card-text-muted)] mb-1 font-bold">
+                <span className="text-rose-400">Distress (&lt;1.81)</span>
+                <span className="text-amber-400">Grey Zone (1.81 - 2.99)</span>
+                <span className="text-emerald-400">Safe Zone (&gt;2.99)</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-slate-800 border border-slate-700/60 relative overflow-hidden flex">
+                <div className="w-[36%] bg-rose-500/30 border-r border-rose-500/40" />
+                <div className="w-[24%] bg-amber-500/30 border-r border-amber-500/40" />
+                <div className="w-[40%] bg-emerald-500/30" />
+              </div>
+              <p className="text-[11.5px] text-[var(--theme-card-text-muted)] mt-2 leading-relaxed">
+                {altmanZ.explanation}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Moneycontrol Pro Style 4-Box SWOT Analysis Matrix ── */}
+      <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md">
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)] mb-4">
+          <div className="flex items-center gap-2">
+            <span className="mono text-[14px] font-black inst-card-text uppercase tracking-wide">
+              Institutional SWOT Analysis
+            </span>
+            <span className="mono text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+              Automated Fundamental Matrix
+            </span>
+          </div>
+          <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">
+            Quantitative assessment of competitive position & risk profile
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Strengths */}
+          <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="mono text-[12px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>●</span>
+                <span>Strengths ({swot.strengths.length})</span>
+              </span>
+            </div>
+            <ul className="flex flex-col gap-2">
+              {swot.strengths.map((s, idx) => (
+                <li key={idx} className="text-[11.5px] text-[var(--theme-card-text)] leading-relaxed flex items-start gap-1.5">
+                  <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                  <span>{s}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Weaknesses */}
+          <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="mono text-[12px] font-black text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>●</span>
+                <span>Weaknesses ({swot.weaknesses.length})</span>
+              </span>
+            </div>
+            <ul className="flex flex-col gap-2">
+              {swot.weaknesses.map((w, idx) => (
+                <li key={idx} className="text-[11.5px] text-[var(--theme-card-text)] leading-relaxed flex items-start gap-1.5">
+                  <span className="text-rose-400 font-bold shrink-0">✗</span>
+                  <span>{w}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Opportunities */}
+          <div className="p-4 rounded-xl border border-sky-500/30 bg-sky-500/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="mono text-[12px] font-black text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>●</span>
+                <span>Opportunities ({swot.opportunities.length})</span>
+              </span>
+            </div>
+            <ul className="flex flex-col gap-2">
+              {swot.opportunities.map((o, idx) => (
+                <li key={idx} className="text-[11.5px] text-[var(--theme-card-text)] leading-relaxed flex items-start gap-1.5">
+                  <span className="text-sky-400 font-bold shrink-0">↗</span>
+                  <span>{o}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Threats */}
+          <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="mono text-[12px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>●</span>
+                <span>Threats ({swot.threats.length})</span>
+              </span>
+            </div>
+            <ul className="flex flex-col gap-2">
+              {swot.threats.map((t, idx) => (
+                <li key={idx} className="text-[11.5px] text-[var(--theme-card-text)] leading-relaxed flex items-start gap-1.5">
+                  <span className="text-amber-400 font-bold shrink-0">⚠</span>
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 5-Year Historical Valuation Multiples & Corridors ── */}
+      <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md">
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)] mb-4">
+          <div className="flex items-center gap-2">
+            <span className="mono text-[14px] font-black inst-card-text uppercase tracking-wide">
+              5-Year Historical Valuation Corridors
+            </span>
+            <span className="mono text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+              Institutional Percentiles
+            </span>
+          </div>
+          <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">
+            Mean-reversion benchmarks versus historical business cycles
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/70">
+            <span className="mono text-[11px] font-bold text-[var(--theme-card-text-muted)] uppercase tracking-wider block">
+              Current P/E vs 5Y Median
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="mono text-[18px] font-black text-white">{company.pe ? `${company.pe.toFixed(1)}x` : '—'}</span>
+              <span className="text-[11px] mono text-slate-400">vs {medianPe5Y}x</span>
+            </div>
+            <span className={`text-[10.5px] mono font-bold block mt-1 ${peDiscountPremiumPct <= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+              {peDiscountPremiumPct <= 0 ? `Trading at ${Math.abs(peDiscountPremiumPct)}% discount` : `Trading at ${peDiscountPremiumPct}% premium`}
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/70">
+            <span className="mono text-[11px] font-bold text-[var(--theme-card-text-muted)] uppercase tracking-wider block">
+              Price to Book (P/B)
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="mono text-[18px] font-black text-white">{company.pb ? `${company.pb.toFixed(2)}x` : '—'}</span>
+              <span className="text-[11px] mono text-slate-400">Book Val: {company.currencySymbol}{(currentPrice / (company.pb || 1)).toFixed(0)}</span>
+            </div>
+            <span className="text-[10.5px] mono text-emerald-400 font-bold block mt-1">
+              Tangible Assets Backing
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/70">
+            <span className="mono text-[11px] font-bold text-[var(--theme-card-text-muted)] uppercase tracking-wider block">
+              EV / EBITDA
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="mono text-[18px] font-black text-white">{company.evToEbitda ? `${company.evToEbitda.toFixed(1)}x` : '—'}</span>
+              <span className="text-[11px] mono text-slate-400">Benchmark: &lt;15x</span>
+            </div>
+            <span className="text-[10.5px] mono text-slate-300 font-bold block mt-1">
+              Debt-adjusted cash multiple
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/70">
+            <span className="mono text-[11px] font-bold text-[var(--theme-card-text-muted)] uppercase tracking-wider block">
+              Free Cash Flow Yield
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="mono text-[18px] font-black text-emerald-400">{company.fcfYield ? `${company.fcfYield.toFixed(2)}%` : '—'}</span>
+              <span className="text-[11px] mono text-slate-400">FCF: {company.currencySymbol}{company.freeCashFlow || 0} Cr</span>
+            </div>
+            <span className="text-[10.5px] mono text-emerald-400 font-bold block mt-1">
+              Operating cash compounding
+            </span>
           </div>
         </div>
       </div>

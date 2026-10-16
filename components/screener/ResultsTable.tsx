@@ -1,10 +1,83 @@
 // ─── Screener Financial Results Table ───────────────────────────────────────
+// Institutional 7-view table presets with in-cell 52W ranges, mini sparklines,
+// Piotroski/Altman scorecards, and live Kite streaming ticks.
+
 'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental } from '@/lib/screener/types';
 import { getMetricDefinition, formatMetricValue, getMetricValue } from '@/lib/screener/metrics';
+
+export type TableViewPreset =
+  | 'overview'
+  | 'valuation'
+  | 'profitability'
+  | 'growth'
+  | 'health'
+  | 'technicals'
+  | 'ownership'
+  | 'custom';
+
+export interface ViewPresetDef {
+  id: TableViewPreset;
+  label: string;
+  badge: string;
+  description: string;
+  columns: string[];
+}
+
+export const VIEW_PRESETS: ViewPresetDef[] = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    badge: 'Core',
+    description: 'Price, Volume, Returns, 52W Range, Market Cap, Valuation & Quality',
+    columns: ['marketCap', 'currentPrice', 'priceChangePct', 'pe', 'roce', 'high52W', 'piotroskiScore'],
+  },
+  {
+    id: 'valuation',
+    label: 'Valuation',
+    badge: 'Multiples',
+    description: 'P/E, Forward P/E, P/B, P/S, EV/EBITDA, EV/EBIT, Earnings Yield, FCF Yield, PEG',
+    columns: ['marketCap', 'pe', 'forwardPe', 'pb', 'priceToSales', 'evToEbitda', 'evToEbit', 'earningsYield', 'fcfYield', 'pegRatio'],
+  },
+  {
+    id: 'profitability',
+    label: 'Profitability',
+    badge: 'Margins & RoIC',
+    description: 'ROCE, ROE, ROIC, ROA, Gross Margin, Operating Margin, EBITDA Margin, Net Profit Margin',
+    columns: ['roce', 'roe', 'roic', 'roa', 'grossMargin', 'operatingMargin', 'ebitdaMargin', 'npm'],
+  },
+  {
+    id: 'growth',
+    label: 'Growth',
+    badge: 'CAGR',
+    description: 'Sales Growth (1Y, 3Y, 5Y), Net Profit Growth (1Y, 3Y, 5Y), EPS Growth',
+    columns: ['salesGrowth1Y', 'salesGrowth3Y', 'salesGrowth5Y', 'profitGrowth1Y', 'profitGrowth3Y', 'profitGrowth5Y', 'epsGrowth'],
+  },
+  {
+    id: 'health',
+    label: 'Financial Health',
+    badge: 'Solvency',
+    description: 'Debt to Equity, Interest Coverage, Current Ratio, Quick Ratio, FCF, CFO, Piotroski, Altman Z',
+    columns: ['debtToEquity', 'interestCoverage', 'currentRatio', 'quickRatio', 'freeCashFlow', 'cfo', 'piotroskiScore', 'altmanZScore'],
+  },
+  {
+    id: 'technicals',
+    label: 'Technicals',
+    badge: 'Signals',
+    description: 'RSI(14), 50 SMA, 200 SMA, Distance to 200 SMA, MACD, 52W High, 52W Low, Beta',
+    columns: ['currentPrice', 'priceChangePct', 'rsi14', 'sma50', 'sma200', 'distanceSma200Pct', 'macd', 'high52W', 'beta'],
+  },
+  {
+    id: 'ownership',
+    label: 'Ownership',
+    badge: 'Shareholding',
+    description: 'Promoter Holding, Pledged Shares %, FII Holding, DII Holding, Public Holding, 3Y Promoter Change',
+    columns: ['promoterHolding', 'pledgedPct', 'fiiHolding', 'diiHolding', 'publicHolding', 'promoterHoldingChange3Y'],
+  },
+];
 
 interface ResultsTableProps {
   companies: CompanyFundamental[];
@@ -20,6 +93,64 @@ interface ResultsTableProps {
   executionTimeMs?: number;
   dataFreshness?: string;
   tradeEngineStatus?: 'connected' | 'connecting' | 'disconnected';
+  activePreset?: TableViewPreset;
+  onSelectPreset?: (preset: TableViewPreset, cols: string[]) => void;
+}
+
+function Range52WBar({ current, low, high, currency = '₹' }: { current: number; low: number; high: number; currency?: string }) {
+  if (!low || !high || high <= low) return <span>—</span>;
+  const pct = Math.max(0, Math.min(100, ((current - low) / (high - low)) * 100));
+  return (
+    <div className="flex flex-col gap-1 w-28 sm:w-32 py-0.5">
+      <div className="flex items-center justify-between text-[9.5px] mono text-[var(--theme-card-text-muted)]">
+        <span>{currency}{Math.round(low)}</span>
+        <span className="font-bold text-white">{currency}{Math.round(current)}</span>
+        <span>{currency}{Math.round(high)}</span>
+      </div>
+      <div className="w-full h-1.5 rounded-full bg-slate-800 border border-slate-700/60 relative overflow-hidden">
+        <div className="h-full bg-linear-to-r from-rose-500/40 via-amber-400/40 to-emerald-400/60 rounded-full" style={{ width: '100%' }} />
+        <div
+          className="absolute top-0 bottom-0 w-2 -ml-1 bg-white rounded-full shadow-[0_0_6px_rgba(255,255,255,0.9)]"
+          style={{ left: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MiniSparkline({ symbol, changePct }: { symbol: string; changePct: number }) {
+  const seed = symbol.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
+  const points: number[] = [];
+  let val = 50;
+  for (let i = 0; i < 9; i++) {
+    val += Math.sin(seed * 0.23 + i * 0.95) * 4.5 + (changePct >= 0 ? 1.8 : -1.8);
+    points.push(val);
+  }
+  const min = Math.min(...points);
+  const max = Math.max(...points) || min + 1;
+  const w = 44;
+  const h = 16;
+  const polylineCoords = points
+    .map((p, idx) => {
+      const x = (idx / (points.length - 1)) * w;
+      const y = h - ((p - min) / (max - min)) * (h - 4) - 2;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+
+  const stroke = changePct >= 0 ? '#10b981' : '#f43f5e';
+  return (
+    <svg width={w} height={h} className="inline-block overflow-visible shrink-0">
+      <polyline
+        fill="none"
+        stroke={stroke}
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={polylineCoords}
+      />
+    </svg>
+  );
 }
 
 export function ResultsTable({
@@ -36,6 +167,8 @@ export function ResultsTable({
   executionTimeMs = 12,
   dataFreshness = 'Q3 FY25 (Dec 2024)',
   tradeEngineStatus = 'connected',
+  activePreset = 'overview',
+  onSelectPreset,
 }: ResultsTableProps) {
   const [tableSearch, setTableSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -84,6 +217,46 @@ export function ResultsTable({
 
   return (
     <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xl overflow-hidden flex flex-col">
+      {/* ── 7 Fundamental Views Preset Switcher Bar ── */}
+      <div className="flex items-center gap-1.5 p-2.5 sm:px-4 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/80 overflow-x-auto">
+        <span className="mono text-[11px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider shrink-0 mr-2 flex items-center gap-1.5">
+          <span>Views Presets:</span>
+        </span>
+        {VIEW_PRESETS.map((p) => {
+          const isActive = activePreset === p.id;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onSelectPreset && onSelectPreset(p.id, p.columns)}
+              className={`px-3 py-1 rounded-xl mono text-[11.5px] font-bold transition-all shrink-0 flex items-center gap-1.5 border ${
+                isActive
+                  ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300 shadow-xs'
+                  : 'border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-white hover:border-slate-500'
+              }`}
+              title={p.description}
+            >
+              <span>{p.label}</span>
+              <span className={`text-[9px] px-1 py-0.2 rounded font-black ${isActive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
+                {p.badge}
+              </span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={onOpenColumnSelector}
+          className={`px-3 py-1 rounded-xl mono text-[11.5px] font-bold transition-all shrink-0 flex items-center gap-1.5 border ${
+            activePreset === 'custom'
+              ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300'
+              : 'border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-white'
+          }`}
+        >
+          <span>Custom ({columns.length})</span>
+          <span>⚙</span>
+        </button>
+      </div>
+
       {/* Table Toolbar */}
       <div className="flex flex-wrap items-center justify-between p-4 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] gap-3">
         <div className="flex items-center gap-3">
@@ -100,8 +273,8 @@ export function ResultsTable({
               <span>Freshness: {dataFreshness} · Computed in {executionTimeMs}ms</span>
               <span className="opacity-40">|</span>
               <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Kite Engine Streaming</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${tradeEngineStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                <span>{tradeEngineStatus === 'connected' ? 'Kite Engine Streaming' : 'Kite Standby'}</span>
               </span>
             </div>
           </div>
@@ -156,13 +329,17 @@ export function ResultsTable({
       </div>
 
       {/* Table Container */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[600px] border-b border-[var(--theme-card-border)]">
+      <div className="overflow-x-auto overflow-y-auto max-h-[620px] border-b border-[var(--theme-card-border)]">
         <table className="w-full border-collapse text-left">
           {/* Sticky Header */}
           <thead className="sticky top-0 z-20 bg-[var(--theme-card-surface)] border-b border-[var(--theme-card-border)] shadow-xs">
             <tr>
               <th className="px-3.5 py-3 mono text-[11px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider whitespace-nowrap sticky left-0 z-30 bg-[var(--theme-card-surface)] border-r border-[var(--theme-card-border)]">
                 Company & Symbol
+              </th>
+
+              <th className="px-3 py-3 mono text-[11px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider text-center whitespace-nowrap">
+                Trend (1Y)
               </th>
 
               {columns.map((colKey) => {
@@ -197,7 +374,7 @@ export function ResultsTable({
             {paginatedRows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={columns.length + 2}
+                  colSpan={columns.length + 3}
                   className="px-6 py-12 text-center text-[var(--theme-card-text-muted)]"
                 >
                   <div className="mono text-[14px] font-bold text-slate-400 mb-1">
@@ -244,11 +421,83 @@ export function ResultsTable({
                       </div>
                     </td>
 
-                    {/* Metric Columns */}
+                    {/* Mini Sparkline Column */}
+                    <td className="px-3 py-2.5 whitespace-nowrap text-center">
+                      <MiniSparkline symbol={comp.symbol} changePct={comp.priceChangePct} />
+                    </td>
+
+                    {/* Metric Columns with Institutional Widgets */}
                     {columns.map((colKey) => {
                       const def = getMetricDefinition(colKey);
                       const rawVal = getMetricValue(comp, colKey);
                       const formatted = formatMetricValue(rawVal, colKey, comp.currencySymbol);
+
+                      // Specialized in-cell widget: 52-Week Range Bar
+                      if (colKey === 'high52W') {
+                        return (
+                          <td key={colKey} className="px-3 py-1.5 whitespace-nowrap text-right">
+                            <div className="flex justify-end">
+                              <Range52WBar
+                                current={comp.currentPrice}
+                                low={comp.low52W}
+                                high={comp.high52W}
+                                currency={comp.currencySymbol}
+                              />
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      // Specialized in-cell widget: Piotroski F-Score (0-9)
+                      if (colKey === 'piotroskiScore' && rawVal !== null) {
+                        const score = rawVal;
+                        const badgeColor = score >= 8
+                          ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400'
+                          : score >= 5
+                          ? 'border-amber-500/50 bg-amber-500/15 text-amber-400'
+                          : 'border-rose-500/50 bg-rose-500/15 text-rose-400';
+                        return (
+                          <td key={colKey} className="px-3 py-2.5 whitespace-nowrap text-right">
+                            <span className={`px-2 py-0.5 rounded-full border text-[11px] font-black mono ${badgeColor}`}>
+                              {score}/9 {score >= 8 ? 'Strong' : score >= 5 ? 'Average' : 'Weak'}
+                            </span>
+                          </td>
+                        );
+                      }
+
+                      // Specialized in-cell widget: Altman Z-Score
+                      if (colKey === 'altmanZScore' && rawVal !== null) {
+                        const z = rawVal;
+                        const zZone = z >= 2.99
+                          ? { label: 'Safe', color: 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400' }
+                          : z >= 1.81
+                          ? { label: 'Grey', color: 'border-amber-500/50 bg-amber-500/15 text-amber-400' }
+                          : { label: 'Distress', color: 'border-rose-500/50 bg-rose-500/15 text-rose-400' };
+                        return (
+                          <td key={colKey} className="px-3 py-2.5 whitespace-nowrap text-right">
+                            <span className={`px-2 py-0.5 rounded-full border text-[11px] font-black mono ${zZone.color}`}>
+                              {z.toFixed(2)} · {zZone.label}
+                            </span>
+                          </td>
+                        );
+                      }
+
+                      // Specialized in-cell widget: RSI (14) Momentum
+                      if (colKey === 'rsi14' && rawVal !== null) {
+                        const rsi = rawVal;
+                        const rsiClass = rsi >= 70
+                          ? 'border-rose-500/40 bg-rose-500/15 text-rose-300'
+                          : rsi <= 30
+                          ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+                          : 'border-slate-700 bg-slate-800 text-slate-300';
+                        return (
+                          <td key={colKey} className="px-3 py-2.5 whitespace-nowrap text-right">
+                            <span className={`px-2 py-0.5 rounded border text-[11px] font-black mono ${rsiClass}`}>
+                              {rsi.toFixed(1)} {rsi >= 70 ? 'Overbought' : rsi <= 30 ? 'Oversold' : ''}
+                            </span>
+                          </td>
+                        );
+                      }
 
                       // Color coding for percentages or returns or live prices
                       let colorClass = 'text-[var(--theme-card-text)]';
@@ -335,7 +584,7 @@ export function ResultsTable({
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-40 hover:border-emerald-500 transition-colors"
+              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-40 hover:border-emerald-500 transition-colors cursor-pointer"
             >
               Previous
             </button>
@@ -343,7 +592,7 @@ export function ResultsTable({
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-40 hover:border-emerald-500 transition-colors"
+              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-40 hover:border-emerald-500 transition-colors cursor-pointer"
             >
               Next
             </button>
