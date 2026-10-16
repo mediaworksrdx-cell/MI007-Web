@@ -130,7 +130,7 @@ export function Footer() {
         {/* Bottom strip */}
         <div className="h-[1px] w-full border-t border-white/20 mt-8 mb-4" />
         <div className="text-[13px] font-semibold text-center sm:text-left footer-copy text-slate-300 flex items-center justify-between flex-wrap gap-2">
-          <span>© 2026 Synthetix Analytics</span>
+          <span>© 2026 Synthetix Analytics. All Rights Reserved.</span>
         </div>
       </div>
     </footer>
