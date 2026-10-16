@@ -143,7 +143,8 @@ export function BacktestingView({
           <button
             type="button"
             onClick={onBackToScreener}
-            className="px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-1.5 mono text-[12px] font-bold shadow-xs cursor-pointer group"
+            className="px-3.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 transition-colors flex items-center gap-1.5 mono text-[12px] font-black shadow-xs cursor-pointer group"
+            title="Return to Stock Screener Table"
           >
             <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
             <span>BACK TO SCREENER</span>

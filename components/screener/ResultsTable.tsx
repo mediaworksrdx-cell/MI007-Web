@@ -554,7 +554,7 @@ export function ResultsTable({
 
                         {/* Chart Link */}
                         <Link
-                          href={`/chart/${comp.symbol}?market=${comp.market}`}
+                          href={`/chart/${comp.symbol}?market=${comp.market}&from=screener`}
                           className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] hover:border-emerald-500 text-[var(--theme-card-text-muted)] hover:text-white text-[11px] font-bold transition-all"
                           title="View Interactive Price Chart"
                         >
