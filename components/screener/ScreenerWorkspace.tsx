@@ -4,9 +4,9 @@
 import React, { useState, useEffect, useMemo, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useMarket } from '@/lib/marketContext';
-import { MarketRegion, CompanyFundamental, SavedScreen, VisualFilter, CustomRatio, Watchlist, ScreeningAlert } from '@/lib/screener/types';
+import { MarketRegion, CompanyFundamental, SavedScreen, CustomRatio, Watchlist, ScreeningAlert } from '@/lib/screener/types';
 import { MASTER_COMPANIES, getCompaniesByMarket, getSectors } from '@/lib/screener/data';
-import { parseQuery, evaluateNode, visualFiltersToQuery } from '@/lib/screener/queryEngine';
+import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
 import {
   getSavedScreens,
   saveUserScreen,
@@ -28,11 +28,8 @@ import { PREDEFINED_SCREENS } from '@/lib/screener/templates';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { TopToolbar } from './TopToolbar';
 import { QueryEditor } from './QueryEditor';
-import { VisualFilterBuilder } from './VisualFilterBuilder';
 import { ResultsTable, TableViewPreset } from './ResultsTable';
 import { ColumnSelectorModal } from './ColumnSelectorModal';
-import { SaveScreenModal } from './SaveScreenModal';
-import { CustomRatioModal } from './CustomRatioModal';
 import { CompanySearchModal } from './CompanySearchModal';
 import { CompanyAnalysisView } from './CompanyAnalysisView';
 import { DiscoverScreensView } from './DiscoverScreensView';
@@ -70,13 +67,9 @@ export function ScreenerWorkspace() {
   // Zerodha Kite Trade Engine Integration
   const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
 
-  // Query and Visual Filters State
+  // Query State
   const defaultScreen = PREDEFINED_SCREENS[0];
   const [currentQuery, setCurrentQuery] = useState<string>(defaultScreen.query);
-  const [visualFilters, setVisualFilters] = useState<VisualFilter[]>([
-    { id: 'vf-1', metricKey: 'roce', operator: '>', value: 18 },
-    { id: 'vf-2', metricKey: 'debtToEquity', operator: '<', value: 0.5 },
-  ]);
   const [sectorFilter, setSectorFilter] = useState<string>('ALL');
   const [sortColumn, setSortColumn] = useState<string>('marketCap');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -89,8 +82,6 @@ export function ScreenerWorkspace() {
 
   // Modals State
   const [columnModalOpen, setColumnModalOpen] = useState(false);
-  const [saveModalOpen, setSaveModalOpen] = useState(false);
-  const [customRatioModalOpen, setCustomRatioModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   // Persistence State
@@ -388,8 +379,6 @@ export function ScreenerWorkspace() {
         availableSectors={availableSectors}
         savedScreens={savedScreens}
         onSelectSavedScreen={handleRunSavedScreen}
-        onOpenSaveModal={() => setSaveModalOpen(true)}
-        onOpenCustomRatioModal={() => setCustomRatioModalOpen(true)}
         onOpenSearchModal={() => setSearchModalOpen(true)}
         activeTab={activeTab}
         onChangeTab={setActiveTab}
@@ -400,26 +389,14 @@ export function ScreenerWorkspace() {
       {/* ── 1. Stock Screener Workspace ── */}
       {activeTab === 'screener' && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-150">
-          {/* Query Builders Grid: Direct Expression Editor + Visual Filter Builder */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <QueryEditor
-              query={currentQuery}
-              onChangeQuery={setCurrentQuery}
-              onRunScreen={() => {}}
-              onResetQuery={() => setCurrentQuery('')}
-              matchCount={filteredCompanies.length}
-            />
-
-            <VisualFilterBuilder
-              filters={visualFilters}
-              onChangeFilters={setVisualFilters}
-              onApplyFilters={() => {
-                const generated = visualFiltersToQuery(visualFilters);
-                setCurrentQuery(generated);
-              }}
-              onClearFilters={() => setVisualFilters([])}
-            />
-          </div>
+          {/* Direct Expression Editor */}
+          <QueryEditor
+            query={currentQuery}
+            onChangeQuery={setCurrentQuery}
+            onRunScreen={() => {}}
+            onResetQuery={() => setCurrentQuery('')}
+            matchCount={filteredCompanies.length}
+          />
 
           {/* Screening Results Table */}
           <ResultsTable
@@ -604,33 +581,6 @@ export function ScreenerWorkspace() {
           setSelectedColumns(DEFAULT_COLUMNS);
           saveColumnPreferences(DEFAULT_COLUMNS);
         }}
-      />
-
-      {/* ── Save Screen Modal ── */}
-      <SaveScreenModal
-        isOpen={saveModalOpen}
-        onClose={() => setSaveModalOpen(false)}
-        onSave={(newScreen) => {
-          const updated = saveUserScreen(newScreen);
-          setSavedScreens(updated);
-        }}
-        currentQuery={currentQuery}
-        selectedColumns={selectedColumns}
-        sortColumn={sortColumn}
-        sortDirection={sortDirection}
-        market={market}
-        matchCount={filteredCompanies.length}
-      />
-
-      {/* ── Custom Ratio Creator Modal ── */}
-      <CustomRatioModal
-        isOpen={customRatioModalOpen}
-        onClose={() => setCustomRatioModalOpen(false)}
-        onSave={(newRatio) => {
-          const updated = saveCustomRatio(newRatio);
-          setCustomRatios(updated);
-        }}
-        marketCompanies={marketCompanies}
       />
 
       {/* ── Quick Search Modal ── */}
