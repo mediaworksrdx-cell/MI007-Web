@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental } from '@/lib/screener/types';
 import { formatMetricValue } from '@/lib/screener/metrics';
+import { useTradeEngine } from '@/lib/tradeEngineContext';
 
 interface CompanyAnalysisViewProps {
   company: CompanyFundamental;
@@ -28,6 +29,19 @@ export function CompanyAnalysisView({
 }: CompanyAnalysisViewProps) {
   const [activeTab, setActiveTab] = useState<StatementTab>('quarterly');
   const [isConsolidated, setIsConsolidated] = useState<boolean>(company.isConsolidated);
+
+  const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
+  const live = getSymbolPrice(company.symbol);
+  const currentPrice = live ? live.price : company.currentPrice;
+  const priceChangePct = live ? live.changePct : company.priceChangePct;
+  const tickDirection = live ? live.tickDirection : 'neutral';
+
+  // Dynamic live calculations
+  const latestEps = company.annualProfitLoss && company.annualProfitLoss[0]?.eps;
+  const livePe = latestEps && latestEps > 0
+    ? Math.round((currentPrice / latestEps) * 10) / 10
+    : company.pe;
+  const liveMarketCap = Math.round(company.marketCap * (currentPrice / (company.currentPrice || 1)));
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-200">
@@ -64,11 +78,25 @@ export function CompanyAnalysisView({
         {/* Price & Action Buttons */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="text-right">
-            <div className="mono text-[22px] sm:text-[26px] font-black inst-card-text">
-              {company.currencySymbol}{company.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            <div className="mono text-[22px] sm:text-[26px] font-black inst-card-text flex items-center justify-end gap-1.5">
+              <span>{company.currencySymbol}{currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  tickDirection === 'up'
+                    ? 'bg-emerald-400'
+                    : tickDirection === 'down'
+                    ? 'bg-rose-400'
+                    : 'bg-emerald-400/60'
+                } animate-pulse`}
+                title="Kite Live Streaming"
+              />
             </div>
-            <div className={`mono text-[13px] font-bold ${company.priceChangePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {company.priceChangePct >= 0 ? '▲ +' : '▼ '}{company.priceChangePct.toFixed(2)}% Today
+            <div className={`mono text-[13px] font-bold ${priceChangePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {priceChangePct >= 0 ? '▲ +' : '▼ '}{priceChangePct.toFixed(2)}% Today
+            </div>
+            <div className="text-[10px] mono text-emerald-400/90 font-bold flex items-center justify-end gap-1 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+              <span>Zerodha Kite Live</span>
             </div>
           </div>
 
@@ -111,11 +139,11 @@ export function CompanyAnalysisView({
       {/* ── Key Metrics Ribbon (Screener.in signature layout) ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {[
-          { label: 'Market Cap', val: formatMetricValue(company.marketCap, 'marketCap', company.currencySymbol) },
-          { label: 'Current Price', val: `${company.currencySymbol}${company.currentPrice.toLocaleString()}` },
+          { label: 'Market Cap', val: formatMetricValue(liveMarketCap, 'marketCap', company.currencySymbol) },
+          { label: 'Current Price', val: `${company.currencySymbol}${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
           { label: 'High / Low 52W', val: `${company.currencySymbol}${company.high52W} / ${company.currencySymbol}${company.low52W}` },
-          { label: 'Stock P/E', val: company.pe ? `${company.pe.toFixed(1)}x` : '—' },
-          { label: 'Book Value', val: `${company.currencySymbol}${(company.currentPrice / (company.pb || 1)).toFixed(1)}` },
+          { label: 'Stock P/E', val: livePe ? `${livePe.toFixed(1)}x` : '—' },
+          { label: 'Book Value', val: `${company.currencySymbol}${(currentPrice / (company.pb || 1)).toFixed(1)}` },
           { label: 'Dividend Yield', val: company.dividendYield ? `${company.dividendYield.toFixed(2)}%` : '—' },
           { label: 'ROCE', val: company.roce ? `${company.roce.toFixed(1)}%` : '—', good: true },
           { label: 'ROE', val: company.roe ? `${company.roe.toFixed(1)}%` : '—', good: true },

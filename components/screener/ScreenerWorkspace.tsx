@@ -24,6 +24,7 @@ import {
   DEFAULT_COLUMNS,
 } from '@/lib/screener/persistence';
 import { PREDEFINED_SCREENS } from '@/lib/screener/templates';
+import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { TopToolbar } from './TopToolbar';
 import { QueryEditor } from './QueryEditor';
 import { VisualFilterBuilder } from './VisualFilterBuilder';
@@ -46,6 +47,9 @@ export function ScreenerWorkspace() {
   const [activeTab, setActiveTab] = useState<
     'screener' | 'discover' | 'queryBuilder' | 'saved' | 'watchlists' | 'analysis' | 'peers' | 'alerts'
   >('screener');
+
+  // Zerodha Kite Trade Engine Integration
+  const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
 
   // Query and Visual Filters State
   const defaultScreen = PREDEFINED_SCREENS[0];
@@ -120,10 +124,66 @@ export function ScreenerWorkspace() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [searchModalOpen]);
 
-  // Companies for current market
+  // Companies for current market enriched with live Zerodha Kite streaming ticks
   const marketCompanies = useMemo(() => {
-    return getCompaniesByMarket(market);
-  }, [market]);
+    const base = getCompaniesByMarket(market);
+    return base.map((comp) => {
+      const live = getSymbolPrice(comp.symbol);
+      if (!live || !live.price) return comp;
+
+      const currentPrice = live.price;
+      const priceChangePct = live.changePct ?? comp.priceChangePct;
+
+      // Dynamically calculate live P/E if annual EPS is available
+      const latestEps = comp.annualProfitLoss && comp.annualProfitLoss[0]?.eps;
+      const pe = latestEps && latestEps > 0
+        ? Math.round((currentPrice / latestEps) * 10) / 10
+        : comp.pe;
+
+      // Scaled Market Cap based on live price ratio
+      const originalPrice = comp.currentPrice || currentPrice;
+      const marketCap = Math.round(comp.marketCap * (currentPrice / originalPrice));
+
+      return {
+        ...comp,
+        currentPrice,
+        priceChangePct,
+        pe,
+        marketCap,
+        tickDirection: live.tickDirection,
+        lastUpdated: new Date(live.lastUpdated).toLocaleTimeString(),
+        isLiveTick: true,
+      };
+    });
+  }, [market, getSymbolPrice]);
+
+  // Master list of all companies enriched with live Zerodha Kite ticks
+  const allCompaniesEnriched = useMemo(() => {
+    return MASTER_COMPANIES.map((comp) => {
+      const live = getSymbolPrice(comp.symbol);
+      if (!live || !live.price) return comp;
+
+      const currentPrice = live.price;
+      const priceChangePct = live.changePct ?? comp.priceChangePct;
+      const latestEps = comp.annualProfitLoss && comp.annualProfitLoss[0]?.eps;
+      const pe = latestEps && latestEps > 0
+        ? Math.round((currentPrice / latestEps) * 10) / 10
+        : comp.pe;
+      const originalPrice = comp.currentPrice || currentPrice;
+      const marketCap = Math.round(comp.marketCap * (currentPrice / originalPrice));
+
+      return {
+        ...comp,
+        currentPrice,
+        priceChangePct,
+        pe,
+        marketCap,
+        tickDirection: live.tickDirection,
+        lastUpdated: new Date(live.lastUpdated).toLocaleTimeString(),
+        isLiveTick: true,
+      };
+    });
+  }, [getSymbolPrice]);
 
   const availableSectors = useMemo(() => {
     return getSectors(market);
@@ -236,11 +296,11 @@ export function ScreenerWorkspace() {
   // Selected Company for Analysis View
   const targetCompany = useMemo(() => {
     return (
-      MASTER_COMPANIES.find((c) => c.symbol.toUpperCase() === selectedSymbol.toUpperCase()) ||
+      allCompaniesEnriched.find((c) => c.symbol.toUpperCase() === selectedSymbol.toUpperCase()) ||
       marketCompanies[0] ||
-      MASTER_COMPANIES[0]
+      allCompaniesEnriched[0]
     );
-  }, [selectedSymbol, marketCompanies]);
+  }, [selectedSymbol, allCompaniesEnriched, marketCompanies]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -259,6 +319,7 @@ export function ScreenerWorkspace() {
         activeTab={activeTab}
         onChangeTab={setActiveTab}
         selectedSymbol={selectedSymbol}
+        tradeEngineStatus={tradeEngineStatus}
       />
 
       {/* ── 1. Stock Screener Workspace ── */}
@@ -299,6 +360,7 @@ export function ScreenerWorkspace() {
             totalMatches={marketCompanies.length}
             executionTimeMs={executionTimeMs}
             dataFreshness={targetCompany?.dataFreshness}
+            tradeEngineStatus={tradeEngineStatus}
           />
         </div>
       )}
@@ -358,6 +420,7 @@ export function ScreenerWorkspace() {
       {activeTab === 'watchlists' && (
         <WatchlistsView
           watchlists={watchlists}
+          companies={allCompaniesEnriched}
           onSelectCompany={handleOpenCompanyAnalysis}
           onRemoveSymbol={(wlId, sym) => {
             const updated = toggleSymbolInWatchlist(wlId, sym);
@@ -396,7 +459,7 @@ export function ScreenerWorkspace() {
         <PeerComparisonView
           initialSymbols={peerSymbols}
           onSelectCompany={handleOpenCompanyAnalysis}
-          companies={marketCompanies}
+          companies={allCompaniesEnriched}
         />
       )}
 
@@ -474,7 +537,7 @@ export function ScreenerWorkspace() {
         isOpen={searchModalOpen}
         onClose={() => setSearchModalOpen(false)}
         onSelectCompany={handleOpenCompanyAnalysis}
-        companies={MASTER_COMPANIES}
+        companies={allCompaniesEnriched}
       />
     </div>
   );

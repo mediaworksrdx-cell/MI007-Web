@@ -19,6 +19,7 @@ interface TopToolbarProps {
   activeTab: string;
   onChangeTab: (tab: any) => void;
   selectedSymbol?: string;
+  tradeEngineStatus?: 'connected' | 'connecting' | 'disconnected';
 }
 
 export function TopToolbar({
@@ -36,6 +37,7 @@ export function TopToolbar({
   activeTab,
   onChangeTab,
   selectedSymbol,
+  tradeEngineStatus = 'connected',
 }: TopToolbarProps) {
   const TABS = [
     { id: 'screener', label: '1. Stock Screener' },
@@ -53,7 +55,7 @@ export function TopToolbar({
       {/* Top Controls Row */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--theme-card-border)]">
         {/* Title and Market Selector */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="mono text-[16px] sm:text-[18px] font-black inst-card-text tracking-wide uppercase">
               MI-007 Stock Screener
@@ -61,6 +63,10 @@ export function TopToolbar({
             <span className="mono text-[10.5px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
               Institutional Terminal
             </span>
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 mono text-[10.5px] font-bold shadow-xs">
+              <span className={`w-2 h-2 rounded-full ${tradeEngineStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : tradeEngineStatus === 'connecting' ? 'bg-amber-400 animate-pulse' : 'bg-rose-400'}`} />
+              <span>{tradeEngineStatus === 'connected' ? 'KITE LIVE' : tradeEngineStatus === 'connecting' ? 'KITE CONNECTING' : 'KITE OFFLINE'}</span>
+            </div>
           </div>
 
           {/* Market selector */}

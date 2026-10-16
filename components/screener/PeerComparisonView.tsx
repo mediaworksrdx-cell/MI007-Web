@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { CompanyFundamental } from '@/lib/screener/types';
 import { MASTER_COMPANIES } from '@/lib/screener/data';
 import { formatMetricValue, getMetricValue, METRIC_DEFINITIONS } from '@/lib/screener/metrics';
+import { useTradeEngine } from '@/lib/tradeEngineContext';
 
 interface PeerComparisonViewProps {
   initialSymbols?: string[];
@@ -18,6 +19,7 @@ export function PeerComparisonView({
   onSelectCompany,
   companies = MASTER_COMPANIES,
 }: PeerComparisonViewProps) {
+  const { getSymbolPrice } = useTradeEngine();
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>(initialSymbols);
   const [candidateSymbol, setCandidateSymbol] = useState('');
 
@@ -160,20 +162,37 @@ export function PeerComparisonView({
                 <th className="py-3 px-4 sticky left-0 z-20 bg-[var(--theme-card-surface)] border-r border-[var(--theme-card-border)]">
                   Fundamental Dimension
                 </th>
-                {selectedCompanies.map((c) => (
-                  <th key={c.symbol} className="py-3 px-4 text-right whitespace-nowrap min-w-36">
-                    <button
-                      type="button"
-                      onClick={() => onSelectCompany(c.symbol)}
-                      className="font-black text-[14px] text-white hover:text-emerald-400 hover:underline transition-colors block text-right"
-                    >
-                      {c.symbol}
-                    </button>
-                    <span className="text-[11px] text-[var(--theme-card-text-muted)] font-normal truncate block">
-                      {c.name}
-                    </span>
-                  </th>
-                ))}
+                {selectedCompanies.map((c) => {
+                  const live = getSymbolPrice(c.symbol);
+                  return (
+                    <th key={c.symbol} className="py-3 px-4 text-right whitespace-nowrap min-w-36">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onSelectCompany(c.symbol)}
+                          className="font-black text-[14px] text-white hover:text-emerald-400 hover:underline transition-colors"
+                        >
+                          {c.symbol}
+                        </button>
+                        {live && (
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              live.tickDirection === 'up'
+                                ? 'bg-emerald-400'
+                                : live.tickDirection === 'down'
+                                ? 'bg-rose-400'
+                                : 'bg-emerald-400/70'
+                            } animate-pulse`}
+                            title="Kite Live Streaming"
+                          />
+                        )}
+                      </div>
+                      <span className="text-[11px] text-[var(--theme-card-text-muted)] font-normal truncate block">
+                        {c.name}
+                      </span>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--theme-card-border)]/50 tabular-nums">

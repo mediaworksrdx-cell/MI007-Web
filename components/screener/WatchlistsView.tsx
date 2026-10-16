@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Watchlist, CompanyFundamental } from '@/lib/screener/types';
 import { MASTER_COMPANIES } from '@/lib/screener/data';
+import { useTradeEngine } from '@/lib/tradeEngineContext';
 
 interface WatchlistsViewProps {
   watchlists: Watchlist[];
@@ -12,6 +13,7 @@ interface WatchlistsViewProps {
   onRemoveSymbol: (watchlistId: string, symbol: string) => void;
   onCreateWatchlist: (name: string, description: string) => void;
   onOpenPeerComparison?: (symbols: string[]) => void;
+  companies?: CompanyFundamental[];
 }
 
 export function WatchlistsView({
@@ -20,7 +22,9 @@ export function WatchlistsView({
   onRemoveSymbol,
   onCreateWatchlist,
   onOpenPeerComparison,
+  companies = MASTER_COMPANIES,
 }: WatchlistsViewProps) {
+  const { getSymbolPrice } = useTradeEngine();
   const [activeWatchlistId, setActiveWatchlistId] = useState<string>(
     watchlists[0]?.id || ''
   );
@@ -31,7 +35,7 @@ export function WatchlistsView({
   const activeWatchlist = watchlists.find((w) => w.id === activeWatchlistId) || watchlists[0];
 
   const watchlistCompanies: CompanyFundamental[] = (activeWatchlist?.symbols || [])
-    .map((sym) => MASTER_COMPANIES.find((c) => c.symbol === sym))
+    .map((sym) => companies.find((c) => c.symbol === sym))
     .filter(Boolean) as CompanyFundamental[];
 
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -128,34 +132,56 @@ export function WatchlistsView({
                   </td>
                 </tr>
               ) : (
-                watchlistCompanies.map((comp) => (
-                  <tr key={comp.id} className="hover:bg-emerald-500/5 transition-colors group">
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onSelectCompany(comp.symbol)}
-                          className="font-black text-[13.5px] text-[var(--theme-card-text)] group-hover:text-emerald-400 hover:underline transition-colors text-left"
-                        >
-                          {comp.symbol}
-                        </button>
-                        <span className="text-[12px] text-[var(--theme-card-text-muted)] font-bold">
-                          {comp.name}
-                        </span>
-                      </div>
-                    </td>
+                watchlistCompanies.map((comp) => {
+                  const live = getSymbolPrice(comp.symbol);
+                  const currentPrice = live ? live.price : comp.currentPrice;
+                  const priceChangePct = live ? live.changePct : comp.priceChangePct;
+                  const tickDirection = live ? live.tickDirection : 'neutral';
+                  const latestEps = comp.annualProfitLoss && comp.annualProfitLoss[0]?.eps;
+                  const pe = latestEps && latestEps > 0
+                    ? Math.round((currentPrice / latestEps) * 10) / 10
+                    : comp.pe;
 
-                    <td className="py-3 px-4 text-right font-black text-white">
-                      {comp.currencySymbol}{comp.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </td>
+                  return (
+                    <tr key={comp.id} className="hover:bg-emerald-500/5 transition-colors group">
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => onSelectCompany(comp.symbol)}
+                            className="font-black text-[13.5px] text-[var(--theme-card-text)] group-hover:text-emerald-400 hover:underline transition-colors text-left flex items-center gap-1.5"
+                          >
+                            <span>{comp.symbol}</span>
+                            {live && (
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  tickDirection === 'up'
+                                    ? 'bg-emerald-400'
+                                    : tickDirection === 'down'
+                                    ? 'bg-rose-400'
+                                    : 'bg-emerald-400/70'
+                                } animate-pulse`}
+                                title="Kite Live Streaming"
+                              />
+                            )}
+                          </button>
+                          <span className="text-[12px] text-[var(--theme-card-text-muted)] font-bold">
+                            {comp.name}
+                          </span>
+                        </div>
+                      </td>
 
-                    <td className={`py-3 px-4 text-right font-bold ${comp.priceChangePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {comp.priceChangePct >= 0 ? '+' : ''}{comp.priceChangePct.toFixed(2)}%
-                    </td>
+                      <td className="py-3 px-4 text-right font-black text-white">
+                        {comp.currencySymbol}{currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </td>
 
-                    <td className="py-3 px-4 text-right font-medium">
-                      {comp.pe ? `${comp.pe.toFixed(1)}x` : '—'}
-                    </td>
+                      <td className={`py-3 px-4 text-right font-bold ${priceChangePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {priceChangePct >= 0 ? '+' : ''}{priceChangePct.toFixed(2)}%
+                      </td>
+
+                      <td className="py-3 px-4 text-right font-medium">
+                        {pe ? `${pe.toFixed(1)}x` : '—'}
+                      </td>
 
                     <td className="py-3 px-4 text-right font-bold text-emerald-400">
                       {comp.roce ? `${comp.roce.toFixed(1)}%` : '—'}
@@ -205,8 +231,8 @@ export function WatchlistsView({
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                );
+              }))}
             </tbody>
           </table>
         </div>

@@ -19,6 +19,7 @@ interface ResultsTableProps {
   totalMatches: number;
   executionTimeMs?: number;
   dataFreshness?: string;
+  tradeEngineStatus?: 'connected' | 'connecting' | 'disconnected';
 }
 
 export function ResultsTable({
@@ -34,6 +35,7 @@ export function ResultsTable({
   totalMatches,
   executionTimeMs = 12,
   dataFreshness = 'Q3 FY25 (Dec 2024)',
+  tradeEngineStatus = 'connected',
 }: ResultsTableProps) {
   const [tableSearch, setTableSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -94,8 +96,13 @@ export function ResultsTable({
                 {displayedCompanies.length} of {totalMatches} Companies
               </span>
             </div>
-            <div className="text-[11px] mono text-[var(--theme-card-text-muted)] mt-0.5">
-              Freshness: {dataFreshness} · Computed in {executionTimeMs}ms
+            <div className="text-[11px] mono text-[var(--theme-card-text-muted)] mt-0.5 flex items-center gap-2 flex-wrap">
+              <span>Freshness: {dataFreshness} · Computed in {executionTimeMs}ms</span>
+              <span className="opacity-40">|</span>
+              <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Kite Engine Streaming</span>
+              </span>
             </div>
           </div>
         </div>
@@ -211,15 +218,27 @@ export function ResultsTable({
                   >
                     {/* Fixed Left Company Cell */}
                     <td className="px-3.5 py-2.5 whitespace-nowrap sticky left-0 z-10 bg-[var(--theme-card-bg)] group-hover:bg-[var(--theme-card-surface)] border-r border-[var(--theme-card-border)] transition-colors">
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => onSelectCompany(comp.symbol)}
-                          className="font-black text-[13.5px] text-[var(--theme-card-text)] group-hover:text-emerald-400 transition-colors hover:underline text-left"
+                          className="font-black text-[13.5px] text-[var(--theme-card-text)] group-hover:text-emerald-400 transition-colors hover:underline text-left flex items-center gap-1.5"
                         >
-                          {comp.symbol}
+                          <span>{comp.symbol}</span>
+                          {(comp as any).isLiveTick && (
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                (comp as any).tickDirection === 'up'
+                                  ? 'bg-emerald-400'
+                                  : (comp as any).tickDirection === 'down'
+                                  ? 'bg-rose-400'
+                                  : 'bg-emerald-400/70'
+                              } animate-pulse`}
+                              title="Kite Live Streaming"
+                            />
+                          )}
                         </button>
-                        <span className="text-[11px] text-[var(--theme-card-text-muted)] font-bold truncate max-w-[140px] sm:max-w-[200px]">
+                        <span className="text-[11px] text-[var(--theme-card-text-muted)] font-bold truncate max-w-[130px] sm:max-w-[180px]">
                           {comp.name}
                         </span>
                       </div>
@@ -231,9 +250,16 @@ export function ResultsTable({
                       const rawVal = getMetricValue(comp, colKey);
                       const formatted = formatMetricValue(rawVal, colKey, comp.currencySymbol);
 
-                      // Color coding for percentages or returns
+                      // Color coding for percentages or returns or live prices
                       let colorClass = 'text-[var(--theme-card-text)]';
-                      if (def?.dataType === 'percent' && rawVal !== null) {
+                      if (colKey === 'currentPrice' && (comp as any).tickDirection) {
+                        colorClass =
+                          (comp as any).tickDirection === 'up'
+                            ? 'text-emerald-300 font-bold'
+                            : (comp as any).tickDirection === 'down'
+                            ? 'text-rose-300 font-bold'
+                            : 'text-[var(--theme-card-text)]';
+                      } else if (def?.dataType === 'percent' && rawVal !== null) {
                         if (rawVal > 0) colorClass = 'text-emerald-400';
                         else if (rawVal < 0) colorClass = 'text-rose-400';
                       }
@@ -241,7 +267,7 @@ export function ResultsTable({
                       return (
                         <td
                           key={colKey}
-                          className={`px-3 py-2.5 whitespace-nowrap text-right font-medium tabular-nums ${colorClass}`}
+                          className={`px-3 py-2.5 whitespace-nowrap text-right font-medium tabular-nums transition-colors duration-200 ${colorClass}`}
                         >
                           {formatted}
                         </td>
