@@ -612,6 +612,89 @@ html[data-theme="cyberpunk"] .token-chip-txt-teal {
   color: #0F766E !important;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   LIGHT THEME UNIVERSAL HIGH-CONTRAST TYPOGRAPHY SYSTEM
+   Ensures that light/pastel colors (emerald-400, cyan-400, teal-400, etc.)
+   never become washed out or unreadable on light theme cards/backgrounds.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+html[data-theme="cream"],
+html[data-theme="sky"],
+html[data-theme="ivory"],
+html[data-theme="champagne"],
+html[data-theme="falcon"],
+html[data-theme="arctic"],
+html[data-theme="lightblue"],
+html[data-theme="quartz"] {
+  /* Green & Emerald Accents: Deep Rich Forest / Excel Green */
+  .text-emerald-400,
+  .text-emerald-300,
+  .text-green-400,
+  .text-green-300,
+  .text-mint-green,
+  [class*="text-emerald-400"],
+  [class*="text-emerald-300"] {
+    color: #047857 !important;
+  }
+
+  /* Teal & Cyan Accents: Deep Ocean Blue / Rich Teal */
+  .text-cyan-400,
+  .text-cyan-300,
+  .text-teal-400,
+  .text-teal-300,
+  .text-sky-300,
+  .text-accent-cyan,
+  [class*="text-cyan-400"],
+  [class*="text-teal-400"] {
+    color: #0369A1 !important;
+  }
+
+  /* Amber & Gold Accents: Deep Warm Amber */
+  .text-amber-400,
+  .text-amber-300,
+  .text-yellow-400,
+  .text-yellow-300,
+  [class*="text-amber-400"] {
+    color: #B45309 !important;
+  }
+
+  /* Red & Crimson Accents: Deep Crimson */
+  .text-rose-400,
+  .text-red-400 {
+    color: #B91C1C !important;
+  }
+
+  /* Prevent Washed Out Grays on White Cards */
+  .terminal-page-panel .text-slate-400,
+  .terminal-page-panel .text-slate-500,
+  [class*="bg-[var(--theme-card"] .text-slate-400,
+  [class*="bg-[var(--theme-card"] .text-slate-500 {
+    color: #334155 !important;
+  }
+
+  /* Prevent Inadvertent White Text on White Cards */
+  td.text-white,
+  tr.text-white,
+  p.text-white,
+  h1.text-white,
+  h2.text-white,
+  h3.text-white,
+  h4.text-white,
+  span.text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *),
+  div.text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *) {
+    color: #0F172A !important;
+  }
+
+  /* Badges with light green backgrounds */
+  .bg-emerald-500\/10,
+  .bg-emerald-500\/15,
+  .bg-emerald-500\/20 {
+    background-color: rgba(4, 120, 87, 0.12) !important;
+    border-color: rgba(4, 120, 87, 0.35) !important;
+    color: #047857 !important;
+  }
+}
+
 /* Hero Stats Bar L3 Marquee Edge Fade Masks (matching each theme's card surface) */
 html[data-theme="ocean"] .hero-marquee-fade-left,
 html[data-theme="graphite"] .hero-marquee-fade-left,

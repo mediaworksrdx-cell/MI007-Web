@@ -121,7 +121,7 @@ export function CustomQueryBuilderView({
             <span className="mono text-[13px] font-black inst-card-text uppercase tracking-wider">
               Metrics Dictionary
             </span>
-            <span className="mono text-[11px] font-bold text-emerald-400">
+            <span className="mono text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
               {filteredMetrics.length} Available
             </span>
           </div>
@@ -153,7 +153,7 @@ export function CustomQueryBuilderView({
                     {m.description}
                   </div>
                   {m.benchmarkGood && (
-                    <div className="text-[10.5px] mono text-emerald-400/80 mt-0.5">
+                    <div className="text-[10.5px] mono text-emerald-700 dark:text-emerald-400 font-bold mt-0.5">
                       Target: {m.benchmarkGood}
                     </div>
                   )}
@@ -162,7 +162,7 @@ export function CustomQueryBuilderView({
                 <button
                   type="button"
                   onClick={() => appendCondition(m.label, '>', '15')}
-                  className="px-2 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-emerald-400 mono text-[11px] font-black opacity-80 group-hover:opacity-100 hover:border-emerald-500 transition-all shrink-0"
+                  className="px-2.5 py-1 rounded-lg border border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 mono text-[11.5px] font-black hover:bg-emerald-500 hover:text-slate-950 transition-all shrink-0 cursor-pointer"
                   title="Append to query"
                 >
                   + Add
