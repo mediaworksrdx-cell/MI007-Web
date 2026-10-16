@@ -42,7 +42,7 @@ export function TopToolbar({
     { id: 'queryBuilder', label: '3. Query Builder' },
     { id: 'discover', label: '4. Discover Screens' },
     { id: 'watchlists', label: '5. Watchlists' },
-    { id: 'analysis', label: `6. Company Analysis ${selectedSymbol ? `(${selectedSymbol})` : ''}` },
+    { id: 'analysis', label: '6. Company Analysis' },
     { id: 'peers', label: '7. Peer Matrix' },
     { id: 'alerts', label: '8. Alerts' },
   ];

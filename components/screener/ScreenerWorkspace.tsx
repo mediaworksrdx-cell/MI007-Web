@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useMemo, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useMarket } from '@/lib/marketContext';
+import { MARKETS } from '@/lib/types';
 import { MarketRegion, CompanyFundamental, SavedScreen, CustomRatio, Watchlist, ScreeningAlert } from '@/lib/screener/types';
 import { MASTER_COMPANIES, getCompaniesByMarket, getSectors } from '@/lib/screener/data';
 import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
@@ -75,8 +76,8 @@ export function ScreenerWorkspace() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedColumns, setSelectedColumns] = useState<string[]>(DEFAULT_COLUMNS);
 
-  // Active Company Selection
-  const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol || 'RELIANCE');
+  // Active Company Selection (Starts unselected, resets on market/country switch)
+  const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol || '');
   const [peerSymbols, setPeerSymbols] = useState<string[]>(['TCS', 'INFY']);
   const prevMarketRef = React.useRef<MarketRegion>(market);
 
@@ -154,25 +155,18 @@ export function ScreenerWorkspace() {
       prevMarketRef.current = globalMarket as MarketRegion;
       setMarket(globalMarket as MarketRegion);
 
-      // Only pick default symbol if current selectedSymbol does not belong to new market
-      const comps = getCompaniesByMarket(globalMarket as MarketRegion);
-      const exists = comps.some((c) => c.symbol.toUpperCase() === selectedSymbol.toUpperCase());
-      if (!exists && comps.length > 0) {
-        setSelectedSymbol(comps[0].symbol);
-      }
+      // Reset selected company so no company stays stuck across countries
+      setSelectedSymbol('');
     }
-  }, [globalMarket, selectedSymbol]);
+  }, [globalMarket]);
 
   const handleMarketChange = (newMarket: MarketRegion) => {
     prevMarketRef.current = newMarket;
     setMarket(newMarket);
     setGlobalMarket(newMarket);
     setSectorFilter('ALL');
-    const comps = getCompaniesByMarket(newMarket);
-    const exists = comps.some((c) => c.symbol.toUpperCase() === selectedSymbol.toUpperCase());
-    if (!exists && comps.length > 0) {
-      setSelectedSymbol(comps[0].symbol);
-    }
+    // Reset selected company so no company stays stuck across countries
+    setSelectedSymbol('');
   };
 
   // Keyboard shortcut '/' or 'Ctrl+K' to open search
@@ -361,12 +355,12 @@ export function ScreenerWorkspace() {
 
   // Selected Company for Analysis View
   const targetCompany = useMemo(() => {
+    if (!selectedSymbol) return null;
     return (
       allCompaniesEnriched.find((c) => c.symbol.toUpperCase() === selectedSymbol.toUpperCase()) ||
-      marketCompanies[0] ||
-      allCompaniesEnriched[0]
+      null
     );
-  }, [selectedSymbol, allCompaniesEnriched, marketCompanies]);
+  }, [selectedSymbol, allCompaniesEnriched]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -525,14 +519,58 @@ export function ScreenerWorkspace() {
       )}
 
       {/* ── 6. Company Analysis Workspace ── */}
-      {activeTab === 'analysis' && targetCompany && (
-        <CompanyAnalysisView
-          company={targetCompany}
-          onBackToScreener={() => setActiveTab('screener')}
-          onOpenPeerComparison={(sym) => handleOpenPeerComparison(sym)}
-          onToggleWatchlist={handleToggleWatchlist}
-          isInWatchlist={watchlistSymbols.includes(targetCompany.symbol)}
-        />
+      {activeTab === 'analysis' && (
+        targetCompany ? (
+          <CompanyAnalysisView
+            company={targetCompany}
+            onBackToScreener={() => setActiveTab('screener')}
+            onOpenPeerComparison={(sym) => handleOpenPeerComparison(sym)}
+            onToggleWatchlist={handleToggleWatchlist}
+            isInWatchlist={watchlistSymbols.includes(targetCompany.symbol)}
+          />
+        ) : (
+          <div className="rounded-2xl border-2 terminal-page-panel p-6 sm:p-10 bg-[var(--theme-card-bg)] text-center flex flex-col items-center justify-center gap-4">
+            <div className="w-14 h-14 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center justify-center text-2xl">
+              📊
+            </div>
+            <div>
+              <h2 className="mono text-[18px] sm:text-[20px] font-black inst-card-text">
+                Select a Company for Fundamental Analysis
+              </h2>
+              <p className="text-[13px] sm:text-[14px] text-[var(--theme-card-text-muted)] font-medium mt-1 max-w-lg">
+                Click <span className="font-bold text-emerald-400">Analyze</span> on any company in the Stock Screener or choose from the top {MARKETS[market]?.label || market} companies below.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-2 max-w-2xl">
+              {marketCompanies.slice(0, 8).map((comp) => (
+                <button
+                  key={comp.id}
+                  onClick={() => handleOpenCompanyAnalysis(comp.symbol)}
+                  className="px-3.5 py-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] hover:border-emerald-500 hover:text-emerald-400 transition-all flex items-center gap-2 mono text-[13px] font-bold cursor-pointer group shadow-xs"
+                >
+                  <span className="text-emerald-400 font-black">{comp.symbol}</span>
+                  <span className="text-[12px] text-[var(--theme-card-text-muted)] group-hover:text-[var(--theme-card-text)] truncate max-w-[140px]">{comp.name}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3 mt-4">
+              <button
+                onClick={() => setSearchModalOpen(true)}
+                className="px-4 py-2 rounded-xl border border-emerald-500 bg-emerald-500/15 text-emerald-400 mono text-[13px] font-bold hover:bg-emerald-500/25 transition-all cursor-pointer"
+              >
+                🔍 Search All Companies
+              </button>
+              <button
+                onClick={() => setActiveTab('screener')}
+                className="px-4 py-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[13px] font-bold hover:border-slate-500 transition-all cursor-pointer"
+              >
+                ← Return to Screener
+              </button>
+            </div>
+          </div>
+        )
       )}
 
       {/* ── 8. Peer Comparison Workspace ── */}
