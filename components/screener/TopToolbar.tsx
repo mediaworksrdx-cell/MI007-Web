@@ -23,8 +23,8 @@ interface TopToolbarProps {
 }
 
 export function TopToolbar({
-  market,
-  onChangeMarket,
+  market: _market,
+  onChangeMarket: _onChangeMarket,
   sector,
   onChangeSector,
   availableSectors,
@@ -37,7 +37,7 @@ export function TopToolbar({
   activeTab,
   onChangeTab,
   selectedSymbol,
-  tradeEngineStatus = 'connected',
+  tradeEngineStatus: _tradeEngineStatus = 'connected',
 }: TopToolbarProps) {
   const TABS = [
     { id: 'screener', label: '1. Stock Screener' },
@@ -57,55 +57,11 @@ export function TopToolbar({
     <div className="flex flex-col gap-3 rounded-2xl border-2 terminal-page-panel p-4 sm:p-5 bg-[var(--theme-card-bg)] shadow-xl relative z-10">
       {/* Top Controls Row */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--theme-card-border)]">
-        {/* Title and Market Selector */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="mono text-[15px] sm:text-[17px] font-black inst-card-text tracking-wide uppercase">
-              MARKET INTELLIGENCE MI-007 · STOCK SCREENER
-            </span>
-            <span className="mono text-[10.5px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-              Institutional Terminal
-            </span>
-            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 mono text-[10.5px] font-bold shadow-xs">
-              <span className={`w-2 h-2 rounded-full ${tradeEngineStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : tradeEngineStatus === 'connecting' ? 'bg-amber-400 animate-pulse' : 'bg-rose-400'}`} />
-              <span>{tradeEngineStatus === 'connected' ? 'KITE LIVE' : tradeEngineStatus === 'connecting' ? 'KITE CONNECTING' : 'KITE OFFLINE'}</span>
-            </div>
-
-            {activeTab !== 'screener' && (
-              <button
-                type="button"
-                onClick={() => onChangeTab('screener')}
-                className="px-3 py-1 rounded-lg border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500 hover:text-slate-950 mono text-[11.5px] font-black transition-all flex items-center gap-1.5 shadow-xs cursor-pointer group"
-                title="Return to Stock Screener"
-              >
-                <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
-                <span>BACK TO SCREENER</span>
-              </button>
-            )}
-          </div>
-
-          {/* Market selector */}
-          <div className="flex items-center gap-1 p-1 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
-            {[
-              { id: 'INDIA', label: 'IN (NSE/BSE)', flag: '🇮🇳' },
-              { id: 'USA', label: 'US (NASDAQ)', flag: '🇺🇸' },
-              { id: 'UAE', label: 'AE (DFM/ADX)', flag: '🇦🇪' },
-            ].map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => onChangeMarket(m.id as MarketRegion)}
-                className={`px-2.5 py-1 rounded-lg mono text-[12px] font-bold transition-all flex items-center gap-1.5 ${
-                  market === m.id
-                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                    : 'text-[var(--theme-card-text-muted)] hover:text-white'
-                }`}
-              >
-                <span>{m.flag}</span>
-                <span>{m.label}</span>
-              </button>
-            ))}
-          </div>
+        {/* Title */}
+        <div className="flex items-center gap-2">
+          <span className="mono text-[15px] sm:text-[17px] font-black inst-card-text tracking-wide uppercase">
+            STOCK SCREENER
+          </span>
         </div>
 
         {/* Global Search & Action Buttons */}
