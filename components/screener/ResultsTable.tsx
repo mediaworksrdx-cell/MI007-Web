@@ -216,7 +216,7 @@ export function ResultsTable({
   };
 
   return (
-    <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xl overflow-hidden flex flex-col">
+    <div id="screener-results-table" className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xl overflow-hidden flex flex-col scroll-mt-24">
       {/* ── 7 Fundamental Views Preset Switcher Bar ── */}
       <div className="flex items-center gap-1.5 p-2.5 sm:px-4 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/80 overflow-x-auto">
         <span className="mono text-[11px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider shrink-0 mr-2 flex items-center gap-1.5">
@@ -229,15 +229,15 @@ export function ResultsTable({
               key={p.id}
               type="button"
               onClick={() => onSelectPreset && onSelectPreset(p.id, p.columns)}
-              className={`px-3 py-1 rounded-xl mono text-[11.5px] font-bold transition-all shrink-0 flex items-center gap-1.5 border ${
+              className={`px-3 py-1 rounded-xl mono text-[11.5px] font-bold transition-all shrink-0 flex items-center gap-1.5 border cursor-pointer ${
                 isActive
-                  ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300 shadow-xs'
-                  : 'border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-white hover:border-slate-500'
+                  ? 'border-emerald-500 bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-black shadow-xs'
+                  : 'border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:border-slate-500'
               }`}
               title={p.description}
             >
               <span>{p.label}</span>
-              <span className={`text-[9px] px-1 py-0.2 rounded font-black ${isActive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
+              <span className={`text-[9px] px-1 py-0.2 rounded font-black ${isActive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'}`}>
                 {p.badge}
               </span>
             </button>
@@ -246,10 +246,10 @@ export function ResultsTable({
         <button
           type="button"
           onClick={onOpenColumnSelector}
-          className={`px-3 py-1 rounded-xl mono text-[11.5px] font-bold transition-all shrink-0 flex items-center gap-1.5 border ${
+          className={`px-3 py-1 rounded-xl mono text-[11.5px] font-bold transition-all shrink-0 flex items-center gap-1.5 border cursor-pointer ${
             activePreset === 'custom'
-              ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300'
-              : 'border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-white'
+              ? 'border-emerald-500 bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-black'
+              : 'border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
           }`}
         >
           <span>Custom ({columns.length})</span>

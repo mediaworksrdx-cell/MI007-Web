@@ -393,7 +393,12 @@ export function ScreenerWorkspace() {
           <QueryEditor
             query={currentQuery}
             onChangeQuery={setCurrentQuery}
-            onRunScreen={() => {}}
+            onRunScreen={() => {
+              if (typeof document !== 'undefined') {
+                const el = document.getElementById('screener-results-table');
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
             onResetQuery={() => setCurrentQuery('')}
             matchCount={filteredCompanies.length}
           />

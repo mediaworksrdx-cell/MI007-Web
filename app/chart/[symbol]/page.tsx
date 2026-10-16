@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { use } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -39,6 +38,14 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
   }
 
   const [market, setMarket] = useState<MarketType>(defaultMarket);
+  const [returnTab, setReturnTab] = useState<string>('analysis');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('mi007_return_tab');
+      if (stored) setReturnTab(stored);
+    }
+  }, []);
 
   const marketBadge = isCrypto ? 'GLOBAL 24/7 CRYPTO' : `${MARKETS[market].flag} ${MARKETS[market].label}`;
 
@@ -51,19 +58,31 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
         <div className="flex items-center gap-3 border-b border-[var(--theme-page-border)] bg-[var(--theme-ticker-bg)] px-4 py-2.5 flex-shrink-0 shadow-xs">
           {isFromScreener ? (
             <>
-              <Link
-                href={`/terminal/screener?tab=analysis&symbol=${cleanSym}`}
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('mi007_return_tab', 'analysis');
-                    sessionStorage.setItem('mi007_return_symbol', cleanSym);
-                  }
-                }}
-                className="flex items-center gap-1.5 text-[13.5px] mono font-black text-emerald-400 hover:text-emerald-300 transition-colors"
-                title={`Return to ${cleanSym} Company Analysis`}
-              >
-                ← BACK TO {cleanSym}
-              </Link>
+              {returnTab === 'technicalScreener' ? (
+                <Link
+                  href="/terminal/screener?tab=technicalScreener"
+                  className="flex items-center gap-1.5 text-[13.5px] mono font-black text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
+                  title="Return to Technical Strategies"
+                >
+                  ← BACK TO TECHNICAL STRATEGIES
+                </Link>
+              ) : returnTab === 'watchlists' ? (
+                <Link
+                  href="/terminal/screener?tab=watchlists"
+                  className="flex items-center gap-1.5 text-[13.5px] mono font-black text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
+                  title="Return to Watchlists"
+                >
+                  ← BACK TO WATCHLISTS
+                </Link>
+              ) : (
+                <Link
+                  href={`/terminal/screener?tab=analysis&symbol=${cleanSym}`}
+                  className="flex items-center gap-1.5 text-[13.5px] mono font-black text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
+                  title={`Return to ${cleanSym} Company Analysis`}
+                >
+                  ← BACK TO {cleanSym}
+                </Link>
+              )}
               <span className="text-[var(--theme-page-border)] font-bold">|</span>
               <Link
                 href="/terminal/screener?tab=screener"

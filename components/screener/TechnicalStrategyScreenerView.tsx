@@ -387,21 +387,20 @@ export function TechnicalStrategyScreenerView({
                       {/* Actions */}
                       <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1.5">
-                          {onOpenBacktest && (
-                            <button
-                              type="button"
-                              onClick={() => onOpenBacktest(res.symbol, res.strategyId)}
-                              className="px-2 py-0.5 rounded border border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 text-[11px] font-bold transition-all cursor-pointer"
-                              title="Run Historical Backtest"
-                            >
-                              Backtest
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => onSelectCompany(res.symbol)}
+                            className="px-2 py-0.5 rounded border border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 text-[11px] font-bold transition-all cursor-pointer"
+                            title="Open Company Financial Analysis"
+                          >
+                            Analyze
+                          </button>
                           <Link
                             href={`/chart/${res.symbol}?market=${res.market}&from=screener`}
                             onClick={() => {
                               if (typeof window !== 'undefined') {
-                                sessionStorage.setItem('mi007_return_tab', 'screener');
+                                sessionStorage.setItem('mi007_return_tab', 'technicalScreener');
+                                sessionStorage.setItem('mi007_return_symbol', res.symbol);
                               }
                             }}
                             className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] text-[11px] font-bold transition-all"
