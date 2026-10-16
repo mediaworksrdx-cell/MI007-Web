@@ -8,6 +8,7 @@ import { deduplicateScreens } from '@/lib/screener/persistence';
 
 interface DiscoverScreensViewProps {
   screens?: SavedScreen[];
+  market?: string;
   onRunScreen: (screen: SavedScreen) => void;
   onCustomizeScreen: (screen: SavedScreen) => void;
   onEditScreen?: (screen: SavedScreen) => void;
@@ -30,6 +31,7 @@ const CATEGORIES = [
 
 export function DiscoverScreensView({
   screens = PREDEFINED_SCREENS,
+  market,
   onRunScreen,
   onCustomizeScreen,
   onEditScreen,
@@ -41,7 +43,10 @@ export function DiscoverScreensView({
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [search, setSearch] = useState('');
 
-  const allScreens = deduplicateScreens(screens && screens.length > 0 ? screens : PREDEFINED_SCREENS);
+  const marketScreens = (screens && screens.length > 0 ? screens : PREDEFINED_SCREENS).filter(
+    (s) => !market || !s.market || s.market === market
+  );
+  const allScreens = deduplicateScreens(marketScreens);
   const userSavedScreens = allScreens.filter((s) => !s.isPredefined);
   const predefinedScreens = allScreens.filter((s) => s.isPredefined);
 

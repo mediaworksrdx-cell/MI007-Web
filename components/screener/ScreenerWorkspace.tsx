@@ -155,7 +155,8 @@ export function ScreenerWorkspace() {
       prevMarketRef.current = globalMarket as MarketRegion;
       setMarket(globalMarket as MarketRegion);
 
-      // Reset selected company so no company stays stuck across countries
+      // Reset selected company and sector so no country data stays stuck across countries
+      setSectorFilter('ALL');
       setSelectedSymbol('');
     }
   }, [globalMarket]);
@@ -460,6 +461,7 @@ export function ScreenerWorkspace() {
       {activeTab === 'discover' && (
         <DiscoverScreensView
           screens={savedScreens}
+          market={market}
           onRunScreen={handleRunSavedScreen}
           onCustomizeScreen={(s) => {
             setCurrentQuery(s.query);

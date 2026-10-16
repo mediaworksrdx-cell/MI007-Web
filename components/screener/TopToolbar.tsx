@@ -22,7 +22,7 @@ interface TopToolbarProps {
 }
 
 export function TopToolbar({
-  market: _market,
+  market,
   onChangeMarket: _onChangeMarket,
   sector,
   onChangeSector,
@@ -33,9 +33,14 @@ export function TopToolbar({
   onOpenSearchModal,
   activeTab,
   onChangeTab,
-  selectedSymbol,
+  selectedSymbol: _selectedSymbol,
   tradeEngineStatus: _tradeEngineStatus = 'connected',
 }: TopToolbarProps) {
+  // Filter saved/predefined screens strictly to the active country
+  const marketScreens = deduplicateScreens(savedScreens).filter(
+    (s) => !s.market || s.market === market
+  );
+
   const TABS = [
     { id: 'screener', label: '1. Stock Screener' },
     { id: 'technicalScreener', label: '2. Technical Strategies' },
@@ -80,13 +85,13 @@ export function TopToolbar({
             </span>
           </button>
 
-          {/* Sector filter */}
+          {/* Sector filter (Filtered to active country) */}
           <select
             value={sector}
             onChange={(e) => onChangeSector(e.target.value)}
             className="h-9 px-3 rounded-xl mono text-[12.5px] font-bold border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] focus:outline-none focus:border-emerald-500 max-w-44"
           >
-            <option value="ALL">All Sectors</option>
+            <option value="ALL">All {market === 'INDIA' ? 'India' : market === 'USA' ? 'US' : 'UAE'} Sectors</option>
             {availableSectors.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -94,17 +99,17 @@ export function TopToolbar({
             ))}
           </select>
 
-          {/* Saved Screen Dropdown Selector (Deduplicated) */}
+          {/* Saved Screen Dropdown Selector (Filtered to active country) */}
           <select
             value={selectedScreenId || ''}
             onChange={(e) => {
-              const found = deduplicateScreens(savedScreens).find((s) => s.id === e.target.value);
+              const found = marketScreens.find((s) => s.id === e.target.value);
               if (found) onSelectSavedScreen(found);
             }}
             className="h-9 px-3 rounded-xl mono text-[12.5px] font-bold border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] focus:outline-none focus:border-emerald-500 max-w-48"
           >
-            <option value="">Load Screen Preset...</option>
-            {deduplicateScreens(savedScreens).map((s) => (
+            <option value="">Load {market === 'INDIA' ? 'India' : market === 'USA' ? 'US' : 'UAE'} Preset...</option>
+            {marketScreens.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
