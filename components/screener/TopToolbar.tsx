@@ -70,14 +70,18 @@ export function TopToolbar({
           <button
             type="button"
             onClick={onOpenSearchModal}
-            className="px-3.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12.5px] font-bold hover:border-emerald-500 transition-all flex items-center gap-2 shadow-xs"
+            className="w-72 sm:w-88 md:w-[420px] px-4 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12.5px] font-bold hover:border-emerald-500 transition-all flex items-center justify-between gap-3 shadow-xs group cursor-pointer"
           >
-            <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <span>Search Companies...</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-slate-400">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <svg className="w-3.5 h-3.5 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <span className="truncate text-[var(--theme-card-text-muted)] group-hover:text-[var(--theme-card-text)] transition-colors">
+                Search Companies...
+              </span>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-slate-400 shrink-0 font-mono font-semibold">
               /
             </span>
           </button>
