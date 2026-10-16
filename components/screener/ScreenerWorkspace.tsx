@@ -37,7 +37,6 @@ import { CompanySearchModal } from './CompanySearchModal';
 import { CompanyAnalysisView } from './CompanyAnalysisView';
 import { DiscoverScreensView } from './DiscoverScreensView';
 import { CustomQueryBuilderView } from './CustomQueryBuilderView';
-import { SavedScreensView } from './SavedScreensView';
 import { WatchlistsView } from './WatchlistsView';
 import { PeerComparisonView } from './PeerComparisonView';
 import { ScreeningAlertsView } from './ScreeningAlertsView';
@@ -55,14 +54,15 @@ export function ScreenerWorkspace() {
     | 'technicalScreener'
     | 'queryBuilder'
     | 'discover'
-    | 'saved'
     | 'watchlists'
     | 'analysis'
     | 'peers'
     | 'alerts'
   >(
-    urlTab && ['screener', 'technicalScreener', 'queryBuilder', 'discover', 'saved', 'watchlists', 'analysis', 'peers', 'alerts'].includes(urlTab)
+    urlTab && ['screener', 'technicalScreener', 'queryBuilder', 'discover', 'watchlists', 'analysis', 'peers', 'alerts'].includes(urlTab)
       ? (urlTab as any)
+      : urlTab === 'saved'
+      ? 'discover'
       : 'screener'
   );
   const [activeViewPreset, setActiveViewPreset] = useState<TableViewPreset>('overview');
@@ -113,7 +113,7 @@ export function ScreenerWorkspace() {
       }
     }
     if (tabParam) {
-      setActiveTab(tabParam as any);
+      setActiveTab(tabParam === 'saved' ? 'discover' : (tabParam as any));
     }
   }, [searchParams]);
 
@@ -134,7 +134,7 @@ export function ScreenerWorkspace() {
         }
         if (returnTab) {
           sessionStorage.removeItem('mi007_return_tab');
-          setActiveTab(returnTab as any);
+          setActiveTab(returnTab === 'saved' ? 'discover' : (returnTab as any));
         }
       }
     };
@@ -455,18 +455,6 @@ export function ScreenerWorkspace() {
         />
       )}
 
-      {/* ── 3. Discover Screens Workspace ── */}
-      {activeTab === 'discover' && (
-        <DiscoverScreensView
-          onRunScreen={handleRunSavedScreen}
-          onCustomizeScreen={(s) => {
-            setCurrentQuery(s.query);
-            setActiveTab('screener');
-          }}
-          onBackToScreener={() => setActiveTab('screener')}
-        />
-      )}
-
       {/* ── 3. Custom Query Builder Diagnostic Lab ── */}
       {activeTab === 'queryBuilder' && (
         <CustomQueryBuilderView
@@ -475,21 +463,36 @@ export function ScreenerWorkspace() {
             setCurrentQuery(q);
             setActiveTab('screener');
           }}
+          onSaveStrategy={(newScreen) => {
+            const updated = saveUserScreen(newScreen);
+            setSavedScreens(updated);
+          }}
+          onDeleteSavedScreen={(id) => {
+            const updated = deleteSavedScreen(id);
+            setSavedScreens(updated);
+          }}
           onBackToScreener={() => setActiveTab('screener')}
+          onNavigateToDiscover={() => setActiveTab('discover')}
           companies={marketCompanies}
+          savedScreens={savedScreens}
+          market={market}
+          onSelectCompany={handleOpenCompanyAnalysis}
         />
       )}
 
-      {/* ── 4. Saved Screens Management ── */}
-      {activeTab === 'saved' && (
-        <SavedScreensView
+      {/* ── 4. Discover Screens Workspace (Includes Curated and User-Saved Strategies) ── */}
+      {activeTab === 'discover' && (
+        <DiscoverScreensView
           screens={savedScreens}
           onRunScreen={handleRunSavedScreen}
+          onCustomizeScreen={(s) => {
+            setCurrentQuery(s.query);
+            setActiveTab('queryBuilder');
+          }}
           onEditScreen={(s) => {
             setCurrentQuery(s.query);
-            setActiveTab('screener');
+            setActiveTab('queryBuilder');
           }}
-          onBackToScreener={() => setActiveTab('screener')}
           onDuplicateScreen={(s) => {
             const copy: SavedScreen = {
               ...s,
@@ -506,6 +509,8 @@ export function ScreenerWorkspace() {
             const updated = deleteSavedScreen(id);
             setSavedScreens(updated);
           }}
+          onBackToScreener={() => setActiveTab('screener')}
+          onOpenQueryBuilder={() => setActiveTab('queryBuilder')}
         />
       )}
 

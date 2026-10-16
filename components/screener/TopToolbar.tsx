@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { MarketRegion, SavedScreen } from '@/lib/screener/types';
+import { deduplicateScreens } from '@/lib/screener/persistence';
 
 interface TopToolbarProps {
   market: MarketRegion;
@@ -44,11 +45,10 @@ export function TopToolbar({
     { id: 'technicalScreener', label: '2. Technical Strategies' },
     { id: 'queryBuilder', label: '3. Query Builder' },
     { id: 'discover', label: '4. Discover Screens' },
-    { id: 'saved', label: '5. Saved Screens' },
-    { id: 'watchlists', label: '6. Watchlists' },
-    { id: 'analysis', label: `7. Company Analysis ${selectedSymbol ? `(${selectedSymbol})` : ''}` },
-    { id: 'peers', label: '8. Peer Matrix' },
-    { id: 'alerts', label: '9. Alerts' },
+    { id: 'watchlists', label: '5. Watchlists' },
+    { id: 'analysis', label: `6. Company Analysis ${selectedSymbol ? `(${selectedSymbol})` : ''}` },
+    { id: 'peers', label: '7. Peer Matrix' },
+    { id: 'alerts', label: '8. Alerts' },
   ];
 
   return (
@@ -98,17 +98,17 @@ export function TopToolbar({
             ))}
           </select>
 
-          {/* Saved Screen Dropdown Selector */}
+          {/* Saved Screen Dropdown Selector (Deduplicated) */}
           <select
             value={selectedScreenId || ''}
             onChange={(e) => {
-              const found = savedScreens.find((s) => s.id === e.target.value);
+              const found = deduplicateScreens(savedScreens).find((s) => s.id === e.target.value);
               if (found) onSelectSavedScreen(found);
             }}
             className="px-3 py-1.5 rounded-xl mono text-[12.5px] font-bold border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] focus:outline-none focus:border-emerald-500 max-w-48"
           >
             <option value="">Load Screen Preset...</option>
-            {savedScreens.map((s) => (
+            {deduplicateScreens(savedScreens).map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>

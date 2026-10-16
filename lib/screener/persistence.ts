@@ -15,6 +15,23 @@ const KEYS = {
 };
 
 // ── Saved Screens Management ─────────────────────────────────────────────────
+export function deduplicateScreens(screens: SavedScreen[]): SavedScreen[] {
+  const seenIds = new Set<string>();
+  const seenNames = new Set<string>();
+  const result: SavedScreen[] = [];
+
+  for (const s of screens) {
+    if (!s || !s.id) continue;
+    const cleanName = (s.name || '').trim().toLowerCase();
+    if (seenIds.has(s.id)) continue;
+    if (cleanName && seenNames.has(cleanName)) continue;
+    seenIds.add(s.id);
+    if (cleanName) seenNames.add(cleanName);
+    result.push(s);
+  }
+  return result;
+}
+
 export function getSavedScreens(): SavedScreen[] {
   if (typeof window === 'undefined') {
     return PREDEFINED_SCREENS;
@@ -26,10 +43,8 @@ export function getSavedScreens(): SavedScreen[] {
       return PREDEFINED_SCREENS;
     }
     const userScreens: SavedScreen[] = JSON.parse(raw);
-    // Combine user screens with predefined screens, ensuring no duplicate IDs
-    const userIds = new Set(userScreens.map((s) => s.id));
-    const merged = [...userScreens, ...PREDEFINED_SCREENS.filter((s) => !userIds.has(s.id))];
-    return merged;
+    const combined = [...userScreens, ...PREDEFINED_SCREENS];
+    return deduplicateScreens(combined);
   } catch (err) {
     console.warn('[Persistence] Error loading saved screens:', err);
     return PREDEFINED_SCREENS;
@@ -40,13 +55,16 @@ export function saveUserScreen(screen: SavedScreen): SavedScreen[] {
   if (typeof window === 'undefined') return [];
   try {
     const all = getSavedScreens();
-    const existingIndex = all.findIndex((s) => s.id === screen.id);
+    const existingIndex = all.findIndex(
+      (s) => s.id === screen.id || s.name.trim().toLowerCase() === screen.name.trim().toLowerCase()
+    );
     let updated: SavedScreen[];
 
     if (existingIndex >= 0) {
       updated = [...all];
       updated[existingIndex] = {
         ...screen,
+        id: all[existingIndex].id,
         updatedAt: new Date().toISOString(),
       };
     } else {
@@ -61,10 +79,11 @@ export function saveUserScreen(screen: SavedScreen): SavedScreen[] {
       ];
     }
 
+    const deduplicated = deduplicateScreens(updated);
     // Persist only non-predefined screens to localStorage
-    const onlyUser = updated.filter((s) => !s.isPredefined);
+    const onlyUser = deduplicated.filter((s) => !s.isPredefined);
     localStorage.setItem(KEYS.SCREENS, JSON.stringify(onlyUser));
-    return updated;
+    return deduplicated;
   } catch (err) {
     console.error('[Persistence] Error saving screen:', err);
     return getSavedScreens();
