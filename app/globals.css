@@ -26,173 +26,177 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   THEME PALETTE DEFINITIONS (Four Distinct Premium Themes)
-   1. Arctic Sky: Soft sky blue canvas (#DCEAF2) · Deep navy cards (#17365C) · Soft ivory text (#F2F0E8) · Sky blue accent (#65A9D6)
-   2. Executive Ivory: Warm ivory canvas (#F5F0E5) · Forest green cards (#204230) · Cream text (#F8F4EB) · Emerald mint accent (#10B981)
-   3. Institutional Graphite: Silver gray canvas (#E3E5E7) · Graphite cards (#303943) · Cool silver text (#E9EDF0) · Muted emerald accent (#70B7A0)
-   4. Midnight Azure: Midnight navy canvas (#14243A) · Warm champagne cards (#E8DFCD) · Slate navy text (#26374A) · Controlled cyan accent (#65B9D8)
+   THEME PALETTE DEFINITIONS (2 Dark & 2 Light Distinct Themes)
+   1. Deep Ocean & Turquoise (Dark): Ocean abyss (#071322) · Navy cards (#0E233D) · Turquoise (#00E5FF) · Sky (#38BDF8)
+   2. Royal Violet & Parrot Green 🦜 (Dark): Violet obsidian (#0F081D) · Amethyst cards (#1A0F30) · Parrot Green (#22E555) · Electric Violet (#A855F7)
+   3. Light & White Cream / Excel Green (Light): Warm cream canvas (#F9F7F2) · White cards (#FFFFFF) · Excel Icon Green (#107C41)
+   4. Sky Blue & Turquoise Breeze (Light): Sky blue mist (#E8F3FA) · White cards (#FFFFFF) · Turquoise (#00B4D8) · Sky (#0284C7) · Parrot (#22C55E)
    ══════════════════════════════════════════════════════════════════════════════ */
 
 :root,
-html[data-theme="arctic"],
-html[data-theme="lightblue"],
-html[data-theme="quartz"] {
-  --color-bg-midnight: #DCEAF2;
-  --color-surface-card: #17365C;
-  --color-surface-variant: #204470;
-  --color-border-navy: #B8D1E0;
-  --color-mint-green: #059669;
-  --color-crimson-red: #DC2626;
-  --color-accent-cyan: #65A9D6;
-  --color-cyber-gold: #65A9D6;
-  --color-chart-bg: #17365C;
-  --color-text-primary: #0E233D;
-  --color-text-secondary: #365373;
-  --color-text-muted: #526E8C;
-  --color-bull-green: #059669;
-  --color-bear-red: #DC2626;
-  --color-glass-white: rgba(23, 54, 92, 0.95);
-
-  --theme-page-bg: #DCEAF2;
-  --theme-page-text: #0E233D;
-  --theme-page-subtitle: #365373;
-  --theme-page-border: #B4CEE0;
-  --theme-navbar-bg: rgba(220, 234, 242, 0.96);
-  --theme-ticker-bg: #DCEAF2;
-  --theme-ticker-text: #0E233D;
-  --theme-ticker-border: #B4CEE0;
-
-  --theme-card-bg: #17365C;
-  --theme-card-surface: #204470;
-  --theme-card-border: #2B5383;
-  --theme-card-text: #F2F0E8;
-  --theme-card-text-muted: #A6BED8;
-
-  --theme-footer-bg: #112742;
-  --theme-footer-text: #F2F0E8;
-  --theme-footer-border: #204470;
-  --theme-switcher-bg: #17365C;
-}
-
-html[data-theme="ivory"],
-html[data-theme="champagne"],
-html[data-theme="falcon"] {
-  --color-bg-midnight: #F5F0E5;
-  --color-surface-card: #204230;
-  --color-surface-variant: #29543C;
-  --color-border-navy: #D8D0C2;
-  --color-mint-green: #047857;
-  --color-crimson-red: #E11D48;
-  --color-accent-cyan: #10B981;
-  --color-cyber-gold: #10B981;
-  --color-chart-bg: #204230;
-  --color-text-primary: #14281D;
-  --color-text-secondary: #3D5545;
-  --color-text-muted: #587161;
-  --color-bull-green: #047857;
-  --color-bear-red: #E11D48;
-  --color-glass-white: rgba(32, 66, 48, 0.95);
-
-  --theme-page-bg: #F5F0E5;
-  --theme-page-text: #14281D;
-  --theme-page-subtitle: #3D5545;
-  --theme-page-border: #D8D0C2;
-  --theme-navbar-bg: rgba(245, 240, 229, 0.96);
-  --theme-ticker-bg: #F5F0E5;
-  --theme-ticker-text: #14281D;
-  --theme-ticker-border: #D8D0C2;
-
-  --theme-card-bg: #204230;
-  --theme-card-surface: #29543C;
-  --theme-card-border: #386A4D;
-  --theme-card-text: #F8F4EB;
-  --theme-card-text-muted: #A3C7B0;
-
-  --theme-footer-bg: #162E21;
-  --theme-footer-text: #F8F4EB;
-  --theme-footer-border: #29543C;
-  --theme-switcher-bg: #204230;
-}
-
+html[data-theme="ocean"],
 html[data-theme="graphite"],
 html[data-theme="metallic"],
 html[data-theme="obsidian"] {
-  --color-bg-midnight: #181C24;
-  --color-surface-card: #28303C;
-  --color-surface-variant: #343E4C;
-  --color-border-navy: #3D4856;
-  --color-mint-green: #10B981;
-  --color-crimson-red: #DC2626;
-  --color-accent-cyan: #70B7A0;
-  --color-cyber-gold: #70B7A0;
-  --color-chart-bg: #28303C;
-  --color-text-primary: #E9EDF0;
-  --color-text-secondary: #9DA9B5;
-  --color-text-muted: #73808E;
-  --color-bull-green: #10B981;
-  --color-bear-red: #DC2626;
-  --color-glass-white: rgba(40, 48, 60, 0.95);
+  --color-bg-midnight: #071322;
+  --color-surface-card: #0E233D;
+  --color-surface-variant: #142F50;
+  --color-border-navy: #1B3B60;
+  --color-mint-green: #00F59B;
+  --color-crimson-red: #FF4D4D;
+  --color-accent-cyan: #00E5FF;
+  --color-cyber-gold: #38BDF8;
+  --color-chart-bg: #0E233D;
+  --color-text-primary: #F0FDF4;
+  --color-text-secondary: #7DD3FC;
+  --color-text-muted: #38BDF8;
+  --color-bull-green: #00F59B;
+  --color-bear-red: #FF4D4D;
+  --color-glass-white: rgba(14, 35, 61, 0.95);
 
-  --theme-page-bg: #181C24;
-  --theme-page-text: #E9EDF0;
-  --theme-page-subtitle: #9DA9B5;
-  --theme-page-border: #3D4856;
-  --theme-navbar-bg: rgba(24, 28, 36, 0.96);
-  --theme-ticker-bg: #181C24;
-  --theme-ticker-text: #E9EDF0;
-  --theme-ticker-border: #3D4856;
+  --theme-page-bg: #071322;
+  --theme-page-text: #F0FDF4;
+  --theme-page-subtitle: #7DD3FC;
+  --theme-page-border: #1B3B60;
+  --theme-navbar-bg: rgba(7, 19, 34, 0.96);
+  --theme-ticker-bg: #0A1B30;
+  --theme-ticker-text: #F0FDF4;
+  --theme-ticker-border: #1B3B60;
 
-  --theme-card-bg: #28303C;
-  --theme-card-surface: #343E4C;
-  --theme-card-border: #424E5E;
-  --theme-card-text: #E9EDF0;
-  --theme-card-text-muted: #9DA9B5;
+  --theme-card-bg: #0E233D;
+  --theme-card-surface: #142F50;
+  --theme-card-border: #1E4670;
+  --theme-card-text: #F0FDF4;
+  --theme-card-text-muted: #7DD3FC;
 
-  --theme-footer-bg: #12151B;
-  --theme-footer-text: #E9EDF0;
-  --theme-footer-border: #343E4C;
-  --theme-switcher-bg: #28303C;
+  --theme-footer-bg: #040B15;
+  --theme-footer-text: #F0FDF4;
+  --theme-footer-border: #142F50;
+  --theme-switcher-bg: #0E233D;
 }
 
+html[data-theme="violet"],
 html[data-theme="capital"],
 html[data-theme="azure"],
 html[data-theme="techno"],
 html[data-theme="cyberpunk"] {
-  --color-bg-midnight: #14243A;
-  --color-surface-card: #E8DFCD;
-  --color-surface-variant: #DED3BE;
-  --color-border-navy: rgba(101, 185, 216, 0.28);
-  --color-mint-green: #059669;
+  --color-bg-midnight: #0F081D;
+  --color-surface-card: #1A0F30;
+  --color-surface-variant: #251644;
+  --color-border-navy: #3B1F6A;
+  --color-mint-green: #22E555;
+  --color-crimson-red: #FF4D6D;
+  --color-accent-cyan: #22E555;
+  --color-cyber-gold: #A855F7;
+  --color-chart-bg: #1A0F30;
+  --color-text-primary: #FAF5FF;
+  --color-text-secondary: #C084FC;
+  --color-text-muted: #9333EA;
+  --color-bull-green: #22E555;
+  --color-bear-red: #FF4D6D;
+  --color-glass-white: rgba(26, 15, 48, 0.95);
+
+  --theme-page-bg: #0F081D;
+  --theme-page-text: #FAF5FF;
+  --theme-page-subtitle: #C084FC;
+  --theme-page-border: #3B1F6A;
+  --theme-navbar-bg: rgba(15, 8, 29, 0.96);
+  --theme-ticker-bg: #140C25;
+  --theme-ticker-text: #FAF5FF;
+  --theme-ticker-border: #3B1F6A;
+
+  --theme-card-bg: #1A0F30;
+  --theme-card-surface: #251644;
+  --theme-card-border: #4C2882;
+  --theme-card-text: #FAF5FF;
+  --theme-card-text-muted: #C084FC;
+
+  --theme-footer-bg: #08040F;
+  --theme-footer-text: #FAF5FF;
+  --theme-footer-border: #251644;
+  --theme-switcher-bg: #1A0F30;
+}
+
+html[data-theme="cream"],
+html[data-theme="ivory"],
+html[data-theme="champagne"],
+html[data-theme="falcon"] {
+  --color-bg-midnight: #F9F7F2;
+  --color-surface-card: #FFFFFF;
+  --color-surface-variant: #F2EEE4;
+  --color-border-navy: #E5E0D8;
+  --color-mint-green: #107C41;
   --color-crimson-red: #DC2626;
-  --color-accent-cyan: #65B9D8;
-  --color-cyber-gold: #65B9D8;
-  --color-chart-bg: #E8DFCD;
-  --color-text-primary: #F1F5F9;
-  --color-text-secondary: #CBD5E1;
-  --color-text-muted: #8EA7C2;
-  --color-bull-green: #059669;
+  --color-accent-cyan: #107C41;
+  --color-cyber-gold: #15803D;
+  --color-chart-bg: #FFFFFF;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #52525B;
+  --color-text-muted: #71717A;
+  --color-bull-green: #107C41;
   --color-bear-red: #DC2626;
-  --color-glass-white: rgba(232, 223, 205, 0.95);
+  --color-glass-white: rgba(255, 255, 255, 0.95);
 
-  --theme-page-bg: #14243A;
-  --theme-page-text: #F1F5F9;
-  --theme-page-subtitle: #8EA7C2;
-  --theme-page-border: rgba(101, 185, 216, 0.28);
-  --theme-navbar-bg: rgba(20, 36, 58, 0.96);
-  --theme-ticker-bg: #14243A;
-  --theme-ticker-text: #F1F5F9;
-  --theme-ticker-border: rgba(101, 185, 216, 0.28);
+  --theme-page-bg: #F9F7F2;
+  --theme-page-text: #0F172A;
+  --theme-page-subtitle: #52525B;
+  --theme-page-border: #E5E0D8;
+  --theme-navbar-bg: rgba(249, 247, 242, 0.96);
+  --theme-ticker-bg: #F3EFE6;
+  --theme-ticker-text: #0F172A;
+  --theme-ticker-border: #E5E0D8;
 
-  --theme-card-bg: #E8DFCD;
-  --theme-card-surface: #DED3BE;
-  --theme-card-border: #CFBEA3;
-  --theme-card-text: #26374A;
-  --theme-card-text-muted: #4B6178;
+  --theme-card-bg: #FFFFFF;
+  --theme-card-surface: #F8F6F0;
+  --theme-card-border: #E5E0D8;
+  --theme-card-text: #0F172A;
+  --theme-card-text-muted: #52525B;
 
-  --theme-footer-bg: #0D1929;
-  --theme-footer-text: #F1F5F9;
-  --theme-footer-border: rgba(101, 185, 216, 0.25);
-  --theme-switcher-bg: #14243A;
+  --theme-footer-bg: #111D16;
+  --theme-footer-text: #F8FAFC;
+  --theme-footer-border: #1E3327;
+  --theme-switcher-bg: #FFFFFF;
+}
+
+html[data-theme="sky"],
+html[data-theme="arctic"],
+html[data-theme="lightblue"],
+html[data-theme="quartz"] {
+  --color-bg-midnight: #E8F3FA;
+  --color-surface-card: #FFFFFF;
+  --color-surface-variant: #DDF0FA;
+  --color-border-navy: #BAE6FD;
+  --color-mint-green: #22C55E;
+  --color-crimson-red: #EF4444;
+  --color-accent-cyan: #00B4D8;
+  --color-cyber-gold: #0284C7;
+  --color-chart-bg: #FFFFFF;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748B;
+  --color-bull-green: #22C55E;
+  --color-bear-red: #EF4444;
+  --color-glass-white: rgba(255, 255, 255, 0.95);
+
+  --theme-page-bg: #E8F3FA;
+  --theme-page-text: #0F172A;
+  --theme-page-subtitle: #475569;
+  --theme-page-border: #BAE6FD;
+  --theme-navbar-bg: rgba(232, 243, 250, 0.96);
+  --theme-ticker-bg: #DCECF7;
+  --theme-ticker-text: #0F172A;
+  --theme-ticker-border: #BAE6FD;
+
+  --theme-card-bg: #FFFFFF;
+  --theme-card-surface: #F0F7FC;
+  --theme-card-border: #BAE6FD;
+  --theme-card-text: #0F172A;
+  --theme-card-text-muted: #475569;
+
+  --theme-footer-bg: #0C1B2A;
+  --theme-footer-text: #F8FAFC;
+  --theme-footer-border: #18334E;
+  --theme-switcher-bg: #FFFFFF;
 }
 
 @keyframes ticker {
@@ -278,6 +282,8 @@ body {
 }
 
 /* ── Adaptive styling across dark candidate modes ── */
+html[data-theme="ocean"],
+html[data-theme="violet"],
 html[data-theme="graphite"],
 html[data-theme="capital"],
 html[data-theme="metallic"],
@@ -289,17 +295,16 @@ html[data-theme="cyberpunk"] {
 
 /* ══════════════════════════════════════════════════════════════════════════════
    STRICT VISUAL INVERSION SYSTEM (DARK THEMES vs LIGHT THEMES)
-   • LIGHT THEMES (Arctic Intelligence & Executive Ivory):
-     - Light Background (Soft Arctic Blue / Warm Ivory)
-     - DARK Cards & Panels (Dark Navy / Deep Charcoal Forest)
-     - LIGHT / White Foreground Text on those dark cards
-     - Dark text for section headings on the light page background
+   • LIGHT THEMES (White & Light Cream / Sky Blue):
+     - Light Background (Warm Cream / Soft Sky)
+     - White Cards & Panels (#FFFFFF)
+     - High contrast obsidian/slate text
+     - Controlled green / sky blue accents
 
-   • DARK THEMES (Institutional Graphite & AI Capital):
-     - Dark Background (Deep Graphite / Midnight Blue)
-     - LIGHT Cards & Panels (Light Silver / Light Blue-Gray)
-     - DARK Foreground Text on those light cards
-     - Light / White text for section headings on the dark page background
+   • DARK THEMES (Deep Ocean & Royal Violet):
+     - Dark Background (Ocean Abyss / Violet Obsidian)
+     - Deep Navy / Amethyst Cards
+     - Luminous white, turquoise, and parrot green accents
    ══════════════════════════════════════════════════════════════════════════════ */
 
 /* ── 1. Page Background & Global Section Reset ── */
@@ -388,50 +393,58 @@ section p.page-subtitle,
   color: var(--theme-page-border) !important;
 }
 
-html[data-theme="arctic"] .ticker-tape-fade-left,
-html[data-theme="lightblue"] .ticker-tape-fade-left,
-html[data-theme="quartz"] .ticker-tape-fade-left {
-  background: linear-gradient(to right, #DCEAF2, transparent) !important;
-}
-html[data-theme="arctic"] .ticker-tape-fade-right,
-html[data-theme="lightblue"] .ticker-tape-fade-right,
-html[data-theme="quartz"] .ticker-tape-fade-right {
-  background: linear-gradient(to left, #DCEAF2, transparent) !important;
-}
-
-html[data-theme="ivory"] .ticker-tape-fade-left,
-html[data-theme="champagne"] .ticker-tape-fade-left,
-html[data-theme="falcon"] .ticker-tape-fade-left {
-  background: linear-gradient(to right, #F5F0E5, transparent) !important;
-}
-html[data-theme="ivory"] .ticker-tape-fade-right,
-html[data-theme="champagne"] .ticker-tape-fade-right,
-html[data-theme="falcon"] .ticker-tape-fade-right {
-  background: linear-gradient(to left, #F5F0E5, transparent) !important;
-}
-
+html[data-theme="ocean"] .ticker-tape-fade-left,
 html[data-theme="graphite"] .ticker-tape-fade-left,
 html[data-theme="metallic"] .ticker-tape-fade-left,
 html[data-theme="obsidian"] .ticker-tape-fade-left {
-  background: linear-gradient(to right, #E3E5E7, transparent) !important;
+  background: linear-gradient(to right, #071322, transparent) !important;
 }
+html[data-theme="ocean"] .ticker-tape-fade-right,
 html[data-theme="graphite"] .ticker-tape-fade-right,
 html[data-theme="metallic"] .ticker-tape-fade-right,
 html[data-theme="obsidian"] .ticker-tape-fade-right {
-  background: linear-gradient(to left, #E3E5E7, transparent) !important;
+  background: linear-gradient(to left, #071322, transparent) !important;
 }
 
+html[data-theme="violet"] .ticker-tape-fade-left,
 html[data-theme="capital"] .ticker-tape-fade-left,
 html[data-theme="azure"] .ticker-tape-fade-left,
 html[data-theme="techno"] .ticker-tape-fade-left,
 html[data-theme="cyberpunk"] .ticker-tape-fade-left {
-  background: linear-gradient(to right, #14243A, transparent) !important;
+  background: linear-gradient(to right, #0F081D, transparent) !important;
 }
+html[data-theme="violet"] .ticker-tape-fade-right,
 html[data-theme="capital"] .ticker-tape-fade-right,
 html[data-theme="azure"] .ticker-tape-fade-right,
 html[data-theme="techno"] .ticker-tape-fade-right,
 html[data-theme="cyberpunk"] .ticker-tape-fade-right {
-  background: linear-gradient(to left, #14243A, transparent) !important;
+  background: linear-gradient(to left, #0F081D, transparent) !important;
+}
+
+html[data-theme="cream"] .ticker-tape-fade-left,
+html[data-theme="ivory"] .ticker-tape-fade-left,
+html[data-theme="champagne"] .ticker-tape-fade-left,
+html[data-theme="falcon"] .ticker-tape-fade-left {
+  background: linear-gradient(to right, #F9F7F2, transparent) !important;
+}
+html[data-theme="cream"] .ticker-tape-fade-right,
+html[data-theme="ivory"] .ticker-tape-fade-right,
+html[data-theme="champagne"] .ticker-tape-fade-right,
+html[data-theme="falcon"] .ticker-tape-fade-right {
+  background: linear-gradient(to left, #F9F7F2, transparent) !important;
+}
+
+html[data-theme="sky"] .ticker-tape-fade-left,
+html[data-theme="arctic"] .ticker-tape-fade-left,
+html[data-theme="lightblue"] .ticker-tape-fade-left,
+html[data-theme="quartz"] .ticker-tape-fade-left {
+  background: linear-gradient(to right, #E8F3FA, transparent) !important;
+}
+html[data-theme="sky"] .ticker-tape-fade-right,
+html[data-theme="arctic"] .ticker-tape-fade-right,
+html[data-theme="lightblue"] .ticker-tape-fade-right,
+html[data-theme="quartz"] .ticker-tape-fade-right {
+  background: linear-gradient(to left, #E8F3FA, transparent) !important;
 }
 
 /* ── 4. Major Institutional Cards & Panels (Strict Visual Contrast System) ── */
@@ -526,14 +539,18 @@ html[data-theme="cyberpunk"] .ticker-tape-fade-right {
 .token-chip-txt-amber { color: #FBBF24 !important; font-weight: 700; }
 .token-chip-txt-teal { color: #2DD4BF !important; font-weight: 700; }
 
-/* In Midnight Azure (where cards are warm champagne #E8DFCD) */
+/* High contrast token chips for Light Themes (where cards are white #FFFFFF) */
+html[data-theme="cream"] .token-chip-txt-white,
+html[data-theme="sky"] .token-chip-txt-white,
 html[data-theme="capital"] .token-chip-txt-white,
 html[data-theme="azure"] .token-chip-txt-white,
 html[data-theme="techno"] .token-chip-txt-white,
 html[data-theme="cyberpunk"] .token-chip-txt-white {
-  color: #26374A !important;
+  color: #0F172A !important;
 }
 
+html[data-theme="cream"] .token-chip-txt-cyan,
+html[data-theme="sky"] .token-chip-txt-cyan,
 html[data-theme="capital"] .token-chip-txt-cyan,
 html[data-theme="azure"] .token-chip-txt-cyan,
 html[data-theme="techno"] .token-chip-txt-cyan,
@@ -541,6 +558,8 @@ html[data-theme="cyberpunk"] .token-chip-txt-cyan {
   color: #0284C7 !important;
 }
 
+html[data-theme="cream"] .token-chip-txt-blue,
+html[data-theme="sky"] .token-chip-txt-blue,
 html[data-theme="capital"] .token-chip-txt-blue,
 html[data-theme="azure"] .token-chip-txt-blue,
 html[data-theme="techno"] .token-chip-txt-blue,
@@ -548,13 +567,17 @@ html[data-theme="cyberpunk"] .token-chip-txt-blue {
   color: #1D4ED8 !important;
 }
 
+html[data-theme="cream"] .token-chip-txt-green,
+html[data-theme="sky"] .token-chip-txt-green,
 html[data-theme="capital"] .token-chip-txt-green,
 html[data-theme="azure"] .token-chip-txt-green,
 html[data-theme="techno"] .token-chip-txt-green,
 html[data-theme="cyberpunk"] .token-chip-txt-green {
-  color: #059669 !important;
+  color: #107C41 !important;
 }
 
+html[data-theme="cream"] .token-chip-txt-purple,
+html[data-theme="sky"] .token-chip-txt-purple,
 html[data-theme="capital"] .token-chip-txt-purple,
 html[data-theme="azure"] .token-chip-txt-purple,
 html[data-theme="techno"] .token-chip-txt-purple,
@@ -562,6 +585,8 @@ html[data-theme="cyberpunk"] .token-chip-txt-purple {
   color: #7E22CE !important;
 }
 
+html[data-theme="cream"] .token-chip-txt-red,
+html[data-theme="sky"] .token-chip-txt-red,
 html[data-theme="capital"] .token-chip-txt-red,
 html[data-theme="azure"] .token-chip-txt-red,
 html[data-theme="techno"] .token-chip-txt-red,
@@ -569,6 +594,8 @@ html[data-theme="cyberpunk"] .token-chip-txt-red {
   color: #DC2626 !important;
 }
 
+html[data-theme="cream"] .token-chip-txt-amber,
+html[data-theme="sky"] .token-chip-txt-amber,
 html[data-theme="capital"] .token-chip-txt-amber,
 html[data-theme="azure"] .token-chip-txt-amber,
 html[data-theme="techno"] .token-chip-txt-amber,
@@ -576,6 +603,8 @@ html[data-theme="cyberpunk"] .token-chip-txt-amber {
   color: #B45309 !important;
 }
 
+html[data-theme="cream"] .token-chip-txt-teal,
+html[data-theme="sky"] .token-chip-txt-teal,
 html[data-theme="capital"] .token-chip-txt-teal,
 html[data-theme="azure"] .token-chip-txt-teal,
 html[data-theme="techno"] .token-chip-txt-teal,
@@ -584,50 +613,58 @@ html[data-theme="cyberpunk"] .token-chip-txt-teal {
 }
 
 /* Hero Stats Bar L3 Marquee Edge Fade Masks (matching each theme's card surface) */
-html[data-theme="arctic"] .hero-marquee-fade-left,
-html[data-theme="lightblue"] .hero-marquee-fade-left,
-html[data-theme="quartz"] .hero-marquee-fade-left {
-  background: linear-gradient(to right, #17365C, transparent) !important;
-}
-html[data-theme="arctic"] .hero-marquee-fade-right,
-html[data-theme="lightblue"] .hero-marquee-fade-right,
-html[data-theme="quartz"] .hero-marquee-fade-right {
-  background: linear-gradient(to left, #17365C, transparent) !important;
-}
-
-html[data-theme="ivory"] .hero-marquee-fade-left,
-html[data-theme="champagne"] .hero-marquee-fade-left,
-html[data-theme="falcon"] .hero-marquee-fade-left {
-  background: linear-gradient(to right, #204230, transparent) !important;
-}
-html[data-theme="ivory"] .hero-marquee-fade-right,
-html[data-theme="champagne"] .hero-marquee-fade-right,
-html[data-theme="falcon"] .hero-marquee-fade-right {
-  background: linear-gradient(to left, #204230, transparent) !important;
-}
-
+html[data-theme="ocean"] .hero-marquee-fade-left,
 html[data-theme="graphite"] .hero-marquee-fade-left,
 html[data-theme="metallic"] .hero-marquee-fade-left,
 html[data-theme="obsidian"] .hero-marquee-fade-left {
-  background: linear-gradient(to right, #303943, transparent) !important;
+  background: linear-gradient(to right, #0E233D, transparent) !important;
 }
+html[data-theme="ocean"] .hero-marquee-fade-right,
 html[data-theme="graphite"] .hero-marquee-fade-right,
 html[data-theme="metallic"] .hero-marquee-fade-right,
 html[data-theme="obsidian"] .hero-marquee-fade-right {
-  background: linear-gradient(to left, #303943, transparent) !important;
+  background: linear-gradient(to left, #0E233D, transparent) !important;
 }
 
+html[data-theme="violet"] .hero-marquee-fade-left,
 html[data-theme="capital"] .hero-marquee-fade-left,
 html[data-theme="azure"] .hero-marquee-fade-left,
 html[data-theme="techno"] .hero-marquee-fade-left,
 html[data-theme="cyberpunk"] .hero-marquee-fade-left {
-  background: linear-gradient(to right, #E8DFCD, transparent) !important;
+  background: linear-gradient(to right, #1A0F30, transparent) !important;
 }
+html[data-theme="violet"] .hero-marquee-fade-right,
 html[data-theme="capital"] .hero-marquee-fade-right,
 html[data-theme="azure"] .hero-marquee-fade-right,
 html[data-theme="techno"] .hero-marquee-fade-right,
 html[data-theme="cyberpunk"] .hero-marquee-fade-right {
-  background: linear-gradient(to left, #E8DFCD, transparent) !important;
+  background: linear-gradient(to left, #1A0F30, transparent) !important;
+}
+
+html[data-theme="cream"] .hero-marquee-fade-left,
+html[data-theme="ivory"] .hero-marquee-fade-left,
+html[data-theme="champagne"] .hero-marquee-fade-left,
+html[data-theme="falcon"] .hero-marquee-fade-left {
+  background: linear-gradient(to right, #FFFFFF, transparent) !important;
+}
+html[data-theme="cream"] .hero-marquee-fade-right,
+html[data-theme="ivory"] .hero-marquee-fade-right,
+html[data-theme="champagne"] .hero-marquee-fade-right,
+html[data-theme="falcon"] .hero-marquee-fade-right {
+  background: linear-gradient(to left, #FFFFFF, transparent) !important;
+}
+
+html[data-theme="sky"] .hero-marquee-fade-left,
+html[data-theme="arctic"] .hero-marquee-fade-left,
+html[data-theme="lightblue"] .hero-marquee-fade-left,
+html[data-theme="quartz"] .hero-marquee-fade-left {
+  background: linear-gradient(to right, #FFFFFF, transparent) !important;
+}
+html[data-theme="sky"] .hero-marquee-fade-right,
+html[data-theme="arctic"] .hero-marquee-fade-right,
+html[data-theme="lightblue"] .hero-marquee-fade-right,
+html[data-theme="quartz"] .hero-marquee-fade-right {
+  background: linear-gradient(to left, #FFFFFF, transparent) !important;
 }
 
 /* ── 5. Header / Navbar ── */
@@ -783,45 +820,54 @@ footer {
   color: #CBD5E1 !important;
 }
 
-html[data-theme="arctic"] footer {
-  background-color: #112742 !important;
-  border-color: #204470 !important;
-}
-
-html[data-theme="ivory"] footer,
-html[data-theme="champagne"] footer,
-html[data-theme="falcon"] footer {
-  background-color: #162E21 !important;
-  border-color: #29543C !important;
-}
-
+html[data-theme="ocean"] footer,
 html[data-theme="graphite"] footer,
 html[data-theme="metallic"] footer {
-  background-color: #252C34 !important;
-  border-color: #3C4753 !important;
+  background-color: #040B15 !important;
+  border-color: #142F50 !important;
 }
 
+html[data-theme="violet"] footer,
 html[data-theme="capital"] footer,
 html[data-theme="azure"] footer,
 html[data-theme="techno"] footer {
-  background-color: #0D1929 !important;
-  border-color: rgba(101, 185, 216, 0.25) !important;
+  background-color: #08040F !important;
+  border-color: #251644 !important;
 }
 
+html[data-theme="cream"] footer,
+html[data-theme="ivory"] footer,
+html[data-theme="champagne"] footer,
+html[data-theme="falcon"] footer {
+  background-color: #111D16 !important;
+  border-color: #1E3327 !important;
+}
+
+html[data-theme="sky"] footer,
+html[data-theme="arctic"] footer {
+  background-color: #0C1B2A !important;
+  border-color: #18334E !important;
+}
 
 /* Scrollbars in dark mode */
+html[data-theme="ocean"] ::-webkit-scrollbar-track,
+html[data-theme="violet"] ::-webkit-scrollbar-track,
 html[data-theme="graphite"] ::-webkit-scrollbar-track,
 html[data-theme="capital"] ::-webkit-scrollbar-track,
 html[data-theme="metallic"] ::-webkit-scrollbar-track,
 html[data-theme="techno"] ::-webkit-scrollbar-track {
   background: var(--theme-page-bg);
 }
+html[data-theme="ocean"] ::-webkit-scrollbar-thumb,
+html[data-theme="violet"] ::-webkit-scrollbar-thumb,
 html[data-theme="graphite"] ::-webkit-scrollbar-thumb,
 html[data-theme="capital"] ::-webkit-scrollbar-thumb,
 html[data-theme="metallic"] ::-webkit-scrollbar-thumb,
 html[data-theme="techno"] ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
 }
+html[data-theme="ocean"] ::-webkit-scrollbar-thumb:hover,
+html[data-theme="violet"] ::-webkit-scrollbar-thumb:hover,
 html[data-theme="graphite"] ::-webkit-scrollbar-thumb:hover,
 html[data-theme="capital"] ::-webkit-scrollbar-thumb:hover,
 html[data-theme="metallic"] ::-webkit-scrollbar-thumb:hover,

@@ -54,13 +54,13 @@ export function Falcon3DLogo({
 
   // Theme-coordinated rim glow
   const accentColor =
-    theme === 'ivory'
-      ? '#34D399' // radiant emerald mint
-      : theme === 'graphite'
-      ? '#70B7A0' // muted emerald
-      : theme === 'capital'
-      ? '#65B9D8' // cyan
-      : '#65A9D6'; // arctic sky blue
+    theme === 'violet'
+      ? '#22E555' // vivid parrot green glow 🦜
+      : theme === 'ocean'
+      ? '#00E5FF' // electric turquoise glow
+      : theme === 'cream'
+      ? '#107C41' // excel icon green glow
+      : '#0284C7'; // sky blue breeze glow
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;

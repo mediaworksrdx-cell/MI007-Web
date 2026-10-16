@@ -7,15 +7,15 @@ export function ThemeSwitcher() {
   const { theme, setTheme } = useAppTheme();
   const [isOpen, setIsOpen] = useState(true);
 
-  // Four Distinct Premium Themes
+  // Four Distinct Premium Themes (2 Dark & 2 Light)
   const themeList = [
-    THEMES.arctic,
-    THEMES.ivory,
-    THEMES.graphite,
-    THEMES.capital,
+    THEMES.ocean,
+    THEMES.violet,
+    THEMES.cream,
+    THEMES.sky,
   ];
 
-  const currentTheme = THEMES[theme] || THEMES.arctic;
+  const currentTheme = THEMES[theme] || THEMES.ocean;
 
   return (
     <aside

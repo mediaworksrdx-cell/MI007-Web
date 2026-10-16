@@ -218,16 +218,16 @@ export default function MarketTerminalSection() {
     ctx.clearRect(0, 0, w, h);
 
     // ── 1. Themed Chart Surface ──
-    const cardIsLight = theme === 'capital';
+    const cardIsLight = theme === 'cream' || theme === 'sky';
 
     const chartBg =
-      theme === 'capital'
-        ? '#E8DFCD' // warm champagne (Midnight Azure)
-        : theme === 'ivory'
-        ? '#204230' // forest green card (Executive Ivory)
-        : theme === 'graphite'
-        ? '#303943' // graphite (Institutional Graphite)
-        : '#17365C'; // deep navy (Arctic Sky)
+      theme === 'ocean'
+        ? '#0E233D' // navy card (Deep Ocean & Turquoise)
+        : theme === 'violet'
+        ? '#1A0F30' // amethyst card (Royal Violet & Parrot Green)
+        : theme === 'cream'
+        ? '#FFFFFF' // pure white card (Light & White Cream)
+        : '#FFFFFF'; // pure white card (Sky Blue & Turquoise Breeze)
 
     ctx.fillStyle = chartBg;
     ctx.fillRect(0, 0, w, h);
@@ -382,15 +382,15 @@ export default function MarketTerminalSection() {
 
     // ── 6. Subpanels: RSI (14) & MACD ──
     const subBg =
-      theme === 'capital'
-        ? '#DED3BE'
-        : theme === 'ivory'
-        ? '#29543C'
-        : theme === 'graphite'
-        ? '#3C4753'
-        : '#204470';
-    const subBorder = cardIsLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)';
-    const textSub = cardIsLight ? '#26374A' : '#A6BED8';
+      theme === 'ocean'
+        ? '#142F50'
+        : theme === 'violet'
+        ? '#251644'
+        : theme === 'cream'
+        ? '#F2EEE4'
+        : '#DDF0FA';
+    const subBorder = cardIsLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+    const textSub = cardIsLight ? '#0F172A' : (theme === 'violet' ? '#C084FC' : '#7DD3FC');
 
     if (showRsi) {
       ctx.fillStyle = subBg;
@@ -506,7 +506,7 @@ export default function MarketTerminalSection() {
     }
 
     // ── 9. Right Price Axis Labels ──
-    ctx.fillStyle = cardIsLight ? '#26374A' : '#A6BED8';
+    ctx.fillStyle = cardIsLight ? '#0F172A' : (theme === 'violet' ? '#C084FC' : '#7DD3FC');
     ctx.font = '12px monospace';
     ctx.textAlign = 'left';
     for (let step = 0; step <= 5; step++) {
