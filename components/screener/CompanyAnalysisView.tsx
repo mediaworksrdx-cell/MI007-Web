@@ -143,7 +143,8 @@ export function CompanyAnalysisView({
               href={`/chart/${company.symbol}?market=${company.market}&from=screener`}
               onClick={() => {
                 if (typeof window !== 'undefined') {
-                  sessionStorage.setItem('mi007_return_tab', 'screener');
+                  sessionStorage.setItem('mi007_return_tab', 'analysis');
+                  sessionStorage.setItem('mi007_return_symbol', company.symbol);
                 }
               }}
               className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 mono text-[12.5px] font-black tracking-wide hover:bg-emerald-400 transition-colors shadow-xs"

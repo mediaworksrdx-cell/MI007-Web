@@ -52,24 +52,30 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
           {isFromScreener ? (
             <>
               <Link
+                href={`/terminal/screener?tab=analysis&symbol=${cleanSym}`}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('mi007_return_tab', 'analysis');
+                    sessionStorage.setItem('mi007_return_symbol', cleanSym);
+                  }
+                }}
+                className="flex items-center gap-1.5 text-[13.5px] mono font-black text-emerald-400 hover:text-emerald-300 transition-colors"
+                title={`Return to ${cleanSym} Company Analysis`}
+              >
+                ← BACK TO {cleanSym}
+              </Link>
+              <span className="text-[var(--theme-page-border)] font-bold">|</span>
+              <Link
                 href="/terminal/screener?tab=screener"
                 onClick={() => {
                   if (typeof window !== 'undefined') {
                     sessionStorage.setItem('mi007_return_tab', 'screener');
                   }
                 }}
-                className="flex items-center gap-1.5 text-[13.5px] mono font-black text-emerald-400 hover:text-emerald-300 transition-colors"
+                className="text-[12px] mono font-bold text-[var(--theme-page-text)] hover:text-emerald-400 transition-colors opacity-80 hover:opacity-100"
                 title="Return to Stock Screener Table"
               >
-                ← BACK TO SCREENER
-              </Link>
-              <span className="text-[var(--theme-page-border)] font-bold">|</span>
-              <Link
-                href="/terminal"
-                className="text-[12px] mono font-bold text-[var(--theme-page-text)] hover:text-emerald-400 transition-colors opacity-70 hover:opacity-100"
-                title="Go to Cockpit Dashboard"
-              >
-                COCKPIT
+                SCREENER TABLE
               </Link>
             </>
           ) : (

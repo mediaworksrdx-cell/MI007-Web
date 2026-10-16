@@ -98,11 +98,15 @@ export function ScreenerWorkspace() {
 
   const searchParams = useSearchParams();
 
-  // Force activeTab to 'screener' (the Stock Screener table) when arriving with ?tab=screener or returning from chart
+  // Sync tab and symbol from URL parameters or session storage return flags
   useEffect(() => {
     const tabParam = searchParams?.get('tab');
-    if (tabParam === 'screener') {
-      setActiveTab('screener');
+    const symbolParam = searchParams?.get('symbol');
+    if (symbolParam) {
+      setSelectedSymbol(symbolParam.toUpperCase());
+    }
+    if (tabParam) {
+      setActiveTab(tabParam as any);
     }
   }, [searchParams]);
 
@@ -110,9 +114,14 @@ export function ScreenerWorkspace() {
     const handleReturnToScreener = () => {
       if (typeof window !== 'undefined') {
         const returnTab = sessionStorage.getItem('mi007_return_tab');
-        if (returnTab === 'screener') {
+        const returnSymbol = sessionStorage.getItem('mi007_return_symbol');
+        if (returnSymbol) {
+          setSelectedSymbol(returnSymbol.toUpperCase());
+          sessionStorage.removeItem('mi007_return_symbol');
+        }
+        if (returnTab) {
           sessionStorage.removeItem('mi007_return_tab');
-          setActiveTab('screener');
+          setActiveTab(returnTab as any);
         }
       }
     };
