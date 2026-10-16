@@ -61,7 +61,7 @@ export function CompanySearchModal({
           />
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
           >
             ✕
           </button>

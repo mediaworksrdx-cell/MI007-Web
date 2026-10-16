@@ -533,7 +533,7 @@ export function CompanyAnalysisView({
                 className={`px-3.5 py-1.5 rounded-xl mono text-[12.5px] font-bold whitespace-nowrap transition-all ${
                   activeTab === tab.id
                     ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                    : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-white'
+                    : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:border-emerald-500'
                 }`}
               >
                 {tab.label}

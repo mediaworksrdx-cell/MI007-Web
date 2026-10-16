@@ -182,7 +182,7 @@ export function QueryEditor({
         <button
           type="button"
           onClick={onResetQuery}
-          className="mono text-[12.5px] font-bold text-[var(--theme-card-text-muted)] hover:text-white transition-colors"
+          className="mono text-[12.5px] font-bold text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] transition-colors cursor-pointer"
         >
           Reset Filters
         </button>

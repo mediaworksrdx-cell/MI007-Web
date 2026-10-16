@@ -14,8 +14,6 @@ interface TopToolbarProps {
   savedScreens: SavedScreen[];
   selectedScreenId?: string;
   onSelectSavedScreen: (screen: SavedScreen) => void;
-  onOpenSaveModal?: () => void;
-  onOpenCustomRatioModal?: () => void;
   onOpenSearchModal: () => void;
   activeTab: string;
   onChangeTab: (tab: any) => void;
@@ -32,8 +30,6 @@ export function TopToolbar({
   savedScreens,
   selectedScreenId,
   onSelectSavedScreen,
-  onOpenSaveModal: _onOpenSaveModal,
-  onOpenCustomRatioModal: _onOpenCustomRatioModal,
   onOpenSearchModal,
   activeTab,
   onChangeTab,
@@ -129,7 +125,7 @@ export function TopToolbar({
               className={`px-3 py-1.5 rounded-xl mono text-[12px] sm:text-[12.5px] font-bold whitespace-nowrap transition-all select-none ${
                 isActive
                   ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
-                  : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-white'
+                  : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:border-emerald-500'
               }`}
             >
               {tab.label}

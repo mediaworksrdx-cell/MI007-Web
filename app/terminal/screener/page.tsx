@@ -67,7 +67,7 @@ export default function ScreenerTerminalPage() {
             <div className="flex items-center gap-2 mb-6 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
               <Link
                 href="/terminal"
-                className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-white hover:bg-white/5 flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2"
               >
                 <span>⚡</span>
                 <span>MARKET COCKPIT</span>

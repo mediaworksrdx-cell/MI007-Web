@@ -108,7 +108,7 @@ export function WatchlistsView({
             className={`px-4 py-2 rounded-xl text-[12.5px] mono font-bold whitespace-nowrap transition-all ${
               activeWatchlist?.id === wl.id
                 ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-white'
+                : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:border-emerald-500'
             }`}
           >
             {wl.name} ({wl.symbols.length})
@@ -298,7 +298,7 @@ export function WatchlistsView({
                 <button
                   type="button"
                   onClick={() => setNewWlModalOpen(false)}
-                  className="px-4 py-2 mono text-[12px] text-[var(--theme-card-text-muted)] hover:text-white"
+                  className="px-4 py-2 mono text-[12px] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] transition-colors"
                 >
                   Cancel
                 </button>

@@ -613,9 +613,9 @@ export function CustomQueryBuilderView({
                   </th>
                   <th
                     className="py-3 px-4 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
-                    onClick={() => toggleSort('peRatio')}
+                    onClick={() => toggleSort('pe')}
                   >
-                    P/E {testSortColumn === 'peRatio' && (testSortDirection === 'asc' ? '▲' : '▼')}
+                    P/E {testSortColumn === 'pe' && (testSortDirection === 'asc' ? '▲' : '▼')}
                   </th>
                   <th
                     className="py-3 px-4 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
@@ -660,7 +660,7 @@ export function CustomQueryBuilderView({
                       ₹{c.marketCap?.toLocaleString('en-IN') || c.marketCap}
                     </td>
                     <td className="py-2.5 px-4 text-right font-mono text-[var(--theme-card-text)]">
-                      {c.peRatio ? `${c.peRatio.toFixed(1)}x` : '—'}
+                      {c.pe ? `${c.pe.toFixed(1)}x` : '—'}
                     </td>
                     <td className="py-2.5 px-4 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400">
                       {c.roce ? `${c.roce.toFixed(1)}%` : '—'}
@@ -669,7 +669,7 @@ export function CustomQueryBuilderView({
                       {c.roe ? `${c.roe.toFixed(1)}%` : '—'}
                     </td>
                     <td className="py-2.5 px-4 text-right font-mono text-[var(--theme-card-text-muted)]">
-                      {c.debtToEquity !== undefined ? c.debtToEquity.toFixed(2) : '0.00'}
+                      {c.debtToEquity != null ? c.debtToEquity.toFixed(2) : '0.00'}
                     </td>
                     <td className="py-2.5 px-4 text-center">
                       {onSelectCompany && (

@@ -69,7 +69,7 @@ export function ColumnSelectorModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
           >
             ✕
           </button>
@@ -88,7 +88,7 @@ export function ColumnSelectorModal({
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-white"
+                className="absolute right-3 top-2.5 text-xs text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]"
               >
                 Clear
               </button>
@@ -102,7 +102,7 @@ export function ColumnSelectorModal({
                 className={`px-3 py-1.5 rounded-lg text-[12px] mono font-bold whitespace-nowrap transition-all ${
                   activeCategory === cat.key
                     ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                    : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-white'
+                    : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:border-emerald-500'
                 }`}
               >
                 {cat.label}
@@ -161,7 +161,7 @@ export function ColumnSelectorModal({
           <button
             type="button"
             onClick={onResetDefault}
-            className="mono text-[12.5px] font-bold text-[var(--theme-card-text-muted)] hover:text-white transition-colors"
+            className="mono text-[12.5px] font-bold text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] transition-colors cursor-pointer"
           >
             Reset to Institutional Defaults
           </button>

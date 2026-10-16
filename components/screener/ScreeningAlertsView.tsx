@@ -242,7 +242,7 @@ export function ScreeningAlertsView({
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 mono text-[12px] text-[var(--theme-card-text-muted)] hover:text-white"
+                  className="px-4 py-2 mono text-[12px] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] transition-colors"
                 >
                   Cancel
                 </button>

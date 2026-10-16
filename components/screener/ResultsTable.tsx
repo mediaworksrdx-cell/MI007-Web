@@ -560,7 +560,7 @@ export function ResultsTable({
                               sessionStorage.setItem('mi007_return_tab', 'screener');
                             }
                           }}
-                          className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] hover:border-emerald-500 text-[var(--theme-card-text-muted)] hover:text-white text-[11px] font-bold transition-all"
+                          className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] hover:border-emerald-500 text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] text-[11px] font-bold transition-all"
                           title="View Interactive Price Chart"
                         >
                           Chart ↗
