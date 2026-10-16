@@ -42,9 +42,6 @@ import { WatchlistsView } from './WatchlistsView';
 import { PeerComparisonView } from './PeerComparisonView';
 import { ScreeningAlertsView } from './ScreeningAlertsView';
 import { TechnicalStrategyScreenerView } from './TechnicalStrategyScreenerView';
-import { TechnicalAnalysisView } from './TechnicalAnalysisView';
-import { BacktestingView } from './BacktestingView';
-import { StrategyId } from '@/lib/screener/technicalStrategies';
 
 export function ScreenerWorkspace() {
   const searchParams = useSearchParams();
@@ -61,17 +58,14 @@ export function ScreenerWorkspace() {
     | 'saved'
     | 'watchlists'
     | 'analysis'
-    | 'technicalAnalysis'
     | 'peers'
-    | 'backtesting'
     | 'alerts'
   >(
-    urlTab && ['screener', 'technicalScreener', 'queryBuilder', 'discover', 'saved', 'watchlists', 'analysis', 'technicalAnalysis', 'peers', 'backtesting', 'alerts'].includes(urlTab)
-      ? urlTab
+    urlTab && ['screener', 'technicalScreener', 'queryBuilder', 'discover', 'saved', 'watchlists', 'analysis', 'peers', 'alerts'].includes(urlTab)
+      ? (urlTab as any)
       : 'screener'
   );
   const [activeViewPreset, setActiveViewPreset] = useState<TableViewPreset>('overview');
-  const [backtestStrategyId, setBacktestStrategyId] = useState<StrategyId>('ma_alignment');
 
   // Zerodha Kite Trade Engine Integration
   const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
@@ -364,19 +358,6 @@ export function ScreenerWorkspace() {
     setActiveTab('peers');
   };
 
-  // Open Technical Analysis View
-  const handleOpenTechnicalAnalysis = (symbol: string) => {
-    setSelectedSymbol(symbol);
-    setActiveTab('technicalAnalysis');
-  };
-
-  // Open Backtesting View
-  const handleOpenBacktest = (symbol: string, strategy?: StrategyId) => {
-    setSelectedSymbol(symbol);
-    if (strategy) setBacktestStrategyId(strategy);
-    setActiveTab('backtesting');
-  };
-
   // Watchlist Actions
   const currentWatchlist = watchlists[0];
   const watchlistSymbols = currentWatchlist?.symbols || [];
@@ -470,7 +451,6 @@ export function ScreenerWorkspace() {
           companies={marketCompanies}
           market={market}
           onSelectCompany={handleOpenCompanyAnalysis}
-          onOpenBacktest={handleOpenBacktest}
           onBackToScreener={() => setActiveTab('screener')}
         />
       )}
@@ -568,18 +548,7 @@ export function ScreenerWorkspace() {
         />
       )}
 
-      {/* ── 8. Technical Analysis Charting Workspace ── */}
-      {activeTab === 'technicalAnalysis' && targetCompany && (
-        <TechnicalAnalysisView
-          company={targetCompany}
-          allCompanies={allCompaniesEnriched}
-          onSelectCompany={(sym) => setSelectedSymbol(sym)}
-          onBackToScreener={() => setActiveTab('screener')}
-          onOpenBacktest={(sym) => handleOpenBacktest(sym)}
-        />
-      )}
-
-      {/* ── 9. Peer Comparison Workspace ── */}
+      {/* ── 8. Peer Comparison Workspace ── */}
       {activeTab === 'peers' && (
         <PeerComparisonView
           initialSymbols={peerSymbols}
@@ -589,18 +558,7 @@ export function ScreenerWorkspace() {
         />
       )}
 
-      {/* ── 10. Quantitative Backtesting Workspace ── */}
-      {activeTab === 'backtesting' && (
-        <BacktestingView
-          companies={marketCompanies}
-          initialSymbol={selectedSymbol}
-          initialStrategyId={backtestStrategyId}
-          onBackToScreener={() => setActiveTab('screener')}
-          onSelectCompany={handleOpenCompanyAnalysis}
-        />
-      )}
-
-      {/* ── 11. Screening Alerts Workspace ── */}
+      {/* ── 9. Screening Alerts Workspace ── */}
       {activeTab === 'alerts' && (
         <ScreeningAlertsView
           alerts={alerts}

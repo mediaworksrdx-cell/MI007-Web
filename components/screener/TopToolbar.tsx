@@ -47,10 +47,8 @@ export function TopToolbar({
     { id: 'saved', label: '5. Saved Screens' },
     { id: 'watchlists', label: '6. Watchlists' },
     { id: 'analysis', label: `7. Company Analysis ${selectedSymbol ? `(${selectedSymbol})` : ''}` },
-    { id: 'technicalAnalysis', label: `8. Technical Analysis ${selectedSymbol ? `(${selectedSymbol})` : ''}` },
-    { id: 'peers', label: '9. Peer Matrix' },
-    { id: 'backtesting', label: '10. Backtesting' },
-    { id: 'alerts', label: '11. Alerts' },
+    { id: 'peers', label: '8. Peer Matrix' },
+    { id: 'alerts', label: '9. Alerts' },
   ];
 
   return (
