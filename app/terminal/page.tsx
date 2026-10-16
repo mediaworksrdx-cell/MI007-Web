@@ -254,11 +254,43 @@ export default function TerminalPage() {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
+                <Link
+                  href="/terminal/screener"
+                  className="px-3.5 py-1.5 rounded-lg bg-emerald-500 text-slate-950 mono text-[12px] sm:text-[13px] font-black tracking-wider hover:bg-emerald-400 transition-all shadow-xs flex items-center gap-1.5"
+                >
+                  <span>⚡</span>
+                  <span>STOCK SCREENER</span>
+                </Link>
                 <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[13px] sm:text-[15px] mono inst-card-text font-bold shadow-xs">
                   <span>{MARKETS[market].flag}</span>
                   <span className="inst-card-text font-black">{MARKETS[market].label}</span>
                 </div>
               </div>
+            </div>
+
+            {/* ── Screener Terminal Banner ── */}
+            <div className="p-4 sm:p-5 rounded-xl border border-emerald-500/40 bg-gradient-to-r from-emerald-500/10 via-[var(--theme-card-surface)] to-[var(--theme-card-bg)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="mono text-[14px] sm:text-[15px] font-black inst-card-text uppercase tracking-wider">
+                    Institutional Equity Screener & Query Engine
+                  </span>
+                  <span className="mono text-[11px] font-black px-2 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/20 text-emerald-300">
+                    NEW MODULE
+                  </span>
+                </div>
+                <p className="text-[12.5px] sm:text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">
+                  Discover, filter, and compare equities using multi-year financial statements, valuation multiples, custom ratios, and Screener.in-inspired queries.
+                </p>
+              </div>
+              <Link
+                href="/terminal/screener"
+                className="px-5 py-2.5 rounded-xl bg-emerald-500 text-slate-950 mono text-[13px] font-black tracking-wide hover:bg-emerald-400 transition-all shadow-md shrink-0 flex items-center justify-center gap-2 group"
+              >
+                <span>OPEN SCREENER TERMINAL</span>
+                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+              </Link>
             </div>
 
             {/* ── Core Indices Grid ── */}

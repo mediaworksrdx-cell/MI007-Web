@@ -19,9 +19,10 @@ interface NavbarProps {
 }
 
 const NAV_LINKS = [
-  { href: '/',          label: 'Home' },
-  { href: '/about',     label: 'About' },
-  { href: '/contact',   label: 'Contact' },
+  { href: '/',                  label: 'Home' },
+  { href: '/terminal/screener', label: 'Screener' },
+  { href: '/about',             label: 'About' },
+  { href: '/contact',           label: 'Contact' },
 ];
 
 export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange }: NavbarProps) {

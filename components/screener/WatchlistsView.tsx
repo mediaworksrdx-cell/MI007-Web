@@ -1,0 +1,271 @@
+// ─── Watchlists & Tracking Workspace ─────────────────────────────────────────
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { Watchlist, CompanyFundamental } from '@/lib/screener/types';
+import { MASTER_COMPANIES } from '@/lib/screener/data';
+
+interface WatchlistsViewProps {
+  watchlists: Watchlist[];
+  onSelectCompany: (symbol: string) => void;
+  onRemoveSymbol: (watchlistId: string, symbol: string) => void;
+  onCreateWatchlist: (name: string, description: string) => void;
+  onOpenPeerComparison?: (symbols: string[]) => void;
+}
+
+export function WatchlistsView({
+  watchlists,
+  onSelectCompany,
+  onRemoveSymbol,
+  onCreateWatchlist,
+  onOpenPeerComparison,
+}: WatchlistsViewProps) {
+  const [activeWatchlistId, setActiveWatchlistId] = useState<string>(
+    watchlists[0]?.id || ''
+  );
+  const [newWlModalOpen, setNewWlModalOpen] = useState(false);
+  const [newWlName, setNewWlName] = useState('');
+  const [newWlDesc, setNewWlDesc] = useState('');
+
+  const activeWatchlist = watchlists.find((w) => w.id === activeWatchlistId) || watchlists[0];
+
+  const watchlistCompanies: CompanyFundamental[] = (activeWatchlist?.symbols || [])
+    .map((sym) => MASTER_COMPANIES.find((c) => c.symbol === sym))
+    .filter(Boolean) as CompanyFundamental[];
+
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newWlName.trim()) return;
+    onCreateWatchlist(newWlName.trim(), newWlDesc.trim());
+    setNewWlName('');
+    setNewWlDesc('');
+    setNewWlModalOpen(false);
+  };
+
+  return (
+    <div className="flex flex-col gap-6 animate-in fade-in duration-150">
+      {/* Header bar */}
+      <div className="p-6 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+            <h2 className="mono text-[18px] sm:text-[22px] font-black inst-card-text uppercase tracking-wide">
+              Institutional Watchlist Monitor
+            </h2>
+          </div>
+          <p className="text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">
+            Track fundamental health and valuation drift across your curated conviction holdings.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          {onOpenPeerComparison && watchlistCompanies.length >= 2 && (
+            <button
+              type="button"
+              onClick={() => onOpenPeerComparison(watchlistCompanies.map((c) => c.symbol))}
+              className="px-3.5 py-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] mono text-[12.5px] font-bold text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 transition-all shadow-xs"
+            >
+              Compare All Watchlist ⇄
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setNewWlModalOpen(true)}
+            className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 mono text-[12.5px] font-black hover:bg-emerald-400 transition-colors shadow-xs"
+          >
+            + New Watchlist
+          </button>
+        </div>
+      </div>
+
+      {/* Watchlist Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {watchlists.map((wl) => (
+          <button
+            key={wl.id}
+            onClick={() => setActiveWatchlistId(wl.id)}
+            className={`px-4 py-2 rounded-xl text-[12.5px] mono font-bold whitespace-nowrap transition-all ${
+              activeWatchlist?.id === wl.id
+                ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-white'
+            }`}
+          >
+            {wl.name} ({wl.symbols.length})
+          </button>
+        ))}
+      </div>
+
+      {/* Watchlist Table */}
+      <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left mono text-[13px]">
+            <thead>
+              <tr className="border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] text-[11px] font-black uppercase">
+                <th className="py-3 px-4">Company</th>
+                <th className="py-3 px-4 text-right">Current Price</th>
+                <th className="py-3 px-4 text-right">Today</th>
+                <th className="py-3 px-4 text-right">P/E</th>
+                <th className="py-3 px-4 text-right">ROCE %</th>
+                <th className="py-3 px-4 text-right">ROE %</th>
+                <th className="py-3 px-4 text-right">3Y Sales CAGR</th>
+                <th className="py-3 px-4 text-right">Debt / Eq</th>
+                <th className="py-3 px-4 text-right">Div Yield</th>
+                <th className="py-3 px-4 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--theme-card-border)]/50 tabular-nums">
+              {watchlistCompanies.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="py-12 text-center text-[var(--theme-card-text-muted)]">
+                    <p className="mono text-[14px] font-bold text-slate-400 mb-1">
+                      This watchlist is empty
+                    </p>
+                    <p className="text-[12px] opacity-70">
+                      Use the Screener results table to star and track companies here.
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                watchlistCompanies.map((comp) => (
+                  <tr key={comp.id} className="hover:bg-emerald-500/5 transition-colors group">
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onSelectCompany(comp.symbol)}
+                          className="font-black text-[13.5px] text-[var(--theme-card-text)] group-hover:text-emerald-400 hover:underline transition-colors text-left"
+                        >
+                          {comp.symbol}
+                        </button>
+                        <span className="text-[12px] text-[var(--theme-card-text-muted)] font-bold">
+                          {comp.name}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="py-3 px-4 text-right font-black text-white">
+                      {comp.currencySymbol}{comp.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+
+                    <td className={`py-3 px-4 text-right font-bold ${comp.priceChangePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {comp.priceChangePct >= 0 ? '+' : ''}{comp.priceChangePct.toFixed(2)}%
+                    </td>
+
+                    <td className="py-3 px-4 text-right font-medium">
+                      {comp.pe ? `${comp.pe.toFixed(1)}x` : '—'}
+                    </td>
+
+                    <td className="py-3 px-4 text-right font-bold text-emerald-400">
+                      {comp.roce ? `${comp.roce.toFixed(1)}%` : '—'}
+                    </td>
+
+                    <td className="py-3 px-4 text-right font-bold text-white">
+                      {comp.roe ? `${comp.roe.toFixed(1)}%` : '—'}
+                    </td>
+
+                    <td className="py-3 px-4 text-right font-medium">
+                      {comp.salesGrowth3Y ? `${comp.salesGrowth3Y.toFixed(1)}%` : '—'}
+                    </td>
+
+                    <td className="py-3 px-4 text-right font-medium">
+                      {comp.debtToEquity !== null ? `${comp.debtToEquity.toFixed(2)}x` : '—'}
+                    </td>
+
+                    <td className="py-3 px-4 text-right font-medium">
+                      {comp.dividendYield ? `${comp.dividendYield.toFixed(2)}%` : '—'}
+                    </td>
+
+                    <td className="py-3 px-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onSelectCompany(comp.symbol)}
+                          className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-emerald-400 text-[11px] font-bold hover:border-emerald-500 transition-all"
+                        >
+                          Analyze
+                        </button>
+
+                        <Link
+                          href={`/chart/${comp.symbol}?market=${comp.market}`}
+                          className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] text-[11px] font-bold hover:text-white transition-all"
+                        >
+                          Chart ↗
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => onRemoveSymbol(activeWatchlist.id, comp.symbol)}
+                          className="p-1 text-rose-400 hover:text-rose-300 text-xs"
+                          title="Remove from Watchlist"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* New Watchlist Modal */}
+      {newWlModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border-2 terminal-page-panel p-6 bg-[var(--theme-card-bg)] shadow-2xl">
+            <h3 className="mono text-[16px] font-black inst-card-text uppercase tracking-wider mb-4">
+              Create New Watchlist
+            </h3>
+            <form onSubmit={handleCreateSubmit} className="flex flex-col gap-3.5">
+              <div>
+                <label className="block mono text-[12px] font-bold text-[var(--theme-card-text-muted)] uppercase mb-1">
+                  Watchlist Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Turnaround Radar"
+                  value={newWlName}
+                  onChange={(e) => setNewWlName(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl mono text-[13px] border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block mono text-[12px] font-bold text-[var(--theme-card-text-muted)] uppercase mb-1">
+                  Description
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Companies under recovery observation"
+                  value={newWlDesc}
+                  onChange={(e) => setNewWlDesc(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl mono text-[13px] border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setNewWlModalOpen(false)}
+                  className="px-4 py-2 mono text-[12px] text-[var(--theme-card-text-muted)] hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 mono text-[12px] font-black hover:bg-emerald-400"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
