@@ -175,18 +175,18 @@ export default function AboutPage() {
             </h1>
 
             <p className="text-[17px] sm:text-[19px] max-w-2xl mx-auto leading-relaxed font-medium page-subtitle mb-4">
-              <strong className="font-bold text-emerald-500">Intelligence Beyond the Noise.</strong> The premier market intelligence platform engineered to revolutionize how you navigate markets.
+              The premier market intelligence platform engineered to revolutionize how you navigate markets.
             </p>
 
             <p className="text-[15px] sm:text-[16px] max-w-2xl mx-auto leading-relaxed font-normal page-subtitle mb-8 opacity-90">
-              Market Intelligence MI- 007 delivers institutional-grade market intelligence directly to retail investors, day traders, and portfolio managers worldwide.
+              MARKET INTELLIGENCE MI-007 delivers institutional-grade market intelligence directly to retail investors, day traders, and portfolio managers worldwide.
             </p>
 
             {/* Informational & Risk Disclaimer Banner */}
             <div className="mx-auto max-w-2xl rounded-2xl border inst-card p-4 shadow-md text-left flex items-start gap-3.5">
               <Icon3D name="info" size="sm" glowColor="rgba(2, 132, 199, 0.4)" />
               <p className="text-xs sm:text-[13px] inst-card-text leading-relaxed font-medium">
-                <strong className="font-bold text-emerald-500">Important Notice:</strong> Market Intelligence MI- 007 is a technology platform built purely for the purpose of study and information, empowering users to make their own decisions at their own risks.
+                <strong className="font-bold text-emerald-500">Important Notice:</strong> MARKET INTELLIGENCE MI-007 is a technology platform built purely for the purpose of study and information, empowering users to make their own decisions at their own risks.
               </p>
             </div>
           </div>
@@ -380,7 +380,7 @@ export default function AboutPage() {
                 <div className="h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center">
                   <Falcon3DLogo
                     src="/images/logo-falcon-transparent.png"
-                    alt="Market Intelligence MI- 007"
+                    alt="MARKET INTELLIGENCE MI-007"
                     width={80}
                     height={80}
                     className="w-full h-full object-contain"
@@ -391,7 +391,7 @@ export default function AboutPage() {
                 &ldquo;The best trading decisions are made not on emotion, but on the precise mathematical
                 analysis of price, volume, and order flow — across every market on earth.&rdquo;
               </blockquote>
-              <p className="mt-4 inst-card-text-muted text-sm font-medium">— Market Intelligence MI- 007 Leadership Team</p>
+              <p className="mt-4 inst-card-text-muted text-sm font-medium">— MARKET INTELLIGENCE MI-007 Leadership Team</p>
             </div>
           </div>
         </section>
