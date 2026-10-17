@@ -77,17 +77,6 @@ const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number;
   { symbol: 'META', price: 733.40, change: 9.60, changePct: 1.33 },
   { symbol: 'AMZN', price: 250.00, change: -1.05, changePct: -0.42 },
   { symbol: 'GOOGL', price: 340.60, change: 2.30, changePct: 0.68 },
-  { symbol: 'NFLX', price: 705.30, change: 8.60, changePct: 1.23 },
-  { symbol: 'AMD', price: 550.20, change: 9.80, changePct: 1.81 },
-  { symbol: 'AVGO', price: 329.40, change: 5.90, changePct: 1.83 },
-  { symbol: 'JPM', price: 337.50, change: -1.80, changePct: -0.53 },
-  { symbol: 'LLY', price: 1256.80, change: 18.30, changePct: 1.48 },
-  { symbol: 'COST', price: 989.10, change: 5.00, changePct: 0.51 },
-  { symbol: 'COIN', price: 173.20, change: 5.50, changePct: 3.28 },
-  { symbol: 'XOM', price: 174.60, change: -0.60, changePct: -0.34 },
-  { symbol: 'DIS', price: 110.60, change: 0.80, changePct: 0.73 },
-  { symbol: 'WMT', price: 118.80, change: 0.50, changePct: 0.42 },
-  { symbol: 'V', price: 402.70, change: 1.60, changePct: 0.40 },
 
   // UAE
   { symbol: 'DFMGI', price: 4850.00, change: 20.60, changePct: 0.43 },
