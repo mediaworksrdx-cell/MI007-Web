@@ -25,9 +25,9 @@ export class TickSimulator {
 
   private getBasePrice(): number {
     const prices: Record<MarketType, Record<string, number>> = {
-      INDIA: { NIFTY: 24850, BANKNIFTY: 53200, RELIANCE: 2980, TCS: 4250, HDFCBANK: 1785 },
-      USA: { SPX: 5480, NDX: 19200, AAPL: 228, NVDA: 875, TSLA: 248 },
-      UAE: { DFMGI: 4320, ADXGI: 9850, EMAAR: 8.45, FAB: 13.80, DEWA: 2.92 },
+      INDIA: { NIFTY: 23146, BANKNIFTY: 55844, RELIANCE: 1211, TCS: 2465, HDFCBANK: 729 },
+      USA: { SPX: 7659, NDX: 29188, QQQ: 715, AAPL: 344, NVDA: 214, TSLA: 355 },
+      UAE: { DFMGI: 4850, ADXGI: 9250, EMAAR: 8.45, FAB: 13.80, DEWA: 2.92 },
     };
     return prices[this.options.market]?.[this.options.symbol] ?? 1000;
   }
