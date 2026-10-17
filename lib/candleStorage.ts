@@ -153,13 +153,22 @@ export function mergeCandleArrays(base: Candle[], incoming: Candle[], timeframeM
       const bTime = getBucket(c.openTime);
       const existing = candleMap.get(bTime);
       if (existing) {
-        candleMap.set(bTime, {
-          ...existing,
-          close: c.close,
-          high: Math.max(existing.high, c.high),
-          low: Math.min(existing.low, c.low),
-          volume: Math.max(existing.volume, c.volume),
-        });
+        // Guard against scale mismatch: if existing and incoming prices diverge by > 25% or existing is corrupt,
+        // incoming authoritative candle overwrites existing instead of combining with Math.max/min
+        const ratio = existing.close > 0 ? c.close / existing.close : 1;
+        const isExistingCorrupt = (existing.high - existing.low) / Math.max(1, existing.low) > 0.25;
+        if (ratio < 0.75 || ratio > 1.35 || isExistingCorrupt) {
+          candleMap.set(bTime, { ...c, openTime: bTime });
+        } else {
+          candleMap.set(bTime, {
+            openTime: bTime,
+            open: existing.open > 0 ? existing.open : c.open,
+            close: c.close,
+            high: Math.max(existing.high, c.high),
+            low: Math.min(existing.low, c.low),
+            volume: Math.max(existing.volume, c.volume),
+          });
+        }
       } else {
         candleMap.set(bTime, { ...c, openTime: bTime });
       }

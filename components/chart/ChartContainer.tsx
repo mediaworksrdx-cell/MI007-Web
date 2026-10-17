@@ -60,10 +60,10 @@ function sanitizeCandleScale(candles: Candle[], targetPrice: number): Candle[] {
   const sortedCloses = [...valid].map(c => c.close).sort((a, b) => a - b);
   const medianPrice = sortedCloses[Math.floor(sortedCloses.length / 2)];
 
-  // Case A: The whole series is scaled differently (e.g. 1000 fallback vs 55000 live)
+  // Case A: Rebase series if the baseline diverges from target price by > 10%
   const seriesRatio = targetPrice / medianPrice;
   let rebased = valid;
-  if (seriesRatio < 0.4 || seriesRatio > 2.5) {
+  if (seriesRatio < 0.85 || seriesRatio > 1.18) {
     rebased = valid.map(c => ({
       ...c,
       open: Number((c.open * seriesRatio).toFixed(2)),
@@ -73,11 +73,34 @@ function sanitizeCandleScale(candles: Candle[], targetPrice: number): Candle[] {
     }));
   }
 
-  // Case B: Filter out individual rogue outlier candles whose low/high are severely dislocated (e.g. low=998 while index is 55000)
-  const minAcceptable = targetPrice * 0.4;
-  const maxAcceptable = targetPrice * 2.5;
-  return rebased.filter(c => {
-    return c.low >= minAcceptable && c.high <= maxAcceptable && c.open >= minAcceptable && c.close >= minAcceptable;
+  // Case B: Filter out individual rogue outlier candles and repair Frankenstein spikes
+  // Acceptable price corridor: ±25% of target price
+  const minAcceptable = targetPrice * 0.75;
+  const maxAcceptable = targetPrice * 1.30;
+
+  const filtered = rebased.filter(c => {
+    // Both open and close must be within realistic boundary
+    if (c.open < minAcceptable || c.open > maxAcceptable) return false;
+    if (c.close < minAcceptable || c.close > maxAcceptable) return false;
+    // Discard any candle whose low or high is wildly detached
+    if (c.low < minAcceptable * 0.85 || c.high > maxAcceptable * 1.15) return false;
+    return true;
+  });
+
+  // Self-heal Frankenstein spikes: if (high - low) / low exceeds 12%, clamp wicks to candle body ± 2%
+  return filtered.map(c => {
+    const spread = (c.high - c.low) / Math.max(1, c.low);
+    if (spread > 0.12) {
+      const top = Math.max(c.open, c.close);
+      const bottom = Math.min(c.open, c.close);
+      const maxWick = top * 0.02;
+      return {
+        ...c,
+        high: Number((top + maxWick).toFixed(2)),
+        low: Number(Math.max(1, bottom - maxWick).toFixed(2)),
+      };
+    }
+    return c;
   });
 }
 
@@ -179,16 +202,20 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             if (prev && prev.length > 0) {
               const prevLast = prev[prev.length - 1];
               const mergedLast = sanitizedMerged[sanitizedMerged.length - 1];
-              // If prev has an active live candle for the same bucket, preserve the live close/high/low
+              // If prev has an active live candle for the same bucket, preserve the live close/high/low only if on matching scale
               if (prevLast && mergedLast && prevLast.openTime === mergedLast.openTime && prevLast.close > 0) {
-                const preservedMerged = [...sanitizedMerged];
-                preservedMerged[preservedMerged.length - 1] = {
-                  ...mergedLast,
-                  close: prevLast.close,
-                  high: Math.max(mergedLast.high, prevLast.high),
-                  low: Math.min(mergedLast.low, prevLast.low),
-                };
-                return preservedMerged;
+                const ratio = prevLast.close / mergedLast.close;
+                if (ratio >= 0.85 && ratio <= 1.18) {
+                  const liveClose = prevLast.close;
+                  const preservedMerged = [...sanitizedMerged];
+                  preservedMerged[preservedMerged.length - 1] = {
+                    ...mergedLast,
+                    close: liveClose,
+                    high: Math.min(Math.max(mergedLast.high, liveClose), Number((liveClose * 1.05).toFixed(2))),
+                    low: Math.max(Math.min(mergedLast.low, liveClose), Number((liveClose * 0.95).toFixed(2))),
+                  };
+                  return preservedMerged;
+                }
               }
             }
             return sanitizedMerged;
@@ -246,11 +273,11 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           const currentBucketOpenTime = Math.floor(now / tfMs) * tfMs;
           const lastCandle = prev[prev.length - 1];
 
-          // Scale guard: if existing candles are severely dislocated from live tick price (e.g. 1000 fallback vs 55568 live)
+          // Scale guard: if existing candles are dislocated from live tick price
           let baseCandles = prev;
           if (lastCandle && lastCandle.close > 0 && tick.price > 0) {
             const ratio = tick.price / lastCandle.close;
-            if (ratio < 0.4 || ratio > 2.5) {
+            if (ratio < 0.85 || ratio > 1.18) {
               baseCandles = prev.map(c => ({
                 ...c,
                 open: Number((c.open * ratio).toFixed(2)),
@@ -267,11 +294,15 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           // Case 1: Tick falls into currently active bucket
           if (currentLast.openTime === currentBucketOpenTime) {
             const rawLow = currentLast.low;
-            const safeLow = (rawLow <= 0 || rawLow < tick.price * 0.4 || rawLow > tick.price * 2.5) ? tick.price : Math.min(rawLow, tick.price);
+            const safeLow = (rawLow <= 0 || rawLow < tick.price * 0.85 || rawLow > tick.price * 1.18)
+              ? tick.price
+              : Math.max(Math.min(rawLow, tick.price), Number((tick.price * 0.95).toFixed(2)));
             const rawHigh = currentLast.high;
-            const safeHigh = (rawHigh <= 0 || rawHigh < tick.price * 0.4 || rawHigh > tick.price * 2.5) ? tick.price : Math.max(rawHigh, tick.price);
+            const safeHigh = (rawHigh <= 0 || rawHigh < tick.price * 0.85 || rawHigh > tick.price * 1.18)
+              ? tick.price
+              : Math.min(Math.max(rawHigh, tick.price), Number((tick.price * 1.05).toFixed(2)));
             const rawOpen = currentLast.open;
-            const safeOpen = (rawOpen <= 0 || rawOpen < tick.price * 0.4 || rawOpen > tick.price * 2.5) ? tick.price : rawOpen;
+            const safeOpen = (rawOpen <= 0 || rawOpen < tick.price * 0.85 || rawOpen > tick.price * 1.18) ? tick.price : rawOpen;
             const updated: Candle = {
               ...currentLast,
               open: safeOpen,
@@ -284,12 +315,12 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             next[next.length - 1] = updated;
           } else if (currentBucketOpenTime > currentLast.openTime) {
             // Case 2: New time bucket started — start ONE single new candle stamped at currentBucketOpenTime
-            const safeOpen = (currentLast.close <= 0 || currentLast.close < tick.price * 0.4 || currentLast.close > tick.price * 2.5) ? tick.price : currentLast.close;
+            const safeOpen = (currentLast.close <= 0 || currentLast.close < tick.price * 0.85 || currentLast.close > tick.price * 1.18) ? tick.price : currentLast.close;
             const newBar: Candle = {
               openTime: currentBucketOpenTime,
               open: safeOpen,
-              high: Math.max(safeOpen, tick.price),
-              low: Math.min(safeOpen, tick.price),
+              high: Math.min(Math.max(safeOpen, tick.price), Number((tick.price * 1.05).toFixed(2))),
+              low: Math.max(Math.min(safeOpen, tick.price), Number((tick.price * 0.95).toFixed(2))),
               close: tick.price,
               volume: tick.volume > 0 ? tick.volume : 1,
             };
@@ -297,9 +328,9 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           } else {
             // Case 3: Prior/matching sub-bucket update
             const rawLow = currentLast.low;
-            const safeLow = (rawLow <= 0 || rawLow < tick.price * 0.4 || rawLow > tick.price * 2.5) ? tick.price : Math.min(rawLow, tick.price);
+            const safeLow = (rawLow <= 0 || rawLow < tick.price * 0.85 || rawLow > tick.price * 1.18) ? tick.price : Math.min(rawLow, tick.price);
             const rawHigh = currentLast.high;
-            const safeHigh = (rawHigh <= 0 || rawHigh < tick.price * 0.4 || rawHigh > tick.price * 2.5) ? tick.price : Math.max(rawHigh, tick.price);
+            const safeHigh = (rawHigh <= 0 || rawHigh < tick.price * 0.85 || rawHigh > tick.price * 1.18) ? tick.price : Math.max(rawHigh, tick.price);
             const updated: Candle = {
               ...currentLast,
               close: tick.price,

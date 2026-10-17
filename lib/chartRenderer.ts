@@ -1004,8 +1004,8 @@ export function renderChart(
       const effectiveClose = (isLastBar && options.currentPriceOverride && options.currentPriceOverride > 0)
         ? options.currentPriceOverride
         : c.close;
-      const effectiveHigh = isLastBar ? Math.max(c.high, effectiveClose) : c.high;
-      const effectiveLow = isLastBar ? Math.min(c.low, effectiveClose) : c.low;
+      const effectiveHigh = isLastBar ? Math.min(Math.max(c.high, effectiveClose), effectiveClose * 1.05) : c.high;
+      const effectiveLow = isLastBar ? Math.max(Math.min(c.low, effectiveClose), effectiveClose * 0.95) : c.low;
       const bull = effectiveClose >= c.open;
       const color = bull ? BULL : BEAR;
       const cx = li * candleW + candleW / 2;
