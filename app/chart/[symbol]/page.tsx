@@ -14,7 +14,7 @@ interface ChartPageProps {
 
 const CRYPTO_SET = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX']);
 const USA_SET = new Set([
-  'SPX', 'NDX', 'DJI', 'QQQ',
+  'SPX', 'NDX', 'DJI', 'VIX', 'VIXY', 'QQQ',
   'AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'GOOG',
   'S&P 500', 'NASDAQ 100', 'DOW JONES'
 ]);

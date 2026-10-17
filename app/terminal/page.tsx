@@ -40,7 +40,7 @@ const USA_INDICES = [
   { symbol: 'SPX', name: 'S&P 500', base: 7659.40, changePct: 0.51 },
   { symbol: 'NDX', name: 'NASDAQ 100', base: 29187.50, changePct: 0.57 },
   { symbol: 'DJI', name: 'DOW JONES', base: 52002.40, changePct: -0.16 },
-  { symbol: 'QQQ', name: 'Invesco QQQ Trust', base: 715.20, changePct: 0.76 },
+  { symbol: 'VIX', name: 'Volatility Index', base: 18.40, changePct: -1.25 },
 ];
 
 // USA watchlist (Top 7 Mega-Cap "Magnificent 7")

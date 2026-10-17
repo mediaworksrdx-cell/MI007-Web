@@ -254,7 +254,7 @@ export const MARKETS: Record<MarketType, { label: string; flag: string; currency
     label: 'USA',
     flag: '🇺🇸',
     currency: '$',
-    indices: ['S&P 500', 'NASDAQ 100', 'DOW JONES', 'QQQ'],
+    indices: ['S&P 500', 'NASDAQ 100', 'DOW JONES', 'VIX'],
   },
   INDIA: {
     label: 'INDIA',
@@ -275,7 +275,7 @@ export const INSTRUMENTS: Record<MarketType, Instrument[]> = {
     { symbol: 'SPX', name: 'S&P 500', exchange: 'NYSE', currency: '$', market: 'USA' },
     { symbol: 'NDX', name: 'NASDAQ 100', exchange: 'NASDAQ', currency: '$', market: 'USA' },
     { symbol: 'DJI', name: 'Dow Jones Industrial', exchange: 'NYSE', currency: '$', market: 'USA' },
-    { symbol: 'QQQ', name: 'Invesco QQQ Trust', exchange: 'NASDAQ', currency: '$', market: 'USA' },
+    { symbol: 'VIX', name: 'Volatility Index', exchange: 'CBOE', currency: '$', market: 'USA' },
     { symbol: 'NVDA', name: 'NVIDIA Corp.', exchange: 'NASDAQ', currency: '$', market: 'USA' },
     { symbol: 'AAPL', name: 'Apple Inc.', exchange: 'NASDAQ', currency: '$', market: 'USA' },
     { symbol: 'MSFT', name: 'Microsoft Corporation', exchange: 'NASDAQ', currency: '$', market: 'USA' },

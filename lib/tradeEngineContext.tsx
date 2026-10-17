@@ -69,6 +69,7 @@ const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number;
   { symbol: 'NASDAQ', price: 29187.50, change: 165.20, changePct: 0.57 },
   { symbol: 'DJI', price: 52002.40, change: -85.40, changePct: -0.16 },
   { symbol: 'DOW JONES', price: 52002.40, change: -85.40, changePct: -0.16 },
+  { symbol: 'VIX', price: 18.40, change: -0.25, changePct: -1.25 },
   { symbol: 'QQQ', price: 715.20, change: 5.40, changePct: 0.76 },
   { symbol: 'NVDA', price: 214.10, change: 3.80, changePct: 1.81 },
   { symbol: 'AAPL', price: 343.50, change: 2.20, changePct: 0.64 },
