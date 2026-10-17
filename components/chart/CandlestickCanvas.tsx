@@ -435,10 +435,61 @@ export function CandlestickCanvas({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       />
+      {/* ── Zerodha Kite-style Floating Bottom-Center Zoom Controls Dock ── */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-0.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-full shadow-lg shadow-slate-900/5 px-1 py-0.5 select-none transition-all">
+        {/* Zoom Out (-) */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setZoom(z => Math.max(0.2, +(z / 1.25).toFixed(2)));
+          }}
+          title="Zoom out (-)"
+          aria-label="Zoom out"
+          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+
+        {/* Zoom Level Indicator / Reset */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setZoom(1);
+            setScrollOffset(0);
+          }}
+          title="Reset zoom to 100% and scroll to live"
+          aria-label="Reset zoom"
+          className="px-2 h-7 flex items-center justify-center text-[10px] font-mono font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all cursor-pointer"
+        >
+          {Math.round(zoom * 100)}%
+        </button>
+
+        {/* Zoom In (+) */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setZoom(z => Math.min(5, +(z * 1.25).toFixed(2)));
+          }}
+          title="Zoom in (+)"
+          aria-label="Zoom in"
+          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      </div>
+
       {scrollOffset > 5 && (
         <button
           onClick={() => setScrollOffset(0)}
-          className="absolute bottom-8 right-20 rounded-full border border-slate-300 bg-white/95 px-3 py-1 text-[11px] font-bold text-slate-700 hover:text-emerald-600 hover:border-emerald-500 transition-all font-mono shadow-md"
+          className="absolute bottom-8 right-20 rounded-full border border-slate-300 bg-white/95 px-3 py-1 text-[11px] font-bold text-slate-700 hover:text-emerald-600 hover:border-emerald-500 transition-all font-mono shadow-md cursor-pointer"
         >
           »» LIVE
         </button>
