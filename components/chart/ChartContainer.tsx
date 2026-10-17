@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Timeframe, MarketType, INSTRUMENTS } from '@/lib/types';
-import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels, StrategyPayoffOverlay } from '@/lib/types';
+import type { Candle, ChartType, IndicatorType, IndicatorConfig } from '@/lib/types';
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
 import {
   INDICATOR_DEFAULTS,
@@ -16,6 +16,15 @@ import { getMockCandles, getMockQuote } from '@/lib/mockData';
 import { fetchCandles, areSymbolsEqual } from '@/lib/tradeEngineClient';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { loadStoredCandles, saveStoredCandles, mergeCandleArrays } from '@/lib/candleStorage';
+import {
+  ChartTemplate,
+  getStoredTemplates,
+  saveTemplate,
+  renameTemplate,
+  removeTemplate,
+  getActiveTemplateId,
+  setActiveTemplateId,
+} from '@/lib/chartTemplates';
 import { ChartToolbar } from './ChartToolbar';
 import { CandlestickCanvas } from './CandlestickCanvas';
 import { OHLCVHeader } from './OHLCVHeader';
@@ -32,6 +41,35 @@ const TIMEFRAME_MS: Record<string, number> = {
   '1M': 30 * 86_400_000,
 };
 
+function getExpectedPrice(market: MarketType, symbol: string): number {
+  try {
+    const q = getMockQuote(market, symbol);
+    if (q && q.price > 0) return q.price;
+  } catch {}
+  return 1000;
+}
+
+function sanitizeCandleScale(candles: Candle[], targetPrice: number): Candle[] {
+  if (!candles || candles.length === 0 || targetPrice <= 0) return candles;
+  const lastC = candles[candles.length - 1];
+  if (!lastC || lastC.close <= 0) return candles;
+
+  const ratio = targetPrice / lastC.close;
+  // If ratio is between 0.4 and 2.5, candle scale is consistent with reality
+  if (ratio >= 0.4 && ratio <= 2.5) {
+    return candles;
+  }
+
+  // Severe dislocation (e.g. 1000 fallback vs 55000 live price) — linearly rebase to expected scale
+  return candles.map(c => ({
+    ...c,
+    open: Number((c.open * ratio).toFixed(2)),
+    high: Number((c.high * ratio).toFixed(2)),
+    low: Number((c.low * ratio).toFixed(2)),
+    close: Number((c.close * ratio).toFixed(2)),
+  }));
+}
+
 export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const instruments = INSTRUMENTS[market];
   const [selectedSymbol, setSelectedSymbol] = useState(
@@ -42,15 +80,19 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [activeDrawingTool, setActiveDrawingTool] = useState<DrawingToolType>('NONE');
   const [drawings, setDrawings] = useState<DrawingItem[]>([]);
 
+  // Default clean view: Volume on, but all indicators and overlays off initially
   const [showVolume, setShowVolume] = useState(true);
   const [showVolumePanel, setShowVolumePanel] = useState(false);
-  const [showSmcOverlay, setShowSmcOverlay] = useState(true);
+  const [showSmcOverlay, setShowSmcOverlay] = useState(false);
   const [showVolumeProfile, setShowVolumeProfile] = useState(false);
-  const [showFnoOverlay, setShowFnoOverlay] = useState(false);
-  const [selectedStrategy, setSelectedStrategy] = useState<string>('NONE');
-  const [activeIndicators, setActiveIndicators] = useState<IndicatorType[]>(['EMA']);
+  const [activeIndicators, setActiveIndicators] = useState<IndicatorType[]>([]);
   const [customConfigs, setCustomConfigs] = useState<Partial<Record<IndicatorType, Partial<IndicatorConfig>>>>({});
   const [editingIndicator, setEditingIndicator] = useState<IndicatorType | null>(null);
+
+  // Template System: 5 renameable slots with persistent storage
+  const [templates, setTemplates] = useState<ChartTemplate[]>(() => getStoredTemplates());
+  const [activeTemplateId, setActiveTemplateIdState] = useState<string>(() => getActiveTemplateId());
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
 
   useEffect(() => {
     try {
@@ -96,8 +138,13 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     setIsLoadingCandles(true);
 
     async function loadCandles() {
-      // 1. Instant load from IndexedDB cache
-      const cached = await loadStoredCandles(selectedSymbol, timeframe);
+      const live = getSymbolPrice(selectedSymbol);
+      const expectedPrice = (live && live.price > 0) ? live.price : getExpectedPrice(market, selectedSymbol);
+
+      // 1. Instant load from IndexedDB cache with scale sanitization
+      const rawCached = await loadStoredCandles(selectedSymbol, timeframe);
+      const cached = sanitizeCandleScale(rawCached || [], expectedPrice);
+
       if (!isCancelled && cached && cached.length > 0) {
         setCandles(cached);
         const lastC = cached[cached.length - 1];
@@ -105,25 +152,28 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         setIsLoadingCandles(false);
       }
 
-      // 2. Fetch latest candles from Trade Engine API
-      const engineCandles = await fetchCandles(selectedSymbol, timeframe);
+      // 2. Fetch latest candles from Trade Engine API with scale sanitization
+      const rawEngine = await fetchCandles(selectedSymbol, timeframe);
+      const engineCandles = sanitizeCandleScale(rawEngine || [], expectedPrice);
 
       if (!isCancelled) {
         if (engineCandles && engineCandles.length > 5) {
           const merged = mergeCandleArrays(cached || [], engineCandles);
-          setCandles(merged);
-          const lastC = merged[merged.length - 1];
+          const sanitizedMerged = sanitizeCandleScale(merged, expectedPrice);
+          setCandles(sanitizedMerged);
+          const lastC = sanitizedMerged[sanitizedMerged.length - 1];
           setCurrentPrice(lastC?.close);
           setIsLiveFromEngine(true);
-          // Persist merged dataset to IndexedDB
-          saveStoredCandles(selectedSymbol, timeframe, merged);
+          // Persist sanitized dataset to IndexedDB
+          saveStoredCandles(selectedSymbol, timeframe, sanitizedMerged);
         } else if (!cached || cached.length === 0) {
           // Fallback to high-quality generator if offline or empty
           const fallback = getMockCandles(market, selectedSymbol, timeframe, 300);
-          setCandles(fallback);
-          setCurrentPrice(fallback[fallback.length - 1]?.close);
+          const sanitizedFallback = sanitizeCandleScale(fallback, expectedPrice);
+          setCandles(sanitizedFallback);
+          setCurrentPrice(sanitizedFallback[sanitizedFallback.length - 1]?.close);
           setIsLiveFromEngine(false);
-          saveStoredCandles(selectedSymbol, timeframe, fallback);
+          saveStoredCandles(selectedSymbol, timeframe, sanitizedFallback);
         }
         setIsLoadingCandles(false);
       }
@@ -134,7 +184,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     return () => {
       isCancelled = true;
     };
-  }, [market, selectedSymbol, timeframe]);
+  }, [market, selectedSymbol, timeframe, getSymbolPrice]);
 
   // Track last save timestamp to throttle IndexedDB writes during active ticks
   const lastSaveTimeRef = useRef<number>(0);
@@ -162,39 +212,55 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           const currentBucketOpenTime = Math.floor(now / tfMs) * tfMs;
           const lastCandle = prev[prev.length - 1];
 
+          // Scale guard: if existing candles are severely dislocated from live tick price (e.g. 1000 fallback vs 55568 live)
+          let baseCandles = prev;
+          if (lastCandle && lastCandle.close > 0 && tick.price > 0) {
+            const ratio = tick.price / lastCandle.close;
+            if (ratio < 0.4 || ratio > 2.5) {
+              baseCandles = prev.map(c => ({
+                ...c,
+                open: Number((c.open * ratio).toFixed(2)),
+                high: Number((c.high * ratio).toFixed(2)),
+                low: Number((c.low * ratio).toFixed(2)),
+                close: Number((c.close * ratio).toFixed(2)),
+              }));
+            }
+          }
+
+          const currentLast = baseCandles[baseCandles.length - 1];
           let next: Candle[];
 
           // Case 1: Tick falls into currently active bucket
-          if (lastCandle.openTime === currentBucketOpenTime) {
+          if (currentLast.openTime === currentBucketOpenTime) {
             const updated: Candle = {
-              ...lastCandle,
+              ...currentLast,
               close: tick.price,
-              high: Math.max(lastCandle.high, tick.price),
-              low: Math.min(lastCandle.low, tick.price),
-              volume: lastCandle.volume + (tick.volume > 0 ? tick.volume : 1),
+              high: Math.max(currentLast.high, tick.price),
+              low: Math.min(currentLast.low, tick.price),
+              volume: currentLast.volume + (tick.volume > 0 ? tick.volume : 1),
             };
-            next = [...prev];
+            next = [...baseCandles];
             next[next.length - 1] = updated;
-          } else if (currentBucketOpenTime > lastCandle.openTime) {
+          } else if (currentBucketOpenTime > currentLast.openTime) {
             // Case 2: New time bucket started — start ONE single new candle stamped at currentBucketOpenTime
             const newBar: Candle = {
               openTime: currentBucketOpenTime,
-              open: lastCandle.close,
-              high: Math.max(lastCandle.close, tick.price),
-              low: Math.min(lastCandle.close, tick.price),
+              open: currentLast.close,
+              high: Math.max(currentLast.close, tick.price),
+              low: Math.min(currentLast.close, tick.price),
               close: tick.price,
               volume: tick.volume > 0 ? tick.volume : 1,
             };
-            next = [...prev.slice(-999), newBar];
+            next = [...baseCandles.slice(-999), newBar];
           } else {
             // Case 3: Prior/matching sub-bucket update
             const updated: Candle = {
-              ...lastCandle,
+              ...currentLast,
               close: tick.price,
-              high: Math.max(lastCandle.high, tick.price),
-              low: Math.min(lastCandle.low, tick.price),
+              high: Math.max(currentLast.high, tick.price),
+              low: Math.min(currentLast.low, tick.price),
             };
-            next = [...prev];
+            next = [...baseCandles];
             next[next.length - 1] = updated;
           }
 
@@ -357,6 +423,62 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     });
   }, [selectedSymbol]);
 
+  // Chart Template Action Handlers
+  const handleSelectTemplate = useCallback((tpl: ChartTemplate) => {
+    setActiveTemplateIdState(tpl.id);
+    setActiveTemplateId(tpl.id);
+    setTimeframe(tpl.timeframe);
+    setChartType(tpl.chartType);
+    setActiveIndicators(tpl.activeIndicators);
+    setShowSmcOverlay(tpl.showSmcOverlay);
+    setShowVolumeProfile(tpl.showVolumeProfile);
+    setShowVolume(tpl.showVolume);
+  }, []);
+
+  const handleSaveToTemplate = useCallback((slotId: string) => {
+    const existing = templates.find(t => t.id === slotId);
+    const slotNum = existing?.slotNumber || parseInt(slotId.replace('tpl_', ''), 10) || 1;
+    const updated: ChartTemplate = {
+      id: slotId,
+      slotNumber: slotNum,
+      name: existing?.name || `Template ${slotNum}`,
+      timeframe,
+      chartType,
+      activeIndicators,
+      showSmcOverlay,
+      showVolumeProfile,
+      showVolume,
+      updatedAt: Date.now(),
+    };
+    const savedList = saveTemplate(updated);
+    setTemplates(savedList);
+    setActiveTemplateIdState(slotId);
+    setActiveTemplateId(slotId);
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus('idle'), 2000);
+  }, [timeframe, chartType, activeIndicators, showSmcOverlay, showVolumeProfile, showVolume, templates]);
+
+  const handleSaveChartLayout = useCallback(() => {
+    const slotId = activeTemplateId || 'tpl_1';
+    handleSaveToTemplate(slotId);
+  }, [activeTemplateId, handleSaveToTemplate]);
+
+  const handleRenameTemplate = useCallback((slotId: string, newName: string) => {
+    const updatedList = renameTemplate(slotId, newName);
+    setTemplates(updatedList);
+  }, []);
+
+  const handleRemoveTemplate = useCallback((slotId: string) => {
+    const updatedList = removeTemplate(slotId);
+    setTemplates(updatedList);
+  }, []);
+
+  const handleClearAllIndicators = useCallback(() => {
+    setActiveIndicators([]);
+    setShowSmcOverlay(false);
+    setShowVolumeProfile(false);
+  }, []);
+
   const lastCandle = candles[candles.length - 1] ?? null;
   const quote = useMemo(() => getMockQuote(market, selectedSymbol), [market, selectedSymbol]);
 
@@ -366,66 +488,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const displayChange = livePriceData?.change ?? quote.change;
   const displayChangePct = livePriceData?.changePct ?? quote.changePct;
 
-  // Institutional Options Dealer Walls (Call Wall, Put Wall, Gamma Flip, Max Pain — Parity with Android FnoOverlayLayer)
-  const fnoLevels: FnoOverlayLevels = useMemo(() => {
-    const price = displayPrice || lastCandle?.close || 1000;
-    const strikeStep = price > 50000 ? 1000 : price > 10000 ? 100 : price > 2000 ? 50 : price > 500 ? 20 : price > 100 ? 5 : 1;
-    const baseStrike = Math.round(price / strikeStep) * strikeStep;
 
-    return {
-      callWall: baseStrike + strikeStep * 3,
-      putWall: baseStrike - strikeStep * 3,
-      gammaFlip: baseStrike - strikeStep * 0.5,
-      maxPain: baseStrike - strikeStep,
-      callWallGex: 1.45e9,
-      putWallGex: -1.18e9,
-      totalNetGex: 2.7e8,
-      enabled: showFnoOverlay,
-    };
-  }, [displayPrice, lastCandle?.close, showFnoOverlay]);
-
-  // Options Strategy Payoff Overlay (Bull Call Spread, Bear Put Spread, Long Straddle, Iron Condor — Parity with Android FnoOverlayLayer)
-  const strategyOverlay: StrategyPayoffOverlay | undefined = useMemo(() => {
-    if (!selectedStrategy || selectedStrategy === 'NONE') return undefined;
-    const price = displayPrice || lastCandle?.close || 1000;
-    const step = price > 50000 ? 1000 : price > 10000 ? 100 : price > 2000 ? 50 : price > 500 ? 20 : price > 100 ? 5 : 1;
-    const atm = Math.round(price / step) * step;
-
-    if (selectedStrategy === 'BULL_CALL_SPREAD') {
-      return {
-        enabled: true,
-        strategyName: 'Bull Call Spread',
-        breakevenPoints: [atm + step * 0.4],
-        maxProfitZone: { low: atm + step, high: atm + step * 4 },
-        maxLossZone: { low: atm - step * 4, high: atm },
-      };
-    } else if (selectedStrategy === 'BEAR_PUT_SPREAD') {
-      return {
-        enabled: true,
-        strategyName: 'Bear Put Spread',
-        breakevenPoints: [atm - step * 0.4],
-        maxProfitZone: { low: atm - step * 4, high: atm - step },
-        maxLossZone: { low: atm, high: atm + step * 4 },
-      };
-    } else if (selectedStrategy === 'LONG_STRADDLE') {
-      return {
-        enabled: true,
-        strategyName: 'Long Straddle',
-        breakevenPoints: [atm - step * 1.5, atm + step * 1.5],
-        maxProfitZone: { low: atm + step * 2, high: atm + step * 5 },
-        maxLossZone: { low: atm - step * 0.8, high: atm + step * 0.8 },
-      };
-    } else if (selectedStrategy === 'IRON_CONDOR') {
-      return {
-        enabled: true,
-        strategyName: 'Iron Condor',
-        breakevenPoints: [atm - step * 1.2, atm + step * 1.2],
-        maxProfitZone: { low: atm - step, high: atm + step },
-        maxLossZone: { low: atm - step * 4, high: atm - step * 2 },
-      };
-    }
-    return undefined;
-  }, [selectedStrategy, displayPrice, lastCandle?.close]);
 
   return (
     <div className="flex flex-col h-full rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs relative">
@@ -438,8 +501,6 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         showVolumePanel={showVolumePanel}
         showSmcOverlay={showSmcOverlay}
         showVolumeProfile={showVolumeProfile}
-        showFnoOverlay={showFnoOverlay}
-        selectedStrategy={selectedStrategy}
         activeIndicators={activeIndicators}
         engineStatus={status}
         isLiveFromEngine={isLiveFromEngine}
@@ -447,6 +508,9 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         displayPrice={displayPrice}
         displayChange={displayChange}
         displayChangePct={displayChangePct}
+        templates={templates}
+        activeTemplateId={activeTemplateId}
+        saveStatus={saveStatus}
         onTimeframeChange={setTimeframe}
         onChartTypeChange={setChartType}
         onDrawingToolChange={setActiveDrawingTool}
@@ -456,10 +520,14 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         onToggleVolumePanel={() => setShowVolumePanel(v => !v)}
         onToggleSmcOverlay={() => setShowSmcOverlay(v => !v)}
         onToggleVolumeProfile={() => setShowVolumeProfile(v => !v)}
-        onToggleFnoOverlay={() => setShowFnoOverlay(v => !v)}
-        onSelectStrategy={setSelectedStrategy}
         onToggleIndicator={toggleIndicator}
         onOpenIndicatorSettings={t => setEditingIndicator(t)}
+        onSelectTemplate={handleSelectTemplate}
+        onSaveToTemplate={handleSaveToTemplate}
+        onRenameTemplate={handleRenameTemplate}
+        onRemoveTemplate={handleRemoveTemplate}
+        onSaveChartLayout={handleSaveChartLayout}
+        onClearAllIndicators={handleClearAllIndicators}
       />
 
       {/* ── OHLCV Bar with Symbol context ── */}
@@ -523,9 +591,9 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           showVolumePanel={showVolumePanel}
           showSmcOverlay={showSmcOverlay}
           showVolumeProfile={showVolumeProfile}
-          showFnoOverlay={showFnoOverlay}
-          fnoLevels={fnoLevels}
-          strategyOverlay={strategyOverlay}
+          showFnoOverlay={false}
+          fnoLevels={undefined}
+          strategyOverlay={undefined}
           indicators={indicatorConfigs}
           indicatorResults={indicatorResults}
           currentPriceOverride={displayPrice}

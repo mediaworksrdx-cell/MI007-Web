@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Timeframe, IndicatorType, INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES } from '@/lib/types';
 import type { ChartType } from '@/lib/types';
 import { DrawingToolType } from '@/lib/drawingTypes';
+import { ChartTemplate } from '@/lib/chartTemplates';
 
 const TIMEFRAMES: { value: Timeframe; label: string }[] = [
   { value: '1m',  label: '1m (1 Min)' },
@@ -39,14 +40,6 @@ const DRAWING_TOOLS: { value: DrawingToolType; label: string; icon: string }[] =
   { value: 'TEXT',                label: 'Text Annotation (1 click)', icon: 'T' },
 ];
 
-const STRATEGIES = [
-  { value: 'NONE', label: 'Strategy: None' },
-  { value: 'BULL_CALL_SPREAD', label: 'Bull Call Spread' },
-  { value: 'BEAR_PUT_SPREAD', label: 'Bear Put Spread' },
-  { value: 'LONG_STRADDLE', label: 'Long Straddle' },
-  { value: 'IRON_CONDOR', label: 'Iron Condor' },
-];
-
 interface ChartToolbarProps {
   timeframe: Timeframe;
   chartType: ChartType;
@@ -55,8 +48,6 @@ interface ChartToolbarProps {
   showVolumePanel: boolean;
   showSmcOverlay: boolean;
   showVolumeProfile: boolean;
-  showFnoOverlay?: boolean;
-  selectedStrategy?: string;
   activeIndicators: IndicatorType[];
   engineStatus?: string;
   isLiveFromEngine?: boolean;
@@ -64,6 +55,9 @@ interface ChartToolbarProps {
   displayPrice?: number;
   displayChange?: number;
   displayChangePct?: number;
+  templates: ChartTemplate[];
+  activeTemplateId: string;
+  saveStatus?: 'idle' | 'saved';
   onTimeframeChange: (tf: Timeframe) => void;
   onChartTypeChange: (type: ChartType) => void;
   onDrawingToolChange: (tool: DrawingToolType) => void;
@@ -73,25 +67,31 @@ interface ChartToolbarProps {
   onToggleVolumePanel: () => void;
   onToggleSmcOverlay: () => void;
   onToggleVolumeProfile: () => void;
-  onToggleFnoOverlay?: () => void;
-  onSelectStrategy?: (strategy: string) => void;
   onToggleIndicator: (type: IndicatorType) => void;
   onOpenIndicatorSettings?: (type: IndicatorType) => void;
+  onSelectTemplate: (template: ChartTemplate) => void;
+  onSaveToTemplate: (slotId: string) => void;
+  onRenameTemplate: (slotId: string, newName: string) => void;
+  onRemoveTemplate: (slotId: string) => void;
+  onSaveChartLayout: () => void;
+  onClearAllIndicators?: () => void;
 }
 
 export function ChartToolbar({
   timeframe, chartType, activeDrawingTool,
-  showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile, showFnoOverlay = false,
-  selectedStrategy = 'NONE',
+  showVolume, showVolumePanel: _showVolumePanel, showSmcOverlay, showVolumeProfile,
   activeIndicators,
   engineStatus, isLiveFromEngine, currency = '₹', displayPrice, displayChange, displayChangePct,
+  templates, activeTemplateId, saveStatus = 'idle',
   onTimeframeChange, onChartTypeChange, onDrawingToolChange, onClearDrawings, onUndoDrawing,
-  onToggleVolume, onToggleVolumePanel, onToggleSmcOverlay, onToggleVolumeProfile, onToggleFnoOverlay,
-  onSelectStrategy,
+  onToggleVolume, onToggleVolumePanel: _onToggleVolumePanel, onToggleSmcOverlay, onToggleVolumeProfile,
   onToggleIndicator, onOpenIndicatorSettings,
+  onSelectTemplate, onSaveToTemplate, onRenameTemplate, onRemoveTemplate, onSaveChartLayout, onClearAllIndicators,
 }: ChartToolbarProps) {
-  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'DRAWING' | 'STRATEGY' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'DRAWING' | 'TEMPLATES' | null>(null);
   const [indicatorSearch, setIndicatorSearch] = useState('');
+  const [renamingSlotId, setRenamingSlotId] = useState<string | null>(null);
+  const [renamingValue, setRenamingValue] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menus when clicking outside
@@ -99,6 +99,7 @@ export function ChartToolbar({
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setOpenMenu(null);
+        setRenamingSlotId(null);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -107,6 +108,7 @@ export function ChartToolbar({
 
   const currentChartTypeMeta = CHART_TYPES.find(c => c.value === chartType) || CHART_TYPES[0];
   const currentDrawingMeta = DRAWING_TOOLS.find(d => d.value === activeDrawingTool) || DRAWING_TOOLS[0];
+  const activeTemplate = templates.find(t => t.id === activeTemplateId) || templates[0];
   const isActiveInd = (t: IndicatorType) => activeIndicators.includes(t);
 
   const filteredOverlays = OVERLAY_TYPES.filter(t =>
@@ -116,34 +118,47 @@ export function ChartToolbar({
     INDICATOR_DEFAULTS[t].label.toLowerCase().includes(indicatorSearch.toLowerCase())
   );
 
+  const handleStartRename = (tpl: ChartTemplate, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRenamingSlotId(tpl.id);
+    setRenamingValue(tpl.name);
+  };
+
+  const handleConfirmRename = (tplId: string, e: React.FormEvent | React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (renamingValue.trim()) {
+      onRenameTemplate(tplId, renamingValue.trim());
+    }
+    setRenamingSlotId(null);
+  };
+
   return (
     <div
       ref={menuRef}
-      className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-3 py-2 text-slate-800 text-xs shadow-xs relative z-30"
+      className="flex items-center justify-between border-b border-[var(--theme-page-border)] bg-[var(--theme-card-bg)] px-3 py-1.5 text-xs text-[var(--theme-page-text)] shadow-xs flex-wrap gap-2 relative z-30 select-none"
     >
-      {/* ── Left Controls: Clean Dropdowns ── */}
+      {/* ── Left Controls: Timeframe, Chart Type, Indicators, Drawing, Overlays, Save & Templates ── */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        {/* 1. Timeframe Dropdown */}
+        {/* 1. Timeframe Selector Dropdown */}
         <div className="relative">
           <button
             onClick={() => setOpenMenu(openMenu === 'TF' ? null : 'TF')}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-mono font-bold transition-all ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border font-bold font-mono transition-all ${
               openMenu === 'TF'
-                ? 'border-emerald-600 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600'
-                : 'border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-800'
+                ? 'border-emerald-600 bg-emerald-500/15 text-emerald-400'
+                : 'border-[var(--theme-page-border)] hover:border-emerald-500/50 bg-[var(--theme-card-surface)] text-[var(--theme-page-text)]'
             }`}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
             <span>{timeframe}</span>
             <span className="text-[10px] text-slate-400">▼</span>
           </button>
 
           {openMenu === 'TF' && (
-            <div className="absolute top-full left-0 mt-1.5 w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">Timeframe</div>
+            <div className="absolute top-full left-0 mt-1 w-36 rounded-xl border border-[var(--theme-page-border)] bg-[var(--theme-card-bg)] shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-[var(--theme-page-border)]/50">
+                Timeframe
+              </div>
               {TIMEFRAMES.map(tf => (
                 <button
                   key={tf.value}
@@ -151,38 +166,41 @@ export function ChartToolbar({
                     onTimeframeChange(tf.value);
                     setOpenMenu(null);
                   }}
-                  className={`flex items-center justify-between w-full px-2 py-1.5 rounded-lg text-left font-mono font-semibold transition-colors ${
+                  className={`flex items-center justify-between w-full px-3 py-1.5 text-left text-xs font-mono font-medium transition-colors ${
                     timeframe === tf.value
-                      ? 'bg-emerald-50 text-emerald-700 font-bold'
-                      : 'text-slate-700 hover:bg-slate-50'
+                      ? 'bg-emerald-500/15 text-emerald-400 font-bold'
+                      : 'text-[var(--theme-page-text)] hover:bg-emerald-500/10'
                   }`}
                 >
-                  <span>{tf.value}</span>
-                  {timeframe === tf.value && <span className="text-emerald-600 text-xs">✓</span>}
+                  <span>{tf.label}</span>
+                  {timeframe === tf.value && <span className="text-emerald-400 font-bold">✓</span>}
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        {/* 2. Candles / Chart Type Dropdown */}
+        {/* 2. Chart Type Dropdown */}
         <div className="relative">
           <button
             onClick={() => setOpenMenu(openMenu === 'CANDLES' ? null : 'CANDLES')}
+            title="Chart Type Style"
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
               openMenu === 'CANDLES'
-                ? 'border-emerald-600 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600'
-                : 'border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-800'
+                ? 'border-emerald-600 bg-emerald-500/15 text-emerald-400'
+                : 'border-[var(--theme-page-border)] hover:border-emerald-500/50 bg-[var(--theme-card-surface)] text-[var(--theme-page-text)]'
             }`}
           >
-            <span>{currentChartTypeMeta.icon}</span>
-            <span className="font-bold">{currentChartTypeMeta.label}</span>
+            <span className="font-mono text-sm leading-none">{currentChartTypeMeta.icon}</span>
+            <span className="hidden sm:inline font-bold">{currentChartTypeMeta.label}</span>
             <span className="text-[10px] text-slate-400">▼</span>
           </button>
 
           {openMenu === 'CANDLES' && (
-            <div className="absolute top-full left-0 mt-1.5 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">Chart Style</div>
+            <div className="absolute top-full left-0 mt-1 w-44 rounded-xl border border-[var(--theme-page-border)] bg-[var(--theme-card-bg)] shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-[var(--theme-page-border)]/50">
+                Chart Style
+              </div>
               {CHART_TYPES.map(ct => (
                 <button
                   key={ct.value}
@@ -190,31 +208,31 @@ export function ChartToolbar({
                     onChartTypeChange(ct.value);
                     setOpenMenu(null);
                   }}
-                  className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-left font-medium transition-colors ${
+                  className={`flex items-center gap-2.5 w-full px-3 py-1.5 text-left text-xs font-medium transition-colors ${
                     chartType === ct.value
-                      ? 'bg-emerald-50 text-emerald-700 font-bold'
-                      : 'text-slate-700 hover:bg-slate-50'
+                      ? 'bg-emerald-500/15 text-emerald-400 font-bold'
+                      : 'text-[var(--theme-page-text)] hover:bg-emerald-500/10'
                   }`}
                 >
-                  <span>{ct.icon}</span>
+                  <span className="font-mono text-sm w-4 text-center">{ct.icon}</span>
                   <span className="flex-1">{ct.label}</span>
-                  {chartType === ct.value && <span className="text-emerald-600 text-xs">✓</span>}
+                  {chartType === ct.value && <span className="text-emerald-400 text-xs">✓</span>}
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        <div className="h-4 w-px bg-slate-200 mx-0.5" />
+        <div className="h-4 w-px bg-[var(--theme-page-border)] mx-0.5" />
 
-        {/* 3. Indicators Dropdown & Modal Menu */}
+        {/* 3. Indicators Dropdown Menu */}
         <div className="relative">
           <button
             onClick={() => setOpenMenu(openMenu === 'INDICATORS' ? null : 'INDICATORS')}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
               openMenu === 'INDICATORS' || activeIndicators.length > 0
-                ? 'border-emerald-600 bg-emerald-50/70 text-emerald-800'
-                : 'border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-800'
+                ? 'border-emerald-600 bg-emerald-500/15 text-emerald-400'
+                : 'border-[var(--theme-page-border)] hover:border-emerald-500/50 bg-[var(--theme-card-surface)] text-[var(--theme-page-text)]'
             }`}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -232,15 +250,15 @@ export function ChartToolbar({
           </button>
 
           {openMenu === 'INDICATORS' && (
-            <div className="absolute top-full left-0 mt-1.5 w-72 rounded-xl border border-slate-200 bg-white shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100 max-h-96 flex flex-col overflow-hidden">
+            <div className="absolute top-full left-0 mt-1.5 w-72 rounded-xl border border-[var(--theme-page-border)] bg-[var(--theme-card-bg)] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100 max-h-96 flex flex-col overflow-hidden">
               {/* Search */}
-              <div className="p-2 border-b border-slate-100 bg-slate-50">
+              <div className="p-2 border-b border-[var(--theme-page-border)] bg-[var(--theme-card-surface)]">
                 <input
                   type="text"
                   placeholder="Search indicators..."
                   value={indicatorSearch}
                   onChange={e => setIndicatorSearch(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-emerald-600"
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-page-border)] bg-[var(--theme-card-bg)] text-xs text-[var(--theme-page-text)] placeholder-slate-400 focus:outline-none focus:border-emerald-600"
                 />
               </div>
 
@@ -259,7 +277,7 @@ export function ChartToolbar({
                           <div
                             key={t}
                             className={`flex items-center justify-between px-2 py-1 rounded-lg transition-colors ${
-                              active ? 'bg-emerald-50/80 text-emerald-900 font-bold' : 'hover:bg-slate-50 text-slate-700'
+                              active ? 'bg-emerald-500/15 text-emerald-400 font-bold' : 'hover:bg-slate-500/10 text-[var(--theme-page-text)]'
                             }`}
                           >
                             <button
@@ -280,12 +298,9 @@ export function ChartToolbar({
                                     setOpenMenu(null);
                                   }}
                                   title="Settings"
-                                  className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200/60"
+                                  className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-500/20"
                                 >
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="3" />
-                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                                  </svg>
+                                  ⚙
                                 </button>
                               )}
                               <input
@@ -315,7 +330,7 @@ export function ChartToolbar({
                           <div
                             key={t}
                             className={`flex items-center justify-between px-2 py-1 rounded-lg transition-colors ${
-                              active ? 'bg-emerald-50/80 text-emerald-900 font-bold' : 'hover:bg-slate-50 text-slate-700'
+                              active ? 'bg-emerald-500/15 text-emerald-400 font-bold' : 'hover:bg-slate-500/10 text-[var(--theme-page-text)]'
                             }`}
                           >
                             <button
@@ -336,12 +351,9 @@ export function ChartToolbar({
                                     setOpenMenu(null);
                                   }}
                                   title="Settings"
-                                  className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200/60"
+                                  className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-200 hover:bg-slate-500/20"
                                 >
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="3" />
-                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                                  </svg>
+                                  ⚙
                                 </button>
                               )}
                               <input
@@ -358,81 +370,72 @@ export function ChartToolbar({
                   </div>
                 )}
               </div>
+
+              {activeIndicators.length > 0 && onClearAllIndicators && (
+                <div className="p-2 border-t border-[var(--theme-page-border)] bg-[var(--theme-card-surface)]">
+                  <button
+                    onClick={() => {
+                      onClearAllIndicators();
+                      setOpenMenu(null);
+                    }}
+                    className="w-full py-1 text-center font-bold text-xs text-rose-500 hover:bg-rose-500/10 rounded transition-colors"
+                  >
+                    Clear All Indicators
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* 4. Pan & Crosshair Primary Tool Button */}
-        <button
-          onClick={() => {
-            onDrawingToolChange('NONE');
-            setOpenMenu(null);
-          }}
-          title="Pan & Crosshair Mode (Esc)"
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
-            activeDrawingTool === 'NONE'
-              ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-1 ring-emerald-600 font-bold'
-              : 'border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-800'
-          }`}
-        >
-          <span className="font-mono text-sm leading-none font-bold text-emerald-600">✛</span>
-          <span className="font-bold text-xs">Pan & Crosshair</span>
-        </button>
-
-        {/* 5. Drawing Tools Dropdown */}
+        {/* 4. Drawing Tools Dropdown */}
         <div className="relative">
           <button
             onClick={() => setOpenMenu(openMenu === 'DRAWING' ? null : 'DRAWING')}
+            title="Drawing Tools"
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
               activeDrawingTool !== 'NONE'
-                ? 'border-blue-600 bg-blue-50 text-blue-800 ring-1 ring-blue-600 font-bold'
-                : 'border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-800'
+                ? 'border-indigo-600 bg-indigo-500/15 text-indigo-400'
+                : 'border-[var(--theme-page-border)] hover:border-emerald-500/50 bg-[var(--theme-card-surface)] text-[var(--theme-page-text)]'
             }`}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 19l7-7 3 3-7 7-3-3z" />
-              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-            </svg>
-            <span className="font-bold text-xs">{activeDrawingTool !== 'NONE' ? currentDrawingMeta.label : 'Draw Tools'}</span>
+            <span className="font-mono text-sm leading-none">{currentDrawingMeta.icon}</span>
+            <span className="hidden md:inline font-bold">
+              {activeDrawingTool === 'NONE' ? 'Draw Tools' : currentDrawingMeta.label.split(' ')[0]}
+            </span>
             <span className="text-[10px] text-slate-400">▼</span>
           </button>
 
           {openMenu === 'DRAWING' && (
-            <div className="absolute top-full left-0 mt-1.5 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">Draw Tools</div>
-              {DRAWING_TOOLS.map(dt => (
+            <div className="absolute top-full left-0 mt-1 w-64 rounded-xl border border-[var(--theme-page-border)] bg-[var(--theme-card-bg)] shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-96 overflow-y-auto">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-[var(--theme-page-border)]/50">
+                Drawing Tools
+              </div>
+              {DRAWING_TOOLS.map(d => (
                 <button
-                  key={dt.value}
+                  key={d.value}
                   onClick={() => {
-                    onDrawingToolChange(dt.value);
+                    onDrawingToolChange(d.value);
                     setOpenMenu(null);
                   }}
-                  className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-left font-medium transition-colors ${
-                    activeDrawingTool === dt.value
-                      ? 'bg-blue-50 text-blue-700 font-bold'
-                      : 'text-slate-700 hover:bg-slate-50'
+                  className={`flex items-center gap-2.5 w-full px-3 py-1.5 text-left text-xs font-medium transition-colors ${
+                    activeDrawingTool === d.value
+                      ? 'bg-indigo-500/15 text-indigo-400 font-bold'
+                      : 'text-[var(--theme-page-text)] hover:bg-indigo-500/10'
                   }`}
                 >
-                  <span className="font-mono">{dt.icon}</span>
-                  <span className="flex-1 text-xs">{dt.label}</span>
-                  {activeDrawingTool === dt.value && <span className="text-blue-600 text-xs">✓</span>}
+                  <span className="font-mono text-sm w-4 text-center">{d.icon}</span>
+                  <span className="flex-1">{d.label}</span>
+                  {activeDrawingTool === d.value && <span className="text-indigo-400 text-xs">✓</span>}
                 </button>
               ))}
-
-              <div className="my-1 border-t border-slate-100" />
+              <div className="h-px bg-[var(--theme-page-border)] my-1" />
               {onUndoDrawing && (
                 <button
-                  onClick={() => {
-                    onUndoDrawing();
-                    setOpenMenu(null);
-                  }}
-                  className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                  onClick={() => onUndoDrawing()}
+                  className="flex items-center gap-2 w-full px-3 py-1.5 text-left text-xs text-[var(--theme-page-text)] hover:bg-slate-500/10 transition-colors"
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="1 4 1 10 7 10" />
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                  </svg>
-                  <span>Undo Last (Ctrl+Z)</span>
+                  <span>Undo Last Drawing (Ctrl+Z)</span>
                 </button>
               )}
               <button
@@ -440,119 +443,243 @@ export function ChartToolbar({
                   onClearDrawings();
                   setOpenMenu(null);
                 }}
-                className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-left text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-left text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-colors"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
                 <span>Clear All Drawings</span>
               </button>
             </div>
           )}
         </div>
 
-        <div className="h-4 w-px bg-slate-200 mx-0.5" />
+        <div className="h-4 w-px bg-[var(--theme-page-border)] mx-0.5" />
 
-        {/* 5. Feature Badges (SMC, VOL, VPVR) */}
+        {/* 5. Optional Clean Overlays (SMC, VOL, VPVR) */}
         <div className="flex items-center gap-1">
           <button
             onClick={onToggleSmcOverlay}
-            className={`px-2 py-1 rounded-md text-[11px] font-bold mono border transition-colors ${
+            title="Toggle Smart Money Concepts (Order Blocks & Equilibrium)"
+            className={`px-2 py-1 rounded-md text-[11px] font-bold mono border transition-colors cursor-pointer ${
               showSmcOverlay
-                ? 'bg-amber-50 border-amber-300 text-amber-800'
-                : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                : 'border-[var(--theme-page-border)] text-slate-400 hover:border-slate-400'
             }`}
           >
             SMC
           </button>
           <button
             onClick={onToggleVolume}
-            className={`px-2 py-1 rounded-md text-[11px] font-bold mono border transition-colors ${
+            title="Toggle Volume Bars"
+            className={`px-2 py-1 rounded-md text-[11px] font-bold mono border transition-colors cursor-pointer ${
               showVolume
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+                : 'border-[var(--theme-page-border)] text-slate-400 hover:border-slate-400'
             }`}
           >
             VOL
           </button>
           <button
             onClick={onToggleVolumeProfile}
-            className={`px-2 py-1 rounded-md text-[11px] font-bold mono border transition-colors ${
+            title="Toggle Volume Profile Visible Range (VPVR)"
+            className={`px-2 py-1 rounded-md text-[11px] font-bold mono border transition-colors cursor-pointer ${
               showVolumeProfile
-                ? 'bg-blue-50 border-blue-300 text-blue-800'
-                : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
+                : 'border-[var(--theme-page-border)] text-slate-400 hover:border-slate-400'
             }`}
           >
             VPVR
           </button>
-          {onToggleFnoOverlay && (
-            <button
-              onClick={onToggleFnoOverlay}
-              title="Toggle Institutional Options Dealer Walls (CW, PW, γ-Flip, Max Pain)"
-              className={`px-2 py-1 rounded-md text-[11px] font-bold mono border transition-colors ${
-                showFnoOverlay
-                  ? 'bg-purple-50 border-purple-300 text-purple-800'
-                  : 'border-slate-200 text-slate-500 hover:border-slate-300'
-              }`}
-            >
-              F&O
-            </button>
-          )}
-          {onSelectStrategy && (
-            <div className="relative">
-              <button
-                onClick={() => setOpenMenu(openMenu === 'STRATEGY' ? null : 'STRATEGY')}
-                title="Options Strategy Payoff Overlay (Profit/Loss Zones & Breakevens)"
-                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold mono border transition-colors ${
-                  selectedStrategy && selectedStrategy !== 'NONE'
-                    ? 'bg-indigo-50 border-indigo-300 text-indigo-800'
-                    : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <circle cx="12" cy="12" r="6" />
-                  <circle cx="12" cy="12" r="2" />
-                </svg>
-                <span>{selectedStrategy && selectedStrategy !== 'NONE' ? selectedStrategy.replace(/_/g, ' ') : 'STRAT'}</span>
-                <span className="text-[9px]">▾</span>
-              </button>
+        </div>
 
-              {openMenu === 'STRATEGY' && (
-                <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-50">
-                  <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Options Strategy Payoff
+        <div className="h-4 w-px bg-[var(--theme-page-border)] mx-0.5" />
+
+        {/* 6. SAVE BUTTON */}
+        <button
+          onClick={onSaveChartLayout}
+          title="Save current chart layout, indicators, and template setup"
+          className={`px-3 py-1.5 rounded-lg border font-bold text-xs mono flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+            saveStatus === 'saved'
+              ? 'border-emerald-500 bg-emerald-500 text-slate-950 font-black'
+              : 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25'
+          }`}
+        >
+          <span>{saveStatus === 'saved' ? '✓' : '💾'}</span>
+          <span>{saveStatus === 'saved' ? 'SAVED' : 'SAVE'}</span>
+        </button>
+
+        {/* 7. TEMPLATES (5 SLOTS — NAME, RENAME, EDIT, REMOVE) */}
+        <div className="relative">
+          <button
+            onClick={() => setOpenMenu(openMenu === 'TEMPLATES' ? null : 'TEMPLATES')}
+            title="5 Chart Templates — Name, Rename, Edit, or Remove"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-bold text-xs mono transition-all shadow-xs cursor-pointer ${
+              openMenu === 'TEMPLATES'
+                ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                : 'border-[var(--theme-page-border)] hover:border-emerald-500/60 bg-[var(--theme-card-surface)] text-[var(--theme-page-text)]'
+            }`}
+          >
+            <span>📑</span>
+            <span className="max-w-[120px] truncate">{activeTemplate?.name || 'Templates'}</span>
+            <span className="text-[10px] text-slate-400">▼</span>
+          </button>
+
+          {openMenu === 'TEMPLATES' && (
+            <div className="absolute top-full left-0 mt-1.5 w-80 sm:w-88 rounded-xl border border-[var(--theme-page-border)] bg-[var(--theme-card-bg)] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100 flex flex-col overflow-hidden">
+              {/* Header */}
+              <div className="px-3.5 py-2.5 border-b border-[var(--theme-page-border)] bg-[var(--theme-card-surface)] flex items-center justify-between">
+                <div>
+                  <div className="mono text-[11px] font-black text-emerald-400 uppercase tracking-wider">
+                    Chart Templates (5 Slots)
                   </div>
-                  {STRATEGIES.map(s => (
-                    <button
-                      key={s.value}
-                      onClick={() => {
-                        onSelectStrategy(s.value);
-                        setOpenMenu(null);
-                      }}
-                      className={`flex items-center justify-between w-full px-3 py-1.5 text-left text-xs font-medium transition-colors ${
-                        (selectedStrategy || 'NONE') === s.value
-                          ? 'bg-indigo-50 text-indigo-700 font-bold'
-                          : 'text-slate-700 hover:bg-slate-50'
+                  <div className="text-[10.5px] text-[var(--theme-page-text)] opacity-70">
+                    Apply, rename, edit with current chart, or remove
+                  </div>
+                </div>
+                <button
+                  onClick={onSaveChartLayout}
+                  className="px-2 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 mono text-[10px] font-bold hover:bg-emerald-500 hover:text-slate-950 transition-colors"
+                  title="Save current state to active template"
+                >
+                  Save Active
+                </button>
+              </div>
+
+              {/* 5 Template Slots */}
+              <div className="p-2 space-y-1.5">
+                {templates.slice(0, 5).map(tpl => {
+                  const isActive = tpl.id === activeTemplateId;
+                  const isRenaming = renamingSlotId === tpl.id;
+
+                  return (
+                    <div
+                      key={tpl.id}
+                      className={`p-2 rounded-xl border transition-all ${
+                        isActive
+                          ? 'border-emerald-500/60 bg-emerald-500/10 shadow-xs'
+                          : 'border-[var(--theme-page-border)]/80 bg-[var(--theme-card-surface)] hover:border-slate-500'
                       }`}
                     >
-                      <span>{s.label}</span>
-                      {(selectedStrategy || 'NONE') === s.value && <span className="text-indigo-600 font-bold">✓</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
+                      {isRenaming ? (
+                        <form
+                          onSubmit={(e) => handleConfirmRename(tpl.id, e)}
+                          className="flex items-center gap-1.5"
+                        >
+                          <input
+                            type="text"
+                            autoFocus
+                            value={renamingValue}
+                            onChange={(e) => setRenamingValue(e.target.value)}
+                            className="flex-1 px-2 py-1 rounded-lg border border-emerald-500 bg-[var(--theme-card-bg)] mono text-xs text-[var(--theme-page-text)] font-bold focus:outline-none"
+                            placeholder="Enter template name..."
+                          />
+                          <button
+                            type="submit"
+                            className="px-2 py-1 rounded bg-emerald-500 text-slate-950 font-black text-xs hover:bg-emerald-400"
+                            title="Save Name"
+                          >
+                            ✓
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRenamingSlotId(null)}
+                            className="px-2 py-1 rounded bg-slate-700 text-slate-200 text-xs hover:bg-slate-600"
+                            title="Cancel"
+                          >
+                            ✕
+                          </button>
+                        </form>
+                      ) : (
+                        <div className="flex items-center justify-between gap-2">
+                          <button
+                            onClick={() => {
+                              onSelectTemplate(tpl);
+                              setOpenMenu(null);
+                            }}
+                            className="flex items-center gap-2.5 text-left flex-1 min-w-0 group cursor-pointer"
+                          >
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-black shrink-0 ${
+                              isActive ? 'bg-emerald-500 text-slate-950' : 'bg-[var(--theme-card-bg)] border border-[var(--theme-page-border)] text-slate-400'
+                            }`}>
+                              {tpl.slotNumber}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`mono text-xs font-black truncate ${
+                                  isActive ? 'text-emerald-400' : 'text-[var(--theme-page-text)] group-hover:text-emerald-400'
+                                }`}>
+                                  {tpl.name}
+                                </span>
+                                {isActive && (
+                                  <span className="mono text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                                    ACTIVE
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mono text-[10px] text-slate-400 truncate">
+                                {tpl.activeIndicators && tpl.activeIndicators.length > 0
+                                  ? `${tpl.activeIndicators.join(', ')} · ${tpl.timeframe}`
+                                  : `Clean Price Action · ${tpl.timeframe}`}
+                              </div>
+                            </div>
+                          </button>
+
+                          {/* Action Buttons: Save Current, Rename, Remove */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => {
+                                onSaveToTemplate(tpl.id);
+                                setOpenMenu(null);
+                              }}
+                              title="Update this template with current chart setup"
+                              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 text-xs transition-colors cursor-pointer"
+                            >
+                              💾
+                            </button>
+                            <button
+                              onClick={(e) => handleStartRename(tpl, e)}
+                              title="Rename this template"
+                              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 text-xs transition-colors cursor-pointer"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => onRemoveTemplate(tpl.id)}
+                              title="Reset / remove this template"
+                              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 text-xs transition-colors cursor-pointer"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Template Quick Actions */}
+              <div className="p-2 border-t border-[var(--theme-page-border)] bg-[var(--theme-card-surface)] flex items-center justify-between text-[10.5px] mono">
+                <span className="text-slate-400">Total: 5 Slots</span>
+                {onClearAllIndicators && (
+                  <button
+                    onClick={() => {
+                      onClearAllIndicators();
+                      setOpenMenu(null);
+                    }}
+                    className="text-rose-400 hover:underline font-bold"
+                  >
+                    Clear All Indicators
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
       </div>
 
-
-      {/* ── Right Controls: Live Beacon & Quote (Saves vertical space!) ── */}
+      {/* ── Right Controls: Live Beacon & Quote ── */}
       <div className="flex items-center gap-3">
         {/* Beacon */}
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-slate-200 bg-slate-50 text-[11px] font-mono font-bold text-slate-700">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--theme-page-border)] bg-[var(--theme-card-surface)] text-[11px] font-mono font-bold text-[var(--theme-page-text)]">
           <span
             className={`w-2 h-2 rounded-full ${
               engineStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
@@ -564,7 +691,7 @@ export function ChartToolbar({
         {/* Price Tracker */}
         {displayPrice !== undefined && displayPrice > 0 && (
           <div className="flex items-center gap-2 font-mono">
-            <span className="text-[14px] font-black text-slate-900">
+            <span className="text-[14px] font-black text-[var(--theme-page-text)]">
               {currency}
               {displayPrice.toLocaleString(undefined, {
                 minimumFractionDigits: displayPrice < 10 ? 2 : 2,
@@ -574,11 +701,11 @@ export function ChartToolbar({
             {displayChange !== undefined && displayChangePct !== undefined && (
               <span
                 className={`text-[12px] font-bold ${
-                  displayChange >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                  displayChange >= 0 ? 'text-emerald-500' : 'text-rose-500'
                 }`}
               >
                 {displayChange >= 0 ? '+' : ''}
-                {displayChange.toFixed(2)} ({displayChange >= 0 ? '+' : ''}
+                {displayChange.toFixed(2)} ({displayChangePct >= 0 ? '+' : ''}
                 {displayChangePct.toFixed(2)}%)
               </span>
             )}
