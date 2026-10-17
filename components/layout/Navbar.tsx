@@ -19,13 +19,16 @@ interface NavbarProps {
 }
 
 const PUBLIC_NAV_LINKS = [
-  { href: '/',        label: 'Home' },
-  { href: '/about',   label: 'About' },
-  { href: '/contact', label: 'Contact' },
+  { href: '/',             label: 'Home' },
+  { href: '/terminal',     label: 'Cockpit' },
+  { href: '/chart/NIFTY',  label: 'Charts' },
+  { href: '/about',        label: 'About' },
+  { href: '/contact',      label: 'Contact' },
 ];
 
 const TERMINAL_NAV_LINKS = [
   { href: '/terminal',          label: 'Market Cockpit' },
+  { href: '/chart/NIFTY',       label: 'Interactive Charts' },
   { href: '/terminal/screener', label: 'Stock Screener' },
 ];
 

@@ -5,6 +5,7 @@ import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevel
 import { isOverlay } from '@/lib/types';
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
 import { renderChart } from '@/lib/chartRenderer';
+import { DrawingQuickBar } from './DrawingQuickBar';
 
 interface CandlestickCanvasProps {
   candles: Candle[];
@@ -23,8 +24,11 @@ interface CandlestickCanvasProps {
   className?: string;
   activeDrawingTool?: DrawingToolType;
   drawings?: DrawingItem[];
+  selectedDrawingId?: string | null;
   onAddDrawing?: (drawing: DrawingItem) => void;
   onUpdateDrawing?: (drawing: DrawingItem) => void;
+  onDeleteDrawing?: (drawingId: string) => void;
+  onSelectDrawing?: (id: string | null) => void;
   onUndoDrawing?: () => void;
   onDrawingToolChange?: (tool: DrawingToolType) => void;
 }
@@ -38,8 +42,11 @@ export function CandlestickCanvas({
   currentPriceOverride, timeframe, className = '',
   activeDrawingTool = 'NONE',
   drawings = [],
+  selectedDrawingId = null,
   onAddDrawing,
   onUpdateDrawing,
+  onDeleteDrawing,
+  onSelectDrawing,
   onUndoDrawing,
   onDrawingToolChange,
 }: CandlestickCanvasProps) {
@@ -51,9 +58,14 @@ export function CandlestickCanvas({
   const [interactionMode, setInteractionMode] = useState<'crosshair' | 'pan'>('crosshair');
   const [isDragging, setIsDragging] = useState(false);
   const [drawingInProgress, setDrawingInProgress] = useState<DrawingItem | null>(null);
+  const [quickBarPos, setQuickBarPos] = useState<{ x: number; y: number } | null>(null);
   const [dpr, setDpr] = useState(1);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [clockTick, setClockTick] = useState(0);
+
+  const selectedDrawing = useMemo(() => {
+    return drawings.find(d => d.id === selectedDrawingId) || null;
+  }, [drawings, selectedDrawingId]);
 
   // 1-second tick for real-time countdown timer
   useEffect(() => {
@@ -189,6 +201,7 @@ export function CandlestickCanvas({
         currentPriceOverride, timeframe,
         drawings,
         activeDrawing: drawingInProgress,
+        selectedDrawingId,
       },
       { startIdx: clampedStart, endIdx: clampedEnd },
       (crosshair && interactionMode === 'crosshair') ? { x: crosshair.x * dpr, y: crosshair.y * dpr } : null,
@@ -197,7 +210,7 @@ export function CandlestickCanvas({
   }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
-      drawings, drawingInProgress,
+      drawings, drawingInProgress, selectedDrawingId,
       clampedStart, clampedEnd, crosshair, interactionMode, size, dpr, clockTick]);
 
   // Mouse dragging and endpoint adjustment refs
@@ -245,7 +258,22 @@ export function CandlestickCanvas({
       return;
     }
 
-    // 3. If in-progress drawing preview rubber-band
+    // 3. Freehand Brush continuous path
+    if (drawingInProgress && activeDrawingTool === 'BRUSH') {
+      const pt = getPointFromEvent(e.clientX, e.clientY);
+      if (pt) {
+        setDrawingInProgress(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            points: [...prev.points, { index: pt.index, time: pt.time, price: pt.price }],
+          };
+        });
+      }
+      return;
+    }
+
+    // 4. In-progress drawing preview rubber-band
     if (drawingInProgress && activeDrawingTool !== 'NONE') {
       const pt = getPointFromEvent(e.clientX, e.clientY);
       if (pt) {
@@ -277,7 +305,14 @@ export function CandlestickCanvas({
       setIsDragging(false);
       try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
     }
-  }, []);
+    if (drawingInProgress && activeDrawingTool === 'BRUSH') {
+      if (drawingInProgress.points.length > 1) {
+        onAddDrawing?.({ ...drawingInProgress, completed: true });
+      }
+      setDrawingInProgress(null);
+      onDrawingToolChange?.('NONE');
+    }
+  }, [activeDrawingTool, drawingInProgress, onAddDrawing, onDrawingToolChange]);
 
   const handlePointerLeave = useCallback(() => {
     if (!isDraggingRef.current && !adjustingRef.current) {
@@ -290,7 +325,6 @@ export function CandlestickCanvas({
     if (!pt) return;
 
     if (!activeDrawingTool || activeDrawingTool === 'NONE') {
-      // 1. Check if clicking near any existing drawing endpoint to adjust it
       const rect = canvasRef.current!.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -312,8 +346,10 @@ export function CandlestickCanvas({
       pMin -= pad; pMax += pad;
       const pRange = pMax - pMin;
 
+      // 1. Check if clicking near any existing drawing endpoint to adjust it
       let targetAdjust: { drawingId: string; pointIdx: number } | null = null;
       for (const d of drawings) {
+        if (d.locked || d.hidden) continue;
         for (let i = 0; i < d.points.length; i++) {
           const p = d.points[i];
           let idx = p.index;
@@ -334,11 +370,89 @@ export function CandlestickCanvas({
 
       if (targetAdjust) {
         adjustingRef.current = targetAdjust;
+        onSelectDrawing?.(targetAdjust.drawingId);
+        setQuickBarPos({ x: e.clientX, y: e.clientY });
         try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}
         return;
       }
 
-      // 2. Otherwise start mouse pan drag
+      // 2. Interactive Selection: Check if clicking anywhere on an existing drawing
+      let clickedDrawingId: string | null = null;
+      for (const d of drawings) {
+        if (d.hidden || !d.points || d.points.length === 0) continue;
+        const p1 = d.points[0];
+        let idx1 = p1.index;
+        if (p1.time && cleanCandles[idx1]?.openTime !== p1.time) {
+          for (let ci = 0; ci < cleanCandles.length; ci++) {
+            if (cleanCandles[ci].openTime === p1.time) { idx1 = ci; break; }
+          }
+        }
+        const ptX1 = (idx1 - clampedStart) * candleW + candleW / 2;
+        const ptY1 = chartH * (1 - (p1.price - pMin) / pRange);
+
+        if (d.tool === 'HORIZONTAL') {
+          if (Math.abs(y - ptY1) <= 12) { clickedDrawingId = d.id; break; }
+        } else if (d.tool === 'HORIZONTAL_RAY') {
+          if (Math.abs(y - ptY1) <= 12 && x >= ptX1 - 5) { clickedDrawingId = d.id; break; }
+        } else if (d.tool === 'VERTICAL_LINE') {
+          if (Math.abs(x - ptX1) <= 12) { clickedDrawingId = d.id; break; }
+        } else if (d.tool === 'TEXT') {
+          if (Math.abs(x - ptX1) <= 50 && Math.abs(y - ptY1) <= 20) { clickedDrawingId = d.id; break; }
+        } else if (d.points.length >= 2) {
+          const p2 = d.points[1];
+          let idx2 = p2.index;
+          if (p2.time && cleanCandles[idx2]?.openTime !== p2.time) {
+            for (let ci = 0; ci < cleanCandles.length; ci++) {
+              if (cleanCandles[ci].openTime === p2.time) { idx2 = ci; break; }
+            }
+          }
+          const ptX2 = (idx2 - clampedStart) * candleW + candleW / 2;
+          const ptY2 = chartH * (1 - (p2.price - pMin) / pRange);
+
+          if (d.tool === 'TRENDLINE' || d.tool === 'RAY' || d.tool === 'EXTENDED_LINE' || d.tool === 'CALLOUT') {
+            const dx = ptX2 - ptX1, dy = ptY2 - ptY1;
+            const lenSq = dx * dx + dy * dy;
+            if (lenSq > 0) {
+              let t = ((x - ptX1) * dx + (y - ptY1) * dy) / lenSq;
+              if (d.tool === 'TRENDLINE' || d.tool === 'CALLOUT') t = Math.max(0, Math.min(1, t));
+              else if (d.tool === 'RAY') t = Math.max(0, t);
+              const px = ptX1 + t * dx, py = ptY1 + t * dy;
+              if (Math.hypot(x - px, y - py) <= 14) { clickedDrawingId = d.id; break; }
+            }
+          } else if (d.tool === 'RECTANGLE' || d.tool === 'MEASURE' || d.tool === 'RISK_REWARD_LONG' || d.tool === 'RISK_REWARD_SHORT') {
+            const minX = Math.min(ptX1, ptX2), maxX = Math.max(ptX1, ptX2);
+            const minY = Math.min(ptY1, ptY2), maxY = Math.max(ptY1, ptY2);
+            if (x >= minX - 8 && x <= maxX + 8 && y >= minY - 8 && y <= maxY + 8) {
+              clickedDrawingId = d.id;
+              break;
+            }
+          } else if (d.tool === 'CIRCLE') {
+            const radius = Math.hypot(ptX2 - ptX1, ptY2 - ptY1);
+            const dist = Math.hypot(x - ptX1, y - ptY1);
+            if (Math.abs(dist - radius) <= 14 || dist <= radius) {
+              clickedDrawingId = d.id;
+              break;
+            }
+          } else if (d.tool === 'CHANNEL' || d.tool === 'FIBONACCI' || d.tool === 'FIBONACCI_EXTENSION') {
+            const minX = Math.min(ptX1, ptX2), maxX = Math.max(ptX1, ptX2);
+            const minY = Math.min(ptY1, ptY2), maxY = Math.max(ptY1, ptY2);
+            if (x >= minX - 10 && x <= maxX + 10 && y >= minY - 15 && y <= maxY + 15) {
+              clickedDrawingId = d.id;
+              break;
+            }
+          }
+        }
+      }
+
+      if (clickedDrawingId) {
+        onSelectDrawing?.(clickedDrawingId);
+        setQuickBarPos({ x: e.clientX, y: e.clientY });
+        return;
+      }
+
+      // 3. Otherwise clicked empty canvas: clear selection and start mouse pan drag
+      onSelectDrawing?.(null);
+      setQuickBarPos(null);
       isDraggingRef.current = true;
       setIsDragging(true);
       dragStartXRef.current = e.clientX;
@@ -347,13 +461,14 @@ export function CandlestickCanvas({
       return;
     }
 
-    // 1-Point Tools: HORIZONTAL, VERTICAL_LINE, TEXT
-    if (activeDrawingTool === 'HORIZONTAL' || activeDrawingTool === 'VERTICAL_LINE') {
+    // ── Tool Creation Handling ──
+    // 1-Point Tools: HORIZONTAL, HORIZONTAL_RAY, VERTICAL_LINE
+    if (activeDrawingTool === 'HORIZONTAL' || activeDrawingTool === 'HORIZONTAL_RAY' || activeDrawingTool === 'VERTICAL_LINE') {
       onAddDrawing?.({
         id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         tool: activeDrawingTool,
         points: [{ index: pt.index, time: pt.time, price: pt.price }],
-        color: activeDrawingTool === 'HORIZONTAL' ? '#2563EB' : '#9333EA',
+        color: activeDrawingTool === 'HORIZONTAL' ? '#2563EB' : activeDrawingTool === 'HORIZONTAL_RAY' ? '#0284C7' : '#9333EA',
         lineWidth: 2,
         completed: true,
       });
@@ -361,6 +476,22 @@ export function CandlestickCanvas({
       return;
     }
 
+    // Freehand Brush Tool
+    if (activeDrawingTool === 'BRUSH') {
+      const newBrush: DrawingItem = {
+        id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        tool: 'BRUSH',
+        points: [{ index: pt.index, time: pt.time, price: pt.price }],
+        color: '#2563EB',
+        lineWidth: 2.5,
+        completed: false,
+      };
+      setDrawingInProgress(newBrush);
+      try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}
+      return;
+    }
+
+    // Text Annotation Tool
     if (activeDrawingTool === 'TEXT') {
       const text = window.prompt('Enter annotation text:', 'Key Level');
       if (text && text.trim()) {
@@ -373,8 +504,24 @@ export function CandlestickCanvas({
           lineWidth: 1,
           completed: true,
         });
-        onDrawingToolChange?.('NONE');
       }
+      onDrawingToolChange?.('NONE');
+      return;
+    }
+
+    // Callout with Arrow
+    if (activeDrawingTool === 'CALLOUT' && drawingInProgress) {
+      const text = window.prompt('Enter callout annotation note:', 'Key Pivot');
+      if (text && text.trim()) {
+        onAddDrawing?.({
+          ...drawingInProgress,
+          points: [drawingInProgress.points[0], { index: pt.index, time: pt.time, price: pt.price }],
+          text: text.trim(),
+          completed: true,
+        });
+      }
+      setDrawingInProgress(null);
+      onDrawingToolChange?.('NONE');
       return;
     }
 
@@ -382,17 +529,23 @@ export function CandlestickCanvas({
 
     if (!drawingInProgress) {
       // First point
+      const defaultColor =
+        activeDrawingTool === 'RECTANGLE' ? '#059669' :
+        activeDrawingTool === 'RISK_REWARD_LONG' ? '#10B981' :
+        activeDrawingTool === 'RISK_REWARD_SHORT' ? '#EF4444' :
+        activeDrawingTool === 'CHANNEL' ? '#4F46E5' :
+        activeDrawingTool === 'FIBONACCI_EXTENSION' ? '#D97706' :
+        activeDrawingTool === 'MEASURE' ? '#0284C7' :
+        activeDrawingTool === 'RAY' || activeDrawingTool === 'EXTENDED_LINE' ? '#EA580C' : '#2563EB';
+
       setDrawingInProgress({
         id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         tool: activeDrawingTool,
         points: [{ index: pt.index, time: pt.time, price: pt.price }],
-        color: activeDrawingTool === 'RECTANGLE' ? '#059669' :
-               activeDrawingTool === 'CHANNEL' ? '#4F46E5' :
-               activeDrawingTool === 'FIBONACCI_EXTENSION' ? '#D97706' :
-               activeDrawingTool === 'MEASURE' ? '#0284C7' :
-               activeDrawingTool === 'RAY' ? '#EA580C' : '#2563EB',
+        color: defaultColor,
         lineWidth: 2,
         completed: false,
+        riskRewardRatio: (activeDrawingTool === 'RISK_REWARD_LONG' || activeDrawingTool === 'RISK_REWARD_SHORT') ? 2.0 : undefined,
       });
     } else {
       if (is3PointTool && drawingInProgress.points.length === 1) {
@@ -402,7 +555,7 @@ export function CandlestickCanvas({
           points: [drawingInProgress.points[0], { index: pt.index, time: pt.time, price: pt.price }],
         });
       } else {
-        // Final point (point 2 for 2-point tools, point 3 for 3-point tools)
+        // Final point
         const newPoints = is3PointTool
           ? [drawingInProgress.points[0], drawingInProgress.points[1], { index: pt.index, time: pt.time, price: pt.price }]
           : [drawingInProgress.points[0], { index: pt.index, time: pt.time, price: pt.price }];
@@ -417,21 +570,30 @@ export function CandlestickCanvas({
         onDrawingToolChange?.('NONE');
       }
     }
-  }, [activeDrawingTool, cleanCandles, clampedEnd, clampedStart, drawings, drawingInProgress, getPointFromEvent, indicators, onAddDrawing, onDrawingToolChange, scrollOffset, showVolumePanel, size]);
+  }, [activeDrawingTool, cleanCandles, clampedEnd, clampedStart, drawings, drawingInProgress, getPointFromEvent, indicators, onAddDrawing, onDrawingToolChange, onSelectDrawing, scrollOffset, showVolumePanel, size]);
 
-  // Cancel drawing on Escape or Undo on Ctrl+Z
+  // Cancel drawing on Escape or Undo on Ctrl+Z or Delete on Delete key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setDrawingInProgress(null);
         onDrawingToolChange?.('NONE');
+        onSelectDrawing?.(null);
+        setQuickBarPos(null);
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+        if (selectedDrawingId) {
+          onDeleteDrawing?.(selectedDrawingId);
+          onSelectDrawing?.(null);
+          setQuickBarPos(null);
+        }
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
         onUndoDrawing?.();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onDrawingToolChange, onUndoDrawing]);
+  }, [onDrawingToolChange, onUndoDrawing, onDeleteDrawing, onSelectDrawing, selectedDrawingId]);
 
   // Wheel zoom + scroll
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -647,6 +809,24 @@ export function CandlestickCanvas({
         >
           »» LIVE
         </button>
+      )}
+
+      {/* Floating Drawing Quick Actions Bar (Color, Width, RR ratio, Delete) */}
+      {selectedDrawing && quickBarPos && (
+        <DrawingQuickBar
+          drawing={selectedDrawing}
+          position={quickBarPos}
+          onUpdateDrawing={(updated) => onUpdateDrawing?.(updated)}
+          onDeleteDrawing={(id) => {
+            onDeleteDrawing?.(id);
+            onSelectDrawing?.(null);
+            setQuickBarPos(null);
+          }}
+          onClose={() => {
+            onSelectDrawing?.(null);
+            setQuickBarPos(null);
+          }}
+        />
       )}
     </div>
   );

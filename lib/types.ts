@@ -17,14 +17,16 @@ export type ChartType = 'CANDLESTICK' | 'LINE' | 'AREA' | 'HEIKIN_ASHI' | 'HOLLO
 
 export type IndicatorType =
   | 'SMA' | 'EMA' | 'BOLLINGER_BANDS' | 'VWAP' | 'SUPERTREND' | 'ICHIMOKU' | 'PARABOLIC_SAR'
-  | 'RSI' | 'MACD' | 'STOCHASTIC' | 'ATR' | 'CVD' | 'ADX' | 'OBV' | 'CCI' | 'WILLIAMS_R' | 'MFI';
+  | 'EMA_RIBBON' | 'PIVOT_POINTS' | 'DONCHIAN' | 'HMA'
+  | 'RSI' | 'MACD' | 'STOCHASTIC' | 'ATR' | 'CVD' | 'ADX' | 'OBV' | 'CCI' | 'WILLIAMS_R' | 'MFI' | 'CMF';
 
 export const OVERLAY_TYPES: IndicatorType[] = [
   'SMA', 'EMA', 'BOLLINGER_BANDS', 'VWAP', 'SUPERTREND', 'ICHIMOKU', 'PARABOLIC_SAR',
+  'EMA_RIBBON', 'PIVOT_POINTS', 'DONCHIAN', 'HMA',
 ];
 
 export const PANEL_TYPES: IndicatorType[] = [
-  'RSI', 'MACD', 'STOCHASTIC', 'ATR', 'CVD', 'ADX', 'OBV', 'CCI', 'WILLIAMS_R', 'MFI',
+  'RSI', 'MACD', 'STOCHASTIC', 'ATR', 'CVD', 'ADX', 'OBV', 'CCI', 'WILLIAMS_R', 'MFI', 'CMF',
 ];
 
 export function isOverlay(t: IndicatorType): boolean {
@@ -178,6 +180,7 @@ export interface ChartOptions {
   timeframe: string;
   drawings?: import('./drawingTypes').DrawingItem[];
   activeDrawing?: import('./drawingTypes').DrawingItem | null;
+  selectedDrawingId?: string | null;
 }
 
 
@@ -221,6 +224,11 @@ export const INDICATOR_DEFAULTS: Record<
   CCI:             { period: 20, secondaryPeriod: 0,  tertiaryPeriod: 0,  color: '#00ACC1', secondaryColor: '#42A5F5', tertiaryColor: '#EF5350', multiplier: 1, label: 'CCI' },
   WILLIAMS_R:      { period: 14, secondaryPeriod: 0,  tertiaryPeriod: 0,  color: '#FDD835', secondaryColor: '#42A5F5', tertiaryColor: '#EF5350', multiplier: 1, label: 'Williams %R' },
   MFI:             { period: 14, secondaryPeriod: 0,  tertiaryPeriod: 0,  color: '#3949AB', secondaryColor: '#42A5F5', tertiaryColor: '#EF5350', multiplier: 1, label: 'MFI' },
+  EMA_RIBBON:      { period: 20, secondaryPeriod: 50,  tertiaryPeriod: 200, color: '#3B82F6', secondaryColor: '#10B981', tertiaryColor: '#F59E0B', multiplier: 100, label: 'EMA Ribbon' },
+  PIVOT_POINTS:    { period: 15, secondaryPeriod: 0,   tertiaryPeriod: 0,   color: '#EAB308', secondaryColor: '#EF4444', tertiaryColor: '#10B981', multiplier: 1, label: 'Pivot Points' },
+  DONCHIAN:        { period: 20, secondaryPeriod: 0,   tertiaryPeriod: 0,   color: '#06B6D4', secondaryColor: '#0EA5E9', tertiaryColor: '#38BDF8', multiplier: 1, label: 'Donchian' },
+  HMA:             { period: 9,  secondaryPeriod: 0,   tertiaryPeriod: 0,   color: '#A855F7', secondaryColor: '#C084FC', tertiaryColor: '#E9D5FF', multiplier: 1, label: 'Hull MA' },
+  CMF:             { period: 20, secondaryPeriod: 0,   tertiaryPeriod: 0,   color: '#10B981', secondaryColor: '#EF4444', tertiaryColor: '#64748B', multiplier: 1, label: 'CMF' },
 };
 
 export interface Instrument {

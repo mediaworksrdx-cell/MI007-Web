@@ -75,6 +75,7 @@ interface ChartToolbarProps {
   onRemoveTemplate: (slotId: string) => void;
   onSaveChartLayout: () => void;
   onClearAllIndicators?: () => void;
+  onOpenIndicatorsModal?: () => void;
 }
 
 export function ChartToolbar({
@@ -87,6 +88,7 @@ export function ChartToolbar({
   onToggleVolume, onToggleVolumePanel: _onToggleVolumePanel, onToggleSmcOverlay, onToggleVolumeProfile,
   onToggleIndicator, onOpenIndicatorSettings,
   onSelectTemplate, onSaveToTemplate, onRenameTemplate, onRemoveTemplate, onSaveChartLayout, onClearAllIndicators,
+  onOpenIndicatorsModal,
 }: ChartToolbarProps) {
   const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'DRAWING' | 'TEMPLATES' | null>(null);
   const [indicatorSearch, setIndicatorSearch] = useState('');
@@ -228,18 +230,20 @@ export function ChartToolbar({
         {/* 3. Indicators Dropdown Menu */}
         <div className="relative">
           <button
-            onClick={() => setOpenMenu(openMenu === 'INDICATORS' ? null : 'INDICATORS')}
+            onClick={() => {
+              if (onOpenIndicatorsModal) {
+                onOpenIndicatorsModal();
+              } else {
+                setOpenMenu(openMenu === 'INDICATORS' ? null : 'INDICATORS');
+              }
+            }}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
               openMenu === 'INDICATORS' || activeIndicators.length > 0
                 ? 'border-emerald-600 bg-emerald-500/15 text-emerald-400'
                 : 'border-[var(--theme-page-border)] hover:border-emerald-500/50 bg-[var(--theme-card-surface)] text-[var(--theme-page-text)]'
             }`}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10" />
-              <line x1="12" y1="20" x2="12" y2="4" />
-              <line x1="6" y1="20" x2="6" y2="14" />
-            </svg>
+            <span className="font-mono font-black text-xs px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-400">ƒx</span>
             <span className="font-bold">Indicators</span>
             {activeIndicators.length > 0 && (
               <span className="h-4 px-1.5 rounded-full bg-emerald-600 text-white font-mono text-[10px] font-bold flex items-center justify-center">
@@ -251,6 +255,22 @@ export function ChartToolbar({
 
           {openMenu === 'INDICATORS' && (
             <div className="absolute top-full left-0 mt-1.5 w-72 rounded-xl border border-[var(--theme-page-border)] bg-[var(--theme-card-bg)] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100 max-h-96 flex flex-col overflow-hidden">
+              {/* Quick Launch Full Library */}
+              {onOpenIndicatorsModal && (
+                <div className="p-2 border-b border-[var(--theme-page-border)] bg-emerald-500/10">
+                  <button
+                    onClick={() => {
+                      setOpenMenu(null);
+                      onOpenIndicatorsModal();
+                    }}
+                    className="w-full py-1 px-2 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <span>ƒx</span>
+                    <span>Browse All 22 Indicators...</span>
+                  </button>
+                </div>
+              )}
+
               {/* Search */}
               <div className="p-2 border-b border-[var(--theme-page-border)] bg-[var(--theme-card-surface)]">
                 <input

@@ -318,6 +318,119 @@ export function calculateVolumeProfile(candles: Candle[], priceMin: number, pric
   return { buckets, pocPrice, vahPrice: buckets[vaHigh].priceHigh, valPrice: buckets[vaLow].priceLow, maxBucketVolume: maxVol };
 }
 
+// EMA Ribbon (4 EMAs: 20, 50, 100, 200)
+export function calculateEmaRibbon(candles: Candle[]) {
+  return {
+    ema20: calculateEMA(candles, 20),
+    ema50: calculateEMA(candles, 50),
+    ema100: calculateEMA(candles, 100),
+    ema200: calculateEMA(candles, 200),
+  };
+}
+
+// Pivot Points (Standard Daily / Swing Pivots)
+export function calculatePivotPoints(candles: Candle[], lookback = 15) {
+  const result: { pivot: (number|null)[]; r1: (number|null)[]; r2: (number|null)[]; s1: (number|null)[]; s2: (number|null)[] } = {
+    pivot: Array(candles.length).fill(null),
+    r1: Array(candles.length).fill(null),
+    r2: Array(candles.length).fill(null),
+    s1: Array(candles.length).fill(null),
+    s2: Array(candles.length).fill(null),
+  };
+  if (candles.length < 5) return result;
+  
+  for (let i = lookback; i < candles.length; i++) {
+    let hh = -Infinity, ll = Infinity;
+    for (let j = i - lookback; j < i; j++) {
+      hh = Math.max(hh, candles[j].high);
+      ll = Math.min(ll, candles[j].low);
+    }
+    const cc = candles[i - 1].close;
+    const p = (hh + ll + cc) / 3;
+    result.pivot[i] = p;
+    result.r1[i] = 2 * p - ll;
+    result.s1[i] = 2 * p - hh;
+    result.r2[i] = p + (hh - ll);
+    result.s2[i] = p - (hh - ll);
+  }
+  return result;
+}
+
+// Donchian Channels
+export function calculateDonchian(candles: Candle[], period = 20) {
+  const upper: (number|null)[] = Array(candles.length).fill(null);
+  const middle: (number|null)[] = Array(candles.length).fill(null);
+  const lower: (number|null)[] = Array(candles.length).fill(null);
+
+  for (let i = period - 1; i < candles.length; i++) {
+    let hh = -Infinity, ll = Infinity;
+    for (let j = i - period + 1; j <= i; j++) {
+      hh = Math.max(hh, candles[j].high);
+      ll = Math.min(ll, candles[j].low);
+    }
+    upper[i] = hh;
+    lower[i] = ll;
+    middle[i] = (hh + ll) / 2;
+  }
+  return { upper, middle, lower };
+}
+
+// Hull Moving Average (HMA)
+export function calculateHMA(candles: Candle[], period = 9): (number|null)[] {
+  if (candles.length < period) return Array(candles.length).fill(null);
+  function wma(values: number[], len: number): (number|null)[] {
+    const res: (number|null)[] = Array(values.length).fill(null);
+    const weightSum = (len * (len + 1)) / 2;
+    for (let i = len - 1; i < values.length; i++) {
+      let sum = 0;
+      for (let j = 0; j < len; j++) {
+        sum += values[i - len + 1 + j] * (j + 1);
+      }
+      res[i] = sum / weightSum;
+    }
+    return res;
+  }
+
+  const closes = candles.map(c => c.close);
+  const halfLen = Math.max(1, Math.floor(period / 2));
+  const sqrtLen = Math.max(1, Math.floor(Math.sqrt(period)));
+
+  const wmaHalf = wma(closes, halfLen);
+  const wmaFull = wma(closes, period);
+
+  const diffSeries: number[] = [];
+  for (let i = 0; i < closes.length; i++) {
+    const h = wmaHalf[i];
+    const f = wmaFull[i];
+    if (h !== null && f !== null) {
+      diffSeries.push(2 * h - f);
+    } else {
+      diffSeries.push(closes[i]);
+    }
+  }
+
+  return wma(diffSeries, sqrtLen);
+}
+
+// Chaikin Money Flow (CMF)
+export function calculateCMF(candles: Candle[], period = 20): (number|null)[] {
+  if (candles.length < period) return Array(candles.length).fill(null);
+  const res: (number|null)[] = Array(candles.length).fill(null);
+  for (let i = period - 1; i < candles.length; i++) {
+    let mfvSum = 0;
+    let volSum = 0;
+    for (let j = i - period + 1; j <= i; j++) {
+      const c = candles[j];
+      const range = c.high - c.low;
+      const mfm = range > 0 ? ((c.close - c.low) - (c.high - c.close)) / range : 0;
+      mfvSum += mfm * c.volume;
+      volSum += c.volume;
+    }
+    res[i] = volSum > 0 ? mfvSum / volSum : 0;
+  }
+  return res;
+}
+
 export function detectSMC(candles: Candle[]): SmcAnalysis {
   if (candles.length < 5) {
     const lastClose = candles.length > 0 ? candles[candles.length - 1].close : 0;
@@ -1203,6 +1316,13 @@ export function renderChart(
         ctx.restore();
         ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
         ctx.fillText(`H-Line: ${formatPrice(p1.price)}`, 6 * dpr, y1 - 4 * dpr);
+      } else if (item.tool === 'HORIZONTAL_RAY') {
+        ctx.save();
+        ctx.setLineDash([6 * dpr, 4 * dpr]);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(chartW, y1); ctx.stroke();
+        ctx.restore();
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillText(`H-Ray: ${formatPrice(p1.price)}`, x1 + 6 * dpr, y1 - 4 * dpr);
       } else if (item.tool === 'VERTICAL_LINE') {
         ctx.save();
         ctx.setLineDash([6 * dpr, 4 * dpr]);
@@ -1233,6 +1353,20 @@ export function renderChart(
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.fillText(textContent, x1 + 5 * dpr, y1 - bH / 2);
         ctx.restore();
+      } else if (item.tool === 'BRUSH') {
+        if (item.points.length > 1) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          for (let k = 1; k < item.points.length; k++) {
+            const pk = item.points[k];
+            const xk = getPointX(pk);
+            const yk = priceToY(pk.price);
+            ctx.lineTo(xk, yk);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
       } else if (item.points.length >= 2) {
         const p2 = item.points[1];
         const x2 = getPointX(p2);
@@ -1253,6 +1387,18 @@ export function renderChart(
             ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
           }
+        } else if (item.tool === 'EXTENDED_LINE') {
+          const dx = x2 - x1, dy = y2 - y1;
+          if (Math.abs(dx) > 0.001) {
+            const slope = dy / dx;
+            const yAt0 = y1 - x1 * slope;
+            const yAtW = y1 + (chartW - x1) * slope;
+            ctx.beginPath(); ctx.moveTo(0, yAt0); ctx.lineTo(chartW, yAtW); ctx.stroke();
+          } else {
+            ctx.beginPath(); ctx.moveTo(x1, 0); ctx.lineTo(x1, chartH); ctx.stroke();
+          }
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'CHANNEL') {
           const p3 = item.points[2] || { price: p1.price + (pMax - pMin) * 0.04, index: p1.index };
           const pOffset = p3.price - p1.price;
@@ -1286,6 +1432,119 @@ export function renderChart(
           ctx.fillStyle = item.color ? `${item.color}22` : 'rgba(37, 99, 235, 0.12)';
           ctx.fillRect(rx, ry, rw, rh);
           ctx.strokeRect(rx, ry, rw, rh);
+        } else if (item.tool === 'CIRCLE') {
+          const r = Math.hypot(x2 - x1, y2 - y1);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x1, y1, r, 0, Math.PI * 2);
+          ctx.fillStyle = item.color ? `${item.color}1A` : 'rgba(37, 99, 235, 0.10)';
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        } else if (item.tool === 'RISK_REWARD_LONG') {
+          const entryP = p1.price;
+          const stopP = p2.price < entryP ? p2.price : entryP * 0.98;
+          const risk = entryP - stopP;
+          const ratio = item.riskRewardRatio || 2.0;
+          const targetP = item.targetPrice || (entryP + risk * ratio);
+          const boxW = Math.max(90 * dpr, Math.abs(x2 - x1) || 120 * dpr);
+          const boxLeft = Math.min(x1, x2);
+
+          const yEntry = priceToY(entryP);
+          const yStop = priceToY(stopP);
+          const yTarget = priceToY(targetP);
+
+          ctx.save();
+          // Target Box (Green)
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.18)';
+          ctx.fillRect(boxLeft, yTarget, boxW, yEntry - yTarget);
+          ctx.strokeStyle = '#10B981';
+          ctx.strokeRect(boxLeft, yTarget, boxW, yEntry - yTarget);
+
+          // Stop Box (Red)
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.18)';
+          ctx.fillRect(boxLeft, yEntry, boxW, yStop - yEntry);
+          ctx.strokeStyle = '#EF4444';
+          ctx.strokeRect(boxLeft, yEntry, boxW, yStop - yEntry);
+
+          // Entry line
+          ctx.strokeStyle = '#64748B';
+          ctx.lineWidth = 1 * dpr;
+          ctx.beginPath(); ctx.moveTo(boxLeft, yEntry); ctx.lineTo(boxLeft + boxW, yEntry); ctx.stroke();
+
+          const gainPct = ((targetP - entryP) / entryP) * 100;
+          const lossPct = ((entryP - stopP) / entryP) * 100;
+          const labelTxt = `LONG 1:${ratio.toFixed(1)} | Target +${gainPct.toFixed(1)}% | Stop -${lossPct.toFixed(1)}%`;
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          ctx.fillStyle = '#0F172A';
+          ctx.fillRect(boxLeft, Math.max(0, yTarget - 16 * dpr), boxW, 15 * dpr);
+          ctx.fillStyle = '#10B981';
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.fillText(labelTxt, boxLeft + 4 * dpr, Math.max(8 * dpr, yTarget - 8 * dpr));
+          ctx.restore();
+        } else if (item.tool === 'RISK_REWARD_SHORT') {
+          const entryP = p1.price;
+          const stopP = p2.price > entryP ? p2.price : entryP * 1.02;
+          const risk = stopP - entryP;
+          const ratio = item.riskRewardRatio || 2.0;
+          const targetP = item.targetPrice || (entryP - risk * ratio);
+          const boxW = Math.max(90 * dpr, Math.abs(x2 - x1) || 120 * dpr);
+          const boxLeft = Math.min(x1, x2);
+
+          const yEntry = priceToY(entryP);
+          const yStop = priceToY(stopP);
+          const yTarget = priceToY(targetP);
+
+          ctx.save();
+          // Stop Box (Red on top)
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.18)';
+          ctx.fillRect(boxLeft, yStop, boxW, yEntry - yStop);
+          ctx.strokeStyle = '#EF4444';
+          ctx.strokeRect(boxLeft, yStop, boxW, yEntry - yStop);
+
+          // Target Box (Green on bottom)
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.18)';
+          ctx.fillRect(boxLeft, yEntry, boxW, yTarget - yEntry);
+          ctx.strokeStyle = '#10B981';
+          ctx.strokeRect(boxLeft, yEntry, boxW, yTarget - yEntry);
+
+          // Entry line
+          ctx.strokeStyle = '#64748B';
+          ctx.lineWidth = 1 * dpr;
+          ctx.beginPath(); ctx.moveTo(boxLeft, yEntry); ctx.lineTo(boxLeft + boxW, yEntry); ctx.stroke();
+
+          const gainPct = ((entryP - targetP) / entryP) * 100;
+          const lossPct = ((stopP - entryP) / entryP) * 100;
+          const labelTxt = `SHORT 1:${ratio.toFixed(1)} | Target +${gainPct.toFixed(1)}% | Stop -${lossPct.toFixed(1)}%`;
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          ctx.fillStyle = '#0F172A';
+          ctx.fillRect(boxLeft, Math.max(0, yStop - 16 * dpr), boxW, 15 * dpr);
+          ctx.fillStyle = '#EF4444';
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.fillText(labelTxt, boxLeft + 4 * dpr, Math.max(8 * dpr, yStop - 8 * dpr));
+          ctx.restore();
+        } else if (item.tool === 'CALLOUT') {
+          ctx.save();
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          const angle = Math.atan2(y1 - y2, x1 - x2);
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x1 - 10 * dpr * Math.cos(angle - Math.PI / 6), y1 - 10 * dpr * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(x1 - 10 * dpr * Math.cos(angle + Math.PI / 6), y1 - 10 * dpr * Math.sin(angle + Math.PI / 6));
+          ctx.closePath(); ctx.fill();
+
+          const txt = item.text || 'Key Level';
+          ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+          const tm = ctx.measureText(txt);
+          const bw = tm.width + 12 * dpr, bh = 18 * dpr;
+          ctx.fillStyle = '#0F172A';
+          ctx.fillRect(x2, y2 - bh / 2, bw, bh);
+          ctx.strokeStyle = item.color || '#2563EB';
+          ctx.strokeRect(x2, y2 - bh / 2, bw, bh);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.fillText(txt, x2 + 6 * dpr, y2);
+          ctx.restore();
         } else if (item.tool === 'FIBONACCI') {
           const levels = [
             { lvl: 0.0,   color: '#EF4444', label: '0.0%' },
@@ -1388,6 +1647,23 @@ export function renderChart(
           ctx.restore();
         }
       }
+
+      // Selection Highlight Anchors
+      if (options.selectedDrawingId && options.selectedDrawingId === item.id) {
+        ctx.save();
+        for (const pt of item.points) {
+          const px = getPointX(pt);
+          const py = priceToY(pt.price);
+          ctx.beginPath();
+          ctx.arc(px, py, 5.5 * dpr, 0, Math.PI * 2);
+          ctx.fillStyle = '#2563EB';
+          ctx.fill();
+          ctx.lineWidth = 2 * dpr;
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
     }
     ctx.restore();
   }
@@ -1473,6 +1749,36 @@ export function renderChart(
           const x = (i-startIdx)*candleW+candleW/2, y = priceToY(v);
           ctx.fillStyle = cfg.color; ctx.beginPath(); ctx.arc(x, y, 2*dpr, 0, Math.PI*2); ctx.fill();
         }
+        break;
+      }
+      case 'EMA_RIBBON': {
+        const rib = result as { ema20: (number|null)[]; ema50: (number|null)[]; ema100: (number|null)[]; ema200: (number|null)[] };
+        drawBandFill(rib.ema20, rib.ema50, 'rgba(59, 130, 246, 0.08)');
+        drawLine(rib.ema20, '#3B82F6', 1.5);
+        drawLine(rib.ema50, '#10B981', 1.5);
+        drawLine(rib.ema100, '#F59E0B', 1.5);
+        drawLine(rib.ema200, '#EF4444', 1.8);
+        break;
+      }
+      case 'PIVOT_POINTS': {
+        const pvt = result as { pivot: (number|null)[]; r1: (number|null)[]; r2: (number|null)[]; s1: (number|null)[]; s2: (number|null)[] };
+        drawLine(pvt.pivot, '#EAB308', 1.4);
+        drawLine(pvt.r1, '#EF4444', 1.2);
+        drawLine(pvt.r2, '#DC2626', 1.2);
+        drawLine(pvt.s1, '#10B981', 1.2);
+        drawLine(pvt.s2, '#059669', 1.2);
+        break;
+      }
+      case 'DONCHIAN': {
+        const don = result as { upper: (number|null)[]; middle: (number|null)[]; lower: (number|null)[] };
+        drawBandFill(don.upper, don.lower, 'rgba(6, 182, 212, 0.08)');
+        drawLine(don.upper, '#06B6D4', 1.3);
+        drawLine(don.middle, '#0EA5E9', 1.0);
+        drawLine(don.lower, '#06B6D4', 1.3);
+        break;
+      }
+      case 'HMA': {
+        drawLine(result as (number|null)[], cfg.color || '#A855F7', 2.0);
         break;
       }
     }
@@ -1857,6 +2163,15 @@ export function renderChart(
         }
         ctx.restore();
         drawPanelLine(cvd.cvdLine, minV, range, cfg.color, 1.5);
+        break;
+      }
+      case 'CMF': {
+        const vals = result as (number|null)[];
+        const zeroY = dT + dH * 0.5;
+        ctx.save(); ctx.setLineDash([3*dpr,3*dpr]); ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8*dpr;
+        ctx.beginPath(); ctx.moveTo(0,zeroY); ctx.lineTo(chartW,zeroY); ctx.stroke();
+        ctx.setLineDash([]); ctx.restore();
+        drawPanelLine(vals, -0.5, 1.0, cfg.color, 1.4);
         break;
       }
       default: {

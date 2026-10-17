@@ -284,6 +284,7 @@ export default function TerminalPage() {
   // Market data per region
   const indices = market === 'INDIA' ? INDIA_INDICES : market === 'USA' ? USA_INDICES : UAE_INDICES;
   const watchlist = market === 'INDIA' ? INDIA_WATCHLIST : market === 'USA' ? USA_WATCHLIST : UAE_WATCHLIST;
+  const defaultChartSym = market === 'INDIA' ? 'NIFTY' : market === 'USA' ? 'SPX' : 'DFMGI';
 
   return (
     <>
@@ -334,13 +335,21 @@ export default function TerminalPage() {
             </div>
 
             {/* ── Terminal Suite Module Tabs ── */}
-            <div className="flex items-center gap-2 mb-6 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
+            <div className="flex flex-wrap items-center gap-2 mb-6 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
               <Link
                 href="/terminal"
                 className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-black tracking-wide text-center transition-all bg-emerald-500 text-slate-950 shadow-xs flex items-center justify-center gap-2"
               >
                 <span>⚡</span>
                 <span>MARKET COCKPIT</span>
+              </Link>
+              <Link
+                href={`/chart/${defaultChartSym}?market=${market}`}
+                className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2 border border-transparent hover:border-emerald-500/30"
+              >
+                <span>📈</span>
+                <span>INTERACTIVE CHARTS</span>
+                <span className="mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">PRO ƒx</span>
               </Link>
               <Link
                 href="/terminal/screener"
