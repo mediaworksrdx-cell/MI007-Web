@@ -181,8 +181,22 @@ export interface ChartOptions {
   drawings?: import('./drawingTypes').DrawingItem[];
   activeDrawing?: import('./drawingTypes').DrawingItem | null;
   selectedDrawingId?: string | null;
+  scaleState?: ScaleState;
+  magnetReticle?: MagnetReticle | null;
+  skipCrosshair?: boolean;
 }
 
+export interface ScaleState {
+  priceScaleRatio: number;
+  priceOffset: number;
+}
+
+export interface MagnetReticle {
+  x: number;
+  y: number;
+  price: number;
+  type: 'OPEN' | 'HIGH' | 'LOW' | 'CLOSE';
+}
 
 export interface ViewState {
   startIdx: number;

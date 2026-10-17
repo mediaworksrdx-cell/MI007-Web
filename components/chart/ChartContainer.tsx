@@ -33,6 +33,7 @@ import { IndicatorSettingsModal } from './IndicatorSettingsModal';
 import { DrawingToolbar } from './DrawingToolbar';
 import { DrawingsManagerModal } from './DrawingsManagerModal';
 import { IndicatorsModal } from './IndicatorsModal';
+import { ChartHotkeysModal } from './ChartHotkeysModal';
 
 interface ChartContainerProps {
   market: MarketType;
@@ -123,6 +124,9 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
   const [isDrawingsManagerOpen, setIsDrawingsManagerOpen] = useState(false);
   const [isIndicatorsModalOpen, setIsIndicatorsModalOpen] = useState(false);
+  const [isMagnetActive, setIsMagnetActive] = useState(false);
+  const [isHotkeysModalOpen, setIsHotkeysModalOpen] = useState(false);
+  const chartWrapperRef = useRef<HTMLDivElement>(null);
 
   // Default clean view: Volume on, but all indicators and overlays off initially
   const [showVolume, setShowVolume] = useState(true);
@@ -610,6 +614,70 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
 
 
 
+  const handleExportSnapshot = useCallback((mode: 'download' | 'clipboard' = 'download') => {
+    if (!chartWrapperRef.current) return;
+    const canvases = chartWrapperRef.current.querySelectorAll('canvas');
+    if (canvases.length < 2) return;
+
+    const bgCanvas = canvases[0];
+    const fgCanvas = canvases[1];
+
+    const width = bgCanvas.width;
+    const height = bgCanvas.height;
+    if (!width || !height) return;
+
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = width;
+    exportCanvas.height = height;
+    const ctx = exportCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // 1. Draw Background (candles, grid, indicators, panels, SMC, VPVR)
+    ctx.drawImage(bgCanvas, 0, 0);
+
+    // 2. Draw Foreground (drawings, annotations)
+    ctx.drawImage(fgCanvas, 0, 0);
+
+    // 3. Watermark & Branding Attribution
+    const dpr = width / (chartWrapperRef.current.clientWidth || 1);
+    ctx.save();
+    ctx.font = `bold ${Math.round(13 * dpr)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
+    const brandText = 'MARKET INTELLIGENCE AI';
+    ctx.fillText(brandText, 24 * dpr, 28 * dpr);
+
+    ctx.font = `${Math.round(10 * dpr)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+    const infoText = `${selectedSymbol} · ${timeframe} · ${new Date().toUTCString()}`;
+    ctx.fillText(infoText, 24 * dpr, 44 * dpr);
+    ctx.restore();
+
+    if (mode === 'download') {
+      const dataUrl = exportCanvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `${selectedSymbol}_${timeframe}_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '_')}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else if (mode === 'clipboard') {
+      exportCanvas.toBlob(async (blob) => {
+        if (blob && navigator.clipboard && window.ClipboardItem) {
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          } catch (e) {
+            console.warn('Clipboard write failed, downloading instead:', e);
+            const dataUrl = exportCanvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `${selectedSymbol}_${timeframe}.png`;
+            a.click();
+          }
+        }
+      }, 'image/png');
+    }
+  }, [selectedSymbol, timeframe]);
+
   return (
     <div className="flex flex-col h-full rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs relative">
       {/* ── Top Dropdown Toolbar ── */}
@@ -649,6 +717,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         onSaveChartLayout={handleSaveChartLayout}
         onClearAllIndicators={handleClearAllIndicators}
         onOpenIndicatorsModal={() => setIsIndicatorsModalOpen(true)}
+        onExportSnapshot={handleExportSnapshot}
       />
 
       {/* ── OHLCV Bar with Symbol context ── */}
@@ -669,11 +738,14 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           onClearDrawings={handleClearDrawings}
           onUndoDrawing={handleUndoDrawing}
           onOpenObjectsTree={() => setIsDrawingsManagerOpen(true)}
+          isMagnetActive={isMagnetActive}
+          onToggleMagnet={() => setIsMagnetActive(m => !m)}
+          onOpenHotkeys={() => setIsHotkeysModalOpen(true)}
           drawingsCount={drawings.length}
         />
 
         {/* Chart Canvas Area */}
-        <div className="flex-1 min-h-0 relative bg-white overflow-hidden">
+        <div ref={chartWrapperRef} className="flex-1 min-h-0 relative bg-white overflow-hidden">
           {/* Top-Left Active Indicator Legend overlay */}
           {indicatorConfigs.length > 0 && (
             <div className="absolute top-2 left-3 z-10 flex flex-wrap items-center gap-1.5 pointer-events-auto">
@@ -734,12 +806,16 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             activeDrawingTool={activeDrawingTool}
             drawings={drawings}
             selectedDrawingId={selectedDrawingId}
+            isMagnetActive={isMagnetActive}
             onAddDrawing={handleAddDrawing}
             onUpdateDrawing={handleUpdateDrawing}
             onDeleteDrawing={handleDeleteDrawing}
             onSelectDrawing={setSelectedDrawingId}
             onUndoDrawing={handleUndoDrawing}
             onDrawingToolChange={setActiveDrawingTool}
+            onToggleMagnet={() => setIsMagnetActive(m => !m)}
+            onOpenHotkeys={() => setIsHotkeysModalOpen(true)}
+            onExportSnapshot={handleExportSnapshot}
             className="h-full"
           />
         </div>
@@ -782,6 +858,12 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           setIsIndicatorsModalOpen(false);
         }}
         onClearAll={handleClearAllIndicators}
+      />
+
+      {/* ── Institutional Hotkeys Cheat Sheet Modal ── */}
+      <ChartHotkeysModal
+        isOpen={isHotkeysModalOpen}
+        onClose={() => setIsHotkeysModalOpen(false)}
       />
     </div>
   );

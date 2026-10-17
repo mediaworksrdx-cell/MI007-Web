@@ -11,7 +11,7 @@ import {
   VolumeProfileBucket, VolumeProfileData,
   SmcFvg, SmcLiquiditySweep, SmcOrderBlock, SmcStructureBreak, SmcAnalysis,
   FnoOverlayLevels, StrategyPayoffOverlay,
-  ChartOptions, ViewState, Crosshair,
+  ChartOptions, ViewState, Crosshair, MagnetReticle, ScaleState,
   INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay,
 } from './types';
 
@@ -22,7 +22,7 @@ export type {
   VolumeProfileBucket, VolumeProfileData,
   SmcFvg, SmcLiquiditySweep, SmcOrderBlock, SmcStructureBreak, SmcAnalysis,
   FnoOverlayLevels, StrategyPayoffOverlay,
-  ChartOptions, ViewState, Crosshair,
+  ChartOptions, ViewState, Crosshair, MagnetReticle, ScaleState,
 };
 export { INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay };
 
@@ -812,6 +812,14 @@ export function renderChart(
   pMin -= pad; pMax += pad;
   pMin = Math.max(minValidBound * 0.95, pMin);
   pMax = Math.min(maxValidBound * 1.05, pMax);
+
+  // Apply interactive price scale stretch/compress if active
+  if (options.scaleState) {
+    const center = (pMax + pMin) / 2 + (options.scaleState.priceOffset || 0);
+    const scaledRange = (pMax - pMin) * (options.scaleState.priceScaleRatio || 1.0);
+    pMin = center - scaledRange / 2;
+    pMax = center + scaledRange / 2;
+  }
   const pRange = Math.max(pMax - pMin, 0.01);
 
   function priceToY(p: number): number { return chartH - ((p - pMin) / pRange * chartH); }
@@ -1272,7 +1280,7 @@ export function renderChart(
 
   // ── LAYER 6.5: User Drawings (Extended Suite matching Android DrawingLayer) ──
   const allDrawings = [...(options.drawings || [])];
-  if (options.activeDrawing) allDrawings.push(options.activeDrawing);
+  if (options.activeDrawing && !options.skipCrosshair) allDrawings.push(options.activeDrawing);
 
   if (allDrawings.length > 0) {
     ctx.save();
@@ -1649,7 +1657,7 @@ export function renderChart(
       }
 
       // Selection Highlight Anchors
-      if (options.selectedDrawingId && options.selectedDrawingId === item.id) {
+      if (options.selectedDrawingId && options.selectedDrawingId === item.id && !options.skipCrosshair) {
         ctx.save();
         for (const pt of item.points) {
           const px = getPointX(pt);
@@ -2194,7 +2202,7 @@ export function renderChart(
   }
 
   // ── LAYER 10: Crosshair ───────────────────────────────────────────────
-  if (crosshair) {
+  if (crosshair && !options.skipCrosshair) {
     const cx = Math.max(0, Math.min(chartW, crosshair.x));
     const cy = Math.max(0, Math.min(H, crosshair.y));
     ctx.save();
@@ -2231,6 +2239,272 @@ export function renderChart(
       ctx.fillText(pTxt, chartW + 5 * dpr, cy);
     }
     // Time label on bottom
+    const cidx = startIdx + Math.floor(cx / candleW);
+    if (cidx >= 0 && cidx < candles.length) {
+      const ts = candles[cidx].openTime;
+      const tStr = formatCrosshairTime(ts, isDailyOrHigher);
+      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+      const tMeas = ctx.measureText(tStr);
+      const tLW = tMeas.width + 10 * dpr, tLH = 14 * dpr;
+      const tLX = Math.min(Math.max(0, cx - tLW / 2), chartW - tLW);
+      ctx.fillStyle = LABEL_BG;
+      ctx.fillRect(tLX, chartH, tLW, tLH);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(tStr, tLX + 5 * dpr, chartH + 2 * dpr);
+    }
+    ctx.restore();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DUAL-CANVAS OVERLAY RENDERER (60-120 FPS Crosshair, Magnet & Active Previews)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export function renderOverlay(
+  ctx: CanvasRenderingContext2D,
+  candles: Candle[],
+  options: ChartOptions,
+  view: ViewState,
+  crosshair: Crosshair | null,
+  dpr: number,
+  magnetReticle?: MagnetReticle | null
+) {
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const RM = 58 * dpr;
+  const BM = 22 * dpr;
+
+  const panelInds = options.indicators.filter(i => !isOverlay(i.type) && i.enabled);
+  const hasVolPanel = options.showVolumePanel;
+  const totalPanels = panelInds.length + (hasVolPanel ? 1 : 0);
+  const panelH = totalPanels === 0 ? 0 : Math.min(H * 0.38, totalPanels * 95 * dpr);
+  const chartH = H - panelH - BM;
+  const chartW = W - RM;
+
+  const { startIdx, endIdx } = view;
+  const visCnt = endIdx - startIdx;
+  if (visCnt <= 0 || candles.length === 0) return;
+
+  const candleW = chartW / visCnt;
+
+  const visSlice = candles.slice(startIdx, Math.min(endIdx, candles.length)).filter(c => c && c.close > 0);
+  const closes = visSlice.map(c => c.close).sort((a, b) => a - b);
+  const medClose = closes.length > 0 ? closes[Math.floor(closes.length / 2)] : 1000;
+  const anchorPrice = (options.currentPriceOverride && options.currentPriceOverride > 0)
+    ? options.currentPriceOverride
+    : medClose;
+  const minValidBound = anchorPrice * 0.85;
+  const maxValidBound = anchorPrice * 1.15;
+
+  let pMin = Infinity, pMax = -Infinity;
+  for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
+    const c = candles[i];
+    const safeLow = Math.max(minValidBound, Math.min(maxValidBound, (c.low >= minValidBound && c.low <= maxValidBound) ? c.low : c.close));
+    const safeHigh = Math.min(maxValidBound, Math.max(minValidBound, (c.high >= minValidBound && c.high <= maxValidBound) ? c.high : c.close));
+    pMin = Math.min(pMin, safeLow);
+    pMax = Math.max(pMax, safeHigh);
+  }
+  if (options.currentPriceOverride && options.currentPriceOverride > 0 && endIdx >= candles.length) {
+    pMin = Math.min(pMin, Math.max(minValidBound, options.currentPriceOverride));
+    pMax = Math.max(pMax, Math.min(maxValidBound, options.currentPriceOverride));
+  }
+  const pad = (pMax - pMin) * 0.05 || 1;
+  pMin -= pad; pMax += pad;
+  pMin = Math.max(minValidBound * 0.95, pMin);
+  pMax = Math.min(maxValidBound * 1.05, pMax);
+
+  if (options.scaleState) {
+    const center = (pMax + pMin) / 2 + (options.scaleState.priceOffset || 0);
+    const scaledRange = (pMax - pMin) * (options.scaleState.priceScaleRatio || 1.0);
+    pMin = center - scaledRange / 2;
+    pMax = center + scaledRange / 2;
+  }
+  const pRange = Math.max(pMax - pMin, 0.01);
+
+  function priceToY(p: number): number { return chartH - ((p - pMin) / pRange * chartH); }
+
+  const getPointX = (pt: { index: number; time?: number }) => {
+    let idx = pt.index;
+    if (pt.time && candles.length > 0) {
+      if (candles[idx]?.openTime !== pt.time) {
+        let bestIdx = idx;
+        let minDiff = Infinity;
+        for (let i = 0; i < candles.length; i++) {
+          const diff = Math.abs(candles[i].openTime - pt.time);
+          if (diff < minDiff) {
+            minDiff = diff;
+            bestIdx = i;
+          }
+        }
+        idx = bestIdx;
+      }
+    }
+    return (idx - startIdx) * candleW + candleW / 2;
+  };
+
+  // 1. Draw Active In-Progress Rubber-Band Drawing
+  if (options.activeDrawing) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, chartW, chartH); ctx.clip();
+    const item = options.activeDrawing;
+    const color = item.color || '#2563EB';
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = (item.lineWidth || 2) * dpr;
+
+    if (item.points.length > 0) {
+      const p1 = item.points[0];
+      const x1 = getPointX(p1);
+      const y1 = priceToY(p1.price);
+
+      if (item.tool === 'HORIZONTAL') {
+        ctx.setLineDash([6 * dpr, 4 * dpr]);
+        ctx.beginPath(); ctx.moveTo(0, y1); ctx.lineTo(chartW, y1); ctx.stroke();
+      } else if (item.tool === 'HORIZONTAL_RAY') {
+        ctx.setLineDash([6 * dpr, 4 * dpr]);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(chartW, y1); ctx.stroke();
+      } else if (item.tool === 'VERTICAL_LINE') {
+        ctx.setLineDash([6 * dpr, 4 * dpr]);
+        ctx.beginPath(); ctx.moveTo(x1, 0); ctx.lineTo(x1, chartH); ctx.stroke();
+      } else if (item.tool === 'BRUSH') {
+        if (item.points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          for (let k = 1; k < item.points.length; k++) {
+            ctx.lineTo(getPointX(item.points[k]), priceToY(item.points[k].price));
+          }
+          ctx.stroke();
+        }
+      } else if (item.points.length >= 2) {
+        const p2 = item.points[1];
+        const x2 = getPointX(p2);
+        const y2 = priceToY(p2.price);
+
+        if (item.tool === 'TRENDLINE' || item.tool === 'RAY' || item.tool === 'EXTENDED_LINE' || item.tool === 'CALLOUT') {
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+        } else if (item.tool === 'RECTANGLE') {
+          const rx = Math.min(x1, x2), ry = Math.min(y1, y2);
+          const rw = Math.abs(x2 - x1), rh = Math.abs(y2 - y1);
+          ctx.fillStyle = item.color ? `${item.color}22` : 'rgba(37, 99, 235, 0.12)';
+          ctx.fillRect(rx, ry, rw, rh);
+          ctx.strokeRect(rx, ry, rw, rh);
+        } else if (item.tool === 'CIRCLE') {
+          const r = Math.hypot(x2 - x1, y2 - y1);
+          ctx.beginPath(); ctx.arc(x1, y1, r, 0, Math.PI * 2);
+          ctx.fillStyle = item.color ? `${item.color}1A` : 'rgba(37, 99, 235, 0.10)';
+          ctx.fill(); ctx.stroke();
+        } else {
+          ctx.setLineDash([4 * dpr, 3 * dpr]);
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  // 2. Draw Selected Drawing Anchor Rings
+  if (options.selectedDrawingId && options.drawings) {
+    const sel = options.drawings.find(d => d.id === options.selectedDrawingId);
+    if (sel && sel.points) {
+      ctx.save();
+      for (const pt of sel.points) {
+        const px = getPointX(pt);
+        const py = priceToY(pt.price);
+        ctx.beginPath();
+        ctx.arc(px, py, 6 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = '#0284C7';
+        ctx.fill();
+        ctx.lineWidth = 2 * dpr;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  // 3. Draw Smart Magnet Snap Reticle
+  const reticle = magnetReticle || options.magnetReticle;
+  if (reticle) {
+    const rx = reticle.x * dpr;
+    const ry = reticle.y * dpr;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(rx, ry, 7.5 * dpr, 0, Math.PI * 2);
+    ctx.strokeStyle = '#06B6D4';
+    ctx.lineWidth = 1.8 * dpr;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(rx - 10 * dpr, ry); ctx.lineTo(rx + 10 * dpr, ry);
+    ctx.moveTo(rx, ry - 10 * dpr); ctx.lineTo(rx, ry + 10 * dpr);
+    ctx.strokeStyle = 'rgba(6, 182, 212, 0.65)';
+    ctx.lineWidth = 1 * dpr;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(rx, ry, 2.5 * dpr, 0, Math.PI * 2);
+    ctx.fillStyle = '#06B6D4';
+    ctx.fill();
+
+    const badgeText = `${reticle.type[0]} ${formatPrice(reticle.price)}`;
+    ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+    const m = ctx.measureText(badgeText);
+    const bw = m.width + 6 * dpr, bh = 13 * dpr;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.fillRect(rx + 8 * dpr, ry - bh / 2, bw, bh);
+    ctx.fillStyle = '#22D3EE';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(badgeText, rx + 11 * dpr, ry);
+    ctx.restore();
+  }
+
+  // 4. Draw Crosshair & Coordinate Badges
+  if (crosshair) {
+    const cx = Math.max(0, Math.min(chartW, crosshair.x));
+    const cy = Math.max(0, Math.min(H, crosshair.y));
+    ctx.save();
+    ctx.setLineDash([4 * dpr, 3 * dpr]);
+    ctx.strokeStyle = CROSSHAIR_COLOR;
+    ctx.lineWidth = 1 * dpr;
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(chartW, cy); ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (cy <= chartH) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, 3 * dpr, 0, Math.PI * 2);
+      ctx.fillStyle = '#2563EB';
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.stroke();
+
+      const price = pMax - (cy / chartH) * pRange;
+      const pTxt = formatPrice(price);
+      ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
+      const pMeas = ctx.measureText(pTxt);
+      const pLW = pMeas.width + 10 * dpr, pLH = 14 * dpr;
+      ctx.fillStyle = LABEL_BG;
+      ctx.fillRect(chartW, cy - pLH / 2, pLW, pLH);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pTxt, chartW + 5 * dpr, cy);
+    }
+
+    const firstMs = candles.length > 0 ? candles[0].openTime : 0;
+    const lastMs = candles.length > 0 ? candles[candles.length - 1].openTime : 0;
+    const avgDur = candles.length > 1 ? Math.abs(lastMs - firstMs) / (candles.length - 1) : 86400000;
+    const tf = options.timeframe.toUpperCase();
+    const isDailyOrHigher = ['1D','D','1W','W','1M','M'].includes(tf) || avgDur >= 20 * 3600000;
+
     const cidx = startIdx + Math.floor(cx / candleW);
     if (cidx >= 0 && cidx < candles.length) {
       const ts = candles[cidx].openTime;

@@ -11,6 +11,9 @@ interface DrawingToolbarProps {
   onUndoDrawing?: () => void;
   onOpenDrawingsManager?: () => void;
   onOpenObjectsTree?: () => void;
+  isMagnetActive?: boolean;
+  onToggleMagnet?: () => void;
+  onOpenHotkeys?: () => void;
   drawingsCount?: number;
   className?: string;
 }
@@ -98,6 +101,9 @@ export function DrawingToolbar({
   onUndoDrawing,
   onOpenDrawingsManager,
   onOpenObjectsTree,
+  isMagnetActive = false,
+  onToggleMagnet,
+  onOpenHotkeys,
   drawingsCount = 0,
   className = '',
 }: DrawingToolbarProps) {
@@ -218,6 +224,20 @@ export function DrawingToolbar({
 
       <div className="w-5 h-px bg-slate-200 dark:bg-slate-800 my-2" />
 
+      {/* ── 2.5. Smart Magnet Snap Mode ── */}
+      <button
+        type="button"
+        onClick={() => onToggleMagnet?.()}
+        title={isMagnetActive ? 'Magnet Mode ON (Snaps drawing vertices to wicks) [Hold Shift]' : 'Magnet Mode OFF (Hold Shift to snap)'}
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 ${
+          isMagnetActive
+            ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/40 shadow-xs font-bold'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+        }`}
+      >
+        <span className="text-sm leading-none">🧲</span>
+      </button>
+
       {/* ── 3. Objects Tree / Drawings Manager ── */}
       <button
         type="button"
@@ -249,6 +269,18 @@ export function DrawingToolbar({
             <polyline points="1 4 1 10 7 10" />
             <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
           </svg>
+        </button>
+      )}
+
+      {/* ── 4.5. Keyboard Shortcuts Cheat Sheet (?) ── */}
+      {onOpenHotkeys && (
+        <button
+          type="button"
+          onClick={() => onOpenHotkeys()}
+          title="Keyboard Shortcuts Cheat Sheet (?)"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer mb-1 font-mono font-bold text-xs"
+        >
+          ⌨
         </button>
       )}
 

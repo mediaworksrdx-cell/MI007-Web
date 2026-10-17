@@ -76,6 +76,7 @@ interface ChartToolbarProps {
   onSaveChartLayout: () => void;
   onClearAllIndicators?: () => void;
   onOpenIndicatorsModal?: () => void;
+  onExportSnapshot?: (mode: 'download' | 'clipboard') => void;
 }
 
 export function ChartToolbar({
@@ -89,6 +90,7 @@ export function ChartToolbar({
   onToggleIndicator, onOpenIndicatorSettings,
   onSelectTemplate, onSaveToTemplate, onRenameTemplate, onRemoveTemplate, onSaveChartLayout, onClearAllIndicators,
   onOpenIndicatorsModal,
+  onExportSnapshot,
 }: ChartToolbarProps) {
   const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'DRAWING' | 'TEMPLATES' | null>(null);
   const [indicatorSearch, setIndicatorSearch] = useState('');
@@ -525,6 +527,19 @@ export function ChartToolbar({
           <span>{saveStatus === 'saved' ? '✓' : '💾'}</span>
           <span>{saveStatus === 'saved' ? 'SAVED' : 'SAVE'}</span>
         </button>
+
+        {/* 6.5. SNAPSHOT CAMERA TOOL */}
+        {onExportSnapshot && (
+          <button
+            type="button"
+            onClick={() => onExportSnapshot('download')}
+            title="Download High-Resolution Chart Image (Alt+S)"
+            className="px-2.5 py-1.5 rounded-lg border border-[var(--theme-page-border)] hover:border-emerald-500/60 bg-[var(--theme-card-surface)] text-[var(--theme-page-text)] hover:text-emerald-400 font-bold text-xs mono flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+          >
+            <span className="text-sm leading-none">📷</span>
+            <span className="hidden md:inline">SNAPSHOT</span>
+          </button>
+        )}
 
         {/* 7. TEMPLATES (5 SLOTS — NAME, RENAME, EDIT, REMOVE) */}
         <div className="relative">
