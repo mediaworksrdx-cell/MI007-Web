@@ -104,9 +104,9 @@ const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number;
   { symbol: 'AVAX', price: 28.50, change: 0.45, changePct: 1.60 },
 
   // Macro Commodities
-  { symbol: 'GOLD', price: 2648.00, change: 11.80, changePct: 0.45 },
-  { symbol: 'XAU/USD', price: 2150.50, change: 12.20, changePct: 0.57 },
-  { symbol: 'BRENT', price: 82.50, change: 0.45, changePct: 0.55 },
+  { symbol: 'GOLD', price: 2650.50, change: 11.80, changePct: 0.45 },
+  { symbol: 'XAU/USD', price: 2650.50, change: 12.20, changePct: 0.57 },
+  { symbol: 'BRENT', price: 74.50, change: 0.45, changePct: 0.55 },
 ];
 
 function buildInitialPriceMap(): Map<string, LiveSymbolData> {
@@ -148,11 +148,11 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   const [cryptoPrices, setCryptoPrices] = useState<TradeEngineCrypto[]>([]);
   const [macroData, setMacroData] = useState<TradeEngineMacro[]>([
     { symbol: 'DXY', value: '104.20' },
-    { symbol: 'XAU/USD', value: '2150.50' },
-    { symbol: 'XAG/USD', value: '24.80' },
+    { symbol: 'XAU/USD', value: '2650.50' },
+    { symbol: 'XAG/USD', value: '31.50' },
     { symbol: 'US10Y', value: '4.25%' },
-    { symbol: 'BRENT', value: '82.50' },
-    { symbol: 'VIX', value: '13.40' },
+    { symbol: 'BRENT', value: '74.50' },
+    { symbol: 'VIX', value: '18.40' },
   ]);
   const [lastTick, setLastTick] = useState<TradeEngineTick | null>(null);
 

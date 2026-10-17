@@ -15,10 +15,11 @@ interface TickerTapeProps {
 
 const MACRO_ITEMS = [
   { symbol: 'DXY', displayVal: '104.20', isMacro: true, change: 0, changePct: 0, price: 104.20 },
-  { symbol: 'XAU/USD', displayVal: '2,150.50', isMacro: true, change: 0, changePct: 0, price: 2150.50 },
+  { symbol: 'XAU/USD', displayVal: '2,650.50', isMacro: true, change: 0, changePct: 0, price: 2650.50 },
+  { symbol: 'XAG/USD', displayVal: '31.50', isMacro: true, change: 0, changePct: 0, price: 31.50 },
   { symbol: 'US10Y', displayVal: '4.25%', isMacro: true, change: 0, changePct: 0, price: 4.25 },
-  { symbol: 'BRENT', displayVal: '$82.50', isMacro: true, change: 0, changePct: 0, price: 82.50 },
-  { symbol: 'VIX', displayVal: '13.40', isMacro: true, change: 0, changePct: 0, price: 13.40 },
+  { symbol: 'BRENT', displayVal: '$74.50', isMacro: true, change: 0, changePct: 0, price: 74.50 },
+  { symbol: 'VIX', displayVal: '18.40', isMacro: true, change: 0, changePct: 0, price: 18.40 },
 ];
 
 export function TickerTape({ market: propMarket, currency: propCurrency }: TickerTapeProps) {
