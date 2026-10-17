@@ -1120,8 +1120,8 @@ export function renderChart(
     }
   } else {
     // Candlestick, Hollow, Heikin-Ashi
-    const bodyW = candleW * 0.65;
-    const wickW = 1 * dpr;
+    const bodyW = Math.max(candleW * 0.72, 3 * dpr);
+    const wickW = Math.max(1 * dpr, 1);
     const isHollow = options.chartType === 'HOLLOW_CANDLE';
     for (let i = startIdx; i < Math.min(endIdx, drawCandles.length); i++) {
       const li = i - startIdx;
@@ -1136,33 +1136,43 @@ export function renderChart(
       // Defensive sanity bounds: prevent distorted multi-hundred-point pillars from corrupted caches
       const barClose = Math.max(minValidBound, Math.min(maxValidBound, effectiveClose));
       let barOpen = (c.open >= minValidBound && c.open <= maxValidBound) ? c.open : barClose;
-      if (Math.abs(barOpen - barClose) > barClose * 0.03) {
-        barOpen = barClose + (barOpen > barClose ? 1 : -1) * barClose * 0.02;
+      if (Math.abs(barOpen - barClose) > barClose * 0.05) {
+        barOpen = barClose + (barOpen > barClose ? 1 : -1) * barClose * 0.03;
       }
       const topPrice = Math.max(barOpen, barClose);
       const botPrice = Math.min(barOpen, barClose);
-      const maxWick = topPrice * 0.015;
+      const barDelta = Math.abs(topPrice - botPrice);
+      const maxWick = Math.max(barDelta * 2.5, topPrice * 0.005);
       const barHigh = Math.min(Math.max(effectiveHigh, topPrice), topPrice + maxWick);
       const barLow = Math.max(Math.min(effectiveLow, botPrice), Math.max(minValidBound, botPrice - maxWick));
 
-      const bull = barClose >= barOpen;
+      const isOriginalBear = (c.close < c.open);
+      const bull = isOriginalBear ? false : (barClose >= barOpen);
       const color = bull ? BULL : BEAR;
       const cx = li * candleW + candleW / 2;
       const hY = priceToY(barHigh), lY = priceToY(barLow);
       const oY = priceToY(barOpen), cY = priceToY(barClose);
       const bTop = Math.min(oY, cY), bBot = Math.max(oY, cY);
-      const bH = Math.max(bBot - bTop, 1);
-      // Wick
+      const rawBodyH = bBot - bTop;
+      const minBodyH = Math.max(2.5 * dpr, 2.5);
+      const bH = Math.max(rawBodyH, minBodyH);
+      const midY = (oY + cY) / 2;
+      const renderTop = rawBodyH < minBodyH ? midY - minBodyH / 2 : bTop;
+
+      // Wick (drawn first behind body)
       ctx.strokeStyle = color; ctx.lineWidth = wickW;
       ctx.beginPath(); ctx.moveTo(cx, hY); ctx.lineTo(cx, lY); ctx.stroke();
-      // Body
+
+      // Body (crisp rectangular institutional fill)
       const bLeft = cx - bodyW / 2;
       if (isHollow && bull) {
-        ctx.strokeStyle = color; ctx.lineWidth = 1*dpr;
-        ctx.strokeRect(bLeft, bTop, bodyW, bH);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(bLeft, renderTop, bodyW, bH);
+        ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.2 * dpr, 1);
+        ctx.strokeRect(bLeft, renderTop, bodyW, bH);
       } else {
         ctx.fillStyle = color;
-        ctx.fillRect(bLeft, bTop, bodyW, bH);
+        ctx.fillRect(bLeft, renderTop, bodyW, bH);
       }
     }
   }

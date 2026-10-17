@@ -191,18 +191,21 @@ export function mergeCandleArrays(base: Candle[], incoming: Candle[], timeframeM
         // incoming authoritative candle overwrites existing completely instead of combining with Math.max/min
         const divergence = existing.close > 0 ? Math.abs(c.close - existing.close) / existing.close : 1;
         const isExistingCorrupt = (existing.high - existing.low) / Math.max(1, existing.low) > 0.08;
-        if (divergence > 0.05 || isExistingCorrupt) {
+        const hasDeformedWick = (existing.high - existing.low) > Math.max(1, Math.abs(existing.close - existing.open) * 15);
+        if (divergence > 0.05 || isExistingCorrupt || hasDeformedWick) {
           candleMap.set(bTime, { ...c, openTime: bTime });
         } else {
-          const top = Math.max(existing.open, c.close);
-          const bot = Math.min(existing.open, c.close);
-          const maxWick = top * 0.02;
+          const safeOpen = (existing.open > 0 && Math.abs(existing.open - c.close) / c.close <= 0.05) ? existing.open : c.open;
+          const top = Math.max(safeOpen, c.close);
+          const bot = Math.min(safeOpen, c.close);
+          const bodyH = Math.abs(top - bot);
+          const maxWick = Math.max(bodyH * 2.5, top * 0.005);
           candleMap.set(bTime, {
             openTime: bTime,
-            open: existing.open > 0 ? existing.open : c.open,
+            open: safeOpen,
             close: c.close,
-            high: Math.min(Math.max(existing.high, c.high, top), Number((top + maxWick).toFixed(2))),
-            low: Math.max(Math.min(existing.low, c.low, bot), Number(Math.max(1, bot - maxWick).toFixed(2))),
+            high: Math.min(Math.max(c.high, top), Number((top + maxWick).toFixed(2))),
+            low: Math.max(Math.min(c.low, bot), Number(Math.max(1, bot - maxWick).toFixed(2))),
             volume: Math.max(existing.volume, c.volume),
           });
         }

@@ -85,36 +85,47 @@ export function generateMockCandles(
     BASE_PRICES.UAE[symClean] ??
     1000;
 
-  // Volatility coefficients per market
-  const volFactor = market === 'INDIA' ? 0.0008
-    : market === 'USA' ? 0.0006
-    : 0.0004;
-
   const candles: Candle[] = [];
   let price = basePrice;
-  let trend = 0; // drift
   const now = Date.now();
   const startTime = now - count * timeframeMs;
 
+  // Scale typical body movement proportional to timeframe
+  const isHighTf = timeframeMs >= 86_400_000;
+  const isMedTf = timeframeMs >= 3_600_000;
+  const basePct = isHighTf ? 0.008 : isMedTf ? 0.0045 : 0.0022;
+
+  let waveTrend = Math.random() > 0.5 ? 1 : -1;
+  let waveSteps = Math.floor(3 + Math.random() * 5);
+
   for (let i = 0; i < count; i++) {
-    // Random walk with mean reversion
-    if (i % 20 === 0) trend = (Math.random() - 0.48) * basePrice * 0.002;
-    const volatility = basePrice * volFactor * (0.5 + Math.random());
-    const change = trend + (Math.random() - 0.5) * volatility * 2;
+    if (waveSteps <= 0) {
+      waveTrend = Math.random() > 0.48 ? 1 : -1;
+      waveSteps = Math.floor(3 + Math.random() * 6); // 3 to 8 bars per swing
+    }
+    waveSteps--;
+
+    // Healthy institutional candle body (0.3% to 1.1% of price on 1H/1D)
+    const variance = (0.5 + Math.random() * 1.0);
+    const movePct = basePct * variance * (Math.random() > 0.38 ? waveTrend : -waveTrend);
+    const bodySize = Math.max(price * Math.abs(movePct), price * 0.001);
+    const isBull = movePct >= 0;
 
     const open = price;
-    const close = Math.max(open + change, open * 0.005);
-    const wickUp = Math.random() * volatility;
-    const wickDown = Math.random() * volatility;
+    const close = isBull ? open + bodySize : Math.max(open - bodySize, open * 0.01);
+
+    // Realistic wicks: 15% to 45% of the body height, never overpowering the body
+    const wickUp = bodySize * (0.15 + Math.random() * 0.35);
+    const wickDown = bodySize * (0.15 + Math.random() * 0.35);
     const high = Math.max(open, close) + wickUp;
-    const low = Math.min(open, close) - wickDown;
-    const volume = Math.floor(basePrice * (500 + Math.random() * 1500));
+    const low = Math.max(Math.min(open, close) - wickDown, open * 0.005);
+    const volume = Math.floor(basePrice * (800 + Math.random() * 2400));
 
     candles.push({
       openTime: startTime + i * timeframeMs,
       open: +open.toFixed(2),
       high: +high.toFixed(2),
-      low: +Math.max(low, open * 0.001).toFixed(2),
+      low: +low.toFixed(2),
       close: +close.toFixed(2),
       volume,
     });

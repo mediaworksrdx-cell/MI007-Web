@@ -170,13 +170,15 @@ export function CandlestickCanvas({
       if (!c) return c;
       const safeClose = (c.close >= minAcceptable && c.close <= maxAcceptable) ? c.close : referencePrice;
       let safeOpen = (c.open >= minAcceptable && c.open <= maxAcceptable) ? c.open : safeClose;
-      // Clamp open within ±3% of close so candles never deform into vertical columns
-      if (Math.abs(safeOpen - safeClose) > safeClose * 0.03) {
-        safeOpen = safeClose + (safeOpen > safeClose ? 1 : -1) * safeClose * 0.02;
+      // Gently clamp open if an extreme outlier exceeds 6% of price
+      if (Math.abs(safeOpen - safeClose) > safeClose * 0.06) {
+        safeOpen = safeClose + (safeOpen > safeClose ? 1 : -1) * safeClose * 0.04;
       }
       const top = Math.max(safeOpen, safeClose);
       const bottom = Math.min(safeOpen, safeClose);
-      const maxWick = top * 0.015;
+      const bodyH = Math.abs(safeClose - safeOpen);
+      // Realistic wick envelope: maximum 2.5x body or 0.5% price
+      const maxWick = Math.max(bodyH * 2.5, top * 0.005);
       const safeHigh = Math.min(Math.max(c.high, top), Number((top + maxWick).toFixed(2)));
       const safeLow = Math.max(Math.min(c.low, bottom), Number(Math.max(1, bottom - maxWick).toFixed(2)));
       return {

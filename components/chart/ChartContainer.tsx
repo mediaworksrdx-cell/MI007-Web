@@ -90,18 +90,20 @@ function sanitizeCandleScale(candles: Candle[], targetPrice: number): Candle[] {
     return true;
   });
 
-  // Self-heal Frankenstein spikes & wide bars: clamp bar range to 3.5% and wicks to 1.5%
+  // Self-heal Frankenstein spikes & wide bars with proportional wick envelope
   return filtered.map(c => {
     const top = Math.max(c.open, c.close);
     const bottom = Math.min(c.open, c.close);
-    const maxBarRange = top * 0.035;
+    const maxBarRange = top * 0.06;
     const safeOpen = Math.abs(c.open - c.close) > maxBarRange
       ? (c.open > c.close ? Number((c.close + maxBarRange).toFixed(2)) : Number((c.close - maxBarRange).toFixed(2)))
       : c.open;
     const bodyTop = Math.max(safeOpen, c.close);
     const bodyBot = Math.min(safeOpen, c.close);
-    const safeHigh = Math.min(Math.max(c.high, bodyTop), Number((bodyTop + bodyTop * 0.015).toFixed(2)));
-    const safeLow = Math.max(Math.min(c.low, bodyBot), Number(Math.max(1, bodyBot - bodyBot * 0.015).toFixed(2)));
+    const bodyH = Math.abs(bodyTop - bodyBot);
+    const maxWick = Math.max(bodyH * 2.5, bodyTop * 0.005);
+    const safeHigh = Math.min(Math.max(c.high, bodyTop), Number((bodyTop + maxWick).toFixed(2)));
+    const safeLow = Math.max(Math.min(c.low, bodyBot), Number(Math.max(1, bodyBot - maxWick).toFixed(2)));
     return {
       ...c,
       open: safeOpen,
@@ -197,8 +199,13 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         const sortedCloses = rawCached.filter(c => c && c.close > 0).map(c => c.close).sort((a, b) => a - b);
         const cachedMed = sortedCloses[Math.floor(sortedCloses.length / 2)] || 0;
         const hasSpike = rawCached.some(c => (c.high - c.low) / Math.max(1, c.low) > 0.08);
+        const hasDeformedWick = rawCached.some(c => {
+          const body = Math.abs(c.close - c.open);
+          const wick = c.high - c.low;
+          return body > 0 && (wick / body > 20) && (wick > c.close * 0.008);
+        });
         const isScaleDislocated = cachedMed > 0 && (Math.abs(cachedMed - expectedPrice) / expectedPrice > 0.12);
-        if (hasSpike || isScaleDislocated) {
+        if (hasSpike || hasDeformedWick || isScaleDislocated) {
           console.warn(`[ChartContainer] Auto-purging corrupted cache for ${selectedSymbol} (cachedMed: ${cachedMed}, expected: ${expectedPrice})`);
           await purgeStoredCandles(selectedSymbol, timeframe);
           rawCached = null;
