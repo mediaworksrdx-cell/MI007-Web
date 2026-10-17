@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useState, useLayoutEffect } from 'react';
+import { useRef, useEffect, useCallback, useState, useLayoutEffect, useMemo } from 'react';
 import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels, StrategyPayoffOverlay } from '@/lib/types';
 import { isOverlay } from '@/lib/types';
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
@@ -92,16 +92,44 @@ export function CandlestickCanvas({
     }
   }, [activeDrawingTool]);
 
+  // Defensive auto-healing: sanitize any cached Frankenstein wicks or dislocated bars before rendering
+  const cleanCandles = useMemo(() => {
+    if (!candles || candles.length === 0) return [];
+    const referencePrice = (currentPriceOverride && currentPriceOverride > 0)
+      ? currentPriceOverride
+      : (candles[candles.length - 1]?.close || 1000);
+    const minAcceptable = referencePrice * 0.75;
+    const maxAcceptable = referencePrice * 1.30;
+
+    return candles.map(c => {
+      if (!c) return c;
+      const safeClose = (c.close >= minAcceptable && c.close <= maxAcceptable) ? c.close : referencePrice;
+      const safeOpen = (c.open >= minAcceptable && c.open <= maxAcceptable) ? c.open : safeClose;
+      const top = Math.max(safeOpen, safeClose);
+      const bottom = Math.min(safeOpen, safeClose);
+      const maxWick = top * 0.035;
+      const safeHigh = Math.min(Math.max(c.high, top), Number((top + maxWick).toFixed(2)));
+      const safeLow = Math.max(Math.min(c.low, bottom), Number(Math.max(1, bottom - maxWick).toFixed(2)));
+      return {
+        ...c,
+        open: safeOpen,
+        close: safeClose,
+        high: safeHigh,
+        low: safeLow,
+      };
+    });
+  }, [candles, currentPriceOverride]);
+
   // Viewport calculation
   const visibleCount = Math.max(8, Math.round(VISIBLE_CANDLES_BASE / zoom));
-  const endIdx = Math.max(visibleCount, candles.length - Math.round(scrollOffset));
-  const clampedEnd = Math.min(endIdx, candles.length);
+  const endIdx = Math.max(visibleCount, cleanCandles.length - Math.round(scrollOffset));
+  const clampedEnd = Math.min(endIdx, cleanCandles.length);
   const clampedStart = Math.max(0, clampedEnd - visibleCount);
 
   // Helper to map mouse coordinate to price and candle
   const getPointFromEvent = useCallback((clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
-    if (!canvas || size.w === 0 || size.h === 0 || candles.length === 0) return null;
+    if (!canvas || size.w === 0 || size.h === 0 || cleanCandles.length === 0) return null;
     const rect = canvas.getBoundingClientRect();
     const x = clientX - rect.left;
     const y = clientY - rect.top;
@@ -116,12 +144,12 @@ export function CandlestickCanvas({
     if (visCnt <= 0) return null;
     const candleW = chartW / visCnt;
     const offsetIdx = Math.floor(x / candleW);
-    const candleIdx = Math.min(candles.length - 1, Math.max(0, clampedStart + offsetIdx));
+    const candleIdx = Math.min(cleanCandles.length - 1, Math.max(0, clampedStart + offsetIdx));
 
     let pMin = Infinity, pMax = -Infinity;
-    for (let i = clampedStart; i < Math.min(clampedEnd, candles.length); i++) {
-      pMin = Math.min(pMin, candles[i].low);
-      pMax = Math.max(pMax, candles[i].high);
+    for (let i = clampedStart; i < Math.min(clampedEnd, cleanCandles.length); i++) {
+      pMin = Math.min(pMin, cleanCandles[i].low);
+      pMax = Math.max(pMax, cleanCandles[i].high);
     }
     const pad = (pMax - pMin) * 0.05 || 1;
     pMin -= pad; pMax += pad;
@@ -129,21 +157,21 @@ export function CandlestickCanvas({
 
     const clampedY = Math.max(0, Math.min(chartH, y));
     const price = pMax - (clampedY / chartH) * pRange;
-    const time = candles[candleIdx]?.openTime || Date.now();
+    const time = cleanCandles[candleIdx]?.openTime || Date.now();
 
     return { index: candleIdx, time, price, x, y };
-  }, [candles, clampedStart, clampedEnd, indicators, showVolumePanel, size]);
+  }, [cleanCandles, clampedStart, clampedEnd, indicators, showVolumePanel, size]);
 
   // Render chart
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || size.w === 0 || candles.length === 0) return;
+    if (!canvas || size.w === 0 || cleanCandles.length === 0) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     renderChart(
       ctx,
-      candles,
+      cleanCandles,
       {
         chartType, showVolume, showVolumePanel,
         showSmcOverlay, showVolumeProfile,
@@ -158,7 +186,7 @@ export function CandlestickCanvas({
       crosshair ? { x: crosshair.x * dpr, y: crosshair.y * dpr } : null,
       dpr
     );
-  }, [candles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
+  }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, drawingInProgress,
@@ -397,9 +425,9 @@ export function CandlestickCanvas({
       setZoom(z => Math.max(0.2, Math.min(5, z * (e.deltaY < 0 ? 1.1 : 0.9))));
     } else {
       const delta = e.deltaY > 0 ? -3 : 3;
-      setScrollOffset(s => Math.max(0, Math.min(candles.length - visibleCount, s - delta)));
+      setScrollOffset(s => Math.max(0, Math.min(cleanCandles.length - visibleCount, s - delta)));
     }
-  }, [candles.length, visibleCount]);
+  }, [cleanCandles.length, visibleCount]);
 
   useEffect(() => {
     const el = canvasRef.current;
@@ -416,7 +444,7 @@ export function CandlestickCanvas({
     const dx = e.touches[0].clientX - lastTouchX.current;
     const candlePixels = (size.w - 58) / visibleCount;
     const deltaCandleCount = -dx / candlePixels;
-    setScrollOffset(s => Math.max(0, Math.min(candles.length - visibleCount, s + deltaCandleCount)));
+    setScrollOffset(s => Math.max(0, Math.min(cleanCandles.length - visibleCount, s + deltaCandleCount)));
     lastTouchX.current = e.touches[0].clientX;
   };
   const handleTouchEnd = () => { lastTouchX.current = null; };

@@ -677,8 +677,8 @@ export function renderChart(
   const visSlice = candles.slice(startIdx, Math.min(endIdx, candles.length)).filter(c => c && c.close > 0);
   const closes = visSlice.map(c => c.close).sort((a, b) => a - b);
   const medClose = closes.length > 0 ? closes[Math.floor(closes.length / 2)] : 1000;
-  const minValidBound = medClose * 0.35;
-  const maxValidBound = medClose * 2.5;
+  const minValidBound = medClose * 0.75;
+  const maxValidBound = medClose * 1.30;
 
   let pMin = Infinity, pMax = -Infinity;
   for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
@@ -1006,11 +1006,21 @@ export function renderChart(
         : c.close;
       const effectiveHigh = isLastBar ? Math.min(Math.max(c.high, effectiveClose), effectiveClose * 1.05) : c.high;
       const effectiveLow = isLastBar ? Math.max(Math.min(c.low, effectiveClose), effectiveClose * 0.95) : c.low;
-      const bull = effectiveClose >= c.open;
+
+      // Defensive sanity bounds: prevent distorted multi-hundred-point pillars from corrupted caches
+      const barClose = effectiveClose;
+      const barOpen = (c.open >= minValidBound && c.open <= maxValidBound) ? c.open : barClose;
+      const topPrice = Math.max(barOpen, barClose);
+      const botPrice = Math.min(barOpen, barClose);
+      const maxWick = topPrice * 0.04;
+      const barHigh = Math.min(Math.max(effectiveHigh, topPrice), topPrice + maxWick);
+      const barLow = Math.max(Math.min(effectiveLow, botPrice), Math.max(1, botPrice - maxWick));
+
+      const bull = barClose >= barOpen;
       const color = bull ? BULL : BEAR;
       const cx = li * candleW + candleW / 2;
-      const hY = priceToY(effectiveHigh), lY = priceToY(effectiveLow);
-      const oY = priceToY(c.open), cY = priceToY(effectiveClose);
+      const hY = priceToY(barHigh), lY = priceToY(barLow);
+      const oY = priceToY(barOpen), cY = priceToY(barClose);
       const bTop = Math.min(oY, cY), bBot = Math.max(oY, cY);
       const bH = Math.max(bBot - bTop, 1);
       // Wick
