@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ChartHotkeysModalProps {
   isOpen: boolean;
@@ -21,107 +22,136 @@ interface HotkeySection {
 
 const SECTIONS: HotkeySection[] = [
   {
-    title: 'Drawing Tools Quick Access',
+    title: 'Drawing Tools',
     icon: '✎',
     items: [
       { keys: ['Alt', 'T'], label: 'Trendline', desc: 'Connect 2 price pivots' },
-      { keys: ['Alt', 'H'], label: 'Horizontal Line', desc: 'Place full-width support / resistance level' },
-      { keys: ['Alt', 'R'], label: 'Extended Ray', desc: 'Ray projecting indefinitely to the right' },
-      { keys: ['Alt', 'F'], label: 'Fibonacci Retracement', desc: '0.236, 0.382, 0.5, 0.618 golden pocket' },
-      { keys: ['Alt', 'B'], label: 'Support / Resistance Box', desc: 'Frame consolidation zones and order blocks' },
-      { keys: ['Alt', 'C'], label: 'Parallel Channel', desc: '3-point ascending / descending trend channel' },
-      { keys: ['Alt', 'M'], label: 'Measure Tool', desc: 'Calculate price change %, delta, and bar count' },
+      { keys: ['Alt', 'H'], label: 'Horizontal Line', desc: 'Full-width S/R level' },
+      { keys: ['Alt', 'R'], label: 'Extended Ray', desc: 'Ray projecting rightward' },
+      { keys: ['Alt', 'F'], label: 'Fibonacci Retracement', desc: '0.618 golden pocket' },
+      { keys: ['Alt', 'B'], label: 'S/R Box', desc: 'Order blocks & consolidations' },
+      { keys: ['Alt', 'C'], label: 'Parallel Channel', desc: '3-point trend channel' },
+      { keys: ['Alt', 'M'], label: 'Measure Tool', desc: 'Price % delta & bars' },
     ],
   },
   {
     title: 'Precision & Object Controls',
     icon: '🧲',
     items: [
-      { keys: ['Shift'], label: 'Magnet Snap (Hold)', desc: 'Automatically snap drawing vertices to nearest candle Open, High, Low, Close' },
-      { keys: ['Delete'], label: 'Delete Selected Drawing', desc: 'Instantly delete the active drawing or zone' },
-      { keys: ['Ctrl', 'Z'], label: 'Undo Drawing', desc: 'Revert the most recently added drawing' },
-      { keys: ['Esc'], label: 'Cancel / Deselect', desc: 'Exit active tool back to cursor & deselect' },
+      { keys: ['Shift'], label: 'Magnet Snap (Hold)', desc: 'Snap to OHLC wicks' },
+      { keys: ['Delete'], label: 'Delete Selected', desc: 'Remove active drawing' },
+      { keys: ['Ctrl', 'Z'], label: 'Undo Drawing', desc: 'Revert last drawing' },
+      { keys: ['Esc'], label: 'Cancel / Deselect', desc: 'Return to cursor mode' },
     ],
   },
   {
     title: 'Navigation & Axis Zoom',
     icon: '🧭',
     items: [
-      { keys: ['Space'], label: 'Jump to Live', desc: 'Instantly snap chart viewport to live real-time candle' },
-      { keys: ['Drag Y-Axis'], label: 'Stretch / Compress Price', desc: 'Click & drag right price scale vertically' },
-      { keys: ['Drag X-Axis'], label: 'Adjust Candle Spacing', desc: 'Click & drag bottom time scale horizontally' },
-      { keys: ['Double Click Axis'], label: 'Reset Auto-Scale', desc: 'Double click price or time axis to auto-fit' },
-      { keys: ['Wheel'], label: 'Scroll / Pan', desc: 'Pan through historical candles horizontally' },
-      { keys: ['Ctrl', 'Wheel'], label: 'Zoom Viewport', desc: 'Expand or contract visible candle range' },
+      { keys: ['Space'], label: 'Jump to Live', desc: 'Snap to live candle' },
+      { keys: ['Drag Y-Axis'], label: 'Stretch Price', desc: 'Drag right price axis' },
+      { keys: ['Drag X-Axis'], label: 'Candle Spacing', desc: 'Drag bottom time axis' },
+      { keys: ['Double Click'], label: 'Auto-Fit Axis', desc: 'Reset price/time scale' },
+      { keys: ['Wheel'], label: 'Pan Chart', desc: 'Scroll historical candles' },
+      { keys: ['Ctrl', 'Wheel'], label: 'Zoom Viewport', desc: 'Expand/contract candle count' },
     ],
   },
   {
-    title: 'Terminal Sharing & Utilities',
+    title: 'Terminal Utilities',
     icon: '📸',
     items: [
-      { keys: ['Alt', 'S'], label: 'Chart Snapshot', desc: 'Export high-res PNG with symbol, timeframe & watermark' },
-      { keys: ['?'], label: 'Shortcuts Cheat Sheet', desc: 'Open this institutional keyboard reference' },
+      { keys: ['Alt', 'S'], label: 'Chart Snapshot', desc: 'High-res card export' },
+      { keys: ['?'], label: 'Cheat Sheet', desc: 'Toggle hotkeys guide' },
     ],
   },
 ];
 
 export function ChartHotkeysModal({ isOpen, onClose }: ChartHotkeysModalProps) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 select-none animate-in fade-in duration-150">
-      <div className="w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !mounted) return null;
+
+  const content = (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 select-none animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="w-full max-w-xl rounded-2xl border border-slate-800 bg-[#0B0F19] text-slate-100 shadow-2xl flex flex-col max-h-[84vh] overflow-hidden animate-in zoom-in-95 duration-150">
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-[#0F172A]/80 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-mono font-bold text-sm">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-mono font-bold text-sm border border-emerald-500/30">
               ⌨
             </div>
             <div>
-              <h3 className="font-mono text-sm font-black text-slate-800 dark:text-slate-100 tracking-wide uppercase">
-                Institutional Keyboard Shortcuts
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                TradingView-compatible hotkeys for rapid execution & analysis
+              <div className="flex items-center gap-2">
+                <h3 className="font-mono text-sm font-black text-slate-100 tracking-wide uppercase">
+                  Keyboard Shortcuts
+                </h3>
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  TradingView Grade
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Fast keyboard execution for institutional chart navigation
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-lg font-bold"
+            title="Close (Esc)"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer text-lg font-bold"
           >
-            ×
+            ✕
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* ── Scrollable Body ── */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
           {SECTIONS.map((sec) => (
-            <div key={sec.title} className="space-y-2.5">
-              <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <div key={sec.title} className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-400">
                 <span>{sec.icon}</span>
                 <span>{sec.title}</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {sec.items.map((it) => (
                   <div
                     key={it.label}
-                    className="flex items-start justify-between p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-800/30 hover:border-slate-200 dark:hover:border-slate-700 transition-colors"
+                    className="flex items-center justify-between px-3 py-2 rounded-xl border border-slate-800/90 bg-[#131B2E]/60 hover:border-slate-700 hover:bg-[#131B2E] transition-all"
                   >
                     <div className="min-w-0 pr-2">
-                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                      <div className="text-xs font-bold text-slate-200 truncate">
                         {it.label}
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+                      <div className="text-[10.5px] text-slate-400 leading-tight truncate">
                         {it.desc}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       {it.keys.map((k) => (
                         <kbd
                           key={k}
-                          className="px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-200 shadow-xs"
+                          className="px-2 py-0.5 rounded-md border border-slate-700 bg-slate-800/90 text-[10px] font-mono font-bold text-emerald-400 shadow-xs"
                         >
                           {k}
                         </kbd>
@@ -134,12 +164,17 @@ export function ChartHotkeysModal({ isOpen, onClose }: ChartHotkeysModalProps) {
           ))}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/50 flex items-center justify-between text-xs text-slate-500">
-          <span>Press <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-[10px] font-bold">Esc</kbd> anytime to dismiss</span>
+        {/* ── Footer ── */}
+        <div className="px-5 py-2.5 border-t border-slate-800 bg-[#0F172A]/80 shrink-0 flex items-center justify-between text-xs text-slate-400">
+          <span className="flex items-center gap-1.5 text-[11px]">
+            <span>Press</span>
+            <kbd className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 font-mono text-[10px] text-slate-300 font-bold">Esc</kbd>
+            <span>or click outside to dismiss</span>
+          </span>
           <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-mono text-xs font-bold transition-colors cursor-pointer"
+            className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-mono text-xs font-black transition-colors cursor-pointer shadow-xs"
           >
             Got It
           </button>
@@ -147,4 +182,6 @@ export function ChartHotkeysModal({ isOpen, onClose }: ChartHotkeysModalProps) {
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { IndicatorConfig, INDICATOR_DEFAULTS } from '@/lib/types';
 
 interface IndicatorSettingsModalProps {
@@ -57,17 +58,25 @@ export function IndicatorSettingsModal({ indicator, isOpen, onClose, onSave }: I
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!isOpen || !mounted) return null;
+
+  const content = (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 select-none animate-in fade-in duration-150"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-sm rounded-xl border border-slate-800 bg-[#0B0F19] text-slate-100 p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-            <h3 className="text-base font-bold text-slate-900">{defaultMeta.label} Settings</h3>
+            <h3 className="text-base font-bold text-slate-100">{defaultMeta.label} Settings</h3>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             ✕
           </button>
@@ -204,4 +213,6 @@ export function IndicatorSettingsModal({ indicator, isOpen, onClose, onSave }: I
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 }
