@@ -3,6 +3,7 @@
 // Complete multi-year historical statements, quarterly results, ratios & shareholding
 
 import { CompanyFundamental } from './types';
+import { findZerodhaStockBySymbol, generateFundamentalFromZerodha } from './zerodhaStocks';
 
 export const MASTER_COMPANIES: CompanyFundamental[] = [
   // ══════════════════════════════════════════════════════════════════════════════
@@ -3061,10 +3062,19 @@ export function getCompaniesByMarket(market: 'INDIA' | 'USA' | 'UAE'): CompanyFu
 /** Find company by symbol */
 export function getCompanyBySymbol(symbol: string): CompanyFundamental | undefined {
   if (!symbol) return undefined;
-  const clean = symbol.trim().toUpperCase();
-  return MASTER_COMPANIES.find(
+  const clean = symbol.trim().toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
+  const existing = MASTER_COMPANIES.find(
     (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
   );
+  if (existing) return existing;
+
+  // Resolve dynamically from full Zerodha Kite catalog (3,800+ stocks)
+  const zerodhaStock = findZerodhaStockBySymbol(clean);
+  if (zerodhaStock) {
+    return generateFundamentalFromZerodha(zerodhaStock);
+  }
+
+  return undefined;
 }
 
 /** Get all sectors in a market */

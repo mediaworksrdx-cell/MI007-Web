@@ -56,11 +56,17 @@ export function TopToolbar({
     <div className="flex flex-col gap-3 rounded-2xl border-2 terminal-page-panel p-4 sm:p-5 bg-[var(--theme-card-bg)] shadow-xl relative z-10">
       {/* Top Controls Row */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--theme-card-border)]">
-        {/* Title */}
-        <div className="flex items-center gap-2">
+        {/* Title & Zerodha Badge */}
+        <div className="flex items-center gap-2.5">
           <span className="mono text-[15px] sm:text-[17px] font-black inst-card-text tracking-wide uppercase">
             STOCK SCREENER
           </span>
+          {market === 'INDIA' && (
+            <span className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 mono text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Zerodha: 3,801 Stocks</span>
+            </span>
+          )}
         </div>
 
         {/* Global Search & Action Buttons */}
@@ -77,7 +83,7 @@ export function TopToolbar({
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
               <span className="truncate text-[var(--theme-card-text-muted)] group-hover:text-[var(--theme-card-text)] transition-colors">
-                Search Companies...
+                {market === 'INDIA' ? 'Search 3,800+ Zerodha Stocks...' : 'Search Companies...'}
               </span>
             </div>
             <span className="text-[10px] px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-slate-400 shrink-0 font-mono font-semibold">

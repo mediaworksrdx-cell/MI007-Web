@@ -1,9 +1,15 @@
 // ─── Company Quick Search & Navigation Modal ────────────────────────────────
+// Full-text search across screened companies AND complete Zerodha Kite NSE catalog (3,800+ stocks)
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { CompanyFundamental } from '@/lib/screener/types';
 import { MASTER_COMPANIES } from '@/lib/screener/data';
+import {
+  searchZerodhaStocks,
+  ZerodhaStockItem,
+  getZerodhaStocksCount,
+} from '@/lib/screener/zerodhaStocks';
 
 interface CompanySearchModalProps {
   isOpen: boolean;
@@ -19,6 +25,10 @@ export function CompanySearchModal({
   companies = MASTER_COMPANIES,
 }: CompanySearchModalProps) {
   const [query, setQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'all' | 'screener' | 'zerodha'>('all');
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [totalZerodha, setTotalZerodha] = useState<number>(() => getZerodhaStocksCount());
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -26,21 +36,51 @@ export function CompanySearchModal({
       setTimeout(() => inputRef.current?.focus(), 50);
     } else {
       setQuery('');
+      setSyncMessage(null);
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  // Pull fresh instruments directly from Zerodha Kite endpoint
+  const handlePullFromZerodha = async () => {
+    setSyncing(true);
+    setSyncMessage('Connecting to Zerodha Kite Connect API...');
+    try {
+      const res = await fetch('/api/screener/zerodha-stocks?action=sync');
+      const data = await res.json();
+      if (data.success) {
+        setTotalZerodha(data.count);
+        setSyncMessage(`✓ Synced ${data.count} active NSE equity stocks from Zerodha!`);
+      } else {
+        setSyncMessage(data.message || 'Updated catalog from Zerodha');
+      }
+    } catch {
+      setSyncMessage('Failed to contact Zerodha endpoint');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
-  const filtered = companies.filter((c) => {
-    if (!query.trim()) return true;
+  // Primary matches from screened universe
+  const screenedMatches = useMemo(() => {
+    if (!query.trim()) return companies.slice(0, 15);
     const q = query.toLowerCase();
-    return (
-      c.symbol.toLowerCase().includes(q) ||
-      c.name.toLowerCase().includes(q) ||
-      c.sector.toLowerCase().includes(q) ||
-      c.industry.toLowerCase().includes(q)
+    return companies.filter(
+      (c) =>
+        c.symbol.toLowerCase().includes(q) ||
+        c.name.toLowerCase().includes(q) ||
+        c.sector.toLowerCase().includes(q) ||
+        c.industry.toLowerCase().includes(q)
     );
-  });
+  }, [companies, query]);
+
+  // Matches from complete 3,800+ Zerodha catalog
+  const zerodhaMatches = useMemo<ZerodhaStockItem[]>(() => {
+    if (!query.trim()) return [];
+    const screenedSyms = new Set(screenedMatches.map((c) => c.symbol.toUpperCase()));
+    return searchZerodhaStocks(query, 30).filter((z) => !screenedSyms.has(z.symbol.toUpperCase()));
+  }, [query, screenedMatches]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
@@ -54,7 +94,7 @@ export function CompanySearchModal({
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search company or ticker (e.g. RELIANCE, TCS, AAPL, EMAAR)..."
+            placeholder="Search all 3,800+ Zerodha stocks (e.g. RELIANCE, TCS, ETERNAL, SUZLON, HAL)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full bg-transparent mono text-[14px] sm:text-[15px] font-bold text-[var(--theme-card-text)] placeholder:text-slate-400 focus:outline-none min-w-0"
@@ -67,52 +107,159 @@ export function CompanySearchModal({
           </button>
         </div>
 
+        {/* Filter Tabs & Zerodha Sync Ribbon */}
+        <div className="px-4 py-2 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] flex flex-wrap items-center justify-between gap-2 text-[12px]">
+          <div className="flex items-center gap-1.5 mono">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                activeTab === 'all'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                  : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
+              }`}
+            >
+              All Results
+            </button>
+            <button
+              onClick={() => setActiveTab('screener')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                activeTab === 'screener'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                  : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
+              }`}
+            >
+              Screened ({screenedMatches.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('zerodha')}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                activeTab === 'zerodha'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                  : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
+              }`}
+            >
+              ⚡ Zerodha Kite ({query ? zerodhaMatches.length : totalZerodha})
+            </button>
+          </div>
+
+          <button
+            onClick={handlePullFromZerodha}
+            disabled={syncing}
+            className="px-2.5 py-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold mono text-[11px] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            title="Pull fresh stock instruments from Zerodha Kite Connect"
+          >
+            <span className={syncing ? 'animate-spin' : ''}>⚡</span>
+            <span>{syncing ? 'Pulling Zerodha...' : 'Pull from Zerodha'}</span>
+          </button>
+        </div>
+
+        {syncMessage && (
+          <div className="px-4 py-1.5 bg-emerald-500/15 border-b border-emerald-500/30 mono text-[11px] text-emerald-300 font-bold flex items-center justify-between">
+            <span>{syncMessage}</span>
+            <button onClick={() => setSyncMessage(null)} className="text-emerald-400 hover:text-white">✕</button>
+          </div>
+        )}
+
         {/* Results List */}
         <div className="max-h-96 overflow-y-auto p-2 divide-y divide-[var(--theme-card-border)]/50">
-          {filtered.length === 0 ? (
+          {screenedMatches.length === 0 && zerodhaMatches.length === 0 ? (
             <div className="p-8 text-center mono text-[13px] text-[var(--theme-card-text-muted)]">
               No matching companies found for &quot;{query}&quot;
             </div>
           ) : (
-            filtered.map((comp) => (
-              <div
-                key={comp.id}
-                onClick={() => {
-                  onSelectCompany(comp.symbol);
-                  onClose();
-                }}
-                className="flex items-center justify-between p-3 rounded-xl hover:bg-emerald-500/10 cursor-pointer transition-colors group"
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
-                  <div className="w-9 h-9 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center justify-center mono text-[12px] font-black text-emerald-400 shrink-0">
-                    {comp.symbol.slice(0, 3)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="mono text-[14px] font-black text-[var(--theme-card-text)] group-hover:text-emerald-400 transition-colors">
-                        {comp.symbol}
-                      </span>
-                      <span className="mono text-[11px] font-bold px-1.5 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] inline-flex items-center leading-none">
-                        {comp.exchange}
-                      </span>
+            <>
+              {/* Screened Universe Results */}
+              {(activeTab === 'all' || activeTab === 'screener') &&
+                screenedMatches.map((comp) => (
+                  <div
+                    key={comp.id}
+                    onClick={() => {
+                      onSelectCompany(comp.symbol);
+                      onClose();
+                    }}
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-emerald-500/10 cursor-pointer transition-colors group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
+                      <div className="w-9 h-9 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center justify-center mono text-[12px] font-black text-emerald-400 shrink-0">
+                        {comp.symbol.slice(0, 3)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="mono text-[14px] font-black text-[var(--theme-card-text)] group-hover:text-emerald-400 transition-colors">
+                            {comp.symbol}
+                          </span>
+                          <span className="mono text-[10.5px] font-bold px-1.5 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] inline-flex items-center leading-none">
+                            {comp.exchange}
+                          </span>
+                          <span className="mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            Screened
+                          </span>
+                        </div>
+                        <div className="text-[12px] text-[var(--theme-card-text-muted)] font-medium truncate">
+                          {comp.name} · {comp.sector}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-[12px] text-[var(--theme-card-text-muted)] font-medium truncate">
-                      {comp.name} · {comp.sector}
-                    </div>
-                  </div>
-                </div>
 
-                <div className="text-right shrink-0 min-w-[120px] tabular-nums">
-                  <div className="mono text-[14px] font-black text-[var(--theme-card-text)]">
-                    {comp.currencySymbol}{comp.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <div className="text-right shrink-0 min-w-[120px] tabular-nums">
+                      <div className="mono text-[14px] font-black text-[var(--theme-card-text)]">
+                        {comp.currencySymbol}{comp.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <div className={`mono text-[11.5px] font-bold ${comp.priceChangePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {comp.priceChangePct >= 0 ? '+' : ''}{comp.priceChangePct.toFixed(2)}%
+                      </div>
+                    </div>
                   </div>
-                  <div className={`mono text-[11.5px] font-bold ${comp.priceChangePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {comp.priceChangePct >= 0 ? '+' : ''}{comp.priceChangePct.toFixed(2)}%
+                ))}
+
+              {/* Zerodha Kite Catalog Results */}
+              {(activeTab === 'all' || activeTab === 'zerodha') &&
+                zerodhaMatches.map((z) => (
+                  <div
+                    key={`zerodha-${z.token}`}
+                    onClick={() => {
+                      onSelectCompany(z.symbol);
+                      onClose();
+                    }}
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-emerald-500/10 cursor-pointer transition-colors group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
+                      <div className="w-9 h-9 rounded-lg border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center mono text-[12px] font-black text-emerald-400 shrink-0">
+                        ⚡
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="mono text-[14px] font-black text-[var(--theme-card-text)] group-hover:text-emerald-400 transition-colors">
+                            {z.symbol}
+                          </span>
+                          <span className="mono text-[10.5px] font-bold px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 inline-flex items-center leading-none">
+                            Zerodha Kite
+                          </span>
+                          <span className="mono text-[10px] text-[var(--theme-card-text-muted)]">
+                            Token: #{z.token}
+                          </span>
+                        </div>
+                        <div className="text-[12px] text-[var(--theme-card-text-muted)] font-medium truncate">
+                          {z.name} · {z.sector}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0 min-w-[100px]">
+                      <span className="mono text-[11px] font-bold px-2 py-1 rounded bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] text-emerald-400 group-hover:border-emerald-500 transition-colors">
+                        Analyze →
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))
+                ))}
+            </>
           )}
+        </div>
+
+        {/* Footer info banner */}
+        <div className="px-4 py-2 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center justify-between text-[11px] text-[var(--theme-card-text-muted)] mono">
+          <span>⚡ Connected to Zerodha Kite Connect ({totalZerodha.toLocaleString()} active NSE instruments)</span>
+          <span>Press ESC to close</span>
         </div>
       </div>
     </div>
