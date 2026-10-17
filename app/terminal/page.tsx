@@ -66,31 +66,91 @@ const UAE_WATCHLIST = [
   { symbol: 'SALIK', name: 'Salik Company', base: 3.65, sector: 'Transport', changePct: 1.15 },
 ];
 
-// ─── 100% Deterministic, Static Mini Sparkline ────
-function Sparkline({ symbol, up }: { symbol?: string; up: boolean }) {
-  const seed = (symbol || 'SYM').split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
-  const pts = Array.from({ length: 12 }, (_, i) => {
-    const pseudo = Math.sin(seed * (i + 1) * 0.73) * 3.2;
-    const trend = up ? (i / 11) * 14 : ((11 - i) / 11) * 14;
-    return 18 - trend + pseudo;
-  });
-  const max = Math.max(...pts);
+// ─── Trend-Accurate Financial Mini Sparkline ──────────────────────────────
+function Sparkline({ symbol, up, changePct }: { symbol?: string; up?: boolean; changePct?: number }) {
+  const isUp = up !== undefined ? up : (changePct ? changePct >= 0 : true);
+  const sym = symbol || 'INDEX';
+
+  // Deterministic seed per symbol for realistic intraday variance
+  let seedVal = sym.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1) * 31, 101);
+  const nextRand = () => {
+    seedVal = (seedVal * 9301 + 49297) % 233280;
+    return seedVal / 233280;
+  };
+
+  const numPts = 14;
+  const pts: number[] = [];
+  const pctVal = changePct ?? (isUp ? 0.75 : -0.75);
+  // Slope magnitude dynamically scaled to the instrument's percentage change
+  const moveSlope = (isUp ? 1 : -1) * Math.max(8, Math.min(22, Math.abs(pctVal) * 9));
+
+  const startBase = 50;
+  for (let i = 0; i < numPts; i++) {
+    const t = i / (numPts - 1); // 0.0 to 1.0 (start to end of day)
+    // Progressive intraday drift along the actual trend
+    const trendOffset = moveSlope * Math.pow(t, 0.9);
+    // Subtle realistic financial microstructure pullbacks / consolidation
+    const noise = (nextRand() - 0.49) * 2.8;
+    pts.push(startBase + trendOffset + noise);
+  }
+
+  // Guarantee start and terminal points strictly conform to trend direction:
+  // UP trend: starts low (left), ends high (right)
+  // DOWN trend: starts high (left), ends low (right)
+  if (isUp) {
+    if (pts[numPts - 1] <= pts[0]) {
+      pts[numPts - 1] = pts[0] + 12;
+    }
+  } else {
+    if (pts[numPts - 1] >= pts[0]) {
+      pts[numPts - 1] = pts[0] - 12;
+    }
+  }
+
   const min = Math.min(...pts);
+  const max = Math.max(...pts);
   const range = max - min || 1;
-  const path = pts
-    .map((v, i) => `${i === 0 ? 'M' : 'L'}${(i / (pts.length - 1)) * 64},${22 - ((v - min) / range) * 18}`)
-    .join(' ');
+
+  // SVG dimensions: W=64, H=26, padTop=3, plotH=20
+  // Higher price = smaller Y in SVG (near top=3)
+  // Lower price = larger Y in SVG (near bottom=23)
+  const W = 64;
+  const H = 26;
+  const padTop = 3;
+  const plotH = 20;
+
+  const coords = pts.map((p, idx) => {
+    const x = (idx / (numPts - 1)) * W;
+    const y = padTop + (1 - (p - min) / range) * plotH;
+    return { x: +x.toFixed(1), y: +y.toFixed(1) };
+  });
+
+  const pathD = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x},${c.y}`).join(' ');
+  const areaD = `${pathD} L${W},${H} L0,${H} Z`;
+  const lastPt = coords[coords.length - 1];
+  const strokeColor = isUp ? '#10b981' : '#f43f5e';
+  const cleanSymId = sym.replace(/[^a-zA-Z0-9]/g, '');
+  const gradId = `spark-grad-${cleanSymId}-${isUp ? 'up' : 'dn'}`;
 
   return (
-    <svg width="64" height="28" viewBox="0 0 64 28" className="opacity-90 flex-shrink-0">
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="overflow-visible flex-shrink-0">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill={`url(#${gradId})`} />
       <path
-        d={path}
+        d={pathD}
         fill="none"
-        stroke={up ? '#059669' : '#E11D48'}
+        stroke={strokeColor}
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {/* Real-time terminal price dot */}
+      <circle cx={lastPt.x} cy={lastPt.y} r="2.2" fill={strokeColor} />
     </svg>
   );
 }
@@ -128,7 +188,7 @@ function IndexTile({
           </span>
           <div className="text-[14px] inst-card-text-muted font-bold">{name}</div>
         </div>
-        <Sparkline symbol={symbol} up={up} />
+        <Sparkline symbol={symbol} up={up} changePct={currentPct} />
       </div>
       <div className="flex items-end justify-between mt-1">
         <span className="mono text-[17px] font-black inst-card-text">
@@ -195,7 +255,7 @@ function WatchlistRow({
       </div>
 
       <div className="hidden xs:block flex-shrink-0">
-        <Sparkline symbol={symbol} up={up} />
+        <Sparkline symbol={symbol} up={up} changePct={currentPct} />
       </div>
 
       {/* Chart arrow */}
