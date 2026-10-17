@@ -33,7 +33,7 @@ const BEAR  = '#E11D48';
 const LINE_COLOR = '#2563EB';
 const GRID  = '#F1F5F9';
 const AXIS_TEXT = '#475569';
-const CROSSHAIR_COLOR = 'rgba(71, 85, 105, 0.45)';
+const CROSSHAIR_COLOR = 'rgba(51, 65, 85, 0.85)';
 const LABEL_BG = '#0F172A';
 const PANEL_BG = '#F8FAFC';
 const PANEL_SEP = '#E2E8F0';
@@ -1882,34 +1882,54 @@ export function renderChart(
   if (crosshair) {
     const cx = Math.max(0, Math.min(chartW, crosshair.x));
     const cy = Math.max(0, Math.min(H, crosshair.y));
-    ctx.save(); ctx.setLineDash([4*dpr, 4*dpr]);
-    ctx.strokeStyle = CROSSHAIR_COLOR; ctx.lineWidth = 0.8*dpr;
+    ctx.save();
+    ctx.setLineDash([4 * dpr, 3 * dpr]);
+    ctx.strokeStyle = CROSSHAIR_COLOR;
+    ctx.lineWidth = 1 * dpr;
     ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(chartW, cy); ctx.stroke();
     ctx.setLineDash([]);
+
+    // Precision reticle dot at intersection
+    if (cy <= chartH) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, 3 * dpr, 0, Math.PI * 2);
+      ctx.fillStyle = '#2563EB';
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.stroke();
+    }
+
     // Price label on right (only when inside main chart)
     if (cy <= chartH) {
       const price = pMax - (cy / chartH) * pRange;
       const pTxt = formatPrice(price);
-      ctx.font = `bold ${9*dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
       const pMeas = ctx.measureText(pTxt);
-      const pLW = pMeas.width + 8*dpr, pLH = 9*dpr + 4*dpr;
-      ctx.fillStyle = LABEL_BG; ctx.fillRect(chartW, cy-pLH/2, pLW, pLH);
-      ctx.fillStyle = '#FFFFFF'; ctx.textAlign='left'; ctx.textBaseline='middle';
-      ctx.fillText(pTxt, chartW+4*dpr, cy);
+      const pLW = pMeas.width + 10 * dpr, pLH = 14 * dpr;
+      ctx.fillStyle = LABEL_BG;
+      ctx.fillRect(chartW, cy - pLH / 2, pLW, pLH);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pTxt, chartW + 5 * dpr, cy);
     }
     // Time label on bottom
     const cidx = startIdx + Math.floor(cx / candleW);
     if (cidx >= 0 && cidx < candles.length) {
       const ts = candles[cidx].openTime;
       const tStr = formatCrosshairTime(ts, isDailyOrHigher);
-      ctx.font = `bold ${8*dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
       const tMeas = ctx.measureText(tStr);
-      const tLW = tMeas.width+8*dpr, tLH = 8*dpr+4*dpr;
-      const tLX = Math.min(Math.max(0, cx-tLW/2), chartW-tLW);
-      ctx.fillStyle = LABEL_BG; ctx.fillRect(tLX, chartH, tLW, tLH);
-      ctx.fillStyle = '#FFFFFF'; ctx.textAlign='left'; ctx.textBaseline='top';
-      ctx.fillText(tStr, tLX+4*dpr, chartH+2*dpr);
+      const tLW = tMeas.width + 10 * dpr, tLH = 14 * dpr;
+      const tLX = Math.min(Math.max(0, cx - tLW / 2), chartW - tLW);
+      ctx.fillStyle = LABEL_BG;
+      ctx.fillRect(tLX, chartH, tLW, tLH);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(tStr, tLX + 5 * dpr, chartH + 2 * dpr);
     }
     ctx.restore();
   }

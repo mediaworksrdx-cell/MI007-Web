@@ -48,6 +48,8 @@ export function CandlestickCanvas({
   const [zoom, setZoom] = useState(1);
   const [scrollOffset, setScrollOffset] = useState(0);
   const [crosshair, setCrosshair] = useState<{ x: number; y: number } | null>(null);
+  const [interactionMode, setInteractionMode] = useState<'crosshair' | 'pan'>('crosshair');
+  const [isDragging, setIsDragging] = useState(false);
   const [drawingInProgress, setDrawingInProgress] = useState<DrawingItem | null>(null);
   const [dpr, setDpr] = useState(1);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -126,8 +128,10 @@ export function CandlestickCanvas({
 
   // Viewport calculation
   const visibleCount = Math.max(8, Math.round(VISIBLE_CANDLES_BASE / zoom));
-  const endIdx = Math.max(visibleCount, cleanCandles.length - Math.round(scrollOffset));
-  const clampedEnd = Math.min(endIdx, cleanCandles.length);
+  const maxScrollOffset = Math.max(0, cleanCandles.length - 8);
+  const effectiveScroll = Math.max(0, Math.min(maxScrollOffset, scrollOffset));
+  const endIdx = Math.round(cleanCandles.length - effectiveScroll);
+  const clampedEnd = Math.max(8, Math.min(cleanCandles.length, endIdx));
   const clampedStart = Math.max(0, clampedEnd - visibleCount);
 
   // Helper to map mouse coordinate to price and candle
@@ -187,14 +191,14 @@ export function CandlestickCanvas({
         activeDrawing: drawingInProgress,
       },
       { startIdx: clampedStart, endIdx: clampedEnd },
-      crosshair ? { x: crosshair.x * dpr, y: crosshair.y * dpr } : null,
+      (crosshair && interactionMode === 'crosshair') ? { x: crosshair.x * dpr, y: crosshair.y * dpr } : null,
       dpr
     );
   }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, drawingInProgress,
-      clampedStart, clampedEnd, crosshair, size, dpr, clockTick]);
+      clampedStart, clampedEnd, crosshair, interactionMode, size, dpr, clockTick]);
 
   // Mouse dragging and endpoint adjustment refs
   const isDraggingRef = useRef(false);
@@ -207,7 +211,9 @@ export function CandlestickCanvas({
     const rect = canvasRef.current!.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    setCrosshair({ x, y });
+    if (interactionMode === 'crosshair') {
+      setCrosshair({ x, y });
+    }
 
     // 1. If currently adjusting an existing drawing endpoint
     if (adjustingRef.current) {
@@ -230,9 +236,12 @@ export function CandlestickCanvas({
     // 2. If currently dragging mouse to pan chart
     if (isDraggingRef.current && (!activeDrawingTool || activeDrawingTool === 'NONE')) {
       const dx = e.clientX - dragStartXRef.current;
-      const candlePixels = Math.max(1, (size.w - 58) / visibleCount);
-      const deltaCandleCount = -dx / candlePixels;
-      setScrollOffset(Math.max(0, Math.min(candles.length - visibleCount, dragStartScrollRef.current + deltaCandleCount)));
+      const visCnt = Math.max(1, clampedEnd - clampedStart);
+      const candlePixels = Math.max(1, (size.w - 58) / visCnt);
+      const deltaCandleCount = dx / candlePixels;
+      const maxScroll = Math.max(0, cleanCandles.length - 8);
+      const newScroll = Math.max(0, Math.min(maxScroll, dragStartScrollRef.current + deltaCandleCount));
+      setScrollOffset(newScroll);
       return;
     }
 
@@ -256,7 +265,7 @@ export function CandlestickCanvas({
         });
       }
     }
-  }, [activeDrawingTool, candles.length, drawings, drawingInProgress, getPointFromEvent, onUpdateDrawing, size.w, visibleCount]);
+  }, [activeDrawingTool, clampedEnd, clampedStart, cleanCandles.length, drawings, drawingInProgress, getPointFromEvent, interactionMode, onUpdateDrawing, size.w]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (adjustingRef.current) {
@@ -265,6 +274,7 @@ export function CandlestickCanvas({
     }
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
+      setIsDragging(false);
       try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
     }
   }, []);
@@ -294,9 +304,9 @@ export function CandlestickCanvas({
       const candleW = visCnt > 0 ? chartW / visCnt : 1;
 
       let pMin = Infinity, pMax = -Infinity;
-      for (let i = clampedStart; i < Math.min(clampedEnd, candles.length); i++) {
-        pMin = Math.min(pMin, candles[i].low);
-        pMax = Math.max(pMax, candles[i].high);
+      for (let i = clampedStart; i < Math.min(clampedEnd, cleanCandles.length); i++) {
+        pMin = Math.min(pMin, cleanCandles[i].low);
+        pMax = Math.max(pMax, cleanCandles[i].high);
       }
       const pad = (pMax - pMin) * 0.05 || 1;
       pMin -= pad; pMax += pad;
@@ -307,9 +317,9 @@ export function CandlestickCanvas({
         for (let i = 0; i < d.points.length; i++) {
           const p = d.points[i];
           let idx = p.index;
-          if (p.time && candles[idx]?.openTime !== p.time) {
-            for (let ci = 0; ci < candles.length; ci++) {
-              if (candles[ci].openTime === p.time) { idx = ci; break; }
+          if (p.time && cleanCandles[idx]?.openTime !== p.time) {
+            for (let ci = 0; ci < cleanCandles.length; ci++) {
+              if (cleanCandles[ci].openTime === p.time) { idx = ci; break; }
             }
           }
           const ptX = (idx - clampedStart) * candleW + candleW / 2;
@@ -330,6 +340,7 @@ export function CandlestickCanvas({
 
       // 2. Otherwise start mouse pan drag
       isDraggingRef.current = true;
+      setIsDragging(true);
       dragStartXRef.current = e.clientX;
       dragStartScrollRef.current = scrollOffset;
       try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}
@@ -406,7 +417,7 @@ export function CandlestickCanvas({
         onDrawingToolChange?.('NONE');
       }
     }
-  }, [activeDrawingTool, candles, clampedEnd, clampedStart, drawings, drawingInProgress, getPointFromEvent, indicators, onAddDrawing, onDrawingToolChange, scrollOffset, showVolumePanel, size]);
+  }, [activeDrawingTool, cleanCandles, clampedEnd, clampedStart, drawings, drawingInProgress, getPointFromEvent, indicators, onAddDrawing, onDrawingToolChange, scrollOffset, showVolumePanel, size]);
 
   // Cancel drawing on Escape or Undo on Ctrl+Z
   useEffect(() => {
@@ -426,12 +437,13 @@ export function CandlestickCanvas({
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     if (e.ctrlKey || e.metaKey) {
-      setZoom(z => Math.max(0.2, Math.min(5, z * (e.deltaY < 0 ? 1.1 : 0.9))));
+      setZoom(z => Math.max(0.2, Math.min(5, +(z * (e.deltaY < 0 ? 1.15 : 0.87)).toFixed(2))));
     } else {
+      const maxScroll = Math.max(0, cleanCandles.length - 8);
       const delta = e.deltaY > 0 ? -3 : 3;
-      setScrollOffset(s => Math.max(0, Math.min(cleanCandles.length - visibleCount, s - delta)));
+      setScrollOffset(s => Math.max(0, Math.min(maxScroll, s + delta)));
     }
-  }, [cleanCandles.length, visibleCount]);
+  }, [cleanCandles.length]);
 
   useEffect(() => {
     const el = canvasRef.current;
@@ -446,18 +458,27 @@ export function CandlestickCanvas({
   const handleTouchMove = (e: React.TouchEvent) => {
     if (lastTouchX.current === null) return;
     const dx = e.touches[0].clientX - lastTouchX.current;
-    const candlePixels = (size.w - 58) / visibleCount;
-    const deltaCandleCount = -dx / candlePixels;
-    setScrollOffset(s => Math.max(0, Math.min(cleanCandles.length - visibleCount, s + deltaCandleCount)));
+    const visCnt = Math.max(1, clampedEnd - clampedStart);
+    const candlePixels = Math.max(1, (size.w - 58) / visCnt);
+    const deltaCandleCount = dx / candlePixels;
+    const maxScroll = Math.max(0, cleanCandles.length - 8);
+    setScrollOffset(s => Math.max(0, Math.min(maxScroll, s + deltaCandleCount)));
     lastTouchX.current = e.touches[0].clientX;
   };
   const handleTouchEnd = () => { lastTouchX.current = null; };
+
+  const canvasCursor = useMemo(() => {
+    if (activeDrawingTool && activeDrawingTool !== 'NONE') return 'cursor-crosshair';
+    if (isDragging) return 'cursor-grabbing';
+    if (interactionMode === 'pan') return 'cursor-grab';
+    return 'cursor-crosshair';
+  }, [activeDrawingTool, isDragging, interactionMode]);
 
   return (
     <div ref={containerRef} className={`relative w-full h-full ${className}`}>
       <canvas
         ref={canvasRef}
-        className="chart block w-full h-full select-none cursor-crosshair"
+        className={`chart block w-full h-full select-none ${canvasCursor}`}
         style={{ touchAction: 'pan-y' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -467,8 +488,75 @@ export function CandlestickCanvas({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       />
-      {/* ── Zerodha Kite-style Floating Bottom-Center Zoom Controls Dock ── */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-0.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-full shadow-lg shadow-slate-900/5 px-1 py-0.5 select-none transition-all">
+      {/* ── Floating Chart Controls Dock (Separate Crosshair, Pan & Zoom Controls) ── */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-full shadow-lg shadow-slate-900/10 px-2 py-1 select-none transition-all">
+        {/* Dedicated Crosshair Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setInteractionMode('crosshair');
+          }}
+          title="Crosshair Tool (Inspect prices & time coordinates)"
+          aria-label="Crosshair mode"
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+            interactionMode === 'crosshair'
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-semibold shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <line x1="12" y1="3" x2="12" y2="7" />
+            <line x1="12" y1="17" x2="12" y2="21" />
+            <line x1="3" y1="12" x2="7" y2="12" />
+            <line x1="17" y1="12" x2="21" y2="12" />
+          </svg>
+          <span>Crosshair</span>
+        </button>
+
+        {/* Dedicated Pan Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setInteractionMode('pan');
+          }}
+          title="Pan Mode (Drag chart to scroll history)"
+          aria-label="Pan mode"
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+            interactionMode === 'pan'
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-semibold shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5" />
+            <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+            <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+            <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+          </svg>
+          <span>Pan</span>
+        </button>
+
+        <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+        {/* Step Pan Left (◀) */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setScrollOffset(s => Math.min(Math.max(0, cleanCandles.length - 8), s + 15));
+          }}
+          title="Pan left (earlier candles)"
+          aria-label="Pan left"
+          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+
         {/* Zoom Out (-) */}
         <button
           type="button"
@@ -478,14 +566,14 @@ export function CandlestickCanvas({
           }}
           title="Zoom out (-)"
           aria-label="Zoom out"
-          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
+          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         </button>
 
-        {/* Zoom Level Indicator / Reset */}
+        {/* Zoom Reset (100%) */}
         <button
           type="button"
           onClick={(e) => {
@@ -493,7 +581,7 @@ export function CandlestickCanvas({
             setZoom(1);
             setScrollOffset(0);
           }}
-          title="Reset zoom to 100% and scroll to live"
+          title="Reset zoom to 100% and jump to live"
           aria-label="Reset zoom"
           className="px-2 h-7 flex items-center justify-center text-[10px] font-mono font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all cursor-pointer"
         >
@@ -509,19 +597,53 @@ export function CandlestickCanvas({
           }}
           title="Zoom in (+)"
           aria-label="Zoom in"
-          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
+          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         </button>
+
+        {/* Step Pan Right (▶) */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setScrollOffset(s => Math.max(0, s - 15));
+          }}
+          title="Pan right (later candles)"
+          aria-label="Pan right"
+          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+
+        {/* Snap to Live Button (when scrolled) */}
+        {scrollOffset > 2 && (
+          <>
+            <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setScrollOffset(0);
+              }}
+              title="Jump to live candles"
+              className="px-2 h-7 flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-full transition-all cursor-pointer animate-pulse"
+            >
+              »» LIVE
+            </button>
+          </>
+        )}
       </div>
 
       {scrollOffset > 5 && (
         <button
           onClick={() => setScrollOffset(0)}
-          className="absolute bottom-8 right-20 rounded-full border border-slate-300 bg-white/95 px-3 py-1 text-[11px] font-bold text-slate-700 hover:text-emerald-600 hover:border-emerald-500 transition-all font-mono shadow-md cursor-pointer"
+          className="absolute bottom-8 right-20 rounded-full border border-slate-300 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-3 py-1 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:text-emerald-600 hover:border-emerald-500 transition-all font-mono shadow-md cursor-pointer z-20"
         >
           »» LIVE
         </button>
