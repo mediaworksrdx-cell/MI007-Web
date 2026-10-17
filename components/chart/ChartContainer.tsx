@@ -32,8 +32,6 @@ import { OHLCVHeader } from './OHLCVHeader';
 import { IndicatorSettingsModal } from './IndicatorSettingsModal';
 import { DrawingToolbar } from './DrawingToolbar';
 import { DrawingsManagerModal } from './DrawingsManagerModal';
-import { IndicatorsModal } from './IndicatorsModal';
-import { ChartHotkeysModal } from './ChartHotkeysModal';
 
 interface ChartContainerProps {
   market: MarketType;
@@ -125,9 +123,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [drawings, setDrawings] = useState<DrawingItem[]>([]);
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
   const [isDrawingsManagerOpen, setIsDrawingsManagerOpen] = useState(false);
-  const [isIndicatorsModalOpen, setIsIndicatorsModalOpen] = useState(false);
   const [isMagnetActive, setIsMagnetActive] = useState(false);
-  const [isHotkeysModalOpen, setIsHotkeysModalOpen] = useState(false);
   const chartWrapperRef = useRef<HTMLDivElement>(null);
 
   // Default clean view: Volume on, but all indicators and overlays off initially
@@ -824,7 +820,6 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         onRemoveTemplate={handleRemoveTemplate}
         onSaveChartLayout={handleSaveChartLayout}
         onClearAllIndicators={handleClearAllIndicators}
-        onOpenIndicatorsModal={() => setIsIndicatorsModalOpen(true)}
         onExportSnapshot={handleExportSnapshot}
       />
 
@@ -848,7 +843,6 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           onOpenObjectsTree={() => setIsDrawingsManagerOpen(true)}
           isMagnetActive={isMagnetActive}
           onToggleMagnet={() => setIsMagnetActive(m => !m)}
-          onOpenHotkeys={() => setIsHotkeysModalOpen(true)}
           drawingsCount={drawings.length}
         />
 
@@ -922,7 +916,6 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             onUndoDrawing={handleUndoDrawing}
             onDrawingToolChange={setActiveDrawingTool}
             onToggleMagnet={() => setIsMagnetActive(m => !m)}
-            onOpenHotkeys={() => setIsHotkeysModalOpen(true)}
             onExportSnapshot={handleExportSnapshot}
             className="h-full"
           />
@@ -953,25 +946,6 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         onUpdateDrawing={handleUpdateDrawing}
         onDeleteDrawing={handleDeleteDrawing}
         onClearAllDrawings={handleClearDrawings}
-      />
-
-      {/* ── Categorized ƒx Indicators Modal ── */}
-      <IndicatorsModal
-        isOpen={isIndicatorsModalOpen}
-        onClose={() => setIsIndicatorsModalOpen(false)}
-        activeIndicators={activeIndicators}
-        onToggleIndicator={toggleIndicator}
-        onOpenSettings={(type) => {
-          setEditingIndicator(type);
-          setIsIndicatorsModalOpen(false);
-        }}
-        onClearAll={handleClearAllIndicators}
-      />
-
-      {/* ── Institutional Hotkeys Cheat Sheet Modal ── */}
-      <ChartHotkeysModal
-        isOpen={isHotkeysModalOpen}
-        onClose={() => setIsHotkeysModalOpen(false)}
       />
     </div>
   );

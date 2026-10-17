@@ -13,7 +13,6 @@ interface DrawingToolbarProps {
   onOpenObjectsTree?: () => void;
   isMagnetActive?: boolean;
   onToggleMagnet?: () => void;
-  onOpenHotkeys?: () => void;
   drawingsCount?: number;
   className?: string;
 }
@@ -103,7 +102,6 @@ export function DrawingToolbar({
   onOpenObjectsTree,
   isMagnetActive = false,
   onToggleMagnet,
-  onOpenHotkeys,
   drawingsCount = 0,
   className = '',
 }: DrawingToolbarProps) {
@@ -274,18 +272,6 @@ export function DrawingToolbar({
             <polyline points="1 4 1 10 7 10" />
             <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
           </svg>
-        </button>
-      )}
-
-      {/* ── 4.5. Keyboard Shortcuts Cheat Sheet (?) ── */}
-      {onOpenHotkeys && (
-        <button
-          type="button"
-          onClick={() => onOpenHotkeys()}
-          title="Keyboard Shortcuts Cheat Sheet (?)"
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer mb-1 font-mono font-bold text-xs"
-        >
-          ⌨
         </button>
       )}
 

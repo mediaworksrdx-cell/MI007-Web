@@ -33,7 +33,6 @@ interface CandlestickCanvasProps {
   onUndoDrawing?: () => void;
   onDrawingToolChange?: (tool: DrawingToolType) => void;
   onToggleMagnet?: () => void;
-  onOpenHotkeys?: () => void;
   onExportSnapshot?: (mode: 'download' | 'clipboard') => void;
 }
 
@@ -55,7 +54,6 @@ export function CandlestickCanvas({
   onUndoDrawing,
   onDrawingToolChange,
   onToggleMagnet,
-  onOpenHotkeys,
   onExportSnapshot,
 }: CandlestickCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -800,14 +798,11 @@ export function CandlestickCanvas({
       } else if (e.key === ' ') {
         e.preventDefault();
         setScrollOffset(0);
-      } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
-        e.preventDefault();
-        onOpenHotkeys?.();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onDrawingToolChange, onUndoDrawing, onDeleteDrawing, onSelectDrawing, selectedDrawingId, onOpenHotkeys, onExportSnapshot]);
+  }, [onDrawingToolChange, onUndoDrawing, onDeleteDrawing, onSelectDrawing, selectedDrawingId, onExportSnapshot]);
 
   // Wheel zoom + scroll attached to foreground overlay canvas
   const handleWheel = useCallback((e: WheelEvent) => {

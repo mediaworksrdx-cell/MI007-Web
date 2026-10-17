@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Timeframe, IndicatorType } from '@/lib/types';
+import React, { useState, useRef, useEffect } from 'react';
+import { Timeframe, IndicatorType, INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES } from '@/lib/types';
 import type { ChartType } from '@/lib/types';
 import { DrawingToolType } from '@/lib/drawingTypes';
 import { ChartTemplate } from '@/lib/chartTemplates';
@@ -26,25 +26,30 @@ const CHART_TYPES: { value: ChartType; label: string; icon: string }[] = [
   { value: 'HEIKIN_ASHI',   label: 'Heikin-Ashi', icon: 'HA' },
 ];
 
-const DRAWING_TOOLS: { value: DrawingToolType; label: string; icon: string }[] = [
-  { value: 'NONE',                label: 'Cursor / Pan Mode', icon: '↖' },
-  { value: 'TRENDLINE',           label: 'Trendline (2 clicks)', icon: '╱' },
-  { value: 'RAY',                 label: 'Extended Ray (2 clicks)', icon: '⟶' },
-  { value: 'HORIZONTAL',          label: 'Horizontal Line (1 click)', icon: '―' },
-  { value: 'HORIZONTAL_RAY',      label: 'Horizontal Ray (1 click)', icon: '⭢' },
-  { value: 'EXTENDED_LINE',       label: 'Extended Line (2 clicks)', icon: '⟷' },
-  { value: 'VERTICAL_LINE',       label: 'Vertical Line (1 click)', icon: '│' },
-  { value: 'CHANNEL',             label: 'Parallel Channel (3 clicks)', icon: '⫽' },
-  { value: 'RECTANGLE',           label: 'Support / Resistance Box (2 clicks)', icon: '▭' },
-  { value: 'CIRCLE',              label: 'Circle Marker (2 clicks)', icon: '○' },
-  { value: 'FIBONACCI',           label: 'Fibonacci Retracement (2 clicks)', icon: '≡' },
-  { value: 'FIBONACCI_EXTENSION', label: 'Fib Extension Targets (3 clicks)', icon: '⤢' },
-  { value: 'RISK_REWARD_LONG',    label: 'Long Position Box (2 clicks)', icon: '▲' },
-  { value: 'RISK_REWARD_SHORT',   label: 'Short Position Box (2 clicks)', icon: '▼' },
-  { value: 'MEASURE',             label: 'Price & Bar Range (2 clicks)', icon: '↔' },
-  { value: 'TEXT',                label: 'Text Annotation (1 click)', icon: 'T' },
-  { value: 'CALLOUT',             label: 'Callout Arrow (2 clicks)', icon: '💬' },
-  { value: 'BRUSH',               label: 'Freehand Pen (drag)', icon: '✎' },
+const DRAWING_TOOLS: { value: DrawingToolType; label: string; shortLabel: string; icon: string }[] = [
+  { value: 'NONE',                label: 'Cursor / Pan Mode', shortLabel: 'Draw Tools', icon: '↖' },
+  { value: 'TRENDLINE',           label: 'Trendline', shortLabel: 'Trendline', icon: '╱' },
+  { value: 'RAY',                 label: 'Extended Ray', shortLabel: 'Ray', icon: '⟶' },
+  { value: 'HORIZONTAL',          label: 'Horizontal Line', shortLabel: 'Horizontal', icon: '―' },
+  { value: 'HORIZONTAL_RAY',      label: 'Horizontal Ray', shortLabel: 'H-Ray', icon: '⭢' },
+  { value: 'EXTENDED_LINE',       label: 'Extended Line', shortLabel: 'Ext Line', icon: '⟷' },
+  { value: 'VERTICAL_LINE',       label: 'Vertical Line', shortLabel: 'Vertical', icon: '│' },
+  { value: 'CHANNEL',             label: 'Parallel Channel', shortLabel: 'Channel', icon: '⫽' },
+  { value: 'RECTANGLE',           label: 'Support / Resistance Box', shortLabel: 'Rectangle', icon: '▭' },
+  { value: 'CIRCLE',              label: 'Circle Marker', shortLabel: 'Circle', icon: '○' },
+  { value: 'FIBONACCI',           label: 'Fibonacci Retracement', shortLabel: 'Fibonacci', icon: '≡' },
+  { value: 'FIBONACCI_EXTENSION', label: 'Fib Extension Targets', shortLabel: 'Fib Ext', icon: '⤢' },
+  { value: 'RISK_REWARD_LONG',    label: 'Long Position Box', shortLabel: 'Long Box', icon: '▲' },
+  { value: 'RISK_REWARD_SHORT',   label: 'Short Position Box', shortLabel: 'Short Box', icon: '▼' },
+  { value: 'MEASURE',             label: 'Price & Bar Range', shortLabel: 'Measure', icon: '↔' },
+  { value: 'TEXT',                label: 'Text Annotation', shortLabel: 'Text', icon: 'T' },
+  { value: 'CALLOUT',             label: 'Callout Arrow', shortLabel: 'Callout', icon: '💬' },
+  { value: 'BRUSH',               label: 'Freehand Pen', shortLabel: 'Pen', icon: '✎' },
+];
+
+const ALL_INDICATOR_TYPES: IndicatorType[] = [
+  ...OVERLAY_TYPES,
+  ...PANEL_TYPES,
 ];
 
 interface ChartToolbarProps {
@@ -82,7 +87,6 @@ interface ChartToolbarProps {
   onRemoveTemplate: (slotId: string) => void;
   onSaveChartLayout: () => void;
   onClearAllIndicators?: () => void;
-  onOpenIndicatorsModal?: () => void;
   onExportSnapshot?: (mode: 'download' | 'clipboard') => void;
 }
 
@@ -113,133 +117,316 @@ export function ChartToolbar({
   onToggleVolumePanel: _onToggleVolumePanel,
   onToggleSmcOverlay,
   onToggleVolumeProfile,
+  onToggleIndicator,
+  onOpenIndicatorSettings,
   onSaveChartLayout,
   onClearAllIndicators,
-  onOpenIndicatorsModal,
   onExportSnapshot,
   onSelectTemplate,
 }: ChartToolbarProps) {
+  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'DRAWING' | 'TEMPLATES' | null>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  // Close menus on outside click or Escape key
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
+        setOpenMenu(null);
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOpenMenu(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const currentChartType = CHART_TYPES.find((c) => c.value === chartType) || CHART_TYPES[0];
+  const currentDrawing = DRAWING_TOOLS.find((d) => d.value === activeDrawingTool) || DRAWING_TOOLS[0];
+  const activeTemplate = templates.find((t) => t.id === activeTemplateId) || templates[0];
+  const isIndicatorActive = (t: IndicatorType) => activeIndicators.includes(t);
+
   return (
-    <div className="flex flex-wrap items-center justify-between border-b border-slate-800 bg-[#0B0F19] px-3 py-1.5 text-xs text-slate-200 shadow-md gap-2 relative z-30 select-none">
+    <div
+      ref={toolbarRef}
+      className="flex flex-wrap items-center justify-between border-b border-slate-800 bg-[#0B0F19] px-3 py-1.5 text-xs text-slate-200 shadow-md gap-2 relative z-50 select-none overflow-visible"
+    >
       {/* ── Left Controls: Timeframe, Chart Type, Indicators, Drawing, Overlays, Save & Templates ── */}
       <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-        {/* 1. Timeframe Selector Dropdown */}
-        <select
-          value={timeframe}
-          onChange={(e) => onTimeframeChange(e.target.value as Timeframe)}
-          className="h-7 px-2.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-100 hover:border-emerald-500 font-bold font-mono text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
-          title="Select Timeframe"
-        >
-          {TIMEFRAMES.map((tf) => (
-            <option key={tf.value} value={tf.value} className="bg-slate-900 text-white py-1">
-              {tf.label}
-            </option>
-          ))}
-        </select>
+        {/* 1. Timeframe Simple Dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setOpenMenu(openMenu === 'TF' ? null : 'TF')}
+            className={`h-7 flex items-center gap-1 px-2.5 rounded-lg border font-bold font-mono text-xs transition-colors cursor-pointer ${
+              openMenu === 'TF'
+                ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                : 'border-slate-700 hover:border-emerald-500/60 bg-slate-900 text-slate-200'
+            }`}
+          >
+            <span>{timeframe}</span>
+            <span className="text-[9px] text-slate-400">▼</span>
+          </button>
 
-        {/* 2. Chart Type Dropdown */}
-        <select
-          value={chartType}
-          onChange={(e) => onChartTypeChange(e.target.value as ChartType)}
-          className="h-7 px-2.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-100 hover:border-emerald-500 font-medium text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
-          title="Select Chart Style"
-        >
-          {CHART_TYPES.map((ct) => (
-            <option key={ct.value} value={ct.value} className="bg-slate-900 text-white py-1">
-              {ct.icon} {ct.label}
-            </option>
-          ))}
-        </select>
+          {openMenu === 'TF' && (
+            <div className="absolute top-full left-0 mt-1 w-36 rounded-xl border border-slate-700 bg-[#0B0F19] shadow-2xl py-1 z-[100] animate-in fade-in duration-75">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                Timeframe
+              </div>
+              {TIMEFRAMES.map((tf) => (
+                <button
+                  key={tf.value}
+                  type="button"
+                  onClick={() => {
+                    onTimeframeChange(tf.value);
+                    setOpenMenu(null);
+                  }}
+                  className={`flex items-center justify-between w-full px-3 py-1.5 text-left text-xs font-mono font-medium transition-colors cursor-pointer ${
+                    timeframe === tf.value
+                      ? 'bg-emerald-500/20 text-emerald-400 font-bold'
+                      : 'text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  <span>{tf.label}</span>
+                  {timeframe === tf.value && <span className="text-emerald-400 font-bold text-xs">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 2. Chart Type Simple Dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setOpenMenu(openMenu === 'CANDLES' ? null : 'CANDLES')}
+            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+              openMenu === 'CANDLES'
+                ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                : 'border-slate-700 hover:border-emerald-500/60 bg-slate-900 text-slate-200'
+            }`}
+          >
+            <span className="font-mono text-sm leading-none">{currentChartType.icon}</span>
+            <span className="font-bold">{currentChartType.label}</span>
+            <span className="text-[9px] text-slate-400">▼</span>
+          </button>
+
+          {openMenu === 'CANDLES' && (
+            <div className="absolute top-full left-0 mt-1 w-44 rounded-xl border border-slate-700 bg-[#0B0F19] shadow-2xl py-1 z-[100] animate-in fade-in duration-75">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                Chart Style
+              </div>
+              {CHART_TYPES.map((ct) => (
+                <button
+                  key={ct.value}
+                  type="button"
+                  onClick={() => {
+                    onChartTypeChange(ct.value);
+                    setOpenMenu(null);
+                  }}
+                  className={`flex items-center gap-2.5 w-full px-3 py-1.5 text-left text-xs font-medium transition-colors cursor-pointer ${
+                    chartType === ct.value
+                      ? 'bg-emerald-500/20 text-emerald-400 font-bold'
+                      : 'text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  <span className="font-mono text-sm w-4 text-center">{ct.icon}</span>
+                  <span className="flex-1">{ct.label}</span>
+                  {chartType === ct.value && <span className="text-emerald-400 text-xs">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="h-4 w-px bg-slate-800 mx-0.5" />
 
-        {/* 3. Indicators Button */}
-        <div className="flex items-center gap-1">
+        {/* 3. Indicators Simple Dropdown Menu */}
+        <div className="relative">
           <button
             type="button"
-            onClick={() => {
-              if (onOpenIndicatorsModal) onOpenIndicatorsModal();
-            }}
-            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border font-medium text-xs transition-all cursor-pointer ${
-              activeIndicators.length > 0
+            onClick={() => setOpenMenu(openMenu === 'INDICATORS' ? null : 'INDICATORS')}
+            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+              openMenu === 'INDICATORS' || activeIndicators.length > 0
                 ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400 font-bold'
                 : 'border-slate-700 hover:border-emerald-500/60 bg-slate-900 text-slate-200'
             }`}
-            title="Open Technical Indicators Library"
           >
-            <span className="font-mono font-black text-xs px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400">ƒx</span>
+            <span className="font-mono font-black text-xs px-1 rounded bg-emerald-500/20 text-emerald-400">ƒx</span>
             <span>Indicators</span>
             {activeIndicators.length > 0 && (
               <span className="h-4 px-1.5 rounded-full bg-emerald-600 text-white font-mono text-[10px] font-bold flex items-center justify-center">
                 {activeIndicators.length}
               </span>
             )}
+            <span className="text-[9px] text-slate-400">▼</span>
           </button>
-          {activeIndicators.length > 0 && onClearAllIndicators && (
-            <button
-              type="button"
-              onClick={onClearAllIndicators}
-              title="Clear all active indicators"
-              className="h-7 px-1.5 rounded-md border border-rose-500/30 hover:border-rose-500 bg-rose-500/10 text-rose-400 hover:text-rose-300 text-[11px] font-bold cursor-pointer transition-colors"
-            >
-              ✕
-            </button>
+
+          {openMenu === 'INDICATORS' && (
+            <div className="absolute top-full left-0 mt-1 w-64 rounded-xl border border-slate-700 bg-[#0B0F19] shadow-2xl py-1 z-[100] max-h-96 overflow-y-auto animate-in fade-in duration-75">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 flex items-center justify-between">
+                <span>Indicators</span>
+                {activeIndicators.length > 0 && (
+                  <span className="text-emerald-400 font-mono text-[9px]">{activeIndicators.length} active</span>
+                )}
+              </div>
+
+              <div className="py-1">
+                {ALL_INDICATOR_TYPES.map((type) => {
+                  const meta = INDICATOR_DEFAULTS[type];
+                  const active = isIndicatorActive(type);
+                  return (
+                    <div
+                      key={type}
+                      className={`flex items-center justify-between px-3 py-1.5 transition-colors cursor-pointer ${
+                        active ? 'bg-emerald-500/15 text-emerald-400 font-bold' : 'text-slate-200 hover:bg-slate-800'
+                      }`}
+                      onClick={() => onToggleIndicator(type)}
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
+                        <span className="text-xs truncate">{meta.label}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {active && onOpenIndicatorSettings && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onOpenIndicatorSettings(type);
+                              setOpenMenu(null);
+                            }}
+                            title="Configure Settings"
+                            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-700 text-xs"
+                          >
+                            ⚙
+                          </button>
+                        )}
+                        <input
+                          type="checkbox"
+                          checked={active}
+                          onChange={() => onToggleIndicator(type)}
+                          className="rounded text-emerald-500 focus:ring-emerald-500 cursor-pointer accent-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {activeIndicators.length > 0 && onClearAllIndicators && (
+                <div className="p-2 border-t border-slate-800 bg-slate-900/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClearAllIndicators();
+                      setOpenMenu(null);
+                    }}
+                    className="w-full py-1 text-center font-bold text-xs text-rose-400 hover:bg-rose-500/15 rounded transition-colors"
+                  >
+                    Clear All Indicators
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
         <div className="h-4 w-px bg-slate-800 mx-0.5" />
 
-        {/* 4. Normal Drawing Tools Dropdown */}
-        <div className="flex items-center gap-1">
-          <select
-            value={activeDrawingTool}
-            onChange={(e) => onDrawingToolChange(e.target.value as DrawingToolType)}
-            className={`h-7 px-2.5 rounded-lg border text-xs font-semibold cursor-pointer focus:outline-none transition-colors ${
-              activeDrawingTool !== 'NONE'
-                ? 'border-indigo-500 bg-indigo-500/25 text-indigo-300 font-bold'
-                : 'border-slate-700 hover:border-indigo-500/60 bg-slate-900 text-slate-200'
-            }`}
-            title="Select Drawing Tool"
-          >
-            {DRAWING_TOOLS.map((dt) => (
-              <option key={dt.value} value={dt.value} className="bg-slate-900 text-white py-1">
-                {dt.icon} {dt.label}
-              </option>
-            ))}
-          </select>
-
-          {activeDrawingTool !== 'NONE' && (
-            <button
-              type="button"
-              onClick={() => onDrawingToolChange('NONE')}
-              title="Exit tool back to Cursor mode (Esc)"
-              className="h-7 px-2 rounded-lg border border-slate-600 hover:border-slate-400 bg-slate-800 text-slate-300 hover:text-white text-xs font-bold cursor-pointer transition-colors"
-            >
-              Esc
-            </button>
-          )}
-
-          {onUndoDrawing && (
-            <button
-              type="button"
-              onClick={onUndoDrawing}
-              title="Undo Last Drawing (Ctrl+Z)"
-              className="h-7 px-2 rounded-lg border border-slate-700 hover:border-slate-500 bg-slate-900 text-slate-300 hover:text-white text-xs font-bold cursor-pointer transition-colors"
-            >
-              ↩
-            </button>
-          )}
-
+        {/* 4. Drawing Tools Simple Dropdown Menu */}
+        <div className="relative">
           <button
             type="button"
-            onClick={onClearDrawings}
-            title="Clear all drawings on chart"
-            className="h-7 px-2 rounded-lg border border-rose-500/40 hover:border-rose-500 bg-rose-500/10 text-rose-400 hover:text-rose-300 text-xs font-bold cursor-pointer transition-colors flex items-center gap-1"
+            onClick={() => setOpenMenu(openMenu === 'DRAWING' ? null : 'DRAWING')}
+            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+              activeDrawingTool !== 'NONE'
+                ? 'border-indigo-500 bg-indigo-500/25 text-indigo-300 font-bold'
+                : openMenu === 'DRAWING'
+                ? 'border-indigo-500/80 bg-slate-900 text-slate-100'
+                : 'border-slate-700 hover:border-indigo-500/60 bg-slate-900 text-slate-200'
+            }`}
           >
-            <span>🗑</span>
-            <span className="hidden sm:inline text-[11px]">Clear</span>
+            <span className="font-mono text-sm leading-none">{activeDrawingTool !== 'NONE' ? currentDrawing.icon : '✏️'}</span>
+            <span className="font-bold">{activeDrawingTool !== 'NONE' ? currentDrawing.shortLabel : 'Draw Tools'}</span>
+            <span className="text-[9px] text-slate-400">▼</span>
           </button>
+
+          {openMenu === 'DRAWING' && (
+            <div className="absolute top-full left-0 mt-1 w-64 rounded-xl border border-slate-700 bg-[#0B0F19] shadow-2xl py-1 z-[100] max-h-96 overflow-y-auto animate-in fade-in duration-75">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                Drawing Tools
+              </div>
+
+              <div className="py-1">
+                {DRAWING_TOOLS.map((dt) => {
+                  const isSelected = activeDrawingTool === dt.value;
+                  return (
+                    <button
+                      key={dt.value}
+                      type="button"
+                      onClick={() => {
+                        onDrawingToolChange(dt.value);
+                        setOpenMenu(null);
+                      }}
+                      className={`flex items-center gap-2.5 w-full px-3 py-1.5 text-left text-xs font-medium transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-500/20 text-indigo-300 font-bold'
+                          : 'text-slate-200 hover:bg-slate-800'
+                      }`}
+                    >
+                      <span className="font-mono text-sm w-4 text-center">{dt.icon}</span>
+                      <span className="flex-1">{dt.label}</span>
+                      {isSelected && <span className="text-indigo-400 text-xs">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="border-t border-slate-800 p-1 bg-slate-900/60 space-y-1">
+                {onUndoDrawing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUndoDrawing();
+                      setOpenMenu(null);
+                    }}
+                    className="flex items-center gap-2 w-full px-2.5 py-1 text-left text-xs text-slate-300 hover:bg-slate-800 rounded transition-colors"
+                  >
+                    <span>↩ Undo Last Drawing (Ctrl+Z)</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClearDrawings();
+                    setOpenMenu(null);
+                  }}
+                  className="flex items-center gap-2 w-full px-2.5 py-1 text-left text-xs font-bold text-rose-400 hover:bg-rose-500/15 rounded transition-colors"
+                >
+                  <span>🗑 Clear All Drawings</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
+
+        {activeDrawingTool !== 'NONE' && (
+          <button
+            type="button"
+            onClick={() => onDrawingToolChange('NONE')}
+            title="Exit drawing tool back to Cursor mode (Esc)"
+            className="h-7 px-2 rounded-lg border border-slate-600 hover:border-slate-400 bg-slate-800 text-slate-300 hover:text-white text-xs font-bold cursor-pointer transition-colors"
+          >
+            Esc
+          </button>
+        )}
 
         <div className="h-4 w-px bg-slate-800 mx-0.5" />
 
@@ -248,7 +435,7 @@ export function ChartToolbar({
           <button
             type="button"
             onClick={onToggleSmcOverlay}
-            title="Toggle Smart Money Concepts (Order Blocks & Equilibrium)"
+            title="Toggle Smart Money Concepts"
             className={`h-7 px-2 rounded-md text-[11px] font-bold font-mono border transition-colors cursor-pointer ${
               showSmcOverlay
                 ? 'bg-amber-500/20 border-amber-500 text-amber-400'
@@ -313,23 +500,47 @@ export function ChartToolbar({
           </button>
         )}
 
-        {/* 8. TEMPLATES NORMAL SELECTOR */}
-        <div className="flex items-center gap-1">
-          <select
-            value={activeTemplateId}
-            onChange={(e) => {
-              const t = templates.find((tpl) => tpl.id === e.target.value);
-              if (t) onSelectTemplate(t);
-            }}
-            className="h-7 px-2 rounded-lg border border-slate-700 bg-slate-900 text-slate-200 hover:border-emerald-500 font-bold text-xs cursor-pointer focus:outline-none"
-            title="Select Template Slot"
+        {/* 8. TEMPLATES SIMPLE DROPDOWN */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setOpenMenu(openMenu === 'TEMPLATES' ? null : 'TEMPLATES')}
+            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-bold font-mono transition-colors cursor-pointer ${
+              openMenu === 'TEMPLATES'
+                ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                : 'border-slate-700 hover:border-emerald-500/60 bg-slate-900 text-slate-200'
+            }`}
           >
-            {templates.map((tpl) => (
-              <option key={tpl.id} value={tpl.id} className="bg-slate-900 text-white py-1">
-                📑 {tpl.name}
-              </option>
-            ))}
-          </select>
+            <span>📑</span>
+            <span className="max-w-[100px] truncate">{activeTemplate?.name || 'Template'}</span>
+            <span className="text-[9px] text-slate-400">▼</span>
+          </button>
+
+          {openMenu === 'TEMPLATES' && (
+            <div className="absolute top-full left-0 mt-1 w-52 rounded-xl border border-slate-700 bg-[#0B0F19] shadow-2xl py-1 z-[100] animate-in fade-in duration-75">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                Chart Templates
+              </div>
+              {templates.slice(0, 5).map((tpl) => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => {
+                    onSelectTemplate(tpl);
+                    setOpenMenu(null);
+                  }}
+                  className={`flex items-center justify-between w-full px-3 py-1.5 text-left text-xs font-medium transition-colors cursor-pointer ${
+                    tpl.id === activeTemplateId
+                      ? 'bg-emerald-500/20 text-emerald-400 font-bold'
+                      : 'text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  <span className="truncate">{tpl.name}</span>
+                  {tpl.id === activeTemplateId && <span className="text-emerald-400 text-xs">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
