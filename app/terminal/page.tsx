@@ -25,8 +25,6 @@ const INDIA_WATCHLIST = [
   { symbol: 'ICICIBANK', name: 'ICICI Bank', base: 1383.00, sector: 'Banking', changePct: -0.46 },
   { symbol: 'ITC', name: 'ITC Ltd', base: 485.50, sector: 'FMCG', changePct: -0.47 },
   { symbol: 'SBIN', name: 'State Bank of India', base: 865.40, sector: 'Banking', changePct: -0.53 },
-  { symbol: 'TATAMOTORS', name: 'Tata Motors', base: 283.70, sector: 'Auto', changePct: -1.17 },
-  { symbol: 'LT', name: 'Larsen & Toubro', base: 3749.10, sector: 'Infra', changePct: 0.48 },
 ];
 const CRYPTO = [
   { symbol: 'BTC', name: 'Bitcoin', base: 83651.0, changePct: 1.24 },
@@ -37,13 +35,15 @@ const CRYPTO = [
   { symbol: 'SHIB', name: 'Shiba Inu', base: 0.0000185, changePct: -0.85 },
 ];
 
-// USA watchlist
+// USA indices
 const USA_INDICES = [
   { symbol: 'SPX', name: 'S&P 500', base: 7659.40, changePct: 0.51 },
   { symbol: 'NDX', name: 'NASDAQ 100', base: 29187.50, changePct: 0.57 },
   { symbol: 'DJI', name: 'DOW JONES', base: 52002.40, changePct: -0.16 },
   { symbol: 'QQQ', name: 'Invesco QQQ Trust', base: 715.20, changePct: 0.76 },
 ];
+
+// USA watchlist (Top 7 Mega-Cap "Magnificent 7")
 const USA_WATCHLIST = [
   { symbol: 'NVDA', name: 'NVIDIA Corporation', base: 214.10, sector: 'Semis & AI', changePct: 1.81 },
   { symbol: 'AAPL', name: 'Apple Inc.', base: 343.50, sector: 'Consumer Tech', changePct: 0.64 },
@@ -52,17 +52,6 @@ const USA_WATCHLIST = [
   { symbol: 'AMZN', name: 'Amazon.com Inc.', base: 250.00, sector: 'eCommerce & AWS', changePct: -0.42 },
   { symbol: 'META', name: 'Meta Platforms Inc.', base: 733.40, sector: 'Social & AI', changePct: 1.33 },
   { symbol: 'GOOGL', name: 'Alphabet Inc.', base: 340.60, sector: 'Search & Cloud', changePct: 0.68 },
-  { symbol: 'NFLX', name: 'Netflix Inc.', base: 705.30, sector: 'Streaming Media', changePct: 1.23 },
-  { symbol: 'AMD', name: 'Advanced Micro Devices', base: 550.20, sector: 'Semiconductors', changePct: 1.81 },
-  { symbol: 'AVGO', name: 'Broadcom Inc.', base: 329.40, sector: 'Semis & Networking', changePct: 1.83 },
-  { symbol: 'JPM', name: 'JPMorgan Chase & Co.', base: 337.50, sector: 'Banking & Finance', changePct: -0.53 },
-  { symbol: 'LLY', name: 'Eli Lilly and Company', base: 1256.80, sector: 'Healthcare & Biotech', changePct: 1.48 },
-  { symbol: 'COST', name: 'Costco Wholesale Corp.', base: 989.10, sector: 'Consumer Staples', changePct: 0.51 },
-  { symbol: 'COIN', name: 'Coinbase Global Inc.', base: 173.20, sector: 'Crypto Infrastructure', changePct: 3.28 },
-  { symbol: 'XOM', name: 'Exxon Mobil Corp.', base: 174.60, sector: 'Energy & Petrochemicals', changePct: -0.34 },
-  { symbol: 'DIS', name: 'The Walt Disney Company', base: 110.60, sector: 'Entertainment & Media', changePct: 0.73 },
-  { symbol: 'WMT', name: 'Walmart Inc.', base: 118.80, sector: 'Retail & Omnichannel', changePct: 0.42 },
-  { symbol: 'V', name: 'Visa Inc.', base: 402.70, sector: 'Payments & Financial', changePct: 0.40 },
 ];
 
 // UAE watchlist
