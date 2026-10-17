@@ -152,9 +152,12 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
       const live = getSymbolPrice(selectedSymbol);
       const expectedPrice = (live && live.price > 0) ? live.price : getExpectedPrice(market, selectedSymbol);
 
-      // 1. Instant load from IndexedDB cache with scale sanitization
+      const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
+
+      // 1. Instant load from IndexedDB cache with scale sanitization & bucket deduplication
       const rawCached = await loadStoredCandles(selectedSymbol, timeframe);
-      const cached = sanitizeCandleScale(rawCached || [], expectedPrice);
+      const sanitizedRawCached = sanitizeCandleScale(rawCached || [], expectedPrice);
+      const cached = mergeCandleArrays([], sanitizedRawCached, tfMs);
 
       if (!isCancelled && cached && cached.length > 0) {
         setCandles(cached);
@@ -165,11 +168,12 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
 
       // 2. Fetch latest candles from Trade Engine API with scale sanitization
       const rawEngine = await fetchCandles(selectedSymbol, timeframe);
-      const engineCandles = sanitizeCandleScale(rawEngine || [], expectedPrice);
+      const sanitizedRawEngine = sanitizeCandleScale(rawEngine || [], expectedPrice);
+      const engineCandles = mergeCandleArrays([], sanitizedRawEngine, tfMs);
 
       if (!isCancelled) {
         if (engineCandles && engineCandles.length > 5) {
-          const merged = mergeCandleArrays(cached || [], engineCandles);
+          const merged = mergeCandleArrays(cached || [], engineCandles, tfMs);
           const sanitizedMerged = sanitizeCandleScale(merged, expectedPrice);
           setCandles(sanitizedMerged);
           const lastC = sanitizedMerged[sanitizedMerged.length - 1];
@@ -181,10 +185,11 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           // Fallback to high-quality generator if offline or empty
           const fallback = getMockCandles(market, selectedSymbol, timeframe, 300);
           const sanitizedFallback = sanitizeCandleScale(fallback, expectedPrice);
-          setCandles(sanitizedFallback);
-          setCurrentPrice(sanitizedFallback[sanitizedFallback.length - 1]?.close);
+          const cleanFallback = mergeCandleArrays([], sanitizedFallback, tfMs);
+          setCandles(cleanFallback);
+          setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);
           setIsLiveFromEngine(false);
-          saveStoredCandles(selectedSymbol, timeframe, sanitizedFallback);
+          saveStoredCandles(selectedSymbol, timeframe, cleanFallback);
         }
         setIsLoadingCandles(false);
       }

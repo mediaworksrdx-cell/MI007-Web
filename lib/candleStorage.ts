@@ -121,23 +121,48 @@ export async function saveStoredCandles(symbol: string, timeframe: string, candl
  * - Sorts in ascending chronological order
  * - Keeps incoming candle values for identical timestamps (updates closing prices)
  */
-export function mergeCandleArrays(base: Candle[], incoming: Candle[]): Candle[] {
-  if (!base || base.length === 0) return incoming.slice(-1000);
-  if (!incoming || incoming.length === 0) return base.slice(-1000);
+export function mergeCandleArrays(base: Candle[], incoming: Candle[], timeframeMs?: number): Candle[] {
+  if (!base || base.length === 0) return (incoming || []).slice(-1000);
+  if (!incoming || incoming.length === 0) return (base || []).slice(-1000);
+
+  // Infer timeframe interval from candles if not explicitly supplied
+  let inferredMs = timeframeMs;
+  if (!inferredMs || inferredMs <= 0) {
+    if (incoming.length > 1) {
+      inferredMs = Math.abs(incoming[1].openTime - incoming[0].openTime);
+    } else if (base.length > 1) {
+      inferredMs = Math.abs(base[1].openTime - base[0].openTime);
+    }
+  }
+  const bucketMs = (inferredMs && inferredMs >= 60_000) ? inferredMs : 3_600_000;
 
   const candleMap = new Map<number, Candle>();
+  const getBucket = (ts: number) => Math.floor(ts / bucketMs) * bucketMs;
 
-  // Insert base
+  // Insert base candles mapped to their calendar interval bucket
   for (const c of base) {
-    if (c && typeof c.openTime === 'number' && !isNaN(c.openTime)) {
-      candleMap.set(c.openTime, c);
+    if (c && typeof c.openTime === 'number' && !isNaN(c.openTime) && c.close > 0) {
+      const bTime = getBucket(c.openTime);
+      candleMap.set(bTime, { ...c, openTime: bTime });
     }
   }
 
-  // Insert or override with incoming (later values win)
+  // Merge incoming candles into the same buckets
   for (const c of incoming) {
-    if (c && typeof c.openTime === 'number' && !isNaN(c.openTime)) {
-      candleMap.set(c.openTime, c);
+    if (c && typeof c.openTime === 'number' && !isNaN(c.openTime) && c.close > 0) {
+      const bTime = getBucket(c.openTime);
+      const existing = candleMap.get(bTime);
+      if (existing) {
+        candleMap.set(bTime, {
+          ...existing,
+          close: c.close,
+          high: Math.max(existing.high, c.high),
+          low: Math.min(existing.low, c.low),
+          volume: Math.max(existing.volume, c.volume),
+        });
+      } else {
+        candleMap.set(bTime, { ...c, openTime: bTime });
+      }
     }
   }
 
