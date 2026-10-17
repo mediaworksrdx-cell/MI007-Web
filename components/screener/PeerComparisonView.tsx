@@ -82,7 +82,7 @@ export function PeerComparisonView({
               type="button"
               onClick={onBackToScreener}
               className="px-3.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 transition-colors flex items-center gap-1.5 mono text-[12px] font-black shadow-xs shrink-0 group cursor-pointer"
-              title="Return to Stock Screener Table"
+              title="Return to Screeners Table"
             >
               <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
               <span>BACK TO SCREENER</span>
@@ -96,7 +96,7 @@ export function PeerComparisonView({
               </h2>
             </div>
             <p className="text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">
-              Side-by-side institutional cross-sectional analysis across valuation multiples, capital efficiency, and earnings power.
+              Side-by-side cross-sectional analysis across valuation multiples, capital efficiency, and earnings power.
             </p>
           </div>
         </div>

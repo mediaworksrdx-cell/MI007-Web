@@ -579,7 +579,7 @@ export function ScreenerWorkspace() {
                 Select a Company for Fundamental Analysis
               </h2>
               <p className="text-[13px] sm:text-[14px] text-[var(--theme-card-text-muted)] font-medium mt-1 max-w-lg">
-                Click <span className="font-bold text-emerald-400">Analyze</span> on any company in the Stock Screener or choose from the top {MARKETS[market]?.label || market} companies below.
+                Click <span className="font-bold text-emerald-400">Analyze</span> on any company in Screeners or choose from the top {MARKETS[market]?.label || market} companies below.
               </p>
             </div>
 

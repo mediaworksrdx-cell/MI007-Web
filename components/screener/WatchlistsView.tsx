@@ -59,7 +59,7 @@ export function WatchlistsView({
               type="button"
               onClick={onBackToScreener}
               className="px-3.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 transition-colors flex items-center gap-1.5 mono text-[12px] font-black shadow-xs shrink-0 group cursor-pointer"
-              title="Return to Stock Screener Table"
+              title="Return to Screeners Table"
             >
               <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
               <span>BACK TO SCREENER</span>
@@ -69,7 +69,7 @@ export function WatchlistsView({
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
               <h2 className="mono text-[18px] sm:text-[22px] font-black inst-card-text uppercase tracking-wide">
-                Institutional Watchlist Monitor
+                Watchlist Monitor
               </h2>
             </div>
             <p className="text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">

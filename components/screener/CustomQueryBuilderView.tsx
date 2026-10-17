@@ -233,7 +233,7 @@ export function CustomQueryBuilderView({
               type="button"
               onClick={onBackToScreener}
               className="px-3.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 transition-colors flex items-center gap-1.5 mono text-[12px] font-black shadow-xs shrink-0 group cursor-pointer"
-              title="Return to Stock Screener Table"
+              title="Return to Screeners Table"
             >
               <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
               <span>BACK TO SCREENER</span>
@@ -361,7 +361,7 @@ export function CustomQueryBuilderView({
                           </option>
                         ))}
                     </optgroup>
-                    <optgroup label="Curated Institutional Screens">
+                    <optgroup label="Curated Preset Screens">
                       {cleanSavedScreens
                         .filter((s) => s.isPredefined)
                         .map((s) => (
@@ -563,7 +563,7 @@ export function CustomQueryBuilderView({
               type="button"
               onClick={() => onApplyQuery(queryText)}
               className="px-3.5 py-1.5 rounded-xl bg-emerald-500 text-slate-950 mono text-[12px] font-black hover:bg-emerald-400 transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
-              title="Transfer query and view in primary Stock Screener table"
+              title="Transfer query and view in primary Screeners table"
             >
               <span>Apply to Screener Tab ▶</span>
             </button>

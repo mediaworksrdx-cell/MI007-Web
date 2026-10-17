@@ -1,4 +1,4 @@
-// ─── MI007 Institutional Stock Screener Terminal Page ────────────────────────
+// ─── MI007 Screeners Terminal Page ───────────────────────────────────────────
 'use client';
 
 import React, { Suspense } from 'react';
@@ -18,7 +18,7 @@ export default function ScreenerTerminalPage() {
       <Navbar market={market} onMarketChange={setMarket} />
 
       <main className="min-h-screen pt-28 sm:pt-32 relative z-20 bg-transparent pb-24">
-        {/* ── Master Cockpit Layer (Identical Terminal Shell) ── */}
+        {/* ── Master Dashboard Shell ── */}
         <div className="mx-auto max-w-[1600px] px-3 sm:px-4 lg:px-6 relative z-20 isolate">
           <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-3.5 sm:p-6 lg:p-8 overflow-hidden">
             {/* Top Outer Hairline Accent */}
@@ -30,10 +30,10 @@ export default function ScreenerTerminalPage() {
                 <Link
                   href="/terminal"
                   className="px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-2 mono text-[12px] font-bold shadow-xs shrink-0 group"
-                  title="Return to Market Cockpit Terminal"
+                  title="Return to Dashboard"
                 >
                   <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
-                  <span className="font-black">BACK TO COCKPIT</span>
+                  <span className="font-black">BACK TO DASHBOARD</span>
                 </Link>
 
                 <div className="flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center flex-shrink-0 overflow-visible">
@@ -50,7 +50,7 @@ export default function ScreenerTerminalPage() {
                     MARKET INTELLIGENCE MI-007
                   </h1>
                   <p className="text-[12px] sm:text-[14px] inst-card-text-muted font-medium mt-0.5 truncate">
-                    Intelligence Beyond the Noise · Quantitative Equity Screener
+                    Intelligence Beyond the Noise · Equity Screeners
                   </p>
                 </div>
               </div>
@@ -70,19 +70,19 @@ export default function ScreenerTerminalPage() {
                 className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2"
               >
                 <span>⚡</span>
-                <span>MARKET COCKPIT</span>
+                <span>DASHBOARD</span>
               </Link>
               <Link
                 href="/terminal/screener"
                 className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-black tracking-wide text-center transition-all bg-emerald-500 text-slate-950 shadow-xs flex items-center justify-center gap-2"
               >
                 <span>🔍</span>
-                <span>STOCK SCREENER</span>
+                <span>SCREENERS</span>
               </Link>
             </div>
 
             {/* Master Screener Workspace */}
-            <Suspense fallback={<div className="p-8 text-center text-slate-400 mono text-[13px]">Loading Institutional Screener...</div>}>
+            <Suspense fallback={<div className="p-8 text-center text-slate-400 mono text-[13px]">Loading Screener...</div>}>
               <ScreenerWorkspace />
             </Suspense>
           </div>

@@ -96,7 +96,7 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
                   }
                 }}
                 className="text-[12px] mono font-bold text-[var(--theme-page-text)] hover:text-emerald-400 transition-colors opacity-80 hover:opacity-100"
-                title="Return to Stock Screener Table"
+                title="Return to Screeners Table"
               >
                 SCREENER TABLE
               </Link>

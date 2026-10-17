@@ -72,7 +72,7 @@ export function CompanyAnalysisView({
             type="button"
             onClick={onBackToScreener}
             className="px-3.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 transition-colors flex items-center gap-1.5 mono text-[12px] font-black shadow-xs shrink-0 group cursor-pointer"
-            title="Return to Stock Screener Table"
+            title="Return to Screeners Table"
           >
             <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
             <span>BACK TO SCREENER</span>
@@ -364,7 +364,7 @@ export function CompanyAnalysisView({
         <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)] mb-4">
           <div className="flex items-center gap-2">
             <span className="mono text-[14px] font-black inst-card-text uppercase tracking-wide">
-              Institutional SWOT Analysis
+              SWOT Analysis
             </span>
             <span className="mono text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
               Automated Fundamental Matrix
@@ -458,7 +458,7 @@ export function CompanyAnalysisView({
               5-Year Historical Valuation Corridors
             </span>
             <span className="mono text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-              Institutional Percentiles
+              Historical Percentiles
             </span>
           </div>
           <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">

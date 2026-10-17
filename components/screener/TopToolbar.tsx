@@ -42,7 +42,7 @@ export function TopToolbar({
   );
 
   const TABS = [
-    { id: 'screener', label: '1. Stock Screener' },
+    { id: 'screener', label: '1. Screeners' },
     { id: 'technicalScreener', label: '2. Technical Strategies' },
     { id: 'queryBuilder', label: '3. Query Builder' },
     { id: 'discover', label: '4. Discover Screens' },
@@ -59,7 +59,7 @@ export function TopToolbar({
         {/* Title & Zerodha Badge */}
         <div className="flex items-center gap-2.5">
           <span className="mono text-[15px] sm:text-[17px] font-black inst-card-text tracking-wide uppercase">
-            STOCK SCREENER
+            SCREENERS
           </span>
           {market === 'INDIA' && (
             <span className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 mono text-[11px] font-bold">

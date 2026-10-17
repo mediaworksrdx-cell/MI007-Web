@@ -108,7 +108,7 @@ export function DiscoverScreensView({
                 </span>
               ) : (
                 <span className="mono text-[10.5px] font-black px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] uppercase tracking-wider">
-                  {screen.category || 'Institutional'}
+                  {screen.category || 'Curated'}
                 </span>
               )}
               {screen.category && isCustom && (
@@ -151,7 +151,7 @@ export function DiscoverScreensView({
             type="button"
             onClick={() => onRunScreen(screen)}
             className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 text-slate-950 mono text-[12px] font-black hover:bg-emerald-400 transition-colors shadow-xs text-center cursor-pointer shrink-0"
-            title="Run screen and inspect results in Stock Screener table"
+            title="Run screen and inspect results in Screeners table"
           >
             Run Strategy ▶
           </button>
@@ -214,7 +214,7 @@ export function DiscoverScreensView({
               type="button"
               onClick={onBackToScreener}
               className="px-3.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 transition-colors flex items-center gap-1.5 mono text-[12px] font-black shadow-xs shrink-0 group cursor-pointer"
-              title="Return to Stock Screener Table"
+              title="Return to Screeners Table"
             >
               <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
               <span>BACK TO SCREENER</span>
@@ -228,7 +228,7 @@ export function DiscoverScreensView({
               </h2>
             </div>
             <p className="text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">
-              Curated institutional screens and your custom saved strategies. Click any strategy to execute or edit.
+              Curated preset screens and your custom saved strategies. Click any strategy to execute or edit.
             </p>
           </div>
         </div>
@@ -340,7 +340,7 @@ export function DiscoverScreensView({
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
                 <h3 className="mono text-[15px] sm:text-[17px] font-black inst-card-text uppercase tracking-wide">
-                  Curated Institutional Screens ({predefinedScreens.length})
+                  Curated Preset Screens ({predefinedScreens.length})
                 </h3>
               </div>
               <span className="mono text-[11px] font-bold text-[var(--theme-card-text-muted)]">

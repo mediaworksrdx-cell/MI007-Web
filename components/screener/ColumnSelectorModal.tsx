@@ -180,7 +180,7 @@ export function ColumnSelectorModal({
             onClick={onResetDefault}
             className="mono text-[12.5px] font-bold text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] transition-colors cursor-pointer"
           >
-            Reset to Institutional Defaults
+            Reset to System Defaults
           </button>
           <button
             type="button"

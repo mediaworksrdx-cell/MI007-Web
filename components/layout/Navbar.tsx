@@ -19,17 +19,18 @@ interface NavbarProps {
 }
 
 const PUBLIC_NAV_LINKS = [
-  { href: '/',             label: 'Home' },
-  { href: '/terminal',     label: 'Cockpit' },
-  { href: '/chart/NIFTY',  label: 'Charts' },
-  { href: '/about',        label: 'About' },
-  { href: '/contact',      label: 'Contact' },
+  { href: '/',                  label: 'Home' },
+  { href: '/terminal',          label: 'Dashboard' },
+  { href: '/chart/NIFTY',       label: 'Charts' },
+  { href: '/terminal/screener', label: 'Screeners' },
+  { href: '/about',             label: 'About' },
+  { href: '/contact',           label: 'Contact' },
 ];
 
 const TERMINAL_NAV_LINKS = [
-  { href: '/terminal',          label: 'Market Cockpit' },
+  { href: '/terminal',          label: 'Dashboard' },
   { href: '/chart/NIFTY',       label: 'Interactive Charts' },
-  { href: '/terminal/screener', label: 'Stock Screener' },
+  { href: '/terminal/screener', label: 'Screeners' },
 ];
 
 export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange }: NavbarProps) {
