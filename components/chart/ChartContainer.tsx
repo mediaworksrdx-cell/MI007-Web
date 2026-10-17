@@ -838,7 +838,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
       />
 
       {/* ── Main Chart Workspace: Left Institutional Drawing Toolbar + Canvas Area ── */}
-      <div className="flex-1 min-h-0 flex flex-row relative bg-white overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-row relative bg-white">
         {/* Left Vertical Institutional Drawing Toolbar */}
         <DrawingToolbar
           activeDrawingTool={activeDrawingTool}

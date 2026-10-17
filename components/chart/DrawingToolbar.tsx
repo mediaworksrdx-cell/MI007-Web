@@ -163,18 +163,14 @@ export function DrawingToolbar({
               <button
                 type="button"
                 onClick={() => {
-                  if (isGroupActive) {
-                    setOpenGroupId(isMenuOpen ? null : group.id);
-                  } else {
-                    onDrawingToolChange(activeToolMeta.id);
-                    setOpenGroupId(group.id);
-                  }
+                  onDrawingToolChange(activeToolMeta.id);
+                  setOpenGroupId(null);
                 }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   setOpenGroupId(isMenuOpen ? null : group.id);
                 }}
-                title={`${group.title} (Right-click or click for more tools)`}
+                title={`${group.title}: ${activeToolMeta.label} (Click to activate, right-click for more)`}
                 className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer font-mono text-sm ${
                   isGroupActive
                     ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
@@ -182,7 +178,16 @@ export function DrawingToolbar({
                 }`}
               >
                 <span>{activeToolMeta.icon}</span>
-                <span className="absolute bottom-0.5 right-0.5 text-[7px] opacity-60 leading-none">▾</span>
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenGroupId(isMenuOpen ? null : group.id);
+                  }}
+                  title="More tools in this group"
+                  className="absolute bottom-0 right-0 p-0.5 text-[8px] opacity-70 hover:opacity-100 hover:text-emerald-400 leading-none"
+                >
+                  ▾
+                </span>
               </button>
 
               {/* Flyout Submenu */}
