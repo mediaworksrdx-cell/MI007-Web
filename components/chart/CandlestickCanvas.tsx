@@ -98,16 +98,20 @@ export function CandlestickCanvas({
     const referencePrice = (currentPriceOverride && currentPriceOverride > 0)
       ? currentPriceOverride
       : (candles[candles.length - 1]?.close || 1000);
-    const minAcceptable = referencePrice * 0.75;
-    const maxAcceptable = referencePrice * 1.30;
+    const minAcceptable = referencePrice * 0.85;
+    const maxAcceptable = referencePrice * 1.15;
 
     return candles.map(c => {
       if (!c) return c;
       const safeClose = (c.close >= minAcceptable && c.close <= maxAcceptable) ? c.close : referencePrice;
-      const safeOpen = (c.open >= minAcceptable && c.open <= maxAcceptable) ? c.open : safeClose;
+      let safeOpen = (c.open >= minAcceptable && c.open <= maxAcceptable) ? c.open : safeClose;
+      // Clamp open within ±3% of close so candles never deform into vertical columns
+      if (Math.abs(safeOpen - safeClose) > safeClose * 0.03) {
+        safeOpen = safeClose + (safeOpen > safeClose ? 1 : -1) * safeClose * 0.02;
+      }
       const top = Math.max(safeOpen, safeClose);
       const bottom = Math.min(safeOpen, safeClose);
-      const maxWick = top * 0.035;
+      const maxWick = top * 0.015;
       const safeHigh = Math.min(Math.max(c.high, top), Number((top + maxWick).toFixed(2)));
       const safeLow = Math.max(Math.min(c.low, bottom), Number(Math.max(1, bottom - maxWick).toFixed(2)));
       return {

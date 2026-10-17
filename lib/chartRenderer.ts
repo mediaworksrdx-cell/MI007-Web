@@ -677,25 +677,28 @@ export function renderChart(
   const visSlice = candles.slice(startIdx, Math.min(endIdx, candles.length)).filter(c => c && c.close > 0);
   const closes = visSlice.map(c => c.close).sort((a, b) => a - b);
   const medClose = closes.length > 0 ? closes[Math.floor(closes.length / 2)] : 1000;
-  const minValidBound = medClose * 0.75;
-  const maxValidBound = medClose * 1.30;
+  const anchorPrice = (options.currentPriceOverride && options.currentPriceOverride > 0)
+    ? options.currentPriceOverride
+    : medClose;
+  const minValidBound = anchorPrice * 0.85;
+  const maxValidBound = anchorPrice * 1.15;
 
   let pMin = Infinity, pMax = -Infinity;
   for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
     const c = candles[i];
-    const safeLow = (c.low >= minValidBound && c.low <= maxValidBound) ? c.low : c.close;
-    const safeHigh = (c.high >= minValidBound && c.high <= maxValidBound) ? c.high : c.close;
+    const safeLow = Math.max(minValidBound, Math.min(maxValidBound, (c.low >= minValidBound && c.low <= maxValidBound) ? c.low : c.close));
+    const safeHigh = Math.min(maxValidBound, Math.max(minValidBound, (c.high >= minValidBound && c.high <= maxValidBound) ? c.high : c.close));
     pMin = Math.min(pMin, safeLow);
     pMax = Math.max(pMax, safeHigh);
   }
   if (options.currentPriceOverride && options.currentPriceOverride > 0 && endIdx >= candles.length) {
-    if (options.currentPriceOverride >= minValidBound && options.currentPriceOverride <= maxValidBound) {
-      pMin = Math.min(pMin, options.currentPriceOverride);
-      pMax = Math.max(pMax, options.currentPriceOverride);
-    }
+    pMin = Math.min(pMin, Math.max(minValidBound, options.currentPriceOverride));
+    pMax = Math.max(pMax, Math.min(maxValidBound, options.currentPriceOverride));
   }
   const pad = (pMax - pMin) * 0.05 || 1;
   pMin -= pad; pMax += pad;
+  pMin = Math.max(minValidBound * 0.95, pMin);
+  pMax = Math.min(maxValidBound * 1.05, pMax);
   const pRange = Math.max(pMax - pMin, 0.01);
 
   function priceToY(p: number): number { return chartH - ((p - pMin) / pRange * chartH); }
@@ -1004,17 +1007,20 @@ export function renderChart(
       const effectiveClose = (isLastBar && options.currentPriceOverride && options.currentPriceOverride > 0)
         ? options.currentPriceOverride
         : c.close;
-      const effectiveHigh = isLastBar ? Math.min(Math.max(c.high, effectiveClose), effectiveClose * 1.05) : c.high;
-      const effectiveLow = isLastBar ? Math.max(Math.min(c.low, effectiveClose), effectiveClose * 0.95) : c.low;
+      const effectiveHigh = isLastBar ? Math.min(Math.max(c.high, effectiveClose), effectiveClose * 1.02) : c.high;
+      const effectiveLow = isLastBar ? Math.max(Math.min(c.low, effectiveClose), effectiveClose * 0.98) : c.low;
 
       // Defensive sanity bounds: prevent distorted multi-hundred-point pillars from corrupted caches
-      const barClose = effectiveClose;
-      const barOpen = (c.open >= minValidBound && c.open <= maxValidBound) ? c.open : barClose;
+      const barClose = Math.max(minValidBound, Math.min(maxValidBound, effectiveClose));
+      let barOpen = (c.open >= minValidBound && c.open <= maxValidBound) ? c.open : barClose;
+      if (Math.abs(barOpen - barClose) > barClose * 0.03) {
+        barOpen = barClose + (barOpen > barClose ? 1 : -1) * barClose * 0.02;
+      }
       const topPrice = Math.max(barOpen, barClose);
       const botPrice = Math.min(barOpen, barClose);
-      const maxWick = topPrice * 0.04;
+      const maxWick = topPrice * 0.015;
       const barHigh = Math.min(Math.max(effectiveHigh, topPrice), topPrice + maxWick);
-      const barLow = Math.max(Math.min(effectiveLow, botPrice), Math.max(1, botPrice - maxWick));
+      const barLow = Math.max(Math.min(effectiveLow, botPrice), Math.max(minValidBound, botPrice - maxWick));
 
       const bull = barClose >= barOpen;
       const color = bull ? BULL : BEAR;

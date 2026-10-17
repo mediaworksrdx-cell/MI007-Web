@@ -115,6 +115,40 @@ export async function saveStoredCandles(symbol: string, timeframe: string, candl
   }
 }
 
+/** Purge cached candles for a specific symbol/timeframe or all symbols */
+export async function purgeStoredCandles(symbol?: string, timeframe?: string): Promise<void> {
+  try {
+    const db = await getDB();
+    if (symbol && timeframe) {
+      const key = getStorageKey(symbol, timeframe);
+      if (db) {
+        await new Promise<void>((resolve) => {
+          try {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).delete(key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+          } catch { resolve(); }
+        });
+      }
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem(`mi007_candles_${key}`);
+      }
+    } else if (db) {
+      await new Promise<void>((resolve) => {
+        try {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).clear();
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => resolve();
+        } catch { resolve(); }
+      });
+    }
+  } catch (err) {
+    console.warn('[CandleStorage] Error purging stored candles:', err);
+  }
+}
+
 /**
  * Merges two arrays of candles:
  * - Deduplicates on openTime
@@ -153,19 +187,22 @@ export function mergeCandleArrays(base: Candle[], incoming: Candle[], timeframeM
       const bTime = getBucket(c.openTime);
       const existing = candleMap.get(bTime);
       if (existing) {
-        // Guard against scale mismatch: if existing and incoming prices diverge by > 25% or existing is corrupt,
-        // incoming authoritative candle overwrites existing instead of combining with Math.max/min
-        const ratio = existing.close > 0 ? c.close / existing.close : 1;
-        const isExistingCorrupt = (existing.high - existing.low) / Math.max(1, existing.low) > 0.25;
-        if (ratio < 0.75 || ratio > 1.35 || isExistingCorrupt) {
+        // Guard against scale mismatch: if existing and incoming prices diverge by > 5% or existing is corrupt,
+        // incoming authoritative candle overwrites existing completely instead of combining with Math.max/min
+        const divergence = existing.close > 0 ? Math.abs(c.close - existing.close) / existing.close : 1;
+        const isExistingCorrupt = (existing.high - existing.low) / Math.max(1, existing.low) > 0.08;
+        if (divergence > 0.05 || isExistingCorrupt) {
           candleMap.set(bTime, { ...c, openTime: bTime });
         } else {
+          const top = Math.max(existing.open, c.close);
+          const bot = Math.min(existing.open, c.close);
+          const maxWick = top * 0.02;
           candleMap.set(bTime, {
             openTime: bTime,
             open: existing.open > 0 ? existing.open : c.open,
             close: c.close,
-            high: Math.max(existing.high, c.high),
-            low: Math.min(existing.low, c.low),
+            high: Math.min(Math.max(existing.high, c.high, top), Number((top + maxWick).toFixed(2))),
+            low: Math.max(Math.min(existing.low, c.low, bot), Number(Math.max(1, bot - maxWick).toFixed(2))),
             volume: Math.max(existing.volume, c.volume),
           });
         }
