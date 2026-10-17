@@ -423,15 +423,22 @@ export default function TerminalPage() {
                     href={`/chart/${c.symbol}`}
                     className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors">{c.symbol}</span>
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0">
+                        <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors">{c.symbol}</span>
+                        <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[70px]">{c.name}</div>
+                      </div>
+                      <div className="scale-90 origin-top-right">
+                        <Sparkline symbol={c.symbol} up={up} changePct={currentPct} />
+                      </div>
                     </div>
-                    <div className="text-[12px] inst-card-text-muted font-bold truncate">{c.name}</div>
-                    <div className="mono text-[14px] font-black inst-card-text mt-1">
-                      ${price.toLocaleString(undefined, { minimumFractionDigits: price < 1 ? 4 : 2, maximumFractionDigits: price < 1 ? 7 : 2 })}
-                    </div>
-                    <div className={`mono text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
-                      {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
+                    <div className="flex items-end justify-between mt-2">
+                      <span className="mono text-[13.5px] font-black inst-card-text">
+                        ${price.toLocaleString(undefined, { minimumFractionDigits: price < 1 ? 4 : 2, maximumFractionDigits: price < 1 ? 7 : 2 })}
+                      </span>
+                      <span className={`mono text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
+                      </span>
                     </div>
                   </Link>
                 );

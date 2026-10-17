@@ -119,36 +119,61 @@ function Range52WBar({ current, low, high, currency = '₹' }: { current: number
 }
 
 function MiniSparkline({ symbol, changePct }: { symbol: string; changePct: number }) {
-  const seed = symbol.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
-  const points: number[] = [];
-  let val = 50;
-  for (let i = 0; i < 9; i++) {
-    val += Math.sin(seed * 0.23 + i * 0.95) * 4.5 + (changePct >= 0 ? 1.8 : -1.8);
-    points.push(val);
-  }
-  const min = Math.min(...points);
-  const max = Math.max(...points) || min + 1;
-  const w = 44;
-  const h = 16;
-  const polylineCoords = points
-    .map((p, idx) => {
-      const x = (idx / (points.length - 1)) * w;
-      const y = h - ((p - min) / (max - min)) * (h - 4) - 2;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
+  const isUp = changePct >= 0;
+  let seedVal = symbol.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1) * 31, 101);
+  const nextRand = () => {
+    seedVal = (seedVal * 9301 + 49297) % 233280;
+    return seedVal / 233280;
+  };
 
-  const stroke = changePct >= 0 ? '#10b981' : '#f43f5e';
+  const numPts = 12;
+  const pts: number[] = [];
+  const moveSlope = (isUp ? 1 : -1) * Math.max(6, Math.min(18, Math.abs(changePct) * 8));
+  const startBase = 50;
+
+  for (let i = 0; i < numPts; i++) {
+    const t = i / (numPts - 1);
+    const trendOffset = moveSlope * Math.pow(t, 0.9);
+    const noise = (nextRand() - 0.49) * 2.2;
+    pts.push(startBase + trendOffset + noise);
+  }
+
+  if (isUp) {
+    if (pts[numPts - 1] <= pts[0]) pts[numPts - 1] = pts[0] + 8;
+  } else {
+    if (pts[numPts - 1] >= pts[0]) pts[numPts - 1] = pts[0] - 8;
+  }
+
+  const min = Math.min(...pts);
+  const max = Math.max(...pts);
+  const range = max - min || 1;
+
+  const w = 48;
+  const h = 18;
+  const padTop = 2;
+  const plotH = 14;
+
+  const coords = pts.map((p, idx) => {
+    const x = (idx / (numPts - 1)) * w;
+    const y = padTop + (1 - (p - min) / range) * plotH;
+    return { x: +x.toFixed(1), y: +y.toFixed(1) };
+  });
+
+  const pathD = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x},${c.y}`).join(' ');
+  const stroke = isUp ? '#10b981' : '#f43f5e';
+  const lastPt = coords[coords.length - 1];
+
   return (
-    <svg width={w} height={h} className="inline-block overflow-visible shrink-0">
-      <polyline
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="inline-block overflow-visible shrink-0">
+      <path
+        d={pathD}
         fill="none"
         stroke={stroke}
-        strokeWidth="1.7"
+        strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
-        points={polylineCoords}
       />
+      <circle cx={lastPt.x} cy={lastPt.y} r="1.8" fill={stroke} />
     </svg>
   );
 }
