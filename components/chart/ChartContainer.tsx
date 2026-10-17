@@ -51,23 +51,34 @@ function getExpectedPrice(market: MarketType, symbol: string): number {
 
 function sanitizeCandleScale(candles: Candle[], targetPrice: number): Candle[] {
   if (!candles || candles.length === 0 || targetPrice <= 0) return candles;
-  const lastC = candles[candles.length - 1];
-  if (!lastC || lastC.close <= 0) return candles;
+  
+  // Filter out any corrupted or zero-price candles
+  const valid = candles.filter(c => c && c.close > 0 && c.open > 0 && c.high > 0 && c.low > 0);
+  if (valid.length === 0) return [];
 
-  const ratio = targetPrice / lastC.close;
-  // If ratio is between 0.4 and 2.5, candle scale is consistent with reality
-  if (ratio >= 0.4 && ratio <= 2.5) {
-    return candles;
+  // Determine median price to establish baseline scale
+  const sortedCloses = [...valid].map(c => c.close).sort((a, b) => a - b);
+  const medianPrice = sortedCloses[Math.floor(sortedCloses.length / 2)];
+
+  // Case A: The whole series is scaled differently (e.g. 1000 fallback vs 55000 live)
+  const seriesRatio = targetPrice / medianPrice;
+  let rebased = valid;
+  if (seriesRatio < 0.4 || seriesRatio > 2.5) {
+    rebased = valid.map(c => ({
+      ...c,
+      open: Number((c.open * seriesRatio).toFixed(2)),
+      high: Number((c.high * seriesRatio).toFixed(2)),
+      low: Number((c.low * seriesRatio).toFixed(2)),
+      close: Number((c.close * seriesRatio).toFixed(2)),
+    }));
   }
 
-  // Severe dislocation (e.g. 1000 fallback vs 55000 live price) — linearly rebase to expected scale
-  return candles.map(c => ({
-    ...c,
-    open: Number((c.open * ratio).toFixed(2)),
-    high: Number((c.high * ratio).toFixed(2)),
-    low: Number((c.low * ratio).toFixed(2)),
-    close: Number((c.close * ratio).toFixed(2)),
-  }));
+  // Case B: Filter out individual rogue outlier candles whose low/high are severely dislocated (e.g. low=998 while index is 55000)
+  const minAcceptable = targetPrice * 0.4;
+  const maxAcceptable = targetPrice * 2.5;
+  return rebased.filter(c => {
+    return c.low >= minAcceptable && c.high <= maxAcceptable && c.open >= minAcceptable && c.close >= minAcceptable;
+  });
 }
 
 export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
@@ -232,33 +243,45 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
 
           // Case 1: Tick falls into currently active bucket
           if (currentLast.openTime === currentBucketOpenTime) {
+            const rawLow = currentLast.low;
+            const safeLow = (rawLow <= 0 || rawLow < tick.price * 0.4 || rawLow > tick.price * 2.5) ? tick.price : Math.min(rawLow, tick.price);
+            const rawHigh = currentLast.high;
+            const safeHigh = (rawHigh <= 0 || rawHigh < tick.price * 0.4 || rawHigh > tick.price * 2.5) ? tick.price : Math.max(rawHigh, tick.price);
+            const rawOpen = currentLast.open;
+            const safeOpen = (rawOpen <= 0 || rawOpen < tick.price * 0.4 || rawOpen > tick.price * 2.5) ? tick.price : rawOpen;
             const updated: Candle = {
               ...currentLast,
+              open: safeOpen,
               close: tick.price,
-              high: Math.max(currentLast.high, tick.price),
-              low: Math.min(currentLast.low, tick.price),
+              high: safeHigh,
+              low: safeLow,
               volume: currentLast.volume + (tick.volume > 0 ? tick.volume : 1),
             };
             next = [...baseCandles];
             next[next.length - 1] = updated;
           } else if (currentBucketOpenTime > currentLast.openTime) {
             // Case 2: New time bucket started — start ONE single new candle stamped at currentBucketOpenTime
+            const safeOpen = (currentLast.close <= 0 || currentLast.close < tick.price * 0.4 || currentLast.close > tick.price * 2.5) ? tick.price : currentLast.close;
             const newBar: Candle = {
               openTime: currentBucketOpenTime,
-              open: currentLast.close,
-              high: Math.max(currentLast.close, tick.price),
-              low: Math.min(currentLast.close, tick.price),
+              open: safeOpen,
+              high: Math.max(safeOpen, tick.price),
+              low: Math.min(safeOpen, tick.price),
               close: tick.price,
               volume: tick.volume > 0 ? tick.volume : 1,
             };
             next = [...baseCandles.slice(-999), newBar];
           } else {
             // Case 3: Prior/matching sub-bucket update
+            const rawLow = currentLast.low;
+            const safeLow = (rawLow <= 0 || rawLow < tick.price * 0.4 || rawLow > tick.price * 2.5) ? tick.price : Math.min(rawLow, tick.price);
+            const rawHigh = currentLast.high;
+            const safeHigh = (rawHigh <= 0 || rawHigh < tick.price * 0.4 || rawHigh > tick.price * 2.5) ? tick.price : Math.max(rawHigh, tick.price);
             const updated: Candle = {
               ...currentLast,
               close: tick.price,
-              high: Math.max(currentLast.high, tick.price),
-              low: Math.min(currentLast.low, tick.price),
+              high: safeHigh,
+              low: safeLow,
             };
             next = [...baseCandles];
             next[next.length - 1] = updated;

@@ -673,19 +673,30 @@ export function renderChart(
 
   const candleW = chartW / visCnt;
 
-  // Price range with 5% padding
+  // Price range with 5% padding & rogue spike protection
+  const visSlice = candles.slice(startIdx, Math.min(endIdx, candles.length)).filter(c => c && c.close > 0);
+  const closes = visSlice.map(c => c.close).sort((a, b) => a - b);
+  const medClose = closes.length > 0 ? closes[Math.floor(closes.length / 2)] : 1000;
+  const minValidBound = medClose * 0.35;
+  const maxValidBound = medClose * 2.5;
+
   let pMin = Infinity, pMax = -Infinity;
   for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
-    pMin = Math.min(pMin, candles[i].low);
-    pMax = Math.max(pMax, candles[i].high);
+    const c = candles[i];
+    const safeLow = (c.low >= minValidBound && c.low <= maxValidBound) ? c.low : c.close;
+    const safeHigh = (c.high >= minValidBound && c.high <= maxValidBound) ? c.high : c.close;
+    pMin = Math.min(pMin, safeLow);
+    pMax = Math.max(pMax, safeHigh);
   }
   if (options.currentPriceOverride && options.currentPriceOverride > 0 && endIdx >= candles.length) {
-    pMin = Math.min(pMin, options.currentPriceOverride);
-    pMax = Math.max(pMax, options.currentPriceOverride);
+    if (options.currentPriceOverride >= minValidBound && options.currentPriceOverride <= maxValidBound) {
+      pMin = Math.min(pMin, options.currentPriceOverride);
+      pMax = Math.max(pMax, options.currentPriceOverride);
+    }
   }
   const pad = (pMax - pMin) * 0.05 || 1;
   pMin -= pad; pMax += pad;
-  const pRange = pMax - pMin;
+  const pRange = Math.max(pMax - pMin, 0.01);
 
   function priceToY(p: number): number { return chartH - ((p - pMin) / pRange * chartH); }
 
