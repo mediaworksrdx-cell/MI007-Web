@@ -147,10 +147,10 @@ export const PREDEFINED_SCREENS: SavedScreen[] = [
   },
   {
     id: 'distressed-radar',
-    name: 'Financial Distress & Risk Radar (Short/Caution)',
-    description: 'Screening for companies burdened with high leverage, deteriorating margins, or inadequate interest coverage.',
+    name: 'Leverage & Solvency Radar',
+    description: 'Screening for companies with debt exposure (Debt to Equity > 0.3) or tighter interest coverage relative to cash-rich peers.',
     category: 'Special',
-    query: 'Debt to Equity > 1.2\nAND Interest Coverage Ratio < 3.0',
+    query: 'Debt to Equity > 0.3\nOR Interest Coverage Ratio < 8.0',
     columns: ['marketCap', 'currentPrice', 'debtToEquity', 'interestCoverage', 'roce', 'npm'],
     sortColumn: 'debtToEquity',
     sortDirection: 'desc',

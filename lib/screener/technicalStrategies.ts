@@ -184,6 +184,7 @@ export function evaluateAllStrategiesForStock(
   const prevHist = macdData.histogram[n - 2] ?? 0.2;
   const currBBUpper = bbData.upper[n - 1] || currentPrice * 1.05;
   const currBBLower = bbData.lower[n - 1] || currentPrice * 0.95;
+  const currency = market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹';
 
   const results: StrategySignalResult[] = [];
 
@@ -202,14 +203,14 @@ export function evaluateAllStrategiesForStock(
     currentPrice,
     triggerPrice: currSma50,
     keyMetrics: {
-      'Price': `₹${currentPrice}`,
-      'SMA 50': `₹${currSma50.toFixed(1)}`,
-      'SMA 200': `₹${currSma200.toFixed(1)}`,
+      'Price': `${currency}${currentPrice}`,
+      'SMA 50': `${currency}${currSma50.toFixed(1)}`,
+      'SMA 200': `${currency}${currSma200.toFixed(1)}`,
       'Distance to 200-SMA': `${(((currentPrice - currSma200) / currSma200) * 100).toFixed(1)}%`,
     },
     status: 'Confirmed',
     explanation: isBullAlignment
-      ? `Price (₹${currentPrice}) is trending above both 50 SMA (₹${currSma50.toFixed(1)}) and 200 SMA (₹${currSma200.toFixed(1)}), confirming strong institutional bullish trend alignment.`
+      ? `Price (${currency}${currentPrice}) is trending above both 50 SMA (${currency}${currSma50.toFixed(1)}) and 200 SMA (${currency}${currSma200.toFixed(1)}), confirming strong institutional bullish trend alignment.`
       : isBearAlignment
       ? `Price has broken below both 50 and 200 SMAs, establishing a macro distribution trend.`
       : 'Moving averages are compressed / neutral without directional hierarchy.',
@@ -248,13 +249,13 @@ export function evaluateAllStrategiesForStock(
     currentPrice,
     triggerPrice: goldenCrossPrice,
     keyMetrics: {
-      'SMA 50': `₹${currSma50.toFixed(1)}`,
-      'SMA 200': `₹${currSma200.toFixed(1)}`,
+      'SMA 50': `${currency}${currSma50.toFixed(1)}`,
+      'SMA 200': `${currency}${currSma200.toFixed(1)}`,
       'Spread %': `${(((currSma50 - currSma200) / currSma200) * 100).toFixed(2)}%`,
     },
     status: 'Confirmed',
     explanation: isGoldenRegime
-      ? `50-day moving average (₹${currSma50.toFixed(1)}) is leading above 200-day moving average (₹${currSma200.toFixed(1)}), confirming macro institutional capital expansion.`
+      ? `50-day moving average (${currency}${currSma50.toFixed(1)}) is leading above 200-day moving average (${currency}${currSma200.toFixed(1)}), confirming macro institutional capital expansion.`
       : 'SMA 50 has not yet crossed above SMA 200.',
     historicalWinRate: 72.1,
   });
@@ -273,8 +274,8 @@ export function evaluateAllStrategiesForStock(
     currentPrice,
     triggerPrice: currSma200,
     keyMetrics: {
-      'SMA 50': `₹${currSma50.toFixed(1)}`,
-      'SMA 200': `₹${currSma200.toFixed(1)}`,
+      'SMA 50': `${currency}${currSma50.toFixed(1)}`,
+      'SMA 200': `${currency}${currSma200.toFixed(1)}`,
     },
     status: 'Confirmed',
     explanation: isDeathCross
@@ -297,12 +298,12 @@ export function evaluateAllStrategiesForStock(
     currentPrice,
     triggerPrice: currSma50,
     keyMetrics: {
-      'SMA 20': `₹${currSma20.toFixed(1)}`,
-      'SMA 50': `₹${currSma50.toFixed(1)}`,
+      'SMA 20': `${currency}${currSma20.toFixed(1)}`,
+      'SMA 50': `${currency}${currSma50.toFixed(1)}`,
     },
     status: 'Confirmed',
     explanation: is2050Bull
-      ? `20-day trend average (₹${currSma20.toFixed(1)}) is actively outperforming the 50-day average, establishing short-to-medium swing momentum.`
+      ? `20-day trend average (${currency}${currSma20.toFixed(1)}) is actively outperforming the 50-day average, establishing short-to-medium swing momentum.`
       : '20-day average is trailing beneath 50-day average.',
     historicalWinRate: 63.5,
   });
@@ -321,12 +322,12 @@ export function evaluateAllStrategiesForStock(
     currentPrice,
     triggerPrice: currEma21,
     keyMetrics: {
-      'EMA 9': `₹${currEma9.toFixed(1)}`,
-      'EMA 21': `₹${currEma21.toFixed(1)}`,
+      'EMA 9': `${currency}${currEma9.toFixed(1)}`,
+      'EMA 21': `${currency}${currEma21.toFixed(1)}`,
     },
     status: 'Confirmed',
     explanation: isEmaBull
-      ? `Fast 9 EMA (₹${currEma9.toFixed(1)}) maintains a positive slope above 21 EMA (₹${currEma21.toFixed(1)}), confirming active buyer aggression.`
+      ? `Fast 9 EMA (${currency}${currEma9.toFixed(1)}) maintains a positive slope above 21 EMA (${currency}${currEma21.toFixed(1)}), confirming active buyer aggression.`
       : 'Fast 9 EMA is below 21 EMA baseline.',
     historicalWinRate: 59.8,
   });
@@ -400,15 +401,15 @@ export function evaluateAllStrategiesForStock(
     currentPrice,
     triggerPrice: touchedLower ? currBBLower : currBBUpper,
     keyMetrics: {
-      'Upper Band': `₹${currBBUpper.toFixed(1)}`,
-      'Lower Band': `₹${currBBLower.toFixed(1)}`,
+      'Upper Band': `${currency}${currBBUpper.toFixed(1)}`,
+      'Lower Band': `${currency}${currBBLower.toFixed(1)}`,
       'Bandwidth': `${(((currBBUpper - currBBLower) / ((currBBUpper + currBBLower) / 2)) * 100).toFixed(1)}%`,
     },
     status: 'Confirmed',
     explanation: touchedLower
-      ? `Price tested the lower 2-std-dev band (₹${currBBLower.toFixed(1)}) and closed inside, confirming responsive buyer absorption.`
+      ? `Price tested the lower 2-std-dev band (${currency}${currBBLower.toFixed(1)}) and closed inside, confirming responsive buyer absorption.`
       : touchedUpper
-      ? `Price pierced the upper volatility band (₹${currBBUpper.toFixed(1)}), reaching short-term exhaustion.`
+      ? `Price pierced the upper volatility band (${currency}${currBBUpper.toFixed(1)}), reaching short-term exhaustion.`
       : 'Price oscillates normally within standard volatility bands.',
     historicalWinRate: 65.4,
   });
@@ -428,13 +429,13 @@ export function evaluateAllStrategiesForStock(
     currentPrice,
     triggerPrice: recentHigh50,
     keyMetrics: {
-      '50-Day Resistance': `₹${recentHigh50.toFixed(1)}`,
+      '50-Day Resistance': `${currency}${recentHigh50.toFixed(1)}`,
       'Distance to Peak': `${(((currentPrice - recentHigh50) / recentHigh50) * 100).toFixed(1)}%`,
       'Volume Surge': '142% vs 20D MA',
     },
     status: 'Confirmed',
     explanation: isBreakout
-      ? `Price (₹${currentPrice}) is challenging or breaking above its 50-day structural ceiling (₹${recentHigh50.toFixed(1)}) on expanding volume.`
+      ? `Price (${currency}${currentPrice}) is challenging or breaking above its 50-day structural ceiling (${currency}${recentHigh50.toFixed(1)}) on expanding volume.`
       : `Price is trading ${(Math.abs(((currentPrice - recentHigh50) / recentHigh50) * 100)).toFixed(1)}% below its 50-day high.`,
     historicalWinRate: 70.8,
   });

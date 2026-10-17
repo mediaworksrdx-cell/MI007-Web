@@ -2,10 +2,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ScreeningAlert } from '@/lib/screener/types';
+import { ScreeningAlert, MarketRegion } from '@/lib/screener/types';
 
 interface ScreeningAlertsViewProps {
   alerts: ScreeningAlert[];
+  market?: MarketRegion;
   onToggleAlert: (alertId: string) => void;
   onCreateAlert: (alert: Partial<ScreeningAlert>) => void;
   onSelectCompany: (symbol: string) => void;
@@ -14,6 +15,7 @@ interface ScreeningAlertsViewProps {
 
 export function ScreeningAlertsView({
   alerts,
+  market = 'INDIA',
   onToggleAlert,
   onCreateAlert,
   onSelectCompany,
@@ -30,6 +32,7 @@ export function ScreeningAlertsView({
     e.preventDefault();
     if (!name.trim()) return;
 
+    const defaultSymbol = market === 'USA' ? 'AAPL' : market === 'UAE' ? 'EMAAR' : 'TCS';
     onCreateAlert({
       id: `alert-${Date.now()}`,
       name: name.trim(),
@@ -41,7 +44,7 @@ export function ScreeningAlertsView({
       recentTriggers: [
         {
           timestamp: new Date().toLocaleString(),
-          symbol: 'TCS',
+          symbol: defaultSymbol,
           message: `Alert activated: Monitoring for ${triggerType === 'METRIC_CROSS' ? `${metricKey} > ${threshold}` : 'screen entry'} on financial report release.`,
         },
       ],

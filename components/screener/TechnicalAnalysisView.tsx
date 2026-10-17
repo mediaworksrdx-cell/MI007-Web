@@ -111,7 +111,7 @@ export function TechnicalAnalysisView({
               </div>
             </div>
             <div className="text-[12.5px] text-[var(--theme-card-text-muted)] font-medium mt-0.5">
-              Sector: <span className="font-bold text-[var(--theme-card-text)]">{company.sector}</span> · 52W High: <span className="font-bold text-[var(--theme-card-text)]">₹{company.high52W}</span> · 52W Low: <span className="font-bold text-[var(--theme-card-text)]">₹{company.low52W}</span>
+              Sector: <span className="font-bold text-[var(--theme-card-text)]">{company.sector}</span> · 52W High: <span className="font-bold text-[var(--theme-card-text)]">{company.currencySymbol}{company.high52W}</span> · 52W Low: <span className="font-bold text-[var(--theme-card-text)]">{company.currencySymbol}{company.low52W}</span>
             </div>
           </div>
         </div>
@@ -150,25 +150,29 @@ export function TechnicalAnalysisView({
         </div>
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">Open</span>
-          <span className="font-black text-[var(--theme-card-text)]">₹{activeCandle.open.toFixed(2)}</span>
+          <span className="font-black text-[var(--theme-card-text)]">{company.currencySymbol}{activeCandle.open.toFixed(2)}</span>
         </div>
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">High</span>
-          <span className="font-black text-emerald-700 dark:text-emerald-400">₹{activeCandle.high.toFixed(2)}</span>
+          <span className="font-black text-emerald-700 dark:text-emerald-400">{company.currencySymbol}{activeCandle.high.toFixed(2)}</span>
         </div>
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">Low</span>
-          <span className="font-black text-rose-700 dark:text-rose-400">₹{activeCandle.low.toFixed(2)}</span>
+          <span className="font-black text-rose-700 dark:text-rose-400">{company.currencySymbol}{activeCandle.low.toFixed(2)}</span>
         </div>
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">Close / LTP</span>
           <span className={`font-black ${activeCandle.close >= activeCandle.open ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
-            ₹{activeCandle.close.toFixed(2)}
+            {company.currencySymbol}{activeCandle.close.toFixed(2)}
           </span>
         </div>
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">Volume</span>
-          <span className="font-bold text-slate-300">{(activeCandle.volume / 100000).toFixed(1)}L</span>
+          <span className="font-bold text-slate-300">
+            {company.market === 'INDIA'
+              ? `${(activeCandle.volume / 100000).toFixed(1)}L`
+              : `${(activeCandle.volume / 1000000).toFixed(1)}M`}
+          </span>
         </div>
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">RSI (14)</span>
@@ -290,7 +294,7 @@ export function TechnicalAnalysisView({
                 <g key={idx}>
                   <line x1="0" y1={y} x2={chartWidth} y2={y} stroke="#334155" strokeDasharray="3 3" strokeOpacity="0.4" />
                   <text x={chartWidth - 5} y={y - 3} fill="#64748b" fontSize="9" textAnchor="end" className="mono">
-                    ₹{price.toFixed(1)}
+                    {company.currencySymbol}{price.toFixed(1)}
                   </text>
                 </g>
               );

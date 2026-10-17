@@ -68,6 +68,7 @@ export function calculatePiotroskiScore(company: CompanyFundamental): PiotroskiR
   const roce = company.roce ?? 16;
 
   const criteria: PiotroskiResult['criteria'] = [];
+  const scale = company.market === 'INDIA' ? 'Cr' : 'B';
 
   // 1. Positive Net Income
   const c1 = netProfitCurr > 0;
@@ -75,7 +76,7 @@ export function calculatePiotroskiScore(company: CompanyFundamental): PiotroskiR
     name: 'Positive Net Profit',
     category: 'Profitability',
     passed: c1,
-    explanation: `Current fiscal net income is ${c1 ? 'profitable' : 'negative'} (${netProfitCurr > 0 ? '+' : ''}${netProfitCurr.toLocaleString()} Cr).`,
+    explanation: `Current fiscal net income is ${c1 ? 'profitable' : 'negative'} (${netProfitCurr > 0 ? '+' : ''}${company.currencySymbol}${netProfitCurr.toLocaleString()} ${scale}).`,
   });
 
   // 2. Positive Operating Cash Flow (CFO)
@@ -84,7 +85,7 @@ export function calculatePiotroskiScore(company: CompanyFundamental): PiotroskiR
     name: 'Positive Cash from Operations',
     category: 'Profitability',
     passed: c2,
-    explanation: `Generated ₹${cfo.toLocaleString()} Cr in operating cash flow.`,
+    explanation: `Generated ${company.currencySymbol}${cfo.toLocaleString()} ${scale} in operating cash flow.`,
   });
 
   // 3. CFO > Net Income (Quality of Earnings)
@@ -295,7 +296,8 @@ export function generateProsAndCons(company: CompanyFundamental): ProsAndConsRes
   }
 
   if (company.freeCashFlow && company.freeCashFlow > 0) {
-    pros.push(`Strong cash generator: Positive free cash flow of ₹${company.freeCashFlow.toLocaleString()} Cr.`);
+    const scale = company.market === 'INDIA' ? 'Cr' : 'B';
+    pros.push(`Strong cash generator: Positive free cash flow of ${company.currencySymbol}${company.freeCashFlow.toLocaleString()} ${scale}.`);
   } else if (company.freeCashFlow && company.freeCashFlow < 0) {
     cons.push(`Free cash flow is currently negative due to significant ongoing capital expenditure.`);
   }

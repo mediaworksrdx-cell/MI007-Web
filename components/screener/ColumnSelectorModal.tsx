@@ -11,6 +11,7 @@ interface ColumnSelectorModalProps {
   selectedColumns: string[];
   onChangeColumns: (columns: string[]) => void;
   onResetDefault: () => void;
+  onOpenCustomRatio?: () => void;
 }
 
 const CATEGORIES: { key: MetricCategory | 'all'; label: string }[] = [
@@ -29,6 +30,7 @@ export function ColumnSelectorModal({
   selectedColumns,
   onChangeColumns,
   onResetDefault,
+  onOpenCustomRatio,
 }: ColumnSelectorModalProps) {
   const [activeCategory, setActiveCategory] = useState<MetricCategory | 'all'>('all');
   const [search, setSearch] = useState('');
@@ -67,12 +69,27 @@ export function ColumnSelectorModal({
               {selectedColumns.length} Active
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            {onOpenCustomRatio && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenCustomRatio();
+                }}
+                className="px-3 py-1 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 mono text-[11.5px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                title="Create a custom mathematical financial ratio formula"
+              >
+                <span>+ Custom Formula</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Search & Filter Toolbar */}

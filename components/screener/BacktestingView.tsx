@@ -105,7 +105,7 @@ export function BacktestingView({
       'Exit Date',
       'Exit Price',
       'Shares',
-      'PnL (₹)',
+      `PnL (${activeCompany.currencySymbol})`,
       'Return (%)',
       'Holding Days',
       'Exit Reason',
@@ -226,7 +226,7 @@ export function BacktestingView({
           {/* Capital */}
           <div>
             <label className="mono text-[10.5px] font-bold text-[var(--theme-card-text-muted)] uppercase block mb-1">
-              Initial Capital (₹)
+              Initial Capital ({activeCompany.currencySymbol})
             </label>
             <input
               type="number"
@@ -291,7 +291,7 @@ export function BacktestingView({
             {backtestResult.totalReturnPct >= 0 ? '+' : ''}{backtestResult.totalReturnPct}%
           </div>
           <span className="text-[10px] mono text-slate-400 block mt-0.5">
-            Final Equity: ₹{backtestResult.finalEquity.toLocaleString()}
+            Final Equity: {activeCompany.currencySymbol}{backtestResult.finalEquity.toLocaleString()}
           </span>
         </div>
 
@@ -389,7 +389,7 @@ export function BacktestingView({
                 <g key={idx}>
                   <line x1="0" y1={y} x2={chartWidth} y2={y} stroke="#334155" strokeDasharray="3 3" strokeOpacity="0.4" />
                   <text x={chartWidth - 5} y={y - 3} fill="#64748b" fontSize="9" textAnchor="end" className="mono">
-                    ₹{Math.round(val).toLocaleString()}
+                    {activeCompany.currencySymbol}{Math.round(val).toLocaleString()}
                   </text>
                 </g>
               );
@@ -440,7 +440,7 @@ export function BacktestingView({
                 <th className="py-2.5 px-3">Exit Date</th>
                 <th className="py-2.5 px-3 text-right">Exit Price</th>
                 <th className="py-2.5 px-3 text-right">Shares</th>
-                <th className="py-2.5 px-3 text-right">PnL (₹)</th>
+                <th className="py-2.5 px-3 text-right">PnL ({activeCompany.currencySymbol})</th>
                 <th className="py-2.5 px-3 text-right">Return %</th>
                 <th className="py-2.5 px-3 text-right">Hold Days</th>
                 <th className="py-2.5 px-3 text-center">Exit Trigger</th>
@@ -460,12 +460,12 @@ export function BacktestingView({
                     <tr key={trade.tradeId} className="hover:bg-emerald-500/5 transition-colors">
                       <td className="py-2 px-3 text-slate-500 font-bold">{trade.tradeId}</td>
                       <td className="py-2 px-3 text-slate-300">{trade.entryDate}</td>
-                      <td className="py-2 px-3 text-right text-white font-bold">₹{trade.entryPrice.toFixed(2)}</td>
+                      <td className="py-2 px-3 text-right text-white font-bold">{activeCompany.currencySymbol}{trade.entryPrice.toFixed(2)}</td>
                       <td className="py-2 px-3 text-slate-300">{trade.exitDate}</td>
-                      <td className="py-2 px-3 text-right text-white font-bold">₹{trade.exitPrice.toFixed(2)}</td>
+                      <td className="py-2 px-3 text-right text-white font-bold">{activeCompany.currencySymbol}{trade.exitPrice.toFixed(2)}</td>
                       <td className="py-2 px-3 text-right text-slate-300">{trade.shares}</td>
                       <td className={`py-2 px-3 text-right font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {trade.pnl >= 0 ? '+' : ''}₹{trade.pnl.toLocaleString()}
+                        {trade.pnl >= 0 ? '+' : ''}{activeCompany.currencySymbol}{trade.pnl.toLocaleString()}
                       </td>
                       <td className={`py-2 px-3 text-right font-bold ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {trade.returnPct >= 0 ? '+' : ''}{trade.returnPct}%

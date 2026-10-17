@@ -603,13 +603,13 @@ export function CustomQueryBuilderView({
                     className="py-3 px-4 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
                     onClick={() => toggleSort('currentPrice')}
                   >
-                    Price (₹) {testSortColumn === 'currentPrice' && (testSortDirection === 'asc' ? '▲' : '▼')}
+                    Price ({market === 'USA' ? '$' : market === 'UAE' ? 'AED' : '₹'}) {testSortColumn === 'currentPrice' && (testSortDirection === 'asc' ? '▲' : '▼')}
                   </th>
                   <th
                     className="py-3 px-4 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
                     onClick={() => toggleSort('marketCap')}
                   >
-                    Market Cap (Cr) {testSortColumn === 'marketCap' && (testSortDirection === 'asc' ? '▲' : '▼')}
+                    Market Cap ({market === 'INDIA' ? 'Cr' : 'B'}) {testSortColumn === 'marketCap' && (testSortDirection === 'asc' ? '▲' : '▼')}
                   </th>
                   <th
                     className="py-3 px-4 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
@@ -654,10 +654,10 @@ export function CustomQueryBuilderView({
                       {c.sector}
                     </td>
                     <td className="py-2.5 px-4 text-right font-mono font-bold text-[var(--theme-card-text)]">
-                      ₹{c.currentPrice?.toLocaleString('en-IN') || c.currentPrice}
+                      {c.currencySymbol || (market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹')}{c.currentPrice?.toLocaleString() || c.currentPrice}
                     </td>
                     <td className="py-2.5 px-4 text-right font-mono text-[var(--theme-card-text-muted)]">
-                      ₹{c.marketCap?.toLocaleString('en-IN') || c.marketCap}
+                      {c.currencySymbol || (market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹')}{c.marketCap?.toLocaleString() || c.marketCap}
                     </td>
                     <td className="py-2.5 px-4 text-right font-mono text-[var(--theme-card-text)]">
                       {c.pe ? `${c.pe.toFixed(1)}x` : '—'}

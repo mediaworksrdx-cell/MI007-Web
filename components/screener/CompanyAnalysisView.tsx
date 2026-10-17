@@ -10,6 +10,8 @@ import { CompanyFundamental } from '@/lib/screener/types';
 import { formatMetricValue } from '@/lib/screener/metrics';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { calculatePiotroskiScore, calculateAltmanZScore, generateSWOTAnalysis } from '@/lib/screener/scorecards';
+import { TechnicalAnalysisView } from './TechnicalAnalysisView';
+import { MASTER_COMPANIES } from '@/lib/screener/data';
 
 interface CompanyAnalysisViewProps {
   company: CompanyFundamental;
@@ -17,9 +19,11 @@ interface CompanyAnalysisViewProps {
   onOpenPeerComparison?: (symbol: string) => void;
   onToggleWatchlist?: (symbol: string) => void;
   isInWatchlist?: boolean;
+  onSelectCompany?: (symbol: string) => void;
+  onOpenBacktest?: (symbol: string) => void;
 }
 
-type StatementTab = 'quarterly' | 'pl' | 'balanceSheet' | 'cashFlow' | 'ratios' | 'shareholding';
+type StatementTab = 'quarterly' | 'pl' | 'balanceSheet' | 'cashFlow' | 'ratios' | 'shareholding' | 'technicals';
 
 export function CompanyAnalysisView({
   company,
@@ -27,6 +31,8 @@ export function CompanyAnalysisView({
   onOpenPeerComparison,
   onToggleWatchlist,
   isInWatchlist = false,
+  onSelectCompany,
+  onOpenBacktest,
 }: CompanyAnalysisViewProps) {
   const [activeTab, setActiveTab] = useState<StatementTab>('quarterly');
   const [isConsolidated, setIsConsolidated] = useState<boolean>(company.isConsolidated);
@@ -36,6 +42,8 @@ export function CompanyAnalysisView({
   const currentPrice = live ? live.price : company.currentPrice;
   const priceChangePct = live ? live.changePct : company.priceChangePct;
   const tickDirection = live ? live.tickDirection : 'neutral';
+
+  const scaleUnit = company.market === 'INDIA' ? 'Cr' : 'B';
 
   // Dynamic live calculations
   const latestEps = company.annualProfitLoss && company.annualProfitLoss[0]?.eps;
@@ -504,7 +512,7 @@ export function CompanyAnalysisView({
             </span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="mono text-[18px] font-black text-emerald-400">{company.fcfYield ? `${company.fcfYield.toFixed(2)}%` : '—'}</span>
-              <span className="text-[11px] mono text-slate-400">FCF: {company.currencySymbol}{company.freeCashFlow || 0} Cr</span>
+              <span className="text-[11px] mono text-slate-400">FCF: {company.currencySymbol}{company.freeCashFlow || 0} {scaleUnit}</span>
             </div>
             <span className="text-[10.5px] mono text-emerald-400 font-bold block mt-1">
               Operating cash compounding
@@ -525,6 +533,7 @@ export function CompanyAnalysisView({
               { id: 'cashFlow', label: 'Cash Flows' },
               { id: 'ratios', label: 'Ratios' },
               { id: 'shareholding', label: 'Shareholding Pattern' },
+              { id: 'technicals', label: 'Technical Chart & Indicators 📈' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -561,7 +570,7 @@ export function CompanyAnalysisView({
             <table className="w-full border-collapse text-left mono text-[13px]">
               <thead>
                 <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[11.5px] font-black uppercase">
-                  <th className="py-2.5 px-3">Item ({company.currencySymbol} Cr)</th>
+                  <th className="py-2.5 px-3">Item ({company.currencySymbol} {scaleUnit})</th>
                   {company.quarterlyResults.map((q) => (
                     <th key={q.quarter} className="py-2.5 px-3 text-right whitespace-nowrap">
                       {q.quarter}
@@ -669,7 +678,7 @@ export function CompanyAnalysisView({
             <table className="w-full border-collapse text-left mono text-[13px]">
               <thead>
                 <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[11.5px] font-black uppercase">
-                  <th className="py-2.5 px-3">Annual Trend ({company.currencySymbol} Cr)</th>
+                  <th className="py-2.5 px-3">Annual Trend ({company.currencySymbol} {scaleUnit})</th>
                   {company.annualProfitLoss.map((pl) => (
                     <th key={pl.year} className="py-2.5 px-3 text-right whitespace-nowrap">
                       {pl.year}
@@ -761,7 +770,7 @@ export function CompanyAnalysisView({
             <table className="w-full border-collapse text-left mono text-[13px]">
               <thead>
                 <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[11.5px] font-black uppercase">
-                  <th className="py-2.5 px-3">Balance Sheet ({company.currencySymbol} Cr)</th>
+                  <th className="py-2.5 px-3">Balance Sheet ({company.currencySymbol} {scaleUnit})</th>
                   {company.balanceSheet.map((bs) => (
                     <th key={bs.year} className="py-2.5 px-3 text-right whitespace-nowrap">
                       {bs.year}
@@ -853,7 +862,7 @@ export function CompanyAnalysisView({
             <table className="w-full border-collapse text-left mono text-[13px]">
               <thead>
                 <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[11.5px] font-black uppercase">
-                  <th className="py-2.5 px-3">Cash Flow Activities ({company.currencySymbol} Cr)</th>
+                  <th className="py-2.5 px-3">Cash Flow Activities ({company.currencySymbol} {scaleUnit})</th>
                   {company.cashFlow.map((cf) => (
                     <th key={cf.year} className="py-2.5 px-3 text-right whitespace-nowrap">
                       {cf.year}
@@ -1050,6 +1059,19 @@ export function CompanyAnalysisView({
                 </tr>
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Tab 7: Technical Candlestick Chart & Moving Averages */}
+        {activeTab === 'technicals' && (
+          <div className="p-2 sm:p-4">
+            <TechnicalAnalysisView
+              company={company}
+              allCompanies={MASTER_COMPANIES.filter((c) => c.market === company.market)}
+              onSelectCompany={(sym) => onSelectCompany ? onSelectCompany(sym) : null}
+              onBackToScreener={onBackToScreener}
+              onOpenBacktest={onOpenBacktest}
+            />
           </div>
         )}
       </div>

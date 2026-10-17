@@ -273,6 +273,16 @@ const DEFAULT_ALERTS: ScreeningAlert[] = [
         symbol: 'CDSL',
         message: 'CDSL reconfirmed in Quality Compounders with 0 debt and 42.5% ROCE.',
       },
+      {
+        timestamp: '2025-01-22 16:00 EST',
+        symbol: 'NVDA',
+        message: 'NVIDIA Corp reconfirmed in Quality Compounders with 72.8% ROCE and exceptional free cash flow.',
+      },
+      {
+        timestamp: '2025-01-21 12:00 GST',
+        symbol: 'SALIK',
+        message: 'Salik Company PJSC entered Quality Compounders: Net margin 41.2% with steady cash generation.',
+      },
     ],
   },
   {
@@ -291,6 +301,11 @@ const DEFAULT_ALERTS: ScreeningAlert[] = [
         timestamp: '2025-01-22 09:00 IST',
         symbol: 'DIXON',
         message: 'Dixon Technologies ROCE reached 34.8% on Q3 results release.',
+      },
+      {
+        timestamp: '2025-01-22 17:30 EST',
+        symbol: 'AAPL',
+        message: 'Apple Inc ROCE sustained above 54.2% on record services revenue.',
       },
     ],
   },

@@ -362,12 +362,12 @@ export function TechnicalStrategyScreenerView({
 
                       {/* LTP */}
                       <td className="py-2.5 px-3 text-right font-black text-[var(--theme-card-text)] whitespace-nowrap">
-                        ₹{res.currentPrice.toFixed(2)}
+                        {res.market === 'USA' ? '$' : res.market === 'UAE' ? 'AED ' : '₹'}{res.currentPrice.toFixed(2)}
                       </td>
 
                       {/* Trigger Price */}
                       <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-semibold whitespace-nowrap">
-                        ₹{res.triggerPrice.toFixed(2)}
+                        {res.market === 'USA' ? '$' : res.market === 'UAE' ? 'AED ' : '₹'}{res.triggerPrice.toFixed(2)}
                       </td>
 
                       {/* Win Rate */}
@@ -395,6 +395,16 @@ export function TechnicalStrategyScreenerView({
                           >
                             Analyze
                           </button>
+                          {onOpenBacktest && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenBacktest(res.symbol, res.strategyId)}
+                              className="px-2 py-0.5 rounded border border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500 hover:text-slate-950 text-[11px] font-bold transition-all cursor-pointer"
+                              title="Run Quantitative Backtest Simulation"
+                            >
+                              Backtest ⚡
+                            </button>
+                          )}
                           <Link
                             href={`/chart/${res.symbol}?market=${res.market}&from=screener`}
                             onClick={() => {

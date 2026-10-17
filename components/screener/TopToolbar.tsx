@@ -121,7 +121,7 @@ export function TopToolbar({
       {/* 8 Main Workspace Tabs Navigation */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {TABS.map((tab) => {
-          const isActive = activeTab === tab.id;
+          const isActive = activeTab === tab.id || (tab.id === 'technicalScreener' && activeTab === 'backtesting');
           return (
             <button
               key={tab.id}

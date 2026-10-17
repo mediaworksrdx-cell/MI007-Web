@@ -39,6 +39,16 @@ import { WatchlistsView } from './WatchlistsView';
 import { PeerComparisonView } from './PeerComparisonView';
 import { ScreeningAlertsView } from './ScreeningAlertsView';
 import { TechnicalStrategyScreenerView } from './TechnicalStrategyScreenerView';
+import { BacktestingView } from './BacktestingView';
+import { SaveScreenModal } from './SaveScreenModal';
+import { CustomRatioModal } from './CustomRatioModal';
+import { StrategyId } from '@/lib/screener/technicalStrategies';
+
+const DEFAULT_PEER_SYMBOLS: Record<MarketRegion, string[]> = {
+  INDIA: ['TCS', 'INFY'],
+  USA: ['AAPL', 'MSFT'],
+  UAE: ['EMAAR', 'ALDAR'],
+};
 
 export function ScreenerWorkspace() {
   const searchParams = useSearchParams();
@@ -50,6 +60,7 @@ export function ScreenerWorkspace() {
   const [activeTab, setActiveTab] = useState<
     | 'screener'
     | 'technicalScreener'
+    | 'backtesting'
     | 'queryBuilder'
     | 'discover'
     | 'watchlists'
@@ -57,7 +68,7 @@ export function ScreenerWorkspace() {
     | 'peers'
     | 'alerts'
   >(
-    urlTab && ['screener', 'technicalScreener', 'queryBuilder', 'discover', 'watchlists', 'analysis', 'peers', 'alerts'].includes(urlTab)
+    urlTab && ['screener', 'technicalScreener', 'backtesting', 'queryBuilder', 'discover', 'watchlists', 'analysis', 'peers', 'alerts'].includes(urlTab)
       ? (urlTab as any)
       : urlTab === 'saved'
       ? 'discover'
@@ -78,12 +89,17 @@ export function ScreenerWorkspace() {
 
   // Active Company Selection (Starts unselected, resets on market/country switch)
   const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol || '');
-  const [peerSymbols, setPeerSymbols] = useState<string[]>(['TCS', 'INFY']);
+  const [peerSymbols, setPeerSymbols] = useState<string[]>(
+    DEFAULT_PEER_SYMBOLS[(globalMarket as MarketRegion) || 'INDIA'] || ['TCS', 'INFY']
+  );
   const prevMarketRef = React.useRef<MarketRegion>(market);
 
-  // Modals State
+  // Modals & Navigation Parameters State
   const [columnModalOpen, setColumnModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [saveScreenModalOpen, setSaveScreenModalOpen] = useState(false);
+  const [customRatioModalOpen, setCustomRatioModalOpen] = useState(false);
+  const [backtestParams, setBacktestParams] = useState<{ symbol: string; strategyId: StrategyId } | null>(null);
 
   // Persistence State
   const [savedScreens, setSavedScreens] = useState<SavedScreen[]>([]);
@@ -158,6 +174,7 @@ export function ScreenerWorkspace() {
       // Reset selected company and sector so no country data stays stuck across countries
       setSectorFilter('ALL');
       setSelectedSymbol('');
+      setPeerSymbols(DEFAULT_PEER_SYMBOLS[globalMarket as MarketRegion] || ['TCS', 'INFY']);
     }
   }, [globalMarket]);
 
@@ -168,6 +185,7 @@ export function ScreenerWorkspace() {
     setSectorFilter('ALL');
     // Reset selected company so no company stays stuck across countries
     setSelectedSymbol('');
+    setPeerSymbols(DEFAULT_PEER_SYMBOLS[newMarket] || ['TCS', 'INFY']);
   };
 
   // Keyboard shortcut '/' or 'Ctrl+K' to open search
@@ -395,6 +413,7 @@ export function ScreenerWorkspace() {
               }
             }}
             onResetQuery={() => setCurrentQuery('')}
+            onOpenSaveScreen={() => setSaveScreenModalOpen(true)}
             matchCount={filteredCompanies.length}
           />
 
@@ -428,7 +447,22 @@ export function ScreenerWorkspace() {
           companies={marketCompanies}
           market={market}
           onSelectCompany={handleOpenCompanyAnalysis}
+          onOpenBacktest={(sym, stratId) => {
+            setBacktestParams({ symbol: sym, strategyId: stratId });
+            setActiveTab('backtesting' as any);
+          }}
           onBackToScreener={() => setActiveTab('screener')}
+        />
+      )}
+
+      {/* ── 2b. Quantitative Strategy Backtesting Laboratory ── */}
+      {activeTab === 'backtesting' && (
+        <BacktestingView
+          companies={marketCompanies}
+          initialSymbol={backtestParams?.symbol || marketCompanies[0]?.symbol || 'RELIANCE'}
+          initialStrategyId={backtestParams?.strategyId || 'ma_alignment'}
+          onBackToScreener={() => setActiveTab('technicalScreener')}
+          onSelectCompany={handleOpenCompanyAnalysis}
         />
       )}
 
@@ -529,6 +563,11 @@ export function ScreenerWorkspace() {
             onOpenPeerComparison={(sym) => handleOpenPeerComparison(sym)}
             onToggleWatchlist={handleToggleWatchlist}
             isInWatchlist={watchlistSymbols.includes(targetCompany.symbol)}
+            onSelectCompany={handleOpenCompanyAnalysis}
+            onOpenBacktest={(sym) => {
+              setBacktestParams({ symbol: sym, strategyId: 'ma_alignment' });
+              setActiveTab('backtesting' as any);
+            }}
           />
         ) : (
           <div className="rounded-2xl border-2 terminal-page-panel p-6 sm:p-10 bg-[var(--theme-card-bg)] text-center flex flex-col items-center justify-center gap-4">
@@ -589,6 +628,7 @@ export function ScreenerWorkspace() {
       {activeTab === 'alerts' && (
         <ScreeningAlertsView
           alerts={alerts}
+          market={market}
           onBackToScreener={() => setActiveTab('screener')}
           onToggleAlert={(id) => {
             const updated = toggleAlertStatus(id);
@@ -626,6 +666,7 @@ export function ScreenerWorkspace() {
           setSelectedColumns(DEFAULT_COLUMNS);
           saveColumnPreferences(DEFAULT_COLUMNS);
         }}
+        onOpenCustomRatio={() => setCustomRatioModalOpen(true)}
       />
 
       {/* ── Quick Search Modal ── */}
@@ -634,6 +675,33 @@ export function ScreenerWorkspace() {
         onClose={() => setSearchModalOpen(false)}
         onSelectCompany={handleOpenCompanyAnalysis}
         companies={allCompaniesEnriched}
+      />
+
+      {/* ── Save Screen Modal ── */}
+      <SaveScreenModal
+        isOpen={saveScreenModalOpen}
+        onClose={() => setSaveScreenModalOpen(false)}
+        onSave={(screen) => {
+          const updated = saveUserScreen(screen);
+          setSavedScreens(updated);
+        }}
+        currentQuery={currentQuery}
+        selectedColumns={selectedColumns}
+        sortColumn={sortColumn}
+        sortDirection={sortDirection}
+        market={market}
+        matchCount={filteredCompanies.length}
+      />
+
+      {/* ── Custom Ratio Creator Modal ── */}
+      <CustomRatioModal
+        isOpen={customRatioModalOpen}
+        onClose={() => setCustomRatioModalOpen(false)}
+        onSave={(ratio) => {
+          const updated = saveCustomRatio(ratio);
+          setCustomRatios(updated);
+        }}
+        marketCompanies={marketCompanies}
       />
     </div>
   );

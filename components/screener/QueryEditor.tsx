@@ -11,6 +11,7 @@ interface QueryEditorProps {
   onChangeQuery: (q: string) => void;
   onRunScreen: () => void;
   onResetQuery: () => void;
+  onOpenSaveScreen?: () => void;
   matchCount?: number;
 }
 
@@ -19,6 +20,7 @@ export function QueryEditor({
   onChangeQuery,
   onRunScreen,
   onResetQuery,
+  onOpenSaveScreen,
   matchCount,
 }: QueryEditorProps) {
   const [parseResult, setParseResult] = useState<QueryParseResult>({ valid: true });
@@ -188,6 +190,19 @@ export function QueryEditor({
         </button>
 
         <div className="flex items-center gap-2.5">
+          {onOpenSaveScreen && (
+            <button
+              type="button"
+              onClick={onOpenSaveScreen}
+              disabled={!parseResult.valid || !query.trim()}
+              className="px-4 py-2 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 disabled:opacity-40 mono text-[12.5px] font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Save current screening query and columns"
+            >
+              <span>💾</span>
+              <span>SAVE SCREEN</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onRunScreen}
