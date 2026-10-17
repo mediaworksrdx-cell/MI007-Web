@@ -13,7 +13,12 @@ interface ChartPageProps {
 }
 
 const CRYPTO_SET = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX']);
-const USA_SET = new Set(['SPX', 'NDX', 'DJI', 'AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'S&P 500', 'NASDAQ 100', 'DOW JONES']);
+const USA_SET = new Set([
+  'SPX', 'NDX', 'DJI', 'QQQ', 'RUT', 'VIX',
+  'AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'GOOG',
+  'NFLX', 'AMD', 'AVGO', 'JPM', 'LLY', 'COST', 'XOM', 'COIN', 'DIS', 'WMT', 'V',
+  'S&P 500', 'NASDAQ 100', 'DOW JONES'
+]);
 const UAE_SET = new Set(['DFMGI', 'ADXGI', 'ADX', 'EMAAR', 'FAB', 'DEWA', 'ALDAR', 'ENBD', 'ADNOC', 'AIRARABIA', 'DFM GENERAL', 'ADX GENERAL', 'FTSE ADX 15']);
 
 export default function ChartPage({ params, searchParams }: ChartPageProps) {

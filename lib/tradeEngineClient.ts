@@ -67,6 +67,9 @@ export function normalizeSymbolKey(sym: string): string {
   if (clean === 'DJI' || clean === 'DOWJONES' || clean === 'DOW') {
     return 'DJI';
   }
+  if (clean === 'QQQ' || clean === 'INVESCOQQQ') {
+    return 'QQQ';
+  }
   if (clean === 'BTC' || clean === 'BITCOIN') {
     return 'BTC';
   }
