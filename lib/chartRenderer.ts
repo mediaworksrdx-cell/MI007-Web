@@ -13,6 +13,7 @@ import {
   FnoOverlayLevels, StrategyPayoffOverlay,
   ChartOptions, ViewState, Crosshair, MagnetReticle, ScaleState,
   INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay,
+  CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN,
 } from './types';
 
 export type {
@@ -769,8 +770,8 @@ export function renderChart(
   dpr: number
 ) {
   const W = ctx.canvas.width, H = ctx.canvas.height;
-  const RM = 58 * dpr;  // right price axis margin
-  const BM = 22 * dpr;  // time axis margin
+  const RM = CHART_RIGHT_MARGIN * dpr;  // institutional right price axis margin
+  const BM = CHART_BOTTOM_MARGIN * dpr; // institutional bottom time axis margin
 
   // Panel layout
   const panelInds = options.indicators.filter(i => !isOverlay(i.type) && i.enabled);
@@ -846,19 +847,20 @@ export function renderChart(
   ctx.strokeStyle = '#F1F5F9';
   ctx.font = `${9*dpr}px "JetBrains Mono",monospace`;
   ctx.fillStyle = AXIS_TEXT;
+  ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   for (let i = 0; i <= numHL; i++) {
     const price = pMin + i * pStep;
     const y = priceToY(price);
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(chartW, y); ctx.stroke();
-    ctx.fillText(formatPrice(price), chartW + 4*dpr, y);
+    ctx.fillText(formatPrice(price), W - 6 * dpr, y);
   }
 
   // Vertical grid + time labels
   const timeStep = Math.max(1, Math.floor(visCnt / 6));
   ctx.font = `${8*dpr}px "JetBrains Mono",monospace`;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
+  ctx.textBaseline = 'middle';
   let prevDay = -1;
   for (let i = startIdx; i < endIdx; i += timeStep) {
     const li = i - startIdx;
@@ -875,7 +877,7 @@ export function renderChart(
       else label = formatTimeLabel(ts, false);
       prevDay = curDay;
       ctx.fillStyle = AXIS_TEXT;
-      ctx.fillText(label, x, chartH + 5*dpr);
+      ctx.fillText(label, x, chartH + BM / 2);
     }
   }
 
@@ -2230,13 +2232,15 @@ export function renderChart(
       const pTxt = formatPrice(price);
       ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
       const pMeas = ctx.measureText(pTxt);
-      const pLW = pMeas.width + 10 * dpr, pLH = 14 * dpr;
+      const pLW = Math.min(W - chartW, pMeas.width + 12 * dpr);
+      const pLH = 16 * dpr;
+      const pX = W - pLW;
       ctx.fillStyle = LABEL_BG;
-      ctx.fillRect(chartW, cy - pLH / 2, pLW, pLH);
+      ctx.fillRect(pX, cy - pLH / 2, pLW, pLH);
       ctx.fillStyle = '#FFFFFF';
-      ctx.textAlign = 'left';
+      ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(pTxt, chartW + 5 * dpr, cy);
+      ctx.fillText(pTxt, pX + pLW / 2, cy);
     }
     // Time label on bottom
     const cidx = startIdx + Math.floor(cx / candleW);
@@ -2245,14 +2249,15 @@ export function renderChart(
       const tStr = formatCrosshairTime(ts, isDailyOrHigher);
       ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
       const tMeas = ctx.measureText(tStr);
-      const tLW = tMeas.width + 10 * dpr, tLH = 14 * dpr;
+      const tLW = tMeas.width + 12 * dpr;
+      const tLH = 18 * dpr;
       const tLX = Math.min(Math.max(0, cx - tLW / 2), chartW - tLW);
       ctx.fillStyle = LABEL_BG;
-      ctx.fillRect(tLX, chartH, tLW, tLH);
+      ctx.fillRect(tLX, chartH + (BM - tLH) / 2, tLW, tLH);
       ctx.fillStyle = '#FFFFFF';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText(tStr, tLX + 5 * dpr, chartH + 2 * dpr);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(tStr, tLX + tLW / 2, chartH + BM / 2);
     }
     ctx.restore();
   }
@@ -2274,8 +2279,8 @@ export function renderOverlay(
   const W = ctx.canvas.width, H = ctx.canvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  const RM = 58 * dpr;
-  const BM = 22 * dpr;
+  const RM = CHART_RIGHT_MARGIN * dpr;
+  const BM = CHART_BOTTOM_MARGIN * dpr;
 
   const panelInds = options.indicators.filter(i => !isOverlay(i.type) && i.enabled);
   const hasVolPanel = options.showVolumePanel;
@@ -2490,13 +2495,15 @@ export function renderOverlay(
       const pTxt = formatPrice(price);
       ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
       const pMeas = ctx.measureText(pTxt);
-      const pLW = pMeas.width + 10 * dpr, pLH = 14 * dpr;
+      const pLW = Math.min(W - chartW, pMeas.width + 12 * dpr);
+      const pLH = 16 * dpr;
+      const pX = W - pLW;
       ctx.fillStyle = LABEL_BG;
-      ctx.fillRect(chartW, cy - pLH / 2, pLW, pLH);
+      ctx.fillRect(pX, cy - pLH / 2, pLW, pLH);
       ctx.fillStyle = '#FFFFFF';
-      ctx.textAlign = 'left';
+      ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(pTxt, chartW + 5 * dpr, cy);
+      ctx.fillText(pTxt, pX + pLW / 2, cy);
     }
 
     const firstMs = candles.length > 0 ? candles[0].openTime : 0;
@@ -2511,14 +2518,15 @@ export function renderOverlay(
       const tStr = formatCrosshairTime(ts, isDailyOrHigher);
       ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
       const tMeas = ctx.measureText(tStr);
-      const tLW = tMeas.width + 10 * dpr, tLH = 14 * dpr;
+      const tLW = tMeas.width + 12 * dpr;
+      const tLH = 18 * dpr;
       const tLX = Math.min(Math.max(0, cx - tLW / 2), chartW - tLW);
       ctx.fillStyle = LABEL_BG;
-      ctx.fillRect(tLX, chartH, tLW, tLH);
+      ctx.fillRect(tLX, chartH + (BM - tLH) / 2, tLW, tLH);
       ctx.fillStyle = '#FFFFFF';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText(tStr, tLX + 5 * dpr, chartH + 2 * dpr);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(tStr, tLX + tLW / 2, chartH + BM / 2);
     }
     ctx.restore();
   }

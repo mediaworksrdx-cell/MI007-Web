@@ -186,6 +186,10 @@ export interface ChartOptions {
   skipCrosshair?: boolean;
 }
 
+export const CHART_RIGHT_MARGIN = 72;
+export const CHART_BOTTOM_MARGIN = 26;
+
+
 export interface ScaleState {
   priceScaleRatio: number;
   priceOffset: number;

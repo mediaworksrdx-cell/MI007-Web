@@ -140,10 +140,10 @@ export function ChartToolbar({
   return (
     <div
       ref={menuRef}
-      className="flex items-center justify-between border-b border-[var(--theme-page-border)] bg-[var(--theme-card-bg)] px-3 py-1.5 text-xs text-[var(--theme-page-text)] shadow-xs flex-wrap gap-2 relative z-30 select-none"
+      className="flex items-center justify-between border-b border-[var(--theme-page-border)] bg-[var(--theme-card-bg)] px-3 py-1.5 text-xs text-[var(--theme-page-text)] shadow-xs gap-3 relative z-30 select-none overflow-x-auto scrollbar-none"
     >
       {/* ── Left Controls: Timeframe, Chart Type, Indicators, Drawing, Overlays, Save & Templates ── */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-1.5 shrink-0">
         {/* 1. Timeframe Selector Dropdown */}
         <div className="relative">
           <button
@@ -712,7 +712,7 @@ export function ChartToolbar({
       </div>
 
       {/* ── Right Controls: Live Beacon & Quote ── */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 shrink-0 ml-auto">
         {/* Beacon */}
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-[var(--theme-page-border)] bg-[var(--theme-card-surface)] text-[11px] font-mono font-bold text-[var(--theme-page-text)]">
           <span

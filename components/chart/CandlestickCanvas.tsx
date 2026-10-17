@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback, useState, useLayoutEffect, useMemo } from 'react';
 import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels, StrategyPayoffOverlay, MagnetReticle, ScaleState } from '@/lib/types';
-import { isOverlay } from '@/lib/types';
+import { isOverlay, CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN } from '@/lib/types';
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
 import { renderChart, renderOverlay } from '@/lib/chartRenderer';
 import { DrawingQuickBar } from './DrawingQuickBar';
@@ -208,8 +208,8 @@ export function CandlestickCanvas({
     const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
     const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
     const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
-    const chartH = size.h - panelH - 22;
-    const chartW = size.w - 58;
+    const chartH = size.h - panelH - CHART_BOTTOM_MARGIN;
+    const chartW = size.w - CHART_RIGHT_MARGIN;
 
     const visCnt = clampedEnd - clampedStart;
     if (visCnt <= 0) return null;
@@ -346,9 +346,9 @@ export function CandlestickCanvas({
     const y = e.clientY - rect.top;
 
     // Detect hover zone over price or time scales
-    if (x >= size.w - 58 && y < size.h - 22) {
+    if (x >= size.w - CHART_RIGHT_MARGIN && y < size.h - CHART_BOTTOM_MARGIN) {
       setHoverScaleZone('price');
-    } else if (y >= size.h - 22 && x < size.w - 58) {
+    } else if (y >= size.h - CHART_BOTTOM_MARGIN && x < size.w - CHART_RIGHT_MARGIN) {
       setHoverScaleZone('time');
     } else {
       setHoverScaleZone('none');
@@ -396,7 +396,7 @@ export function CandlestickCanvas({
     if (isDraggingRef.current && (!activeDrawingTool || activeDrawingTool === 'NONE')) {
       const dx = e.clientX - dragStartXRef.current;
       const visCnt = Math.max(1, clampedEnd - clampedStart);
-      const candlePixels = Math.max(1, (size.w - 58) / visCnt);
+      const candlePixels = Math.max(1, (size.w - CHART_RIGHT_MARGIN) / visCnt);
       const deltaCandleCount = dx / candlePixels;
       const maxScroll = Math.max(0, cleanCandles.length - 8);
       const newScroll = Math.max(0, Math.min(maxScroll, dragStartScrollRef.current + deltaCandleCount));
@@ -479,11 +479,11 @@ export function CandlestickCanvas({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (x >= size.w - 58) {
+    if (x >= size.w - CHART_RIGHT_MARGIN) {
       // Double click on right price scale: auto-fit price scale
       setPriceScaleRatio(1.0);
       setPriceOffset(0);
-    } else if (y >= size.h - 22) {
+    } else if (y >= size.h - CHART_BOTTOM_MARGIN) {
       // Double click on bottom time scale: reset zoom & snap to live
       setZoom(1.0);
       setScrollOffset(0);
@@ -497,8 +497,8 @@ export function CandlestickCanvas({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // A. Check if clicking on right price scale (x >= size.w - 58, y < size.h - 22)
-    if (x >= size.w - 58 && y < size.h - 22) {
+    // A. Check if clicking on right price scale (x >= size.w - CHART_RIGHT_MARGIN, y < size.h - CHART_BOTTOM_MARGIN)
+    if (x >= size.w - CHART_RIGHT_MARGIN && y < size.h - CHART_BOTTOM_MARGIN) {
       dragScaleModeRef.current = 'price';
       dragScaleStartYRef.current = e.clientY;
       dragScaleStartRatioRef.current = priceScaleRatio;
@@ -507,8 +507,8 @@ export function CandlestickCanvas({
       return;
     }
 
-    // B. Check if clicking on bottom time scale (y >= size.h - 22, x < size.w - 58)
-    if (y >= size.h - 22 && x < size.w - 58) {
+    // B. Check if clicking on bottom time scale (y >= size.h - CHART_BOTTOM_MARGIN, x < size.w - CHART_RIGHT_MARGIN)
+    if (y >= size.h - CHART_BOTTOM_MARGIN && x < size.w - CHART_RIGHT_MARGIN) {
       dragScaleModeRef.current = 'time';
       dragScaleStartXRef.current = e.clientX;
       dragScaleStartZoomRef.current = zoom;
@@ -523,8 +523,8 @@ export function CandlestickCanvas({
       const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
       const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
       const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
-      const chartH = size.h - panelH - 22;
-      const chartW = size.w - 58;
+      const chartH = size.h - panelH - CHART_BOTTOM_MARGIN;
+      const chartW = size.w - CHART_RIGHT_MARGIN;
       const visCnt = clampedEnd - clampedStart;
       const candleW = visCnt > 0 ? chartW / visCnt : 1;
 
@@ -871,7 +871,7 @@ export function CandlestickCanvas({
     if (e.touches.length === 1 && lastTouchX.current !== null) {
       const dx = e.touches[0].clientX - lastTouchX.current;
       const visCnt = Math.max(1, clampedEnd - clampedStart);
-      const candlePixels = Math.max(1, (size.w - 58) / visCnt);
+      const candlePixels = Math.max(1, (size.w - CHART_RIGHT_MARGIN) / visCnt);
       const deltaCandleCount = dx / candlePixels;
       const maxScroll = Math.max(0, cleanCandles.length - 8);
       setScrollOffset(s => Math.max(0, Math.min(maxScroll, s + deltaCandleCount)));

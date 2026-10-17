@@ -622,36 +622,137 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     const bgCanvas = canvases[0];
     const fgCanvas = canvases[1];
 
-    const width = bgCanvas.width;
-    const height = bgCanvas.height;
-    if (!width || !height) return;
+    const srcW = bgCanvas.width;
+    const srcH = bgCanvas.height;
+    if (!srcW || !srcH) return;
+
+    // Scaling proportional to canvas pixel density
+    const dpr = Math.max(1, Math.round(srcW / (chartWrapperRef.current.clientWidth || 1)));
+    const outerPad = Math.round(20 * dpr);
+    const headerH = Math.round(68 * dpr);
+    const footerH = Math.round(36 * dpr);
+
+    const totalW = srcW + outerPad * 2;
+    const totalH = srcH + headerH + footerH + outerPad * 2;
 
     const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = width;
-    exportCanvas.height = height;
+    exportCanvas.width = totalW;
+    exportCanvas.height = totalH;
     const ctx = exportCanvas.getContext('2d');
     if (!ctx) return;
 
-    // 1. Draw Background (candles, grid, indicators, panels, SMC, VPVR)
-    ctx.drawImage(bgCanvas, 0, 0);
+    // 1. Institutional Card Background (Executive Obsidian Slate #0B0F19)
+    ctx.fillStyle = '#0B0F19';
+    ctx.fillRect(0, 0, totalW, totalH);
 
-    // 2. Draw Foreground (drawings, annotations)
-    ctx.drawImage(fgCanvas, 0, 0);
+    // Card Outer Border
+    ctx.strokeStyle = '#1E293B';
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.strokeRect(outerPad / 2, outerPad / 2, totalW - outerPad, totalH - outerPad);
 
-    // 3. Watermark & Branding Attribution
-    const dpr = width / (chartWrapperRef.current.clientWidth || 1);
-    ctx.save();
-    ctx.font = `bold ${Math.round(13 * dpr)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
-    const brandText = 'MARKET INTELLIGENCE AI';
-    ctx.fillText(brandText, 24 * dpr, 28 * dpr);
+    // 2. Executive Header
+    const hX = outerPad;
+    const hY = outerPad;
 
-    ctx.font = `${Math.round(10 * dpr)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-    ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
-    const infoText = `${selectedSymbol} · ${timeframe} · ${new Date().toUTCString()}`;
-    ctx.fillText(infoText, 24 * dpr, 44 * dpr);
-    ctx.restore();
+    // Glowing Live Accent Dot + Brand Title
+    ctx.beginPath();
+    ctx.arc(hX + 6 * dpr, hY + 14 * dpr, 3.5 * dpr, 0, Math.PI * 2);
+    ctx.fillStyle = '#10B981';
+    ctx.fill();
 
+    ctx.font = `bold ${Math.round(11 * dpr)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillStyle = '#10B981';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('MARKET INTELLIGENCE AI', hX + 16 * dpr, hY + 14 * dpr);
+
+    // Symbol Name
+    ctx.font = `900 ${Math.round(22 * dpr)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillText(selectedSymbol, hX, hY + 44 * dpr);
+    const symWidth = ctx.measureText(selectedSymbol).width;
+
+    // Timeframe Badge
+    const tfX = hX + symWidth + 12 * dpr;
+    const tfY = hY + 33 * dpr;
+    const tfW = 40 * dpr;
+    const tfH = 20 * dpr;
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+    ctx.fillRect(tfX, tfY, tfW, tfH);
+    ctx.strokeStyle = 'rgba(16, 185, 129, 0.5)';
+    ctx.lineWidth = 1 * dpr;
+    ctx.strokeRect(tfX, tfY, tfW, tfH);
+    ctx.font = `bold ${Math.round(11 * dpr)}px "JetBrains Mono", monospace`;
+    ctx.fillStyle = '#34D399';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(timeframe, tfX + tfW / 2, tfY + tfH / 2);
+
+    // Market Badge
+    const mktX = tfX + tfW + 8 * dpr;
+    const mktW = 64 * dpr;
+    ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+    ctx.fillRect(mktX, tfY, mktW, tfH);
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
+    ctx.strokeRect(mktX, tfY, mktW, tfH);
+    ctx.font = `bold ${Math.round(10 * dpr)}px "JetBrains Mono", monospace`;
+    ctx.fillStyle = '#60A5FA';
+    ctx.fillText(market.toUpperCase(), mktX + mktW / 2, tfY + tfH / 2);
+
+    // Header Right: Price + Delta %
+    const rightX = totalW - outerPad;
+    if (displayPrice !== undefined && displayPrice > 0) {
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.font = `900 ${Math.round(22 * dpr)}px "JetBrains Mono", monospace`;
+      ctx.fillStyle = '#F8FAFC';
+      const priceStr = `${currency}${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      ctx.fillText(priceStr, rightX, hY + 44 * dpr);
+
+      if (displayChangePct !== undefined) {
+        const isUp = (displayChangePct >= 0);
+        const chgColor = isUp ? '#10B981' : '#F43F5E';
+        ctx.font = `bold ${Math.round(12 * dpr)}px "JetBrains Mono", monospace`;
+        ctx.fillStyle = chgColor;
+        const chgStr = `${isUp ? '+' : ''}${displayChangePct.toFixed(2)}% ${isUp ? '▲' : '▼'}`;
+        ctx.fillText(chgStr, rightX, hY + 14 * dpr);
+      }
+    }
+
+    // 3. Main Chart Canvas Area (Framed within card with zero cutoffs)
+    const chartCanvasY = hY + headerH;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(outerPad, chartCanvasY, srcW, srcH);
+
+    // Draw background layer (candles, indicators, grids, VPVR, SMC)
+    ctx.drawImage(bgCanvas, outerPad, chartCanvasY, srcW, srcH);
+
+    // Draw foreground layer (drawings, annotations)
+    ctx.drawImage(fgCanvas, outerPad, chartCanvasY, srcW, srcH);
+
+    // Crisp card inner border around chart
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1 * dpr;
+    ctx.strokeRect(outerPad, chartCanvasY, srcW, srcH);
+
+    // 4. Executive Footer Bar
+    const fY = chartCanvasY + srcH + 12 * dpr;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.font = `${Math.round(10.5 * dpr)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.fillStyle = '#94A3B8';
+    const activeIndNames = indicatorConfigs.map(c => `${INDICATOR_DEFAULTS[c.type].label}(${c.period})`);
+    if (showSmcOverlay) activeIndNames.push('SMC Pro');
+    if (showVolumeProfile) activeIndNames.push('VPVR');
+    const indString = activeIndNames.length > 0 ? `Active: ${activeIndNames.join(' · ')}` : 'Clean Technical View';
+    ctx.fillText(indString, outerPad, fY + 10 * dpr);
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#64748B';
+    const timestampStr = `${new Date().toUTCString()} · Institutional Engine`;
+    ctx.fillText(timestampStr, rightX, fY + 10 * dpr);
+
+    // Output Image File or Blob
     if (mode === 'download') {
       const dataUrl = exportCanvas.toDataURL('image/png');
       const a = document.createElement('a');
@@ -676,7 +777,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         }
       }, 'image/png');
     }
-  }, [selectedSymbol, timeframe]);
+  }, [selectedSymbol, timeframe, market, currency, displayPrice, displayChangePct, indicatorConfigs, showSmcOverlay, showVolumeProfile]);
 
   return (
     <div className="flex flex-col h-full rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs relative">
