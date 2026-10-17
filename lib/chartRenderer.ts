@@ -1000,11 +1000,17 @@ export function renderChart(
     for (let i = startIdx; i < Math.min(endIdx, drawCandles.length); i++) {
       const li = i - startIdx;
       const c = drawCandles[i];
-      const bull = c.close >= c.open;
+      const isLastBar = i === drawCandles.length - 1;
+      const effectiveClose = (isLastBar && options.currentPriceOverride && options.currentPriceOverride > 0)
+        ? options.currentPriceOverride
+        : c.close;
+      const effectiveHigh = isLastBar ? Math.max(c.high, effectiveClose) : c.high;
+      const effectiveLow = isLastBar ? Math.min(c.low, effectiveClose) : c.low;
+      const bull = effectiveClose >= c.open;
       const color = bull ? BULL : BEAR;
       const cx = li * candleW + candleW / 2;
-      const hY = priceToY(c.high), lY = priceToY(c.low);
-      const oY = priceToY(c.open), cY = priceToY(c.close);
+      const hY = priceToY(effectiveHigh), lY = priceToY(effectiveLow);
+      const oY = priceToY(c.open), cY = priceToY(effectiveClose);
       const bTop = Math.min(oY, cY), bBot = Math.max(oY, cY);
       const bH = Math.max(bBot - bTop, 1);
       // Wick

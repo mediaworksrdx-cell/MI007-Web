@@ -446,20 +446,26 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     };
   }, []);
 
+  const livePricesRef = useRef<Map<string, LiveSymbolData>>(livePrices);
+  useEffect(() => {
+    livePricesRef.current = livePrices;
+  }, [livePrices]);
+
   const getSymbolPrice = useCallback((symbol: string): LiveSymbolData | undefined => {
     if (!symbol) return undefined;
     const cleanKey = normalizeSymbolKey(symbol);
     const upper = symbol.toUpperCase().trim();
+    const map = livePricesRef.current;
     return (
-      livePrices.get(cleanKey) ||
-      livePrices.get(symbol) ||
-      livePrices.get(upper) ||
-      livePrices.get(`${cleanKey}.NS`) ||
-      livePrices.get(`${upper}.NS`) ||
-      livePrices.get(symbol.replace(/\s+/g, '')) ||
-      livePrices.get(symbol.replace(/\.NS$/, ''))
+      map.get(cleanKey) ||
+      map.get(symbol) ||
+      map.get(upper) ||
+      map.get(`${cleanKey}.NS`) ||
+      map.get(`${upper}.NS`) ||
+      map.get(symbol.replace(/\s+/g, '')) ||
+      map.get(symbol.replace(/\.NS$/, ''))
     );
-  }, [livePrices]);
+  }, []);
 
   const subscribeToTicks = useCallback((callback: (tick: TradeEngineTick) => void) => {
     listenersRef.current.add(callback);

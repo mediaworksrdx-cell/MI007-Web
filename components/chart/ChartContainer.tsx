@@ -175,9 +175,26 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         if (engineCandles && engineCandles.length > 5) {
           const merged = mergeCandleArrays(cached || [], engineCandles, tfMs);
           const sanitizedMerged = sanitizeCandleScale(merged, expectedPrice);
-          setCandles(sanitizedMerged);
+          setCandles(prev => {
+            if (prev && prev.length > 0) {
+              const prevLast = prev[prev.length - 1];
+              const mergedLast = sanitizedMerged[sanitizedMerged.length - 1];
+              // If prev has an active live candle for the same bucket, preserve the live close/high/low
+              if (prevLast && mergedLast && prevLast.openTime === mergedLast.openTime && prevLast.close > 0) {
+                const preservedMerged = [...sanitizedMerged];
+                preservedMerged[preservedMerged.length - 1] = {
+                  ...mergedLast,
+                  close: prevLast.close,
+                  high: Math.max(mergedLast.high, prevLast.high),
+                  low: Math.min(mergedLast.low, prevLast.low),
+                };
+                return preservedMerged;
+              }
+            }
+            return sanitizedMerged;
+          });
           const lastC = sanitizedMerged[sanitizedMerged.length - 1];
-          setCurrentPrice(lastC?.close);
+          setCurrentPrice(prev => (prev && prev > 0 ? prev : lastC?.close));
           setIsLiveFromEngine(true);
           // Persist sanitized dataset to IndexedDB
           saveStoredCandles(selectedSymbol, timeframe, sanitizedMerged);
@@ -200,7 +217,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     return () => {
       isCancelled = true;
     };
-  }, [market, selectedSymbol, timeframe, getSymbolPrice]);
+  }, [market, selectedSymbol, timeframe]);
 
   // Track last save timestamp to throttle IndexedDB writes during active ticks
   const lastSaveTimeRef = useRef<number>(0);
@@ -210,6 +227,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     const live = getSymbolPrice(selectedSymbol);
     if (live && live.price > 0) {
       setCurrentPrice(live.price);
+      setIsLiveFromEngine(true);
     }
   }, [selectedSymbol, getSymbolPrice]);
 
@@ -307,14 +325,6 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     return () => unsub();
   }, [selectedSymbol, timeframe, subscribeToTicks]);
 
-  // Sync snapshot price if available from trade engine
-  useEffect(() => {
-    const live = getSymbolPrice(selectedSymbol);
-    if (live && live.price > 0) {
-      setCurrentPrice(live.price);
-      setIsLiveFromEngine(true);
-    }
-  }, [selectedSymbol, getSymbolPrice]);
 
   // Build IndicatorConfig array from active indicator types + user customizations
   const indicatorConfigs: IndicatorConfig[] = useMemo(() => {
