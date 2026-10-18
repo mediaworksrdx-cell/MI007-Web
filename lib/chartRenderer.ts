@@ -2978,7 +2978,7 @@ export function renderOverlay(
     ctx.restore();
   }
 
-  // 2. Draw Selected Drawing Anchor Rings
+  // 2. Draw Selected Drawing Anchor Rings & Selection Outline
   if (options.selectedDrawingId && options.drawings) {
     const sel = options.drawings.find(d => d.id === options.selectedDrawingId);
     if (sel && sel.points) {
@@ -2986,13 +2986,20 @@ export function renderOverlay(
       for (const pt of sel.points) {
         const px = getPointX(pt);
         const py = priceToY(pt.price);
+        // Outer drop shadow ring
         ctx.beginPath();
-        ctx.arc(px, py, 6 * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = '#0284C7';
+        ctx.arc(px, py, 7 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = '#2563EB';
         ctx.fill();
-        ctx.lineWidth = 2 * dpr;
+        ctx.lineWidth = 2.5 * dpr;
         ctx.strokeStyle = '#FFFFFF';
         ctx.stroke();
+
+        // Inner white dot
+        ctx.beginPath();
+        ctx.arc(px, py, 2.5 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fill();
       }
       ctx.restore();
     }

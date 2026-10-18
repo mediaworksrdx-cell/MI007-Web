@@ -229,7 +229,12 @@ export function CandlestickCanvas({
         isDraggingRef.current = false;
         setIsDragging(false);
       }
+      if (movingDrawingRef.current) {
+        movingDrawingRef.current = null;
+        setIsMovingDrawing(false);
+      }
       adjustingRef.current = null;
+      setIsAdjustingDrawing(false);
       dragScaleModeRef.current = 'none';
     };
     window.addEventListener('pointerup', handleGlobalRelease);
@@ -467,6 +472,14 @@ export function CandlestickCanvas({
   const dragStartXRef = useRef<number>(0);
   const dragStartScrollRef = useRef<number>(0);
   const adjustingRef = useRef<{ drawingId: string; pointIdx: number } | null>(null);
+  const movingDrawingRef = useRef<{
+    drawingId: string;
+    startPt: { index: number; price: number };
+    initialPoints: { index: number; time?: number; price: number }[];
+  } | null>(null);
+  const [isMovingDrawing, setIsMovingDrawing] = useState(false);
+  const [isAdjustingDrawing, setIsAdjustingDrawing] = useState(false);
+  const [hoverDrawingZone, setHoverDrawingZone] = useState<'none' | 'drawing' | 'endpoint'>('none');
 
   // Pointer events
   // Pointer events with Interactive Axis Dragging & 120 FPS Precision
@@ -485,9 +498,117 @@ export function CandlestickCanvas({
       }
       if (adjustingRef.current) {
         adjustingRef.current = null;
+        setIsAdjustingDrawing(false);
+      }
+      if (movingDrawingRef.current) {
+        movingDrawingRef.current = null;
+        setIsMovingDrawing(false);
       }
       if (dragScaleModeRef.current !== 'none') {
         dragScaleModeRef.current = 'none';
+      }
+
+      // Detect hover over drawing or endpoint for cursor icon updates
+      if (!activeDrawingTool || activeDrawingTool === 'NONE') {
+        const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
+        const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
+        const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
+        const chartH = size.h - panelH - CHART_BOTTOM_MARGIN;
+        const chartW = size.w - CHART_RIGHT_MARGIN;
+        const visCnt = visibleCount;
+        const candleW = visCnt > 0 ? chartW / visCnt : 1;
+
+        let pMin = Infinity, pMax = -Infinity;
+        for (let i = Math.max(0, startIdx); i < Math.min(endIdx, cleanCandles.length); i++) {
+          pMin = Math.min(pMin, cleanCandles[i].low);
+          pMax = Math.max(pMax, cleanCandles[i].high);
+        }
+        const pad = (pMax - pMin) * 0.05 || 1;
+        pMin -= pad; pMax += pad;
+        const center = (pMax + pMin) / 2 + priceOffset;
+        const scaledRange = (pMax - pMin) * priceScaleRatio;
+        pMin = center - scaledRange / 2;
+        pMax = center + scaledRange / 2;
+        const pRange = Math.max(pMax - pMin, 0.01);
+
+        let hoveredEndpoint = false;
+        let hoveredBody = false;
+
+        for (const d of drawings) {
+          if (d.hidden || !d.points || d.points.length === 0) continue;
+          const pts = d.points.map(p => {
+            let idx = p.index;
+            if (p.time && cleanCandles[idx]?.openTime !== p.time) {
+              for (let ci = 0; ci < cleanCandles.length; ci++) {
+                if (cleanCandles[ci].openTime === p.time) { idx = ci; break; }
+              }
+            }
+            return {
+              x: (idx - startIdx) * candleW + candleW / 2,
+              y: chartH * (1 - (p.price - pMin) / pRange),
+            };
+          });
+
+          // Check endpoints (radius 20px)
+          for (const ep of pts) {
+            if (Math.hypot(x - ep.x, y - ep.y) <= 20) {
+              hoveredEndpoint = true;
+              break;
+            }
+          }
+          if (hoveredEndpoint) break;
+
+          // Check body (radius 18px)
+          const p1 = pts[0];
+          if (pts.length === 1) {
+            if (d.tool === 'HORIZONTAL' && Math.abs(y - p1.y) <= 18) hoveredBody = true;
+            else if (d.tool === 'HORIZONTAL_RAY' && Math.abs(y - p1.y) <= 18 && x >= p1.x - 8) hoveredBody = true;
+            else if (d.tool === 'VERTICAL_LINE' && Math.abs(x - p1.x) <= 18) hoveredBody = true;
+            else if (d.tool === 'CROSS_LINE' && (Math.abs(y - p1.y) <= 18 || Math.abs(x - p1.x) <= 18)) hoveredBody = true;
+            else if (Math.hypot(x - p1.x, y - p1.y) <= 24) hoveredBody = true;
+          } else {
+            for (let si = 0; si < pts.length - 1; si++) {
+              const pa = pts[si], pb = pts[si + 1];
+              const dx = pb.x - pa.x, dy = pb.y - pa.y;
+              const lenSq = dx * dx + dy * dy;
+              if (lenSq > 0) {
+                let t = ((x - pa.x) * dx + (y - pa.y) * dy) / lenSq;
+                if (d.tool === 'RAY' && si === pts.length - 2) t = Math.max(0, t);
+                else t = Math.max(0, Math.min(1, t));
+                const px = pa.x + t * dx, py = pa.y + t * dy;
+                if (Math.hypot(x - px, y - py) <= 18) {
+                  hoveredBody = true;
+                  break;
+                }
+              }
+            }
+            if (!hoveredBody) {
+              let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+              for (const ptItem of pts) {
+                if (ptItem.x < minX) minX = ptItem.x;
+                if (ptItem.x > maxX) maxX = ptItem.x;
+                if (ptItem.y < minY) minY = ptItem.y;
+                if (ptItem.y > maxY) maxY = ptItem.y;
+              }
+              const isAreaTool = [
+                'RECTANGLE', 'ROTATED_RECTANGLE', 'CIRCLE', 'ELLIPSE', 'TRIANGLE',
+                'CHANNEL', 'DISJOINT_CHANNEL', 'FIB_CHANNEL', 'GANN_BOX',
+                'RISK_REWARD_LONG', 'RISK_REWARD_SHORT', 'PRICE_RANGE', 'DATE_RANGE', 'MEASURE',
+                'XABCD_PATTERN', 'ABCD_PATTERN'
+              ].includes(d.tool);
+              if (isAreaTool && x >= minX - 10 && x <= maxX + 10 && y >= minY - 10 && y <= maxY + 10) {
+                hoveredBody = true;
+              }
+            }
+          }
+          if (hoveredBody) break;
+        }
+
+        if (hoveredEndpoint) setHoverDrawingZone('endpoint');
+        else if (hoveredBody) setHoverDrawingZone('drawing');
+        else setHoverDrawingZone('none');
+      } else {
+        setHoverDrawingZone('none');
       }
     }
 
@@ -532,6 +653,34 @@ export function CandlestickCanvas({
             price: pt.price,
           };
           onUpdateDrawing?.({ ...target, points: updatedPoints });
+          setQuickBarPos({ x: e.clientX, y: e.clientY });
+        }
+      }
+      return;
+    }
+
+    // 1.5. If currently dragging / moving an entire drawing across price & time
+    if (movingDrawingRef.current) {
+      const pt = getPointFromEvent(e.clientX, e.clientY);
+      if (pt) {
+        const target = drawings.find(d => d.id === movingDrawingRef.current!.drawingId);
+        if (target) {
+          const deltaIdx = pt.index - movingDrawingRef.current.startPt.index;
+          const deltaPrice = pt.price - movingDrawingRef.current.startPt.price;
+
+          const updatedPoints = movingDrawingRef.current.initialPoints.map(p => {
+            const newIdx = Math.max(0, Math.min(cleanCandles.length - 1, p.index + deltaIdx));
+            const newTime = cleanCandles[newIdx]?.openTime || (p.time ? p.time + deltaIdx * 60000 : Date.now());
+            const newPrice = Number((p.price + deltaPrice).toFixed(4));
+            return {
+              ...p,
+              index: newIdx,
+              time: newTime,
+              price: newPrice,
+            };
+          });
+          onUpdateDrawing?.({ ...target, points: updatedPoints });
+          setQuickBarPos({ x: e.clientX, y: e.clientY });
         }
       }
       return;
@@ -577,7 +726,7 @@ export function CandlestickCanvas({
         });
       }
     }
-  }, [activeDrawingTool, visibleCount, cleanCandles.length, drawings, drawingInProgress, getPointFromEvent, onUpdateDrawing, size.h, size.w]);
+  }, [activeDrawingTool, visibleCount, cleanCandles, drawings, drawingInProgress, getPointFromEvent, onUpdateDrawing, size.h, size.w, startIdx, endIdx, priceOffset, priceScaleRatio, showVolumePanel, indicators]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (dragScaleModeRef.current !== 'none') {
@@ -586,6 +735,12 @@ export function CandlestickCanvas({
     }
     if (adjustingRef.current) {
       adjustingRef.current = null;
+      setIsAdjustingDrawing(false);
+      try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+    }
+    if (movingDrawingRef.current) {
+      movingDrawingRef.current = null;
+      setIsMovingDrawing(false);
       try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
     }
     if (isDraggingRef.current) {
@@ -753,7 +908,7 @@ export function CandlestickCanvas({
           }
           const ptX = (idx - startIdx) * candleW + candleW / 2;
           const ptY = chartH * (1 - (p.price - pMin) / pRange);
-          if (Math.hypot(x - ptX, y - ptY) <= 15) {
+          if (Math.hypot(x - ptX, y - ptY) <= 20) {
             targetAdjust = { drawingId: d.id, pointIdx: i };
             break;
           }
@@ -770,6 +925,7 @@ export function CandlestickCanvas({
         }
         if (!isAllDrawingsLocked) {
           adjustingRef.current = targetAdjust;
+          setIsAdjustingDrawing(true);
           try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}
         }
         onSelectDrawing?.(targetAdjust.drawingId);
@@ -797,16 +953,16 @@ export function CandlestickCanvas({
         const p1 = pts[0];
         if (d.points.length === 1) {
           if (d.tool === 'HORIZONTAL') {
-            if (Math.abs(y - p1.y) <= 12) { clickedDrawingId = d.id; break; }
+            if (Math.abs(y - p1.y) <= 16) { clickedDrawingId = d.id; break; }
           } else if (d.tool === 'HORIZONTAL_RAY') {
-            if (Math.abs(y - p1.y) <= 12 && x >= p1.x - 5) { clickedDrawingId = d.id; break; }
+            if (Math.abs(y - p1.y) <= 16 && x >= p1.x - 8) { clickedDrawingId = d.id; break; }
           } else if (d.tool === 'VERTICAL_LINE') {
-            if (Math.abs(x - p1.x) <= 12) { clickedDrawingId = d.id; break; }
+            if (Math.abs(x - p1.x) <= 16) { clickedDrawingId = d.id; break; }
           } else if (d.tool === 'CROSS_LINE') {
-            if (Math.abs(y - p1.y) <= 12 || Math.abs(x - p1.x) <= 12) { clickedDrawingId = d.id; break; }
+            if (Math.abs(y - p1.y) <= 16 || Math.abs(x - p1.x) <= 16) { clickedDrawingId = d.id; break; }
           } else {
             // Anchor point hit test for 1-point markers (TEXT, ANCHORED_TEXT, PRICE_LABEL, ARROW_UP, ARROW_DOWN, FLAG)
-            if (Math.hypot(x - p1.x, y - p1.y) <= 22) { clickedDrawingId = d.id; break; }
+            if (Math.hypot(x - p1.x, y - p1.y) <= 24) { clickedDrawingId = d.id; break; }
           }
         } else if (pts.length >= 2) {
           // Distance to any line segment between consecutive points
@@ -825,7 +981,7 @@ export function CandlestickCanvas({
                 t = Math.max(0, Math.min(1, t));
               }
               const px = pa.x + t * dx, py = pa.y + t * dy;
-              if (Math.hypot(x - px, y - py) <= 14) {
+              if (Math.hypot(x - px, y - py) <= 18) {
                 hitSegment = true;
                 break;
               }
@@ -866,6 +1022,18 @@ export function CandlestickCanvas({
         }
         onSelectDrawing?.(clickedDrawingId);
         setQuickBarPos({ x: e.clientX, y: e.clientY });
+
+        // Start dragging the entire drawing!
+        const target = drawings.find(d => d.id === clickedDrawingId);
+        if (target && !target.locked && !isAllDrawingsLocked) {
+          movingDrawingRef.current = {
+            drawingId: target.id,
+            startPt: { index: pt.index, price: pt.price },
+            initialPoints: target.points.map(p => ({ ...p })),
+          };
+          setIsMovingDrawing(true);
+          try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}
+        }
         return;
       }
 
@@ -1115,11 +1283,13 @@ export function CandlestickCanvas({
     if (hoverScaleZone === 'time') return 'cursor-ew-resize';
     if (cursorMode === 'eraser') return 'cursor-not-allowed';
     if (activeDrawingTool && activeDrawingTool !== 'NONE') return 'cursor-crosshair';
-    if (isDragging) return 'cursor-grabbing';
+    if (isMovingDrawing || isDragging) return 'cursor-grabbing';
+    if (isAdjustingDrawing || hoverDrawingZone === 'endpoint') return 'cursor-crosshair';
+    if (hoverDrawingZone === 'drawing') return 'cursor-move';
     if (cursorMode === 'pan') return 'cursor-grab';
     if (cursorMode === 'arrow') return 'cursor-default';
     return 'cursor-crosshair';
-  }, [activeDrawingTool, cursorMode, hoverScaleZone, isDragging]);
+  }, [activeDrawingTool, cursorMode, hoverDrawingZone, hoverScaleZone, isAdjustingDrawing, isDragging, isMovingDrawing]);
 
   return (
     <div ref={containerRef} className={`relative w-full h-full overflow-hidden ${className}`}>
