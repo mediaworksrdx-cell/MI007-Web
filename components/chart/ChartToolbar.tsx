@@ -125,7 +125,7 @@ export function ChartToolbar({
   return (
     <div
       ref={toolbarRef}
-      className="flex flex-wrap items-center justify-between border-b border-slate-800 bg-[#0B0F19] px-3 py-1.5 text-xs text-slate-200 shadow-md gap-2 relative z-50 select-none overflow-visible"
+      className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B0F19] px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 shadow-xs gap-2 relative z-50 select-none overflow-visible"
     >
       {/* ── Left Controls: Timeframe, Chart Type, Indicators, Drawing, Overlays, Save & Templates ── */}
       <div className="flex flex-wrap items-center gap-1.5 shrink-0">
@@ -136,17 +136,17 @@ export function ChartToolbar({
             onClick={() => setOpenMenu(openMenu === 'TF' ? null : 'TF')}
             className={`h-7 flex items-center gap-1 px-2.5 rounded-lg border font-bold font-mono text-xs transition-colors cursor-pointer ${
               openMenu === 'TF'
-                ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                : 'border-slate-700 hover:border-emerald-500/60 bg-slate-900 text-slate-200'
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
             <span>{timeframe}</span>
-            <span className="text-[9px] text-slate-400">▼</span>
+            <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
           </button>
 
           {openMenu === 'TF' && (
-            <div className="absolute top-full left-0 mt-1 w-36 rounded-xl border border-slate-700 bg-[#0B0F19] shadow-2xl py-1 z-[100] animate-in fade-in duration-75">
-              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+            <div className="absolute top-full left-0 mt-1 w-36 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-xl py-1 z-[100] animate-in fade-in duration-75">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                 Timeframe
               </div>
               {TIMEFRAMES.map((tf) => (
@@ -159,12 +159,12 @@ export function ChartToolbar({
                   }}
                   className={`flex items-center justify-between w-full px-3 py-1.5 text-left text-xs font-mono font-medium transition-colors cursor-pointer ${
                     timeframe === tf.value
-                      ? 'bg-emerald-500/20 text-emerald-400 font-bold'
-                      : 'text-slate-200 hover:bg-slate-800'
+                      ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span>{tf.label}</span>
-                  {timeframe === tf.value && <span className="text-emerald-400 font-bold text-xs">✓</span>}
+                  {timeframe === tf.value && <span className="text-emerald-600 dark:text-emerald-400 font-bold text-xs">✓</span>}
                 </button>
               ))}
             </div>
@@ -178,18 +178,18 @@ export function ChartToolbar({
             onClick={() => setOpenMenu(openMenu === 'CANDLES' ? null : 'CANDLES')}
             className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
               openMenu === 'CANDLES'
-                ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                : 'border-slate-700 hover:border-emerald-500/60 bg-slate-900 text-slate-200'
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
             <span className="font-mono text-sm leading-none">{currentChartType.icon}</span>
             <span className="font-bold">{currentChartType.label}</span>
-            <span className="text-[9px] text-slate-400">▼</span>
+            <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
           </button>
 
           {openMenu === 'CANDLES' && (
-            <div className="absolute top-full left-0 mt-1 w-44 rounded-xl border border-slate-700 bg-[#0B0F19] shadow-2xl py-1 z-[100] animate-in fade-in duration-75">
-              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+            <div className="absolute top-full left-0 mt-1 w-44 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-xl py-1 z-[100] animate-in fade-in duration-75">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                 Chart Style
               </div>
               {CHART_TYPES.map((ct) => (
@@ -202,20 +202,20 @@ export function ChartToolbar({
                   }}
                   className={`flex items-center gap-2.5 w-full px-3 py-1.5 text-left text-xs font-medium transition-colors cursor-pointer ${
                     chartType === ct.value
-                      ? 'bg-emerald-500/20 text-emerald-400 font-bold'
-                      : 'text-slate-200 hover:bg-slate-800'
+                      ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span className="font-mono text-sm w-4 text-center">{ct.icon}</span>
                   <span className="flex-1">{ct.label}</span>
-                  {chartType === ct.value && <span className="text-emerald-400 text-xs">✓</span>}
+                  {chartType === ct.value && <span className="text-emerald-600 dark:text-emerald-400 text-xs font-bold">✓</span>}
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        <div className="h-4 w-px bg-slate-800 mx-0.5" />
+        <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
         {/* 3. Indicators Simple Dropdown Menu */}
         <div className="relative">
@@ -224,26 +224,26 @@ export function ChartToolbar({
             onClick={() => setOpenMenu(openMenu === 'INDICATORS' ? null : 'INDICATORS')}
             className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
               openMenu === 'INDICATORS' || activeIndicators.length > 0
-                ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400 font-bold'
-                : 'border-slate-700 hover:border-emerald-500/60 bg-slate-900 text-slate-200'
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
+                : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
-            <span className="font-mono font-black text-xs px-1 rounded bg-emerald-500/20 text-emerald-400">ƒx</span>
+            <span className="font-mono font-black text-xs px-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">ƒx</span>
             <span>Indicators</span>
             {activeIndicators.length > 0 && (
               <span className="h-4 px-1.5 rounded-full bg-emerald-600 text-white font-mono text-[10px] font-bold flex items-center justify-center">
                 {activeIndicators.length}
               </span>
             )}
-            <span className="text-[9px] text-slate-400">▼</span>
+            <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
           </button>
 
           {openMenu === 'INDICATORS' && (
-            <div className="absolute top-full left-0 mt-1 w-64 rounded-xl border border-slate-700 bg-[#0B0F19] shadow-2xl py-1 z-[100] max-h-96 overflow-y-auto animate-in fade-in duration-75">
-              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 flex items-center justify-between">
+            <div className="absolute top-full left-0 mt-1 w-64 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-xl py-1 z-[100] max-h-96 overflow-y-auto animate-in fade-in duration-75">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <span>Indicators</span>
                 {activeIndicators.length > 0 && (
-                  <span className="text-emerald-400 font-mono text-[9px]">{activeIndicators.length} active</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[9px] font-bold">{activeIndicators.length} active</span>
                 )}
               </div>
 
@@ -255,7 +255,7 @@ export function ChartToolbar({
                     <div
                       key={type}
                       className={`flex items-center justify-between px-3 py-1.5 transition-colors cursor-pointer ${
-                        active ? 'bg-emerald-500/15 text-emerald-400 font-bold' : 'text-slate-200 hover:bg-slate-800'
+                        active ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                       onClick={() => onToggleIndicator(type)}
                     >
@@ -273,7 +273,7 @@ export function ChartToolbar({
                               setOpenMenu(null);
                             }}
                             title="Configure Settings"
-                            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-700 text-xs"
+                            className="p-1 rounded text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 text-xs"
                           >
                             ⚙
                           </button>
@@ -282,7 +282,7 @@ export function ChartToolbar({
                           type="checkbox"
                           checked={active}
                           onChange={() => onToggleIndicator(type)}
-                          className="rounded text-emerald-500 focus:ring-emerald-500 cursor-pointer accent-emerald-500"
+                          className="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
                         />
                       </div>
                     </div>
@@ -291,14 +291,14 @@ export function ChartToolbar({
               </div>
 
               {activeIndicators.length > 0 && onClearAllIndicators && (
-                <div className="p-2 border-t border-slate-800 bg-slate-900/60">
+                <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
                   <button
                     type="button"
                     onClick={() => {
                       onClearAllIndicators();
                       setOpenMenu(null);
                     }}
-                    className="w-full py-1 text-center font-bold text-xs text-rose-400 hover:bg-rose-500/15 rounded transition-colors"
+                    className="w-full py-1 text-center font-bold text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/15 rounded transition-colors cursor-pointer"
                   >
                     Clear All Indicators
                   </button>
@@ -308,7 +308,7 @@ export function ChartToolbar({
           )}
         </div>
 
-        <div className="h-4 w-px bg-slate-800 mx-0.5" />
+        <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
         
         {/* 4. Optional Clean Overlays (SMC, VOL, VPVR) */}
         <div className="flex items-center gap-1">
@@ -318,8 +318,8 @@ export function ChartToolbar({
             title="Toggle Smart Money Concepts"
             className={`h-7 px-2 rounded-md text-[11px] font-bold font-mono border transition-colors cursor-pointer ${
               showSmcOverlay
-                ? 'bg-amber-500/20 border-amber-500 text-amber-400'
-                : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                ? 'bg-amber-50 dark:bg-amber-500/20 border-amber-400 dark:border-amber-500 text-amber-700 dark:text-amber-400 font-bold'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
             SMC
@@ -330,8 +330,8 @@ export function ChartToolbar({
             title="Toggle Volume Bars"
             className={`h-7 px-2 rounded-md text-[11px] font-bold font-mono border transition-colors cursor-pointer ${
               showVolume
-                ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                ? 'bg-emerald-50 dark:bg-emerald-500/20 border-emerald-400 dark:border-emerald-500 text-emerald-700 dark:text-emerald-400 font-bold'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
             VOL
@@ -342,15 +342,15 @@ export function ChartToolbar({
             title="Toggle Volume Profile Visible Range (VPVR)"
             className={`h-7 px-2 rounded-md text-[11px] font-bold font-mono border transition-colors cursor-pointer ${
               showVolumeProfile
-                ? 'bg-blue-500/20 border-blue-500 text-blue-400'
-                : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                ? 'bg-blue-50 dark:bg-blue-500/20 border-blue-400 dark:border-blue-500 text-blue-700 dark:text-blue-400 font-bold'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
             VPVR
           </button>
         </div>
 
-        <div className="h-4 w-px bg-slate-800 mx-0.5" />
+        <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
         {/* 6. SAVE BUTTON */}
         <button
@@ -359,8 +359,8 @@ export function ChartToolbar({
           title="Save current chart layout and settings"
           className={`h-7 px-3 rounded-lg border font-bold text-xs font-mono flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
             saveStatus === 'saved'
-              ? 'border-emerald-500 bg-emerald-500 text-slate-950 font-black'
-              : 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25'
+              ? 'border-emerald-500 bg-emerald-600 text-white font-black'
+              : 'border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/25'
           }`}
         >
           <span>{saveStatus === 'saved' ? '✓' : '💾'}</span>
@@ -373,7 +373,7 @@ export function ChartToolbar({
             type="button"
             onClick={() => onExportSnapshot('download')}
             title="Download High-Resolution Chart Image"
-            className="h-7 px-2.5 rounded-lg border border-slate-700 hover:border-emerald-500/60 bg-slate-900 text-slate-200 hover:text-emerald-400 font-bold text-xs font-mono flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+            className="h-7 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-slate-800 font-bold text-xs font-mono flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
           >
             <span className="text-sm leading-none">📷</span>
             <span className="hidden md:inline">SNAPSHOT</span>
@@ -387,18 +387,18 @@ export function ChartToolbar({
             onClick={() => setOpenMenu(openMenu === 'TEMPLATES' ? null : 'TEMPLATES')}
             className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-bold font-mono transition-colors cursor-pointer ${
               openMenu === 'TEMPLATES'
-                ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                : 'border-slate-700 hover:border-emerald-500/60 bg-slate-900 text-slate-200'
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
+                : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
             <span>📑</span>
             <span className="max-w-[100px] truncate">{activeTemplate?.name || 'Template'}</span>
-            <span className="text-[9px] text-slate-400">▼</span>
+            <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
           </button>
 
           {openMenu === 'TEMPLATES' && (
-            <div className="absolute top-full left-0 mt-1 w-52 rounded-xl border border-slate-700 bg-[#0B0F19] shadow-2xl py-1 z-[100] animate-in fade-in duration-75">
-              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+            <div className="absolute top-full left-0 mt-1 w-52 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-xl py-1 z-[100] animate-in fade-in duration-75">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                 Chart Templates
               </div>
               {templates.slice(0, 5).map((tpl) => (
@@ -411,12 +411,12 @@ export function ChartToolbar({
                   }}
                   className={`flex items-center justify-between w-full px-3 py-1.5 text-left text-xs font-medium transition-colors cursor-pointer ${
                     tpl.id === activeTemplateId
-                      ? 'bg-emerald-500/20 text-emerald-400 font-bold'
-                      : 'text-slate-200 hover:bg-slate-800'
+                      ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span className="truncate">{tpl.name}</span>
-                  {tpl.id === activeTemplateId && <span className="text-emerald-400 text-xs">✓</span>}
+                  {tpl.id === activeTemplateId && <span className="text-emerald-600 dark:text-emerald-400 text-xs font-bold">✓</span>}
                 </button>
               ))}
             </div>
@@ -427,7 +427,7 @@ export function ChartToolbar({
       {/* ── Right Controls: Live Beacon & Quote ── */}
       <div className="flex items-center gap-2.5 shrink-0 ml-auto">
         {/* Beacon */}
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-800 bg-slate-900/80 text-[11px] font-mono font-bold text-slate-300">
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300 shadow-xs">
           <span
             className={`w-2 h-2 rounded-full ${
               engineStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
@@ -438,8 +438,8 @@ export function ChartToolbar({
 
         {/* Price Tracker */}
         {displayPrice !== undefined && displayPrice > 0 && (
-          <div className="flex items-center gap-2.5 font-mono bg-slate-900/90 border border-slate-700/80 px-2.5 py-0.5 rounded-lg shadow-sm">
-            <span className="text-[16px] font-black text-white tracking-tight">
+          <div className="flex items-center gap-2.5 font-mono bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/80 px-2.5 py-0.5 rounded-lg shadow-xs">
+            <span className="text-[16px] font-black text-slate-900 dark:text-white tracking-tight">
               {currency}
               {displayPrice.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
@@ -449,7 +449,7 @@ export function ChartToolbar({
             {displayChange !== undefined && displayChangePct !== undefined && (
               <span
                 className={`text-[13px] font-extrabold ${
-                  displayChange >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                  displayChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                 }`}
               >
                 {displayChange >= 0 ? '+' : ''}
