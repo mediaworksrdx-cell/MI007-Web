@@ -438,8 +438,8 @@ export function ChartToolbar({
 
         {/* Price Tracker */}
         {displayPrice !== undefined && displayPrice > 0 && (
-          <div className="flex items-center gap-2 font-mono">
-            <span className="text-[14px] font-black text-slate-100">
+          <div className="flex items-center gap-2.5 font-mono bg-slate-900/90 border border-slate-700/80 px-2.5 py-0.5 rounded-lg shadow-sm">
+            <span className="text-[16px] font-black text-white tracking-tight">
               {currency}
               {displayPrice.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
@@ -448,7 +448,7 @@ export function ChartToolbar({
             </span>
             {displayChange !== undefined && displayChangePct !== undefined && (
               <span
-                className={`text-[12px] font-bold ${
+                className={`text-[13px] font-extrabold ${
                   displayChange >= 0 ? 'text-emerald-400' : 'text-rose-400'
                 }`}
               >

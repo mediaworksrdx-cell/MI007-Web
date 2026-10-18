@@ -845,20 +845,20 @@ export function renderChart(
   ctx.setLineDash(gridDash);
   ctx.lineWidth = 0.8 * dpr;
   ctx.strokeStyle = '#F1F5F9';
-  ctx.font = `${9*dpr}px "JetBrains Mono",monospace`;
-  ctx.fillStyle = AXIS_TEXT;
+  ctx.font = `bold ${12 * dpr}px "JetBrains Mono",monospace`;
+  ctx.fillStyle = '#1E293B';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   for (let i = 0; i <= numHL; i++) {
     const price = pMin + i * pStep;
     const y = priceToY(price);
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(chartW, y); ctx.stroke();
-    ctx.fillText(formatPrice(price), W - 6 * dpr, y);
+    ctx.fillText(formatPrice(price), W - 8 * dpr, y);
   }
 
   // Vertical grid + time labels
   const timeStep = Math.max(1, Math.floor(visCnt / 6));
-  ctx.font = `${8*dpr}px "JetBrains Mono",monospace`;
+  ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   let prevDay = -1;
@@ -876,7 +876,7 @@ export function renderChart(
       else if (multiDay && prevDay !== curDay) label = formatTimeLabel(ts, true);
       else label = formatTimeLabel(ts, false);
       prevDay = curDay;
-      ctx.fillStyle = AXIS_TEXT;
+      ctx.fillStyle = '#334155';
       ctx.fillText(label, x, chartH + BM / 2);
     }
   }
@@ -1197,30 +1197,30 @@ export function renderChart(
     ctx.setLineDash([]); ctx.restore();
     // Pill badge on right axis
     const prStr = formatPrice(curPrice);
-    ctx.font = `900 ${9*dpr}px "JetBrains Mono",monospace`;
+    ctx.font = `900 ${12.5 * dpr}px "JetBrains Mono",monospace`;
     const tm = ctx.measureText(prStr);
-    const padH = 5*dpr, padV = 3*dpr, dotR = 2*dpr;
-    const bW = tm.width + padH*2 + 8*dpr;
-    const bH2 = 9*dpr + padV*2;
-    const bL = chartW + 2*dpr;
-    const bT = clY - bH2/2;
+    const padH = 7 * dpr, padV = 4.5 * dpr, dotR = 2.5 * dpr;
+    const bW = Math.min(W - chartW - 2 * dpr, tm.width + padH * 2 + 10 * dpr);
+    const bH2 = 12.5 * dpr + padV * 2;
+    const bL = chartW + 2 * dpr;
+    const bT = clY - bH2 / 2;
     // Pill bg
     ctx.fillStyle = accent;
     ctx.beginPath();
-    const cr = 4*dpr;
-    ctx.moveTo(bL+cr, bT); ctx.lineTo(bL+bW-cr, bT); ctx.arcTo(bL+bW, bT, bL+bW, bT+cr, cr);
-    ctx.lineTo(bL+bW, bT+bH2-cr); ctx.arcTo(bL+bW, bT+bH2, bL+bW-cr, bT+bH2, cr);
-    ctx.lineTo(bL+cr, bT+bH2); ctx.arcTo(bL, bT+bH2, bL, bT+bH2-cr, cr);
-    ctx.lineTo(bL, bT+cr); ctx.arcTo(bL, bT, bL+cr, bT, cr);
+    const cr = 4 * dpr;
+    ctx.moveTo(bL + cr, bT); ctx.lineTo(bL + bW - cr, bT); ctx.arcTo(bL + bW, bT, bL + bW, bT + cr, cr);
+    ctx.lineTo(bL + bW, bT + bH2 - cr); ctx.arcTo(bL + bW, bT + bH2, bL + bW - cr, bT + bH2, cr);
+    ctx.lineTo(bL + cr, bT + bH2); ctx.arcTo(bL, bT + bH2, bL, bT + bH2 - cr, cr);
+    ctx.lineTo(bL, bT + cr); ctx.arcTo(bL, bT, bL + cr, bT, cr);
     ctx.closePath(); ctx.fill();
     // Live dot
     const txtColor = bull ? '#000000' : '#FFFFFF';
     ctx.fillStyle = txtColor;
-    ctx.beginPath(); ctx.arc(bL+padH+dotR, clY, dotR, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(bL + padH + dotR, clY, dotR, 0, Math.PI * 2); ctx.fill();
     // Price text
     ctx.fillStyle = txtColor;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(prStr, bL+padH+dotR*2+3*dpr, clY);
+    ctx.fillText(prStr, bL + padH + dotR * 2 + 4 * dpr, clY);
 
     // ── Real-time Candle Countdown Timer (Parity with Android InstitutionalChartEngine) ──
     const TF_DURATIONS: Record<string, number> = {
@@ -1257,11 +1257,11 @@ export function renderChart(
     }
 
     const timerBadgeStr = `⏱ ${timerText}`;
-    ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+    ctx.font = `bold ${9.5 * dpr}px "JetBrains Mono",monospace`;
     const tMeas = ctx.measureText(timerBadgeStr);
-    const tPadH = 4 * dpr, tPadV = 2 * dpr;
-    const tW = tMeas.width + tPadH * 2;
-    const tH = 8 * dpr + tPadV * 2;
+    const tPadH = 5 * dpr, tPadV = 3 * dpr;
+    const tW = Math.min(W - chartW - 2 * dpr, tMeas.width + tPadH * 2);
+    const tH = 9.5 * dpr + tPadV * 2;
     const tL = chartW + 2 * dpr;
     const tT = bT + bH2 + 3 * dpr;
 
@@ -1334,15 +1334,15 @@ export function renderChart(
         ctx.setLineDash([6 * dpr, 4 * dpr]);
         ctx.beginPath(); ctx.moveTo(0, y1); ctx.lineTo(chartW, y1); ctx.stroke();
         ctx.restore();
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillText(`H-Line: ${formatPrice(p1.price)}`, 6 * dpr, y1 - 4 * dpr);
+        ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillText(`H-Line: ${formatPrice(p1.price)}`, 6 * dpr, y1 - 5 * dpr);
       } else if (item.tool === 'HORIZONTAL_RAY') {
         ctx.save();
         ctx.setLineDash([6 * dpr, 4 * dpr]);
         ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(chartW, y1); ctx.stroke();
         ctx.restore();
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillText(`H-Ray: ${formatPrice(p1.price)}`, x1 + 6 * dpr, y1 - 4 * dpr);
+        ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillText(`H-Ray: ${formatPrice(p1.price)}`, x1 + 6 * dpr, y1 - 5 * dpr);
       } else if (item.tool === 'VERTICAL_LINE') {
         ctx.save();
         ctx.setLineDash([6 * dpr, 4 * dpr]);
@@ -1351,8 +1351,8 @@ export function renderChart(
         const cTime = candles[Math.min(Math.max(0, p1.index), candles.length - 1)]?.openTime;
         if (cTime) {
           const tText = formatCrosshairTime(cTime, isDailyOrHigher);
-          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-          ctx.fillText(tText, Math.max(4 * dpr, x1 - 30 * dpr), 12 * dpr);
+          ctx.font = `bold ${10.5 * dpr}px "JetBrains Mono",monospace`;
+          ctx.fillText(tText, Math.max(4 * dpr, x1 - 35 * dpr), 15 * dpr);
         }
       } else if (item.tool === 'CROSS_LINE') {
         ctx.save();
@@ -1360,15 +1360,15 @@ export function renderChart(
         ctx.beginPath(); ctx.moveTo(0, y1); ctx.lineTo(chartW, y1); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(x1, 0); ctx.lineTo(x1, chartH); ctx.stroke();
         ctx.restore();
-        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+        ctx.font = `bold ${10.5 * dpr}px "JetBrains Mono",monospace`;
         ctx.fillStyle = color;
-        ctx.fillText(`+ ${formatPrice(p1.price)}`, Math.max(6 * dpr, x1 + 6 * dpr), y1 - 4 * dpr);
+        ctx.fillText(`+ ${formatPrice(p1.price)}`, Math.max(6 * dpr, x1 + 6 * dpr), y1 - 5 * dpr);
       } else if (item.tool === 'TEXT') {
         const textContent = item.text || 'Annotation';
-        ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
+        ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(textContent);
-        const bW = tm.width + 10 * dpr;
-        const bH = 14 * dpr;
+        const bW = tm.width + 12 * dpr;
+        const bH = 18 * dpr;
         ctx.save();
         ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
         ctx.beginPath();
@@ -1380,13 +1380,13 @@ export function renderChart(
         ctx.closePath(); ctx.fill();
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(textContent, x1 + 5 * dpr, y1 - bH / 2);
+        ctx.fillText(textContent, x1 + 6 * dpr, y1 - bH / 2);
         ctx.restore();
       } else if (item.tool === 'ANCHORED_TEXT') {
         const textContent = item.text || 'Note';
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(textContent);
-        const bW = tm.width + 12 * dpr, bH = 16 * dpr;
+        const bW = tm.width + 14 * dpr, bH = 20 * dpr;
         ctx.save();
         ctx.beginPath(); ctx.arc(x1, y1, 4 * dpr, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 + 14 * dpr, y1 - 14 * dpr); ctx.stroke();
@@ -1396,26 +1396,26 @@ export function renderChart(
         ctx.strokeRect(x1 + 14 * dpr, y1 - 14 * dpr - bH / 2, bW, bH);
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(textContent, x1 + 18 * dpr, y1 - 14 * dpr);
+        ctx.fillText(textContent, x1 + 20 * dpr, y1 - 14 * dpr);
         ctx.restore();
       } else if (item.tool === 'PRICE_LABEL') {
         const priceStr = formatPrice(p1.price);
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.font = `bold ${11.5 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(priceStr);
-        const bW = tm.width + 12 * dpr, bH = 16 * dpr;
+        const bW = tm.width + 16 * dpr, bH = 20 * dpr;
         ctx.save();
         ctx.fillStyle = color || '#2563EB';
         ctx.beginPath();
         ctx.moveTo(x1, y1);
-        ctx.lineTo(x1 + 7 * dpr, y1 - bH / 2);
-        ctx.lineTo(x1 + 7 * dpr + bW, y1 - bH / 2);
-        ctx.lineTo(x1 + 7 * dpr + bW, y1 + bH / 2);
-        ctx.lineTo(x1 + 7 * dpr, y1 + bH / 2);
+        ctx.lineTo(x1 + 8 * dpr, y1 - bH / 2);
+        ctx.lineTo(x1 + 8 * dpr + bW, y1 - bH / 2);
+        ctx.lineTo(x1 + 8 * dpr + bW, y1 + bH / 2);
+        ctx.lineTo(x1 + 8 * dpr, y1 + bH / 2);
         ctx.closePath();
         ctx.fill();
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(priceStr, x1 + 10 * dpr, y1);
+        ctx.fillText(priceStr, x1 + 12 * dpr, y1);
         ctx.restore();
       } else if (item.tool === 'ARROW_UP') {
         ctx.save();
@@ -2311,10 +2311,10 @@ export function renderChart(
         const tagY = priceToY(lastVal);
         const tagText = `${formatPrice(lastVal)}`;
         ctx.save();
-        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+        ctx.font = `bold ${10.5 * dpr}px "JetBrains Mono",monospace`;
         const tw = ctx.measureText(tagText).width;
-        const bw = tw + 8 * dpr;
-        const bh = 13 * dpr;
+        const bw = Math.min(W - chartW - 2 * dpr, tw + 10 * dpr);
+        const bh = 17 * dpr;
         const bx = chartW + 1 * dpr;
         const by = Math.max(1, Math.min(chartH - bh, tagY - bh / 2));
         ctx.fillStyle = cfg.color;
@@ -2322,7 +2322,7 @@ export function renderChart(
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(tagText, bx + 4 * dpr, by + bh / 2);
+        ctx.fillText(tagText, bx + 5 * dpr, by + bh / 2);
         ctx.restore();
       }
     }
@@ -2512,14 +2512,14 @@ export function renderChart(
     const lastMa = volMa20Values[Math.min(endIdx - 1, volMa20Values.length - 1)];
     const volTxt = lastC && lastC.volume > 0 ? `Vol ${formatVolume(lastC.volume)}` : 'Vol';
     const maTxt = lastMa !== null && lastMa !== undefined ? ` | MA(20) ${formatVolume(lastMa)}` : '';
-    ctx.font = `bold ${8.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle = VOL_LABEL;
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(`${volTxt}${maTxt}`, 4*dpr, panelOffset+2*dpr);
+    ctx.font = `bold ${10.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle = VOL_LABEL;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(`${volTxt}${maTxt}`, 4*dpr, panelOffset+3*dpr);
 
     // Max vol label right
     if (maxV > 0) {
-      ctx.font = `${7.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle = VOL_AXIS; ctx.textAlign = 'left';
-      ctx.fillText(formatVolume(maxV), chartW+3*dpr, panelOffset+2*dpr);
-      ctx.fillText('0', chartW+3*dpr, panelOffset+pH-11*dpr);
+      ctx.font = `bold ${9.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle = VOL_AXIS; ctx.textAlign = 'left';
+      ctx.fillText(formatVolume(maxV), chartW+4*dpr, panelOffset+3*dpr);
+      ctx.fillText('0', chartW+4*dpr, panelOffset+pH-12*dpr);
     }
     // Bars
     if (maxV > 0) {
@@ -2590,7 +2590,7 @@ export function renderChart(
       if (lv !== null && lv !== undefined) valSnippet = `: ${formatPrice(lv)}`;
     }
 
-    ctx.font = `bold ${9*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle = cfg.color;
+    ctx.font = `bold ${11*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle = cfg.color;
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     ctx.fillText(`${baseLabel}${valSnippet}`, 4*dpr, panelOffset+3*dpr);
 
@@ -2658,7 +2658,7 @@ export function renderChart(
         ctx.strokeStyle='#CBD5E1'; ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(chartW,mid); ctx.stroke();
         ctx.setLineDash([]); ctx.restore();
         // Level labels on right axis
-        ctx.font=`${7.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle='#64748B'; ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.font=`bold ${9.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle='#64748B'; ctx.textAlign='left'; ctx.textBaseline='middle';
         ctx.fillText('70', chartW+4*dpr, ob); ctx.fillText('30', chartW+4*dpr, os);
         drawPanelLine(vals, 0, 100, cfg.color, 1.5);
         break;
@@ -2699,8 +2699,8 @@ export function renderChart(
         ctx.strokeStyle='rgba(225,29,72,0.35)'; ctx.beginPath(); ctx.moveTo(0,y80); ctx.lineTo(chartW,y80); ctx.stroke();
         ctx.strokeStyle='rgba(0,163,92,0.35)'; ctx.beginPath(); ctx.moveTo(0,y20); ctx.lineTo(chartW,y20); ctx.stroke();
         ctx.setLineDash([]); ctx.restore();
-        ctx.font=`${7.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle='#64748B'; ctx.textAlign='left'; ctx.textBaseline='middle';
-        ctx.fillText('80', chartW+4*dpr, y80); ctx.fillText('20', chartW+4*dpr, y20);
+        ctx.font = `bold ${9.5*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle = '#64748B'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText('80', chartW + 4 * dpr, y80); ctx.fillText('20', chartW + 4 * dpr, y20);
         drawPanelLine(st.kLine, 0, 100, cfg.color, 1.2);
         drawPanelLine(st.dLine, 0, 100, cfg.secondaryColor, 1.2);
         break;
@@ -2791,10 +2791,10 @@ export function renderChart(
     if (cy <= chartH) {
       const price = pMax - (cy / chartH) * pRange;
       const pTxt = formatPrice(price);
-      ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${12 * dpr}px "JetBrains Mono",monospace`;
       const pMeas = ctx.measureText(pTxt);
-      const pLW = Math.min(W - chartW, pMeas.width + 12 * dpr);
-      const pLH = 16 * dpr;
+      const pLW = Math.min(W - chartW, pMeas.width + 16 * dpr);
+      const pLH = 22 * dpr;
       const pX = W - pLW;
       ctx.fillStyle = LABEL_BG;
       ctx.fillRect(pX, cy - pLH / 2, pLW, pLH);
@@ -2808,10 +2808,10 @@ export function renderChart(
     if (cidx >= 0 && cidx < candles.length) {
       const ts = candles[cidx].openTime;
       const tStr = formatCrosshairTime(ts, isDailyOrHigher);
-      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${11.5 * dpr}px "JetBrains Mono",monospace`;
       const tMeas = ctx.measureText(tStr);
-      const tLW = tMeas.width + 12 * dpr;
-      const tLH = 18 * dpr;
+      const tLW = tMeas.width + 16 * dpr;
+      const tLH = 22 * dpr;
       const tLX = Math.min(Math.max(0, cx - tLW / 2), chartW - tLW);
       ctx.fillStyle = LABEL_BG;
       ctx.fillRect(tLX, chartH + (BM - tLH) / 2, tLW, tLH);
@@ -3054,10 +3054,10 @@ export function renderOverlay(
 
       const price = pMax - (cy / chartH) * pRange;
       const pTxt = formatPrice(price);
-      ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${12 * dpr}px "JetBrains Mono",monospace`;
       const pMeas = ctx.measureText(pTxt);
-      const pLW = Math.min(W - chartW, pMeas.width + 12 * dpr);
-      const pLH = 16 * dpr;
+      const pLW = Math.min(W - chartW, pMeas.width + 16 * dpr);
+      const pLH = 22 * dpr;
       const pX = W - pLW;
       ctx.fillStyle = LABEL_BG;
       ctx.fillRect(pX, cy - pLH / 2, pLW, pLH);
@@ -3077,10 +3077,10 @@ export function renderOverlay(
     if (cidx >= 0 && cidx < candles.length) {
       const ts = candles[cidx].openTime;
       const tStr = formatCrosshairTime(ts, isDailyOrHigher);
-      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${11.5 * dpr}px "JetBrains Mono",monospace`;
       const tMeas = ctx.measureText(tStr);
-      const tLW = tMeas.width + 12 * dpr;
-      const tLH = 18 * dpr;
+      const tLW = tMeas.width + 16 * dpr;
+      const tLH = 22 * dpr;
       const tLX = Math.min(Math.max(0, cx - tLW / 2), chartW - tLW);
       ctx.fillStyle = LABEL_BG;
       ctx.fillRect(tLX, chartH + (BM - tLH) / 2, tLW, tLH);

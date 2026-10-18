@@ -186,8 +186,8 @@ export interface ChartOptions {
   skipCrosshair?: boolean;
 }
 
-export const CHART_RIGHT_MARGIN = 72;
-export const CHART_BOTTOM_MARGIN = 26;
+export const CHART_RIGHT_MARGIN = 90;
+export const CHART_BOTTOM_MARGIN = 34;
 
 
 export interface ScaleState {
