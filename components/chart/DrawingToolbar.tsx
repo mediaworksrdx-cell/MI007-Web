@@ -131,10 +131,10 @@ const TOOL_GROUPS: ToolGroup[] = [
 ];
 
 const CURSOR_OPTIONS: { id: CursorMode; label: string; desc: string; icon: string }[] = [
+  { id: 'arrow', label: 'Arrow / Cursor', desc: 'Standard mouse pointer for selecting and moving drawings', icon: '↖' },
   { id: 'crosshair', label: 'Crosshair', desc: 'Precision coordinates with price & time badges', icon: '✛' },
   { id: 'pan', label: 'Pan / Hand', desc: 'Drag chart freely to scroll history & prices', icon: '✋' },
   { id: 'dot', label: 'Dot', desc: 'Minimalist point reticle with coordinates', icon: '•' },
-  { id: 'arrow', label: 'Arrow', desc: 'Standard mouse pointer for clean chart inspection', icon: '↖' },
   { id: 'eraser', label: 'Eraser', desc: 'Click any drawing on the chart to delete it', icon: '⌫' },
 ];
 
@@ -191,7 +191,29 @@ export function DrawingToolbar({
       className={`relative z-30 flex flex-col items-center bg-white dark:bg-[#0B0F19] border-r border-slate-200 dark:border-slate-800 py-2 px-1 select-none shadow-sm ${className}`}
       style={{ width: '44px' }}
     >
-      {/* ── 1. Crosshair Mode (Matches TradingView Top Item) ── */}
+      {/* ── 1. Cursor / Arrow Mode (Standard Selection Cursor ↖) ── */}
+      <button
+        type="button"
+        onClick={() => {
+          onDrawingToolChange('NONE');
+          onCursorModeChange?.('arrow');
+          setOpenGroupId(null);
+        }}
+        title="Cursor Tool (Arrow / Pointer) - Click to select, inspect or move drawings"
+        aria-label="Cursor tool"
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 ${
+          isCursorActive && cursorMode === 'arrow'
+            ? 'bg-blue-600 text-white shadow-md font-bold'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+        }`}
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+          <path d="M13 13l6 6" />
+        </svg>
+      </button>
+
+      {/* ── 2. Crosshair Mode (Precision Reticle ✛) ── */}
       <div className="relative">
         <button
           type="button"
@@ -207,17 +229,13 @@ export function DrawingToolbar({
           title="Crosshair Tool (Inspect prices & time coordinates) - Right-click or click arrow for options"
           aria-label="Crosshair tool"
           className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 relative ${
-            isCursorActive && cursorMode !== 'pan'
+            isCursorActive && (cursorMode === 'crosshair' || cursorMode === 'dot' || cursorMode === 'eraser')
               ? 'bg-blue-600 text-white shadow-md font-bold'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           {cursorMode === 'dot' ? (
             <span className="w-2.5 h-2.5 rounded-full bg-current" />
-          ) : cursorMode === 'arrow' ? (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
-            </svg>
           ) : cursorMode === 'eraser' ? (
             <span className="text-xs font-mono font-bold">⌫</span>
           ) : (
@@ -235,18 +253,18 @@ export function DrawingToolbar({
               e.stopPropagation();
               setOpenGroupId(openGroupId === 'cursor' ? null : 'cursor');
             }}
-            title="Cursor mode options"
+            title="Crosshair mode options"
             className="absolute bottom-0 right-0 p-0.5 text-[8px] opacity-75 hover:opacity-100 leading-none"
           >
             ▾
           </span>
         </button>
 
-        {/* Cursor Mode Flyout */}
+        {/* Crosshair / Reticle Mode Flyout */}
         {openGroupId === 'cursor' && (
           <div className="absolute left-full top-0 ml-1.5 w-60 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E131F] shadow-2xl py-1 z-[100] animate-in fade-in duration-75">
             <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
-              Cursor Modes
+              Crosshair Modes
             </div>
             {CURSOR_OPTIONS.map((opt) => (
               <button
@@ -277,7 +295,7 @@ export function DrawingToolbar({
         )}
       </div>
 
-      {/* ── 2. Pan / Hand Mode Tool ── */}
+      {/* ── 3. Pan / Hand Mode Tool ── */}
       <button
         type="button"
         onClick={() => {

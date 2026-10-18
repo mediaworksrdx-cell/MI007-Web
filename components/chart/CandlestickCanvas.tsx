@@ -446,13 +446,14 @@ export function CandlestickCanvas({
         showSmcOverlay, showVolumeProfile,
         indicators, indicatorResults,
         currentPriceOverride, timeframe,
+        cursorMode,
         drawings: isAllDrawingsHidden ? [] : drawings,
         activeDrawing: isAllDrawingsHidden ? null : drawingInProgress,
         selectedDrawingId: isAllDrawingsHidden ? null : selectedDrawingId,
         scaleState: { priceScaleRatio, priceOffset },
       },
       { startIdx, endIdx },
-      (crosshair && cursorMode !== 'arrow' && cursorMode !== 'pan') ? { x: crosshair.x * dpr, y: crosshair.y * dpr } : null,
+      (crosshair && cursorMode !== 'pan') ? { x: crosshair.x * dpr, y: crosshair.y * dpr } : null,
       dpr,
       magnetReticle
     );

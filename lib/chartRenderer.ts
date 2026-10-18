@@ -3041,20 +3041,22 @@ export function renderOverlay(
     const cy = Math.max(0, Math.min(H, crosshair.y));
     ctx.save();
     ctx.setLineDash([4 * dpr, 3 * dpr]);
-    ctx.strokeStyle = CROSSHAIR_COLOR;
+    ctx.strokeStyle = options.cursorMode === 'arrow' ? 'rgba(51, 65, 85, 0.45)' : CROSSHAIR_COLOR;
     ctx.lineWidth = 1 * dpr;
     ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(chartW, cy); ctx.stroke();
     ctx.setLineDash([]);
 
     if (cy <= chartH) {
-      ctx.beginPath();
-      ctx.arc(cx, cy, 3 * dpr, 0, Math.PI * 2);
-      ctx.fillStyle = '#2563EB';
-      ctx.fill();
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 1.2 * dpr;
-      ctx.stroke();
+      if (options.cursorMode !== 'arrow') {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = '#2563EB';
+        ctx.fill();
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.stroke();
+      }
 
       const price = pMax - (cy / chartH) * pRange;
       const pTxt = formatPrice(price);

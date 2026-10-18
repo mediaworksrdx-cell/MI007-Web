@@ -178,6 +178,7 @@ export interface ChartOptions {
   indicatorResults: Map<IndicatorType, unknown>;
   currentPriceOverride?: number;
   timeframe: string;
+  cursorMode?: string;
   drawings?: import('./drawingTypes').DrawingItem[];
   activeDrawing?: import('./drawingTypes').DrawingItem | null;
   selectedDrawingId?: string | null;
