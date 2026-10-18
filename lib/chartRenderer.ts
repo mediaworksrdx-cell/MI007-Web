@@ -1354,6 +1354,15 @@ export function renderChart(
           ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
           ctx.fillText(tText, Math.max(4 * dpr, x1 - 30 * dpr), 12 * dpr);
         }
+      } else if (item.tool === 'CROSS_LINE') {
+        ctx.save();
+        ctx.setLineDash([5 * dpr, 4 * dpr]);
+        ctx.beginPath(); ctx.moveTo(0, y1); ctx.lineTo(chartW, y1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x1, 0); ctx.lineTo(x1, chartH); ctx.stroke();
+        ctx.restore();
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = color;
+        ctx.fillText(`+ ${formatPrice(p1.price)}`, Math.max(6 * dpr, x1 + 6 * dpr), y1 - 4 * dpr);
       } else if (item.tool === 'TEXT') {
         const textContent = item.text || 'Annotation';
         ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
@@ -1373,6 +1382,82 @@ export function renderChart(
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.fillText(textContent, x1 + 5 * dpr, y1 - bH / 2);
         ctx.restore();
+      } else if (item.tool === 'ANCHORED_TEXT') {
+        const textContent = item.text || 'Note';
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        const tm = ctx.measureText(textContent);
+        const bW = tm.width + 12 * dpr, bH = 16 * dpr;
+        ctx.save();
+        ctx.beginPath(); ctx.arc(x1, y1, 4 * dpr, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 + 14 * dpr, y1 - 14 * dpr); ctx.stroke();
+        ctx.fillStyle = '#0F172A';
+        ctx.fillRect(x1 + 14 * dpr, y1 - 14 * dpr - bH / 2, bW, bH);
+        ctx.strokeStyle = color;
+        ctx.strokeRect(x1 + 14 * dpr, y1 - 14 * dpr - bH / 2, bW, bH);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(textContent, x1 + 18 * dpr, y1 - 14 * dpr);
+        ctx.restore();
+      } else if (item.tool === 'PRICE_LABEL') {
+        const priceStr = formatPrice(p1.price);
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        const tm = ctx.measureText(priceStr);
+        const bW = tm.width + 12 * dpr, bH = 16 * dpr;
+        ctx.save();
+        ctx.fillStyle = color || '#2563EB';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 + 7 * dpr, y1 - bH / 2);
+        ctx.lineTo(x1 + 7 * dpr + bW, y1 - bH / 2);
+        ctx.lineTo(x1 + 7 * dpr + bW, y1 + bH / 2);
+        ctx.lineTo(x1 + 7 * dpr, y1 + bH / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(priceStr, x1 + 10 * dpr, y1);
+        ctx.restore();
+      } else if (item.tool === 'ARROW_UP') {
+        ctx.save();
+        ctx.fillStyle = '#10B981';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - 6 * dpr, y1 + 10 * dpr);
+        ctx.lineTo(x1 - 2.5 * dpr, y1 + 10 * dpr);
+        ctx.lineTo(x1 - 2.5 * dpr, y1 + 18 * dpr);
+        ctx.lineTo(x1 + 2.5 * dpr, y1 + 18 * dpr);
+        ctx.lineTo(x1 + 2.5 * dpr, y1 + 10 * dpr);
+        ctx.lineTo(x1 + 6 * dpr, y1 + 10 * dpr);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      } else if (item.tool === 'ARROW_DOWN') {
+        ctx.save();
+        ctx.fillStyle = '#EF4444';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - 6 * dpr, y1 - 10 * dpr);
+        ctx.lineTo(x1 - 2.5 * dpr, y1 - 10 * dpr);
+        ctx.lineTo(x1 - 2.5 * dpr, y1 - 18 * dpr);
+        ctx.lineTo(x1 + 2.5 * dpr, y1 - 18 * dpr);
+        ctx.lineTo(x1 + 2.5 * dpr, y1 - 10 * dpr);
+        ctx.lineTo(x1 + 6 * dpr, y1 - 10 * dpr);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      } else if (item.tool === 'FLAG') {
+        ctx.save();
+        ctx.strokeStyle = '#64748B';
+        ctx.lineWidth = 1.5 * dpr;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1, y1 - 20 * dpr); ctx.stroke();
+        ctx.fillStyle = color || '#EF4444';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1 - 20 * dpr);
+        ctx.lineTo(x1 + 13 * dpr, y1 - 15 * dpr);
+        ctx.lineTo(x1, y1 - 10 * dpr);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
       } else if (item.tool === 'BRUSH') {
         if (item.points.length > 1) {
           ctx.save();
@@ -1380,11 +1465,39 @@ export function renderChart(
           ctx.moveTo(x1, y1);
           for (let k = 1; k < item.points.length; k++) {
             const pk = item.points[k];
-            const xk = getPointX(pk);
-            const yk = priceToY(pk.price);
-            ctx.lineTo(xk, yk);
+            ctx.lineTo(getPointX(pk), priceToY(pk.price));
           }
           ctx.stroke();
+          ctx.restore();
+        }
+      } else if (item.tool === 'HIGHLIGHTER') {
+        if (item.points.length > 1) {
+          ctx.save();
+          ctx.strokeStyle = color ? `${color}35` : 'rgba(250, 204, 21, 0.35)';
+          ctx.lineWidth = 14 * dpr;
+          ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          for (let k = 1; k < item.points.length; k++) {
+            const pk = item.points[k];
+            ctx.lineTo(getPointX(pk), priceToY(pk.price));
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+      } else if (item.tool === 'POLYLINE') {
+        if (item.points.length > 1) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          for (let k = 1; k < item.points.length; k++) {
+            const pk = item.points[k];
+            ctx.lineTo(getPointX(pk), priceToY(pk.price));
+          }
+          ctx.stroke();
+          for (const pt of item.points) {
+            ctx.beginPath(); ctx.arc(getPointX(pt), priceToY(pt.price), 3 * dpr, 0, Math.PI * 2); ctx.fill();
+          }
           ctx.restore();
         }
       } else if (item.points.length >= 2) {
@@ -1664,6 +1777,303 @@ export function renderChart(
           ctx.fillStyle = measureColor;
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText(infoStr, bX + bW / 2, bY + bH / 2);
+          ctx.restore();
+        } else if (item.tool === 'INFO_LINE') {
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          const dP = p2.price - p1.price;
+          const pct = p1.price !== 0 ? (dP / p1.price) * 100 : 0;
+          const bars = Math.abs(p2.index - p1.index);
+          const angle = Math.round(Math.atan2(-(y2 - y1), x2 - x1) * 180 / Math.PI);
+          const sign = dP >= 0 ? '+' : '';
+          const info = `${sign}${formatPrice(dP)} (${sign}${pct.toFixed(1)}%) | ${bars}b | ${angle}°`;
+          const midX = (x1 + x2) / 2, midY = (y1 + y2) / 2;
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          const tm = ctx.measureText(info);
+          ctx.save();
+          ctx.fillStyle = '#0F172A';
+          ctx.fillRect(midX - tm.width / 2 - 4 * dpr, midY - 14 * dpr, tm.width + 8 * dpr, 13 * dpr);
+          ctx.fillStyle = dP >= 0 ? '#10B981' : '#EF4444';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(info, midX, midY - 7.5 * dpr);
+          ctx.restore();
+        } else if (item.tool === 'TREND_ANGLE') {
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          ctx.save();
+          ctx.setLineDash([3 * dpr, 3 * dpr]);
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y1); ctx.stroke();
+          ctx.restore();
+          const angle = Math.round(Math.atan2(-(y2 - y1), x2 - x1) * 180 / Math.PI);
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          ctx.save();
+          ctx.fillStyle = '#0F172A';
+          ctx.fillRect(x1 + 8 * dpr, y1 - 12 * dpr, 36 * dpr, 13 * dpr);
+          ctx.fillStyle = '#22D3EE';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(`${angle}°`, x1 + 26 * dpr, y1 - 5.5 * dpr);
+          ctx.restore();
+        } else if (item.tool === 'DISJOINT_CHANNEL') {
+          const p3 = item.points[2] || { price: p2.price, index: p2.index };
+          const x3 = getPointX(p3);
+          const y3 = priceToY(p3.price);
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x1, y1 + (y3 - y2)); ctx.lineTo(x3, y3); ctx.stroke();
+          ctx.save();
+          ctx.fillStyle = 'rgba(37, 99, 235, 0.08)';
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.lineTo(x1, y1 + (y3 - y2)); ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        } else if (item.tool === 'ROTATED_RECTANGLE') {
+          const p3 = item.points[2] || { price: p1.price + (pMax - pMin) * 0.03, index: p1.index };
+          const offY = priceToY(p3.price) - y1;
+          ctx.save();
+          ctx.fillStyle = color ? `${color}1F` : 'rgba(37, 99, 235, 0.12)';
+          ctx.beginPath();
+          ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x2, y2 + offY); ctx.lineTo(x1, y1 + offY);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          ctx.restore();
+        } else if (item.tool === 'ELLIPSE') {
+          const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+          const rx = Math.max(1, Math.abs(x2 - x1) / 2);
+          const ry = Math.max(1, Math.abs(y2 - y1) / 2);
+          ctx.save();
+          ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+          ctx.fillStyle = color ? `${color}1A` : 'rgba(37, 99, 235, 0.10)';
+          ctx.fill(); ctx.stroke();
+          ctx.restore();
+        } else if (item.tool === 'TRIANGLE') {
+          const p3 = item.points[2] || { price: (p1.price + p2.price) / 2, index: Math.round((p1.index + p2.index) / 2) };
+          const x3 = getPointX(p3), y3 = priceToY(p3.price);
+          ctx.save();
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.closePath();
+          ctx.fillStyle = color ? `${color}1F` : 'rgba(168, 85, 247, 0.12)';
+          ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x3, y3, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        } else if (item.tool === 'CURVE') {
+          const p3 = item.points[2] || p2;
+          const x3 = getPointX(p3), y3 = priceToY(p3.price);
+          ctx.save();
+          ctx.beginPath(); ctx.moveTo(x1, y1);
+          ctx.quadraticCurveTo(x2, y2, x3, y3);
+          ctx.stroke();
+          ctx.restore();
+        } else if (item.tool === 'FIB_CHANNEL') {
+          const p3 = item.points[2] || { price: p1.price + (pMax - pMin) * 0.05, index: p1.index };
+          const baseDy = priceToY(p3.price) - y1;
+          const fibRatios = [0, 0.382, 0.5, 0.618, 1.0, 1.618];
+          ctx.save();
+          for (const r of fibRatios) {
+            const off = baseDy * r;
+            ctx.setLineDash(r === 0 || r === 1.0 ? [] : [3 * dpr, 3 * dpr]);
+            ctx.beginPath(); ctx.moveTo(x1, y1 + off); ctx.lineTo(x2, y2 + off); ctx.stroke();
+            ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
+            ctx.fillText(`${r}`, x2 + 4 * dpr, y2 + off);
+          }
+          ctx.restore();
+        } else if (item.tool === 'FIB_TIME_ZONE') {
+          const fibSeq = [1, 2, 3, 5, 8, 13, 21, 34, 55];
+          const dxIdx = Math.max(1, Math.abs(p2.index - p1.index));
+          ctx.save();
+          ctx.setLineDash([3 * dpr, 3 * dpr]);
+          for (const f of fibSeq) {
+            const targetIdx = p1.index + f * dxIdx;
+            if (targetIdx >= startIdx && targetIdx <= endIdx) {
+              const fx = (targetIdx - startIdx) * candleW + candleW / 2;
+              ctx.beginPath(); ctx.moveTo(fx, 0); ctx.lineTo(fx, chartH); ctx.stroke();
+              ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+              ctx.fillText(`${f}`, fx + 2 * dpr, 14 * dpr);
+            }
+          }
+          ctx.restore();
+        } else if (item.tool === 'GANN_BOX') {
+          const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+          const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
+          const w = maxX - minX, h = maxY - minY;
+          ctx.save();
+          ctx.strokeRect(minX, minY, w, h);
+          ctx.setLineDash([2 * dpr, 2 * dpr]);
+          for (const r of [0.25, 0.5, 0.75]) {
+            ctx.beginPath(); ctx.moveTo(minX + w * r, minY); ctx.lineTo(minX + w * r, maxY); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(minX, minY + h * r); ctx.lineTo(maxX, minY + h * r); ctx.stroke();
+          }
+          ctx.beginPath(); ctx.moveTo(minX, minY); ctx.lineTo(maxX, maxY); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(minX, maxY); ctx.lineTo(maxX, minY); ctx.stroke();
+          ctx.restore();
+        } else if (item.tool === 'GANN_FAN') {
+          const slopes = [
+            { label: '1/8', s: 0.125 }, { label: '1/4', s: 0.25 }, { label: '1/3', s: 0.333 },
+            { label: '1/2', s: 0.5 }, { label: '1/1', s: 1.0 }, { label: '2/1', s: 2.0 },
+            { label: '3/1', s: 3.0 }, { label: '4/1', s: 4.0 }, { label: '8/1', s: 8.0 }
+          ];
+          const dx = x2 - x1, baseDy = y2 - y1;
+          ctx.save();
+          for (const sl of slopes) {
+            ctx.beginPath(); ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + dx * 2, y1 + baseDy * sl.s * 2);
+            ctx.stroke();
+          }
+          ctx.restore();
+        } else if (item.tool === 'PRICE_RANGE') {
+          const dP = p2.price - p1.price;
+          const pct = p1.price !== 0 ? (dP / p1.price) * 100 : 0;
+          const isUp = dP >= 0;
+          const col = isUp ? '#10B981' : '#EF4444';
+          ctx.save();
+          ctx.strokeStyle = col; ctx.fillStyle = col;
+          ctx.lineWidth = 1.5 * dpr;
+          ctx.beginPath(); ctx.moveTo(x1 - 10 * dpr, y1); ctx.lineTo(x1 + 10 * dpr, y1); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1, y2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x1 - 10 * dpr, y2); ctx.lineTo(x1 + 10 * dpr, y2); ctx.stroke();
+          const midY = (y1 + y2) / 2;
+          const txt = `${isUp ? '+' : ''}${formatPrice(dP)} (${isUp ? '+' : ''}${pct.toFixed(2)}%)`;
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          const tm = ctx.measureText(txt);
+          ctx.fillStyle = '#0F172A';
+          ctx.fillRect(x1 + 6 * dpr, midY - 8 * dpr, tm.width + 8 * dpr, 15 * dpr);
+          ctx.fillStyle = col;
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.fillText(txt, x1 + 10 * dpr, midY);
+          ctx.restore();
+        } else if (item.tool === 'DATE_RANGE') {
+          const bars = Math.abs(p2.index - p1.index);
+          const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+          ctx.save();
+          ctx.strokeStyle = '#0284C7'; ctx.fillStyle = '#0284C7';
+          ctx.lineWidth = 1.5 * dpr;
+          ctx.beginPath(); ctx.moveTo(minX, y1 - 10 * dpr); ctx.lineTo(minX, y1 + 10 * dpr); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(minX, y1); ctx.lineTo(maxX, y1); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(maxX, y1 - 10 * dpr); ctx.lineTo(maxX, y1 + 10 * dpr); ctx.stroke();
+          const midX = (minX + maxX) / 2;
+          const txt = `${bars} bars`;
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          const tm = ctx.measureText(txt);
+          ctx.fillStyle = '#0F172A';
+          ctx.fillRect(midX - tm.width / 2 - 4 * dpr, y1 - 16 * dpr, tm.width + 8 * dpr, 14 * dpr);
+          ctx.fillStyle = '#38BDF8';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(txt, midX, y1 - 9 * dpr);
+          ctx.restore();
+        } else if (item.tool === 'HEAD_AND_SHOULDERS') {
+          const labels = ['LS', 'Head', 'RS', 'NL1', 'NL2'];
+          ctx.save();
+          ctx.beginPath(); ctx.moveTo(x1, y1);
+          for (let k = 1; k < Math.min(item.points.length, 3); k++) {
+            ctx.lineTo(getPointX(item.points[k]), priceToY(item.points[k].price));
+          }
+          ctx.stroke();
+          if (item.points.length >= 5) {
+            const x4 = getPointX(item.points[3]), y4 = priceToY(item.points[3].price);
+            const x5 = getPointX(item.points[4]), y5 = priceToY(item.points[4].price);
+            ctx.setLineDash([4 * dpr, 3 * dpr]);
+            ctx.beginPath(); ctx.moveTo(x4, y4); ctx.lineTo(x5, y5); ctx.stroke();
+          }
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          item.points.forEach((pt, idx) => {
+            const px = getPointX(pt), py = priceToY(pt.price);
+            ctx.beginPath(); ctx.arc(px, py, 4 * dpr, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(labels[idx] || `${idx + 1}`, px + 6 * dpr, py - 6 * dpr);
+          });
+          ctx.restore();
+        } else if (item.tool === 'ELLIOTT_IMPULSE') {
+          const waveLabels = ['(1)', '(2)', '(3)', '(4)', '(5)'];
+          ctx.save();
+          ctx.beginPath(); ctx.moveTo(x1, y1);
+          for (let k = 1; k < item.points.length; k++) {
+            ctx.lineTo(getPointX(item.points[k]), priceToY(item.points[k].price));
+          }
+          ctx.stroke();
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          item.points.forEach((pt, idx) => {
+            const px = getPointX(pt), py = priceToY(pt.price);
+            ctx.beginPath(); ctx.arc(px, py, 8 * dpr, 0, Math.PI * 2);
+            ctx.fillStyle = '#0F172A'; ctx.fill();
+            ctx.strokeStyle = color; ctx.stroke();
+            ctx.fillStyle = '#F59E0B'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(waveLabels[idx] || `${idx + 1}`, px, py);
+          });
+          ctx.restore();
+        } else if (item.tool === 'ELLIOTT_CORRECTION') {
+          const waveLabels = ['(A)', '(B)', '(C)'];
+          ctx.save();
+          ctx.beginPath(); ctx.moveTo(x1, y1);
+          for (let k = 1; k < item.points.length; k++) {
+            ctx.lineTo(getPointX(item.points[k]), priceToY(item.points[k].price));
+          }
+          ctx.stroke();
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          item.points.forEach((pt, idx) => {
+            const px = getPointX(pt), py = priceToY(pt.price);
+            ctx.beginPath(); ctx.arc(px, py, 8 * dpr, 0, Math.PI * 2);
+            ctx.fillStyle = '#0F172A'; ctx.fill();
+            ctx.strokeStyle = color; ctx.stroke();
+            ctx.fillStyle = '#38BDF8'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(waveLabels[idx] || `(${String.fromCharCode(65 + idx)})`, px, py);
+          });
+          ctx.restore();
+        } else if (item.tool === 'XABCD_PATTERN') {
+          const harmLabels = ['X', 'A', 'B', 'C', 'D'];
+          ctx.save();
+          ctx.beginPath(); ctx.moveTo(x1, y1);
+          for (let k = 1; k < item.points.length; k++) {
+            ctx.lineTo(getPointX(item.points[k]), priceToY(item.points[k].price));
+          }
+          ctx.stroke();
+          if (item.points.length >= 3) {
+            const xA = getPointX(item.points[1]), yA = priceToY(item.points[1].price);
+            const xB = getPointX(item.points[2]), yB = priceToY(item.points[2].price);
+            ctx.fillStyle = 'rgba(234, 179, 8, 0.12)';
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(xA, yA); ctx.lineTo(xB, yB); ctx.closePath();
+            ctx.fill();
+          }
+          if (item.points.length >= 5) {
+            const xB = getPointX(item.points[2]), yB = priceToY(item.points[2].price);
+            const xC = getPointX(item.points[3]), yC = priceToY(item.points[3].price);
+            const xD = getPointX(item.points[4]), yD = priceToY(item.points[4].price);
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+            ctx.beginPath(); ctx.moveTo(xB, yB); ctx.lineTo(xC, yC); ctx.lineTo(xD, yD); ctx.closePath();
+            ctx.fill();
+          }
+          ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+          item.points.forEach((pt, idx) => {
+            const px = getPointX(pt), py = priceToY(pt.price);
+            ctx.beginPath(); ctx.arc(px, py, 4 * dpr, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(harmLabels[idx] || `${idx}`, px + 6 * dpr, py - 6 * dpr);
+          });
+          ctx.restore();
+        } else if (item.tool === 'ABCD_PATTERN') {
+          const abcdLabels = ['A', 'B', 'C', 'D'];
+          ctx.save();
+          ctx.beginPath(); ctx.moveTo(x1, y1);
+          for (let k = 1; k < item.points.length; k++) {
+            ctx.lineTo(getPointX(item.points[k]), priceToY(item.points[k].price));
+          }
+          ctx.stroke();
+          ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+          item.points.forEach((pt, idx) => {
+            const px = getPointX(pt), py = priceToY(pt.price);
+            ctx.beginPath(); ctx.arc(px, py, 4 * dpr, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(abcdLabels[idx] || `${idx}`, px + 6 * dpr, py - 6 * dpr);
+          });
+          ctx.restore();
+        } else if (item.tool === 'BARS_PATTERN') {
+          const rx = Math.min(x1, x2), ry = Math.min(y1, y2);
+          const rw = Math.abs(x2 - x1), rh = Math.abs(y2 - y1);
+          ctx.save();
+          ctx.setLineDash([4 * dpr, 4 * dpr]);
+          ctx.strokeRect(rx, ry, rw, rh);
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+          ctx.fillRect(rx, ry, rw, rh);
+          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          ctx.fillStyle = '#38BDF8';
+          ctx.fillText('BARS PROJECTION', rx + 6 * dpr, ry + 12 * dpr);
           ctx.restore();
         }
       }

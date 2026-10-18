@@ -27,6 +27,9 @@ interface CandlestickCanvasProps {
   drawings?: DrawingItem[];
   selectedDrawingId?: string | null;
   isMagnetActive?: boolean;
+  isDrawingModeLocked?: boolean;
+  isAllDrawingsLocked?: boolean;
+  isAllDrawingsHidden?: boolean;
   onAddDrawing?: (drawing: DrawingItem) => void;
   onUpdateDrawing?: (drawing: DrawingItem) => void;
   onDeleteDrawing?: (drawingId: string) => void;
@@ -34,7 +37,101 @@ interface CandlestickCanvasProps {
   onUndoDrawing?: () => void;
   onDrawingToolChange?: (tool: DrawingToolType) => void;
   onToggleMagnet?: () => void;
+  onToggleDrawingModeLock?: () => void;
+  onToggleLockAllDrawings?: () => void;
+  onToggleHideAllDrawings?: () => void;
   onExportSnapshot?: (mode: 'download' | 'clipboard') => void;
+}
+
+export function getToolRequiredPoints(tool: DrawingToolType): number {
+  switch (tool) {
+    case 'HORIZONTAL':
+    case 'HORIZONTAL_RAY':
+    case 'VERTICAL_LINE':
+    case 'CROSS_LINE':
+    case 'TEXT':
+    case 'ANCHORED_TEXT':
+    case 'PRICE_LABEL':
+    case 'ARROW_UP':
+    case 'ARROW_DOWN':
+    case 'FLAG':
+      return 1;
+
+    case 'CHANNEL':
+    case 'DISJOINT_CHANNEL':
+    case 'FIBONACCI_EXTENSION':
+    case 'FIB_CHANNEL':
+    case 'ROTATED_RECTANGLE':
+    case 'TRIANGLE':
+    case 'CURVE':
+    case 'ELLIOTT_CORRECTION':
+      return 3;
+
+    case 'ABCD_PATTERN':
+      return 4;
+
+    case 'HEAD_AND_SHOULDERS':
+    case 'ELLIOTT_IMPULSE':
+    case 'XABCD_PATTERN':
+      return 5;
+
+    case 'BRUSH':
+    case 'HIGHLIGHTER':
+    case 'POLYLINE':
+      return -1; // Multi-point or continuous
+
+    default:
+      return 2;
+  }
+}
+
+export function getDefaultToolColor(tool: DrawingToolType): string {
+  switch (tool) {
+    case 'HORIZONTAL': return '#2563EB';
+    case 'HORIZONTAL_RAY': return '#0284C7';
+    case 'VERTICAL_LINE': return '#9333EA';
+    case 'CROSS_LINE': return '#64748B';
+    case 'RECTANGLE': return '#059669';
+    case 'ROTATED_RECTANGLE': return '#0D9488';
+    case 'CIRCLE': return '#3B82F6';
+    case 'ELLIPSE': return '#6366F1';
+    case 'TRIANGLE': return '#8B5CF6';
+    case 'POLYLINE': return '#EC4899';
+    case 'CURVE': return '#06B6D4';
+    case 'BRUSH': return '#2563EB';
+    case 'HIGHLIGHTER': return 'rgba(251, 191, 36, 0.4)';
+    case 'RISK_REWARD_LONG': return '#10B981';
+    case 'RISK_REWARD_SHORT': return '#EF4444';
+    case 'PRICE_RANGE': return '#0EA5E9';
+    case 'DATE_RANGE': return '#8B5CF6';
+    case 'MEASURE': return '#0284C7';
+    case 'BARS_PATTERN': return '#3B82F6';
+    case 'CHANNEL': return '#4F46E5';
+    case 'DISJOINT_CHANNEL': return '#6366F1';
+    case 'FIBONACCI': return '#D97706';
+    case 'FIBONACCI_EXTENSION': return '#B45309';
+    case 'FIB_CHANNEL': return '#F59E0B';
+    case 'FIB_TIME_ZONE': return '#84CC16';
+    case 'GANN_BOX': return '#14B8A6';
+    case 'GANN_FAN': return '#06B6D4';
+    case 'HEAD_AND_SHOULDERS': return '#EC4899';
+    case 'ELLIOTT_IMPULSE': return '#3B82F6';
+    case 'ELLIOTT_CORRECTION': return '#8B5CF6';
+    case 'XABCD_PATTERN': return '#10B981';
+    case 'ABCD_PATTERN': return '#F59E0B';
+    case 'RAY':
+    case 'EXTENDED_LINE': return '#EA580C';
+    case 'INFO_LINE': return '#2563EB';
+    case 'TREND_ANGLE': return '#0284C7';
+    case 'PRICE_LABEL': return '#1E293B';
+    case 'ARROW_UP': return '#16A34A';
+    case 'ARROW_DOWN': return '#DC2626';
+    case 'FLAG': return '#E11D48';
+    case 'ANCHORED_TEXT':
+    case 'TEXT': return '#1E293B';
+    case 'CALLOUT': return '#0284C7';
+    default: return '#2563EB';
+  }
 }
 
 const VISIBLE_CANDLES_BASE = 60;
@@ -49,6 +146,9 @@ export function CandlestickCanvas({
   drawings = [],
   selectedDrawingId = null,
   isMagnetActive = false,
+  isDrawingModeLocked = false,
+  isAllDrawingsLocked = false,
+  isAllDrawingsHidden = false,
   onAddDrawing,
   onUpdateDrawing,
   onDeleteDrawing,
@@ -56,6 +156,9 @@ export function CandlestickCanvas({
   onUndoDrawing,
   onDrawingToolChange,
   onToggleMagnet,
+  onToggleDrawingModeLock,
+  onToggleLockAllDrawings,
+  onToggleHideAllDrawings,
   onExportSnapshot,
 }: CandlestickCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,6 +174,8 @@ export function CandlestickCanvas({
   const [quickBarPos, setQuickBarPos] = useState<{ x: number; y: number } | null>(null);
   const [dpr, setDpr] = useState(1);
   const pointerDownPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const committedPointsRef = useRef<Array<{ index: number; time: number; price: number }>>([]);
+  const isBrushingRef = useRef(false);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [clockTick, setClockTick] = useState(0);
 
@@ -177,6 +282,8 @@ export function CandlestickCanvas({
   useEffect(() => {
     if (activeDrawingTool === 'NONE') {
       setDrawingInProgress(null);
+      committedPointsRef.current = [];
+      isBrushingRef.current = false;
     }
   }, [activeDrawingTool]);
 
@@ -310,7 +417,7 @@ export function CandlestickCanvas({
         strategyOverlay,
         indicators, indicatorResults,
         currentPriceOverride, timeframe,
-        drawings,
+        drawings: isAllDrawingsHidden ? [] : drawings,
         activeDrawing: null, // Overlay canvas handles active drawing rubber-band
         selectedDrawingId: null, // Overlay canvas handles selection rings
         scaleState: { priceScaleRatio, priceOffset },
@@ -323,7 +430,7 @@ export function CandlestickCanvas({
   }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
-      drawings, clampedStart, clampedEnd, priceScaleRatio, priceOffset, size, dpr, clockTick]);
+      drawings, isAllDrawingsHidden, clampedStart, clampedEnd, priceScaleRatio, priceOffset, size, dpr, clockTick]);
 
   // ── LAYER 2: Foreground Overlay Canvas Render (120 FPS Crosshair, Anchors, Magnet Reticle) ──
   useEffect(() => {
@@ -340,9 +447,9 @@ export function CandlestickCanvas({
         showSmcOverlay, showVolumeProfile,
         indicators, indicatorResults,
         currentPriceOverride, timeframe,
-        drawings,
-        activeDrawing: drawingInProgress,
-        selectedDrawingId,
+        drawings: isAllDrawingsHidden ? [] : drawings,
+        activeDrawing: isAllDrawingsHidden ? null : drawingInProgress,
+        selectedDrawingId: isAllDrawingsHidden ? null : selectedDrawingId,
         scaleState: { priceScaleRatio, priceOffset },
       },
       { startIdx: clampedStart, endIdx: clampedEnd },
@@ -352,7 +459,7 @@ export function CandlestickCanvas({
     );
   }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
       indicators, indicatorResults, currentPriceOverride, timeframe,
-      drawings, drawingInProgress, selectedDrawingId,
+      drawings, drawingInProgress, selectedDrawingId, isAllDrawingsHidden,
       clampedStart, clampedEnd, crosshair, cursorMode, interactionMode, priceScaleRatio, priceOffset, size, dpr, magnetReticle]);
 
   // Mouse dragging and endpoint adjustment refs
@@ -442,8 +549,8 @@ export function CandlestickCanvas({
       return;
     }
 
-    // 3. Freehand Brush continuous path
-    if (drawingInProgress && activeDrawingTool === 'BRUSH') {
+    // 3. Freehand Brush & Highlighter continuous path
+    if (isBrushingRef.current && (activeDrawingTool === 'BRUSH' || activeDrawingTool === 'HIGHLIGHTER')) {
       const pt = getPointFromEvent(e.clientX, e.clientY);
       if (pt) {
         setDrawingInProgress(prev => {
@@ -457,22 +564,15 @@ export function CandlestickCanvas({
       return;
     }
 
-    // 4. In-progress drawing preview rubber-band
-    if (drawingInProgress && activeDrawingTool !== 'NONE') {
+    // 4. In-progress drawing preview rubber-band (multi-point tools)
+    if (committedPointsRef.current.length > 0 && activeDrawingTool !== 'NONE') {
       const pt = getPointFromEvent(e.clientX, e.clientY);
       if (pt) {
         setDrawingInProgress(prev => {
           if (!prev) return null;
-          const is3Point = prev.tool === 'CHANNEL' || prev.tool === 'FIBONACCI_EXTENSION';
-          if (is3Point && prev.points.length >= 2) {
-            return {
-              ...prev,
-              points: [prev.points[0], prev.points[1], { index: pt.index, time: pt.time, price: pt.price }],
-            };
-          }
           return {
             ...prev,
-            points: [prev.points[0], { index: pt.index, time: pt.time, price: pt.price }],
+            points: [...committedPointsRef.current, { index: pt.index, time: pt.time, price: pt.price }],
           };
         });
       }
@@ -495,35 +595,46 @@ export function CandlestickCanvas({
     }
 
     // Handle completed drawings
-    if (drawingInProgress && activeDrawingTool !== 'NONE') {
-      if (activeDrawingTool === 'BRUSH') {
-        if (drawingInProgress.points.length > 1) {
-          onAddDrawing?.({ ...drawingInProgress, completed: true });
-        }
-        setDrawingInProgress(null);
-        onDrawingToolChange?.('NONE');
-      } else {
-        const is3PointTool = activeDrawingTool === 'CHANNEL' || activeDrawingTool === 'FIBONACCI_EXTENSION';
-        if (!is3PointTool) {
-          const dist = Math.hypot(e.clientX - pointerDownPosRef.current.x, e.clientY - pointerDownPosRef.current.y);
-          // If dragged more than 20px, finalize on mouse up
-          if (dist > 20) {
-            const pt = getPointFromEvent(e.clientX, e.clientY);
-            if (pt) {
-              const finished: DrawingItem = {
+    if (isBrushingRef.current) {
+      isBrushingRef.current = false;
+      if (drawingInProgress && drawingInProgress.points.length > 1) {
+        onAddDrawing?.({ ...drawingInProgress, completed: true });
+      }
+      setDrawingInProgress(null);
+      committedPointsRef.current = [];
+      if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
+    } else if (drawingInProgress && activeDrawingTool !== 'NONE') {
+      const reqPoints = getToolRequiredPoints(activeDrawingTool);
+      if (reqPoints === 2 && committedPointsRef.current.length === 1) {
+        const dist = Math.hypot(e.clientX - pointerDownPosRef.current.x, e.clientY - pointerDownPosRef.current.y);
+        // If dragged more than 20px, finalize on mouse up
+        if (dist > 20) {
+          const pt = getPointFromEvent(e.clientX, e.clientY);
+          if (pt) {
+            const finalPoints = [committedPointsRef.current[0], { index: pt.index, time: pt.time, price: pt.price }];
+            if (activeDrawingTool === 'CALLOUT') {
+              const text = window.prompt('Enter callout annotation note:', 'Key Pivot');
+              onAddDrawing?.({
                 ...drawingInProgress,
-                points: [drawingInProgress.points[0], { index: pt.index, time: pt.time, price: pt.price }],
+                points: finalPoints,
+                text: text?.trim() || 'Key Pivot',
                 completed: true,
-              };
-              onAddDrawing?.(finished);
-              setDrawingInProgress(null);
-              onDrawingToolChange?.('NONE');
+              });
+            } else {
+              onAddDrawing?.({
+                ...drawingInProgress,
+                points: finalPoints,
+                completed: true,
+              });
             }
+            committedPointsRef.current = [];
+            setDrawingInProgress(null);
+            if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
           }
         }
       }
     }
-  }, [activeDrawingTool, drawingInProgress, getPointFromEvent, onAddDrawing, onDrawingToolChange]);
+  }, [activeDrawingTool, drawingInProgress, getPointFromEvent, isDrawingModeLocked, onAddDrawing, onDrawingToolChange]);
 
   const handlePointerLeave = useCallback(() => {
     setCrosshair(null);
@@ -532,6 +643,21 @@ export function CandlestickCanvas({
   }, []);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Finish Polyline on double click
+    if (activeDrawingTool === 'POLYLINE' && committedPointsRef.current.length >= 2) {
+      if (drawingInProgress) {
+        onAddDrawing?.({
+          ...drawingInProgress,
+          points: [...committedPointsRef.current],
+          completed: true,
+        });
+      }
+      committedPointsRef.current = [];
+      setDrawingInProgress(null);
+      if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
+      return;
+    }
+
     const canvas = overlayCanvasRef.current || canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -547,7 +673,7 @@ export function CandlestickCanvas({
       setZoom(1.0);
       setScrollOffset(0);
     }
-  }, [size]);
+  }, [activeDrawingTool, drawingInProgress, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, size]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
@@ -557,7 +683,7 @@ export function CandlestickCanvas({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // A. Check if clicking on right price scale (x >= size.w - CHART_RIGHT_MARGIN, y < size.h - CHART_BOTTOM_MARGIN)
+    // A. Check if clicking on right price scale
     if (x >= size.w - CHART_RIGHT_MARGIN && y < size.h - CHART_BOTTOM_MARGIN) {
       dragScaleModeRef.current = 'price';
       dragScaleStartYRef.current = e.clientY;
@@ -567,7 +693,7 @@ export function CandlestickCanvas({
       return;
     }
 
-    // B. Check if clicking on bottom time scale (y >= size.h - CHART_BOTTOM_MARGIN, x < size.w - CHART_RIGHT_MARGIN)
+    // B. Check if clicking on bottom time scale
     if (y >= size.h - CHART_BOTTOM_MARGIN && x < size.w - CHART_RIGHT_MARGIN) {
       dragScaleModeRef.current = 'time';
       dragScaleStartXRef.current = e.clientX;
@@ -580,6 +706,17 @@ export function CandlestickCanvas({
     if (!pt) return;
 
     if (!activeDrawingTool || activeDrawingTool === 'NONE') {
+      if (isAllDrawingsHidden) {
+        onSelectDrawing?.(null);
+        setQuickBarPos(null);
+        isDraggingRef.current = true;
+        setIsDragging(true);
+        dragStartXRef.current = e.clientX;
+        dragStartScrollRef.current = scrollOffset;
+        try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}
+        return;
+      }
+
       const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
       const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
       const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
@@ -625,89 +762,103 @@ export function CandlestickCanvas({
       }
 
       if (targetAdjust) {
-        if (cursorMode === 'eraser') {
+        if (cursorMode === 'eraser' && !isAllDrawingsLocked) {
           onDeleteDrawing?.(targetAdjust.drawingId);
           onSelectDrawing?.(null);
           setQuickBarPos(null);
           return;
         }
-        adjustingRef.current = targetAdjust;
+        if (!isAllDrawingsLocked) {
+          adjustingRef.current = targetAdjust;
+          try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}
+        }
         onSelectDrawing?.(targetAdjust.drawingId);
         setQuickBarPos({ x: e.clientX, y: e.clientY });
-        try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}
         return;
       }
 
-      // 2. Interactive Selection: Check if clicking anywhere on an existing drawing
+      // 2. Universal Hit-Testing for All 38 Tools
       let clickedDrawingId: string | null = null;
       for (const d of drawings) {
         if (d.hidden || !d.points || d.points.length === 0) continue;
-        const p1 = d.points[0];
-        let idx1 = p1.index;
-        if (p1.time && cleanCandles[idx1]?.openTime !== p1.time) {
-          for (let ci = 0; ci < cleanCandles.length; ci++) {
-            if (cleanCandles[ci].openTime === p1.time) { idx1 = ci; break; }
-          }
-        }
-        const ptX1 = (idx1 - clampedStart) * candleW + candleW / 2;
-        const ptY1 = chartH * (1 - (p1.price - pMin) / pRange);
-
-        if (d.tool === 'HORIZONTAL') {
-          if (Math.abs(y - ptY1) <= 12) { clickedDrawingId = d.id; break; }
-        } else if (d.tool === 'HORIZONTAL_RAY') {
-          if (Math.abs(y - ptY1) <= 12 && x >= ptX1 - 5) { clickedDrawingId = d.id; break; }
-        } else if (d.tool === 'VERTICAL_LINE') {
-          if (Math.abs(x - ptX1) <= 12) { clickedDrawingId = d.id; break; }
-        } else if (d.tool === 'TEXT') {
-          if (Math.abs(x - ptX1) <= 50 && Math.abs(y - ptY1) <= 20) { clickedDrawingId = d.id; break; }
-        } else if (d.points.length >= 2) {
-          const p2 = d.points[1];
-          let idx2 = p2.index;
-          if (p2.time && cleanCandles[idx2]?.openTime !== p2.time) {
+        const pts = d.points.map(p => {
+          let idx = p.index;
+          if (p.time && cleanCandles[idx]?.openTime !== p.time) {
             for (let ci = 0; ci < cleanCandles.length; ci++) {
-              if (cleanCandles[ci].openTime === p2.time) { idx2 = ci; break; }
+              if (cleanCandles[ci].openTime === p.time) { idx = ci; break; }
             }
           }
-          const ptX2 = (idx2 - clampedStart) * candleW + candleW / 2;
-          const ptY2 = chartH * (1 - (p2.price - pMin) / pRange);
+          return {
+            x: (idx - clampedStart) * candleW + candleW / 2,
+            y: chartH * (1 - (p.price - pMin) / pRange),
+          };
+        });
 
-          if (d.tool === 'TRENDLINE' || d.tool === 'RAY' || d.tool === 'EXTENDED_LINE' || d.tool === 'CALLOUT') {
-            const dx = ptX2 - ptX1, dy = ptY2 - ptY1;
+        const p1 = pts[0];
+        if (d.points.length === 1) {
+          if (d.tool === 'HORIZONTAL') {
+            if (Math.abs(y - p1.y) <= 12) { clickedDrawingId = d.id; break; }
+          } else if (d.tool === 'HORIZONTAL_RAY') {
+            if (Math.abs(y - p1.y) <= 12 && x >= p1.x - 5) { clickedDrawingId = d.id; break; }
+          } else if (d.tool === 'VERTICAL_LINE') {
+            if (Math.abs(x - p1.x) <= 12) { clickedDrawingId = d.id; break; }
+          } else if (d.tool === 'CROSS_LINE') {
+            if (Math.abs(y - p1.y) <= 12 || Math.abs(x - p1.x) <= 12) { clickedDrawingId = d.id; break; }
+          } else {
+            // Anchor point hit test for 1-point markers (TEXT, ANCHORED_TEXT, PRICE_LABEL, ARROW_UP, ARROW_DOWN, FLAG)
+            if (Math.hypot(x - p1.x, y - p1.y) <= 22) { clickedDrawingId = d.id; break; }
+          }
+        } else if (pts.length >= 2) {
+          // Distance to any line segment between consecutive points
+          let hitSegment = false;
+          for (let si = 0; si < pts.length - 1; si++) {
+            const pa = pts[si], pb = pts[si + 1];
+            const dx = pb.x - pa.x, dy = pb.y - pa.y;
             const lenSq = dx * dx + dy * dy;
             if (lenSq > 0) {
-              let t = ((x - ptX1) * dx + (y - ptY1) * dy) / lenSq;
-              if (d.tool === 'TRENDLINE' || d.tool === 'CALLOUT') t = Math.max(0, Math.min(1, t));
-              else if (d.tool === 'RAY') t = Math.max(0, t);
-              const px = ptX1 + t * dx, py = ptY1 + t * dy;
-              if (Math.hypot(x - px, y - py) <= 14) { clickedDrawingId = d.id; break; }
+              let t = ((x - pa.x) * dx + (y - pa.y) * dy) / lenSq;
+              if (d.tool === 'RAY' && si === pts.length - 2) {
+                t = Math.max(0, t);
+              } else if (d.tool === 'EXTENDED_LINE') {
+                // infinite
+              } else {
+                t = Math.max(0, Math.min(1, t));
+              }
+              const px = pa.x + t * dx, py = pa.y + t * dy;
+              if (Math.hypot(x - px, y - py) <= 14) {
+                hitSegment = true;
+                break;
+              }
             }
-          } else if (d.tool === 'RECTANGLE' || d.tool === 'MEASURE' || d.tool === 'RISK_REWARD_LONG' || d.tool === 'RISK_REWARD_SHORT') {
-            const minX = Math.min(ptX1, ptX2), maxX = Math.max(ptX1, ptX2);
-            const minY = Math.min(ptY1, ptY2), maxY = Math.max(ptY1, ptY2);
-            if (x >= minX - 8 && x <= maxX + 8 && y >= minY - 8 && y <= maxY + 8) {
-              clickedDrawingId = d.id;
-              break;
-            }
-          } else if (d.tool === 'CIRCLE') {
-            const radius = Math.hypot(ptX2 - ptX1, ptY2 - ptY1);
-            const dist = Math.hypot(x - ptX1, y - ptY1);
-            if (Math.abs(dist - radius) <= 14 || dist <= radius) {
-              clickedDrawingId = d.id;
-              break;
-            }
-          } else if (d.tool === 'CHANNEL' || d.tool === 'FIBONACCI' || d.tool === 'FIBONACCI_EXTENSION') {
-            const minX = Math.min(ptX1, ptX2), maxX = Math.max(ptX1, ptX2);
-            const minY = Math.min(ptY1, ptY2), maxY = Math.max(ptY1, ptY2);
-            if (x >= minX - 10 && x <= maxX + 10 && y >= minY - 15 && y <= maxY + 15) {
-              clickedDrawingId = d.id;
-              break;
-            }
+          }
+          if (hitSegment) {
+            clickedDrawingId = d.id;
+            break;
+          }
+
+          // Area bounding test for box-like / polygon shapes
+          let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+          for (const ptItem of pts) {
+            if (ptItem.x < minX) minX = ptItem.x;
+            if (ptItem.x > maxX) maxX = ptItem.x;
+            if (ptItem.y < minY) minY = ptItem.y;
+            if (ptItem.y > maxY) maxY = ptItem.y;
+          }
+          const isAreaTool = [
+            'RECTANGLE', 'ROTATED_RECTANGLE', 'CIRCLE', 'ELLIPSE', 'TRIANGLE',
+            'CHANNEL', 'DISJOINT_CHANNEL', 'FIB_CHANNEL', 'GANN_BOX',
+            'RISK_REWARD_LONG', 'RISK_REWARD_SHORT', 'PRICE_RANGE', 'DATE_RANGE', 'MEASURE',
+            'XABCD_PATTERN', 'ABCD_PATTERN'
+          ].includes(d.tool);
+          if (isAreaTool && x >= minX - 10 && x <= maxX + 10 && y >= minY - 10 && y <= maxY + 10) {
+            clickedDrawingId = d.id;
+            break;
           }
         }
       }
 
       if (clickedDrawingId) {
-        if (cursorMode === 'eraser') {
+        if (cursorMode === 'eraser' && !isAllDrawingsLocked) {
           onDeleteDrawing?.(clickedDrawingId);
           onSelectDrawing?.(null);
           setQuickBarPos(null);
@@ -718,7 +869,7 @@ export function CandlestickCanvas({
         return;
       }
 
-      // 3. Otherwise clicked empty canvas: clear selection and start mouse pan drag
+      // 3. Clicked empty canvas: clear selection and start mouse pan drag
       onSelectDrawing?.(null);
       setQuickBarPos(null);
       isDraggingRef.current = true;
@@ -730,28 +881,48 @@ export function CandlestickCanvas({
     }
 
     // ── Tool Creation Handling ──
-    // 1-Point Tools: HORIZONTAL, HORIZONTAL_RAY, VERTICAL_LINE
-    if (activeDrawingTool === 'HORIZONTAL' || activeDrawingTool === 'HORIZONTAL_RAY' || activeDrawingTool === 'VERTICAL_LINE') {
-      onAddDrawing?.({
-        id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-        tool: activeDrawingTool,
-        points: [{ index: pt.index, time: pt.time, price: pt.price }],
-        color: activeDrawingTool === 'HORIZONTAL' ? '#2563EB' : activeDrawingTool === 'HORIZONTAL_RAY' ? '#0284C7' : '#9333EA',
-        lineWidth: 2,
-        completed: true,
-      });
-      onDrawingToolChange?.('NONE');
+    const reqPoints = getToolRequiredPoints(activeDrawingTool);
+
+    // 1-Point Instant Tools
+    if (reqPoints === 1) {
+      if (activeDrawingTool === 'TEXT' || activeDrawingTool === 'ANCHORED_TEXT') {
+        const text = window.prompt(activeDrawingTool === 'ANCHORED_TEXT' ? 'Enter anchored note text:' : 'Enter annotation text:', 'Key Level');
+        if (text && text.trim()) {
+          onAddDrawing?.({
+            id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+            tool: activeDrawingTool,
+            points: [{ index: pt.index, time: pt.time, price: pt.price }],
+            text: text.trim(),
+            color: '#1E293B',
+            lineWidth: 1,
+            completed: true,
+          });
+        }
+      } else {
+        onAddDrawing?.({
+          id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          tool: activeDrawingTool,
+          points: [{ index: pt.index, time: pt.time, price: pt.price }],
+          color: getDefaultToolColor(activeDrawingTool),
+          lineWidth: 2,
+          completed: true,
+        });
+      }
+      committedPointsRef.current = [];
+      setDrawingInProgress(null);
+      if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
       return;
     }
 
-    // Freehand Brush Tool
-    if (activeDrawingTool === 'BRUSH') {
+    // Freehand Brush & Highlighter
+    if (activeDrawingTool === 'BRUSH' || activeDrawingTool === 'HIGHLIGHTER') {
+      isBrushingRef.current = true;
       const newBrush: DrawingItem = {
         id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-        tool: 'BRUSH',
+        tool: activeDrawingTool,
         points: [{ index: pt.index, time: pt.time, price: pt.price }],
-        color: '#2563EB',
-        lineWidth: 2.5,
+        color: getDefaultToolColor(activeDrawingTool),
+        lineWidth: activeDrawingTool === 'HIGHLIGHTER' ? 14 : 2.5,
         completed: false,
       };
       setDrawingInProgress(newBrush);
@@ -759,86 +930,53 @@ export function CandlestickCanvas({
       return;
     }
 
-    // Text Annotation Tool
-    if (activeDrawingTool === 'TEXT') {
-      const text = window.prompt('Enter annotation text:', 'Key Level');
-      if (text && text.trim()) {
-        onAddDrawing?.({
-          id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-          tool: 'TEXT',
-          points: [{ index: pt.index, time: pt.time, price: pt.price }],
-          text: text.trim(),
-          color: '#1E293B',
-          lineWidth: 1,
-          completed: true,
-        });
-      }
-      onDrawingToolChange?.('NONE');
-      return;
-    }
-
-    // Callout with Arrow
-    if (activeDrawingTool === 'CALLOUT' && drawingInProgress) {
-      const text = window.prompt('Enter callout annotation note:', 'Key Pivot');
-      if (text && text.trim()) {
-        onAddDrawing?.({
-          ...drawingInProgress,
-          points: [drawingInProgress.points[0], { index: pt.index, time: pt.time, price: pt.price }],
-          text: text.trim(),
-          completed: true,
-        });
-      }
-      setDrawingInProgress(null);
-      onDrawingToolChange?.('NONE');
-      return;
-    }
-
-    const is3PointTool = activeDrawingTool === 'CHANNEL' || activeDrawingTool === 'FIBONACCI_EXTENSION';
-
-    if (!drawingInProgress) {
-      // First point
-      const defaultColor =
-        activeDrawingTool === 'RECTANGLE' ? '#059669' :
-        activeDrawingTool === 'RISK_REWARD_LONG' ? '#10B981' :
-        activeDrawingTool === 'RISK_REWARD_SHORT' ? '#EF4444' :
-        activeDrawingTool === 'CHANNEL' ? '#4F46E5' :
-        activeDrawingTool === 'FIBONACCI_EXTENSION' ? '#D97706' :
-        activeDrawingTool === 'MEASURE' ? '#0284C7' :
-        activeDrawingTool === 'RAY' || activeDrawingTool === 'EXTENDED_LINE' ? '#EA580C' : '#2563EB';
-
+    // Multi-Point Tools (2-point, 3-point, 4-point, 5-point, polyline)
+    if (committedPointsRef.current.length === 0) {
+      // First point clicked
+      committedPointsRef.current = [{ index: pt.index, time: pt.time, price: pt.price }];
+      const defaultColor = getDefaultToolColor(activeDrawingTool);
       setDrawingInProgress({
         id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         tool: activeDrawingTool,
-        points: [{ index: pt.index, time: pt.time, price: pt.price }],
+        points: [...committedPointsRef.current],
         color: defaultColor,
         lineWidth: 2,
         completed: false,
         riskRewardRatio: (activeDrawingTool === 'RISK_REWARD_LONG' || activeDrawingTool === 'RISK_REWARD_SHORT') ? 2.0 : undefined,
       });
     } else {
-      if (is3PointTool && drawingInProgress.points.length === 1) {
-        // Second point of 3-point tool
-        setDrawingInProgress({
-          ...drawingInProgress,
-          points: [drawingInProgress.points[0], { index: pt.index, time: pt.time, price: pt.price }],
-        });
-      } else {
-        // Final point
-        const newPoints = is3PointTool
-          ? [drawingInProgress.points[0], drawingInProgress.points[1], { index: pt.index, time: pt.time, price: pt.price }]
-          : [drawingInProgress.points[0], { index: pt.index, time: pt.time, price: pt.price }];
-
-        const finished: DrawingItem = {
-          ...drawingInProgress,
-          points: newPoints,
-          completed: true,
-        };
-        onAddDrawing?.(finished);
+      // Check if this click satisfies the required points
+      if (reqPoints > 0 && committedPointsRef.current.length + 1 >= reqPoints) {
+        // Final point!
+        const finalPoints = [...committedPointsRef.current, { index: pt.index, time: pt.time, price: pt.price }];
+        if (activeDrawingTool === 'CALLOUT') {
+          const text = window.prompt('Enter callout annotation note:', 'Key Pivot');
+          onAddDrawing?.({
+            ...drawingInProgress!,
+            points: finalPoints,
+            text: text?.trim() || 'Key Pivot',
+            completed: true,
+          });
+        } else {
+          onAddDrawing?.({
+            ...drawingInProgress!,
+            points: finalPoints,
+            completed: true,
+          });
+        }
+        committedPointsRef.current = [];
         setDrawingInProgress(null);
-        onDrawingToolChange?.('NONE');
+        if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
+      } else {
+        // Append point and wait for remaining points
+        committedPointsRef.current.push({ index: pt.index, time: pt.time, price: pt.price });
+        setDrawingInProgress(prev => prev ? ({
+          ...prev,
+          points: [...committedPointsRef.current],
+        }) : null);
       }
     }
-  }, [activeDrawingTool, cleanCandles, clampedEnd, clampedStart, drawings, drawingInProgress, getPointFromEvent, indicators, onAddDrawing, onDrawingToolChange, onSelectDrawing, scrollOffset, showVolumePanel, size]);
+  }, [activeDrawingTool, cleanCandles, clampedEnd, clampedStart, cursorMode, drawings, drawingInProgress, getPointFromEvent, indicators, isAllDrawingsHidden, isAllDrawingsLocked, isDrawingModeLocked, onDeleteDrawing, onAddDrawing, onDrawingToolChange, onSelectDrawing, priceOffset, priceScaleRatio, scrollOffset, showVolumePanel, size, zoom]);
 
   // ── Keyboard Shortcuts (Alt+Tool, Space to Live, ?, Undo, Delete) ──
   useEffect(() => {
@@ -846,10 +984,25 @@ export function CandlestickCanvas({
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
 
       if (e.key === 'Escape') {
+        committedPointsRef.current = [];
+        isBrushingRef.current = false;
         setDrawingInProgress(null);
         onDrawingToolChange?.('NONE');
         onSelectDrawing?.(null);
         setQuickBarPos(null);
+      } else if (e.key === 'Enter') {
+        if (activeDrawingTool === 'POLYLINE' && committedPointsRef.current.length >= 2) {
+          if (drawingInProgress) {
+            onAddDrawing?.({
+              ...drawingInProgress,
+              points: [...committedPointsRef.current],
+              completed: true,
+            });
+          }
+          committedPointsRef.current = [];
+          setDrawingInProgress(null);
+          if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
+        }
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedDrawingId) {
           onDeleteDrawing?.(selectedDrawingId);
@@ -874,7 +1027,7 @@ export function CandlestickCanvas({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onDrawingToolChange, onUndoDrawing, onDeleteDrawing, onSelectDrawing, selectedDrawingId, onExportSnapshot]);
+  }, [activeDrawingTool, drawingInProgress, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, onUndoDrawing, onDeleteDrawing, onSelectDrawing, selectedDrawingId, onExportSnapshot]);
 
   // Wheel zoom + scroll attached to foreground overlay canvas
   const handleWheel = useCallback((e: WheelEvent) => {

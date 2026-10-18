@@ -125,6 +125,9 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
   const [isDrawingsManagerOpen, setIsDrawingsManagerOpen] = useState(false);
   const [isMagnetActive, setIsMagnetActive] = useState(false);
+  const [isDrawingModeLocked, setIsDrawingModeLocked] = useState(false);
+  const [isAllDrawingsLocked, setIsAllDrawingsLocked] = useState(false);
+  const [isAllDrawingsHidden, setIsAllDrawingsHidden] = useState(false);
   const chartWrapperRef = useRef<HTMLDivElement>(null);
 
   // Default clean view: Volume on, but all indicators and overlays off initially
@@ -507,9 +510,11 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
       } catch {}
       return next;
     });
-    // Auto-revert back to Cursor / Pan & Crosshair mode
-    setActiveDrawingTool('NONE');
-  }, [selectedSymbol]);
+    // Auto-revert back to Cursor / Pan & Crosshair mode if not locked
+    if (!isDrawingModeLocked) {
+      setActiveDrawingTool('NONE');
+    }
+  }, [selectedSymbol, isDrawingModeLocked]);
 
   const handleUpdateDrawing = useCallback((item: DrawingItem) => {
     setDrawings(prev => {
@@ -849,6 +854,12 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           onOpenObjectsTree={() => setIsDrawingsManagerOpen(true)}
           isMagnetActive={isMagnetActive}
           onToggleMagnet={() => setIsMagnetActive(m => !m)}
+          isDrawingModeLocked={isDrawingModeLocked}
+          onToggleDrawingModeLock={() => setIsDrawingModeLocked(l => !l)}
+          isAllDrawingsLocked={isAllDrawingsLocked}
+          onToggleLockAllDrawings={() => setIsAllDrawingsLocked(l => !l)}
+          isAllDrawingsHidden={isAllDrawingsHidden}
+          onToggleHideAllDrawings={() => setIsAllDrawingsHidden(h => !h)}
           drawingsCount={drawings.length}
         />
 
@@ -916,6 +927,9 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             drawings={drawings}
             selectedDrawingId={selectedDrawingId}
             isMagnetActive={isMagnetActive}
+            isDrawingModeLocked={isDrawingModeLocked}
+            isAllDrawingsLocked={isAllDrawingsLocked}
+            isAllDrawingsHidden={isAllDrawingsHidden}
             onAddDrawing={handleAddDrawing}
             onUpdateDrawing={handleUpdateDrawing}
             onDeleteDrawing={handleDeleteDrawing}
@@ -923,6 +937,9 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             onUndoDrawing={handleUndoDrawing}
             onDrawingToolChange={setActiveDrawingTool}
             onToggleMagnet={() => setIsMagnetActive(m => !m)}
+            onToggleDrawingModeLock={() => setIsDrawingModeLocked(l => !l)}
+            onToggleLockAllDrawings={() => setIsAllDrawingsLocked(l => !l)}
+            onToggleHideAllDrawings={() => setIsAllDrawingsHidden(h => !h)}
             onExportSnapshot={handleExportSnapshot}
             className="h-full"
           />

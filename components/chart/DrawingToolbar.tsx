@@ -17,6 +17,12 @@ interface DrawingToolbarProps {
   onOpenObjectsTree?: () => void;
   isMagnetActive?: boolean;
   onToggleMagnet?: () => void;
+  isDrawingModeLocked?: boolean;
+  onToggleDrawingModeLock?: () => void;
+  isAllDrawingsLocked?: boolean;
+  onToggleLockAllDrawings?: () => void;
+  isAllDrawingsHidden?: boolean;
+  onToggleHideAllDrawings?: () => void;
   drawingsCount?: number;
   className?: string;
 }
@@ -41,22 +47,30 @@ const TOOL_GROUPS: ToolGroup[] = [
     title: 'Lines & Rays',
     defaultTool: 'TRENDLINE',
     tools: [
-      { id: 'TRENDLINE', label: 'Trendline', desc: '2 points: connect swings or trend', icon: '/' },
+      { id: 'TRENDLINE', label: 'Trendline', desc: '2 points: connect swings or trend', icon: '╱' },
       { id: 'RAY', label: 'Extended Ray', desc: 'Projects forward past 2nd point', icon: '⟶' },
+      { id: 'INFO_LINE', label: 'Info Line', desc: 'Price delta, %, bar count & angle badges', icon: 'ⓘ' },
+      { id: 'EXTENDED_LINE', label: 'Extended Line', desc: 'Projects infinitely in both directions', icon: '⟷' },
+      { id: 'TREND_ANGLE', label: 'Trend Angle', desc: '2 points: angle in degrees from horizontal', icon: '∠' },
       { id: 'HORIZONTAL', label: 'Horizontal Line', desc: 'Full-width support/resistance level', icon: '―' },
       { id: 'HORIZONTAL_RAY', label: 'Horizontal Ray', desc: 'Starts at anchor and extends right', icon: '⭢' },
-      { id: 'EXTENDED_LINE', label: 'Extended Line', desc: 'Projects infinitely in both directions', icon: '⟷' },
       { id: 'VERTICAL_LINE', label: 'Vertical Line', desc: 'Time-anchor vertical timeline bar', icon: '│' },
+      { id: 'CROSS_LINE', label: 'Cross Line', desc: 'Crosshair intersection on chart', icon: '┼' },
+      { id: 'CHANNEL', label: 'Parallel Channel', desc: '3 points: upper, lower rails & median', icon: '⫽' },
+      { id: 'DISJOINT_CHANNEL', label: 'Disjoint Channel', desc: '3 points: non-parallel channel band', icon: '⫿' },
     ],
   },
   {
     id: 'fib',
-    title: 'Fibonacci & Channels',
+    title: 'Fibonacci & Gann',
     defaultTool: 'FIBONACCI',
     tools: [
       { id: 'FIBONACCI', label: 'Fib Retracement', desc: '0.236, 0.382, 0.5, 0.618 golden pocket', icon: '≡' },
       { id: 'FIBONACCI_EXTENSION', label: 'Fib Extension', desc: '3 points: 1.0, 1.618, 2.618 targets', icon: '⤢' },
-      { id: 'CHANNEL', label: 'Parallel Channel', desc: '3 points: upper, lower rails & median', icon: '⫽' },
+      { id: 'FIB_CHANNEL', label: 'Fib Channel', desc: '3 points: Fibonacci channel rails', icon: '⫸' },
+      { id: 'FIB_TIME_ZONE', label: 'Fib Time Zone', desc: 'Vertical intervals based on Fibonacci sequence', icon: '⏳' },
+      { id: 'GANN_BOX', label: 'Gann Box', desc: '4x4 square grid with diagonal rays', icon: '⊞' },
+      { id: 'GANN_FAN', label: 'Gann Fan', desc: '1x8 to 8x1 geometric Gann angles', icon: '◬' },
     ],
   },
   {
@@ -65,8 +79,26 @@ const TOOL_GROUPS: ToolGroup[] = [
     defaultTool: 'RECTANGLE',
     tools: [
       { id: 'RECTANGLE', label: 'Support / Resistance Box', desc: '2 points: frame order blocks & zones', icon: '▭' },
+      { id: 'ROTATED_RECTANGLE', label: 'Rotated Rectangle', desc: '3 points: angled order block channel', icon: '▱' },
       { id: 'CIRCLE', label: 'Circle Marker', desc: '2 points: center point and radius', icon: '○' },
+      { id: 'ELLIPSE', label: 'Ellipse Zone', desc: '2 points: horizontal/vertical swing oval', icon: '⬭' },
+      { id: 'TRIANGLE', label: 'Triangle Pattern', desc: '3 points: triangle consolidation pattern', icon: '△' },
+      { id: 'POLYLINE', label: 'Polyline', desc: 'Multi-point connected path (dbl-click to end)', icon: '⌇' },
+      { id: 'CURVE', label: 'Curved Arc', desc: '3 points: quadratic curve/cup pattern', icon: '⌒' },
       { id: 'BRUSH', label: 'Freehand Pen', desc: 'Click and drag to sketch freeform paths', icon: '✎' },
+      { id: 'HIGHLIGHTER', label: 'Highlighter', desc: 'Wide translucent marker stroke', icon: '🖍' },
+    ],
+  },
+  {
+    id: 'patterns',
+    title: 'Harmonics & Waves',
+    defaultTool: 'HEAD_AND_SHOULDERS',
+    tools: [
+      { id: 'HEAD_AND_SHOULDERS', label: 'Head & Shoulders', desc: '5 points: LS, Head, RS & Neckline', icon: '👤' },
+      { id: 'ELLIOTT_IMPULSE', label: 'Elliott Wave 1-5', desc: '5 points: Motive impulse wave ①-⑤', icon: '①' },
+      { id: 'ELLIOTT_CORRECTION', label: 'Elliott Wave ABC', desc: '3 points: Corrective wave Ⓐ-Ⓑ-Ⓒ', icon: 'Ⓐ' },
+      { id: 'XABCD_PATTERN', label: 'Harmonic XABCD', desc: '5 points: Gartley/Bat/Butterfly harmonic', icon: '⧓' },
+      { id: 'ABCD_PATTERN', label: 'ABCD Pattern', desc: '4 points: Classic ABCD swing harmonic', icon: '⋈' },
     ],
   },
   {
@@ -76,16 +108,24 @@ const TOOL_GROUPS: ToolGroup[] = [
     tools: [
       { id: 'RISK_REWARD_LONG', label: 'Long Position Box', desc: 'Entry, stop-loss & take-profit targets', icon: '▲' },
       { id: 'RISK_REWARD_SHORT', label: 'Short Position Box', desc: 'Short entry, stop & reward projection', icon: '▼' },
-      { id: 'MEASURE', label: 'Price & Bar Measure', desc: 'Delta price, % change, and bar count', icon: '↔' },
+      { id: 'PRICE_RANGE', label: 'Price Range', desc: 'Vertical delta price and percentage badge', icon: '↕' },
+      { id: 'DATE_RANGE', label: 'Date Range', desc: 'Horizontal bar count and time span', icon: '↔' },
+      { id: 'MEASURE', label: 'Price & Bar Measure', desc: 'Delta price, %, and bar count', icon: '📏' },
+      { id: 'BARS_PATTERN', label: 'Bars Pattern', desc: 'Clone & project candle bars pattern', icon: '⑃' },
     ],
   },
   {
     id: 'annotations',
-    title: 'Text & Notes',
+    title: 'Text & Annotations',
     defaultTool: 'TEXT',
     tools: [
       { id: 'TEXT', label: 'Text Annotation', desc: 'Place customized text label on chart', icon: 'T' },
+      { id: 'ANCHORED_TEXT', label: 'Anchored Text', desc: 'Text pinned to price level and coordinates', icon: '⚓' },
       { id: 'CALLOUT', label: 'Callout Arrow', desc: '2 points: arrow tip to wick + text bubble', icon: '💬' },
+      { id: 'PRICE_LABEL', label: 'Price Label', desc: '1-click flag badge with exact price', icon: '🏷' },
+      { id: 'ARROW_UP', label: 'Bullish Arrow Up', desc: 'Green upward marker on pivot low', icon: '↑' },
+      { id: 'ARROW_DOWN', label: 'Bearish Arrow Down', desc: 'Red downward marker on pivot high', icon: '↓' },
+      { id: 'FLAG', label: 'Flag Marker', desc: 'Signal flag marker pinned to candle', icon: '🚩' },
     ],
   },
 ];
@@ -109,6 +149,12 @@ export function DrawingToolbar({
   onOpenObjectsTree,
   isMagnetActive = false,
   onToggleMagnet,
+  isDrawingModeLocked = false,
+  onToggleDrawingModeLock,
+  isAllDrawingsLocked = false,
+  onToggleLockAllDrawings,
+  isAllDrawingsHidden = false,
+  onToggleHideAllDrawings,
   drawingsCount = 0,
   className = '',
 }: DrawingToolbarProps) {
@@ -119,6 +165,7 @@ export function DrawingToolbar({
     lines: 'TRENDLINE',
     fib: 'FIBONACCI',
     shapes: 'RECTANGLE',
+    patterns: 'HEAD_AND_SHOULDERS',
     prediction: 'RISK_REWARD_LONG',
     annotations: 'TEXT',
   });
@@ -143,7 +190,7 @@ export function DrawingToolbar({
       className={`relative z-30 flex flex-col items-center bg-white dark:bg-[#0B0F19] border-r border-slate-200 dark:border-slate-800 py-2 px-1 select-none shadow-sm ${className}`}
       style={{ width: '44px' }}
     >
-      {/* ── 1. Cursor / Select Mode (Matches Image 1: Blue rounded box with cursor arrow) ── */}
+      {/* ── 1. Cursor / Select Mode (Matches TradingView Top Item) ── */}
       <div className="relative">
         <button
           type="button"
@@ -229,7 +276,7 @@ export function DrawingToolbar({
 
       <div className="w-5 h-[1px] bg-slate-200 dark:bg-slate-800 my-1" />
 
-      {/* ── 2. Tool Groups (Lines, Fib, Shapes, Positions, Text) ── */}
+      {/* ── 2. Tool Groups (Lines, Fib, Shapes, Harmonics, Positions, Text) ── */}
       <div className="flex flex-col items-center gap-1">
         {TOOL_GROUPS.map((group) => {
           const isGroupActive = group.tools.some((t) => t.id === activeDrawingTool);
@@ -273,8 +320,8 @@ export function DrawingToolbar({
 
               {/* Flyout Submenu */}
               {isMenuOpen && (
-                <div className="absolute left-full top-0 ml-1.5 w-64 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E131F] shadow-2xl py-1 z-[100] animate-in fade-in duration-75">
-                  <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                <div className="absolute left-full top-0 ml-1.5 w-72 max-h-[80vh] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E131F] shadow-2xl py-1 z-[100] animate-in fade-in duration-75">
+                  <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-[#0E131F] z-10">
                     {group.title}
                   </div>
                   {group.tools.map((tool) => (
@@ -311,7 +358,21 @@ export function DrawingToolbar({
 
       <div className="w-5 h-[1px] bg-slate-200 dark:bg-slate-800 my-1.5" />
 
-      {/* ── 3. Smart Magnet Snap Mode (Matches Image 1: Pink Horseshoe Magnet) ── */}
+      {/* ── 3. Quick Measure Ruler (TradingView Measure Tool) ── */}
+      <button
+        type="button"
+        onClick={() => onDrawingToolChange(activeDrawingTool === 'MEASURE' ? 'NONE' : 'MEASURE')}
+        title="Measure Tool (Distance, % and Bars)"
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 text-sm font-mono ${
+          activeDrawingTool === 'MEASURE'
+            ? 'bg-blue-600 text-white font-bold shadow-md'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+        }`}
+      >
+        📏
+      </button>
+
+      {/* ── 4. Smart Magnet Snap Mode ── */}
       <button
         type="button"
         onClick={() => onToggleMagnet?.()}
@@ -323,21 +384,84 @@ export function DrawingToolbar({
         }`}
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-          {/* Horseshoe Magnet Top Arc (Pink/Rose) */}
           <path
             d="M5 11V6a7 7 0 0 1 14 0v5"
             stroke="#F43F5E"
             strokeWidth="3.2"
             strokeLinecap="round"
           />
-          {/* Left Silver Pole Tip */}
           <rect x="3.4" y="11" width="3.2" height="4.5" rx="0.5" fill="#94A3B8" />
-          {/* Right Silver Pole Tip */}
           <rect x="17.4" y="11" width="3.2" height="4.5" rx="0.5" fill="#94A3B8" />
         </svg>
       </button>
 
-      {/* ── 4. Drawings Manager / Objects Tree (Matches Image 1: Stacked Layers) ── */}
+      {/* ── 5. Stay in Drawing Mode (Locks active drawing tool across consecutive draws) ── */}
+      <button
+        type="button"
+        onClick={() => onToggleDrawingModeLock?.()}
+        title={isDrawingModeLocked ? 'Stay in Drawing Mode: ON (Tool remains selected after drawing)' : 'Stay in Drawing Mode: OFF'}
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 text-xs ${
+          isDrawingModeLocked
+            ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40 shadow-xs'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+        }`}
+      >
+        <span className="font-mono font-bold leading-none">✏️</span>
+      </button>
+
+      {/* ── 6. Lock All Drawings (Padlock toggle) ── */}
+      <button
+        type="button"
+        onClick={() => onToggleLockAllDrawings?.()}
+        title={isAllDrawingsLocked ? 'Lock All Drawings: LOCKED (Drawings cannot be modified)' : 'Lock All Drawings: UNLOCKED'}
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 ${
+          isAllDrawingsLocked
+            ? 'bg-blue-600 text-white shadow-md'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+        }`}
+      >
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          {isAllDrawingsLocked ? (
+            <>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </>
+          ) : (
+            <>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+            </>
+          )}
+        </svg>
+      </button>
+
+      {/* ── 7. Hide / Show All Drawings (Eye toggle) ── */}
+      <button
+        type="button"
+        onClick={() => onToggleHideAllDrawings?.()}
+        title={isAllDrawingsHidden ? 'Show All Drawings' : 'Hide All Drawings'}
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 ${
+          isAllDrawingsHidden
+            ? 'bg-rose-500/20 text-rose-500 border border-rose-500/40 shadow-xs'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+        }`}
+      >
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          {isAllDrawingsHidden ? (
+            <>
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </>
+          ) : (
+            <>
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </>
+          )}
+        </svg>
+      </button>
+
+      {/* ── 8. Drawings Manager / Objects Tree (Stacked Layers) ── */}
       <button
         type="button"
         onClick={() => handleOpenManager?.()}
@@ -356,7 +480,7 @@ export function DrawingToolbar({
         )}
       </button>
 
-      {/* ── 5. Undo Drawing (Matches Image 1: Counter-clockwise circle arrow ↺) ── */}
+      {/* ── 9. Undo Drawing (↺) ── */}
       {onUndoDrawing && (
         <button
           type="button"
@@ -371,7 +495,7 @@ export function DrawingToolbar({
         </button>
       )}
 
-      {/* ── 6. Clear All Drawings (Trash) ── */}
+      {/* ── 10. Clear All Drawings (Trash) ── */}
       <button
         type="button"
         onClick={() => {
