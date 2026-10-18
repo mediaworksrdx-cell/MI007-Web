@@ -19,17 +19,14 @@ interface NavbarProps {
 }
 
 const PUBLIC_NAV_LINKS = [
-  { href: '/',                  label: 'Home' },
-  { href: '/terminal',          label: 'Dashboard' },
-  { href: '/chart/NIFTY',       label: 'Charts' },
-  { href: '/terminal/screener', label: 'Screeners' },
-  { href: '/about',             label: 'About' },
-  { href: '/contact',           label: 'Contact' },
+  { href: '/',        label: 'Home' },
+  { href: '/about',   label: 'About' },
+  { href: '/contact', label: 'Contact' },
 ];
 
 const TERMINAL_NAV_LINKS = [
   { href: '/terminal',          label: 'Dashboard' },
-  { href: '/chart/NIFTY',       label: 'Interactive Charts' },
+  { href: '/chart/NIFTY',       label: 'Charts' },
   { href: '/terminal/screener', label: 'Screeners' },
 ];
 
@@ -38,7 +35,11 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
   const context = useMarket();
   const { theme, setTheme, currentThemeConfig } = useAppTheme();
   const market = propMarket ?? context.market ?? 'USA';
-  const isTerminalOrDashboard = pathname.startsWith('/terminal') || pathname.startsWith('/dashboard');
+  const isTerminalOrDashboard =
+    pathname.startsWith('/terminal') ||
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/chart') ||
+    pathname.startsWith('/screener');
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -135,7 +136,11 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
         {/* ── Desktop Nav Links (High Contrast, Clear Active State) ── */}
         <nav className="hidden md:flex items-center gap-1.5">
           {(isTerminalOrDashboard ? TERMINAL_NAV_LINKS : PUBLIC_NAV_LINKS).map(({ href, label }) => {
-            const isActive = pathname === href;
+            const isActive =
+              pathname === href ||
+              (href === '/chart/NIFTY' && pathname.startsWith('/chart')) ||
+              (href === '/terminal' && (pathname === '/terminal' || pathname === '/dashboard')) ||
+              (href === '/terminal/screener' && (pathname.startsWith('/terminal/screener') || pathname.startsWith('/screener')));
             return (
               <Link
                 key={href}
@@ -393,18 +398,25 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             <MarketToggle selected={market} onChange={handleMarketChange} className="w-full justify-center mb-2" />
           )}
 
-          {(isTerminalOrDashboard ? TERMINAL_NAV_LINKS : PUBLIC_NAV_LINKS).map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMenuOpen(false)}
-              className={`block px-3.5 py-3 rounded-xl text-[16px] font-bold min-h-[44px] flex items-center transition-colors ${
-                pathname === href ? 'nav-link-active' : 'nav-link-inactive'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
+          {(isTerminalOrDashboard ? TERMINAL_NAV_LINKS : PUBLIC_NAV_LINKS).map(({ href, label }) => {
+            const isActive =
+              pathname === href ||
+              (href === '/chart/NIFTY' && pathname.startsWith('/chart')) ||
+              (href === '/terminal' && (pathname === '/terminal' || pathname === '/dashboard')) ||
+              (href === '/terminal/screener' && (pathname.startsWith('/terminal/screener') || pathname.startsWith('/screener')));
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMenuOpen(false)}
+                className={`block px-3.5 py-3 rounded-xl text-[16px] font-bold min-h-[44px] flex items-center transition-colors ${
+                  isActive ? 'nav-link-active' : 'nav-link-inactive'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
 
           {!isTerminalOrDashboard && (
             <Link
