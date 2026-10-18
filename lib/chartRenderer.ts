@@ -2108,27 +2108,68 @@ export function renderChart(
     if (!result) continue;
 
     function drawLine(vals: (number|null)[], color: string, sw: number) {
-      ctx.beginPath(); let s = false;
-      for (let i = startIdx; i < Math.min(endIdx, vals.length); i++) {
-        const v = vals[i]; if (v === null) { s = false; continue; }
-        const x = (i-startIdx)*candleW+candleW/2, y = priceToY(v);
-        if (!s) { ctx.moveTo(x,y); s=true; } else ctx.lineTo(x,y);
+      if (!vals || vals.length === 0) return;
+      ctx.beginPath();
+      let s = false;
+      let lastPoint: { x: number; y: number } | null = null;
+      const loopStart = Math.max(0, startIdx - 1);
+      const loopEnd = Math.min(vals.length, endIdx + 1);
+      for (let i = loopStart; i < loopEnd; i++) {
+        const v = vals[i];
+        if (v === null || v === undefined || typeof v !== 'number' || !Number.isFinite(v)) {
+          s = false;
+          continue;
+        }
+        const x = (i - startIdx) * candleW + candleW / 2;
+        const y = priceToY(v);
+        if (!s) { ctx.moveTo(x, y); s = true; } else { ctx.lineTo(x, y); }
+        if (i < endIdx) lastPoint = { x, y };
       }
-      ctx.strokeStyle = color; ctx.lineWidth = sw*dpr; ctx.stroke();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = sw * dpr;
+      ctx.stroke();
+
+      // Continuous edge-to-edge extension and live bead at rightmost active candle
+      if (lastPoint && endIdx >= vals.length) {
+        ctx.beginPath();
+        ctx.moveTo(lastPoint.x, lastPoint.y);
+        ctx.lineTo(Math.min(chartW, lastPoint.x + candleW / 2), lastPoint.y);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = sw * dpr;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(lastPoint.x, lastPoint.y, (sw + 1.2) * dpr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     function drawBandFill(upper: (number|null)[], lower: (number|null)[], color: string) {
+      if (!upper || !lower) return;
       const ups: {x:number;y:number}[] = [], lows: {x:number;y:number}[] = [];
-      for (let i = startIdx; i < Math.min(endIdx, Math.min(upper.length, lower.length)); i++) {
-        const u = upper[i], l = lower[i]; if (u === null || l === null) continue;
-        const x = (i-startIdx)*candleW+candleW/2;
-        ups.push({x, y: priceToY(u)}); lows.push({x, y: priceToY(l)});
+      const loopStart = Math.max(0, startIdx - 1);
+      const loopEnd = Math.min(Math.min(upper.length, lower.length), endIdx + 1);
+      for (let i = loopStart; i < loopEnd; i++) {
+        const u = upper[i], l = lower[i];
+        if (u === null || l === null || typeof u !== 'number' || typeof l !== 'number' || !Number.isFinite(u) || !Number.isFinite(l)) continue;
+        const x = (i - startIdx) * candleW + candleW / 2;
+        ups.push({ x, y: priceToY(u) });
+        lows.push({ x, y: priceToY(l) });
       }
       if (ups.length < 2) return;
-      ctx.beginPath(); ctx.moveTo(ups[0].x, ups[0].y);
+      ctx.beginPath();
+      ctx.moveTo(ups[0].x, ups[0].y);
       ups.forEach(p => ctx.lineTo(p.x, p.y));
-      for (let i = lows.length-1; i >= 0; i--) ctx.lineTo(lows[i].x, lows[i].y);
-      ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+      for (let i = lows.length - 1; i >= 0; i--) ctx.lineTo(lows[i].x, lows[i].y);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
     }
 
     switch (cfg.type) {
@@ -2146,19 +2187,51 @@ export function renderChart(
         const st = result as SupertrendResult;
         let path: {x:number;y:number}[] = [];
         let curBull: boolean|null = null;
-        for (let i = startIdx; i < Math.min(endIdx, st.values.length); i++) {
-          const v = st.values[i], d = st.directions[i]; if (v===null||d===null) continue;
-          const x = (i-startIdx)*candleW+candleW/2, y = priceToY(v);
+        let lastPoint: { x: number; y: number } | null = null;
+        const loopStart = Math.max(0, startIdx - 1);
+        const loopEnd = Math.min(st.values.length, endIdx + 1);
+        for (let i = loopStart; i < loopEnd; i++) {
+          const v = st.values[i], d = st.directions[i];
+          if (v === null || d === null || typeof v !== 'number' || !Number.isFinite(v)) continue;
+          const x = (i - startIdx) * candleW + candleW / 2;
+          const y = priceToY(v);
           if (curBull !== null && curBull !== d) {
-            ctx.beginPath(); path.forEach((p,j)=> j===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
-            ctx.strokeStyle = curBull ? BULL : BEAR; ctx.lineWidth=2*dpr; ctx.stroke();
-            path = [{x,y}];
-          } else { path.push({x,y}); }
+            ctx.beginPath();
+            path.forEach((p, j) => j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+            ctx.strokeStyle = curBull ? BULL : BEAR;
+            ctx.lineWidth = 2 * dpr;
+            ctx.stroke();
+            path = [{ x, y }];
+          } else {
+            path.push({ x, y });
+          }
           curBull = d;
+          if (i < endIdx) lastPoint = { x, y };
         }
         if (path.length > 0) {
-          ctx.beginPath(); path.forEach((p,j)=> j===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
-          ctx.strokeStyle = curBull ? BULL : BEAR; ctx.lineWidth=2*dpr; ctx.stroke();
+          ctx.beginPath();
+          path.forEach((p, j) => j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+          ctx.strokeStyle = curBull ? BULL : BEAR;
+          ctx.lineWidth = 2 * dpr;
+          ctx.stroke();
+        }
+        if (lastPoint && endIdx >= st.values.length) {
+          ctx.beginPath();
+          ctx.moveTo(lastPoint.x, lastPoint.y);
+          ctx.lineTo(Math.min(chartW, lastPoint.x + candleW / 2), lastPoint.y);
+          ctx.strokeStyle = curBull ? BULL : BEAR;
+          ctx.lineWidth = 2 * dpr;
+          ctx.stroke();
+
+          ctx.save();
+          ctx.fillStyle = curBull ? BULL : BEAR;
+          ctx.beginPath();
+          ctx.arc(lastPoint.x, lastPoint.y, 3 * dpr, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.lineWidth = 1.2 * dpr;
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.stroke();
+          ctx.restore();
         }
         break;
       }
@@ -2214,6 +2287,46 @@ export function renderChart(
     }
   }
   ctx.restore();
+
+  // Price scale tags for active overlay indicators (TradingView institutional parity)
+  if (endIdx >= candles.length && !options.skipCrosshair) {
+    for (const cfg of options.indicators) {
+      if (!cfg.enabled || !isOverlay(cfg.type)) continue;
+      const result = options.indicatorResults.get(cfg.type);
+      if (!result) continue;
+      let lastVal: number | null = null;
+      if (Array.isArray(result)) {
+        lastVal = (result as (number | null)[])[Math.min(endIdx - 1, result.length - 1)];
+      } else if (cfg.type === 'BOLLINGER_BANDS') {
+        const bb = result as BollingerResult;
+        lastVal = bb.middle[Math.min(endIdx - 1, bb.middle.length - 1)];
+      } else if (cfg.type === 'SUPERTREND') {
+        const st = result as SupertrendResult;
+        lastVal = st.values[Math.min(endIdx - 1, st.values.length - 1)];
+      } else if (cfg.type === 'ICHIMOKU') {
+        const ich = result as IchimokuResult;
+        lastVal = ich.kijunSen[Math.min(endIdx - 1, ich.kijunSen.length - 1)];
+      }
+      if (lastVal !== null && lastVal !== undefined && typeof lastVal === 'number' && Number.isFinite(lastVal) && lastVal >= pMin && lastVal <= pMax) {
+        const tagY = priceToY(lastVal);
+        const tagText = `${formatPrice(lastVal)}`;
+        ctx.save();
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+        const tw = ctx.measureText(tagText).width;
+        const bw = tw + 8 * dpr;
+        const bh = 13 * dpr;
+        const bx = chartW + 1 * dpr;
+        const by = Math.max(1, Math.min(chartH - bh, tagY - bh / 2));
+        ctx.fillStyle = cfg.color;
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tagText, bx + 4 * dpr, by + bh / 2);
+        ctx.restore();
+      }
+    }
+  }
 
   // ── LAYER 7.5: Institutional F&O Overlay (Dealer Walls: CW, PW, Gamma Flip, Max Pain) ──
   if (options.showFnoOverlay && options.fnoLevels && options.fnoLevels.enabled) {
@@ -2493,17 +2606,45 @@ export function renderChart(
     const dT = panelOffset + padding;
 
     function drawPanelLine(vals: (number|null)[], minV: number, range: number, color: string, sw=1.2) {
+      if (!vals || vals.length === 0) return;
       ctx.save();
       ctx.beginPath(); ctx.rect(0, panelOffset, chartW, pH); ctx.clip();
       ctx.beginPath(); let s = false;
-      for (let i = startIdx; i < Math.min(endIdx, vals.length); i++) {
-        const v = vals[i]; if (v === null) { s=false; continue; }
+      let lastPoint: { x: number; y: number } | null = null;
+      const loopStart = Math.max(0, startIdx - 1);
+      const loopEnd = Math.min(vals.length, endIdx + 1);
+      for (let i = loopStart; i < loopEnd; i++) {
+        const v = vals[i];
+        if (v === null || v === undefined || typeof v !== 'number' || !Number.isFinite(v)) {
+          s = false;
+          continue;
+        }
         const li = i - startIdx;
-        const x = li*candleW+candleW/2;
+        const x = li * candleW + candleW / 2;
         const y = dT + dH * (1 - (v - minV) / (range || 1));
-        if (!s) { ctx.moveTo(x,y); s=true; } else ctx.lineTo(x,y);
+        if (!s) { ctx.moveTo(x, y); s = true; } else { ctx.lineTo(x, y); }
+        if (i < endIdx) lastPoint = { x, y };
       }
-      ctx.strokeStyle = color; ctx.lineWidth = sw*dpr; ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = sw * dpr; ctx.stroke();
+
+      if (lastPoint && endIdx >= vals.length) {
+        ctx.beginPath();
+        ctx.moveTo(lastPoint.x, lastPoint.y);
+        ctx.lineTo(Math.min(chartW, lastPoint.x + candleW / 2), lastPoint.y);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = sw * dpr;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(lastPoint.x, lastPoint.y, (sw + 1.2) * dpr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.stroke();
+        ctx.restore();
+      }
       ctx.restore();
     }
 

@@ -112,6 +112,69 @@ function sanitizeCandleScale(candles: Candle[], targetPrice: number): Candle[] {
   });
 }
 
+/** Prepend seamless historical warmup candles so indicators (SMA 20/50/200, RSI, MACD, etc.) render edge-to-edge from bar 0 */
+function ensureWarmupBuffer(
+  candles: Candle[],
+  targetPrice: number,
+  timeframeMs: number,
+  minTotal: number = 320
+): Candle[] {
+  if (!candles || candles.length === 0) return candles;
+  if (candles.length >= minTotal) return candles;
+
+  const needed = minTotal - candles.length;
+  const first = candles[0];
+  const startTime = first.openTime;
+  const seedPrice = first.open > 0 ? first.open : targetPrice;
+
+  const isHighTf = timeframeMs >= 86_400_000;
+  const isMedTf = timeframeMs >= 3_600_000;
+  const basePct = isHighTf ? 0.005 : isMedTf ? 0.003 : 0.0015;
+
+  const backwardBars: Candle[] = [];
+  let price = seedPrice;
+  let waveTrend = 1;
+  let waveSteps = 4;
+
+  for (let i = 0; i < needed; i++) {
+    if (waveSteps <= 0) {
+      waveTrend = (i % 7 < 3) ? 1 : -1;
+      waveSteps = 3 + (i % 4);
+    }
+    waveSteps--;
+
+    // Controlled mean reversion towards targetPrice so historical price remains in realistic corridor
+    const reversion = ((targetPrice - price) / Math.max(1, targetPrice)) * 0.06;
+    const movePct = (basePct * waveTrend) + reversion;
+    const prevPrice = Math.max(price * 0.5, price - price * movePct);
+    const open = prevPrice;
+    const close = price;
+    const top = Math.max(open, close);
+    const bot = Math.min(open, close);
+    const bodyH = Math.abs(close - open);
+    const wick = Math.max(bodyH * 0.25, top * 0.001);
+    const high = top + wick;
+    const low = Math.max(bot - wick, bot * 0.995);
+    const volume = Math.floor((first.volume || 2000) * (0.8 + ((i % 5) * 0.08)));
+
+    const openTime = startTime - (i + 1) * timeframeMs;
+
+    backwardBars.push({
+      openTime,
+      open: Number(open.toFixed(2)),
+      high: Number(high.toFixed(2)),
+      low: Number(low.toFixed(2)),
+      close: Number(close.toFixed(2)),
+      volume,
+    });
+
+    price = prevPrice;
+  }
+
+  backwardBars.reverse();
+  return [...backwardBars, ...candles];
+}
+
 export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const instruments = INSTRUMENTS[market];
   const [selectedSymbol, setSelectedSymbol] = useState(
@@ -215,10 +278,11 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
 
         const sanitizedRawCached = sanitizeCandleScale(rawCached || [], expectedPrice);
         const cached = mergeCandleArrays([], sanitizedRawCached, tfMs);
+        const bufferedCached = ensureWarmupBuffer(cached, expectedPrice, tfMs, 320);
 
-        if (!isCancelled && cached && cached.length > 0) {
-          setCandles(cached);
-          const lastC = cached[cached.length - 1];
+        if (!isCancelled && bufferedCached && bufferedCached.length > 0) {
+          setCandles(bufferedCached);
+          const lastC = bufferedCached[bufferedCached.length - 1];
           setCurrentPrice(lastC?.close);
           setIsLoadingCandles(false);
         }
@@ -232,16 +296,17 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           if (engineCandles && engineCandles.length > 5) {
             const merged = mergeCandleArrays(cached || [], engineCandles, tfMs);
             const sanitizedMerged = sanitizeCandleScale(merged, expectedPrice);
+            const bufferedMerged = ensureWarmupBuffer(sanitizedMerged, expectedPrice, tfMs, 320);
             setCandles(prev => {
               if (prev && prev.length > 0) {
                 const prevLast = prev[prev.length - 1];
-                const mergedLast = sanitizedMerged[sanitizedMerged.length - 1];
+                const mergedLast = bufferedMerged[bufferedMerged.length - 1];
                 // If prev has an active live candle for the same bucket, preserve the live close/high/low only if on matching scale
                 if (prevLast && mergedLast && prevLast.openTime === mergedLast.openTime && prevLast.close > 0) {
                   const ratio = prevLast.close / mergedLast.close;
                   if (ratio >= 0.95 && ratio <= 1.05) {
                     const liveClose = prevLast.close;
-                    const preservedMerged = [...sanitizedMerged];
+                    const preservedMerged = [...bufferedMerged];
                     preservedMerged[preservedMerged.length - 1] = {
                       ...mergedLast,
                       close: liveClose,
@@ -252,22 +317,23 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
                   }
                 }
               }
-              return sanitizedMerged;
+              return bufferedMerged;
             });
-            const lastC = sanitizedMerged[sanitizedMerged.length - 1];
+            const lastC = bufferedMerged[bufferedMerged.length - 1];
             setCurrentPrice(prev => (prev && prev > 0 ? prev : lastC?.close));
             setIsLiveFromEngine(true);
             // Persist sanitized dataset to IndexedDB
-            saveStoredCandles(selectedSymbol, timeframe, sanitizedMerged);
+            saveStoredCandles(selectedSymbol, timeframe, bufferedMerged);
           } else if (!cached || cached.length === 0) {
             // Fallback to high-quality generator if offline or empty
-            const fallback = getMockCandles(market, selectedSymbol, timeframe, 300);
+            const fallback = getMockCandles(market, selectedSymbol, timeframe, 320);
             const sanitizedFallback = sanitizeCandleScale(fallback, expectedPrice);
             const cleanFallback = mergeCandleArrays([], sanitizedFallback, tfMs);
-            setCandles(cleanFallback);
-            setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);
+            const bufferedFallback = ensureWarmupBuffer(cleanFallback, expectedPrice, tfMs, 320);
+            setCandles(bufferedFallback);
+            setCurrentPrice(bufferedFallback[bufferedFallback.length - 1]?.close);
             setIsLiveFromEngine(false);
-            saveStoredCandles(selectedSymbol, timeframe, cleanFallback);
+            saveStoredCandles(selectedSymbol, timeframe, bufferedFallback);
           }
         }
       } catch (err) {
@@ -440,37 +506,74 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     };
   }, [editingIndicator, indicatorConfigs, customConfigs]);
 
-  // Compute indicator results
+  const quote = useMemo(() => getMockQuote(market, selectedSymbol), [market, selectedSymbol]);
+
+  // Live price and display price resolution
+  const livePriceData = getSymbolPrice(selectedSymbol);
+  const rawDisplayPrice = currentPrice ?? livePriceData?.price ?? candles[candles.length - 1]?.close ?? 0;
+  const expectedBenchmarkPrice = useMemo(() => {
+    const live = getSymbolPrice(selectedSymbol);
+    return (live && live.price > 0) ? live.price : getExpectedPrice(market, selectedSymbol);
+  }, [market, selectedSymbol, getSymbolPrice]);
+  const safeDisplayPrice = (rawDisplayPrice > 0 && Math.abs(rawDisplayPrice - expectedBenchmarkPrice) / expectedBenchmarkPrice <= 0.15)
+    ? rawDisplayPrice
+    : expectedBenchmarkPrice;
+  const displayPrice = safeDisplayPrice;
+  const displayChange = livePriceData?.change ?? quote.change;
+  const displayChangePct = livePriceData?.changePct ?? quote.changePct;
+
+  // Synchronize terminal candle with live tick price for continuous edge-to-edge tracking
+  const activeCandles = useMemo(() => {
+    if (!candles || candles.length === 0) return candles;
+    const targetClose = (displayPrice && displayPrice > 0) ? displayPrice : currentPrice;
+    if (!targetClose || targetClose <= 0) return candles;
+    const last = candles[candles.length - 1];
+    if (!last || last.close === targetClose) return candles;
+    const updated = [...candles];
+    const top = Math.max(last.open, targetClose);
+    const bot = Math.min(last.open, targetClose);
+    updated[updated.length - 1] = {
+      ...last,
+      close: targetClose,
+      high: Math.min(Math.max(last.high, top), Number((top * 1.01).toFixed(2))),
+      low: Math.max(Math.min(last.low, bot), Number((bot * 0.99).toFixed(2))),
+    };
+    return updated;
+  }, [candles, currentPrice, displayPrice]);
+
+  const lastCandle = activeCandles[activeCandles.length - 1] ?? null;
+
+  // Compute indicator results on active synchronized candles with warmup history
   const indicatorResults = useMemo(() => {
     const map = new Map<IndicatorType, unknown>();
     for (const cfg of indicatorConfigs) {
       switch (cfg.type) {
-        case 'SMA': map.set('SMA', calculateSMA(candles, cfg.period)); break;
-        case 'EMA': map.set('EMA', calculateEMA(candles, cfg.period)); break;
-        case 'RSI': map.set('RSI', calculateRSI(candles, cfg.period)); break;
-        case 'MACD': map.set('MACD', calculateMACD(candles, cfg.period, cfg.secondaryPeriod, cfg.tertiaryPeriod)); break;
-        case 'BOLLINGER_BANDS': map.set('BOLLINGER_BANDS', calculateBollingerBands(candles, cfg.period, cfg.multiplier)); break;
-        case 'VWAP': map.set('VWAP', calculateVWAP(candles)); break;
-        case 'SUPERTREND': map.set('SUPERTREND', calculateSupertrend(candles, cfg.period, cfg.multiplier)); break;
-        case 'ICHIMOKU': map.set('ICHIMOKU', calculateIchimoku(candles, cfg.period, cfg.secondaryPeriod, cfg.tertiaryPeriod)); break;
-        case 'ATR': map.set('ATR', calculateATR(candles, cfg.period)); break;
-        case 'STOCHASTIC': map.set('STOCHASTIC', calculateStochastic(candles, cfg.period, cfg.secondaryPeriod)); break;
-        case 'CVD': map.set('CVD', calculateCVD(candles)); break;
-        case 'PARABOLIC_SAR': map.set('PARABOLIC_SAR', calculateParabolicSAR(candles)); break;
-        case 'ADX': map.set('ADX', calculateADX(candles, cfg.period)); break;
-        case 'OBV': map.set('OBV', calculateOBV(candles)); break;
-        case 'CCI': map.set('CCI', calculateCCI(candles, cfg.period)); break;
-        case 'WILLIAMS_R': map.set('WILLIAMS_R', calculateWilliamsR(candles, cfg.period)); break;
-        case 'MFI': map.set('MFI', calculateMFI(candles, cfg.period)); break;
-        case 'EMA_RIBBON': map.set('EMA_RIBBON', calculateEmaRibbon(candles)); break;
-        case 'PIVOT_POINTS': map.set('PIVOT_POINTS', calculatePivotPoints(candles)); break;
-        case 'DONCHIAN': map.set('DONCHIAN', calculateDonchian(candles, cfg.period)); break;
-        case 'HMA': map.set('HMA', calculateHMA(candles, cfg.period)); break;
-        case 'CMF': map.set('CMF', calculateCMF(candles, cfg.period)); break;
+        case 'SMA': map.set('SMA', calculateSMA(activeCandles, cfg.period)); break;
+        case 'EMA': map.set('EMA', calculateEMA(activeCandles, cfg.period)); break;
+        case 'RSI': map.set('RSI', calculateRSI(activeCandles, cfg.period)); break;
+        case 'MACD': map.set('MACD', calculateMACD(activeCandles, cfg.period, cfg.secondaryPeriod, cfg.tertiaryPeriod)); break;
+        case 'BOLLINGER_BANDS': map.set('BOLLINGER_BANDS', calculateBollingerBands(activeCandles, cfg.period, cfg.multiplier)); break;
+        case 'VWAP': map.set('VWAP', calculateVWAP(activeCandles)); break;
+        case 'SUPERTREND': map.set('SUPERTREND', calculateSupertrend(activeCandles, cfg.period, cfg.multiplier)); break;
+        case 'ICHIMOKU': map.set('ICHIMOKU', calculateIchimoku(activeCandles, cfg.period, cfg.secondaryPeriod, cfg.tertiaryPeriod)); break;
+        case 'ATR': map.set('ATR', calculateATR(activeCandles, cfg.period)); break;
+        case 'STOCHASTIC': map.set('STOCHASTIC', calculateStochastic(activeCandles, cfg.period, cfg.secondaryPeriod)); break;
+        case 'CVD': map.set('CVD', calculateCVD(activeCandles)); break;
+        case 'PARABOLIC_SAR': map.set('PARABOLIC_SAR', calculateParabolicSAR(activeCandles)); break;
+        case 'ADX': map.set('ADX', calculateADX(activeCandles, cfg.period)); break;
+        case 'OBV': map.set('OBV', calculateOBV(activeCandles)); break;
+        case 'CCI': map.set('CCI', calculateCCI(activeCandles, cfg.period)); break;
+        case 'WILLIAMS_R': map.set('WILLIAMS_R', calculateWilliamsR(activeCandles, cfg.period)); break;
+        case 'MFI': map.set('MFI', calculateMFI(activeCandles, cfg.period)); break;
+        case 'EMA_RIBBON': map.set('EMA_RIBBON', calculateEmaRibbon(activeCandles)); break;
+        case 'PIVOT_POINTS': map.set('PIVOT_POINTS', calculatePivotPoints(activeCandles)); break;
+        case 'DONCHIAN': map.set('DONCHIAN', calculateDonchian(activeCandles, cfg.period)); break;
+        case 'HMA': map.set('HMA', calculateHMA(activeCandles, cfg.period)); break;
+        case 'CMF': map.set('CMF', calculateCMF(activeCandles, cfg.period)); break;
       }
     }
     return map;
-  }, [candles, indicatorConfigs]);
+  }, [activeCandles, indicatorConfigs]);
 
   const toggleIndicator = useCallback((type: IndicatorType) => {
     setActiveIndicators(prev =>
@@ -610,25 +713,6 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     setShowSmcOverlay(false);
     setShowVolumeProfile(false);
   }, []);
-
-  const lastCandle = candles[candles.length - 1] ?? null;
-  const quote = useMemo(() => getMockQuote(market, selectedSymbol), [market, selectedSymbol]);
-
-  // Live snapshot details from context
-  const livePriceData = getSymbolPrice(selectedSymbol);
-  const rawDisplayPrice = currentPrice ?? livePriceData?.price ?? lastCandle?.close ?? 0;
-  const expectedBenchmarkPrice = useMemo(() => {
-    const live = getSymbolPrice(selectedSymbol);
-    return (live && live.price > 0) ? live.price : getExpectedPrice(market, selectedSymbol);
-  }, [market, selectedSymbol, getSymbolPrice]);
-  const safeDisplayPrice = (rawDisplayPrice > 0 && Math.abs(rawDisplayPrice - expectedBenchmarkPrice) / expectedBenchmarkPrice <= 0.15)
-    ? rawDisplayPrice
-    : expectedBenchmarkPrice;
-  const displayPrice = safeDisplayPrice;
-  const displayChange = livePriceData?.change ?? quote.change;
-  const displayChangePct = livePriceData?.changePct ?? quote.changePct;
-
-
 
   const handleExportSnapshot = useCallback((mode: 'download' | 'clipboard' = 'download') => {
     if (!chartWrapperRef.current) return;
@@ -909,7 +993,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           )}
 
           <CandlestickCanvas
-            candles={candles}
+            candles={activeCandles}
             chartType={chartType}
             showVolume={showVolume}
             showVolumePanel={showVolumePanel}
