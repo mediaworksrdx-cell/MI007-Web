@@ -23,6 +23,7 @@ interface CandlestickCanvasProps {
   timeframe: string;
   className?: string;
   activeDrawingTool?: DrawingToolType;
+  cursorMode?: 'crosshair' | 'dot' | 'arrow' | 'eraser';
   drawings?: DrawingItem[];
   selectedDrawingId?: string | null;
   isMagnetActive?: boolean;
@@ -44,6 +45,7 @@ export function CandlestickCanvas({
   indicators, indicatorResults,
   currentPriceOverride, timeframe, className = '',
   activeDrawingTool = 'NONE',
+  cursorMode = 'crosshair',
   drawings = [],
   selectedDrawingId = null,
   isMagnetActive = false,
@@ -68,6 +70,7 @@ export function CandlestickCanvas({
   const [drawingInProgress, setDrawingInProgress] = useState<DrawingItem | null>(null);
   const [quickBarPos, setQuickBarPos] = useState<{ x: number; y: number } | null>(null);
   const [dpr, setDpr] = useState(1);
+  const pointerDownPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [clockTick, setClockTick] = useState(0);
 
@@ -111,6 +114,28 @@ export function CandlestickCanvas({
     return () => {
       window.removeEventListener('keydown', handleShiftDown);
       window.removeEventListener('keyup', handleShiftUp);
+    };
+  }, []);
+
+  // Global release listener so panning or drag states can never get stuck if mouse leaves window
+  useEffect(() => {
+    const handleGlobalRelease = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        setIsDragging(false);
+      }
+      adjustingRef.current = null;
+      dragScaleModeRef.current = 'none';
+    };
+    window.addEventListener('pointerup', handleGlobalRelease);
+    window.addEventListener('mouseup', handleGlobalRelease);
+    window.addEventListener('pointercancel', handleGlobalRelease);
+    window.addEventListener('blur', handleGlobalRelease);
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalRelease);
+      window.removeEventListener('mouseup', handleGlobalRelease);
+      window.removeEventListener('pointercancel', handleGlobalRelease);
+      window.removeEventListener('blur', handleGlobalRelease);
     };
   }, []);
 
@@ -321,14 +346,14 @@ export function CandlestickCanvas({
         scaleState: { priceScaleRatio, priceOffset },
       },
       { startIdx: clampedStart, endIdx: clampedEnd },
-      (crosshair && interactionMode === 'crosshair') ? { x: crosshair.x * dpr, y: crosshair.y * dpr } : null,
+      (crosshair && cursorMode !== 'arrow') ? { x: crosshair.x * dpr, y: crosshair.y * dpr } : null,
       dpr,
       magnetReticle
     );
   }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, drawingInProgress, selectedDrawingId,
-      clampedStart, clampedEnd, crosshair, interactionMode, priceScaleRatio, priceOffset, size, dpr, magnetReticle]);
+      clampedStart, clampedEnd, crosshair, cursorMode, interactionMode, priceScaleRatio, priceOffset, size, dpr, magnetReticle]);
 
   // Mouse dragging and endpoint adjustment refs
   const isDraggingRef = useRef(false);
@@ -344,6 +369,20 @@ export function CandlestickCanvas({
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    // Safety check: if no mouse buttons are pressed, clear any dragging/scaling/adjusting states
+    if (e.buttons === 0) {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        setIsDragging(false);
+      }
+      if (adjustingRef.current) {
+        adjustingRef.current = null;
+      }
+      if (dragScaleModeRef.current !== 'none') {
+        dragScaleModeRef.current = 'none';
+      }
+    }
 
     // Detect hover zone over price or time scales
     if (x >= size.w - CHART_RIGHT_MARGIN && y < size.h - CHART_BOTTOM_MARGIN) {
@@ -370,9 +409,8 @@ export function CandlestickCanvas({
       return;
     }
 
-    if (interactionMode === 'crosshair') {
-      setCrosshair({ x, y });
-    }
+    // Always update crosshair position smoothly
+    setCrosshair({ x, y });
 
     // 1. If currently adjusting an existing drawing endpoint
     if (adjustingRef.current) {
@@ -439,7 +477,7 @@ export function CandlestickCanvas({
         });
       }
     }
-  }, [activeDrawingTool, clampedEnd, clampedStart, cleanCandles.length, drawings, drawingInProgress, getPointFromEvent, interactionMode, onUpdateDrawing, size.h, size.w]);
+  }, [activeDrawingTool, clampedEnd, clampedStart, cleanCandles.length, drawings, drawingInProgress, getPointFromEvent, onUpdateDrawing, size.h, size.w]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (dragScaleModeRef.current !== 'none') {
@@ -455,21 +493,42 @@ export function CandlestickCanvas({
       setIsDragging(false);
       try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
     }
-    if (drawingInProgress && activeDrawingTool === 'BRUSH') {
-      if (drawingInProgress.points.length > 1) {
-        onAddDrawing?.({ ...drawingInProgress, completed: true });
+
+    // Handle completed drawings
+    if (drawingInProgress && activeDrawingTool !== 'NONE') {
+      if (activeDrawingTool === 'BRUSH') {
+        if (drawingInProgress.points.length > 1) {
+          onAddDrawing?.({ ...drawingInProgress, completed: true });
+        }
+        setDrawingInProgress(null);
+        onDrawingToolChange?.('NONE');
+      } else {
+        const is3PointTool = activeDrawingTool === 'CHANNEL' || activeDrawingTool === 'FIBONACCI_EXTENSION';
+        if (!is3PointTool) {
+          const dist = Math.hypot(e.clientX - pointerDownPosRef.current.x, e.clientY - pointerDownPosRef.current.y);
+          // If dragged more than 20px, finalize on mouse up
+          if (dist > 20) {
+            const pt = getPointFromEvent(e.clientX, e.clientY);
+            if (pt) {
+              const finished: DrawingItem = {
+                ...drawingInProgress,
+                points: [drawingInProgress.points[0], { index: pt.index, time: pt.time, price: pt.price }],
+                completed: true,
+              };
+              onAddDrawing?.(finished);
+              setDrawingInProgress(null);
+              onDrawingToolChange?.('NONE');
+            }
+          }
+        }
       }
-      setDrawingInProgress(null);
-      onDrawingToolChange?.('NONE');
     }
-  }, [activeDrawingTool, drawingInProgress, onAddDrawing, onDrawingToolChange]);
+  }, [activeDrawingTool, drawingInProgress, getPointFromEvent, onAddDrawing, onDrawingToolChange]);
 
   const handlePointerLeave = useCallback(() => {
-    if (!isDraggingRef.current && !adjustingRef.current && dragScaleModeRef.current === 'none') {
-      setCrosshair(null);
-      setMagnetReticle(null);
-      setHoverScaleZone('none');
-    }
+    setCrosshair(null);
+    setMagnetReticle(null);
+    setHoverScaleZone('none');
   }, []);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -491,6 +550,7 @@ export function CandlestickCanvas({
   }, [size]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
     const canvas = overlayCanvasRef.current || canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -565,6 +625,12 @@ export function CandlestickCanvas({
       }
 
       if (targetAdjust) {
+        if (cursorMode === 'eraser') {
+          onDeleteDrawing?.(targetAdjust.drawingId);
+          onSelectDrawing?.(null);
+          setQuickBarPos(null);
+          return;
+        }
         adjustingRef.current = targetAdjust;
         onSelectDrawing?.(targetAdjust.drawingId);
         setQuickBarPos({ x: e.clientX, y: e.clientY });
@@ -641,6 +707,12 @@ export function CandlestickCanvas({
       }
 
       if (clickedDrawingId) {
+        if (cursorMode === 'eraser') {
+          onDeleteDrawing?.(clickedDrawingId);
+          onSelectDrawing?.(null);
+          setQuickBarPos(null);
+          return;
+        }
         onSelectDrawing?.(clickedDrawingId);
         setQuickBarPos({ x: e.clientX, y: e.clientY });
         return;
@@ -888,11 +960,12 @@ export function CandlestickCanvas({
   const canvasCursor = useMemo(() => {
     if (hoverScaleZone === 'price') return 'cursor-ns-resize';
     if (hoverScaleZone === 'time') return 'cursor-ew-resize';
+    if (cursorMode === 'eraser') return 'cursor-not-allowed';
     if (activeDrawingTool && activeDrawingTool !== 'NONE') return 'cursor-crosshair';
     if (isDragging) return 'cursor-grabbing';
-    if (interactionMode === 'pan') return 'cursor-grab';
+    if (interactionMode === 'pan' || cursorMode === 'arrow') return 'cursor-default';
     return 'cursor-crosshair';
-  }, [activeDrawingTool, hoverScaleZone, isDragging, interactionMode]);
+  }, [activeDrawingTool, cursorMode, hoverScaleZone, isDragging, interactionMode]);
 
   return (
     <div ref={containerRef} className={`relative w-full h-full overflow-hidden ${className}`}>

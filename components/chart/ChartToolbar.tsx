@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Timeframe, IndicatorType, INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES } from '@/lib/types';
 import type { ChartType } from '@/lib/types';
-import { DrawingToolType } from '@/lib/drawingTypes';
 import { ChartTemplate } from '@/lib/chartTemplates';
 
 const TIMEFRAMES: { value: Timeframe; label: string }[] = [
@@ -26,26 +25,6 @@ const CHART_TYPES: { value: ChartType; label: string; icon: string }[] = [
   { value: 'HEIKIN_ASHI',   label: 'Heikin-Ashi', icon: 'HA' },
 ];
 
-const DRAWING_TOOLS: { value: DrawingToolType; label: string; shortLabel: string; icon: string }[] = [
-  { value: 'NONE',                label: 'Cursor / Pan Mode', shortLabel: 'Draw Tools', icon: '↖' },
-  { value: 'TRENDLINE',           label: 'Trendline', shortLabel: 'Trendline', icon: '╱' },
-  { value: 'RAY',                 label: 'Extended Ray', shortLabel: 'Ray', icon: '⟶' },
-  { value: 'HORIZONTAL',          label: 'Horizontal Line', shortLabel: 'Horizontal', icon: '―' },
-  { value: 'HORIZONTAL_RAY',      label: 'Horizontal Ray', shortLabel: 'H-Ray', icon: '⭢' },
-  { value: 'EXTENDED_LINE',       label: 'Extended Line', shortLabel: 'Ext Line', icon: '⟷' },
-  { value: 'VERTICAL_LINE',       label: 'Vertical Line', shortLabel: 'Vertical', icon: '│' },
-  { value: 'CHANNEL',             label: 'Parallel Channel', shortLabel: 'Channel', icon: '⫽' },
-  { value: 'RECTANGLE',           label: 'Support / Resistance Box', shortLabel: 'Rectangle', icon: '▭' },
-  { value: 'CIRCLE',              label: 'Circle Marker', shortLabel: 'Circle', icon: '○' },
-  { value: 'FIBONACCI',           label: 'Fibonacci Retracement', shortLabel: 'Fibonacci', icon: '≡' },
-  { value: 'FIBONACCI_EXTENSION', label: 'Fib Extension Targets', shortLabel: 'Fib Ext', icon: '⤢' },
-  { value: 'RISK_REWARD_LONG',    label: 'Long Position Box', shortLabel: 'Long Box', icon: '▲' },
-  { value: 'RISK_REWARD_SHORT',   label: 'Short Position Box', shortLabel: 'Short Box', icon: '▼' },
-  { value: 'MEASURE',             label: 'Price & Bar Range', shortLabel: 'Measure', icon: '↔' },
-  { value: 'TEXT',                label: 'Text Annotation', shortLabel: 'Text', icon: 'T' },
-  { value: 'CALLOUT',             label: 'Callout Arrow', shortLabel: 'Callout', icon: '💬' },
-  { value: 'BRUSH',               label: 'Freehand Pen', shortLabel: 'Pen', icon: '✎' },
-];
 
 const ALL_INDICATOR_TYPES: IndicatorType[] = [
   ...OVERLAY_TYPES,
@@ -55,7 +34,6 @@ const ALL_INDICATOR_TYPES: IndicatorType[] = [
 interface ChartToolbarProps {
   timeframe: Timeframe;
   chartType: ChartType;
-  activeDrawingTool: DrawingToolType;
   showVolume: boolean;
   showVolumePanel: boolean;
   showSmcOverlay: boolean;
@@ -72,9 +50,6 @@ interface ChartToolbarProps {
   saveStatus?: 'idle' | 'saved';
   onTimeframeChange: (tf: Timeframe) => void;
   onChartTypeChange: (type: ChartType) => void;
-  onDrawingToolChange: (tool: DrawingToolType) => void;
-  onClearDrawings: () => void;
-  onUndoDrawing?: () => void;
   onToggleVolume: () => void;
   onToggleVolumePanel: () => void;
   onToggleSmcOverlay: () => void;
@@ -93,7 +68,6 @@ interface ChartToolbarProps {
 export function ChartToolbar({
   timeframe,
   chartType,
-  activeDrawingTool,
   showVolume,
   showVolumePanel: _showVolumePanel,
   showSmcOverlay,
@@ -110,9 +84,6 @@ export function ChartToolbar({
   saveStatus = 'idle',
   onTimeframeChange,
   onChartTypeChange,
-  onDrawingToolChange,
-  onClearDrawings,
-  onUndoDrawing,
   onToggleVolume,
   onToggleVolumePanel: _onToggleVolumePanel,
   onToggleSmcOverlay,
@@ -124,7 +95,7 @@ export function ChartToolbar({
   onExportSnapshot,
   onSelectTemplate,
 }: ChartToolbarProps) {
-  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'DRAWING' | 'TEMPLATES' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   // Close menus on outside click or Escape key
@@ -148,7 +119,6 @@ export function ChartToolbar({
   }, []);
 
   const currentChartType = CHART_TYPES.find((c) => c.value === chartType) || CHART_TYPES[0];
-  const currentDrawing = DRAWING_TOOLS.find((d) => d.value === activeDrawingTool) || DRAWING_TOOLS[0];
   const activeTemplate = templates.find((t) => t.id === activeTemplateId) || templates[0];
   const isIndicatorActive = (t: IndicatorType) => activeIndicators.includes(t);
 
@@ -339,98 +309,8 @@ export function ChartToolbar({
         </div>
 
         <div className="h-4 w-px bg-slate-800 mx-0.5" />
-
-        {/* 4. Drawing Tools Simple Dropdown Menu */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setOpenMenu(openMenu === 'DRAWING' ? null : 'DRAWING')}
-            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
-              activeDrawingTool !== 'NONE'
-                ? 'border-indigo-500 bg-indigo-500/25 text-indigo-300 font-bold'
-                : openMenu === 'DRAWING'
-                ? 'border-indigo-500/80 bg-slate-900 text-slate-100'
-                : 'border-slate-700 hover:border-indigo-500/60 bg-slate-900 text-slate-200'
-            }`}
-          >
-            <span className="font-mono text-sm leading-none">{activeDrawingTool !== 'NONE' ? currentDrawing.icon : '✏️'}</span>
-            <span className="font-bold">{activeDrawingTool !== 'NONE' ? currentDrawing.shortLabel : 'Draw Tools'}</span>
-            <span className="text-[9px] text-slate-400">▼</span>
-          </button>
-
-          {openMenu === 'DRAWING' && (
-            <div className="absolute top-full left-0 mt-1 w-64 rounded-xl border border-slate-700 bg-[#0B0F19] shadow-2xl py-1 z-[100] max-h-96 overflow-y-auto animate-in fade-in duration-75">
-              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
-                Drawing Tools
-              </div>
-
-              <div className="py-1">
-                {DRAWING_TOOLS.map((dt) => {
-                  const isSelected = activeDrawingTool === dt.value;
-                  return (
-                    <button
-                      key={dt.value}
-                      type="button"
-                      onClick={() => {
-                        onDrawingToolChange(dt.value);
-                        setOpenMenu(null);
-                      }}
-                      className={`flex items-center gap-2.5 w-full px-3 py-1.5 text-left text-xs font-medium transition-colors cursor-pointer ${
-                        isSelected
-                          ? 'bg-indigo-500/20 text-indigo-300 font-bold'
-                          : 'text-slate-200 hover:bg-slate-800'
-                      }`}
-                    >
-                      <span className="font-mono text-sm w-4 text-center">{dt.icon}</span>
-                      <span className="flex-1">{dt.label}</span>
-                      {isSelected && <span className="text-indigo-400 text-xs">✓</span>}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="border-t border-slate-800 p-1 bg-slate-900/60 space-y-1">
-                {onUndoDrawing && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onUndoDrawing();
-                      setOpenMenu(null);
-                    }}
-                    className="flex items-center gap-2 w-full px-2.5 py-1 text-left text-xs text-slate-300 hover:bg-slate-800 rounded transition-colors"
-                  >
-                    <span>↩ Undo Last Drawing (Ctrl+Z)</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClearDrawings();
-                    setOpenMenu(null);
-                  }}
-                  className="flex items-center gap-2 w-full px-2.5 py-1 text-left text-xs font-bold text-rose-400 hover:bg-rose-500/15 rounded transition-colors"
-                >
-                  <span>🗑 Clear All Drawings</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {activeDrawingTool !== 'NONE' && (
-          <button
-            type="button"
-            onClick={() => onDrawingToolChange('NONE')}
-            title="Exit drawing tool back to Cursor mode (Esc)"
-            className="h-7 px-2 rounded-lg border border-slate-600 hover:border-slate-400 bg-slate-800 text-slate-300 hover:text-white text-xs font-bold cursor-pointer transition-colors"
-          >
-            Esc
-          </button>
-        )}
-
-        <div className="h-4 w-px bg-slate-800 mx-0.5" />
-
-        {/* 5. Optional Clean Overlays (SMC, VOL, VPVR) */}
+        
+        {/* 4. Optional Clean Overlays (SMC, VOL, VPVR) */}
         <div className="flex items-center gap-1">
           <button
             type="button"

@@ -120,6 +120,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>('1H');
   const [chartType, setChartType] = useState<ChartType>('CANDLESTICK');
   const [activeDrawingTool, setActiveDrawingTool] = useState<DrawingToolType>('NONE');
+  const [cursorMode, setCursorMode] = useState<'crosshair' | 'dot' | 'arrow' | 'eraser'>('crosshair');
   const [drawings, setDrawings] = useState<DrawingItem[]>([]);
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
   const [isDrawingsManagerOpen, setIsDrawingsManagerOpen] = useState(false);
@@ -184,87 +185,94 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     setIsLoadingCandles(true);
 
     async function loadCandles() {
-      const live = getSymbolPrice(selectedSymbol);
-      const expectedPrice = (live && live.price > 0) ? live.price : getExpectedPrice(market, selectedSymbol);
+      try {
+        const live = getSymbolPrice(selectedSymbol);
+        const expectedPrice = (live && live.price > 0) ? live.price : getExpectedPrice(market, selectedSymbol);
 
-      const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
+        const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
 
-      // 1. Instant load from IndexedDB cache with auto-purge of corrupted scale data
-      let rawCached = await loadStoredCandles(selectedSymbol, timeframe);
-      if (rawCached && rawCached.length > 0) {
-        const sortedCloses = rawCached.filter(c => c && c.close > 0).map(c => c.close).sort((a, b) => a - b);
-        const cachedMed = sortedCloses[Math.floor(sortedCloses.length / 2)] || 0;
-        const hasSpike = rawCached.some(c => (c.high - c.low) / Math.max(1, c.low) > 0.08);
-        const hasDeformedWick = rawCached.some(c => {
-          const body = Math.abs(c.close - c.open);
-          const wick = c.high - c.low;
-          return body > 0 && (wick / body > 20) && (wick > c.close * 0.008);
-        });
-        const isScaleDislocated = cachedMed > 0 && (Math.abs(cachedMed - expectedPrice) / expectedPrice > 0.12);
-        if (hasSpike || hasDeformedWick || isScaleDislocated) {
-          console.warn(`[ChartContainer] Auto-purging corrupted cache for ${selectedSymbol} (cachedMed: ${cachedMed}, expected: ${expectedPrice})`);
-          await purgeStoredCandles(selectedSymbol, timeframe);
-          rawCached = null;
+        // 1. Instant load from IndexedDB cache with auto-purge of corrupted scale data
+        let rawCached = await loadStoredCandles(selectedSymbol, timeframe);
+        if (rawCached && rawCached.length > 0) {
+          const sortedCloses = rawCached.filter(c => c && c.close > 0).map(c => c.close).sort((a, b) => a - b);
+          const cachedMed = sortedCloses[Math.floor(sortedCloses.length / 2)] || 0;
+          const hasSpike = rawCached.some(c => (c.high - c.low) / Math.max(1, c.low) > 0.08);
+          const hasDeformedWick = rawCached.some(c => {
+            const body = Math.abs(c.close - c.open);
+            const wick = c.high - c.low;
+            return body > 0 && (wick / body > 20) && (wick > c.close * 0.008);
+          });
+          const isScaleDislocated = cachedMed > 0 && (Math.abs(cachedMed - expectedPrice) / expectedPrice > 0.12);
+          if (hasSpike || hasDeformedWick || isScaleDislocated) {
+            console.warn(`[ChartContainer] Auto-purging corrupted cache for ${selectedSymbol} (cachedMed: ${cachedMed}, expected: ${expectedPrice})`);
+            await purgeStoredCandles(selectedSymbol, timeframe);
+            rawCached = null;
+          }
         }
-      }
 
-      const sanitizedRawCached = sanitizeCandleScale(rawCached || [], expectedPrice);
-      const cached = mergeCandleArrays([], sanitizedRawCached, tfMs);
+        const sanitizedRawCached = sanitizeCandleScale(rawCached || [], expectedPrice);
+        const cached = mergeCandleArrays([], sanitizedRawCached, tfMs);
 
-      if (!isCancelled && cached && cached.length > 0) {
-        setCandles(cached);
-        const lastC = cached[cached.length - 1];
-        setCurrentPrice(lastC?.close);
-        setIsLoadingCandles(false);
-      }
+        if (!isCancelled && cached && cached.length > 0) {
+          setCandles(cached);
+          const lastC = cached[cached.length - 1];
+          setCurrentPrice(lastC?.close);
+          setIsLoadingCandles(false);
+        }
 
-      // 2. Fetch latest candles from Trade Engine API with scale sanitization
-      const rawEngine = await fetchCandles(selectedSymbol, timeframe);
-      const sanitizedRawEngine = sanitizeCandleScale(rawEngine || [], expectedPrice);
-      const engineCandles = mergeCandleArrays([], sanitizedRawEngine, tfMs);
+        // 2. Fetch latest candles from Trade Engine API with scale sanitization
+        const rawEngine = await fetchCandles(selectedSymbol, timeframe);
+        const sanitizedRawEngine = sanitizeCandleScale(rawEngine || [], expectedPrice);
+        const engineCandles = mergeCandleArrays([], sanitizedRawEngine, tfMs);
 
-      if (!isCancelled) {
-        if (engineCandles && engineCandles.length > 5) {
-          const merged = mergeCandleArrays(cached || [], engineCandles, tfMs);
-          const sanitizedMerged = sanitizeCandleScale(merged, expectedPrice);
-          setCandles(prev => {
-            if (prev && prev.length > 0) {
-              const prevLast = prev[prev.length - 1];
-              const mergedLast = sanitizedMerged[sanitizedMerged.length - 1];
-              // If prev has an active live candle for the same bucket, preserve the live close/high/low only if on matching scale
-              if (prevLast && mergedLast && prevLast.openTime === mergedLast.openTime && prevLast.close > 0) {
-                const ratio = prevLast.close / mergedLast.close;
-                if (ratio >= 0.95 && ratio <= 1.05) {
-                  const liveClose = prevLast.close;
-                  const preservedMerged = [...sanitizedMerged];
-                  preservedMerged[preservedMerged.length - 1] = {
-                    ...mergedLast,
-                    close: liveClose,
-                    high: Math.min(Math.max(mergedLast.high, liveClose), Number((liveClose * 1.02).toFixed(2))),
-                    low: Math.max(Math.min(mergedLast.low, liveClose), Number((liveClose * 0.98).toFixed(2))),
-                  };
-                  return preservedMerged;
+        if (!isCancelled) {
+          if (engineCandles && engineCandles.length > 5) {
+            const merged = mergeCandleArrays(cached || [], engineCandles, tfMs);
+            const sanitizedMerged = sanitizeCandleScale(merged, expectedPrice);
+            setCandles(prev => {
+              if (prev && prev.length > 0) {
+                const prevLast = prev[prev.length - 1];
+                const mergedLast = sanitizedMerged[sanitizedMerged.length - 1];
+                // If prev has an active live candle for the same bucket, preserve the live close/high/low only if on matching scale
+                if (prevLast && mergedLast && prevLast.openTime === mergedLast.openTime && prevLast.close > 0) {
+                  const ratio = prevLast.close / mergedLast.close;
+                  if (ratio >= 0.95 && ratio <= 1.05) {
+                    const liveClose = prevLast.close;
+                    const preservedMerged = [...sanitizedMerged];
+                    preservedMerged[preservedMerged.length - 1] = {
+                      ...mergedLast,
+                      close: liveClose,
+                      high: Math.min(Math.max(mergedLast.high, liveClose), Number((liveClose * 1.02).toFixed(2))),
+                      low: Math.max(Math.min(mergedLast.low, liveClose), Number((liveClose * 0.98).toFixed(2))),
+                    };
+                    return preservedMerged;
+                  }
                 }
               }
-            }
-            return sanitizedMerged;
-          });
-          const lastC = sanitizedMerged[sanitizedMerged.length - 1];
-          setCurrentPrice(prev => (prev && prev > 0 ? prev : lastC?.close));
-          setIsLiveFromEngine(true);
-          // Persist sanitized dataset to IndexedDB
-          saveStoredCandles(selectedSymbol, timeframe, sanitizedMerged);
-        } else if (!cached || cached.length === 0) {
-          // Fallback to high-quality generator if offline or empty
-          const fallback = getMockCandles(market, selectedSymbol, timeframe, 300);
-          const sanitizedFallback = sanitizeCandleScale(fallback, expectedPrice);
-          const cleanFallback = mergeCandleArrays([], sanitizedFallback, tfMs);
-          setCandles(cleanFallback);
-          setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);
-          setIsLiveFromEngine(false);
-          saveStoredCandles(selectedSymbol, timeframe, cleanFallback);
+              return sanitizedMerged;
+            });
+            const lastC = sanitizedMerged[sanitizedMerged.length - 1];
+            setCurrentPrice(prev => (prev && prev > 0 ? prev : lastC?.close));
+            setIsLiveFromEngine(true);
+            // Persist sanitized dataset to IndexedDB
+            saveStoredCandles(selectedSymbol, timeframe, sanitizedMerged);
+          } else if (!cached || cached.length === 0) {
+            // Fallback to high-quality generator if offline or empty
+            const fallback = getMockCandles(market, selectedSymbol, timeframe, 300);
+            const sanitizedFallback = sanitizeCandleScale(fallback, expectedPrice);
+            const cleanFallback = mergeCandleArrays([], sanitizedFallback, tfMs);
+            setCandles(cleanFallback);
+            setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);
+            setIsLiveFromEngine(false);
+            saveStoredCandles(selectedSymbol, timeframe, cleanFallback);
+          }
         }
-        setIsLoadingCandles(false);
+      } catch (err) {
+        console.error('[ChartContainer] loadCandles error:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingCandles(false);
+        }
       }
     }
 
@@ -788,7 +796,6 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
       <ChartToolbar
         timeframe={timeframe}
         chartType={chartType}
-        activeDrawingTool={activeDrawingTool}
         showVolume={showVolume}
         showVolumePanel={showVolumePanel}
         showSmcOverlay={showSmcOverlay}
@@ -805,9 +812,6 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         saveStatus={saveStatus}
         onTimeframeChange={setTimeframe}
         onChartTypeChange={setChartType}
-        onDrawingToolChange={setActiveDrawingTool}
-        onClearDrawings={handleClearDrawings}
-        onUndoDrawing={handleUndoDrawing}
         onToggleVolume={() => setShowVolume(v => !v)}
         onToggleVolumePanel={() => setShowVolumePanel(v => !v)}
         onToggleSmcOverlay={() => setShowSmcOverlay(v => !v)}
@@ -837,7 +841,9 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         {/* Left Vertical Institutional Drawing Toolbar */}
         <DrawingToolbar
           activeDrawingTool={activeDrawingTool}
+          cursorMode={cursorMode}
           onDrawingToolChange={setActiveDrawingTool}
+          onCursorModeChange={setCursorMode}
           onClearDrawings={handleClearDrawings}
           onUndoDrawing={handleUndoDrawing}
           onOpenObjectsTree={() => setIsDrawingsManagerOpen(true)}
@@ -883,7 +889,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           )}
 
           {isLoadingCandles && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-xs">
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-xs pointer-events-none">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-[12px] mono font-bold shadow-md">
                 <span className="w-3 h-3 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin" />
                 <span>STREAMING FROM TRADE ENGINE...</span>
@@ -906,6 +912,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             currentPriceOverride={displayPrice}
             timeframe={timeframe}
             activeDrawingTool={activeDrawingTool}
+            cursorMode={cursorMode}
             drawings={drawings}
             selectedDrawingId={selectedDrawingId}
             isMagnetActive={isMagnetActive}
