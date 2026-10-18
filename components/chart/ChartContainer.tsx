@@ -30,7 +30,7 @@ import { ChartToolbar } from './ChartToolbar';
 import { CandlestickCanvas } from './CandlestickCanvas';
 import { OHLCVHeader } from './OHLCVHeader';
 import { IndicatorSettingsModal } from './IndicatorSettingsModal';
-import { DrawingToolbar } from './DrawingToolbar';
+import { DrawingToolbar, type CursorMode } from './DrawingToolbar';
 import { DrawingsManagerModal } from './DrawingsManagerModal';
 
 interface ChartContainerProps {
@@ -183,7 +183,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>('1H');
   const [chartType, setChartType] = useState<ChartType>('CANDLESTICK');
   const [activeDrawingTool, setActiveDrawingTool] = useState<DrawingToolType>('NONE');
-  const [cursorMode, setCursorMode] = useState<'crosshair' | 'dot' | 'arrow' | 'eraser'>('crosshair');
+  const [cursorMode, setCursorMode] = useState<CursorMode>('crosshair');
   const [drawings, setDrawings] = useState<DrawingItem[]>([]);
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
   const [isDrawingsManagerOpen, setIsDrawingsManagerOpen] = useState(false);

@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { DrawingToolType } from '@/lib/drawingTypes';
 
-export type CursorMode = 'crosshair' | 'dot' | 'arrow' | 'eraser';
+export type CursorMode = 'crosshair' | 'pan' | 'dot' | 'arrow' | 'eraser';
 
 interface DrawingToolbarProps {
   activeDrawingTool: DrawingToolType;
@@ -132,6 +132,7 @@ const TOOL_GROUPS: ToolGroup[] = [
 
 const CURSOR_OPTIONS: { id: CursorMode; label: string; desc: string; icon: string }[] = [
   { id: 'crosshair', label: 'Crosshair', desc: 'Precision coordinates with price & time badges', icon: '✛' },
+  { id: 'pan', label: 'Pan / Hand', desc: 'Drag chart freely to scroll history & prices', icon: '✋' },
   { id: 'dot', label: 'Dot', desc: 'Minimalist point reticle with coordinates', icon: '•' },
   { id: 'arrow', label: 'Arrow', desc: 'Standard mouse pointer for clean chart inspection', icon: '↖' },
   { id: 'eraser', label: 'Eraser', desc: 'Click any drawing on the chart to delete it', icon: '⌫' },
@@ -190,41 +191,43 @@ export function DrawingToolbar({
       className={`relative z-30 flex flex-col items-center bg-white dark:bg-[#0B0F19] border-r border-slate-200 dark:border-slate-800 py-2 px-1 select-none shadow-sm ${className}`}
       style={{ width: '44px' }}
     >
-      {/* ── 1. Cursor / Select Mode (Matches TradingView Top Item) ── */}
+      {/* ── 1. Crosshair Mode (Matches TradingView Top Item) ── */}
       <div className="relative">
         <button
           type="button"
           onClick={() => {
             onDrawingToolChange('NONE');
+            onCursorModeChange?.('crosshair');
             if (openGroupId === 'cursor') setOpenGroupId(null);
           }}
           onContextMenu={(e) => {
             e.preventDefault();
             setOpenGroupId(openGroupId === 'cursor' ? null : 'cursor');
           }}
-          title={`Cursor Tool (${cursorMode.toUpperCase()}) - Click to inspect or pan, right-click for options`}
+          title="Crosshair Tool (Inspect prices & time coordinates) - Right-click or click arrow for options"
+          aria-label="Crosshair tool"
           className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 relative ${
-            isCursorActive
+            isCursorActive && cursorMode !== 'pan'
               ? 'bg-blue-600 text-white shadow-md font-bold'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          {cursorMode === 'crosshair' && (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
-              <path d="M13 13l6 6" />
-            </svg>
-          )}
-          {cursorMode === 'arrow' && (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
-            </svg>
-          )}
-          {cursorMode === 'dot' && (
+          {cursorMode === 'dot' ? (
             <span className="w-2.5 h-2.5 rounded-full bg-current" />
-          )}
-          {cursorMode === 'eraser' && (
+          ) : cursorMode === 'arrow' ? (
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+            </svg>
+          ) : cursorMode === 'eraser' ? (
             <span className="text-xs font-mono font-bold">⌫</span>
+          ) : (
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="3" x2="12" y2="7" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+              <line x1="3" y1="12" x2="7" y2="12" />
+              <line x1="17" y1="12" x2="21" y2="12" />
+            </svg>
           )}
 
           <span
@@ -273,6 +276,30 @@ export function DrawingToolbar({
           </div>
         )}
       </div>
+
+      {/* ── 2. Pan / Hand Mode Tool ── */}
+      <button
+        type="button"
+        onClick={() => {
+          onDrawingToolChange('NONE');
+          onCursorModeChange?.('pan');
+          setOpenGroupId(null);
+        }}
+        title="Pan Tool (Hand ✋) - Drag chart freely to scroll history"
+        aria-label="Pan tool"
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 ${
+          isCursorActive && cursorMode === 'pan'
+            ? 'bg-blue-600 text-white shadow-md font-bold'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+        }`}
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5" />
+          <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+          <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+          <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+        </svg>
+      </button>
 
       <div className="w-5 h-[1px] bg-slate-200 dark:bg-slate-800 my-1" />
 

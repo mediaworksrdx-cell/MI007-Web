@@ -786,9 +786,11 @@ export function renderChart(
   if (visCnt <= 0 || candles.length === 0) return;
 
   const candleW = chartW / visCnt;
+  const safeStart = Math.max(0, startIdx);
+  const safeEnd = Math.min(endIdx, candles.length);
 
   // Price range with 5% padding & rogue spike protection
-  const visSlice = candles.slice(startIdx, Math.min(endIdx, candles.length)).filter(c => c && c.close > 0);
+  const visSlice = candles.slice(safeStart, safeEnd).filter(c => c && c.close > 0);
   const closes = visSlice.map(c => c.close).sort((a, b) => a - b);
   const medClose = closes.length > 0 ? closes[Math.floor(closes.length / 2)] : 1000;
   const anchorPrice = (options.currentPriceOverride && options.currentPriceOverride > 0)
@@ -798,7 +800,7 @@ export function renderChart(
   const maxValidBound = anchorPrice * 1.15;
 
   let pMin = Infinity, pMax = -Infinity;
-  for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
+  for (let i = safeStart; i < safeEnd; i++) {
     const c = candles[i];
     const safeLow = Math.max(minValidBound, Math.min(maxValidBound, (c.low >= minValidBound && c.low <= maxValidBound) ? c.low : c.close));
     const safeHigh = Math.min(maxValidBound, Math.max(minValidBound, (c.high >= minValidBound && c.high <= maxValidBound) ? c.high : c.close));
@@ -866,7 +868,7 @@ export function renderChart(
     const li = i - startIdx;
     const x = li * candleW + candleW / 2;
     ctx.strokeStyle = '#F1F5F9'; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, chartH); ctx.stroke();
-    if (i < candles.length) {
+    if (i >= 0 && i < candles.length) {
       const ts = candles[i].openTime;
       const d = new Date(ts);
       const curDay = d.getDate();
@@ -891,7 +893,7 @@ export function renderChart(
 
   // ── LAYER 2: Volume Profile (VPVR) ────────────────────────────────────
   if (options.showVolumeProfile) {
-    const visCandles = candles.slice(startIdx, Math.min(endIdx, candles.length));
+    const visCandles = candles.slice(safeStart, safeEnd);
     const vpData = calculateVolumeProfile(visCandles, pMin, pMax, 40);
     if (vpData.buckets.length > 0 && vpData.maxBucketVolume > 0) {
       const maxBarW = chartW * 0.22;
@@ -1072,9 +1074,9 @@ export function renderChart(
     const volH = chartH * 0.15;
     const volBodyW = candleW * 0.7;
     let maxV = 0;
-    for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) maxV = Math.max(maxV, candles[i].volume);
+    for (let i = safeStart; i < safeEnd; i++) maxV = Math.max(maxV, candles[i].volume);
     if (maxV > 0) {
-      for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
+      for (let i = safeStart; i < safeEnd; i++) {
         const li = i - startIdx;
         const x = li * candleW + (candleW - volBodyW) / 2;
         const c = candles[i];
@@ -1097,14 +1099,14 @@ export function renderChart(
 
   if (options.chartType === 'LINE') {
     ctx.beginPath(); let started = false;
-    for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
+    for (let i = safeStart; i < safeEnd; i++) {
       const x = (i-startIdx)*candleW + candleW/2, y = priceToY(candles[i].close);
       if (!started) { ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
     }
     ctx.strokeStyle = LINE_COLOR; ctx.lineWidth = 1.5*dpr; ctx.stroke();
   } else if (options.chartType === 'AREA') {
     const pts: {x:number;y:number}[] = [];
-    for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
+    for (let i = safeStart; i < safeEnd; i++) {
       pts.push({ x: (i-startIdx)*candleW+candleW/2, y: priceToY(candles[i].close) });
     }
     if (pts.length > 1) {
@@ -1123,7 +1125,7 @@ export function renderChart(
     const bodyW = Math.max(candleW * 0.72, 3 * dpr);
     const wickW = Math.max(1 * dpr, 1);
     const isHollow = options.chartType === 'HOLLOW_CANDLE';
-    for (let i = startIdx; i < Math.min(endIdx, drawCandles.length); i++) {
+    for (let i = safeStart; i < Math.min(safeEnd, drawCandles.length); i++) {
       const li = i - startIdx;
       const c = drawCandles[i];
       const isLastBar = i === drawCandles.length - 1;
@@ -2247,7 +2249,7 @@ export function renderChart(
       }
       case 'PARABOLIC_SAR': {
         const sarVals = result as (number|null)[];
-        for (let i = startIdx; i < Math.min(endIdx, sarVals.length); i++) {
+        for (let i = safeStart; i < Math.min(safeEnd, sarVals.length); i++) {
           const v = sarVals[i]; if (v === null) continue;
           const x = (i-startIdx)*candleW+candleW/2, y = priceToY(v);
           ctx.fillStyle = cfg.color; ctx.beginPath(); ctx.arc(x, y, 2*dpr, 0, Math.PI*2); ctx.fill();
@@ -2501,7 +2503,7 @@ export function renderChart(
 
     // Find max vol (including volume MA)
     let maxV = 0;
-    for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
+    for (let i = safeStart; i < safeEnd; i++) {
       maxV = Math.max(maxV, candles[i].volume);
       const maV = volMa20Values[i];
       if (maV !== null && maV !== undefined && maV > maxV) maxV = maV;
@@ -2526,7 +2528,7 @@ export function renderChart(
       const topPad = 12*dpr;
       const avH = Math.max(1, pH - topPad - 2*dpr);
       const bw = (candleW * 0.72);
-      for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
+      for (let i = safeStart; i < safeEnd; i++) {
         const li = i - startIdx;
         const x = li * candleW + (candleW - bw) / 2;
         const c = candles[i];
@@ -2543,7 +2545,7 @@ export function renderChart(
       ctx.clip();
       ctx.beginPath();
       let startedMa = false;
-      for (let i = startIdx; i < Math.min(endIdx, volMa20Values.length); i++) {
+      for (let i = safeStart; i < Math.min(safeEnd, volMa20Values.length); i++) {
         const v = volMa20Values[i];
         if (v === null) { startedMa = false; continue; }
         const li = i - startIdx;
@@ -2855,8 +2857,10 @@ export function renderOverlay(
   if (visCnt <= 0 || candles.length === 0) return;
 
   const candleW = chartW / visCnt;
+  const safeStart = Math.max(0, startIdx);
+  const safeEnd = Math.min(endIdx, candles.length);
 
-  const visSlice = candles.slice(startIdx, Math.min(endIdx, candles.length)).filter(c => c && c.close > 0);
+  const visSlice = candles.slice(safeStart, safeEnd).filter(c => c && c.close > 0);
   const closes = visSlice.map(c => c.close).sort((a, b) => a - b);
   const medClose = closes.length > 0 ? closes[Math.floor(closes.length / 2)] : 1000;
   const anchorPrice = (options.currentPriceOverride && options.currentPriceOverride > 0)
@@ -2866,7 +2870,7 @@ export function renderOverlay(
   const maxValidBound = anchorPrice * 1.15;
 
   let pMin = Infinity, pMax = -Infinity;
-  for (let i = startIdx; i < Math.min(endIdx, candles.length); i++) {
+  for (let i = safeStart; i < safeEnd; i++) {
     const c = candles[i];
     const safeLow = Math.max(minValidBound, Math.min(maxValidBound, (c.low >= minValidBound && c.low <= maxValidBound) ? c.low : c.close));
     const safeHigh = Math.min(maxValidBound, Math.max(minValidBound, (c.high >= minValidBound && c.high <= maxValidBound) ? c.high : c.close));
