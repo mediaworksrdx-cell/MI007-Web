@@ -1316,9 +1316,14 @@ export function renderChart(
     const volH = chartH * volHeightRatio;
     const volDividerY = Math.round(chartH - volH) + 0.5; // faint 1px baseline divider
 
-    // Faint 1px horizontal baseline divider separating price pane from volume pane
+    // Subtle boxed container backdrop & faint 1px horizontal rule matching grid line tone with 30-40% opacity
     ctx.save();
-    ctx.strokeStyle = '#E2E8F0';
+    // Ultra-subtle boxed container backdrop for grounded volume histogram
+    ctx.fillStyle = 'rgba(248, 250, 252, 0.40)';
+    ctx.fillRect(0, volDividerY, chartW, chartH - volDividerY);
+
+    // 1px horizontal rule right across the top boundary of the volume bars (grid line tone with 35% opacity)
+    ctx.strokeStyle = 'rgba(100, 116, 139, 0.35)';
     ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
     ctx.moveTo(0, volDividerY);

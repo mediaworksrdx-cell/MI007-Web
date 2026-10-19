@@ -25,7 +25,7 @@ export function OHLCVHeader({ symbol, candle, currency, timeframe, currentPrice 
 
   return (
     <div
-      className="flex flex-wrap items-center gap-x-5 gap-y-1.5 bg-white border-b border-slate-200 px-4 py-2 font-mono text-[14px] text-slate-800 shadow-xs tabular-nums select-none"
+      className="flex flex-wrap items-center gap-x-5 gap-y-1.5 bg-white border-b border-slate-200 pl-6 pr-4 py-2 font-mono text-[14px] text-slate-800 shadow-xs tabular-nums select-none"
       style={{ fontVariantNumeric: 'tabular-nums' }}
     >
       {symbol && (
