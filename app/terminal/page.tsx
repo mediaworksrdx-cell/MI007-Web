@@ -10,6 +10,7 @@ import { MarketType, MARKETS } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { searchZerodhaStocks, findZerodhaStockBySymbol } from '@/lib/screener/zerodhaStocks';
+import { ChartContainer } from '@/components/chart/ChartContainer';
 
 // ─── Default Master Catalogs ──────────────────────────────────────────────────
 export interface IndexItem {
@@ -497,8 +498,8 @@ export default function TerminalPage() {
   const { market, setMarket, currency } = useMarket();
   const { getSymbolPrice } = useTradeEngine();
 
-  // Active terminal module tab: 'all' (Full Dashboard) | 'commodities' | 'forex'
-  const [activeTab, setActiveTab] = useState<'all' | 'commodities' | 'forex'>('all');
+  // Active terminal module tab: 'all' (Full Dashboard) | 'commodities' | 'forex' | 'charts'
+  const [activeTab, setActiveTab] = useState<'all' | 'commodities' | 'forex' | 'charts'>('all');
 
   // State: Edit mode toggle
   const [isEditing, setIsEditing] = useState(false);
@@ -527,6 +528,8 @@ export default function TerminalPage() {
       } else if (view === 'forex' || window.location.hash === '#forex') {
         setActiveTab('forex');
         setTargetCategory('FOREX');
+      } else if (view === 'charts' || window.location.hash === '#charts') {
+        setActiveTab('charts');
       }
 
       try {
@@ -991,13 +994,18 @@ export default function TerminalPage() {
                   <span>💱</span>
                   <span>FOREX</span>
                 </button>
-                <Link
-                  href={`/chart/${defaultChartSym}?market=${market}`}
-                  className="px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2 border border-transparent hover:border-emerald-500/30"
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('charts')}
+                  className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    activeTab === 'charts'
+                      ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                      : 'font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                  }`}
                 >
                   <span>📈</span>
                   <span>CHARTS</span>
-                </Link>
+                </button>
                 <Link
                   href="/terminal/screener"
                   className="px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2"
@@ -1010,149 +1018,158 @@ export default function TerminalPage() {
 
 
 
-            {/* ── Search Bar with Add Button for Stocks, Index, Commodities, Forex, or Crypto ── */}
-            <div className="p-4 sm:p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-md mb-6 relative z-30" ref={searchContainerRef}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span className="mono text-[13px] sm:text-[14px] font-black inst-card-text uppercase tracking-wider">
-                    {activeTab === 'commodities'
-                      ? 'Add Commodity to Commodities Intelligence'
-                      : activeTab === 'forex'
-                      ? 'Add Currency Pair to Forex Intelligence'
-                      : 'Add New Instrument to Dashboard'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {(['AUTO', 'STOCK', 'INDEX', 'COMMODITY', 'FOREX', 'CRYPTO'] as const).map(cat => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setTargetCategory(cat)}
-                      className={`px-2.5 py-1 rounded-lg mono text-[11px] font-bold transition-all cursor-pointer ${
-                        targetCategory === cat
-                          ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                          : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
-                      }`}
-                    >
-                      {cat === 'AUTO' ? 'Auto-Detect' : cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Input + Add Button row */}
-              <div className="flex items-center gap-2.5 relative">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setIsDropdownOpen(true);
-                    }}
-                    onFocus={() => setIsDropdownOpen(true)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (searchSuggestions.length > 0) {
-                          handleAddInstrument(searchSuggestions[0]);
-                        } else {
-                          handleAddInstrument();
-                        }
-                      }
-                    }}
-                    placeholder={
-                      activeTab === 'commodities'
-                        ? 'Search commodities (GOLD, CRUDEOIL, SILVER, NATGAS) to add...'
+            {/* ── Search Bar with Add Button for Stocks, Index, Commodities, Forex, or Crypto (Dashboard, Commodities, and Forex tabs) ── */}
+            {activeTab !== 'charts' && (
+              <div className="p-4 sm:p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-md mb-6 relative z-30" ref={searchContainerRef}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="mono text-[13px] sm:text-[14px] font-black inst-card-text uppercase tracking-wider">
+                      {activeTab === 'commodities'
+                        ? 'Add Commodity to Commodities Intelligence'
                         : activeTab === 'forex'
-                        ? 'Search major currency pairs (EURUSD, GBPUSD, USDJPY, USDINR) to add...'
-                        : market === 'INDIA'
-                        ? 'Search from 3,800+ Zerodha stocks, indices, or crypto...'
-                        : 'Search stocks, indices, or crypto...'
-                    }
-                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] placeholder-slate-400 mono text-[13px] font-medium focus:outline-none focus:border-emerald-500 shadow-inner"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setIsDropdownOpen(false);
-                      }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[var(--theme-card-text)] font-mono text-xs cursor-pointer"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleAddInstrument(searchSuggestions[0])}
-                  disabled={!searchQuery.trim()}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed mono text-[13px] font-black tracking-wider shadow-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
-                >
-                  <span>+</span>
-                  <span>ADD</span>
-                </button>
-              </div>
-
-              {/* Floating Dropdown Suggestions */}
-              {isDropdownOpen && searchQuery.trim().length > 0 && (
-                <div className="absolute top-full left-4 right-4 mt-2 max-h-72 overflow-y-auto rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-2xl z-50 divide-y divide-[var(--theme-card-border)]/50">
-                  {searchSuggestions.length === 0 ? (
-                    <div className="p-4 text-center mono text-xs text-[var(--theme-card-text-muted)]">
-                      No matching catalog items found. Click <strong className="text-emerald-500">+ ADD</strong> to register <span className="font-bold text-[var(--theme-card-text)]">{searchQuery.toUpperCase()}</span> directly.
-                    </div>
-                  ) : (
-                    searchSuggestions.map((item) => (
-                      <div
-                        key={`${item.category}-${item.symbol}`}
-                        onClick={() => handleAddInstrument(item)}
-                        className="px-4 py-2.5 flex items-center justify-between hover:bg-emerald-500/10 cursor-pointer transition-colors group"
+                        ? 'Add Currency Pair to Forex Intelligence'
+                        : 'Add New Instrument to Dashboard'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(['AUTO', 'STOCK', 'INDEX', 'COMMODITY', 'FOREX', 'CRYPTO'] as const).map(cat => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setTargetCategory(cat)}
+                        className={`px-2.5 py-1 rounded-lg mono text-[11px] font-bold transition-all cursor-pointer ${
+                          targetCategory === cat
+                            ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                            : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
+                        }`}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="mono text-[13px] font-black text-emerald-500 dark:text-emerald-400 group-hover:underline">
-                            {item.symbol}
-                          </span>
-                          <span className="text-[12px] text-[var(--theme-card-text)] truncate max-w-xs sm:max-w-md">
-                            {item.name}
-                          </span>
-                          {item.sector && (
-                            <span className="hidden sm:inline-block mono text-[10px] px-1.5 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)]">
-                              {item.sector}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="mono text-[10.5px] font-bold px-2 py-0.5 rounded bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] border border-[var(--theme-card-border)]">
-                            {item.category}
-                          </span>
-                          <span className="mono text-[11px] font-bold text-emerald-500 group-hover:translate-x-0.5 transition-transform">
-                            + ADD
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                        {cat === 'AUTO' ? 'Auto-Detect' : cat}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
 
-              {/* Feedback Toast */}
-              {feedbackToast && (
-                <div
-                  className={`mt-2 px-3 py-1.5 rounded-lg mono text-[12px] font-bold flex items-center gap-2 animate-in fade-in ${
-                    feedbackToast.isError
-                      ? 'bg-rose-500/15 border border-rose-500/40 text-rose-500 dark:text-rose-400'
-                      : 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
-                  }`}
-                >
-                  <span>{feedbackToast.isError ? '⚠️' : '✓'}</span>
-                  <span>{feedbackToast.message}</span>
+                {/* Input + Add Button row */}
+                <div className="flex items-center gap-2.5 relative">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setIsDropdownOpen(true);
+                      }}
+                      onFocus={() => setIsDropdownOpen(true)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (searchSuggestions.length > 0) {
+                            handleAddInstrument(searchSuggestions[0]);
+                          } else {
+                            handleAddInstrument();
+                          }
+                        }
+                      }}
+                      placeholder={
+                        activeTab === 'commodities'
+                          ? 'Search commodities (GOLD, CRUDEOIL, SILVER, NATGAS) to add...'
+                          : activeTab === 'forex'
+                          ? 'Search major currency pairs (EURUSD, GBPUSD, USDJPY, USDINR) to add...'
+                          : market === 'INDIA'
+                          ? 'Search from 3,800+ Zerodha stocks, indices, or crypto...'
+                          : 'Search stocks, indices, or crypto...'
+                      }
+                      className="w-full px-4 py-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] placeholder-slate-400 mono text-[13px] font-medium focus:outline-none focus:border-emerald-500 shadow-inner"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setIsDropdownOpen(false);
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[var(--theme-card-text)] font-mono text-xs cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAddInstrument(searchSuggestions[0])}
+                    disabled={!searchQuery.trim()}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed mono text-[13px] font-black tracking-wider shadow-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
+                  >
+                    <span>+</span>
+                    <span>ADD</span>
+                  </button>
                 </div>
-              )}
-            </div>
+
+                {/* Floating Dropdown Suggestions */}
+                {isDropdownOpen && searchQuery.trim().length > 0 && (
+                  <div className="absolute top-full left-4 right-4 mt-2 max-h-72 overflow-y-auto rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-2xl z-50 divide-y divide-[var(--theme-card-border)]/50">
+                    {searchSuggestions.length === 0 ? (
+                      <div className="p-4 text-center mono text-xs text-[var(--theme-card-text-muted)]">
+                        No matching catalog items found. Click <strong className="text-emerald-500">+ ADD</strong> to register <span className="font-bold text-[var(--theme-card-text)]">{searchQuery.toUpperCase()}</span> directly.
+                      </div>
+                    ) : (
+                      searchSuggestions.map((item) => (
+                        <div
+                          key={`${item.category}-${item.symbol}`}
+                          onClick={() => handleAddInstrument(item)}
+                          className="px-4 py-2.5 flex items-center justify-between hover:bg-emerald-500/10 cursor-pointer transition-colors group"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="mono text-[13px] font-black text-emerald-500 dark:text-emerald-400 group-hover:underline">
+                              {item.symbol}
+                            </span>
+                            <span className="text-[12px] text-[var(--theme-card-text)] truncate max-w-xs sm:max-w-md">
+                              {item.name}
+                            </span>
+                            {item.sector && (
+                              <span className="hidden sm:inline-block mono text-[10px] px-1.5 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)]">
+                                {item.sector}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="mono text-[10.5px] font-bold px-2 py-0.5 rounded bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] border border-[var(--theme-card-border)]">
+                              {item.category}
+                            </span>
+                            <span className="mono text-[11px] font-bold text-emerald-500 group-hover:translate-x-0.5 transition-transform">
+                              + ADD
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Feedback Toast */}
+                {feedbackToast && (
+                  <div
+                    className={`mt-2 px-3 py-1.5 rounded-lg mono text-[12px] font-bold flex items-center gap-2 animate-in fade-in ${
+                      feedbackToast.isError
+                        ? 'bg-rose-500/15 border border-rose-500/40 text-rose-500 dark:text-rose-400'
+                        : 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
+                    }`}
+                  >
+                    <span>{feedbackToast.isError ? '⚠️' : '✓'}</span>
+                    <span>{feedbackToast.message}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Charts Module (Shown on CHARTS tab) ── */}
+            {activeTab === 'charts' && (
+              <div className="w-full rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xl overflow-hidden min-h-[780px] h-[calc(100vh-13rem)] flex flex-col mb-8 animate-in fade-in duration-150">
+                <ChartContainer market={market} defaultSymbol={defaultChartSym} />
+              </div>
+            )}
 
             {/* ── Core Indices Grid (Shown on Full Dashboard) ── */}
             {activeTab === 'all' && (

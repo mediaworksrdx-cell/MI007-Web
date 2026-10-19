@@ -32,6 +32,7 @@ import { OHLCVHeader } from './OHLCVHeader';
 import { IndicatorSettingsModal } from './IndicatorSettingsModal';
 import { DrawingToolbar, type CursorMode } from './DrawingToolbar';
 import { DrawingsManagerModal } from './DrawingsManagerModal';
+import { ChartSymbolSearch, type ChartInstrumentItem } from './ChartSymbolSearch';
 
 interface ChartContainerProps {
   market: MarketType;
@@ -242,8 +243,17 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     }
   }, [market]);
 
-  const isCryptoSymbol = ['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX'].includes(selectedSymbol.toUpperCase());
-  const currency = isCryptoSymbol ? '$' : (instruments[0]?.currency ?? '₹');
+  const currency = useMemo(() => {
+    const sym = selectedSymbol.toUpperCase().replace(/[\s\/-]+/g, '');
+    if (['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX', 'LINK', 'MATIC', 'DOT'].includes(sym)) return '$';
+    if (['GOLD', 'XAU', 'XAUUSD', 'SILVER', 'XAG', 'XAGUSD', 'CRUDEOIL', 'BRENT', 'WTI', 'NATGAS', 'COPPER', 'PLATINUM'].includes(sym)) return '$';
+    if (['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(sym)) return '$';
+    if (['USDINR'].includes(sym)) return '₹';
+    if (['USDAED'].includes(sym)) return 'AED ';
+    if (['DFMGI', 'ADXGI', 'EMAAR', 'FAB', 'DEWA', 'ALDAR', 'ENBD', 'ADNOC', 'AIRARABIA', 'SALIK'].includes(sym)) return 'AED ';
+    if (['SPX', 'NDX', 'DJI', 'VIX', 'QQQ', 'NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'AMD', 'NFLX', 'INTC'].includes(sym)) return '$';
+    return instruments[0]?.currency ?? '₹';
+  }, [selectedSymbol, instruments]);
 
   // Load candles from cache first, then reconcile with Trade Engine
   useEffect(() => {
@@ -887,6 +897,23 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
 
   return (
     <div className="flex flex-col h-full rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs relative">
+      {/* ── Top Instrument Search Bar ── */}
+      <ChartSymbolSearch
+        selectedSymbol={selectedSymbol}
+        market={market}
+        onSelectInstrument={(item: ChartInstrumentItem) => {
+          setSelectedSymbol(item.symbol);
+          if (typeof window !== 'undefined' && window.location.pathname.startsWith('/chart/')) {
+            const url = new URL(window.location.href);
+            url.pathname = `/chart/${item.symbol}`;
+            if (item.market) {
+              url.searchParams.set('market', item.market);
+            }
+            window.history.pushState(null, '', url.toString());
+          }
+        }}
+      />
+
       {/* ── Top Dropdown Toolbar ── */}
       <ChartToolbar
         timeframe={timeframe}
