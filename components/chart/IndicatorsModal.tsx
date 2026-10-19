@@ -80,12 +80,12 @@ export function IndicatorsModal({
 
   const content = (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 select-none animate-in fade-in duration-150"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 dark:bg-black/75 backdrop-blur-xs p-4 select-none animate-in fade-in duration-150"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-[#0B0F19] text-slate-100 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+      <div className="w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B0F19] text-slate-800 dark:text-slate-100 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
         {/* Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#0F172A]/80 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0F172A]/80 shrink-0">
           <div className="flex items-center gap-2.5">
             <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-black font-mono text-sm">
               ƒx
@@ -94,7 +94,7 @@ export function IndicatorsModal({
               <h3 className="font-mono text-base font-black text-slate-800 dark:text-slate-100 tracking-wide uppercase">
                 Indicators & Quantitative Overlays
               </h3>
-              <p className="text-xs text-slate-400">Institutional overlays, momentum oscillators, and volume profile tools</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Institutional overlays, momentum oscillators, and volume profile tools</p>
             </div>
           </div>
           <button
