@@ -596,7 +596,13 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     try {
       const saved = localStorage.getItem(`mi007_drawings_${selectedSymbol}`);
       if (saved) {
-        setDrawings(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter(d => d && d.id && d.tool && Array.isArray(d.points) && d.points.length > 0);
+          setDrawings(valid);
+        } else {
+          setDrawings([]);
+        }
       } else {
         setDrawings([]);
       }

@@ -48,6 +48,81 @@ export function formatPrice(p: number): string {
   if (p >= 1) return p.toFixed(2);
   return p.toFixed(4);
 }
+
+/**
+ * Resolves the accurate candle index for a drawing point across reloads,
+ * timeframes, and shifting candle series using timestamp proximity (minDiff).
+ */
+export function resolveDrawingPointIndex(
+  pt: { index: number; time?: number },
+  candles: Candle[]
+): number {
+  let idx = pt.index;
+  if (pt.time && candles && candles.length > 0) {
+    if (candles[idx]?.openTime !== pt.time) {
+      let bestIdx = idx;
+      let minDiff = Infinity;
+      for (let i = 0; i < candles.length; i++) {
+        const diff = Math.abs(candles[i].openTime - pt.time);
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestIdx = i;
+        }
+      }
+      idx = bestIdx;
+    }
+  }
+  return Math.max(0, Math.min((candles?.length || 1) - 1, idx));
+}
+
+/**
+ * Unified price scale bounding helper used across renderChart, renderOverlay,
+ * and CandlestickCanvas interaction hit-testing to ensure 100% pixel-perfect alignment.
+ */
+export function computeChartPriceBounds(
+  candles: Candle[],
+  startIdx: number,
+  endIdx: number,
+  currentPriceOverride?: number,
+  priceOffset: number = 0,
+  priceScaleRatio: number = 1.0
+): { pMin: number; pMax: number; pRange: number; minValidBound: number; maxValidBound: number } {
+  const safeStart = Math.max(0, startIdx);
+  const safeEnd = Math.min(endIdx, candles.length);
+  const visSlice = candles.slice(safeStart, safeEnd).filter(c => c && c.close > 0);
+  const closes = visSlice.map(c => c.close).sort((a, b) => a - b);
+  const medClose = closes.length > 0 ? closes[Math.floor(closes.length / 2)] : 1000;
+  const anchorPrice = (currentPriceOverride && currentPriceOverride > 0)
+    ? currentPriceOverride
+    : medClose;
+  const minValidBound = anchorPrice * 0.85;
+  const maxValidBound = anchorPrice * 1.15;
+
+  let pMin = Infinity, pMax = -Infinity;
+  for (let i = safeStart; i < safeEnd; i++) {
+    const c = candles[i];
+    const safeLow = Math.max(minValidBound, Math.min(maxValidBound, (c.low >= minValidBound && c.low <= maxValidBound) ? c.low : c.close));
+    const safeHigh = Math.min(maxValidBound, Math.max(minValidBound, (c.high >= minValidBound && c.high <= maxValidBound) ? c.high : c.close));
+    pMin = Math.min(pMin, safeLow);
+    pMax = Math.max(pMax, safeHigh);
+  }
+  if (currentPriceOverride && currentPriceOverride > 0 && endIdx >= candles.length) {
+    pMin = Math.min(pMin, Math.max(minValidBound, currentPriceOverride));
+    pMax = Math.max(pMax, Math.min(maxValidBound, currentPriceOverride));
+  }
+  const pad = (pMax - pMin) * 0.05 || 1;
+  pMin -= pad; pMax += pad;
+  pMin = Math.max(minValidBound * 0.95, pMin);
+  pMax = Math.min(maxValidBound * 1.05, pMax);
+
+  const center = (pMax + pMin) / 2 + priceOffset;
+  const scaledRange = (pMax - pMin) * priceScaleRatio;
+  pMin = center - scaledRange / 2;
+  pMax = center + scaledRange / 2;
+  const pRange = Math.max(pMax - pMin, 0.01);
+
+  return { pMin, pMax, pRange, minValidBound, maxValidBound };
+}
 function formatVolume(v: number): string {
   if (v >= 1e9) return (v/1e9).toFixed(2)+'B';
   if (v >= 1e6) return (v/1e6).toFixed(2)+'M';
@@ -790,40 +865,14 @@ export function renderChart(
   const safeEnd = Math.min(endIdx, candles.length);
 
   // Price range with 5% padding & rogue spike protection
-  const visSlice = candles.slice(safeStart, safeEnd).filter(c => c && c.close > 0);
-  const closes = visSlice.map(c => c.close).sort((a, b) => a - b);
-  const medClose = closes.length > 0 ? closes[Math.floor(closes.length / 2)] : 1000;
-  const anchorPrice = (options.currentPriceOverride && options.currentPriceOverride > 0)
-    ? options.currentPriceOverride
-    : medClose;
-  const minValidBound = anchorPrice * 0.85;
-  const maxValidBound = anchorPrice * 1.15;
-
-  let pMin = Infinity, pMax = -Infinity;
-  for (let i = safeStart; i < safeEnd; i++) {
-    const c = candles[i];
-    const safeLow = Math.max(minValidBound, Math.min(maxValidBound, (c.low >= minValidBound && c.low <= maxValidBound) ? c.low : c.close));
-    const safeHigh = Math.min(maxValidBound, Math.max(minValidBound, (c.high >= minValidBound && c.high <= maxValidBound) ? c.high : c.close));
-    pMin = Math.min(pMin, safeLow);
-    pMax = Math.max(pMax, safeHigh);
-  }
-  if (options.currentPriceOverride && options.currentPriceOverride > 0 && endIdx >= candles.length) {
-    pMin = Math.min(pMin, Math.max(minValidBound, options.currentPriceOverride));
-    pMax = Math.max(pMax, Math.min(maxValidBound, options.currentPriceOverride));
-  }
-  const pad = (pMax - pMin) * 0.05 || 1;
-  pMin -= pad; pMax += pad;
-  pMin = Math.max(minValidBound * 0.95, pMin);
-  pMax = Math.min(maxValidBound * 1.05, pMax);
-
-  // Apply interactive price scale stretch/compress if active
-  if (options.scaleState) {
-    const center = (pMax + pMin) / 2 + (options.scaleState.priceOffset || 0);
-    const scaledRange = (pMax - pMin) * (options.scaleState.priceScaleRatio || 1.0);
-    pMin = center - scaledRange / 2;
-    pMax = center + scaledRange / 2;
-  }
-  const pRange = Math.max(pMax - pMin, 0.01);
+  const { pMin, pMax, pRange, minValidBound, maxValidBound } = computeChartPriceBounds(
+    candles,
+    startIdx,
+    endIdx,
+    options.currentPriceOverride,
+    options.scaleState?.priceOffset || 0,
+    options.scaleState?.priceScaleRatio || 1.0
+  );
 
   function priceToY(p: number): number { return chartH - ((p - pMin) / pRange * chartH); }
 
@@ -1302,21 +1351,7 @@ export function renderChart(
 
     // Helper to calculate X coordinate for a drawing point with time-anchor fallback
     const getPointX = (pt: { index: number; time?: number }) => {
-      let idx = pt.index;
-      if (pt.time && candles.length > 0) {
-        if (candles[idx]?.openTime !== pt.time) {
-          let bestIdx = idx;
-          let minDiff = Infinity;
-          for (let i = 0; i < candles.length; i++) {
-            const diff = Math.abs(candles[i].openTime - pt.time);
-            if (diff < minDiff) {
-              minDiff = diff;
-              bestIdx = i;
-            }
-          }
-          idx = bestIdx;
-        }
-      }
+      const idx = resolveDrawingPointIndex(pt, candles);
       return (idx - startIdx) * candleW + candleW / 2;
     };
 
@@ -2860,58 +2895,19 @@ export function renderOverlay(
   const safeStart = Math.max(0, startIdx);
   const safeEnd = Math.min(endIdx, candles.length);
 
-  const visSlice = candles.slice(safeStart, safeEnd).filter(c => c && c.close > 0);
-  const closes = visSlice.map(c => c.close).sort((a, b) => a - b);
-  const medClose = closes.length > 0 ? closes[Math.floor(closes.length / 2)] : 1000;
-  const anchorPrice = (options.currentPriceOverride && options.currentPriceOverride > 0)
-    ? options.currentPriceOverride
-    : medClose;
-  const minValidBound = anchorPrice * 0.85;
-  const maxValidBound = anchorPrice * 1.15;
-
-  let pMin = Infinity, pMax = -Infinity;
-  for (let i = safeStart; i < safeEnd; i++) {
-    const c = candles[i];
-    const safeLow = Math.max(minValidBound, Math.min(maxValidBound, (c.low >= minValidBound && c.low <= maxValidBound) ? c.low : c.close));
-    const safeHigh = Math.min(maxValidBound, Math.max(minValidBound, (c.high >= minValidBound && c.high <= maxValidBound) ? c.high : c.close));
-    pMin = Math.min(pMin, safeLow);
-    pMax = Math.max(pMax, safeHigh);
-  }
-  if (options.currentPriceOverride && options.currentPriceOverride > 0 && endIdx >= candles.length) {
-    pMin = Math.min(pMin, Math.max(minValidBound, options.currentPriceOverride));
-    pMax = Math.max(pMax, Math.min(maxValidBound, options.currentPriceOverride));
-  }
-  const pad = (pMax - pMin) * 0.05 || 1;
-  pMin -= pad; pMax += pad;
-  pMin = Math.max(minValidBound * 0.95, pMin);
-  pMax = Math.min(maxValidBound * 1.05, pMax);
-
-  if (options.scaleState) {
-    const center = (pMax + pMin) / 2 + (options.scaleState.priceOffset || 0);
-    const scaledRange = (pMax - pMin) * (options.scaleState.priceScaleRatio || 1.0);
-    pMin = center - scaledRange / 2;
-    pMax = center + scaledRange / 2;
-  }
-  const pRange = Math.max(pMax - pMin, 0.01);
+  const { pMin, pMax, pRange } = computeChartPriceBounds(
+    candles,
+    startIdx,
+    endIdx,
+    options.currentPriceOverride,
+    options.scaleState?.priceOffset || 0,
+    options.scaleState?.priceScaleRatio || 1.0
+  );
 
   function priceToY(p: number): number { return chartH - ((p - pMin) / pRange * chartH); }
 
   const getPointX = (pt: { index: number; time?: number }) => {
-    let idx = pt.index;
-    if (pt.time && candles.length > 0) {
-      if (candles[idx]?.openTime !== pt.time) {
-        let bestIdx = idx;
-        let minDiff = Infinity;
-        for (let i = 0; i < candles.length; i++) {
-          const diff = Math.abs(candles[i].openTime - pt.time);
-          if (diff < minDiff) {
-            minDiff = diff;
-            bestIdx = i;
-          }
-        }
-        idx = bestIdx;
-      }
-    }
+    const idx = resolveDrawingPointIndex(pt, candles);
     return (idx - startIdx) * candleW + candleW / 2;
   };
 

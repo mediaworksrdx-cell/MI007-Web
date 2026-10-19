@@ -4,7 +4,7 @@ import { useRef, useEffect, useCallback, useState, useLayoutEffect, useMemo } fr
 import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels, StrategyPayoffOverlay, MagnetReticle, ScaleState } from '@/lib/types';
 import { isOverlay, CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN } from '@/lib/types';
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
-import { renderChart, renderOverlay } from '@/lib/chartRenderer';
+import { renderChart, renderOverlay, resolveDrawingPointIndex, computeChartPriceBounds } from '@/lib/chartRenderer';
 import { DrawingQuickBar } from './DrawingQuickBar';
 import type { CursorMode } from './DrawingToolbar';
 
@@ -353,20 +353,15 @@ export function CandlestickCanvas({
     const offsetIdx = Math.floor(x / candleW);
     const candleIdx = Math.min(cleanCandles.length - 1, Math.max(0, startIdx + offsetIdx));
 
-    let pMin = Infinity, pMax = -Infinity;
-    for (let i = Math.max(0, startIdx); i < Math.min(endIdx, cleanCandles.length); i++) {
-      pMin = Math.min(pMin, cleanCandles[i].low);
-      pMax = Math.max(pMax, cleanCandles[i].high);
-    }
-    const pad = (pMax - pMin) * 0.05 || 1;
-    pMin -= pad; pMax += pad;
-
-    // Apply interactive price scale stretch/compress
-    const center = (pMax + pMin) / 2 + priceOffset;
-    const scaledRange = (pMax - pMin) * priceScaleRatio;
-    pMin = center - scaledRange / 2;
-    pMax = center + scaledRange / 2;
-    const pRange = Math.max(pMax - pMin, 0.01);
+    // Apply shared unified price scale calculation
+    const { pMin, pMax, pRange } = computeChartPriceBounds(
+      cleanCandles,
+      startIdx,
+      endIdx,
+      currentPriceOverride,
+      priceOffset,
+      priceScaleRatio
+    );
 
     const clampedY = Math.max(0, Math.min(chartH, y));
     let price = pMax - (clampedY / chartH) * pRange;
@@ -402,7 +397,7 @@ export function CandlestickCanvas({
 
     const time = cleanCandles[candleIdx]?.openTime || Date.now();
     return { index: candleIdx, time, price, x: finalX, y };
-  }, [cleanCandles, startIdx, endIdx, visibleCount, indicators, isMagnetActive, isShiftHeld, priceOffset, priceScaleRatio, showVolumePanel, size]);
+  }, [cleanCandles, startIdx, endIdx, visibleCount, indicators, isMagnetActive, isShiftHeld, priceOffset, priceScaleRatio, showVolumePanel, size, currentPriceOverride]);
 
   // ── LAYER 1: Background Canvas Render (Candles, Indicators, SMC, Volumes) ──
   useEffect(() => {
@@ -518,18 +513,14 @@ export function CandlestickCanvas({
         const visCnt = visibleCount;
         const candleW = visCnt > 0 ? chartW / visCnt : 1;
 
-        let pMin = Infinity, pMax = -Infinity;
-        for (let i = Math.max(0, startIdx); i < Math.min(endIdx, cleanCandles.length); i++) {
-          pMin = Math.min(pMin, cleanCandles[i].low);
-          pMax = Math.max(pMax, cleanCandles[i].high);
-        }
-        const pad = (pMax - pMin) * 0.05 || 1;
-        pMin -= pad; pMax += pad;
-        const center = (pMax + pMin) / 2 + priceOffset;
-        const scaledRange = (pMax - pMin) * priceScaleRatio;
-        pMin = center - scaledRange / 2;
-        pMax = center + scaledRange / 2;
-        const pRange = Math.max(pMax - pMin, 0.01);
+        const { pMin, pRange } = computeChartPriceBounds(
+          cleanCandles,
+          startIdx,
+          endIdx,
+          currentPriceOverride,
+          priceOffset,
+          priceScaleRatio
+        );
 
         let hoveredEndpoint = false;
         let hoveredBody = false;
@@ -537,21 +528,16 @@ export function CandlestickCanvas({
         for (const d of drawings) {
           if (d.hidden || !d.points || d.points.length === 0) continue;
           const pts = d.points.map(p => {
-            let idx = p.index;
-            if (p.time && cleanCandles[idx]?.openTime !== p.time) {
-              for (let ci = 0; ci < cleanCandles.length; ci++) {
-                if (cleanCandles[ci].openTime === p.time) { idx = ci; break; }
-              }
-            }
+            const idx = resolveDrawingPointIndex(p, cleanCandles);
             return {
               x: (idx - startIdx) * candleW + candleW / 2,
               y: chartH * (1 - (p.price - pMin) / pRange),
             };
           });
 
-          // Check endpoints (radius 20px)
+          // Check endpoints (radius 24px)
           for (const ep of pts) {
-            if (Math.hypot(x - ep.x, y - ep.y) <= 20) {
+            if (Math.hypot(x - ep.x, y - ep.y) <= 24) {
               hoveredEndpoint = true;
               break;
             }
@@ -646,14 +632,21 @@ export function CandlestickCanvas({
       if (pt) {
         const target = drawings.find(d => d.id === adjustingRef.current!.drawingId);
         if (target) {
-          const updatedPoints = [...target.points];
-          updatedPoints[adjustingRef.current.pointIdx] = {
-            index: pt.index,
-            time: pt.time,
-            price: pt.price,
-          };
+          const updatedPoints = target.points.map((p, pIdx) => {
+            if (pIdx === adjustingRef.current!.pointIdx) {
+              return {
+                index: pt.index,
+                time: pt.time,
+                price: pt.price,
+              };
+            }
+            return {
+              ...p,
+              index: resolveDrawingPointIndex(p, cleanCandles),
+            };
+          });
           onUpdateDrawing?.({ ...target, points: updatedPoints });
-          setQuickBarPos({ x: e.clientX, y: e.clientY });
+          setQuickBarPos({ x, y });
         }
       }
       return;
@@ -680,7 +673,7 @@ export function CandlestickCanvas({
             };
           });
           onUpdateDrawing?.({ ...target, points: updatedPoints });
-          setQuickBarPos({ x: e.clientX, y: e.clientY });
+          setQuickBarPos({ x, y });
         }
       }
       return;
@@ -880,19 +873,14 @@ export function CandlestickCanvas({
       const visCnt = visibleCount;
       const candleW = visCnt > 0 ? chartW / visCnt : 1;
 
-      let pMin = Infinity, pMax = -Infinity;
-      for (let i = Math.max(0, startIdx); i < Math.min(endIdx, cleanCandles.length); i++) {
-        pMin = Math.min(pMin, cleanCandles[i].low);
-        pMax = Math.max(pMax, cleanCandles[i].high);
-      }
-      const pad = (pMax - pMin) * 0.05 || 1;
-      pMin -= pad; pMax += pad;
-
-      const center = (pMax + pMin) / 2 + priceOffset;
-      const scaledRange = (pMax - pMin) * priceScaleRatio;
-      pMin = center - scaledRange / 2;
-      pMax = center + scaledRange / 2;
-      const pRange = Math.max(pMax - pMin, 0.01);
+      const { pMin, pRange } = computeChartPriceBounds(
+        cleanCandles,
+        startIdx,
+        endIdx,
+        currentPriceOverride,
+        priceOffset,
+        priceScaleRatio
+      );
 
       // 1. Check if clicking near any existing drawing endpoint to adjust it
       let targetAdjust: { drawingId: string; pointIdx: number } | null = null;
@@ -900,15 +888,10 @@ export function CandlestickCanvas({
         if (d.locked || d.hidden) continue;
         for (let i = 0; i < d.points.length; i++) {
           const p = d.points[i];
-          let idx = p.index;
-          if (p.time && cleanCandles[idx]?.openTime !== p.time) {
-            for (let ci = 0; ci < cleanCandles.length; ci++) {
-              if (cleanCandles[ci].openTime === p.time) { idx = ci; break; }
-            }
-          }
+          const idx = resolveDrawingPointIndex(p, cleanCandles);
           const ptX = (idx - startIdx) * candleW + candleW / 2;
           const ptY = chartH * (1 - (p.price - pMin) / pRange);
-          if (Math.hypot(x - ptX, y - ptY) <= 20) {
+          if (Math.hypot(x - ptX, y - ptY) <= 24) {
             targetAdjust = { drawingId: d.id, pointIdx: i };
             break;
           }
@@ -929,7 +912,7 @@ export function CandlestickCanvas({
           try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}
         }
         onSelectDrawing?.(targetAdjust.drawingId);
-        setQuickBarPos({ x: e.clientX, y: e.clientY });
+        setQuickBarPos({ x, y });
         return;
       }
 
@@ -938,12 +921,7 @@ export function CandlestickCanvas({
       for (const d of drawings) {
         if (d.hidden || !d.points || d.points.length === 0) continue;
         const pts = d.points.map(p => {
-          let idx = p.index;
-          if (p.time && cleanCandles[idx]?.openTime !== p.time) {
-            for (let ci = 0; ci < cleanCandles.length; ci++) {
-              if (cleanCandles[ci].openTime === p.time) { idx = ci; break; }
-            }
-          }
+          const idx = resolveDrawingPointIndex(p, cleanCandles);
           return {
             x: (idx - startIdx) * candleW + candleW / 2,
             y: chartH * (1 - (p.price - pMin) / pRange),
@@ -953,16 +931,16 @@ export function CandlestickCanvas({
         const p1 = pts[0];
         if (d.points.length === 1) {
           if (d.tool === 'HORIZONTAL') {
-            if (Math.abs(y - p1.y) <= 16) { clickedDrawingId = d.id; break; }
+            if (Math.abs(y - p1.y) <= 18) { clickedDrawingId = d.id; break; }
           } else if (d.tool === 'HORIZONTAL_RAY') {
-            if (Math.abs(y - p1.y) <= 16 && x >= p1.x - 8) { clickedDrawingId = d.id; break; }
+            if (Math.abs(y - p1.y) <= 18 && x >= p1.x - 8) { clickedDrawingId = d.id; break; }
           } else if (d.tool === 'VERTICAL_LINE') {
-            if (Math.abs(x - p1.x) <= 16) { clickedDrawingId = d.id; break; }
+            if (Math.abs(x - p1.x) <= 18) { clickedDrawingId = d.id; break; }
           } else if (d.tool === 'CROSS_LINE') {
-            if (Math.abs(y - p1.y) <= 16 || Math.abs(x - p1.x) <= 16) { clickedDrawingId = d.id; break; }
+            if (Math.abs(y - p1.y) <= 18 || Math.abs(x - p1.x) <= 18) { clickedDrawingId = d.id; break; }
           } else {
             // Anchor point hit test for 1-point markers (TEXT, ANCHORED_TEXT, PRICE_LABEL, ARROW_UP, ARROW_DOWN, FLAG)
-            if (Math.hypot(x - p1.x, y - p1.y) <= 24) { clickedDrawingId = d.id; break; }
+            if (Math.hypot(x - p1.x, y - p1.y) <= 26) { clickedDrawingId = d.id; break; }
           }
         } else if (pts.length >= 2) {
           // Distance to any line segment between consecutive points
@@ -981,7 +959,7 @@ export function CandlestickCanvas({
                 t = Math.max(0, Math.min(1, t));
               }
               const px = pa.x + t * dx, py = pa.y + t * dy;
-              if (Math.hypot(x - px, y - py) <= 18) {
+              if (Math.hypot(x - px, y - py) <= 20) {
                 hitSegment = true;
                 break;
               }
@@ -1006,7 +984,7 @@ export function CandlestickCanvas({
             'RISK_REWARD_LONG', 'RISK_REWARD_SHORT', 'PRICE_RANGE', 'DATE_RANGE', 'MEASURE',
             'XABCD_PATTERN', 'ABCD_PATTERN'
           ].includes(d.tool);
-          if (isAreaTool && x >= minX - 10 && x <= maxX + 10 && y >= minY - 10 && y <= maxY + 10) {
+          if (isAreaTool && x >= minX - 12 && x <= maxX + 12 && y >= minY - 12 && y <= maxY + 12) {
             clickedDrawingId = d.id;
             break;
           }
@@ -1021,7 +999,7 @@ export function CandlestickCanvas({
           return;
         }
         onSelectDrawing?.(clickedDrawingId);
-        setQuickBarPos({ x: e.clientX, y: e.clientY });
+        setQuickBarPos({ x, y });
 
         // Start dragging the entire drawing!
         const target = drawings.find(d => d.id === clickedDrawingId);
@@ -1029,7 +1007,10 @@ export function CandlestickCanvas({
           movingDrawingRef.current = {
             drawingId: target.id,
             startPt: { index: pt.index, price: pt.price },
-            initialPoints: target.points.map(p => ({ ...p })),
+            initialPoints: target.points.map(p => ({
+              ...p,
+              index: resolveDrawingPointIndex(p, cleanCandles),
+            })),
           };
           setIsMovingDrawing(true);
           try { (e.target as HTMLElement).setPointerCapture(e.pointerId); } catch {}

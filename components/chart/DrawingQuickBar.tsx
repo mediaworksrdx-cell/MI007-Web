@@ -30,9 +30,9 @@ export function DrawingQuickBar({
   onDeleteDrawing,
   onClose,
 }: DrawingQuickBarProps) {
-  // Clamp position to remain inside viewport
-  const left = Math.max(12, Math.min(position.x - 120, window.innerWidth - 320));
-  const top = Math.max(12, position.y - 44);
+  // Clamp position to remain inside the chart canvas container
+  const left = Math.max(12, Math.min(position.x - 120, (typeof window !== 'undefined' ? window.innerWidth : 1000) - 340));
+  const top = Math.max(12, position.y - 48);
 
   const handleColorChange = (color: string) => {
     onUpdateDrawing({ ...drawing, color });
