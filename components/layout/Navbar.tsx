@@ -29,6 +29,30 @@ const TERMINAL_NAV_LINKS = [
   { href: '/terminal/screener', label: 'Screeners' },
 ];
 
+const DEFAULT_NOTIFICATIONS = [
+  {
+    id: 'notif-1',
+    icon: '⚡',
+    title: 'NIFTY 50 Breakout Alert',
+    desc: 'Broke above 24,580 structural resistance with 1.8x volume surge.',
+    time: '2m ago',
+  },
+  {
+    id: 'notif-2',
+    icon: '🛢️',
+    title: 'Gold Spot Absorption',
+    desc: 'XAU/USD holding $2,653.13 support block with aggressive limit buyer absorption.',
+    time: '14m ago',
+  },
+  {
+    id: 'notif-3',
+    icon: '💱',
+    title: 'EUR/USD Interbank Spread',
+    desc: 'Interbank spread narrowed to 0.8 pips at 1.0845 on US market opening flow.',
+    time: '32m ago',
+  },
+];
+
 export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange }: NavbarProps) {
   const pathname = usePathname();
   const context = useMarket();
@@ -45,11 +69,14 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(3);
   const [userSession, setUserSession] = useState<{ name: string; role: string; deskId: string } | null>(null);
 
   const [brandHovered, setBrandHovered] = useState(false);
 
   const accountMenuRef = useRef<HTMLDivElement>(null);
+  const notificationMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -60,18 +87,24 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
     } catch {}
   }, []);
 
-  // Click outside & Escape key handler to close Account/Settings dropdown
+  // Click outside & Escape key handler to close Account/Settings & Notification dropdowns
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
         setAccountMenuOpen(false);
       }
+      if (notificationMenuRef.current && !notificationMenuRef.current.contains(e.target as Node)) {
+        setNotificationMenuOpen(false);
+      }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setAccountMenuOpen(false);
+      if (e.key === 'Escape') {
+        setAccountMenuOpen(false);
+        setNotificationMenuOpen(false);
+      }
     };
 
-    if (accountMenuOpen) {
+    if (accountMenuOpen || notificationMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleKeyDown);
     }
@@ -79,7 +112,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [accountMenuOpen]);
+  }, [accountMenuOpen, notificationMenuOpen]);
 
   const handleMarketChange = (m: MarketType) => {
     if (propOnMarketChange) {
@@ -168,6 +201,95 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               <span>LAUNCH TERMINAL</span>
             </Link>
           )}
+
+          {/* ── Notification Bell Icon with Live Alerts Flyout ── */}
+          <div className="relative" ref={notificationMenuRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setNotificationMenuOpen((v) => !v);
+                setAccountMenuOpen(false);
+              }}
+              className={`relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
+                notificationMenuOpen ? 'ring-2 ring-emerald-500' : 'opacity-85 hover:opacity-100 hover:border-emerald-500/40'
+              }`}
+              title="Market Alerts & Notifications"
+              aria-label="Market Notifications"
+              aria-expanded={notificationMenuOpen}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-black text-slate-950 font-mono shadow-xs animate-pulse">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Flyout Menu */}
+            {notificationMenuOpen && (
+              <div className="account-settings-dropdown absolute right-0 mt-2.5 w-80 sm:w-96 rounded-2xl p-3 flex flex-col gap-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 shadow-2xl">
+                <div className="flex items-center justify-between px-2 py-1 border-b border-current/15 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-mono font-black uppercase tracking-wider">
+                      Signals & Alerts
+                    </span>
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
+                      {unreadCount} LIVE
+                    </span>
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setUnreadCount(0)}
+                      className="text-[11px] font-mono text-emerald-500 hover:underline cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto">
+                  {DEFAULT_NOTIFICATIONS.map((n) => (
+                    <div
+                      key={n.id}
+                      className="p-2.5 rounded-xl border border-current/10 bg-current/5 hover:bg-current/10 transition-colors flex items-start gap-2.5 text-left"
+                    >
+                      <span className="text-base shrink-0 mt-0.5">{n.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xs font-bold font-mono truncate">{n.title}</span>
+                          <span className="text-[10px] font-mono opacity-60 shrink-0">{n.time}</span>
+                        </div>
+                        <p className="text-[11.5px] opacity-80 leading-snug mt-0.5">{n.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-current/15 pt-2 flex items-center justify-between">
+                  <Link
+                    href="/terminal/screener"
+                    onClick={() => setNotificationMenuOpen(false)}
+                    className="text-[11.5px] font-mono text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 group"
+                  >
+                    <span>View Screener Alert Engine</span>
+                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setNotificationMenuOpen(false)}
+                    className="text-[11px] font-mono opacity-60 hover:opacity-100 cursor-pointer"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* ── 1 Unified Icon for Settings & Login (Like Top Platforms) ── */}
           <div className="relative" ref={accountMenuRef}>
@@ -303,28 +425,6 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                     })}
                   </div>
                 </div>
-
-                {/* Divider */}
-                <div className="w-full h-px opacity-20 bg-current my-0.5" />
-
-                {/* 3. Settings Modal Trigger */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAccountMenuOpen(false);
-                    setSettingsOpen(true);
-                  }}
-                  className="account-dropdown-settings-btn w-full p-2 rounded-lg border flex items-center justify-between text-left transition-all cursor-pointer opacity-85 hover:opacity-100 group"
-                >
-                  <div className="flex items-center gap-2 text-[12px] font-mono font-bold">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-80">
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                    </svg>
-                    <span>System Settings & Audio</span>
-                  </div>
-                  <span className="text-xs font-mono opacity-60 group-hover:translate-x-0.5 transition-transform">→</span>
-                </button>
               </div>
             )}
           </div>
