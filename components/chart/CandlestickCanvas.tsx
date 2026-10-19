@@ -168,7 +168,6 @@ export function CandlestickCanvas({
 
   const [zoom, setZoom] = useState(1);
   const [scrollOffset, setScrollOffset] = useState(0);
-  const [crosshair, setCrosshair] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [drawingInProgress, setDrawingInProgress] = useState<DrawingItem | null>(null);
   const [quickBarPos, setQuickBarPos] = useState<{ x: number; y: number } | null>(null);
@@ -178,6 +177,27 @@ export function CandlestickCanvas({
   const isBrushingRef = useRef(false);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [clockTick, setClockTick] = useState(0);
+
+  // ── High-Performance 120 FPS Interaction & Overlay Refs ──
+  const crosshairRef = useRef<{ x: number; y: number } | null>(null);
+  const magnetReticleRef = useRef<MagnetReticle | null>(null);
+  const isShiftHeldRef = useRef(false);
+
+  // Animation frame coalescing refs (guarantees 120 FPS V-Sync alignment)
+  const panRafIdRef = useRef<number | null>(null);
+  const pendingScrollRef = useRef<number | null>(null);
+  const scaleRafIdRef = useRef<number | null>(null);
+  const pendingScaleRatioRef = useRef<number | null>(null);
+  const zoomRafIdRef = useRef<number | null>(null);
+  const pendingZoomRef = useRef<number | null>(null);
+  const wheelRafIdRef = useRef<number | null>(null);
+  const pendingWheelDeltaRef = useRef<{ scroll: number; zoomMult: number }>({ scroll: 0, zoomMult: 1 });
+  const chartRafIdRef = useRef<number | null>(null);
+  const overlayRafIdRef = useRef<number | null>(null);
+
+  // Deduplication refs for hover states (prevents redundant React reconciliations)
+  const hoverDrawingZoneRef = useRef<'none' | 'drawing' | 'endpoint'>('none');
+  const hoverScaleZoneRef = useRef<'none' | 'price' | 'time'>('none');
 
   // ── Pillar 2: Interactive Price & Time Scale Stretch/Compress ──
   const [priceScaleRatio, setPriceScaleRatio] = useState(1.0);
@@ -192,7 +212,6 @@ export function CandlestickCanvas({
 
   // ── Pillar 3: Smart Magnet Mode (Snapping to OHLC wicks) ──
   const [isShiftHeld, setIsShiftHeld] = useState(false);
-  const [magnetReticle, setMagnetReticle] = useState<MagnetReticle | null>(null);
 
   // ── Pillar 6: Mobile Touch Gestures & Pinch-to-Zoom ──
   const touchStartDistRef = useRef<number | null>(null);
@@ -206,12 +225,16 @@ export function CandlestickCanvas({
   // Track Shift key for instantaneous magnet snap
   useEffect(() => {
     const handleShiftDown = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') setIsShiftHeld(true);
+      if (e.key === 'Shift') {
+        setIsShiftHeld(true);
+        isShiftHeldRef.current = true;
+      }
     };
     const handleShiftUp = (e: KeyboardEvent) => {
       if (e.key === 'Shift') {
         setIsShiftHeld(false);
-        setMagnetReticle(null);
+        isShiftHeldRef.current = false;
+        magnetReticleRef.current = null;
       }
     };
     window.addEventListener('keydown', handleShiftDown);
@@ -377,11 +400,106 @@ export function CandlestickCanvas({
         reticle = { x: finalX, y: snapY, price: best.val, type: best.type };
       }
     }
-    setMagnetReticle(reticle);
+    magnetReticleRef.current = reticle;
 
     const time = cleanCandles[candleIdx]?.openTime || Date.now();
     return { index: candleIdx, time, price, x: finalX, y };
   }, [cleanCandles, startIdx, endIdx, visibleCount, indicators, isMagnetActive, isShiftHeld, priceOffset, priceScaleRatio, showVolumePanel, size, currentPriceOverride]);
+
+  // ── Sync latest props and states to refs for direct 120 FPS overlay rendering ──
+  const cleanCandlesRef = useRef(cleanCandles);
+  cleanCandlesRef.current = cleanCandles;
+  const chartTypeRef = useRef(chartType);
+  chartTypeRef.current = chartType;
+  const showVolumeRef = useRef(showVolume);
+  showVolumeRef.current = showVolume;
+  const showVolumePanelRef = useRef(showVolumePanel);
+  showVolumePanelRef.current = showVolumePanel;
+  const showSmcOverlayRef = useRef(showSmcOverlay);
+  showSmcOverlayRef.current = showSmcOverlay;
+  const showVolumeProfileRef = useRef(showVolumeProfile);
+  showVolumeProfileRef.current = showVolumeProfile;
+  const indicatorsRef = useRef(indicators);
+  indicatorsRef.current = indicators;
+  const indicatorResultsRef = useRef(indicatorResults);
+  indicatorResultsRef.current = indicatorResults;
+  const currentPriceOverrideRef = useRef(currentPriceOverride);
+  currentPriceOverrideRef.current = currentPriceOverride;
+  const timeframeRef = useRef(timeframe);
+  timeframeRef.current = timeframe;
+  const cursorModeRef = useRef(cursorMode);
+  cursorModeRef.current = cursorMode;
+  const drawingsRef = useRef(drawings);
+  drawingsRef.current = drawings;
+  const drawingInProgressRef = useRef(drawingInProgress);
+  drawingInProgressRef.current = drawingInProgress;
+  const selectedDrawingIdRef = useRef(selectedDrawingId);
+  selectedDrawingIdRef.current = selectedDrawingId;
+  const isAllDrawingsHiddenRef = useRef(isAllDrawingsHidden);
+  isAllDrawingsHiddenRef.current = isAllDrawingsHidden;
+  const priceScaleRatioRef = useRef(priceScaleRatio);
+  priceScaleRatioRef.current = priceScaleRatio;
+  const priceOffsetRef = useRef(priceOffset);
+  priceOffsetRef.current = priceOffset;
+  const startIdxRef = useRef(startIdx);
+  startIdxRef.current = startIdx;
+  const endIdxRef = useRef(endIdx);
+  endIdxRef.current = endIdx;
+  const dprRef = useRef(dpr);
+  dprRef.current = dpr;
+  const sizeRef = useRef(size);
+  sizeRef.current = size;
+
+  // ── Direct 120 FPS Overlay Canvas Render (Bypasses React Re-renders on Pointer Move) ──
+  const renderOverlayNow = useCallback(() => {
+    const canvas = overlayCanvasRef.current;
+    if (!canvas || sizeRef.current.w === 0 || cleanCandlesRef.current.length === 0) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const ch = crosshairRef.current;
+    const chCoord = (ch && cursorModeRef.current !== 'pan')
+      ? { x: ch.x * dprRef.current, y: ch.y * dprRef.current }
+      : null;
+
+    renderOverlay(
+      ctx,
+      cleanCandlesRef.current,
+      {
+        chartType: chartTypeRef.current,
+        showVolume: showVolumeRef.current,
+        showVolumePanel: showVolumePanelRef.current,
+        showSmcOverlay: showSmcOverlayRef.current,
+        showVolumeProfile: showVolumeProfileRef.current,
+        indicators: indicatorsRef.current,
+        indicatorResults: indicatorResultsRef.current,
+        currentPriceOverride: currentPriceOverrideRef.current,
+        timeframe: timeframeRef.current,
+        cursorMode: cursorModeRef.current,
+        drawings: isAllDrawingsHiddenRef.current ? [] : drawingsRef.current,
+        activeDrawing: isAllDrawingsHiddenRef.current ? null : drawingInProgressRef.current,
+        selectedDrawingId: isAllDrawingsHiddenRef.current ? null : selectedDrawingIdRef.current,
+        scaleState: { priceScaleRatio: priceScaleRatioRef.current, priceOffset: priceOffsetRef.current },
+      },
+      { startIdx: startIdxRef.current, endIdx: endIdxRef.current },
+      chCoord,
+      dprRef.current,
+      magnetReticleRef.current
+    );
+  }, []);
+
+  const requestOverlayRender = useCallback(() => {
+    if (overlayRafIdRef.current !== null) return;
+    overlayRafIdRef.current = requestAnimationFrame(() => {
+      overlayRafIdRef.current = null;
+      renderOverlayNow();
+    });
+  }, [renderOverlayNow]);
+
+  // Keep overlay canvas synchronized whenever React props or states change
+  useEffect(() => {
+    requestOverlayRender();
+  });
 
   // ── LAYER 1: Background Canvas Render (Candles, Indicators, SMC, Volumes) ──
   useEffect(() => {
@@ -390,61 +508,56 @@ export function CandlestickCanvas({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    renderChart(
-      ctx,
-      cleanCandles,
-      {
-        chartType, showVolume, showVolumePanel,
-        showSmcOverlay, showVolumeProfile,
-        showFnoOverlay, fnoLevels,
-        strategyOverlay,
-        indicators, indicatorResults,
-        currentPriceOverride, timeframe,
-        drawings: isAllDrawingsHidden ? [] : drawings,
-        activeDrawing: null, // Overlay canvas handles active drawing rubber-band
-        selectedDrawingId: null, // Overlay canvas handles selection rings
-        scaleState: { priceScaleRatio, priceOffset },
-        skipCrosshair: true, // Overlay canvas handles crosshair at 120 FPS
-      },
-      { startIdx, endIdx },
-      null,
-      dpr
-    );
+    if (chartRafIdRef.current !== null) {
+      cancelAnimationFrame(chartRafIdRef.current);
+    }
+
+    chartRafIdRef.current = requestAnimationFrame(() => {
+      chartRafIdRef.current = null;
+      renderChart(
+        ctx,
+        cleanCandles,
+        {
+          chartType, showVolume, showVolumePanel,
+          showSmcOverlay, showVolumeProfile,
+          showFnoOverlay, fnoLevels,
+          strategyOverlay,
+          indicators, indicatorResults,
+          currentPriceOverride, timeframe,
+          drawings: isAllDrawingsHidden ? [] : drawings,
+          activeDrawing: null, // Overlay canvas handles active drawing rubber-band
+          selectedDrawingId: null, // Overlay canvas handles selection rings
+          scaleState: { priceScaleRatio, priceOffset },
+          skipCrosshair: true, // Overlay canvas handles crosshair at 120 FPS
+        },
+        { startIdx, endIdx },
+        null,
+        dpr
+      );
+    });
+
+    return () => {
+      if (chartRafIdRef.current !== null) {
+        cancelAnimationFrame(chartRafIdRef.current);
+        chartRafIdRef.current = null;
+      }
+    };
   }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, isAllDrawingsHidden, startIdx, endIdx, priceScaleRatio, priceOffset, size, dpr, clockTick]);
 
-  // ── LAYER 2: Foreground Overlay Canvas Render (120 FPS Crosshair, Anchors, Magnet Reticle) ──
+  // Global cleanup of all animation frames on unmount
   useEffect(() => {
-    const canvas = overlayCanvasRef.current;
-    if (!canvas || size.w === 0 || cleanCandles.length === 0) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    renderOverlay(
-      ctx,
-      cleanCandles,
-      {
-        chartType, showVolume, showVolumePanel,
-        showSmcOverlay, showVolumeProfile,
-        indicators, indicatorResults,
-        currentPriceOverride, timeframe,
-        cursorMode,
-        drawings: isAllDrawingsHidden ? [] : drawings,
-        activeDrawing: isAllDrawingsHidden ? null : drawingInProgress,
-        selectedDrawingId: isAllDrawingsHidden ? null : selectedDrawingId,
-        scaleState: { priceScaleRatio, priceOffset },
-      },
-      { startIdx, endIdx },
-      (crosshair && cursorMode !== 'pan') ? { x: crosshair.x * dpr, y: crosshair.y * dpr } : null,
-      dpr,
-      magnetReticle
-    );
-  }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
-      indicators, indicatorResults, currentPriceOverride, timeframe,
-      drawings, drawingInProgress, selectedDrawingId, isAllDrawingsHidden,
-      startIdx, endIdx, crosshair, cursorMode, priceScaleRatio, priceOffset, size, dpr, magnetReticle]);
+    return () => {
+      if (overlayRafIdRef.current !== null) cancelAnimationFrame(overlayRafIdRef.current);
+      if (panRafIdRef.current !== null) cancelAnimationFrame(panRafIdRef.current);
+      if (scaleRafIdRef.current !== null) cancelAnimationFrame(scaleRafIdRef.current);
+      if (zoomRafIdRef.current !== null) cancelAnimationFrame(zoomRafIdRef.current);
+      if (wheelRafIdRef.current !== null) cancelAnimationFrame(wheelRafIdRef.current);
+      if (chartRafIdRef.current !== null) cancelAnimationFrame(chartRafIdRef.current);
+    };
+  }, []);
 
   // Mouse dragging and endpoint adjustment refs
   const isDraggingRef = useRef(false);
@@ -574,41 +687,72 @@ export function CandlestickCanvas({
           if (hoveredBody) break;
         }
 
-        if (hoveredEndpoint) setHoverDrawingZone('endpoint');
-        else if (hoveredBody) setHoverDrawingZone('drawing');
-        else setHoverDrawingZone('none');
+        const nextHoverDrawingZone = hoveredEndpoint ? 'endpoint' : hoveredBody ? 'drawing' : 'none';
+        if (hoverDrawingZoneRef.current !== nextHoverDrawingZone) {
+          hoverDrawingZoneRef.current = nextHoverDrawingZone;
+          setHoverDrawingZone(nextHoverDrawingZone);
+        }
       } else {
-        setHoverDrawingZone('none');
+        if (hoverDrawingZoneRef.current !== 'none') {
+          hoverDrawingZoneRef.current = 'none';
+          setHoverDrawingZone('none');
+        }
       }
     }
 
-    // Detect hover zone over price or time scales
-    if (x >= size.w - CHART_RIGHT_MARGIN && y < size.h - CHART_BOTTOM_MARGIN) {
-      setHoverScaleZone('price');
-    } else if (y >= size.h - CHART_BOTTOM_MARGIN && x < size.w - CHART_RIGHT_MARGIN) {
-      setHoverScaleZone('time');
-    } else {
-      setHoverScaleZone('none');
+    // Detect hover zone over price or time scales (Deduplicated)
+    const nextHoverScaleZone = (x >= size.w - CHART_RIGHT_MARGIN && y < size.h - CHART_BOTTOM_MARGIN)
+      ? 'price'
+      : (y >= size.h - CHART_BOTTOM_MARGIN && x < size.w - CHART_RIGHT_MARGIN)
+      ? 'time'
+      : 'none';
+    if (hoverScaleZoneRef.current !== nextHoverScaleZone) {
+      hoverScaleZoneRef.current = nextHoverScaleZone;
+      setHoverScaleZone(nextHoverScaleZone);
     }
 
-    // 0. Interactive Price Scale Dragging (Vertical Stretch / Compress)
+    // 0. Interactive Price Scale Dragging (Vertical Stretch / Compress with rAF)
     if (dragScaleModeRef.current === 'price') {
       const dy = e.clientY - dragScaleStartYRef.current;
       const factor = Math.max(0.1, Math.min(10, dragScaleStartRatioRef.current * (1 + dy / 180)));
-      setPriceScaleRatio(+factor.toFixed(3));
+      pendingScaleRatioRef.current = +factor.toFixed(3);
+      if (scaleRafIdRef.current === null) {
+        scaleRafIdRef.current = requestAnimationFrame(() => {
+          scaleRafIdRef.current = null;
+          if (pendingScaleRatioRef.current !== null) {
+            setPriceScaleRatio(pendingScaleRatioRef.current);
+            pendingScaleRatioRef.current = null;
+          }
+        });
+      }
       return;
     }
 
-    // 0.5. Interactive Time Scale Dragging (Horizontal Spacing Adjustment)
+    // 0.5. Interactive Time Scale Dragging (Horizontal Spacing Adjustment with rAF)
     if (dragScaleModeRef.current === 'time') {
       const dx = e.clientX - dragScaleStartXRef.current;
       const factor = Math.max(0.2, Math.min(5, dragScaleStartZoomRef.current * (1 - dx / 250)));
-      setZoom(+factor.toFixed(2));
+      pendingZoomRef.current = +factor.toFixed(2);
+      if (zoomRafIdRef.current === null) {
+        zoomRafIdRef.current = requestAnimationFrame(() => {
+          zoomRafIdRef.current = null;
+          if (pendingZoomRef.current !== null) {
+            setZoom(pendingZoomRef.current);
+            pendingZoomRef.current = null;
+          }
+        });
+      }
       return;
     }
 
-    // Always update crosshair position smoothly
-    setCrosshair({ x, y });
+    // Direct 120 FPS Crosshair tracking — zero React state overhead
+    crosshairRef.current = { x, y };
+    if (isMagnetActive || isShiftHeld) {
+      getPointFromEvent(e.clientX, e.clientY);
+    } else {
+      magnetReticleRef.current = null;
+    }
+    requestOverlayRender();
 
     // 1. If currently adjusting an existing drawing endpoint
     if (adjustingRef.current) {
@@ -663,7 +807,7 @@ export function CandlestickCanvas({
       return;
     }
 
-    // 2. If currently dragging mouse to pan chart
+    // 2. If currently dragging mouse to pan chart (Coalesced via rAF for 120 FPS fluid pan)
     if (isDraggingRef.current && (!activeDrawingTool || activeDrawingTool === 'NONE')) {
       const dx = e.clientX - dragStartXRef.current;
       const visCnt = visibleCount;
@@ -671,7 +815,16 @@ export function CandlestickCanvas({
       const deltaCandleCount = dx / candlePixels;
       const maxScroll = Math.max(0, cleanCandles.length - 8);
       const newScroll = Math.max(0, Math.min(maxScroll, dragStartScrollRef.current + deltaCandleCount));
-      setScrollOffset(newScroll);
+      pendingScrollRef.current = newScroll;
+      if (panRafIdRef.current === null) {
+        panRafIdRef.current = requestAnimationFrame(() => {
+          panRafIdRef.current = null;
+          if (pendingScrollRef.current !== null) {
+            setScrollOffset(pendingScrollRef.current);
+            pendingScrollRef.current = null;
+          }
+        });
+      }
       return;
     }
 
@@ -703,9 +856,35 @@ export function CandlestickCanvas({
         });
       }
     }
-  }, [activeDrawingTool, visibleCount, cleanCandles, drawings, drawingInProgress, getPointFromEvent, onUpdateDrawing, size.h, size.w, startIdx, endIdx, priceOffset, priceScaleRatio, showVolumePanel, indicators]);
+  }, [activeDrawingTool, visibleCount, cleanCandles, drawings, drawingInProgress, getPointFromEvent, onUpdateDrawing, size.h, size.w, startIdx, endIdx, priceOffset, priceScaleRatio, showVolumePanel, indicators, isMagnetActive, isShiftHeld, requestOverlayRender]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    // Flush any pending scale or pan animations
+    if (panRafIdRef.current !== null) {
+      cancelAnimationFrame(panRafIdRef.current);
+      panRafIdRef.current = null;
+    }
+    if (pendingScrollRef.current !== null) {
+      setScrollOffset(pendingScrollRef.current);
+      pendingScrollRef.current = null;
+    }
+    if (scaleRafIdRef.current !== null) {
+      cancelAnimationFrame(scaleRafIdRef.current);
+      scaleRafIdRef.current = null;
+    }
+    if (pendingScaleRatioRef.current !== null) {
+      setPriceScaleRatio(pendingScaleRatioRef.current);
+      pendingScaleRatioRef.current = null;
+    }
+    if (zoomRafIdRef.current !== null) {
+      cancelAnimationFrame(zoomRafIdRef.current);
+      zoomRafIdRef.current = null;
+    }
+    if (pendingZoomRef.current !== null) {
+      setZoom(pendingZoomRef.current);
+      pendingZoomRef.current = null;
+    }
+
     if (dragScaleModeRef.current !== 'none') {
       dragScaleModeRef.current = 'none';
       try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
@@ -769,10 +948,18 @@ export function CandlestickCanvas({
   }, [activeDrawingTool, drawingInProgress, getPointFromEvent, isDrawingModeLocked, onAddDrawing, onDrawingToolChange]);
 
   const handlePointerLeave = useCallback(() => {
-    setCrosshair(null);
-    setMagnetReticle(null);
-    setHoverScaleZone('none');
-  }, []);
+    crosshairRef.current = null;
+    magnetReticleRef.current = null;
+    requestOverlayRender();
+    if (hoverScaleZoneRef.current !== 'none') {
+      hoverScaleZoneRef.current = 'none';
+      setHoverScaleZone('none');
+    }
+    if (hoverDrawingZoneRef.current !== 'none') {
+      hoverDrawingZoneRef.current = 'none';
+      setHoverDrawingZone('none');
+    }
+  }, [requestOverlayRender]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     // Finish Polyline on double click
@@ -1162,15 +1349,31 @@ export function CandlestickCanvas({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeDrawingTool, drawingInProgress, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, onUndoDrawing, onDeleteDrawing, onSelectDrawing, selectedDrawingId, onExportSnapshot]);
 
-  // Wheel zoom + scroll attached to foreground overlay canvas
+  // Wheel zoom + scroll attached to foreground overlay canvas (rAF-coalesced for 120 FPS trackpads)
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     if (e.shiftKey) {
-      const maxScroll = Math.max(0, cleanCandles.length - 8);
       const delta = e.deltaY > 0 ? -4 : 4;
-      setScrollOffset(s => Math.max(0, Math.min(maxScroll, s + delta)));
+      pendingWheelDeltaRef.current.scroll += delta;
     } else {
-      setZoom(z => Math.max(0.15, Math.min(6.0, +(z * (e.deltaY < 0 ? 1.15 : 0.87)).toFixed(2))));
+      const mult = e.deltaY < 0 ? 1.12 : 0.89;
+      pendingWheelDeltaRef.current.zoomMult *= mult;
+    }
+
+    if (wheelRafIdRef.current === null) {
+      wheelRafIdRef.current = requestAnimationFrame(() => {
+        wheelRafIdRef.current = null;
+        const { scroll, zoomMult } = pendingWheelDeltaRef.current;
+        pendingWheelDeltaRef.current = { scroll: 0, zoomMult: 1 };
+
+        if (scroll !== 0) {
+          const maxScroll = Math.max(0, cleanCandles.length - 8);
+          setScrollOffset(s => Math.max(0, Math.min(maxScroll, s + scroll)));
+        }
+        if (zoomMult !== 1) {
+          setZoom(z => Math.max(0.15, Math.min(6.0, +(z * zoomMult).toFixed(2))));
+        }
+      });
     }
   }, [cleanCandles.length]);
 
@@ -1202,7 +1405,8 @@ export function CandlestickCanvas({
       longPressTimerRef.current = setTimeout(() => {
         const pt = getPointFromEvent(touchX, touchY);
         if (pt) {
-          setCrosshair({ x: pt.x, y: pt.y });
+          crosshairRef.current = { x: pt.x, y: pt.y };
+          requestOverlayRender();
         }
       }, 350);
     }
@@ -1238,6 +1442,11 @@ export function CandlestickCanvas({
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
+    }
+    if (crosshairRef.current !== null) {
+      crosshairRef.current = null;
+      magnetReticleRef.current = null;
+      requestOverlayRender();
     }
     touchStartDistRef.current = null;
     lastTouchX.current = null;
