@@ -162,6 +162,8 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   useEffect(() => {
     let isCancelled = false;
     setIsLoadingCandles(true);
+    setCandles([]);
+    setCurrentPrice(undefined);
 
     async function loadCandles() {
       try {
@@ -173,10 +175,10 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         let rawCached = await loadStoredCandles(selectedSymbol, timeframe);
         if (rawCached && rawCached.length > 0) {
           const lastC = rawCached[rawCached.length - 1];
-          // If cached dataset has massive scale dislocation from live/expected price (> 50%), purge it
+          // If cached dataset has massive scale dislocation from live/expected price (> 35%), purge it
           if (expectedPrice > 0 && lastC && lastC.close > 0) {
             const dislocation = Math.abs(lastC.close - expectedPrice) / expectedPrice;
-            if (dislocation > 0.50) {
+            if (dislocation > 0.35) {
               console.warn(`[ChartContainer] Auto-purging dislocated cache for ${selectedSymbol} (cached: ${lastC.close}, expected: ${expectedPrice})`);
               await purgeStoredCandles(selectedSymbol, timeframe);
               rawCached = null;
@@ -199,8 +201,23 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
 
         if (!isCancelled) {
           if (cleanEngine.length > 0) {
-            const merged = mergeCandleArrays(cleanCached, cleanEngine, tfMs);
-            const cleanMerged = validateAndCleanCandles(merged);
+            let finalCandles: Candle[];
+            // Only merge older cached candles if they are on a continuous price scale with engine data
+            if (cleanCached.length > 0 && cleanCached[cleanCached.length - 1].openTime < cleanEngine[0].openTime) {
+              const cachedLast = cleanCached[cleanCached.length - 1].close;
+              const engineFirst = cleanEngine[0].open;
+              const scaleDiff = Math.abs(cachedLast - engineFirst) / Math.max(1, engineFirst);
+              if (scaleDiff < 0.15) {
+                finalCandles = mergeCandleArrays(cleanCached, cleanEngine, tfMs);
+              } else {
+                finalCandles = cleanEngine;
+                purgeStoredCandles(selectedSymbol, timeframe);
+              }
+            } else {
+              finalCandles = mergeCandleArrays(cleanCached, cleanEngine, tfMs);
+            }
+
+            const cleanMerged = validateAndCleanCandles(finalCandles);
 
             setCandles(cleanMerged);
             const lastC = cleanMerged[cleanMerged.length - 1];
@@ -208,13 +225,12 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             setIsLiveFromEngine(true);
             saveStoredCandles(selectedSymbol, timeframe, cleanMerged);
           } else if (cleanCached.length === 0) {
-            // Fallback to mock data if offline or no candles returned
+            // Fallback to mock data ONLY in-memory (never pollute persistent storage with mock candles)
             const fallback = getMockCandles(market, selectedSymbol, timeframe, 150);
             const cleanFallback = validateAndCleanCandles(fallback);
             setCandles(cleanFallback);
             setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);
             setIsLiveFromEngine(false);
-            saveStoredCandles(selectedSymbol, timeframe, cleanFallback);
           }
         }
       } catch (err) {
