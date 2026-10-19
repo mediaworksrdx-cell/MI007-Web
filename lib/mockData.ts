@@ -67,6 +67,30 @@ const CRYPTO_BASE_PRICES: Record<string, number> = {
   AVAX: 28.50,
 };
 
+export const COMMODITY_BASE_PRICES: Record<string, number> = {
+  GOLD: 2735.40,
+  XAU: 2735.40,
+  XAUUSD: 2735.40,
+  SILVER: 31.85,
+  XAG: 31.85,
+  XAGUSD: 31.85,
+  CRUDEOIL: 74.20,
+  BRENT: 74.20,
+  WTI: 70.80,
+  NATGAS: 2.85,
+  COPPER: 4.38,
+  PLATINUM: 1024.50,
+};
+
+export const FOREX_BASE_PRICES: Record<string, number> = {
+  EURUSD: 1.0845,
+  GBPUSD: 1.2980,
+  USDJPY: 152.40,
+  USDINR: 84.08,
+  USDAED: 3.6725,
+  AUDUSD: 0.6650,
+};
+
 /** Generate realistic OHLCV candles with volatility clustering */
 export function generateMockCandles(
   market: MarketType,
@@ -74,10 +98,12 @@ export function generateMockCandles(
   count: number = 300,
   timeframeMs: number = 60 * 60 * 1000 // 1H default
 ): Candle[] {
-  const symClean = symbol.toUpperCase().replace(/\s+/g, '');
+  const symClean = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
   const market_prices = BASE_PRICES[market] || BASE_PRICES.INDIA;
   const basePrice =
     CRYPTO_BASE_PRICES[symClean] ??
+    COMMODITY_BASE_PRICES[symClean] ??
+    FOREX_BASE_PRICES[symClean] ??
     market_prices[symbol] ??
     market_prices[symClean] ??
     BASE_PRICES.INDIA[symClean] ??
@@ -85,6 +111,7 @@ export function generateMockCandles(
     BASE_PRICES.UAE[symClean] ??
     1000;
 
+  const decimals = basePrice < 2 ? 4 : basePrice < 10 ? 3 : 2;
   const candles: Candle[] = [];
   let price = basePrice;
   const now = Date.now();
@@ -108,7 +135,7 @@ export function generateMockCandles(
     // Healthy institutional candle body (0.3% to 1.1% of price on 1H/1D)
     const variance = (0.5 + Math.random() * 1.0);
     const movePct = basePct * variance * (Math.random() > 0.38 ? waveTrend : -waveTrend);
-    const bodySize = Math.max(price * Math.abs(movePct), price * 0.001);
+    const bodySize = Math.max(price * Math.abs(movePct), price * 0.0005);
     const isBull = movePct >= 0;
 
     const open = price;
@@ -123,10 +150,10 @@ export function generateMockCandles(
 
     candles.push({
       openTime: startTime + i * timeframeMs,
-      open: +open.toFixed(2),
-      high: +high.toFixed(2),
-      low: +low.toFixed(2),
-      close: +close.toFixed(2),
+      open: +open.toFixed(decimals),
+      high: +high.toFixed(decimals),
+      low: +low.toFixed(decimals),
+      close: +close.toFixed(decimals),
       volume,
     });
 
@@ -163,10 +190,12 @@ export function getMockQuote(
   market: MarketType,
   symbol: string
 ): { price: number; change: number; changePct: number; high: number; low: number; volume: number; open: number } {
-  const symClean = symbol.toUpperCase().replace(/\s+/g, '');
+  const symClean = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
   const market_prices = BASE_PRICES[market] || BASE_PRICES.INDIA;
   const basePrice =
     CRYPTO_BASE_PRICES[symClean] ??
+    COMMODITY_BASE_PRICES[symClean] ??
+    FOREX_BASE_PRICES[symClean] ??
     market_prices[symbol] ??
     market_prices[symClean] ??
     BASE_PRICES.INDIA[symClean] ??
@@ -177,13 +206,14 @@ export function getMockQuote(
   const open = basePrice - change * 0.3;
   const high = basePrice + Math.abs(change) * 1.4;
   const low = basePrice - Math.abs(change) * 1.1;
+  const decimals = basePrice < 2 ? 4 : basePrice < 10 ? 3 : 2;
   return {
-    price: +basePrice.toFixed(2),
-    change: +change.toFixed(2),
+    price: +basePrice.toFixed(decimals),
+    change: +change.toFixed(decimals),
     changePct: +((change / basePrice) * 100).toFixed(2),
-    high: +high.toFixed(2),
-    low: +low.toFixed(2),
-    open: +open.toFixed(2),
+    high: +high.toFixed(decimals),
+    low: +low.toFixed(decimals),
+    open: +open.toFixed(decimals),
     volume: Math.floor(basePrice * (1000 + Math.random() * 3000)),
   };
 }

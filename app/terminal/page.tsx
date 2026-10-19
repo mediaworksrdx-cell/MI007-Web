@@ -34,6 +34,24 @@ export interface CryptoItem {
   changePct: number;
 }
 
+export interface CommodityItem {
+  symbol: string;
+  name: string;
+  base: number;
+  unit: string;
+  category: string;
+  changePct: number;
+}
+
+export interface ForexItem {
+  symbol: string;
+  name: string;
+  base: number;
+  pair: string;
+  pipSpread?: string;
+  changePct: number;
+}
+
 const DEFAULT_INDIA_INDICES: IndexItem[] = [
   { symbol: 'NIFTY', name: 'NIFTY 50', base: 23146.15, changePct: 0.65 },
   { symbol: 'BANKNIFTY', name: 'BANK NIFTY', base: 55844.00, changePct: 0.06 },
@@ -92,6 +110,24 @@ const DEFAULT_CRYPTO: CryptoItem[] = [
   { symbol: 'SHIB', name: 'Shiba Inu', base: 0.0000185, changePct: -0.85 },
 ];
 
+const DEFAULT_COMMODITIES: CommodityItem[] = [
+  { symbol: 'GOLD', name: 'Gold Bullion', base: 2735.40, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.65 },
+  { symbol: 'SILVER', name: 'Silver Spot', base: 31.85, unit: 'USD / oz', category: 'Precious Metals', changePct: 1.20 },
+  { symbol: 'CRUDEOIL', name: 'Brent Crude', base: 74.20, unit: 'USD / bbl', category: 'Energy', changePct: -0.45 },
+  { symbol: 'NATGAS', name: 'Natural Gas', base: 2.85, unit: 'USD / MMBtu', category: 'Energy', changePct: 2.15 },
+  { symbol: 'COPPER', name: 'High Grade Copper', base: 4.38, unit: 'USD / lb', category: 'Industrial Metals', changePct: 0.82 },
+  { symbol: 'PLATINUM', name: 'Platinum Spot', base: 1024.50, unit: 'USD / oz', category: 'Precious Metals', changePct: -0.30 },
+];
+
+const DEFAULT_FOREX: ForexItem[] = [
+  { symbol: 'EURUSD', name: 'Euro / US Dollar', pair: 'EUR / USD', base: 1.0845, pipSpread: '0.8 pips', changePct: 0.18 },
+  { symbol: 'GBPUSD', name: 'British Pound / USD', pair: 'GBP / USD', base: 1.2980, pipSpread: '1.0 pips', changePct: 0.22 },
+  { symbol: 'USDJPY', name: 'USD / Japanese Yen', pair: 'USD / JPY', base: 152.40, pipSpread: '0.9 pips', changePct: -0.35 },
+  { symbol: 'USDINR', name: 'USD / Indian Rupee', pair: 'USD / INR', base: 84.08, pipSpread: '1.2 pips', changePct: 0.05 },
+  { symbol: 'USDAED', name: 'USD / UAE Dirham', pair: 'USD / AED', base: 3.6725, pipSpread: '0.5 pips', changePct: 0.00 },
+  { symbol: 'AUDUSD', name: 'Australian Dollar / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips', changePct: 0.40 },
+];
+
 // Predefined catalog of recognized indices & cryptos for instantaneous auto-detection
 const KNOWN_INDICES: Record<string, { name: string; base: number; market: MarketType }> = {
   NIFTY: { name: 'NIFTY 50', base: 23146.15, market: 'INDIA' },
@@ -124,6 +160,26 @@ const KNOWN_CRYPTOS: Record<string, { name: string; base: number }> = {
   DOT: { name: 'Polkadot', base: 6.80 },
   LINK: { name: 'Chainlink', base: 14.50 },
   MATIC: { name: 'Polygon', base: 0.42 },
+};
+
+const KNOWN_COMMODITIES: Record<string, { name: string; base: number; unit: string; category: string }> = {
+  GOLD: { name: 'Gold Bullion', base: 2735.40, unit: 'USD / oz', category: 'Precious Metals' },
+  SILVER: { name: 'Silver Spot', base: 31.85, unit: 'USD / oz', category: 'Precious Metals' },
+  CRUDEOIL: { name: 'Brent Crude', base: 74.20, unit: 'USD / bbl', category: 'Energy' },
+  BRENT: { name: 'Brent Crude', base: 74.20, unit: 'USD / bbl', category: 'Energy' },
+  WTI: { name: 'WTI Light Crude', base: 70.80, unit: 'USD / bbl', category: 'Energy' },
+  NATGAS: { name: 'Natural Gas', base: 2.85, unit: 'USD / MMBtu', category: 'Energy' },
+  COPPER: { name: 'High Grade Copper', base: 4.38, unit: 'USD / lb', category: 'Industrial Metals' },
+  PLATINUM: { name: 'Platinum Spot', base: 1024.50, unit: 'USD / oz', category: 'Precious Metals' },
+};
+
+const KNOWN_FOREX: Record<string, { name: string; base: number; pair: string; pipSpread: string }> = {
+  EURUSD: { name: 'Euro / US Dollar', pair: 'EUR / USD', base: 1.0845, pipSpread: '0.8 pips' },
+  GBPUSD: { name: 'British Pound / USD', pair: 'GBP / USD', base: 1.2980, pipSpread: '1.0 pips' },
+  USDJPY: { name: 'USD / Japanese Yen', pair: 'USD / JPY', base: 152.40, pipSpread: '0.9 pips' },
+  USDINR: { name: 'USD / Indian Rupee', pair: 'USD / INR', base: 84.08, pipSpread: '1.2 pips' },
+  USDAED: { name: 'USD / UAE Dirham', pair: 'USD / AED', base: 3.6725, pipSpread: '0.5 pips' },
+  AUDUSD: { name: 'Australian Dollar / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips' },
 };
 
 const KNOWN_US_STOCKS: Record<string, { name: string; base: number; sector: string }> = {
@@ -432,7 +488,7 @@ function SectionHeader({
 interface SearchSuggestion {
   symbol: string;
   name: string;
-  category: 'STOCK' | 'INDEX' | 'CRYPTO';
+  category: 'STOCK' | 'INDEX' | 'COMMODITY' | 'FOREX' | 'CRYPTO';
   sector?: string;
   base: number;
 }
@@ -440,6 +496,9 @@ interface SearchSuggestion {
 export default function TerminalPage() {
   const { market, setMarket, currency } = useMarket();
   const { getSymbolPrice } = useTradeEngine();
+
+  // Active terminal module tab: 'all' (Full Dashboard) | 'commodities' | 'forex'
+  const [activeTab, setActiveTab] = useState<'all' | 'commodities' | 'forex'>('all');
 
   // State: Edit mode toggle
   const [isEditing, setIsEditing] = useState(false);
@@ -454,6 +513,29 @@ export default function TerminalPage() {
   });
 
   const [crypto, setCrypto] = useState<CryptoItem[]>(DEFAULT_CRYPTO);
+  const [commodities, setCommodities] = useState<CommodityItem[]>(DEFAULT_COMMODITIES);
+  const [forex, setForex] = useState<ForexItem[]>(DEFAULT_FOREX);
+
+  // Read URL query/hash on mount and load saved commodities/forex
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const view = params.get('view') || params.get('tab');
+      if (view === 'commodities' || window.location.hash === '#commodities') {
+        setActiveTab('commodities');
+      } else if (view === 'forex' || window.location.hash === '#forex') {
+        setActiveTab('forex');
+      }
+
+      try {
+        const savedComm = localStorage.getItem('mi007_dashboard_commodities');
+        if (savedComm) setCommodities(JSON.parse(savedComm));
+
+        const savedFx = localStorage.getItem('mi007_dashboard_forex');
+        if (savedFx) setForex(JSON.parse(savedFx));
+      } catch {}
+    }
+  }, []);
 
   // Sync state when market changes or load from localStorage
   useEffect(() => {
@@ -507,6 +589,22 @@ export default function TerminalPage() {
     } catch {}
   };
 
+  // Persist commodities to localStorage
+  const updateCommodities = (newList: CommodityItem[]) => {
+    setCommodities(newList);
+    try {
+      localStorage.setItem('mi007_dashboard_commodities', JSON.stringify(newList));
+    } catch {}
+  };
+
+  // Persist forex to localStorage
+  const updateForex = (newList: ForexItem[]) => {
+    setForex(newList);
+    try {
+      localStorage.setItem('mi007_dashboard_forex', JSON.stringify(newList));
+    } catch {}
+  };
+
   // ─── Delete Handlers ───
   const handleDeleteIndex = (symbol: string) => {
     const updated = indices.filter(i => i.symbol.toUpperCase() !== symbol.toUpperCase());
@@ -526,18 +624,36 @@ export default function TerminalPage() {
     showToast(`Removed ${symbol} from Crypto Intelligence`);
   };
 
+  const handleDeleteCommodity = (symbol: string) => {
+    const updated = commodities.filter(c => c.symbol.toUpperCase() !== symbol.toUpperCase());
+    updateCommodities(updated);
+    showToast(`Removed ${symbol} from Commodities Intelligence`);
+  };
+
+  const handleDeleteForex = (symbol: string) => {
+    const updated = forex.filter(f => f.symbol.toUpperCase() !== symbol.toUpperCase());
+    updateForex(updated);
+    showToast(`Removed ${symbol} from Forex Intelligence`);
+  };
+
   const handleResetDefaults = () => {
     const defInd = market === 'INDIA' ? DEFAULT_INDIA_INDICES : market === 'USA' ? DEFAULT_USA_INDICES : DEFAULT_UAE_INDICES;
     const defWat = market === 'INDIA' ? DEFAULT_INDIA_WATCHLIST : market === 'USA' ? DEFAULT_USA_WATCHLIST : DEFAULT_UAE_WATCHLIST;
     updateIndices(defInd);
     updateWatchlist(defWat);
     updateCrypto(DEFAULT_CRYPTO);
+    updateCommodities(DEFAULT_COMMODITIES);
+    updateForex(DEFAULT_FOREX);
+    try {
+      localStorage.removeItem('mi007_dashboard_commodities');
+      localStorage.removeItem('mi007_dashboard_forex');
+    } catch {}
     showToast(`Reset ${MARKETS[market].label} dashboard to factory defaults`);
   };
 
   // ─── Search & Add System ───
   const [searchQuery, setSearchQuery] = useState('');
-  const [targetCategory, setTargetCategory] = useState<'AUTO' | 'STOCK' | 'INDEX' | 'CRYPTO'>('AUTO');
+  const [targetCategory, setTargetCategory] = useState<'AUTO' | 'STOCK' | 'INDEX' | 'COMMODITY' | 'FOREX' | 'CRYPTO'>('AUTO');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [feedbackToast, setFeedbackToast] = useState<{ message: string; isError?: boolean } | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -558,7 +674,7 @@ export default function TerminalPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Compute live search suggestions across Indices, Cryptos, US/UAE stocks, and 3,800+ Zerodha NSE stocks
+  // Compute live search suggestions across Indices, Cryptos, Commodities, Forex, US/UAE stocks, and 3,800+ Zerodha NSE stocks
   const searchSuggestions: SearchSuggestion[] = useMemo(() => {
     const q = searchQuery.trim().toUpperCase();
     if (!q) return [];
@@ -572,28 +688,42 @@ export default function TerminalPage() {
       }
     });
 
-    // 2. Check known indices
+    // 2. Check known commodities
+    Object.entries(KNOWN_COMMODITIES).forEach(([sym, data]) => {
+      if (sym.includes(q) || data.name.toUpperCase().includes(q)) {
+        results.push({ symbol: sym, name: data.name, category: 'COMMODITY', base: data.base });
+      }
+    });
+
+    // 3. Check known forex
+    Object.entries(KNOWN_FOREX).forEach(([sym, data]) => {
+      if (sym.includes(q) || data.name.toUpperCase().includes(q) || data.pair.toUpperCase().includes(q)) {
+        results.push({ symbol: sym, name: `${data.name} (${data.pair})`, category: 'FOREX', base: data.base });
+      }
+    });
+
+    // 4. Check known indices
     Object.entries(KNOWN_INDICES).forEach(([sym, data]) => {
       if (sym.includes(q) || data.name.toUpperCase().includes(q)) {
         results.push({ symbol: sym, name: data.name, category: 'INDEX', base: data.base });
       }
     });
 
-    // 3. Check USA stocks
+    // 5. Check USA stocks
     Object.entries(KNOWN_US_STOCKS).forEach(([sym, data]) => {
       if (sym.includes(q) || data.name.toUpperCase().includes(q)) {
         results.push({ symbol: sym, name: data.name, category: 'STOCK', sector: data.sector, base: data.base });
       }
     });
 
-    // 4. Check UAE stocks
+    // 6. Check UAE stocks
     Object.entries(KNOWN_UAE_STOCKS).forEach(([sym, data]) => {
       if (sym.includes(q) || data.name.toUpperCase().includes(q)) {
         results.push({ symbol: sym, name: data.name, category: 'STOCK', sector: data.sector, base: data.base });
       }
     });
 
-    // 5. Check 3,800+ Indian Zerodha catalog
+    // 7. Check 3,800+ Indian Zerodha catalog
     if (market === 'INDIA' || results.length < 6) {
       const zerodhaMatches = searchZerodhaStocks(q, 10);
       zerodhaMatches.forEach((z) => {
@@ -622,7 +752,7 @@ export default function TerminalPage() {
     const rawSym = (item?.symbol || searchQuery).trim().toUpperCase();
     if (!rawSym) return;
 
-    let targetCat: 'STOCK' | 'INDEX' | 'CRYPTO' = 'STOCK';
+    let targetCat: 'STOCK' | 'INDEX' | 'COMMODITY' | 'FOREX' | 'CRYPTO' = 'STOCK';
 
     if (targetCategory !== 'AUTO') {
       targetCat = targetCategory;
@@ -630,6 +760,10 @@ export default function TerminalPage() {
       targetCat = item.category;
     } else if (KNOWN_CRYPTOS[rawSym]) {
       targetCat = 'CRYPTO';
+    } else if (KNOWN_COMMODITIES[rawSym]) {
+      targetCat = 'COMMODITY';
+    } else if (KNOWN_FOREX[rawSym]) {
+      targetCat = 'FOREX';
     } else if (KNOWN_INDICES[rawSym]) {
       targetCat = 'INDEX';
     }
@@ -649,6 +783,50 @@ export default function TerminalPage() {
       };
       updateCrypto([...crypto, newCryptoItem]);
       showToast(`✓ Added ${rawSym} to Crypto Intelligence`);
+      setSearchQuery('');
+      setIsDropdownOpen(false);
+      return;
+    }
+
+    // Add to Commodities
+    if (targetCat === 'COMMODITY') {
+      if (commodities.some(c => c.symbol.toUpperCase() === rawSym)) {
+        showToast(`${rawSym} is already in Commodities Intelligence`, true);
+        return;
+      }
+      const commData = KNOWN_COMMODITIES[rawSym] || { name: item?.name || `${rawSym} Commodity`, base: item?.base || 100.0, unit: 'USD / contract', category: 'Commodities' };
+      const newCommItem: CommodityItem = {
+        symbol: rawSym,
+        name: commData.name,
+        base: commData.base,
+        unit: commData.unit,
+        category: commData.category,
+        changePct: +(Math.random() * 2 - 0.7).toFixed(2),
+      };
+      updateCommodities([...commodities, newCommItem]);
+      showToast(`✓ Added ${rawSym} to Commodities Intelligence`);
+      setSearchQuery('');
+      setIsDropdownOpen(false);
+      return;
+    }
+
+    // Add to Forex
+    if (targetCat === 'FOREX') {
+      if (forex.some(f => f.symbol.toUpperCase() === rawSym)) {
+        showToast(`${rawSym} is already in Forex Intelligence`, true);
+        return;
+      }
+      const fxData = KNOWN_FOREX[rawSym] || { name: item?.name || `${rawSym} FX Pair`, base: item?.base || 1.0, pair: rawSym.length === 6 ? `${rawSym.slice(0, 3)} / ${rawSym.slice(3)}` : rawSym, pipSpread: '1.0 pips' };
+      const newForexItem: ForexItem = {
+        symbol: rawSym,
+        name: fxData.name,
+        pair: fxData.pair,
+        base: fxData.base,
+        pipSpread: fxData.pipSpread,
+        changePct: +(Math.random() * 0.8 - 0.4).toFixed(2),
+      };
+      updateForex([...forex, newForexItem]);
+      showToast(`✓ Added ${rawSym} to Forex Intelligence`);
       setSearchQuery('');
       setIsDropdownOpen(false);
       return;
@@ -763,15 +941,50 @@ export default function TerminalPage() {
               </div>
             </div>
 
-            {/* ── Module Tabs: Dashboard & Screeners ── */}
+            {/* ── Module Tabs: Dashboard, Commodities, Forex, Charts, Screeners ── */}
             <div className="flex flex-wrap items-center gap-2 mb-6 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
-              <Link
-                href="/terminal"
-                className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-black tracking-wide text-center transition-all bg-emerald-500 text-slate-950 shadow-xs flex items-center justify-center gap-2"
+              <button
+                type="button"
+                onClick={() => setActiveTab('all')}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  activeTab === 'all'
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                    : 'font-bold text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/5'
+                }`}
               >
                 <span>⚡</span>
                 <span>DASHBOARD</span>
-              </Link>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('commodities')}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  activeTab === 'commodities'
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                    : 'font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                }`}
+              >
+                <span>🛢️</span>
+                <span>COMMODITIES</span>
+                <span className={`mono text-[10px] px-1.5 py-0.5 rounded ${activeTab === 'commodities' ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-amber-500/15 text-amber-500 font-bold'}`}>
+                  6 GLOBAL
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('forex')}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  activeTab === 'forex'
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                    : 'font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                }`}
+              >
+                <span>💱</span>
+                <span>FOREX</span>
+                <span className={`mono text-[10px] px-1.5 py-0.5 rounded ${activeTab === 'forex' ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-cyan-500/15 text-cyan-500 font-bold'}`}>
+                  6 MAJOR
+                </span>
+              </button>
               <Link
                 href={`/chart/${defaultChartSym}?market=${market}`}
                 className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2 border border-transparent hover:border-emerald-500/30"
@@ -789,32 +1002,82 @@ export default function TerminalPage() {
               </Link>
             </div>
 
-            {/* ── Screeners Banner ── */}
-            <div className="p-4 sm:p-5 rounded-xl border border-emerald-500/40 bg-gradient-to-r from-emerald-500/10 via-[var(--theme-card-surface)] to-[var(--theme-card-bg)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="mono text-[14px] sm:text-[15px] font-black inst-card-text uppercase tracking-wider">
-                    Equity Screener & Query Engine
-                  </span>
-                  <span className="mono text-[11px] font-black px-2 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/20 text-emerald-300">
-                    NEW MODULE
-                  </span>
+            {/* ── Contextual Module Banner ── */}
+            {activeTab === 'commodities' ? (
+              <div className="p-4 sm:p-5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-[var(--theme-card-surface)] to-[var(--theme-card-bg)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="mono text-[14px] sm:text-[15px] font-black inst-card-text uppercase tracking-wider">
+                      Global Commodities Intelligence · 24/5 Contracts
+                    </span>
+                    <span className="mono text-[11px] font-black px-2 py-0.5 rounded border border-amber-500/40 bg-amber-500/20 text-amber-500 dark:text-amber-400">
+                      PRECIOUS METALS · ENERGY · METALS
+                    </span>
+                  </div>
+                  <p className="text-[12.5px] sm:text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">
+                    Continuous institutional pricing, daily performance, and professional interactive charting for Gold, Silver, Brent Crude, Natural Gas, Copper, and Platinum.
+                  </p>
                 </div>
-                <p className="text-[12.5px] sm:text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">
-                  Discover, filter, and compare equities using multi-year financial statements, valuation multiples, custom ratios, and Screener.in-inspired queries.
-                </p>
+                <Link
+                  href="/chart/GOLD?market=USA"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 text-slate-950 mono text-[13px] font-black tracking-wide hover:bg-amber-400 transition-all shadow-md shrink-0 flex items-center justify-center gap-2 group"
+                >
+                  <span>LAUNCH GOLD CHART</span>
+                  <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                </Link>
               </div>
-              <Link
-                href="/terminal/screener"
-                className="px-5 py-2.5 rounded-xl bg-emerald-500 text-slate-950 mono text-[13px] font-black tracking-wide hover:bg-emerald-400 transition-all shadow-md shrink-0 flex items-center justify-center gap-2 group"
-              >
-                <span>OPEN SCREENERS</span>
-                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-              </Link>
-            </div>
+            ) : activeTab === 'forex' ? (
+              <div className="p-4 sm:p-5 rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-500/10 via-[var(--theme-card-surface)] to-[var(--theme-card-bg)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+                    <span className="mono text-[14px] sm:text-[15px] font-black inst-card-text uppercase tracking-wider">
+                      Interbank Foreign Exchange · Major Crosses
+                    </span>
+                    <span className="mono text-[11px] font-black px-2 py-0.5 rounded border border-cyan-500/40 bg-cyan-500/20 text-cyan-600 dark:text-cyan-400">
+                      24/5 INTERBANK FX
+                    </span>
+                  </div>
+                  <p className="text-[12.5px] sm:text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">
+                    Real-time interbank currency exchange rates, live pip spreads, and technical candlestick charting across EUR/USD, GBP/USD, USD/JPY, USD/INR, USD/AED, and AUD/USD.
+                  </p>
+                </div>
+                <Link
+                  href="/chart/EURUSD?market=USA"
+                  className="px-5 py-2.5 rounded-xl bg-cyan-500 text-slate-950 mono text-[13px] font-black tracking-wide hover:bg-cyan-400 transition-all shadow-md shrink-0 flex items-center justify-center gap-2 group"
+                >
+                  <span>LAUNCH EUR/USD CHART</span>
+                  <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="p-4 sm:p-5 rounded-xl border border-emerald-500/40 bg-gradient-to-r from-emerald-500/10 via-[var(--theme-card-surface)] to-[var(--theme-card-bg)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="mono text-[14px] sm:text-[15px] font-black inst-card-text uppercase tracking-wider">
+                      Equity Screener & Query Engine
+                    </span>
+                    <span className="mono text-[11px] font-black px-2 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/20 text-emerald-300">
+                      NEW MODULE
+                    </span>
+                  </div>
+                  <p className="text-[12.5px] sm:text-[13px] text-[var(--theme-card-text-muted)] font-medium mt-1">
+                    Discover, filter, and compare equities using multi-year financial statements, valuation multiples, custom ratios, and Screener.in-inspired queries.
+                  </p>
+                </div>
+                <Link
+                  href="/terminal/screener"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-500 text-slate-950 mono text-[13px] font-black tracking-wide hover:bg-emerald-400 transition-all shadow-md shrink-0 flex items-center justify-center gap-2 group"
+                >
+                  <span>OPEN SCREENERS</span>
+                  <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                </Link>
+              </div>
+            )}
 
-            {/* ── Search Bar with Add Button for Stocks, Index, or Crypto ── */}
+            {/* ── Search Bar with Add Button for Stocks, Index, Commodities, Forex, or Crypto ── */}
             <div className="p-4 sm:p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-md mb-6 relative z-30" ref={searchContainerRef}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-2">
@@ -824,7 +1087,7 @@ export default function TerminalPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {(['AUTO', 'STOCK', 'INDEX', 'CRYPTO'] as const).map(cat => (
+                  {(['AUTO', 'STOCK', 'INDEX', 'COMMODITY', 'FOREX', 'CRYPTO'] as const).map(cat => (
                     <button
                       key={cat}
                       type="button"
@@ -863,9 +1126,13 @@ export default function TerminalPage() {
                       }
                     }}
                     placeholder={
-                      market === 'INDIA'
-                        ? 'Search from 3,800+ Zerodha stocks, indices (NIFTY), or crypto (BTC) to add...'
-                        : 'Search stocks (NVDA, AAPL), indices (SPX, NDX), or crypto (BTC) to add...'
+                      activeTab === 'commodities'
+                        ? 'Search commodities (GOLD, CRUDEOIL, SILVER, NATGAS) to add...'
+                        : activeTab === 'forex'
+                        ? 'Search major currency pairs (EURUSD, GBPUSD, USDJPY, USDINR) to add...'
+                        : market === 'INDIA'
+                        ? 'Search from 3,800+ Zerodha stocks, indices, commodities, forex, or crypto...'
+                        : 'Search stocks, indices, commodities, forex, or crypto...'
                     }
                     className="w-full px-4 py-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] placeholder-slate-400 mono text-[13px] font-medium focus:outline-none focus:border-emerald-500 shadow-inner"
                   />
@@ -950,131 +1217,307 @@ export default function TerminalPage() {
               )}
             </div>
 
-            {/* ── Core Indices Grid ── */}
-            <SectionHeader
-              title="Core Indices"
-              badge={`${indices.length} ACTIVE`}
-              isEditing={isEditing}
-              onToggleEdit={() => setIsEditing(v => !v)}
-              onResetDefaults={handleResetDefaults}
-            />
-            {indices.length === 0 ? (
-              <div className="p-8 rounded-2xl border-2 border-dashed border-[var(--theme-card-border)] text-center mono text-xs text-[var(--theme-card-text-muted)] mb-6">
-                No indices in this section. Use the search bar above or click Reset Defaults.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
-                {indices.map(idx => (
-                  <IndexTile
-                    key={idx.symbol}
-                    symbol={idx.symbol}
-                    name={idx.name}
-                    base={idx.base}
-                    changePct={idx.changePct}
-                    currency={currency}
-                    market={market}
-                    isEditing={isEditing}
-                    onDelete={() => handleDeleteIndex(idx.symbol)}
-                  />
-                ))}
-              </div>
+            {/* ── Core Indices Grid (Shown on Full Dashboard) ── */}
+            {activeTab === 'all' && (
+              <>
+                <SectionHeader
+                  title="Core Indices"
+                  badge={`${indices.length} ACTIVE`}
+                  isEditing={isEditing}
+                  onToggleEdit={() => setIsEditing(v => !v)}
+                  onResetDefaults={handleResetDefaults}
+                />
+                {indices.length === 0 ? (
+                  <div className="p-8 rounded-2xl border-2 border-dashed border-[var(--theme-card-border)] text-center mono text-xs text-[var(--theme-card-text-muted)] mb-6">
+                    No indices in this section. Use the search bar above or click Reset Defaults.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
+                    {indices.map(idx => (
+                      <IndexTile
+                        key={idx.symbol}
+                        symbol={idx.symbol}
+                        name={idx.name}
+                        base={idx.base}
+                        changePct={idx.changePct}
+                        currency={currency}
+                        market={market}
+                        isEditing={isEditing}
+                        onDelete={() => handleDeleteIndex(idx.symbol)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Strategic Watchlist ── */}
+                <SectionHeader
+                  title={`${MARKETS[market].label} Strategic Watchlist`}
+                  badge={`${watchlist.length} MONITORED`}
+                  isEditing={isEditing}
+                  onToggleEdit={() => setIsEditing(v => !v)}
+                  onResetDefaults={handleResetDefaults}
+                />
+                {watchlist.length === 0 ? (
+                  <div className="p-8 rounded-2xl border-2 border-dashed border-[var(--theme-card-border)] text-center mono text-xs text-[var(--theme-card-text-muted)] mb-6">
+                    No stocks in this watchlist. Use the search bar above to add stocks or click Reset Defaults.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2.5 mb-6">
+                    {watchlist.map(item => (
+                      <WatchlistRow
+                        key={item.symbol}
+                        symbol={item.symbol}
+                        name={item.name}
+                        base={item.base}
+                        sector={item.sector}
+                        changePct={item.changePct}
+                        currency={currency}
+                        market={market}
+                        isEditing={isEditing}
+                        onDelete={() => handleDeleteWatchlist(item.symbol)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
-            {/* ── Strategic Watchlist ── */}
-            <SectionHeader
-              title={`${MARKETS[market].label} Strategic Watchlist`}
-              badge={`${watchlist.length} MONITORED`}
-              isEditing={isEditing}
-              onToggleEdit={() => setIsEditing(v => !v)}
-              onResetDefaults={handleResetDefaults}
-            />
-            {watchlist.length === 0 ? (
-              <div className="p-8 rounded-2xl border-2 border-dashed border-[var(--theme-card-border)] text-center mono text-xs text-[var(--theme-card-text-muted)] mb-6">
-                No stocks in this watchlist. Use the search bar above to add stocks or click Reset Defaults.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2.5 mb-6">
-                {watchlist.map(item => (
-                  <WatchlistRow
-                    key={item.symbol}
-                    symbol={item.symbol}
-                    name={item.name}
-                    base={item.base}
-                    sector={item.sector}
-                    changePct={item.changePct}
-                    currency={currency}
-                    market={market}
-                    isEditing={isEditing}
-                    onDelete={() => handleDeleteWatchlist(item.symbol)}
-                  />
-                ))}
-              </div>
+            {/* ── Commodities Intelligence (Shown on All or Commodities tab) ── */}
+            {(activeTab === 'all' || activeTab === 'commodities') && (
+              <>
+                <SectionHeader
+                  title="Commodities Intelligence"
+                  badge={`${commodities.length} GLOBAL BENCHMARKS`}
+                  isEditing={isEditing}
+                  onToggleEdit={() => setIsEditing(v => !v)}
+                  onResetDefaults={handleResetDefaults}
+                />
+                {commodities.length === 0 ? (
+                  <div className="p-8 rounded-2xl border-2 border-dashed border-[var(--theme-card-border)] text-center mono text-xs text-[var(--theme-card-text-muted)] mb-6">
+                    No commodities in this section. Use the search bar above or click Reset Defaults.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                    {commodities.map(c => {
+                      const live = getSymbolPrice(c.symbol);
+                      const price = live ? live.price : c.base;
+                      const currentPct = live ? live.changePct : c.changePct;
+                      const up = currentPct >= 0;
+                      return (
+                        <div key={c.symbol} className="relative group">
+                          <Link
+                            href={`/chart/${c.symbol}?market=USA`}
+                            className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[96px]"
+                            title={`Open ${c.name} Interactive Chart`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="min-w-0 pr-3">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
+                                    {c.symbol}
+                                  </span>
+                                  <span className="mono text-[9px] px-1 py-0.2 rounded bg-amber-500/15 text-amber-500 font-bold shrink-0">
+                                    {c.category}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[110px]" title={c.name}>
+                                  {c.name}
+                                </div>
+                              </div>
+                              <div className="scale-90 origin-top-right shrink-0">
+                                <Sparkline symbol={c.symbol} up={up} changePct={currentPct} />
+                              </div>
+                            </div>
+                            <div className="flex items-end justify-between mt-2 pt-1 border-t border-[var(--theme-card-border)]/40">
+                              <div>
+                                <span className="mono text-[13px] sm:text-[13.5px] font-black inst-card-text">
+                                  ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                                <span className="text-[10px] text-[var(--theme-card-text-muted)] font-mono ml-1">
+                                  {c.unit.includes('/') ? `/${c.unit.split('/')[1].trim()}` : ''}
+                                </span>
+                              </div>
+                              <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
+                              </span>
+                            </div>
+                          </Link>
+                          {isEditing && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteCommodity(c.symbol);
+                              }}
+                              className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center text-[10px] font-black shadow-md z-30 transition-transform active:scale-90 cursor-pointer"
+                              title={`Delete ${c.symbol} from Commodities`}
+                              aria-label={`Delete ${c.symbol}`}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
 
-            {/* ── Crypto Section ── */}
-            <SectionHeader
-              title="Crypto Intelligence"
-              badge={`${crypto.length} GLOBAL`}
-              isEditing={isEditing}
-              onToggleEdit={() => setIsEditing(v => !v)}
-              onResetDefaults={handleResetDefaults}
-            />
-            {crypto.length === 0 ? (
-              <div className="p-8 rounded-2xl border-2 border-dashed border-[var(--theme-card-border)] text-center mono text-xs text-[var(--theme-card-text-muted)] mb-6">
-                No cryptos in this section. Use the search bar above to add crypto or click Reset Defaults.
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-                {crypto.map(c => {
-                  const live = getSymbolPrice(c.symbol);
-                  const price = live ? live.price : c.base;
-                  const currentPct = live ? live.changePct : c.changePct;
-                  const up = currentPct >= 0;
-                  return (
-                    <div key={c.symbol} className="relative group">
-                      <Link
-                        href={`/chart/${c.symbol}`}
-                        className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[88px]"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="min-w-0 pr-4">
-                            <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate block">
-                              {c.symbol}
-                            </span>
-                            <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[70px]">{c.name}</div>
-                          </div>
-                          <div className="scale-90 origin-top-right">
-                            <Sparkline symbol={c.symbol} up={up} changePct={currentPct} />
-                          </div>
+            {/* ── Forex Intelligence (Shown on All or Forex tab) ── */}
+            {(activeTab === 'all' || activeTab === 'forex') && (
+              <>
+                <SectionHeader
+                  title="Forex Intelligence"
+                  badge={`${forex.length} MAJOR PAIRS`}
+                  isEditing={isEditing}
+                  onToggleEdit={() => setIsEditing(v => !v)}
+                  onResetDefaults={handleResetDefaults}
+                />
+                {forex.length === 0 ? (
+                  <div className="p-8 rounded-2xl border-2 border-dashed border-[var(--theme-card-border)] text-center mono text-xs text-[var(--theme-card-text-muted)] mb-6">
+                    No forex pairs in this section. Use the search bar above or click Reset Defaults.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                    {forex.map(f => {
+                      const live = getSymbolPrice(f.symbol);
+                      const price = live ? live.price : f.base;
+                      const currentPct = live ? live.changePct : f.changePct;
+                      const up = currentPct >= 0;
+                      return (
+                        <div key={f.symbol} className="relative group">
+                          <Link
+                            href={`/chart/${f.symbol}?market=USA`}
+                            className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[96px]"
+                            title={`Open ${f.name} Interactive Chart`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="min-w-0 pr-3">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
+                                    {f.pair}
+                                  </span>
+                                  <span className="mono text-[9px] px-1 py-0.2 rounded bg-cyan-500/15 text-cyan-500 font-bold shrink-0">
+                                    FX
+                                  </span>
+                                </div>
+                                <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[110px]" title={f.name}>
+                                  {f.name}
+                                </div>
+                              </div>
+                              <div className="scale-90 origin-top-right shrink-0">
+                                <Sparkline symbol={f.symbol} up={up} changePct={currentPct} />
+                              </div>
+                            </div>
+                            <div className="flex items-end justify-between mt-2 pt-1 border-t border-[var(--theme-card-border)]/40">
+                              <div>
+                                <span className="mono text-[13px] sm:text-[13.5px] font-black inst-card-text">
+                                  {price.toFixed(price < 2 ? 4 : 2)}
+                                </span>
+                                {f.pipSpread && (
+                                  <span className="text-[9.5px] text-[var(--theme-card-text-muted)] font-mono ml-1 hidden sm:inline">
+                                    ({f.pipSpread})
+                                  </span>
+                                )}
+                              </div>
+                              <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
+                              </span>
+                            </div>
+                          </Link>
+                          {isEditing && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteForex(f.symbol);
+                              }}
+                              className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center text-[10px] font-black shadow-md z-30 transition-transform active:scale-90 cursor-pointer"
+                              title={`Delete ${f.symbol} from Forex`}
+                              aria-label={`Delete ${f.symbol}`}
+                            >
+                              ✕
+                            </button>
+                          )}
                         </div>
-                        <div className="flex items-end justify-between mt-2">
-                          <span className="mono text-[13px] sm:text-[13.5px] font-black inst-card-text">
-                            ${price.toLocaleString(undefined, { minimumFractionDigits: price < 1 ? 4 : 2, maximumFractionDigits: price < 1 ? 7 : 2 })}
-                          </span>
-                          <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
-                          </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ── Crypto Section (Shown on Full Dashboard) ── */}
+            {activeTab === 'all' && (
+              <>
+                <SectionHeader
+                  title="Crypto Intelligence"
+                  badge={`${crypto.length} GLOBAL`}
+                  isEditing={isEditing}
+                  onToggleEdit={() => setIsEditing(v => !v)}
+                  onResetDefaults={handleResetDefaults}
+                />
+                {crypto.length === 0 ? (
+                  <div className="p-8 rounded-2xl border-2 border-dashed border-[var(--theme-card-border)] text-center mono text-xs text-[var(--theme-card-text-muted)] mb-6">
+                    No cryptos in this section. Use the search bar above to add crypto or click Reset Defaults.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                    {crypto.map(c => {
+                      const live = getSymbolPrice(c.symbol);
+                      const price = live ? live.price : c.base;
+                      const currentPct = live ? live.changePct : c.changePct;
+                      const up = currentPct >= 0;
+                      return (
+                        <div key={c.symbol} className="relative group">
+                          <Link
+                            href={`/chart/${c.symbol}`}
+                            className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[88px]"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="min-w-0 pr-4">
+                                <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate block">
+                                  {c.symbol}
+                                </span>
+                                <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[70px]">{c.name}</div>
+                              </div>
+                              <div className="scale-90 origin-top-right">
+                                <Sparkline symbol={c.symbol} up={up} changePct={currentPct} />
+                              </div>
+                            </div>
+                            <div className="flex items-end justify-between mt-2">
+                              <span className="mono text-[13px] sm:text-[13.5px] font-black inst-card-text">
+                                ${price.toLocaleString(undefined, { minimumFractionDigits: price < 1 ? 4 : 2, maximumFractionDigits: price < 1 ? 7 : 2 })}
+                              </span>
+                              <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
+                              </span>
+                            </div>
+                          </Link>
+                          {isEditing && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteCrypto(c.symbol);
+                              }}
+                              className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center text-[10px] font-black shadow-md z-30 transition-transform active:scale-90 cursor-pointer"
+                              title={`Delete ${c.symbol} from Crypto`}
+                              aria-label={`Delete ${c.symbol}`}
+                            >
+                              ✕
+                            </button>
+                          )}
                         </div>
-                      </Link>
-                      {isEditing && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDeleteCrypto(c.symbol);
-                          }}
-                          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center text-[10px] font-black shadow-md z-30 transition-transform active:scale-90 cursor-pointer"
-                          title={`Delete ${c.symbol} from Crypto`}
-                          aria-label={`Delete ${c.symbol}`}
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

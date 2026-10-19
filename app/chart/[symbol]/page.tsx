@@ -13,6 +13,8 @@ interface ChartPageProps {
 }
 
 const CRYPTO_SET = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX']);
+const COMMODITIES_SET = new Set(['GOLD', 'XAUUSD', 'SILVER', 'XAGUSD', 'CRUDEOIL', 'BRENT', 'WTI', 'NATGAS', 'COPPER', 'PLATINUM']);
+const FOREX_SET = new Set(['EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDAED', 'AUDUSD']);
 const USA_SET = new Set([
   'SPX', 'NDX', 'DJI', 'VIX', 'VIXY', 'QQQ',
   'AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'GOOG',
@@ -25,8 +27,10 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
   const { market: marketParam, from } = use(searchParams);
   const isFromScreener = from === 'screener';
 
-  const cleanSym = symbol.toUpperCase();
+  const cleanSym = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
   const isCrypto = CRYPTO_SET.has(cleanSym);
+  const isCommodity = COMMODITIES_SET.has(cleanSym);
+  const isForex = FOREX_SET.has(cleanSym);
 
   const validMarkets: MarketType[] = ['INDIA', 'USA', 'UAE'];
   let defaultMarket: MarketType = 'INDIA';
@@ -37,7 +41,7 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
     defaultMarket = 'USA';
   } else if (UAE_SET.has(cleanSym)) {
     defaultMarket = 'UAE';
-  } else if (isCrypto) {
+  } else if (isCrypto || isCommodity || isForex) {
     defaultMarket = 'USA';
   }
 
@@ -51,7 +55,13 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
     }
   }, []);
 
-  const marketBadge = isCrypto ? 'GLOBAL 24/7 CRYPTO' : `${MARKETS[market].flag} ${MARKETS[market].label}`;
+  const marketBadge = isCrypto
+    ? 'GLOBAL 24/7 CRYPTO'
+    : isCommodity
+    ? 'GLOBAL COMMODITY 24/5'
+    : isForex
+    ? 'GLOBAL FOREX 24/5'
+    : `${MARKETS[market].flag} ${MARKETS[market].label}`;
 
   return (
     <>

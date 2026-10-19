@@ -62,13 +62,37 @@ export default function ScreenerTerminalPage() {
             </div>
 
             {/* ── Terminal Suite Module Tabs ── */}
-            <div className="flex items-center gap-2 mb-6 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
+            <div className="flex flex-wrap items-center gap-2 mb-6 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
               <Link
                 href="/terminal"
                 className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2"
               >
                 <span>⚡</span>
                 <span>DASHBOARD</span>
+              </Link>
+              <Link
+                href="/terminal?view=commodities"
+                className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2"
+              >
+                <span>🛢️</span>
+                <span>COMMODITIES</span>
+                <span className="mono text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 font-bold">6 GLOBAL</span>
+              </Link>
+              <Link
+                href="/terminal?view=forex"
+                className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2"
+              >
+                <span>💱</span>
+                <span>FOREX</span>
+                <span className="mono text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-500 font-bold">6 MAJOR</span>
+              </Link>
+              <Link
+                href={`/chart/NIFTY?market=${market}`}
+                className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2"
+              >
+                <span>📈</span>
+                <span>INTERACTIVE CHARTS</span>
+                <span className="mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">PRO ƒx</span>
               </Link>
               <Link
                 href="/terminal/screener"
