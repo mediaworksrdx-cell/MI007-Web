@@ -96,14 +96,26 @@ function setCached(key: string, data: any) {
 
 async function fetchYahooMacroData(): Promise<{ value: any[]; Count: number } | null> {
   const symbolMap = [
-    { yahoo: 'GC=F', symbol: 'XAU/USD', format: (p: number) => p.toFixed(2) },
-    { yahoo: 'SI=F', symbol: 'XAG/USD', format: (p: number) => p.toFixed(2) },
-    { yahoo: 'BZ=F', symbol: 'BRENT', format: (p: number) => p.toFixed(2) },
-    { yahoo: 'DX-Y.NYB', symbol: 'DXY', format: (p: number) => p.toFixed(2) },
-    { yahoo: '^TNX', symbol: 'US10Y', format: (p: number) => `${p.toFixed(2)}%` },
-    { yahoo: '^VIX', symbol: 'VIX', format: (p: number) => p.toFixed(2) },
-    { yahoo: 'USDINR=X', symbol: 'USD/INR', format: (p: number) => p.toFixed(2) },
-    { yahoo: 'EURUSD=X', symbol: 'EUR/USD', format: (p: number) => p.toFixed(4) },
+    // 6 Major Commodities
+    { yahoo: 'GC=F', symbols: ['GOLD', 'XAU/USD', 'XAUUSD', 'XAU'], format: (p: number) => p.toFixed(2) },
+    { yahoo: 'SI=F', symbols: ['SILVER', 'XAG/USD', 'XAGUSD', 'XAG'], format: (p: number) => p.toFixed(2) },
+    { yahoo: 'BZ=F', symbols: ['CRUDEOIL', 'BRENT', 'OIL'], format: (p: number) => p.toFixed(2) },
+    { yahoo: 'CL=F', symbols: ['WTI', 'CRUDE_WTI'], format: (p: number) => p.toFixed(2) },
+    { yahoo: 'NG=F', symbols: ['NATGAS', 'NATURALGAS'], format: (p: number) => p.toFixed(3) },
+    { yahoo: 'HG=F', symbols: ['COPPER', 'HIGH_GRADE_COPPER'], format: (p: number) => p.toFixed(3) },
+
+    // 6 Major Forex Pairs
+    { yahoo: 'EURUSD=X', symbols: ['EURUSD', 'EUR/USD'], format: (p: number) => p.toFixed(4) },
+    { yahoo: 'GBPUSD=X', symbols: ['GBPUSD', 'GBP/USD'], format: (p: number) => p.toFixed(4) },
+    { yahoo: 'USDJPY=X', symbols: ['USDJPY', 'USD/JPY'], format: (p: number) => p.toFixed(2) },
+    { yahoo: 'USDINR=X', symbols: ['USDINR', 'USD/INR'], format: (p: number) => p.toFixed(2) },
+    { yahoo: 'USDCHF=X', symbols: ['USDCHF', 'USD/CHF'], format: (p: number) => p.toFixed(4) },
+    { yahoo: 'AUDUSD=X', symbols: ['AUDUSD', 'AUD/USD'], format: (p: number) => p.toFixed(4) },
+
+    // Global Macro Benchmarks
+    { yahoo: 'DX-Y.NYB', symbols: ['DXY'], format: (p: number) => p.toFixed(2) },
+    { yahoo: '^TNX', symbols: ['US10Y'], format: (p: number) => `${p.toFixed(2)}%` },
+    { yahoo: '^VIX', symbols: ['VIX'], format: (p: number) => p.toFixed(2) },
   ];
 
   try {
@@ -131,12 +143,12 @@ async function fetchYahooMacroData(): Promise<{ value: any[]; Count: number } | 
           if (typeof price === 'number') {
             const chg = +(price - prevClose).toFixed(2);
             const chgPct = +((chg / Math.max(0.001, prevClose)) * 100).toFixed(2);
-            return {
-              symbol: item.symbol,
+            return item.symbols.map(sym => ({
+              symbol: sym,
               value: item.format(price),
               change: chg,
               changePercent: chgPct,
-            };
+            }));
           }
         } catch {
           // Continue to next host
@@ -146,8 +158,8 @@ async function fetchYahooMacroData(): Promise<{ value: any[]; Count: number } | 
     });
 
     const settled = await Promise.all(promises);
-    const results = settled.filter((item): item is NonNullable<typeof item> => item !== null);
-    if (results.length >= 4) {
+    const results = settled.filter((item): item is NonNullable<typeof item> => item !== null).flat();
+    if (results.length >= 6) {
       return { value: results, Count: results.length };
     }
   } catch (err) {

@@ -282,6 +282,8 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               next.set(key, data);
               next.set(m.symbol, data);
               next.set(m.symbol.toUpperCase(), data);
+              next.set(m.symbol.replace('/', ''), data);
+              next.set(m.symbol.replace(/\s+/g, ''), data);
 
               if (m.symbol === 'XAU/USD' || m.symbol === 'GOLD') {
                 next.set('GOLD', data);
@@ -293,18 +295,45 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
                 next.set('XAG', data);
                 next.set('XAGUSD', data);
               }
-              if (m.symbol === 'BRENT') {
+              if (m.symbol === 'BRENT' || m.symbol === 'CRUDEOIL') {
                 next.set('BRENT', data);
                 next.set('CRUDEOIL', data);
                 next.set('OIL', data);
               }
-              if (m.symbol === 'USD/INR') {
+              if (m.symbol === 'WTI') {
+                next.set('WTI', data);
+                next.set('CRUDE_WTI', data);
+              }
+              if (m.symbol === 'NATGAS') {
+                next.set('NATGAS', data);
+                next.set('NATURALGAS', data);
+              }
+              if (m.symbol === 'COPPER') {
+                next.set('COPPER', data);
+              }
+              if (m.symbol === 'USD/INR' || m.symbol === 'USDINR') {
                 next.set('USDINR', data);
                 next.set('USD/INR', data);
               }
-              if (m.symbol === 'EUR/USD') {
+              if (m.symbol === 'EUR/USD' || m.symbol === 'EURUSD') {
                 next.set('EURUSD', data);
                 next.set('EUR/USD', data);
+              }
+              if (m.symbol === 'GBP/USD' || m.symbol === 'GBPUSD') {
+                next.set('GBPUSD', data);
+                next.set('GBP/USD', data);
+              }
+              if (m.symbol === 'USD/JPY' || m.symbol === 'USDJPY') {
+                next.set('USDJPY', data);
+                next.set('USD/JPY', data);
+              }
+              if (m.symbol === 'USD/CHF' || m.symbol === 'USDCHF') {
+                next.set('USDCHF', data);
+                next.set('USD/CHF', data);
+              }
+              if (m.symbol === 'AUD/USD' || m.symbol === 'AUDUSD') {
+                next.set('AUDUSD', data);
+                next.set('AUD/USD', data);
               }
             }
           }

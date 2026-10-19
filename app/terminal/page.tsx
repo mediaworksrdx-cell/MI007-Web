@@ -116,9 +116,9 @@ const DEFAULT_COMMODITIES: CommodityItem[] = [
   { symbol: 'GOLD', name: 'Gold Bullion', base: 2735.40, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.65 },
   { symbol: 'SILVER', name: 'Silver Spot', base: 31.85, unit: 'USD / oz', category: 'Precious Metals', changePct: 1.20 },
   { symbol: 'CRUDEOIL', name: 'Brent Crude', base: 74.20, unit: 'USD / bbl', category: 'Energy', changePct: -0.45 },
+  { symbol: 'WTI', name: 'WTI Crude Oil', base: 70.80, unit: 'USD / bbl', category: 'Energy', changePct: -0.35 },
   { symbol: 'NATGAS', name: 'Natural Gas', base: 2.85, unit: 'USD / MMBtu', category: 'Energy', changePct: 2.15 },
   { symbol: 'COPPER', name: 'High Grade Copper', base: 4.38, unit: 'USD / lb', category: 'Industrial Metals', changePct: 0.82 },
-  { symbol: 'PLATINUM', name: 'Platinum Spot', base: 1024.50, unit: 'USD / oz', category: 'Precious Metals', changePct: -0.30 },
 ];
 
 const DEFAULT_FOREX: ForexItem[] = [
@@ -126,7 +126,7 @@ const DEFAULT_FOREX: ForexItem[] = [
   { symbol: 'GBPUSD', name: 'British Pound / USD', pair: 'GBP / USD', base: 1.2980, pipSpread: '1.0 pips', changePct: 0.22 },
   { symbol: 'USDJPY', name: 'USD / Japanese Yen', pair: 'USD / JPY', base: 152.40, pipSpread: '0.9 pips', changePct: -0.35 },
   { symbol: 'USDINR', name: 'USD / Indian Rupee', pair: 'USD / INR', base: 84.08, pipSpread: '1.2 pips', changePct: 0.05 },
-  { symbol: 'USDAED', name: 'USD / UAE Dirham', pair: 'USD / AED', base: 3.6725, pipSpread: '0.5 pips', changePct: 0.00 },
+  { symbol: 'USDCHF', name: 'USD / Swiss Franc', pair: 'USD / CHF', base: 0.8850, pipSpread: '0.9 pips', changePct: -0.15 },
   { symbol: 'AUDUSD', name: 'Australian Dollar / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips', changePct: 0.40 },
 ];
 
@@ -1603,8 +1603,8 @@ export default function TerminalPage() {
               </>
             )}
 
-            {/* ── Commodities Intelligence (Shown only on Commodities tab) ── */}
-            {activeTab === 'commodities' && (
+            {/* ── Commodities Intelligence (Shown on Dashboard and Commodities tab) ── */}
+            {(activeTab === 'commodities' || activeTab === 'all') && (
               <>
                 <SectionHeader
                   title="Commodities Intelligence"
@@ -1632,8 +1632,8 @@ export default function TerminalPage() {
               </>
             )}
 
-            {/* ── Forex Intelligence (Shown only on Forex tab) ── */}
-            {activeTab === 'forex' && (
+            {/* ── Forex Intelligence (Shown on Dashboard and Forex tab) ── */}
+            {(activeTab === 'forex' || activeTab === 'all') && (
               <>
                 <SectionHeader
                   title="Forex Intelligence"
