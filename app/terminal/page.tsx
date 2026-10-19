@@ -523,8 +523,10 @@ export default function TerminalPage() {
       const view = params.get('view') || params.get('tab');
       if (view === 'commodities' || window.location.hash === '#commodities') {
         setActiveTab('commodities');
+        setTargetCategory('COMMODITY');
       } else if (view === 'forex' || window.location.hash === '#forex') {
         setActiveTab('forex');
+        setTargetCategory('FOREX');
       }
 
       try {
@@ -946,7 +948,10 @@ export default function TerminalPage() {
               <div className="w-full sm:w-fit inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-xs">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('all')}
+                  onClick={() => {
+                    setActiveTab('all');
+                    setTargetCategory('AUTO');
+                  }}
                   className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     activeTab === 'all'
                       ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
@@ -958,7 +963,10 @@ export default function TerminalPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('commodities')}
+                  onClick={() => {
+                    setActiveTab('commodities');
+                    setTargetCategory('COMMODITY');
+                  }}
                   className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     activeTab === 'commodities'
                       ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
@@ -970,7 +978,10 @@ export default function TerminalPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('forex')}
+                  onClick={() => {
+                    setActiveTab('forex');
+                    setTargetCategory('FOREX');
+                  }}
                   className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     activeTab === 'forex'
                       ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
@@ -1078,7 +1089,11 @@ export default function TerminalPage() {
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
                   <span className="mono text-[13px] sm:text-[14px] font-black inst-card-text uppercase tracking-wider">
-                    Add New Instrument to Dashboard
+                    {activeTab === 'commodities'
+                      ? 'Add Commodity to Commodities Intelligence'
+                      : activeTab === 'forex'
+                      ? 'Add Currency Pair to Forex Intelligence'
+                      : 'Add New Instrument to Dashboard'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -1126,8 +1141,8 @@ export default function TerminalPage() {
                         : activeTab === 'forex'
                         ? 'Search major currency pairs (EURUSD, GBPUSD, USDJPY, USDINR) to add...'
                         : market === 'INDIA'
-                        ? 'Search from 3,800+ Zerodha stocks, indices, commodities, forex, or crypto...'
-                        : 'Search stocks, indices, commodities, forex, or crypto...'
+                        ? 'Search from 3,800+ Zerodha stocks, indices, or crypto...'
+                        : 'Search stocks, indices, or crypto...'
                     }
                     className="w-full px-4 py-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] placeholder-slate-400 mono text-[13px] font-medium focus:outline-none focus:border-emerald-500 shadow-inner"
                   />
@@ -1277,8 +1292,8 @@ export default function TerminalPage() {
               </>
             )}
 
-            {/* ── Commodities Intelligence (Shown on All or Commodities tab) ── */}
-            {(activeTab === 'all' || activeTab === 'commodities') && (
+            {/* ── Commodities Intelligence (Shown only on Commodities tab) ── */}
+            {activeTab === 'commodities' && (
               <>
                 <SectionHeader
                   title="Commodities Intelligence"
@@ -1360,8 +1375,8 @@ export default function TerminalPage() {
               </>
             )}
 
-            {/* ── Forex Intelligence (Shown on All or Forex tab) ── */}
-            {(activeTab === 'all' || activeTab === 'forex') && (
+            {/* ── Forex Intelligence (Shown only on Forex tab) ── */}
+            {activeTab === 'forex' && (
               <>
                 <SectionHeader
                   title="Forex Intelligence"
