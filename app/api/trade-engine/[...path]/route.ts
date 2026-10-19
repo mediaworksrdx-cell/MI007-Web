@@ -42,22 +42,22 @@ function getUsLiveBenchmarks(): any[] {
   const isUsOpen = isMarketOpen('USA', new Date(now));
   const timeDrift = isUsOpen ? (Math.sin(now / 5000) * 0.0004) : 0;
   const items = [
-    { instrumentToken: 900001, symbol: 'SPX', base: 7703.58, change: 44.14, changePercent: 0.58 },
-    { instrumentToken: 900002, symbol: 'S&P 500', base: 7703.58, change: 44.14, changePercent: 0.58 },
-    { instrumentToken: 900003, symbol: 'NDX', base: 29630.77, change: 443.22, changePercent: 1.52 },
-    { instrumentToken: 900004, symbol: 'NASDAQ 100', base: 29630.77, change: 443.22, changePercent: 1.52 },
-    { instrumentToken: 900005, symbol: 'NASDAQ', base: 29630.77, change: 443.22, changePercent: 1.52 },
-    { instrumentToken: 900006, symbol: 'DJI', base: 51964.04, change: -38.37, changePercent: -0.07 },
-    { instrumentToken: 900007, symbol: 'DOW JONES', base: 51964.04, change: -38.37, changePercent: -0.07 },
-    { instrumentToken: 900008, symbol: 'VIX', base: 18.56, change: -1.43, changePercent: -7.15 },
+    { instrumentToken: 900001, symbol: 'SPX', base: 7690.73, change: 31.29, changePercent: 0.41 },
+    { instrumentToken: 900002, symbol: 'S&P 500', base: 7690.73, change: 31.29, changePercent: 0.41 },
+    { instrumentToken: 900003, symbol: 'NDX', base: 29529.34, change: 341.79, changePercent: 1.17 },
+    { instrumentToken: 900004, symbol: 'NASDAQ 100', base: 29529.34, change: 341.79, changePercent: 1.17 },
+    { instrumentToken: 900005, symbol: 'NASDAQ', base: 29529.34, change: 341.79, changePercent: 1.17 },
+    { instrumentToken: 900006, symbol: 'DJI', base: 51966.03, change: -36.38, changePercent: -0.07 },
+    { instrumentToken: 900007, symbol: 'DOW JONES', base: 51966.03, change: -36.38, changePercent: -0.07 },
+    { instrumentToken: 900008, symbol: 'VIX', base: 18.44, change: -1.55, changePercent: -7.75 },
     { instrumentToken: 900009, symbol: 'QQQ', base: 717.71, change: 7.88, changePercent: 1.11 },
-    { instrumentToken: 900010, symbol: 'NVDA', base: 214.10, change: 3.80, changePercent: 1.81 },
-    { instrumentToken: 900011, symbol: 'AAPL', base: 343.50, change: 2.20, changePercent: 0.64 },
-    { instrumentToken: 900012, symbol: 'MSFT', base: 529.00, change: -2.60, changePercent: -0.49 },
-    { instrumentToken: 900013, symbol: 'TSLA', base: 354.70, change: 8.20, changePercent: 2.37 },
-    { instrumentToken: 900014, symbol: 'META', base: 733.40, change: 9.60, changePercent: 1.33 },
-    { instrumentToken: 900015, symbol: 'AMZN', base: 250.00, change: -1.05, changePercent: -0.42 },
-    { instrumentToken: 900016, symbol: 'GOOGL', base: 340.60, change: 2.30, changePercent: 0.68 },
+    { instrumentToken: 900010, symbol: 'NVDA', base: 217.09, change: 2.96, changePercent: 1.38 },
+    { instrumentToken: 900011, symbol: 'AAPL', base: 342.94, change: -0.52, changePercent: -0.15 },
+    { instrumentToken: 900012, symbol: 'MSFT', base: 533.52, change: 4.47, changePercent: 0.84 },
+    { instrumentToken: 900013, symbol: 'TSLA', base: 368.06, change: 13.34, changePercent: 3.76 },
+    { instrumentToken: 900014, symbol: 'META', base: 705.44, change: -3.89, changePercent: -0.55 },
+    { instrumentToken: 900015, symbol: 'AMZN', base: 262.45, change: 12.45, changePercent: 4.98 },
+    { instrumentToken: 900016, symbol: 'GOOGL', base: 344.18, change: 3.59, changePercent: 1.05 },
   ];
 
   return items.map(item => {
@@ -168,13 +168,12 @@ async function fetchYahooMacroData(): Promise<{ value: any[]; Count: number } | 
   return null;
 }
 
+const DEFAULT_TWELVE_DATA_KEY = process.env.TWELVE_DATA_API_KEY || process.env.NEXT_PUBLIC_TWELVE_DATA_API_KEY || '3925d32210e845e087ea7b75b1b7720b';
+
 async function fetchTwelveDataUsPrices(apiKey: string): Promise<any[]> {
-  const symbols = 'SPX,NDX,DJI,QQQ,NVDA,AAPL,MSFT,TSLA,META,AMZN,GOOGL';
+  // Query only the 7 US Strategic Watchlist stocks (7 symbols = 7 credits, strictly <= 8 credits/min limit)
+  const stockSymbols = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'META', 'AMZN', 'GOOGL'];
   const tokenMap: Record<string, number> = {
-    SPX: 900001,
-    NDX: 900003,
-    DJI: 900006,
-    QQQ: 900009,
     NVDA: 900010,
     AAPL: 900011,
     MSFT: 900012,
@@ -185,13 +184,19 @@ async function fetchTwelveDataUsPrices(apiKey: string): Promise<any[]> {
   };
 
   try {
+    const symbolsParam = stockSymbols.join(',');
     const res = await fetch(
-      `https://api.twelvedata.com/quote?symbol=${symbols}&apikey=${apiKey}`,
+      `https://api.twelvedata.com/quote?symbol=${symbolsParam}&apikey=${apiKey}`,
       { cache: 'no-store' }
     );
     if (!res.ok) return [];
     const raw = await res.json();
-    if (!raw || typeof raw !== 'object' || raw.status === 'error') return [];
+    if (!raw || typeof raw !== 'object' || raw.status === 'error') {
+      if (raw?.message) {
+        console.warn('[TwelveDataUsPrices] API notice:', raw.message);
+      }
+      return [];
+    }
 
     const now = Date.now();
     const items: any[] = [];
@@ -206,26 +211,71 @@ async function fetchTwelveDataUsPrices(apiKey: string): Promise<any[]> {
       items.push({
         instrumentToken: tokenMap[sym.toUpperCase()] || 900050,
         symbol: sym.toUpperCase(),
-        ltp,
-        change: chg,
-        changePercent: pct,
+        ltp: +ltp.toFixed(2),
+        change: +chg.toFixed(2),
+        changePercent: +pct.toFixed(2),
         timestamp: now,
       });
-
-      if (sym.toUpperCase() === 'SPX') {
-        items.push({ instrumentToken: 900002, symbol: 'S&P 500', ltp, change: chg, changePercent: pct, timestamp: now });
-      }
-      if (sym.toUpperCase() === 'NDX') {
-        items.push({ instrumentToken: 900004, symbol: 'NASDAQ 100', ltp, change: chg, changePercent: pct, timestamp: now });
-        items.push({ instrumentToken: 900005, symbol: 'NASDAQ', ltp, change: chg, changePercent: pct, timestamp: now });
-      }
-      if (sym.toUpperCase() === 'DJI') {
-        items.push({ instrumentToken: 900007, symbol: 'DOW JONES', ltp, change: chg, changePercent: pct, timestamp: now });
-      }
     }
     return items;
   } catch (err) {
     console.warn('[TwelveDataUsPrices] Error fetching Twelve Data quotes:', err);
+    return [];
+  }
+}
+
+async function fetchYahooFallbackUsPrices(): Promise<any[]> {
+  const stockMap = [
+    { yahoo: 'NVDA', token: 900010 },
+    { yahoo: 'AAPL', token: 900011 },
+    { yahoo: 'MSFT', token: 900012 },
+    { yahoo: 'TSLA', token: 900013 },
+    { yahoo: 'META', token: 900014 },
+    { yahoo: 'AMZN', token: 900015 },
+    { yahoo: 'GOOGL', token: 900016 },
+  ];
+
+  try {
+    const promises = stockMap.map(async (item) => {
+      const hosts = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
+      for (const host of hosts) {
+        try {
+          const res = await fetch(`https://${host}/v8/finance/chart/${item.yahoo}?interval=1d&range=1d`, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+              'Accept': 'application/json',
+            },
+            cache: 'no-store',
+          });
+          if (res.status === 429) continue;
+          if (!res.ok) continue;
+
+          const json = await res.json();
+          const meta = json?.chart?.result?.[0]?.meta;
+          const price = meta?.regularMarketPrice;
+          const prevClose = meta?.chartPreviousClose || price;
+          if (typeof price === 'number') {
+            const chg = +(price - prevClose).toFixed(2);
+            const pct = +((chg / Math.max(0.001, prevClose)) * 100).toFixed(2);
+            return {
+              instrumentToken: item.token,
+              symbol: item.yahoo,
+              ltp: +price.toFixed(2),
+              change: chg,
+              changePercent: pct,
+              timestamp: Date.now(),
+            };
+          }
+        } catch {
+          // Try next host
+        }
+      }
+      return null;
+    });
+
+    const settled = await Promise.all(promises);
+    return settled.filter((s): s is NonNullable<typeof s> => s !== null);
+  } catch {
     return [];
   }
 }
@@ -236,6 +286,7 @@ async function fetchRealUsIndices(): Promise<any[]> {
     { yahoo: '^NDX', symbol: 'NDX', altSymbol: 'NASDAQ 100', token: 900003, altToken: 900004 },
     { yahoo: '^DJI', symbol: 'DJI', altSymbol: 'DOW JONES', token: 900006, altToken: 900007 },
     { yahoo: '^VIX', symbol: 'VIX', altSymbol: 'Volatility Index', token: 900008, altToken: 900008 },
+    { yahoo: 'QQQ', symbol: 'QQQ', altSymbol: 'QQQ', token: 900009, altToken: 900009 },
   ];
 
   try {
@@ -261,10 +312,16 @@ async function fetchRealUsIndices(): Promise<any[]> {
             const chg = +(price - prevClose).toFixed(2);
             const pct = +((chg / Math.max(0.001, prevClose)) * 100).toFixed(2);
             const now = Date.now();
-            return [
+            const results = [
               { instrumentToken: item.token, symbol: item.symbol, ltp: +price.toFixed(2), change: chg, changePercent: pct, timestamp: now },
-              { instrumentToken: item.altToken, symbol: item.altSymbol, ltp: +price.toFixed(2), change: chg, changePercent: pct, timestamp: now },
             ];
+            if (item.symbol !== item.altSymbol) {
+              results.push({ instrumentToken: item.altToken, symbol: item.altSymbol, ltp: +price.toFixed(2), change: chg, changePercent: pct, timestamp: now });
+            }
+            if (item.symbol === 'NDX') {
+              results.push({ instrumentToken: 900005, symbol: 'NASDAQ', ltp: +price.toFixed(2), change: chg, changePercent: pct, timestamp: now });
+            }
+            return results;
           }
         } catch {
           // Try next host
@@ -280,89 +337,37 @@ async function fetchRealUsIndices(): Promise<any[]> {
   }
 }
 
-async function fetchTradeEngineUsPrices(): Promise<any[]> {
-  const stockSymbols = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'META', 'AMZN', 'GOOGL', 'QQQ'];
-  const tokenMap: Record<string, number> = {
-    QQQ: 900009,
-    NVDA: 900010,
-    AAPL: 900011,
-    MSFT: 900012,
-    TSLA: 900013,
-    META: 900014,
-    AMZN: 900015,
-    GOOGL: 900016,
-  };
-
-  try {
-    const [realIndices, stockCandles] = await Promise.all([
-      fetchRealUsIndices(),
-      Promise.all(stockSymbols.map(async (sym) => {
-        try {
-          const res = await fetch(`${TRADE_ENGINE_URL}/candles?symbol=${sym}`, {
-            cache: 'no-store',
-            headers: { 'Accept': 'application/json' },
-          });
-          if (!res.ok) return [];
-          const candles = await res.json();
-          if (!Array.isArray(candles) || candles.length < 2) return [];
-
-          const last = candles[candles.length - 1];
-          const prev = candles[candles.length - 2];
-          const ltp = Number(last.close || 0);
-          const prevClose = Number(prev.close || ltp);
-          const chg = +(ltp - prevClose).toFixed(2);
-          const pct = +(((ltp - prevClose) / Math.max(0.01, prevClose)) * 100).toFixed(2);
-          const now = Date.now();
-
-          return [
-            {
-              instrumentToken: tokenMap[sym] || 900050,
-              symbol: sym,
-              ltp,
-              change: chg,
-              changePercent: pct,
-              timestamp: now,
-            }
-          ];
-        } catch {
-          return [];
-        }
-      })),
-    ]);
-
-    const stocks = stockCandles.flat();
-    return [...realIndices, ...stocks];
-  } catch (err) {
-    console.warn('[TradeEngineUsPrices] Error extracting Twelve Data prices from Trade Engine:', err);
-    return [];
-  }
-}
-
 async function getActiveUsPrices(): Promise<any[]> {
-  // Check 30-minute server cache
-  const cached = getCached('trade-engine-us-prices', 30 * 60 * 1000);
+  const isUsOpen = isMarketOpen('USA');
+  // 30 min cache TTL during active trading hours (~91 Twelve Data credits/day out of 800 free quota)
+  const ttl = isUsOpen ? (30 * 60 * 1000) : (60 * 60 * 1000);
+  const cached = getCached('us-active-prices', ttl);
   if (cached && cached.length > 0) {
     return cached;
   }
 
-  // 1. Primary: Extract live Twelve Data stock prices from Trade Engine + authentic spot index points
-  const engineItems = await fetchTradeEngineUsPrices();
-  if (engineItems.length > 0) {
-    setCached('trade-engine-us-prices', engineItems);
-    return engineItems;
-  }
+  // 1. Fetch real spot indices via Yahoo (0 Twelve Data credits, genuine index points)
+  const realIndices = await fetchRealUsIndices();
 
-  // 2. Secondary fallback: Direct Twelve Data call if API key provided in env
-  const apiKey = process.env.TWELVE_DATA_API_KEY || process.env.NEXT_PUBLIC_TWELVE_DATA_API_KEY;
+  // 2. Fetch US stocks via Twelve Data using authenticated key
+  const apiKey = DEFAULT_TWELVE_DATA_KEY;
+  let usStocks: any[] = [];
   if (apiKey) {
-    const liveItems = await fetchTwelveDataUsPrices(apiKey);
-    if (liveItems.length > 0) {
-      setCached('trade-engine-us-prices', liveItems);
-      return liveItems;
-    }
+    usStocks = await fetchTwelveDataUsPrices(apiKey);
   }
 
-  // 3. Baseline benchmark fallback
+  // 3. Robust fallback to Yahoo if Twelve Data is empty or rate limited
+  if (usStocks.length === 0) {
+    usStocks = await fetchYahooFallbackUsPrices();
+  }
+
+  if (realIndices.length > 0 || usStocks.length > 0) {
+    const combined = [...realIndices, ...usStocks];
+    setCached('us-active-prices', combined);
+    return combined;
+  }
+
+  // 4. Baseline benchmark fallback
   return getUsLiveBenchmarks();
 }
 

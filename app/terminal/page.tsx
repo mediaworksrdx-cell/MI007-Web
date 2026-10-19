@@ -72,20 +72,20 @@ const DEFAULT_INDIA_WATCHLIST: WatchlistItem[] = [
 ];
 
 const DEFAULT_USA_INDICES: IndexItem[] = [
-  { symbol: 'SPX', name: 'S&P 500', base: 7703.58, changePct: 0.58 },
-  { symbol: 'NDX', name: 'NASDAQ 100', base: 29630.77, changePct: 1.52 },
-  { symbol: 'DJI', name: 'DOW JONES', base: 51964.04, changePct: -0.07 },
-  { symbol: 'VIX', name: 'Volatility Index', base: 18.56, changePct: -7.15 },
+  { symbol: 'SPX', name: 'S&P 500', base: 7690.73, changePct: 0.41 },
+  { symbol: 'NDX', name: 'NASDAQ 100', base: 29529.34, changePct: 1.17 },
+  { symbol: 'DJI', name: 'DOW JONES', base: 51966.03, changePct: -0.07 },
+  { symbol: 'VIX', name: 'Volatility Index', base: 18.44, changePct: -7.75 },
 ];
 
 const DEFAULT_USA_WATCHLIST: WatchlistItem[] = [
-  { symbol: 'NVDA', name: 'NVIDIA Corporation', base: 214.10, sector: 'Semis & AI', changePct: 1.81 },
-  { symbol: 'AAPL', name: 'Apple Inc.', base: 343.50, sector: 'Consumer Tech', changePct: 0.64 },
-  { symbol: 'MSFT', name: 'Microsoft Corporation', base: 529.00, sector: 'Enterprise & Cloud', changePct: -0.49 },
-  { symbol: 'TSLA', name: 'Tesla Inc.', base: 354.70, sector: 'EV & Autonomous', changePct: 2.37 },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.', base: 250.00, sector: 'eCommerce & AWS', changePct: -0.42 },
-  { symbol: 'META', name: 'Meta Platforms Inc.', base: 733.40, sector: 'Social & AI', changePct: 1.33 },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', base: 340.60, sector: 'Search & Cloud', changePct: 0.68 },
+  { symbol: 'NVDA', name: 'NVIDIA Corporation', base: 217.09, sector: 'Semis & AI', changePct: 1.38 },
+  { symbol: 'AAPL', name: 'Apple Inc.', base: 342.94, sector: 'Consumer Tech', changePct: -0.15 },
+  { symbol: 'MSFT', name: 'Microsoft Corporation', base: 533.52, sector: 'Enterprise & Cloud', changePct: 0.84 },
+  { symbol: 'TSLA', name: 'Tesla Inc.', base: 368.06, sector: 'EV & Autonomous', changePct: 3.76 },
+  { symbol: 'AMZN', name: 'Amazon.com Inc.', base: 262.45, sector: 'eCommerce & AWS', changePct: 4.98 },
+  { symbol: 'META', name: 'Meta Platforms Inc.', base: 705.44, sector: 'Social & AI', changePct: -0.55 },
+  { symbol: 'GOOGL', name: 'Alphabet Inc.', base: 344.18, sector: 'Search & Cloud', changePct: 1.05 },
 ];
 
 const DEFAULT_UAE_INDICES: IndexItem[] = [
