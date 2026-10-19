@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { MarketToggle } from '@/components/market/MarketToggle';
 import { TickerTape } from '@/components/market/TickerTape';
 import { MarketType } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
@@ -155,16 +154,8 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           })}
         </nav>
 
-        {/* ── Top-Right Institutional Cluster: MarketToggle + Single Terminal CTA + 1 Unified Account/Settings Icon ── */}
+        {/* ── Top-Right Institutional Cluster: Single Terminal CTA + 1 Unified Account/Settings Icon ── */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {isTerminalOrDashboard && (
-            <MarketToggle
-              selected={market}
-              onChange={handleMarketChange}
-              className="hidden sm:flex"
-            />
-          )}
-
           {/* ── Exactly 1 Single Launch Terminal Button ── */}
           {!isTerminalOrDashboard && (
             <Link
@@ -393,10 +384,6 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               <span className="truncate">{userSession ? userSession.name : 'Client Login'}</span>
             </button>
           </div>
-
-          {isTerminalOrDashboard && (
-            <MarketToggle selected={market} onChange={handleMarketChange} className="w-full justify-center mb-2" />
-          )}
 
           {(isTerminalOrDashboard ? TERMINAL_NAV_LINKS : PUBLIC_NAV_LINKS).map(({ href, label }) => {
             const isActive =

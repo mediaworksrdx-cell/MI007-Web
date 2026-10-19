@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { MarketToggle } from '@/components/market/MarketToggle';
 import { MarketType, MARKETS } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
@@ -758,10 +759,7 @@ export default function TerminalPage() {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[13px] sm:text-[15px] mono inst-card-text font-bold shadow-xs">
-                  <span>{MARKETS[market].flag}</span>
-                  <span className="inst-card-text font-black">{MARKETS[market].label}</span>
-                </div>
+                <MarketToggle selected={market} onChange={setMarket} />
               </div>
             </div>
 
