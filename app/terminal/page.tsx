@@ -72,10 +72,10 @@ const DEFAULT_INDIA_WATCHLIST: WatchlistItem[] = [
 ];
 
 const DEFAULT_USA_INDICES: IndexItem[] = [
-  { symbol: 'SPX', name: 'S&P 500', base: 766.48, changePct: 0.42 },
-  { symbol: 'NDX', name: 'NASDAQ 100', base: 718.36, changePct: 1.21 },
-  { symbol: 'DJI', name: 'DOW JONES', base: 518.92, changePct: -0.03 },
-  { symbol: 'VIX', name: 'Volatility Index', base: 17.01, changePct: -4.06 },
+  { symbol: 'SPX', name: 'S&P 500', base: 7690.73, changePct: 0.41 },
+  { symbol: 'NDX', name: 'NASDAQ 100', base: 29529.34, changePct: 1.17 },
+  { symbol: 'DJI', name: 'DOW JONES', base: 51966.03, changePct: -0.07 },
+  { symbol: 'VIX', name: 'Volatility Index', base: 18.44, changePct: -7.75 },
 ];
 
 const DEFAULT_USA_WATCHLIST: WatchlistItem[] = [
