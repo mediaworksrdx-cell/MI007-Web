@@ -203,7 +203,7 @@ export function DrawingToolbar({
         aria-label="Cursor tool"
         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 ${
           isCursorActive && cursorMode === 'arrow'
-            ? 'bg-blue-600 text-white shadow-md font-bold'
+            ? 'bg-[#089981] text-white shadow-md font-bold'
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
         }`}
       >
@@ -230,7 +230,7 @@ export function DrawingToolbar({
           aria-label="Crosshair tool"
           className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 relative ${
             isCursorActive && (cursorMode === 'crosshair' || cursorMode === 'dot' || cursorMode === 'eraser')
-              ? 'bg-blue-600 text-white shadow-md font-bold'
+              ? 'bg-[#089981] text-white shadow-md font-bold'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
@@ -277,7 +277,7 @@ export function DrawingToolbar({
                 }}
                 className={`flex items-start gap-2.5 w-full px-3 py-2 text-left transition-colors cursor-pointer ${
                   cursorMode === opt.id && isCursorActive
-                    ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 font-bold'
+                    ? 'bg-[#089981]/15 text-[#089981] dark:text-[#089981] font-bold'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
@@ -288,7 +288,7 @@ export function DrawingToolbar({
                     {opt.desc}
                   </div>
                 </div>
-                {cursorMode === opt.id && <span className="text-blue-600 font-bold text-xs mt-0.5">✓</span>}
+                {cursorMode === opt.id && <span className="text-[#089981] font-bold text-xs mt-0.5">✓</span>}
               </button>
             ))}
           </div>
@@ -307,7 +307,7 @@ export function DrawingToolbar({
         aria-label="Pan tool"
         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 ${
           isCursorActive && cursorMode === 'pan'
-            ? 'bg-blue-600 text-white shadow-md font-bold'
+            ? 'bg-[#089981] text-white shadow-md font-bold'
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
         }`}
       >
@@ -346,7 +346,7 @@ export function DrawingToolbar({
                 title={`${group.title}: ${currentTool.label} (Click to activate, click arrow for more)`}
                 className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer font-mono text-sm ${
                   isGroupActive
-                    ? 'bg-blue-600 text-white font-bold shadow-md'
+                    ? 'bg-[#089981] text-white font-bold shadow-md'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
@@ -380,7 +380,7 @@ export function DrawingToolbar({
                       }}
                       className={`flex items-start gap-2.5 w-full px-3 py-2 text-left transition-colors cursor-pointer ${
                         activeDrawingTool === tool.id
-                          ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 font-bold'
+                          ? 'bg-[#089981]/15 text-[#089981] dark:text-[#089981] font-bold'
                           : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
@@ -391,7 +391,7 @@ export function DrawingToolbar({
                           {tool.desc}
                         </div>
                       </div>
-                      {activeDrawingTool === tool.id && <span className="text-blue-600 font-bold text-xs mt-0.5">✓</span>}
+                      {activeDrawingTool === tool.id && <span className="text-[#089981] font-bold text-xs mt-0.5">✓</span>}
                     </button>
                   ))}
                 </div>
@@ -410,7 +410,7 @@ export function DrawingToolbar({
         title="Measure Tool (Distance, % and Bars)"
         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 text-sm font-mono ${
           activeDrawingTool === 'MEASURE'
-            ? 'bg-blue-600 text-white font-bold shadow-md'
+            ? 'bg-[#089981] text-white font-bold shadow-md'
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
         }`}
       >
@@ -461,7 +461,7 @@ export function DrawingToolbar({
         title={isAllDrawingsLocked ? 'Lock All Drawings: LOCKED (Drawings cannot be modified)' : 'Lock All Drawings: UNLOCKED'}
         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 ${
           isAllDrawingsLocked
-            ? 'bg-blue-600 text-white shadow-md'
+            ? 'bg-[#089981] text-white shadow-md'
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
         }`}
       >
@@ -519,7 +519,7 @@ export function DrawingToolbar({
           <polyline points="2 12 12 17 22 12" />
         </svg>
         {drawingsCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-white font-mono text-[9px] font-black flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#089981] text-white font-mono text-[9px] font-black flex items-center justify-center">
             {drawingsCount}
           </span>
         )}

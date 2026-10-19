@@ -1444,6 +1444,38 @@ export function renderChart(
           ctx.strokeRect(bLeft + 0.5 * dpr, rTop + 0.5 * dpr, bWidth - 1 * dpr, bHeight - 1 * dpr);
         }
       }
+
+      // Active Bar Highlight & Glow: Commercial terminal outline & close level pulse
+      if (isLastBar) {
+        ctx.save();
+        // 1. Subtle 1px outline with soft glow on active forming candle body
+        ctx.shadowColor = bull ? 'rgba(8, 153, 129, 0.45)' : 'rgba(242, 54, 69, 0.45)';
+        ctx.shadowBlur = 5 * dpr;
+        ctx.strokeStyle = bull ? '#089981' : '#F23645';
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.strokeRect(bLeft - 0.5 * dpr, rTop - 0.5 * dpr, bWidth + 1 * dpr, bHeight + 1 * dpr);
+        ctx.restore();
+
+        // 2. Subtle glow and 1px live tick highlight on active close level
+        ctx.save();
+        const closeY = Math.round(cY) + 0.5;
+        // Soft luminous glow on close level
+        ctx.strokeStyle = bull ? 'rgba(8, 153, 129, 0.45)' : 'rgba(242, 54, 69, 0.45)';
+        ctx.lineWidth = 3 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(bLeft - 2 * dpr, closeY);
+        ctx.lineTo(bLeft + bWidth + 2 * dpr, closeY);
+        ctx.stroke();
+
+        // Crisp 1px close tick marker indicating live stream update
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(bLeft - 1 * dpr, closeY);
+        ctx.lineTo(bLeft + bWidth + 1 * dpr, closeY);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
   }
   ctx.restore();
