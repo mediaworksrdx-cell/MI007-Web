@@ -252,6 +252,65 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
           return next;
         });
       }
+
+      // Also index commodities, forex, and macro into livePrices map
+      if (macros.length > 0) {
+        setLivePrices(prev => {
+          const next = new Map(prev);
+          for (const m of macros) {
+            const numVal = parseFloat(String(m.value).replace(/[%$,]/g, ''));
+            if (!isNaN(numVal) && numVal > 0) {
+              const key = normalizeSymbolKey(m.symbol);
+              const prevEntry = next.get(key) || next.get(m.symbol);
+              const tickDirection = prevEntry
+                ? numVal > prevEntry.price ? 'up' : numVal < prevEntry.price ? 'down' : 'neutral'
+                : 'neutral';
+
+              const chg = typeof (m as any).change === 'number' ? (m as any).change : (prevEntry?.change || 0);
+              const chgPct = typeof (m as any).changePercent === 'number' ? (m as any).changePercent : (prevEntry?.changePct || 0);
+
+              const data: LiveSymbolData = {
+                symbol: m.symbol,
+                price: numVal,
+                change: chg,
+                changePct: chgPct,
+                timestamp: now,
+                tickDirection,
+                lastUpdated: now,
+              };
+
+              next.set(key, data);
+              next.set(m.symbol, data);
+              next.set(m.symbol.toUpperCase(), data);
+
+              if (m.symbol === 'XAU/USD' || m.symbol === 'GOLD') {
+                next.set('GOLD', data);
+                next.set('XAU', data);
+                next.set('XAUUSD', data);
+              }
+              if (m.symbol === 'XAG/USD' || m.symbol === 'SILVER') {
+                next.set('SILVER', data);
+                next.set('XAG', data);
+                next.set('XAGUSD', data);
+              }
+              if (m.symbol === 'BRENT') {
+                next.set('BRENT', data);
+                next.set('CRUDEOIL', data);
+                next.set('OIL', data);
+              }
+              if (m.symbol === 'USD/INR') {
+                next.set('USDINR', data);
+                next.set('USD/INR', data);
+              }
+              if (m.symbol === 'EUR/USD') {
+                next.set('EURUSD', data);
+                next.set('EUR/USD', data);
+              }
+            }
+          }
+          return next;
+        });
+      }
     } catch (err) {
       console.warn('[TradeEngineProvider] Reconciliation error:', err);
     }

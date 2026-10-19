@@ -94,6 +94,151 @@ function setCached(key: string, data: any) {
   serverCache[key] = { data, timestamp: Date.now() };
 }
 
+async function fetchYahooMacroData(): Promise<{ value: any[]; Count: number } | null> {
+  const symbolMap = [
+    { yahoo: 'GC=F', symbol: 'XAU/USD', format: (p: number) => p.toFixed(2) },
+    { yahoo: 'SI=F', symbol: 'XAG/USD', format: (p: number) => p.toFixed(2) },
+    { yahoo: 'BZ=F', symbol: 'BRENT', format: (p: number) => p.toFixed(2) },
+    { yahoo: 'DX-Y.NYB', symbol: 'DXY', format: (p: number) => p.toFixed(2) },
+    { yahoo: '^TNX', symbol: 'US10Y', format: (p: number) => `${p.toFixed(2)}%` },
+    { yahoo: '^VIX', symbol: 'VIX', format: (p: number) => p.toFixed(2) },
+    { yahoo: 'USDINR=X', symbol: 'USD/INR', format: (p: number) => p.toFixed(2) },
+    { yahoo: 'EURUSD=X', symbol: 'EUR/USD', format: (p: number) => p.toFixed(4) },
+  ];
+
+  try {
+    const promises = symbolMap.map(async (item) => {
+      try {
+        const res = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(item.yahoo)}?interval=1d&range=1d`,
+          {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+              'Accept': 'application/json',
+            },
+            cache: 'no-store',
+          }
+        );
+        if (!res.ok) return null;
+        const json = await res.json();
+        const meta = json?.chart?.result?.[0]?.meta;
+        const price = meta?.regularMarketPrice;
+        const prevClose = meta?.chartPreviousClose || price;
+        if (typeof price === 'number') {
+          const chg = +(price - prevClose).toFixed(2);
+          const chgPct = +((chg / Math.max(0.001, prevClose)) * 100).toFixed(2);
+          return {
+            symbol: item.symbol,
+            value: item.format(price),
+            change: chg,
+            changePercent: chgPct,
+          };
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    });
+
+    const settled = await Promise.all(promises);
+    const results = settled.filter((item): item is NonNullable<typeof item> => item !== null);
+    if (results.length >= 4) {
+      return { value: results, Count: results.length };
+    }
+  } catch (err) {
+    console.warn('[YahooMacro] Error fetching Yahoo macro data:', err);
+  }
+  return null;
+}
+
+async function fetchTwelveDataUsPrices(apiKey: string): Promise<any[]> {
+  const symbols = 'SPX,NDX,DJI,QQQ,NVDA,AAPL,MSFT,TSLA,META,AMZN,GOOGL';
+  const tokenMap: Record<string, number> = {
+    SPX: 900001,
+    NDX: 900003,
+    DJI: 900006,
+    QQQ: 900009,
+    NVDA: 900010,
+    AAPL: 900011,
+    MSFT: 900012,
+    TSLA: 900013,
+    META: 900014,
+    AMZN: 900015,
+    GOOGL: 900016,
+  };
+
+  try {
+    const res = await fetch(
+      `https://api.twelvedata.com/quote?symbol=${symbols}&apikey=${apiKey}`,
+      { cache: 'no-store' }
+    );
+    if (!res.ok) return [];
+    const raw = await res.json();
+    if (!raw || typeof raw !== 'object' || raw.status === 'error') return [];
+
+    const now = Date.now();
+    const items: any[] = [];
+
+    for (const [sym, quote] of Object.entries(raw as Record<string, any>)) {
+      if (!quote || typeof quote !== 'object' || !quote.close) continue;
+      const ltp = parseFloat(quote.close);
+      const prevClose = parseFloat(quote.previous_close || quote.close);
+      const chg = parseFloat(quote.change || (ltp - prevClose).toFixed(2));
+      const pct = parseFloat(quote.percent_change || (((ltp - prevClose) / Math.max(0.01, prevClose)) * 100).toFixed(2));
+
+      items.push({
+        instrumentToken: tokenMap[sym.toUpperCase()] || 900050,
+        symbol: sym.toUpperCase(),
+        ltp,
+        change: chg,
+        changePercent: pct,
+        timestamp: now,
+      });
+
+      if (sym.toUpperCase() === 'SPX') {
+        items.push({ instrumentToken: 900002, symbol: 'S&P 500', ltp, change: chg, changePercent: pct, timestamp: now });
+      }
+      if (sym.toUpperCase() === 'NDX') {
+        items.push({ instrumentToken: 900004, symbol: 'NASDAQ 100', ltp, change: chg, changePercent: pct, timestamp: now });
+        items.push({ instrumentToken: 900005, symbol: 'NASDAQ', ltp, change: chg, changePercent: pct, timestamp: now });
+      }
+      if (sym.toUpperCase() === 'DJI') {
+        items.push({ instrumentToken: 900007, symbol: 'DOW JONES', ltp, change: chg, changePercent: pct, timestamp: now });
+      }
+    }
+    return items;
+  } catch (err) {
+    console.warn('[TwelveDataUsPrices] Error fetching Twelve Data quotes:', err);
+    return [];
+  }
+}
+
+async function getActiveUsPrices(): Promise<any[]> {
+  const apiKey = process.env.TWELVE_DATA_API_KEY || process.env.NEXT_PUBLIC_TWELVE_DATA_API_KEY;
+  const isUsOpen = isMarketOpen('USA');
+
+  // Option A: If Twelve Data API key is provided, query Twelve Data with session-aware 15m caching
+  if (apiKey) {
+    const cachedTwelve = getCached('twelve-data-us', 15 * 60 * 1000);
+    if (cachedTwelve && cachedTwelve.length > 0) {
+      return cachedTwelve;
+    }
+
+    if (isUsOpen) {
+      const liveItems = await fetchTwelveDataUsPrices(apiKey);
+      if (liveItems.length > 0) {
+        setCached('twelve-data-us', liveItems);
+        return liveItems;
+      }
+    } else {
+      const lastClosed = serverCache['twelve-data-us']?.data;
+      if (lastClosed && lastClosed.length > 0) return lastClosed;
+    }
+  }
+
+  return getUsLiveBenchmarks();
+}
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> }
@@ -103,13 +248,23 @@ export async function GET(
   const search = request.nextUrl.search;
   const cacheKey = `${pathStr}${search}`;
 
-  // 1. Check in-memory cache for macro-data (10-minute TTL guarantees quota lasts well past EOD)
+  // 1. Check in-memory cache for macro-data (Commodities & Forex via Yahoo Finance, 0 Twelve Data credits)
   if (pathStr === 'macro-data') {
-    const cachedMacro = getCached(cacheKey, 10 * 60 * 1000);
+    const cachedMacro = getCached(cacheKey, 5 * 60 * 1000);
     if (cachedMacro) {
       return NextResponse.json(cachedMacro, {
         status: 200,
         headers: { 'X-Cache': 'HIT', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
+    // Try Yahoo Finance for Commodities & Forex first (0 Twelve Data credits!)
+    const yahooMacro = await fetchYahooMacroData();
+    if (yahooMacro) {
+      setCached(cacheKey, yahooMacro);
+      return NextResponse.json(yahooMacro, {
+        status: 200,
+        headers: { 'X-Cache': 'MISS-YAHOO', 'Access-Control-Allow-Origin': '*' },
       });
     }
   }
@@ -164,7 +319,7 @@ export async function GET(
 
       // If live-prices returned Indian stocks, merge active US benchmarks so both markets update
       if (pathStr === 'live-prices' && Array.isArray(data)) {
-        const usItems = getUsLiveBenchmarks();
+        const usItems = await getActiveUsPrices();
         data = [...data, ...usItems];
       }
 
@@ -189,7 +344,8 @@ export async function GET(
     }
 
     if (pathStr === 'live-prices') {
-      return NextResponse.json(getUsLiveBenchmarks(), { status: 200 });
+      const usItems = await getActiveUsPrices();
+      return NextResponse.json(usItems, { status: 200 });
     }
 
     return NextResponse.json(
@@ -208,7 +364,8 @@ export async function GET(
     }
 
     if (pathStr === 'live-prices') {
-      return NextResponse.json(getUsLiveBenchmarks(), { status: 200 });
+      const usItems = await getActiveUsPrices();
+      return NextResponse.json(usItems, { status: 200 });
     }
 
     console.error(`[TradeEngineProxy] Error proxying GET to ${targetUrl}:`, message);
