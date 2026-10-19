@@ -941,65 +941,60 @@ export default function TerminalPage() {
               </div>
             </div>
 
-            {/* ── Module Tabs: Dashboard, Commodities, Forex, Charts, Screeners ── */}
-            <div className="flex flex-wrap items-center gap-2 mb-6 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
-              <button
-                type="button"
-                onClick={() => setActiveTab('all')}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  activeTab === 'all'
-                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                    : 'font-bold text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/5'
-                }`}
-              >
-                <span>⚡</span>
-                <span>DASHBOARD</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('commodities')}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  activeTab === 'commodities'
-                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                    : 'font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
-                }`}
-              >
-                <span>🛢️</span>
-                <span>COMMODITIES</span>
-                <span className={`mono text-[10px] px-1.5 py-0.5 rounded ${activeTab === 'commodities' ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-amber-500/15 text-amber-500 font-bold'}`}>
-                  6 GLOBAL
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('forex')}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  activeTab === 'forex'
-                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                    : 'font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
-                }`}
-              >
-                <span>💱</span>
-                <span>FOREX</span>
-                <span className={`mono text-[10px] px-1.5 py-0.5 rounded ${activeTab === 'forex' ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-cyan-500/15 text-cyan-500 font-bold'}`}>
-                  6 MAJOR
-                </span>
-              </button>
-              <Link
-                href={`/chart/${defaultChartSym}?market=${market}`}
-                className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2 border border-transparent hover:border-emerald-500/30"
-              >
-                <span>📈</span>
-                <span>INTERACTIVE CHARTS</span>
-                <span className="mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">PRO ƒx</span>
-              </Link>
-              <Link
-                href="/terminal/screener"
-                className="flex-1 sm:flex-none px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2"
-              >
-                <span>🔍</span>
-                <span>SCREENERS</span>
-              </Link>
+            {/* ── Module Tabs: Centered segmented bar with no unwanted box space ── */}
+            <div className="flex justify-center mb-6">
+              <div className="w-full sm:w-fit inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('all')}
+                  className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    activeTab === 'all'
+                      ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                      : 'font-bold text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <span>⚡</span>
+                  <span>DASHBOARD</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('commodities')}
+                  className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    activeTab === 'commodities'
+                      ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                      : 'font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <span>🛢️</span>
+                  <span>COMMODITIES</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('forex')}
+                  className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    activeTab === 'forex'
+                      ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                      : 'font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <span>💱</span>
+                  <span>FOREX</span>
+                </button>
+                <Link
+                  href={`/chart/${defaultChartSym}?market=${market}`}
+                  className="px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2 border border-transparent hover:border-emerald-500/30"
+                >
+                  <span>📈</span>
+                  <span>CHARTS</span>
+                </Link>
+                <Link
+                  href="/terminal/screener"
+                  className="px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2"
+                >
+                  <span>🔍</span>
+                  <span>SCREENERS</span>
+                </Link>
+              </div>
             </div>
 
             {/* ── Contextual Module Banner ── */}
