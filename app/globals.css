@@ -672,18 +672,18 @@ html[data-theme="quartz"] {
     color: #334155 !important;
   }
 
-  /* Prevent Inadvertent White Text on White Cards */
-  button.text-white:not(.bg-rose-500):not(.bg-emerald-600):not(.bg-emerald-500):not(.bg-slate-900):not(.bg-black):not(.launch-terminal-btn),
-  button .text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *),
-  td.text-white,
-  tr.text-white,
-  p.text-white,
-  h1.text-white,
-  h2.text-white,
-  h3.text-white,
-  h4.text-white,
-  span.text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *),
-  div.text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *) {
+  /* Prevent Inadvertent White Text on White Cards (excluding footer and dark surfaces) */
+  button.text-white:not(.bg-rose-500):not(.bg-emerald-600):not(.bg-emerald-500):not(.bg-slate-900):not(.bg-black):not(.launch-terminal-btn):not(footer *):not(.footer-panel *),
+  button .text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *):not(footer *):not(.footer-panel *),
+  td.text-white:not(footer *):not(.footer-panel *),
+  tr.text-white:not(footer *):not(.footer-panel *),
+  p.text-white:not(footer *):not(.footer-panel *),
+  h1.text-white:not(footer *):not(.footer-panel *),
+  h2.text-white:not(footer *):not(.footer-panel *),
+  h3.text-white:not(footer *):not(.footer-panel *),
+  h4.text-white:not(footer *):not(.footer-panel *),
+  span.text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *):not(footer *):not(.footer-panel *),
+  div.text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *):not(footer *):not(.footer-panel *) {
     color: #0F172A !important;
   }
 
@@ -855,53 +855,104 @@ html[data-theme="cyberpunk"] .navbar-brand-badge {
 
 /* ── 6. Footer ── */
 .footer-panel,
-footer {
+footer,
+html footer,
+html[data-theme] footer,
+html .footer-panel,
+html[data-theme] .footer-panel {
   background-color: var(--theme-footer-bg) !important;
   border-color: var(--theme-footer-border) !important;
   color: #FFFFFF !important;
 }
 
-.footer-brand-title {
+.footer-brand-title,
+footer .footer-brand-title,
+.footer-panel .footer-brand-title,
+html footer .footer-brand-title,
+html[data-theme] footer .footer-brand-title,
+html[data-theme] footer span.footer-brand-title {
   color: #FFFFFF !important;
 }
 
-.footer-brand-subtitle {
+.footer-brand-subtitle,
+footer .footer-brand-subtitle,
+.footer-panel .footer-brand-subtitle,
+html footer .footer-brand-subtitle,
+html[data-theme] footer .footer-brand-subtitle {
   color: #CBD5E1 !important;
 }
 
-.footer-chip {
+.footer-chip,
+footer .footer-chip,
+.footer-panel .footer-chip,
+html footer .footer-chip,
+html[data-theme] footer .footer-chip,
+html[data-theme] footer span.footer-chip {
   background-color: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
   color: #FFFFFF !important;
 }
 
-.footer-heading {
+.footer-heading,
+footer .footer-heading,
+.footer-panel .footer-heading,
+html footer .footer-heading,
+html[data-theme] footer .footer-heading,
+html[data-theme] footer h4.footer-heading {
   color: #FFFFFF !important;
 }
 
-.footer-link {
+.footer-link,
+footer .footer-link,
+.footer-panel .footer-link,
+html footer .footer-link,
+html[data-theme] footer .footer-link {
   color: #F8FAFC !important;
   opacity: 0.95;
 }
-.footer-link:hover {
+.footer-link:hover,
+footer .footer-link:hover,
+.footer-panel .footer-link:hover,
+html footer .footer-link:hover,
+html[data-theme] footer .footer-link:hover {
   color: #34D399 !important;
   opacity: 1;
 }
 
 .footer-list,
 .footer-list li,
-.footer-list span {
+.footer-list span,
+footer .footer-list,
+footer .footer-list li,
+footer .footer-list span,
+.footer-panel .footer-list,
+.footer-panel .footer-list li,
+.footer-panel .footer-list span,
+html footer .footer-list *,
+html[data-theme] footer .footer-list * {
   color: #F1F5F9 !important;
 }
 
-.footer-coming-soon {
+.footer-coming-soon,
+footer .footer-coming-soon,
+.footer-panel .footer-coming-soon,
+html footer .footer-coming-soon,
+html[data-theme] footer .footer-coming-soon {
   background-color: rgba(245, 158, 11, 0.2) !important;
   border: 1px solid rgba(245, 158, 11, 0.5) !important;
   color: #FBBF24 !important;
 }
 
 .footer-copy,
-.footer-copy span {
+.footer-copy span,
+footer .footer-copy,
+footer .footer-copy span,
+.footer-panel .footer-copy,
+.footer-panel .footer-copy span,
+html footer .footer-copy,
+html[data-theme] footer .footer-copy,
+html footer .footer-copy span,
+html[data-theme] footer .footer-copy span {
   color: #CBD5E1 !important;
 }
 
