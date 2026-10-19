@@ -11,11 +11,11 @@ const forces: {
   icon3d: Icon3DName;
   glow: string;
 }[] = [
-  { id: 'LIQUIDITY', desc: 'Hidden buy & sell pools swept by institutional algorithms', color: 'text-mint-green', icon3d: 'wave', glow: 'rgba(6, 182, 212, 0.4)' },
-  { id: 'MOMENTUM', desc: 'Velocity of price displacement across micro-timeframes', color: 'text-accent-cyan', icon3d: 'lightning', glow: 'rgba(245, 158, 11, 0.4)' },
+  { id: 'LIQUIDITY', desc: 'Hidden buy & sell pools swept by institutional algorithms', color: 'text-cyber-gold', icon3d: 'wave', glow: 'rgba(6, 182, 212, 0.4)' },
+  { id: 'MOMENTUM', desc: 'Velocity of price displacement across micro-timeframes', color: 'text-cyber-gold', icon3d: 'lightning', glow: 'rgba(245, 158, 11, 0.4)' },
   { id: 'ABSORPTION', desc: 'Large limit orders holding key structural levels', color: 'text-cyber-gold', icon3d: 'shield', glow: 'rgba(16, 185, 129, 0.4)' },
-  { id: 'STRUCTURE', desc: 'Higher timeframe order blocks guiding directional bias', color: 'text-purple-600', icon3d: 'pattern', glow: 'rgba(168, 85, 247, 0.4)' },
-  { id: 'INTELLIGENCE', desc: 'Synthesized probability vectors informing execution', color: 'text-emerald-700', icon3d: 'robot', glow: 'rgba(16, 185, 129, 0.4)' },
+  { id: 'STRUCTURE', desc: 'Higher timeframe order blocks guiding directional bias', color: 'text-cyber-gold', icon3d: 'pattern', glow: 'rgba(168, 85, 247, 0.4)' },
+  { id: 'INTELLIGENCE', desc: 'Synthesized probability vectors informing execution', color: 'text-cyber-gold', icon3d: 'robot', glow: 'rgba(16, 185, 129, 0.4)' },
 ];
 
 export default function AboutSection() {
