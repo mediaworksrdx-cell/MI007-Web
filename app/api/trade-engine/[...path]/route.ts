@@ -213,29 +213,102 @@ async function fetchTwelveDataUsPrices(apiKey: string): Promise<any[]> {
   }
 }
 
-async function getActiveUsPrices(): Promise<any[]> {
-  const apiKey = process.env.TWELVE_DATA_API_KEY || process.env.NEXT_PUBLIC_TWELVE_DATA_API_KEY;
-  const isUsOpen = isMarketOpen('USA');
+async function fetchTradeEngineUsPrices(): Promise<any[]> {
+  const symbols = ['SPX', 'NDX', 'DJI', 'QQQ', 'NVDA', 'AAPL', 'MSFT', 'TSLA', 'META', 'AMZN', 'GOOGL'];
+  const tokenMap: Record<string, number> = {
+    SPX: 900001,
+    NDX: 900003,
+    DJI: 900006,
+    QQQ: 900009,
+    NVDA: 900010,
+    AAPL: 900011,
+    MSFT: 900012,
+    TSLA: 900013,
+    META: 900014,
+    AMZN: 900015,
+    GOOGL: 900016,
+  };
 
-  // Option A: If Twelve Data API key is provided, query Twelve Data with session-aware 15m caching
-  if (apiKey) {
-    const cachedTwelve = getCached('twelve-data-us', 15 * 60 * 1000);
-    if (cachedTwelve && cachedTwelve.length > 0) {
-      return cachedTwelve;
-    }
+  try {
+    const promises = symbols.map(async (sym) => {
+      try {
+        const res = await fetch(`${TRADE_ENGINE_URL}/candles?symbol=${sym}`, {
+          cache: 'no-store',
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!res.ok) return [];
+        const candles = await res.json();
+        if (!Array.isArray(candles) || candles.length < 2) return [];
 
-    if (isUsOpen) {
-      const liveItems = await fetchTwelveDataUsPrices(apiKey);
-      if (liveItems.length > 0) {
-        setCached('twelve-data-us', liveItems);
-        return liveItems;
+        const last = candles[candles.length - 1];
+        const prev = candles[candles.length - 2];
+        const ltp = Number(last.close || 0);
+        const prevClose = Number(prev.close || ltp);
+        const chg = +(ltp - prevClose).toFixed(2);
+        const pct = +(((ltp - prevClose) / Math.max(0.01, prevClose)) * 100).toFixed(2);
+        const now = Date.now();
+
+        const items = [
+          {
+            instrumentToken: tokenMap[sym] || 900050,
+            symbol: sym,
+            ltp,
+            change: chg,
+            changePercent: pct,
+            timestamp: now,
+          }
+        ];
+
+        if (sym === 'SPX') {
+          items.push({ instrumentToken: 900002, symbol: 'S&P 500', ltp, change: chg, changePercent: pct, timestamp: now });
+        }
+        if (sym === 'NDX') {
+          items.push({ instrumentToken: 900004, symbol: 'NASDAQ 100', ltp, change: chg, changePercent: pct, timestamp: now });
+          items.push({ instrumentToken: 900005, symbol: 'NASDAQ', ltp, change: chg, changePercent: pct, timestamp: now });
+        }
+        if (sym === 'DJI') {
+          items.push({ instrumentToken: 900007, symbol: 'DOW JONES', ltp, change: chg, changePercent: pct, timestamp: now });
+        }
+
+        return items;
+      } catch {
+        return [];
       }
-    } else {
-      const lastClosed = serverCache['twelve-data-us']?.data;
-      if (lastClosed && lastClosed.length > 0) return lastClosed;
+    });
+
+    const settled = await Promise.all(promises);
+    return settled.flat();
+  } catch (err) {
+    console.warn('[TradeEngineUsPrices] Error extracting Twelve Data prices from Trade Engine:', err);
+    return [];
+  }
+}
+
+async function getActiveUsPrices(): Promise<any[]> {
+  // Check 15-minute server cache
+  const cached = getCached('trade-engine-us-prices', 15 * 60 * 1000);
+  if (cached && cached.length > 0) {
+    return cached;
+  }
+
+  // 1. Primary: Extract live Twelve Data prices already connected to Trade Engine
+  const engineItems = await fetchTradeEngineUsPrices();
+  if (engineItems.length > 0) {
+    setCached('trade-engine-us-prices', engineItems);
+    return engineItems;
+  }
+
+  // 2. Secondary fallback: Direct Twelve Data call if API key provided in env
+  const apiKey = process.env.TWELVE_DATA_API_KEY || process.env.NEXT_PUBLIC_TWELVE_DATA_API_KEY;
+  if (apiKey) {
+    const liveItems = await fetchTwelveDataUsPrices(apiKey);
+    if (liveItems.length > 0) {
+      setCached('trade-engine-us-prices', liveItems);
+      return liveItems;
     }
   }
 
+  // 3. Baseline benchmark fallback
   return getUsLiveBenchmarks();
 }
 
