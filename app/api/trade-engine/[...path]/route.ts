@@ -108,34 +108,39 @@ async function fetchYahooMacroData(): Promise<{ value: any[]; Count: number } | 
 
   try {
     const promises = symbolMap.map(async (item) => {
-      try {
-        const res = await fetch(
-          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(item.yahoo)}?interval=1d&range=1d`,
-          {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-              'Accept': 'application/json',
-            },
-            cache: 'no-store',
+      const hosts = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
+      for (const host of hosts) {
+        try {
+          const res = await fetch(
+            `https://${host}/v8/finance/chart/${encodeURIComponent(item.yahoo)}?interval=1d&range=1d`,
+            {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Accept': 'application/json',
+              },
+              cache: 'no-store',
+            }
+          );
+          if (res.status === 429) continue; // Rate limited on host, failover to next host
+          if (!res.ok) continue;
+
+          const json = await res.json();
+          const meta = json?.chart?.result?.[0]?.meta;
+          const price = meta?.regularMarketPrice;
+          const prevClose = meta?.chartPreviousClose || price;
+          if (typeof price === 'number') {
+            const chg = +(price - prevClose).toFixed(2);
+            const chgPct = +((chg / Math.max(0.001, prevClose)) * 100).toFixed(2);
+            return {
+              symbol: item.symbol,
+              value: item.format(price),
+              change: chg,
+              changePercent: chgPct,
+            };
           }
-        );
-        if (!res.ok) return null;
-        const json = await res.json();
-        const meta = json?.chart?.result?.[0]?.meta;
-        const price = meta?.regularMarketPrice;
-        const prevClose = meta?.chartPreviousClose || price;
-        if (typeof price === 'number') {
-          const chg = +(price - prevClose).toFixed(2);
-          const chgPct = +((chg / Math.max(0.001, prevClose)) * 100).toFixed(2);
-          return {
-            symbol: item.symbol,
-            value: item.format(price),
-            change: chg,
-            changePercent: chgPct,
-          };
+        } catch {
+          // Continue to next host
         }
-      } catch {
-        return null;
       }
       return null;
     });
@@ -323,7 +328,11 @@ export async function GET(
 
   // 1. Check in-memory cache for macro-data (Commodities & Forex via Yahoo Finance, 0 Twelve Data credits)
   if (pathStr === 'macro-data') {
-    const cachedMacro = getCached(cacheKey, 5 * 60 * 1000);
+    const isCommOpen = isMarketOpen('COMMODITY');
+    // Active session: 10m TTL (only 48 requests/hr across 8 symbols, <3% of Yahoo limit). Weekend closed: 60m TTL.
+    const ttl = isCommOpen ? (10 * 60 * 1000) : (60 * 60 * 1000);
+
+    const cachedMacro = getCached(cacheKey, ttl);
     if (cachedMacro) {
       return NextResponse.json(cachedMacro, {
         status: 200,
