@@ -28,9 +28,9 @@ export type {
 export { INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay };
 
 
-// ── Color Constants (Crisp Professional Light Theme) ──────────────────────
-const BULL  = '#00A35C';
-const BEAR  = '#E11D48';
+// ── Color Constants (Soft Institutional Theme) ──────────────────────────
+const BULL  = '#089981';
+const BEAR  = '#F23645';
 const LINE_COLOR = '#2563EB';
 const GRID  = '#F1F5F9';
 const AXIS_TEXT = '#475569';
@@ -43,10 +43,48 @@ const VOL_AXIS = '#64748B';
 
 // ── Formatters ────────────────────────────────────────────────────────────
 export function formatPrice(p: number): string {
-  if (p >= 10000) return p.toFixed(0);
-  if (p >= 100) return p.toFixed(1);
-  if (p >= 1) return p.toFixed(2);
+  if (p >= 10000) return p.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (p >= 100) return p.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  if (p >= 1) return p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return p.toFixed(4);
+}
+
+/**
+ * Institutional "Nice Numbers" algorithm for price axis intervals.
+ * Snaps levels to clean, rounded numbers like 52,000, 52,500, 53,000.
+ */
+export function computeNicePriceTicks(pMin: number, pMax: number, targetTicks: number = 6): number[] {
+  const range = pMax - pMin;
+  if (range <= 0 || !Number.isFinite(range)) return [pMin];
+
+  const rawStep = range / Math.max(2, targetTicks);
+  const exponent = Math.floor(Math.log10(rawStep));
+  const fraction = rawStep / Math.pow(10, exponent);
+
+  let niceFraction = 1;
+  if (fraction < 1.5) niceFraction = 1;
+  else if (fraction < 3) niceFraction = 2;
+  else if (fraction < 7) niceFraction = 5;
+  else niceFraction = 10;
+
+  const step = niceFraction * Math.pow(10, exponent);
+  const startTick = Math.ceil(pMin / step) * step;
+
+  const ticks: number[] = [];
+  const decimals = exponent < 0 ? Math.min(6, Math.abs(exponent) + 1) : 0;
+
+  for (let p = startTick; p <= pMax + step * 0.001; p += step) {
+    const cleanP = Number(p.toFixed(decimals));
+    if (cleanP >= pMin - step * 0.05 && cleanP <= pMax + step * 0.05) {
+      ticks.push(cleanP);
+    }
+  }
+
+  if (ticks.length < 2) {
+    return [pMin, (pMin + pMax) / 2, pMax];
+  }
+
+  return ticks;
 }
 
 /**
@@ -887,22 +925,25 @@ export function renderChart(
   const tf = options.timeframe.toUpperCase();
   const isDailyOrHigher = ['1D','D','1W','W','1M','M'].includes(tf) || avgDur >= 20 * 3600000;
 
-  // ── LAYER 1: Grid & Axes (Light Mode) ──────────────────────────────────
+  // ── LAYER 1: Grid & Axes (Light Mode with Institutional Nice Numbers) ──
   ctx.save();
-  const gridDash = [4*dpr, 4*dpr];
-  const numHL = 5;
-  const pStep = pRange / numHL;
+  const gridDash = [4 * dpr, 4 * dpr];
   ctx.setLineDash(gridDash);
   ctx.lineWidth = 0.8 * dpr;
   ctx.strokeStyle = '#F1F5F9';
   ctx.font = `bold ${12 * dpr}px "JetBrains Mono",monospace`;
-  ctx.fillStyle = '#1E293B';
+  ctx.fillStyle = '#475569';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  for (let i = 0; i <= numHL; i++) {
-    const price = pMin + i * pStep;
-    const y = priceToY(price);
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(chartW, y); ctx.stroke();
+
+  const priceTicks = computeNicePriceTicks(pMin, pMax, 6);
+  for (const price of priceTicks) {
+    const y = Math.round(priceToY(price));
+    if (y < 8 * dpr || y > chartH - 8 * dpr) continue;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(chartW, y);
+    ctx.stroke();
     ctx.fillText(formatPrice(price), W - 8 * dpr, y);
   }
 
@@ -1117,7 +1158,7 @@ export function renderChart(
   }
 
 
-  // ── LAYER 4: Volume Overlay (behind candles) ──────────────────────────
+  // ── LAYER 4: Volume Overlay (behind candles - 32% quiet opacity) ───────
   if (options.showVolume && !options.showVolumePanel) {
     const volH = chartH * 0.15;
     const volBodyW = candleW * 0.7;
@@ -1126,14 +1167,14 @@ export function renderChart(
     if (maxV > 0) {
       for (let i = safeStart; i < safeEnd; i++) {
         const li = i - startIdx;
-        const x = li * candleW + (candleW - volBodyW) / 2;
+        const x = Math.round(li * candleW + (candleW - volBodyW) / 2);
         const c = candles[i];
         const ratio = Math.min(1, Math.max(0.08, c.volume / maxV));
-        const barH = ratio * volH * 0.9;
-        const bTop = chartH - barH;
+        const barH = Math.round(ratio * volH * 0.9);
+        const bTop = Math.round(chartH - barH);
         const bull = c.close >= c.open;
-        ctx.fillStyle = bull ? 'rgba(0,230,118,0.35)' : 'rgba(255,23,68,0.35)';
-        ctx.fillRect(x, bTop, volBodyW, barH);
+        ctx.fillStyle = bull ? 'rgba(8, 153, 129, 0.32)' : 'rgba(242, 54, 69, 0.32)';
+        ctx.fillRect(x, bTop, Math.round(volBodyW), barH);
       }
     }
   }
@@ -1202,20 +1243,28 @@ export function renderChart(
       const midY = (oY + cY) / 2;
       const renderTop = rawBodyH < minBodyH ? midY - minBodyH / 2 : bTop;
 
-      // Wick (drawn first behind body)
-      ctx.strokeStyle = color; ctx.lineWidth = wickW;
-      ctx.beginPath(); ctx.moveTo(cx, hY); ctx.lineTo(cx, lY); ctx.stroke();
+      // Sub-Pixel Line Drawing: +0.5px offset centers 1px wick on physical pixel row for razor sharpness
+      const wickX = Math.floor(cx) + 0.5;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = wickW;
+      ctx.beginPath();
+      ctx.moveTo(wickX, Math.round(hY));
+      ctx.lineTo(wickX, Math.round(lY));
+      ctx.stroke();
 
       // Body (crisp rectangular institutional fill)
-      const bLeft = cx - bodyW / 2;
+      const bLeft = Math.round(cx - bodyW / 2);
+      const rTop = Math.round(renderTop);
+      const bWidth = Math.max(1, Math.round(bodyW));
+      const bHeight = Math.max(1, Math.round(bH));
       if (isHollow && bull) {
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(bLeft, renderTop, bodyW, bH);
+        ctx.fillRect(bLeft, rTop, bWidth, bHeight);
         ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.2 * dpr, 1);
-        ctx.strokeRect(bLeft, renderTop, bodyW, bH);
+        ctx.strokeRect(bLeft, rTop, bWidth, bHeight);
       } else {
         ctx.fillStyle = color;
-        ctx.fillRect(bLeft, renderTop, bodyW, bH);
+        ctx.fillRect(bLeft, rTop, bWidth, bHeight);
       }
     }
   }
@@ -1230,7 +1279,7 @@ export function renderChart(
     const rawY = priceToY(curPrice);
     const clY = Math.max(2, Math.min(chartH - 2, rawY));
     // Glow halo
-    ctx.strokeStyle = bull ? 'rgba(0,230,118,0.28)' : 'rgba(255,23,68,0.28)';
+    ctx.strokeStyle = bull ? 'rgba(8, 153, 129, 0.28)' : 'rgba(242, 54, 69, 0.28)';
     ctx.lineWidth = 3.5*dpr;
     ctx.beginPath(); ctx.moveTo(0, clY); ctx.lineTo(chartW, clY); ctx.stroke();
     // Dashed line
@@ -2557,12 +2606,12 @@ export function renderChart(
       const bw = (candleW * 0.72);
       for (let i = safeStart; i < safeEnd; i++) {
         const li = i - startIdx;
-        const x = li * candleW + (candleW - bw) / 2;
+        const x = Math.round(li * candleW + (candleW - bw) / 2);
         const c = candles[i];
-        const barH = Math.max(1.5, (c.volume / maxV) * avH);
-        const bT = panelOffset + pH - barH;
-        ctx.fillStyle = c.close >= c.open ? 'rgba(0,163,92,0.7)' : 'rgba(225,29,72,0.7)';
-        ctx.fillRect(x, bT, bw, barH);
+        const barH = Math.max(1.5, Math.round((c.volume / maxV) * avH));
+        const bT = Math.round(panelOffset + pH - barH);
+        ctx.fillStyle = c.close >= c.open ? 'rgba(8, 153, 129, 0.32)' : 'rgba(242, 54, 69, 0.32)';
+        ctx.fillRect(x, bT, Math.round(bw), barH);
       }
 
       // Draw Volume MA 20 Curve (Amber/Orange line on top of volume bars)
