@@ -200,7 +200,11 @@ export function computeCalendarTimeTicks(
       const li = idx - startIdx;
       const x = Math.round(li * candleW + candleW / 2);
       if (x >= 24 * dpr && x <= chartW - 24 * dpr && x - lastX >= minSpacing) {
-        ticks.push({ x, label: anchor.label });
+        const cDate = new Date(c.openTime);
+        const candleLabel = spanDays > 730
+          ? `${cDate.getFullYear()}`
+          : `${cDate.getDate()} ${months[cDate.getMonth()]}`;
+        ticks.push({ x, label: candleLabel });
         lastX = x;
         seenIndices.add(idx);
       }

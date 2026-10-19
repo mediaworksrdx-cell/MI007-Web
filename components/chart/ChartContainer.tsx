@@ -53,10 +53,10 @@ function getExpectedPrice(market: MarketType, symbol: string): number {
   return 1000;
 }
 
-function validateAndCleanCandles(candles: Candle[]): Candle[] {
+function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[] {
   if (!candles || candles.length === 0) return [];
 
-  return candles
+  const valid = candles
     .filter(c => c && Number.isFinite(c.openTime) && c.close > 0)
     .map(c => {
       const close = Number(c.close);
@@ -77,6 +77,37 @@ function validateAndCleanCandles(candles: Candle[]): Candle[] {
       };
     })
     .sort((a, b) => a.openTime - b.openTime);
+
+  if (valid.length <= 1) return valid;
+
+  // Deduplicate same-day duplicate candles on daily view (e.g. UTC midnight duplicate vs market midnight)
+  if (timeframe === '1D') {
+    const merged: Candle[] = [];
+    for (let i = 0; i < valid.length; i++) {
+      const c = valid[i];
+      const prev = merged[merged.length - 1];
+      if (prev) {
+        const pDate = new Date(prev.openTime);
+        const cDate = new Date(c.openTime);
+        const isSameCalendarDay = (
+          (pDate.getFullYear() === cDate.getFullYear() && pDate.getMonth() === cDate.getMonth() && pDate.getDate() === cDate.getDate()) ||
+          (pDate.getUTCFullYear() === cDate.getUTCFullYear() && pDate.getUTCMonth() === cDate.getUTCMonth() && pDate.getUTCDate() === cDate.getUTCDate()) ||
+          (Math.abs(c.openTime - prev.openTime) < 86_400_000 && Math.abs(c.openTime - prev.openTime) <= 6 * 3600_000)
+        );
+        if (isSameCalendarDay) {
+          prev.high = Math.max(prev.high, c.high);
+          prev.low = Math.min(prev.low, c.low);
+          prev.close = c.close;
+          prev.volume += c.volume;
+          continue;
+        }
+      }
+      merged.push({ ...c });
+    }
+    return merged;
+  }
+
+  return valid;
 }
 
 export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
@@ -186,7 +217,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           }
         }
 
-        const cleanCached = validateAndCleanCandles(rawCached || []);
+        const cleanCached = validateAndCleanCandles(rawCached || [], timeframe);
 
         if (!isCancelled && cleanCached.length > 0) {
           setCandles(cleanCached);
@@ -197,7 +228,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
 
         // 2. Fetch latest candles from Trade Engine API
         const rawEngine = await fetchCandles(selectedSymbol, timeframe);
-        const cleanEngine = validateAndCleanCandles(rawEngine || []);
+        const cleanEngine = validateAndCleanCandles(rawEngine || [], timeframe);
 
         if (!isCancelled) {
           if (cleanEngine.length > 0) {
@@ -217,7 +248,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
               finalCandles = mergeCandleArrays(cleanCached, cleanEngine, tfMs);
             }
 
-            const cleanMerged = validateAndCleanCandles(finalCandles);
+            const cleanMerged = validateAndCleanCandles(finalCandles, timeframe);
 
             setCandles(cleanMerged);
             const lastC = cleanMerged[cleanMerged.length - 1];
@@ -227,7 +258,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           } else if (cleanCached.length === 0) {
             // Fallback to mock data ONLY in-memory (never pollute persistent storage with mock candles)
             const fallback = getMockCandles(market, selectedSymbol, timeframe, 150);
-            const cleanFallback = validateAndCleanCandles(fallback);
+            const cleanFallback = validateAndCleanCandles(fallback, timeframe);
             setCandles(cleanFallback);
             setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);
             setIsLiveFromEngine(false);
@@ -252,33 +283,67 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   // Track last save timestamp to throttle IndexedDB writes during active ticks
   const lastSaveTimeRef = useRef<number>(0);
 
-  // Sync current price immediately from Trade Engine if available
+  // Sync current price immediately from Trade Engine if available (with scale dislocation protection)
   useEffect(() => {
     const live = getSymbolPrice(selectedSymbol);
     if (live && live.price > 0) {
+      if (candles.length > 0) {
+        const lastC = candles[candles.length - 1];
+        if (lastC && lastC.close > 0) {
+          const dis = Math.abs(live.price - lastC.close) / lastC.close;
+          if (dis > 0.25) return;
+        }
+      }
       setCurrentPrice(live.price);
       setIsLiveFromEngine(true);
     }
-  }, [selectedSymbol, getSymbolPrice]);
+  }, [selectedSymbol, getSymbolPrice, candles]);
 
-  // Listen to live WebSocket ticks from the Trade Engine with clock-aligned candle formation
+  // Listen to live WebSocket ticks from the Trade Engine with robust session-aware candle formation
   useEffect(() => {
     const unsub = subscribeToTicks((tick) => {
       if (areSymbolsEqual(tick.symbol, selectedSymbol) && tick.price > 0) {
-        setIsLiveFromEngine(true);
-        setCurrentPrice(tick.price);
-
         setCandles(prev => {
           if (prev.length === 0) return prev;
+          const currentLast = prev[prev.length - 1];
+          if (!currentLast || currentLast.close <= 0) return prev;
+
+          // Scale dislocation guard: ignore ticks > 25% off current bar scale to prevent distorted candles
+          const dislocation = Math.abs(tick.price - currentLast.close) / currentLast.close;
+          if (dislocation > 0.25) {
+            return prev;
+          }
+
+          setIsLiveFromEngine(true);
+          setCurrentPrice(tick.price);
+
           const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
           const now = tick.timestamp || Date.now();
-          const currentBucketOpenTime = Math.floor(now / tfMs) * tfMs;
-          const currentLast = prev[prev.length - 1];
+
+          // Check if tick belongs to currently active candle bucket (handling UTC vs local market midnight)
+          let isSameBucket = false;
+          if (timeframe === '1D') {
+            const cDate = new Date(currentLast.openTime);
+            const tDate = new Date(now);
+            if ((cDate.getFullYear() === tDate.getFullYear() && cDate.getMonth() === tDate.getMonth() && cDate.getDate() === tDate.getDate()) ||
+                (cDate.getUTCFullYear() === tDate.getUTCFullYear() && cDate.getUTCMonth() === tDate.getUTCMonth() && cDate.getUTCDate() === tDate.getUTCDate()) ||
+                (now >= currentLast.openTime && now < currentLast.openTime + tfMs)) {
+              isSameBucket = true;
+            }
+          } else if (timeframe === '1W') {
+            isSameBucket = now >= currentLast.openTime && now < currentLast.openTime + 7 * 86_400_000;
+          } else if (timeframe === '1M') {
+            const cDate = new Date(currentLast.openTime);
+            const tDate = new Date(now);
+            isSameBucket = cDate.getFullYear() === tDate.getFullYear() && cDate.getMonth() === tDate.getMonth();
+          } else {
+            isSameBucket = now >= currentLast.openTime && now < currentLast.openTime + tfMs;
+          }
 
           let next: Candle[];
 
-          // Case 1: Tick falls into currently active bucket
-          if (currentLast.openTime === currentBucketOpenTime) {
+          if (isSameBucket) {
+            // Case 1: Update active candle in place
             const open = currentLast.open > 0 ? currentLast.open : tick.price;
             const updated: Candle = {
               ...currentLast,
@@ -290,10 +355,13 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             };
             next = [...prev];
             next[next.length - 1] = updated;
-          } else if (currentBucketOpenTime > currentLast.openTime) {
-            // Case 2: New time bucket started — start clean new candle
+          } else if (now >= currentLast.openTime + tfMs) {
+            // Case 2: Genuine new time bucket started (e.g. next day or next hour)
+            const newBarOpenTime = timeframe === '1D'
+              ? currentLast.openTime + tfMs
+              : Math.floor(now / tfMs) * tfMs;
             const newBar: Candle = {
-              openTime: currentBucketOpenTime,
+              openTime: newBarOpenTime,
               open: tick.price,
               high: tick.price,
               low: tick.price,
