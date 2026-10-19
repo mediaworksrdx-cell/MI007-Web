@@ -172,6 +172,7 @@ export async function fetchMacroData(): Promise<TradeEngineMacro[]> {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.value)) return data.value;
     return [];
   } catch (err) {
     console.warn('[TradeEngineClient] fetchMacroData error:', err);

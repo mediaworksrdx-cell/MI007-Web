@@ -75,6 +75,25 @@ function getUsLiveBenchmarks(): any[] {
   });
 }
 
+// In-memory server cache to conserve Twelve Data credit quota and prevent high-frequency hammering
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+const serverCache: Record<string, CacheEntry> = {};
+
+function getCached(key: string, ttlMs: number): any | null {
+  const item = serverCache[key];
+  if (item && Date.now() - item.timestamp < ttlMs) {
+    return item.data;
+  }
+  return null;
+}
+
+function setCached(key: string, data: any) {
+  serverCache[key] = { data, timestamp: Date.now() };
+}
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> }
@@ -82,6 +101,41 @@ export async function GET(
   const { path } = await context.params;
   const pathStr = path.join('/');
   const search = request.nextUrl.search;
+  const cacheKey = `${pathStr}${search}`;
+
+  // 1. Check in-memory cache for macro-data (10-minute TTL guarantees quota lasts well past EOD)
+  if (pathStr === 'macro-data') {
+    const cachedMacro = getCached(cacheKey, 10 * 60 * 1000);
+    if (cachedMacro) {
+      return NextResponse.json(cachedMacro, {
+        status: 200,
+        headers: { 'X-Cache': 'HIT', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+  }
+
+  // 2. Check in-memory cache for live-prices (15s TTL)
+  if (pathStr === 'live-prices') {
+    const cachedLive = getCached(cacheKey, 15 * 1000);
+    if (cachedLive) {
+      return NextResponse.json(cachedLive, {
+        status: 200,
+        headers: { 'X-Cache': 'HIT', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+  }
+
+  // 3. Check in-memory cache for crypto-prices (20s TTL)
+  if (pathStr === 'crypto-prices') {
+    const cachedCrypto = getCached(cacheKey, 20 * 1000);
+    if (cachedCrypto) {
+      return NextResponse.json(cachedCrypto, {
+        status: 200,
+        headers: { 'X-Cache': 'HIT', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+  }
+
   const targetUrl = `${TRADE_ENGINE_URL}/${pathStr}${search}`;
 
   try {
@@ -113,6 +167,9 @@ export async function GET(
         const usItems = getUsLiveBenchmarks();
         data = [...data, ...usItems];
       }
+
+      // Save to server-side cache
+      setCached(cacheKey, data);
 
       return NextResponse.json(data, {
         status: 200,

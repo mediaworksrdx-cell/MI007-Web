@@ -11,7 +11,6 @@ import {
   fetchMacroData,
   normalizeSymbolKey,
 } from './tradeEngineClient';
-import { isSymbolMarketOpen } from './marketHours';
 
 export interface LiveSymbolData {
   symbol: string;
@@ -260,134 +259,10 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     refreshHttpSnapshot();
-    const interval = setInterval(refreshHttpSnapshot, 5000);
+    // Steady update cadence: polls snapshots every 30 seconds without frequent jitter
+    const interval = setInterval(refreshHttpSnapshot, 30000);
     return () => clearInterval(interval);
   }, [refreshHttpSnapshot]);
-
-  // 2. Continuous Real-time Micro-Tick Heartbeat Engine (every 1.0 - 1.2s)
-  // Ensures US indices, crypto, and market benchmarks actively tick 24/7 with realistic micro-variations
-  useEffect(() => {
-    const PRIORITY_TICK_KEYS = ['BTC', 'ETH', 'SOL', 'SPX', 'NDX', 'DJI', 'VIX', 'QQQ', 'NVDA', 'AAPL', 'TSLA'];
-
-    const tickInterval = setInterval(() => {
-      const now = Date.now();
-      let generatedTick: TradeEngineTick | null = null;
-
-      setLivePrices(prev => {
-        if (prev.size === 0) return prev;
-        const next = new Map(prev);
-        const allKeys = Array.from(prev.keys()).filter(k => !k.includes('.') && !k.toLowerCase().includes('usdt'));
-        if (allKeys.length === 0) return prev;
-
-        const nowDate = new Date(now);
-        // Strictly filter to symbols whose markets are currently OPEN!
-        // Closed markets (e.g. India at night/weekends, UAE off-hours, US off-hours) MUST NOT TICK.
-        const availablePriority = PRIORITY_TICK_KEYS.filter(k => next.has(k) && isSymbolMarketOpen(k, nowDate));
-        const availableGeneral = allKeys.filter(k => isSymbolMarketOpen(k, nowDate));
-
-        if (availablePriority.length === 0 && availableGeneral.length === 0) return prev;
-
-        // Guarantee pulses only for currently OPEN market instruments (e.g. Crypto 24/7 or active session equities)
-        const targetKeys: string[] = [];
-        for (let i = 0; i < 2 && availablePriority.length > 0; i++) {
-          const pk = availablePriority[Math.floor(Math.random() * availablePriority.length)];
-          if (!targetKeys.includes(pk)) targetKeys.push(pk);
-        }
-        for (let i = 0; i < 2 && availableGeneral.length > 0; i++) {
-          const rk = availableGeneral[Math.floor(Math.random() * availableGeneral.length)];
-          if (!targetKeys.includes(rk)) targetKeys.push(rk);
-        }
-
-        for (const randKey of targetKeys) {
-          if (!isSymbolMarketOpen(randKey, nowDate)) continue;
-          const entry = next.get(randKey);
-          if (!entry || entry.price <= 0) continue;
-
-          // Gentle realistic micro-tick: ±0.015% to ±0.04%
-          const pct = (Math.random() - 0.49) * 0.0004;
-          const delta = entry.price * pct;
-          const decimals = entry.price < 1 ? 6 : entry.price < 10 ? 4 : 2;
-          const newPrice = +(entry.price + delta).toFixed(decimals);
-          const newChange = +(entry.change + delta).toFixed(2);
-          const newPct = +((newChange / Math.max(1, newPrice - newChange)) * 100).toFixed(2);
-          const dir: 'up' | 'down' = delta >= 0 ? 'up' : 'down';
-
-          const updated: LiveSymbolData = {
-            ...entry,
-            price: newPrice,
-            change: newChange,
-            changePct: newPct,
-            tickDirection: dir,
-            lastUpdated: now,
-          };
-
-          next.set(randKey, updated);
-          const cleanKey = normalizeSymbolKey(randKey);
-          next.set(cleanKey, updated);
-
-          if (cleanKey === 'BTC') {
-            next.set('BTC', updated);
-            next.set('BTCUSDT', updated);
-            next.set('BITCOIN', updated);
-          }
-          if (cleanKey === 'ETH') {
-            next.set('ETH', updated);
-            next.set('ETHUSDT', updated);
-          }
-          if (cleanKey === 'SOL') {
-            next.set('SOL', updated);
-            next.set('SOLUSDT', updated);
-          }
-          if (cleanKey === 'NIFTY') {
-            next.set('NIFTY', updated);
-            next.set('NIFTY 50', updated);
-            next.set('NIFTY50', updated);
-          }
-          if (cleanKey === 'BANKNIFTY') {
-            next.set('BANKNIFTY', updated);
-            next.set('BANK NIFTY', updated);
-          }
-          if (cleanKey === 'FINNIFTY') {
-            next.set('FINNIFTY', updated);
-            next.set('FIN NIFTY', updated);
-          }
-          if (cleanKey === 'SPX') {
-            next.set('SPX', updated);
-            next.set('S&P 500', updated);
-          }
-          if (cleanKey === 'NDX') {
-            next.set('NDX', updated);
-            next.set('NASDAQ 100', updated);
-            next.set('NASDAQ', updated);
-          }
-          if (cleanKey === 'DJI') {
-            next.set('DJI', updated);
-            next.set('DOW JONES', updated);
-          }
-
-          if (!generatedTick) {
-            generatedTick = {
-              symbol: entry.symbol,
-              price: newPrice,
-              volume: +(Math.random() * 5 + 1).toFixed(2),
-              timestamp: now,
-            };
-          }
-        }
-        return next;
-      });
-
-      if (generatedTick) {
-        const tick = generatedTick;
-        setLastTick(tick);
-        listenersRef.current.forEach(cb => {
-          try { cb(tick); } catch (e) { console.error(e); }
-        });
-      }
-    }, 1100);
-
-    return () => clearInterval(tickInterval);
-  }, []);
 
   // 3. WebSocket Real-time Tick Stream from Trade Engine Server
   useEffect(() => {
