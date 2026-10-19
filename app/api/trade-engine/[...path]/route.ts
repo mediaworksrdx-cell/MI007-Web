@@ -405,12 +405,10 @@ async function fetchRealUsIndices(): Promise<any[]> {
 
 async function getActiveUsPrices(): Promise<any[]> {
   const isUsOpen = isMarketOpen('USA');
-  // Plan 1: 15-minute interval during active US trading (9:30 AM - 4:00 PM ET)
-  // Off-hours / weekend: 45-minute interval
-  // Market hours: 26 refreshes * 11 symbols = 286 credits
-  // Off-hours: 23 refreshes * 11 symbols = 253 credits
-  // Total = ~539 credits/day, leaving >260 credits safety buffer out of 800 daily quota
-  const ttl = isUsOpen ? (15 * 60 * 1000) : (45 * 60 * 1000);
+  // 10-minute interval during active US trading (6.5 hrs = 39 updates * 11 = 429 credits)
+  // 38-minute interval off-hours (17.5 hrs = 27 updates * 11 = 297 credits)
+  // Total = 726 credits used / day, leaving exactly 74 credits cushion (out of 800 daily quota)
+  const ttl = isUsOpen ? (10 * 60 * 1000) : (38 * 60 * 1000);
 
   let cachedStocks = getCached('twelve-data-stocks', ttl);
   let cachedIndices = getCached('twelve-data-indices', ttl);
