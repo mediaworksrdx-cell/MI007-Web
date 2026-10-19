@@ -405,8 +405,12 @@ async function fetchRealUsIndices(): Promise<any[]> {
 
 async function getActiveUsPrices(): Promise<any[]> {
   const isUsOpen = isMarketOpen('USA');
-  // 30 min cache TTL plan (48 updates/day * 11 symbols = 528 credits/day, well within 800 daily limit)
-  const ttl = isUsOpen ? (30 * 60 * 1000) : (60 * 60 * 1000);
+  // Plan 1: 15-minute interval during active US trading (9:30 AM - 4:00 PM ET)
+  // Off-hours / weekend: 45-minute interval
+  // Market hours: 26 refreshes * 11 symbols = 286 credits
+  // Off-hours: 23 refreshes * 11 symbols = 253 credits
+  // Total = ~539 credits/day, leaving >260 credits safety buffer out of 800 daily quota
+  const ttl = isUsOpen ? (15 * 60 * 1000) : (45 * 60 * 1000);
 
   let cachedStocks = getCached('twelve-data-stocks', ttl);
   let cachedIndices = getCached('twelve-data-indices', ttl);
