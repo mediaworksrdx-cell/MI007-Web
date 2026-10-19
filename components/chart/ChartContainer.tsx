@@ -228,7 +228,25 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
 
         // 2. Fetch latest candles from Trade Engine API
         const rawEngine = await fetchCandles(selectedSymbol, timeframe);
-        const cleanEngine = validateAndCleanCandles(rawEngine || [], timeframe);
+        let cleanEngine = validateAndCleanCandles(rawEngine || [], timeframe);
+
+        // Scale reconciliation for US benchmark indices (NDX, SPX, DJI):
+        // If the backend Trade Engine returned ETF-scale candles (e.g. QQQ ~$490 for NDX, SPY ~$580 for SPX, DIA ~$425 for DJI)
+        // while the instrument is an index with expected price > 2000, dynamically scale candle prices to true index scale.
+        const isUsIndex = ['NDX', 'NASDAQ 100', 'NASDAQ', 'SPX', 'S&P 500', 'DJI', 'DOW JONES'].some(s => areSymbolsEqual(s, selectedSymbol));
+        if (isUsIndex && expectedPrice > 2000 && cleanEngine.length > 0) {
+          const engineLast = cleanEngine[cleanEngine.length - 1];
+          if (engineLast && engineLast.close > 0 && engineLast.close < 2000) {
+            const scaleMultiplier = expectedPrice / engineLast.close;
+            cleanEngine = cleanEngine.map(c => ({
+              ...c,
+              open: +(c.open * scaleMultiplier).toFixed(2),
+              high: +(c.high * scaleMultiplier).toFixed(2),
+              low: +(c.low * scaleMultiplier).toFixed(2),
+              close: +(c.close * scaleMultiplier).toFixed(2),
+            }));
+          }
+        }
 
         if (!isCancelled) {
           if (cleanEngine.length > 0) {

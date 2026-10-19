@@ -1,6 +1,6 @@
 import { Candle } from './types';
 
-const DB_NAME = 'MI007_MarketData_v4';
+const DB_NAME = 'MI007_MarketData_v5';
 const DB_VERSION = 1;
 const STORE_NAME = 'candles';
 
@@ -16,6 +16,7 @@ if (typeof window !== 'undefined') {
     if (window.indexedDB) {
       window.indexedDB.deleteDatabase('MI007_MarketData');
       window.indexedDB.deleteDatabase('MI007_MarketData_v3');
+      window.indexedDB.deleteDatabase('MI007_MarketData_v4');
     }
     if (window.localStorage) {
       for (let i = localStorage.length - 1; i >= 0; i--) {
