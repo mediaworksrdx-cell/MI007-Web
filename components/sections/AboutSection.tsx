@@ -21,7 +21,7 @@ const forces: {
 export default function AboutSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true, margin: '-100px' });
-  const [activeZone, setActiveZone] = useState<'support' | 'resistance' | 'breakout' | null>(null);
+  const [activeZone, setActiveZone] = useState<'support' | 'resistance' | 'breakout' | 'rejection' | null>(null);
 
   return (
     <section
@@ -109,7 +109,7 @@ export default function AboutSection() {
               className="absolute top-[10%] sm:top-[18%] left-[2%] sm:left-[16%] px-2.5 sm:px-4 py-1 sm:py-2 rounded-full border-2 border-emerald-500 highway-callout-tag shadow-md cursor-pointer transition-transform hover:scale-105"
             >
               <div className="flex items-center gap-1.5 sm:gap-2 mono text-[11px] sm:text-[14px] font-black text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                 <span>BREAKOUT 82%</span>
               </div>
             </div>
@@ -121,7 +121,7 @@ export default function AboutSection() {
               className="absolute top-[10%] sm:top-[18%] right-[2%] sm:right-[16%] px-2.5 sm:px-4 py-1 sm:py-2 rounded-full border-2 border-rose-500 highway-callout-tag shadow-md cursor-pointer transition-transform hover:scale-105"
             >
               <div className="flex items-center gap-1.5 sm:gap-2 mono text-[11px] sm:text-[14px] font-black text-rose-400">
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
                 <span>RESISTANCE 25,240</span>
               </div>
             </div>
@@ -133,14 +133,19 @@ export default function AboutSection() {
               className="absolute bottom-[16%] sm:bottom-[22%] left-[2%] sm:left-[20%] px-2.5 sm:px-4 py-1 sm:py-2 rounded-full border-2 border-emerald-500 highway-callout-tag shadow-md cursor-pointer transition-transform hover:scale-105"
             >
               <div className="flex items-center gap-1.5 sm:gap-2 mono text-[11px] sm:text-[14px] font-black text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                 <span>SUPPORT 24,580</span>
               </div>
             </div>
 
             {/* Rejection / Downtrend Tag (Bottom Right) */}
-            <div className="absolute bottom-[16%] sm:bottom-[22%] right-[2%] sm:right-[20%] px-2.5 sm:px-4 py-1 sm:py-2 rounded-full border-2 border-rose-500 highway-callout-tag shadow-md cursor-pointer">
+            <div
+              onMouseEnter={() => setActiveZone('rejection')}
+              onMouseLeave={() => setActiveZone(null)}
+              className="absolute bottom-[16%] sm:bottom-[22%] right-[2%] sm:right-[20%] px-2.5 sm:px-4 py-1 sm:py-2 rounded-full border-2 border-rose-500 highway-callout-tag shadow-md cursor-pointer transition-transform hover:scale-105"
+            >
               <div className="flex items-center gap-1.5 sm:gap-2 mono text-[11px] sm:text-[14px] font-black text-rose-400">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
                 <span>REJECTION 75%<span className="hidden sm:inline"> // DOWNTREND -4.23%</span></span>
               </div>
             </div>
@@ -153,16 +158,17 @@ export default function AboutSection() {
               animate={{ opacity: 1, y: 0 }}
               className="relative z-10 p-3.5 rounded-xl border highway-detail-box shadow-md mono text-[14px] flex items-center gap-3 justify-center"
             >
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
               <span className="font-bold">
                 {activeZone === 'breakout' && 'Aggressive buyer imbalance pushing through structural supply.'}
                 {activeZone === 'resistance' && 'Institutional limit orders capping upward price discovery at 25,240.'}
                 {activeZone === 'support' && 'Deep liquidity absorption defending structural floor at 24,580.'}
+                {activeZone === 'rejection' && 'Heavy seller distribution triggering down-channel price rejection.'}
               </span>
             </motion.div>
           ) : (
             <div className="relative z-10 p-3 rounded-xl border highway-detail-box mono text-[14px] text-center font-bold">
-              Hover over liquidity zones (Support, Resistance, Breakout) to inspect structural order flow metrics.
+              Hover over liquidity zones (Support, Resistance, Breakout, Rejection) to inspect structural order flow metrics.
             </div>
           )}
         </motion.div>
