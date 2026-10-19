@@ -333,11 +333,14 @@ export function CandlestickCanvas({
     });
   }, [candles]);
 
-  // Viewport calculation with responsive zoom and dynamic candle scaling
+  // Viewport calculation with responsive zoom, dynamic candle scaling,
+  // and a forward projection empty space buffer of 6 bars (~35-50px) to the right of the latest candle
+  const RIGHT_BUFFER_BARS = 6;
   const visibleCount = Math.max(8, Math.round(VISIBLE_CANDLES_BASE / zoom));
   const maxScrollOffset = Math.max(0, cleanCandles.length - 8);
-  const effectiveScroll = Math.max(0, Math.min(maxScrollOffset, scrollOffset));
-  const endIdx = Math.round(cleanCandles.length - effectiveScroll);
+  const minScrollOffset = -RIGHT_BUFFER_BARS * 2;
+  const effectiveScroll = Math.max(minScrollOffset, Math.min(maxScrollOffset, scrollOffset));
+  const endIdx = Math.round(cleanCandles.length + RIGHT_BUFFER_BARS - effectiveScroll);
   const startIdx = endIdx - visibleCount;
 
   // Helper to map mouse coordinate to price and candle with Smart Magnet & Axis Scale support
@@ -358,7 +361,8 @@ export function CandlestickCanvas({
     if (visCnt <= 0) return null;
     const candleW = chartW / visCnt;
     const offsetIdx = Math.floor(x / candleW);
-    const candleIdx = Math.min(cleanCandles.length - 1, Math.max(0, startIdx + offsetIdx));
+    const rawIdx = startIdx + offsetIdx;
+    const candleIdx = Math.min(cleanCandles.length - 1, Math.max(0, rawIdx));
 
     // Apply shared unified price scale calculation
     const { pMin, pMax, pRange } = computeChartPriceBounds(
@@ -374,9 +378,9 @@ export function CandlestickCanvas({
     let price = pMax - (clampedY / chartH) * pRange;
     let finalX = x;
 
-    // Smart Magnet snapping (OHLC wicks)
+    // Smart Magnet snapping (OHLC wicks) - only snaps when hovering over real candle bars
     let reticle: MagnetReticle | null = null;
-    if (snapMagnet && (isMagnetActive || isShiftHeld)) {
+    if (snapMagnet && (isMagnetActive || isShiftHeld) && rawIdx <= cleanCandles.length - 1) {
       const c = cleanCandles[candleIdx];
       if (c) {
         const candidates: { type: 'OPEN' | 'HIGH' | 'LOW' | 'CLOSE'; val: number }[] = [
@@ -402,8 +406,17 @@ export function CandlestickCanvas({
     }
     magnetReticleRef.current = reticle;
 
-    const time = cleanCandles[candleIdx]?.openTime || Date.now();
-    return { index: candleIdx, time, price, x: finalX, y };
+    // Support forward projected timestamps for drawings placed in the buffer zone
+    let time = cleanCandles[candleIdx]?.openTime || Date.now();
+    if (rawIdx > cleanCandles.length - 1 && cleanCandles.length > 0) {
+      const lastBar = cleanCandles[cleanCandles.length - 1];
+      const prevBar = cleanCandles[cleanCandles.length - 2];
+      const barDuration = (prevBar && lastBar.openTime > prevBar.openTime)
+        ? (lastBar.openTime - prevBar.openTime)
+        : 86_400_000;
+      time = lastBar.openTime + (rawIdx - (cleanCandles.length - 1)) * barDuration;
+    }
+    return { index: rawIdx, time, price, x: finalX, y };
   }, [cleanCandles, startIdx, endIdx, visibleCount, indicators, isMagnetActive, isShiftHeld, priceOffset, priceScaleRatio, showVolumePanel, size, currentPriceOverride]);
 
   // ── Sync latest props and states to refs for direct 120 FPS overlay rendering ──
@@ -814,7 +827,8 @@ export function CandlestickCanvas({
       const candlePixels = Math.max(1, (size.w - CHART_RIGHT_MARGIN) / visCnt);
       const deltaCandleCount = dx / candlePixels;
       const maxScroll = Math.max(0, cleanCandles.length - 8);
-      const newScroll = Math.max(0, Math.min(maxScroll, dragStartScrollRef.current + deltaCandleCount));
+      const minScroll = -RIGHT_BUFFER_BARS * 2;
+      const newScroll = Math.max(minScroll, Math.min(maxScroll, dragStartScrollRef.current + deltaCandleCount));
       pendingScrollRef.current = newScroll;
       if (panRafIdRef.current === null) {
         panRafIdRef.current = requestAnimationFrame(() => {
@@ -1368,7 +1382,8 @@ export function CandlestickCanvas({
 
         if (scroll !== 0) {
           const maxScroll = Math.max(0, cleanCandles.length - 8);
-          setScrollOffset(s => Math.max(0, Math.min(maxScroll, s + scroll)));
+          const minScroll = -RIGHT_BUFFER_BARS * 2;
+          setScrollOffset(s => Math.max(minScroll, Math.min(maxScroll, s + scroll)));
         }
         if (zoomMult !== 1) {
           setZoom(z => Math.max(0.15, Math.min(6.0, +(z * zoomMult).toFixed(2))));
@@ -1433,7 +1448,8 @@ export function CandlestickCanvas({
       const candlePixels = Math.max(1, (size.w - CHART_RIGHT_MARGIN) / visCnt);
       const deltaCandleCount = dx / candlePixels;
       const maxScroll = Math.max(0, cleanCandles.length - 8);
-      setScrollOffset(s => Math.max(0, Math.min(maxScroll, s + deltaCandleCount)));
+      const minScroll = -RIGHT_BUFFER_BARS * 2;
+      setScrollOffset(s => Math.max(minScroll, Math.min(maxScroll, s + deltaCandleCount)));
       lastTouchX.current = e.touches[0].clientX;
     }
   };
@@ -1558,23 +1574,7 @@ export function CandlestickCanvas({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setScrollOffset(s => Math.max(0, s - 15));
-          }}
-          title="Pan right (later candles)"
-          aria-label="Pan right"
-          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </button>
-
-        {/* Step Pan Right (▶) */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setScrollOffset(s => Math.max(0, s - 15));
+            setScrollOffset(s => Math.max(-RIGHT_BUFFER_BARS * 2, s - 15));
           }}
           title="Pan right (later candles)"
           aria-label="Pan right"
@@ -1606,7 +1606,7 @@ export function CandlestickCanvas({
         )}
 
         {/* Snap to Live Button (when scrolled) */}
-        {scrollOffset > 2 && (
+        {Math.abs(scrollOffset) > 2 && (
           <>
             <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
             <button
@@ -1624,7 +1624,7 @@ export function CandlestickCanvas({
         )}
       </div>
 
-      {scrollOffset > 5 && (
+      {Math.abs(scrollOffset) > 5 && (
         <button
           onClick={() => setScrollOffset(0)}
           className="absolute bottom-8 right-20 rounded-full border border-slate-300 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-3 py-1 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:text-emerald-600 hover:border-emerald-500 transition-all font-mono shadow-md cursor-pointer z-20"

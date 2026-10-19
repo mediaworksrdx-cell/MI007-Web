@@ -438,8 +438,11 @@ export function ChartToolbar({
 
         {/* Price Tracker */}
         {displayPrice !== undefined && displayPrice > 0 && (
-          <div className="flex items-center gap-2.5 font-mono bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/80 px-2.5 py-0.5 rounded-lg shadow-xs">
-            <span className="text-[16px] font-black text-slate-900 dark:text-white tracking-tight">
+          <div
+            className="flex items-center gap-2.5 font-mono tabular-nums bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/80 px-2.5 py-0.5 rounded-lg shadow-xs"
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
+            <span className="text-[16px] font-black text-slate-900 dark:text-white tracking-tight tabular-nums">
               {currency}
               {displayPrice.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
@@ -448,7 +451,7 @@ export function ChartToolbar({
             </span>
             {displayChange !== undefined && displayChangePct !== undefined && (
               <span
-                className={`text-[13px] font-extrabold ${
+                className={`text-[13px] font-extrabold tabular-nums ${
                   displayChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                 }`}
               >

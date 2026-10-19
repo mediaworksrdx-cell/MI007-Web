@@ -1310,10 +1310,23 @@ export function renderChart(
   }
 
 
-  // ── LAYER 4: Volume Overlay (behind candles - 32% quiet opacity) ───────
+  // ── LAYER 4: Volume Overlay (behind candles - 32% quiet opacity & faint baseline divider) ──
   if (options.showVolume && !options.showVolumePanel) {
-    const volH = chartH * 0.15;
-    const volBodyW = candleW * 0.7;
+    const volHeightRatio = 0.12; // roughly 12% height from the bottom
+    const volH = chartH * volHeightRatio;
+    const volDividerY = Math.round(chartH - volH) + 0.5; // faint 1px baseline divider
+
+    // Faint 1px horizontal baseline divider separating price pane from volume pane
+    ctx.save();
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1 * dpr;
+    ctx.beginPath();
+    ctx.moveTo(0, volDividerY);
+    ctx.lineTo(chartW, volDividerY);
+    ctx.stroke();
+    ctx.restore();
+
+    const volBodyW = candleW * 0.70;
     let maxV = 0;
     for (let i = safeStart; i < safeEnd; i++) maxV = Math.max(maxV, candles[i].volume);
     if (maxV > 0) {
@@ -1322,7 +1335,7 @@ export function renderChart(
         const x = Math.round(li * candleW + (candleW - volBodyW) / 2);
         const c = candles[i];
         const ratio = Math.min(1, Math.max(0.08, c.volume / maxV));
-        const barH = Math.round(ratio * volH * 0.9);
+        const barH = Math.round(ratio * volH * 0.92);
         const bTop = Math.round(chartH - barH);
         const bull = c.close >= c.open;
         ctx.fillStyle = bull ? 'rgba(8, 153, 129, 0.32)' : 'rgba(242, 54, 69, 0.32)';
