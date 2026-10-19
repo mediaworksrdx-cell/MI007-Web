@@ -88,6 +88,167 @@ export function computeNicePriceTicks(pMin: number, pMax: number, targetTicks: n
 }
 
 /**
+ * Institutional Calendar-Aligned Time Axis Intervals.
+ * Snaps bottom X-axis grid lines and labels strictly to clean calendar intervals:
+ * - Multi-month / Daily: Exact 1st and 15th of each month (Semi-Monthly) or 1st of month
+ * - Multi-week / Daily: Exact Mondays (Weekly)
+ * - Intraday: Clean hour and session boundaries
+ */
+export function computeCalendarTimeTicks(
+  candles: Candle[],
+  startIdx: number,
+  endIdx: number,
+  chartW: number,
+  candleW: number,
+  isDailyOrHigher: boolean,
+  dpr: number
+): { x: number; label: string }[] {
+  const safeStart = Math.max(0, startIdx);
+  const safeEnd = Math.min(endIdx, candles.length);
+  if (safeEnd <= safeStart || candles.length === 0) return [];
+
+  const firstTs = candles[safeStart].openTime;
+  const lastTs = candles[safeEnd - 1].openTime;
+  const spanMs = Math.max(1, lastTs - firstTs);
+  const spanDays = spanMs / 86_400_000;
+  const minSpacing = 72 * dpr;
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const ticks: { x: number; label: string }[] = [];
+
+  // Binary search helper to find the first trading candle on or immediately after target timestamp
+  function findClosestCandleIndex(targetTs: number): number {
+    let low = safeStart, high = safeEnd - 1;
+    let bestIdx = low;
+    let bestDiff = Math.abs(candles[low].openTime - targetTs);
+
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      const diff = Math.abs(candles[mid].openTime - targetTs);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestIdx = mid;
+      }
+      if (candles[mid].openTime < targetTs) {
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return bestIdx;
+  }
+
+  if (isDailyOrHigher) {
+    const anchors: { ts: number; label: string }[] = [];
+    const startDate = new Date(firstTs);
+    const endDate = new Date(lastTs);
+
+    if (spanDays > 730) {
+      // Multi-year: Jan 1 of each year
+      for (let y = startDate.getFullYear(); y <= endDate.getFullYear() + 1; y++) {
+        const d = new Date(y, 0, 1);
+        anchors.push({ ts: d.getTime(), label: `${y}` });
+      }
+    } else if (spanDays > 180) {
+      // Multi-month: 1st of every month
+      const cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      while (cur.getTime() <= lastTs + 15 * 86_400_000) {
+        anchors.push({ ts: cur.getTime(), label: `1 ${months[cur.getMonth()]}` });
+        cur.setMonth(cur.getMonth() + 1);
+      }
+    } else if (spanDays > 32) {
+      // Medium Range: Semi-Monthly (1st and 15th of each month)
+      const cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      while (cur.getTime() <= lastTs + 15 * 86_400_000) {
+        const d1 = new Date(cur.getFullYear(), cur.getMonth(), 1);
+        anchors.push({ ts: d1.getTime(), label: `1 ${months[cur.getMonth()]}` });
+        const d15 = new Date(cur.getFullYear(), cur.getMonth(), 15);
+        anchors.push({ ts: d15.getTime(), label: `15 ${months[cur.getMonth()]}` });
+        cur.setMonth(cur.getMonth() + 1);
+      }
+    } else if (spanDays > 12) {
+      // Weekly: Every Monday
+      const cur = new Date(startDate);
+      const day = cur.getDay();
+      const diff = (day === 0 ? 1 : (day === 1 ? 0 : 8 - day));
+      cur.setDate(cur.getDate() + diff);
+      cur.setHours(0, 0, 0, 0);
+      while (cur.getTime() <= lastTs + 7 * 86_400_000) {
+        anchors.push({ ts: cur.getTime(), label: `${cur.getDate()} ${months[cur.getMonth()]}` });
+        cur.setDate(cur.getDate() + 7);
+      }
+    } else {
+      // Short: Every 2 days
+      const cur = new Date(startDate);
+      cur.setHours(0, 0, 0, 0);
+      while (cur.getTime() <= lastTs + 2 * 86_400_000) {
+        anchors.push({ ts: cur.getTime(), label: `${cur.getDate()} ${months[cur.getMonth()]}` });
+        cur.setDate(cur.getDate() + 2);
+      }
+    }
+
+    // Map anchors to visible candle indices
+    let lastX = -Infinity;
+    const seenIndices = new Set<number>();
+    for (const anchor of anchors) {
+      const idx = findClosestCandleIndex(anchor.ts);
+      if (idx < safeStart || idx >= safeEnd || seenIndices.has(idx)) continue;
+      const c = candles[idx];
+      // Tolerance check: must be within 3.5 calendar days of anchor
+      if (Math.abs(c.openTime - anchor.ts) > 3.5 * 86_400_000) continue;
+
+      const li = idx - startIdx;
+      const x = Math.round(li * candleW + candleW / 2);
+      if (x >= 24 * dpr && x <= chartW - 24 * dpr && x - lastX >= minSpacing) {
+        ticks.push({ x, label: anchor.label });
+        lastX = x;
+        seenIndices.add(idx);
+      }
+    }
+  } else {
+    // Intraday: Clean hour and session boundaries
+    let lastX = -Infinity;
+    const timeStep = Math.max(1, Math.floor((endIdx - startIdx) / Math.max(2, Math.floor(chartW / (95 * dpr)))));
+    let prevDay = -1;
+    for (let i = startIdx; i < endIdx; i += timeStep) {
+      if (i < 0 || i >= candles.length) continue;
+      const li = i - startIdx;
+      const x = Math.round(li * candleW + candleW / 2);
+      if (x - lastX < minSpacing) continue;
+
+      const ts = candles[i].openTime;
+      const d = new Date(ts);
+      const curDay = d.getDate();
+      const multiDay = Math.abs(lastTs - firstTs) > 86_400_000;
+      let label: string;
+      if (multiDay && prevDay !== curDay) {
+        label = `${d.getDate()} ${months[d.getMonth()]}`;
+      } else {
+        label = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      }
+      prevDay = curDay;
+      ticks.push({ x, label });
+      lastX = x;
+    }
+  }
+
+  // Fallback if sparse
+  if (ticks.length < 2 && safeEnd - safeStart >= 2) {
+    const midIdx = Math.floor((safeStart + safeEnd) / 2);
+    const x1 = Math.round((safeStart - startIdx) * candleW + candleW / 2);
+    const xMid = Math.round((midIdx - startIdx) * candleW + candleW / 2);
+    const x2 = Math.round((safeEnd - 1 - startIdx) * candleW + candleW / 2);
+    return [
+      { x: x1, label: formatTimeLabel(candles[safeStart].openTime, isDailyOrHigher) },
+      { x: xMid, label: formatTimeLabel(candles[midIdx].openTime, isDailyOrHigher) },
+      { x: x2, label: formatTimeLabel(candles[safeEnd - 1].openTime, isDailyOrHigher) },
+    ];
+  }
+
+  return ticks;
+}
+
+/**
  * Resolves the accurate candle index for a drawing point across reloads,
  * timeframes, and shifting candle series using timestamp proximity (minDiff).
  */
@@ -947,29 +1108,20 @@ export function renderChart(
     ctx.fillText(formatPrice(price), W - 8 * dpr, y);
   }
 
-  // Vertical grid + time labels
-  const timeStep = Math.max(1, Math.floor(visCnt / 6));
-  ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
+  // Vertical grid + uniform calendar-aligned date/time labels
+  const timeTicks = computeCalendarTimeTicks(candles, startIdx, endIdx, chartW, candleW, isDailyOrHigher, dpr);
+  ctx.font = `bold ${10.5 * dpr}px "JetBrains Mono",monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  let prevDay = -1;
-  for (let i = startIdx; i < endIdx; i += timeStep) {
-    const li = i - startIdx;
-    const x = li * candleW + candleW / 2;
-    ctx.strokeStyle = '#F1F5F9'; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, chartH); ctx.stroke();
-    if (i >= 0 && i < candles.length) {
-      const ts = candles[i].openTime;
-      const d = new Date(ts);
-      const curDay = d.getDate();
-      const multiDay = !isDailyOrHigher && Math.abs(lastMs - firstMs) > 86400000;
-      let label: string;
-      if (isDailyOrHigher) label = formatTimeLabel(ts, true);
-      else if (multiDay && prevDay !== curDay) label = formatTimeLabel(ts, true);
-      else label = formatTimeLabel(ts, false);
-      prevDay = curDay;
-      ctx.fillStyle = '#334155';
-      ctx.fillText(label, x, chartH + BM / 2);
-    }
+  for (const tick of timeTicks) {
+    ctx.strokeStyle = '#F1F5F9';
+    ctx.beginPath();
+    ctx.moveTo(tick.x, 0);
+    ctx.lineTo(tick.x, chartH);
+    ctx.stroke();
+
+    ctx.fillStyle = '#475569';
+    ctx.fillText(tick.label, tick.x, chartH + BM / 2);
   }
 
   // Solid separators for right price scale and bottom time scale
@@ -1211,7 +1363,8 @@ export function renderChart(
     }
   } else {
     // Candlestick, Hollow, Heikin-Ashi
-    const bodyW = Math.max(candleW * 0.72, 3 * dpr);
+    const candleGap = Math.max(1.5 * dpr, candleW * 0.28);
+    const bodyW = Math.max(2 * dpr, candleW - candleGap);
     const wickW = Math.max(1 * dpr, 1);
     const isHollow = options.chartType === 'HOLLOW_CANDLE';
     for (let i = safeStart; i < Math.min(safeEnd, drawCandles.length); i++) {
@@ -1233,6 +1386,7 @@ export function renderChart(
       const isOriginalBear = (c.close < c.open);
       const bull = isOriginalBear ? false : (barClose >= barOpen);
       const color = bull ? BULL : BEAR;
+      const strokeColor = bull ? '#067A67' : '#CF2232';
       const cx = li * candleW + candleW / 2;
       const hY = priceToY(barHigh), lY = priceToY(barLow);
       const oY = priceToY(barOpen), cY = priceToY(barClose);
@@ -1252,7 +1406,7 @@ export function renderChart(
       ctx.lineTo(wickX, Math.round(lY));
       ctx.stroke();
 
-      // Body (crisp rectangular institutional fill)
+      // Body (crisp rectangular institutional fill with subtle definition outer stroke)
       const bLeft = Math.round(cx - bodyW / 2);
       const rTop = Math.round(renderTop);
       const bWidth = Math.max(1, Math.round(bodyW));
@@ -1265,6 +1419,12 @@ export function renderChart(
       } else {
         ctx.fillStyle = color;
         ctx.fillRect(bLeft, rTop, bWidth, bHeight);
+        // Subtle 1px outer stroke for high visual definition against light canvas
+        if (bWidth >= 3 * dpr && bHeight >= 3 * dpr) {
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = 1 * dpr;
+          ctx.strokeRect(bLeft + 0.5 * dpr, rTop + 0.5 * dpr, bWidth - 1 * dpr, bHeight - 1 * dpr);
+        }
       }
     }
   }
@@ -1289,32 +1449,32 @@ export function renderChart(
     ctx.setLineDash([]); ctx.restore();
     // Pill badge on right axis
     const prStr = formatPrice(curPrice);
-    ctx.font = `900 ${12.5 * dpr}px "JetBrains Mono",monospace`;
+    ctx.font = `900 ${11.5 * dpr}px "JetBrains Mono",monospace`;
     const tm = ctx.measureText(prStr);
-    const padH = 7 * dpr, padV = 4.5 * dpr, dotR = 2.5 * dpr;
-    const bW = Math.min(W - chartW - 2 * dpr, tm.width + padH * 2 + 10 * dpr);
-    const bH2 = 12.5 * dpr + padV * 2;
-    const bL = chartW + 2 * dpr;
-    const bT = clY - bH2 / 2;
+    const padH = 6 * dpr, padV = 3.5 * dpr, dotR = 2.5 * dpr;
+    const bW = Math.max(tm.width + padH * 2 + 10 * dpr, W - chartW - 4 * dpr);
+    const bH2 = Math.round(11.5 * dpr + padV * 2);
+    const bL = Math.round(chartW + 2 * dpr);
+    const bT = Math.round(clY - bH2 / 2);
     // Pill bg
     ctx.fillStyle = accent;
     ctx.beginPath();
-    const cr = 4 * dpr;
+    const cr = 3.5 * dpr;
     ctx.moveTo(bL + cr, bT); ctx.lineTo(bL + bW - cr, bT); ctx.arcTo(bL + bW, bT, bL + bW, bT + cr, cr);
     ctx.lineTo(bL + bW, bT + bH2 - cr); ctx.arcTo(bL + bW, bT + bH2, bL + bW - cr, bT + bH2, cr);
     ctx.lineTo(bL + cr, bT + bH2); ctx.arcTo(bL, bT + bH2, bL, bT + bH2 - cr, cr);
     ctx.lineTo(bL, bT + cr); ctx.arcTo(bL, bT, bL + cr, bT, cr);
     ctx.closePath(); ctx.fill();
     // Live dot
-    const txtColor = bull ? '#000000' : '#FFFFFF';
+    const txtColor = '#FFFFFF';
     ctx.fillStyle = txtColor;
-    ctx.beginPath(); ctx.arc(bL + padH + dotR, clY, dotR, 0, Math.PI * 2); ctx.fill();
-    // Price text
+    ctx.beginPath(); ctx.arc(bL + padH + dotR, Math.round(bT + bH2 / 2), dotR, 0, Math.PI * 2); ctx.fill();
+    // Price text (high contrast bold white)
     ctx.fillStyle = txtColor;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(prStr, bL + padH + dotR * 2 + 4 * dpr, clY);
+    ctx.fillText(prStr, bL + padH + dotR * 2 + 3 * dpr, Math.round(bT + bH2 / 2));
 
-    // ── Real-time Candle Countdown Timer (Parity with Android InstitutionalChartEngine) ──
+    // ── Real-time Candle Countdown Timer (Clean 2.5px margin below price pill) ──
     const TF_DURATIONS: Record<string, number> = {
       '1M': 60_000,
       '5M': 300_000,
@@ -1349,17 +1509,22 @@ export function renderChart(
     }
 
     const timerBadgeStr = `⏱ ${timerText}`;
-    ctx.font = `bold ${9.5 * dpr}px "JetBrains Mono",monospace`;
-    const tMeas = ctx.measureText(timerBadgeStr);
-    const tPadH = 5 * dpr, tPadV = 3 * dpr;
-    const tW = Math.min(W - chartW - 2 * dpr, tMeas.width + tPadH * 2);
-    const tH = 9.5 * dpr + tPadV * 2;
-    const tL = chartW + 2 * dpr;
-    const tT = bT + bH2 + 3 * dpr;
+    const tPadV = 2.5 * dpr;
+    const tH = Math.round(9 * dpr + tPadV * 2);
+    const tW = bW; // Perfectly matches width of price pill for clean vertical stacking
+    const tL = bL;
 
-    if (tT + tH <= chartH + BM) {
+    // Position 2.5px below price pill, or flip 2.5px above if near bottom edge
+    const marginGap = Math.round(2.5 * dpr);
+    let tT = bT + bH2 + marginGap;
+    if (tT + tH > chartH + BM - 2 * dpr) {
+      tT = bT - tH - marginGap;
+    }
+
+    if (tT >= 2 * dpr && tT + tH <= H) {
       ctx.save();
-      ctx.fillStyle = '#334155'; // Slate-700
+      // Subtle deep slate pill
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
       ctx.beginPath();
       const tcr = 3 * dpr;
       ctx.moveTo(tL + tcr, tT);
@@ -1374,7 +1539,9 @@ export function renderChart(
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = '#F8FAFC';
+      // Muted text opacity (72%) so the active price badge remains high-contrast
+      ctx.fillStyle = 'rgba(241, 245, 249, 0.72)';
+      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(timerBadgeStr, tL + tW / 2, tT + tH / 2);
