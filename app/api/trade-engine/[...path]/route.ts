@@ -230,12 +230,59 @@ async function fetchTwelveDataUsPrices(apiKey: string): Promise<any[]> {
   }
 }
 
+async function fetchRealUsIndices(): Promise<any[]> {
+  const indexMap = [
+    { yahoo: '^GSPC', symbol: 'SPX', altSymbol: 'S&P 500', token: 900001, altToken: 900002 },
+    { yahoo: '^NDX', symbol: 'NDX', altSymbol: 'NASDAQ 100', token: 900003, altToken: 900004 },
+    { yahoo: '^DJI', symbol: 'DJI', altSymbol: 'DOW JONES', token: 900006, altToken: 900007 },
+    { yahoo: '^VIX', symbol: 'VIX', altSymbol: 'Volatility Index', token: 900008, altToken: 900008 },
+  ];
+
+  try {
+    const promises = indexMap.map(async (item) => {
+      const hosts = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
+      for (const host of hosts) {
+        try {
+          const res = await fetch(`https://${host}/v8/finance/chart/${encodeURIComponent(item.yahoo)}?interval=1d&range=1d`, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+              'Accept': 'application/json',
+            },
+            cache: 'no-store',
+          });
+          if (res.status === 429) continue;
+          if (!res.ok) continue;
+
+          const json = await res.json();
+          const meta = json?.chart?.result?.[0]?.meta;
+          const price = meta?.regularMarketPrice;
+          const prevClose = meta?.chartPreviousClose || price;
+          if (typeof price === 'number') {
+            const chg = +(price - prevClose).toFixed(2);
+            const pct = +((chg / Math.max(0.001, prevClose)) * 100).toFixed(2);
+            const now = Date.now();
+            return [
+              { instrumentToken: item.token, symbol: item.symbol, ltp: +price.toFixed(2), change: chg, changePercent: pct, timestamp: now },
+              { instrumentToken: item.altToken, symbol: item.altSymbol, ltp: +price.toFixed(2), change: chg, changePercent: pct, timestamp: now },
+            ];
+          }
+        } catch {
+          // Try next host
+        }
+      }
+      return [];
+    });
+
+    const settled = await Promise.all(promises);
+    return settled.flat();
+  } catch {
+    return [];
+  }
+}
+
 async function fetchTradeEngineUsPrices(): Promise<any[]> {
-  const symbols = ['SPX', 'NDX', 'DJI', 'QQQ', 'NVDA', 'AAPL', 'MSFT', 'TSLA', 'META', 'AMZN', 'GOOGL'];
+  const stockSymbols = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'META', 'AMZN', 'GOOGL', 'QQQ'];
   const tokenMap: Record<string, number> = {
-    SPX: 900001,
-    NDX: 900003,
-    DJI: 900006,
     QQQ: 900009,
     NVDA: 900010,
     AAPL: 900011,
@@ -247,54 +294,44 @@ async function fetchTradeEngineUsPrices(): Promise<any[]> {
   };
 
   try {
-    const promises = symbols.map(async (sym) => {
-      try {
-        const res = await fetch(`${TRADE_ENGINE_URL}/candles?symbol=${sym}`, {
-          cache: 'no-store',
-          headers: { 'Accept': 'application/json' },
-        });
-        if (!res.ok) return [];
-        const candles = await res.json();
-        if (!Array.isArray(candles) || candles.length < 2) return [];
+    const [realIndices, stockCandles] = await Promise.all([
+      fetchRealUsIndices(),
+      Promise.all(stockSymbols.map(async (sym) => {
+        try {
+          const res = await fetch(`${TRADE_ENGINE_URL}/candles?symbol=${sym}`, {
+            cache: 'no-store',
+            headers: { 'Accept': 'application/json' },
+          });
+          if (!res.ok) return [];
+          const candles = await res.json();
+          if (!Array.isArray(candles) || candles.length < 2) return [];
 
-        const last = candles[candles.length - 1];
-        const prev = candles[candles.length - 2];
-        const ltp = Number(last.close || 0);
-        const prevClose = Number(prev.close || ltp);
-        const chg = +(ltp - prevClose).toFixed(2);
-        const pct = +(((ltp - prevClose) / Math.max(0.01, prevClose)) * 100).toFixed(2);
-        const now = Date.now();
+          const last = candles[candles.length - 1];
+          const prev = candles[candles.length - 2];
+          const ltp = Number(last.close || 0);
+          const prevClose = Number(prev.close || ltp);
+          const chg = +(ltp - prevClose).toFixed(2);
+          const pct = +(((ltp - prevClose) / Math.max(0.01, prevClose)) * 100).toFixed(2);
+          const now = Date.now();
 
-        const items = [
-          {
-            instrumentToken: tokenMap[sym] || 900050,
-            symbol: sym,
-            ltp,
-            change: chg,
-            changePercent: pct,
-            timestamp: now,
-          }
-        ];
-
-        if (sym === 'SPX') {
-          items.push({ instrumentToken: 900002, symbol: 'S&P 500', ltp, change: chg, changePercent: pct, timestamp: now });
+          return [
+            {
+              instrumentToken: tokenMap[sym] || 900050,
+              symbol: sym,
+              ltp,
+              change: chg,
+              changePercent: pct,
+              timestamp: now,
+            }
+          ];
+        } catch {
+          return [];
         }
-        if (sym === 'NDX') {
-          items.push({ instrumentToken: 900004, symbol: 'NASDAQ 100', ltp, change: chg, changePercent: pct, timestamp: now });
-          items.push({ instrumentToken: 900005, symbol: 'NASDAQ', ltp, change: chg, changePercent: pct, timestamp: now });
-        }
-        if (sym === 'DJI') {
-          items.push({ instrumentToken: 900007, symbol: 'DOW JONES', ltp, change: chg, changePercent: pct, timestamp: now });
-        }
+      })),
+    ]);
 
-        return items;
-      } catch {
-        return [];
-      }
-    });
-
-    const settled = await Promise.all(promises);
-    return settled.flat();
+    const stocks = stockCandles.flat();
+    return [...realIndices, ...stocks];
   } catch (err) {
     console.warn('[TradeEngineUsPrices] Error extracting Twelve Data prices from Trade Engine:', err);
     return [];
@@ -308,7 +345,7 @@ async function getActiveUsPrices(): Promise<any[]> {
     return cached;
   }
 
-  // 1. Primary: Extract live Twelve Data prices already connected to Trade Engine
+  // 1. Primary: Extract live Twelve Data stock prices from Trade Engine + authentic spot index points
   const engineItems = await fetchTradeEngineUsPrices();
   if (engineItems.length > 0) {
     setCached('trade-engine-us-prices', engineItems);
