@@ -27,14 +27,14 @@ export default function HeroSection() {
   const niftyPrice = nifty ? nifty.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '22,453.60';
   const niftyChg = nifty ? nifty.changePct : 0.99;
 
-  const spPrice = sp500 ? sp500.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '5,864.20';
-  const spChg = sp500 ? sp500.changePct : 0.82;
+  const spPrice = sp500 ? sp500.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '7,703.58';
+  const spChg = sp500 ? sp500.changePct : 0.58;
 
-  const btcPrice = btc ? `$${btc.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '$83,651';
-  const btcChg = btc ? btc.changePct : 1.24;
+  const btcPrice = btc ? `$${btc.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '$82,010';
+  const btcChg = btc ? btc.changePct : 1.14;
 
-  const ndxPrice = nasdaq ? nasdaq.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '18,240';
-  const ndxChg = nasdaq ? nasdaq.changePct : 0.65;
+  const ndxPrice = nasdaq ? nasdaq.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '29,631';
+  const ndxChg = nasdaq ? nasdaq.changePct : 1.52;
 
   const goldPrice = gold ? `$${gold.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '$2,648';
   const goldChg = gold ? gold.changePct : 0.45;

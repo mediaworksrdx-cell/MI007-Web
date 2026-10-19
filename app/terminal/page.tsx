@@ -71,10 +71,10 @@ const DEFAULT_INDIA_WATCHLIST: WatchlistItem[] = [
 ];
 
 const DEFAULT_USA_INDICES: IndexItem[] = [
-  { symbol: 'SPX', name: 'S&P 500', base: 7659.40, changePct: 0.51 },
-  { symbol: 'NDX', name: 'NASDAQ 100', base: 29187.50, changePct: 0.57 },
-  { symbol: 'DJI', name: 'DOW JONES', base: 52002.40, changePct: -0.16 },
-  { symbol: 'VIX', name: 'Volatility Index', base: 18.40, changePct: -1.25 },
+  { symbol: 'SPX', name: 'S&P 500', base: 7703.58, changePct: 0.58 },
+  { symbol: 'NDX', name: 'NASDAQ 100', base: 29630.77, changePct: 1.52 },
+  { symbol: 'DJI', name: 'DOW JONES', base: 51964.04, changePct: -0.07 },
+  { symbol: 'VIX', name: 'Volatility Index', base: 18.56, changePct: -7.15 },
 ];
 
 const DEFAULT_USA_WATCHLIST: WatchlistItem[] = [
@@ -103,11 +103,11 @@ const DEFAULT_UAE_WATCHLIST: WatchlistItem[] = [
 ];
 
 const DEFAULT_CRYPTO: CryptoItem[] = [
-  { symbol: 'BTC', name: 'Bitcoin', base: 83651.0, changePct: 1.24 },
-  { symbol: 'ETH', name: 'Ethereum', base: 2687.59, changePct: 0.88 },
-  { symbol: 'SOL', name: 'Solana', base: 103.50, changePct: 2.45 },
-  { symbol: 'BNB', name: 'BNB', base: 754.00, changePct: 0.42 },
-  { symbol: 'DOGE', name: 'Dogecoin', base: 0.090, changePct: -1.15 },
+  { symbol: 'BTC', name: 'Bitcoin', base: 82010.0, changePct: 1.14 },
+  { symbol: 'ETH', name: 'Ethereum', base: 2403.00, changePct: 1.54 },
+  { symbol: 'SOL', name: 'Solana', base: 104.37, changePct: 2.31 },
+  { symbol: 'BNB', name: 'BNB', base: 727.00, changePct: 2.16 },
+  { symbol: 'DOGE', name: 'Dogecoin', base: 0.079, changePct: 2.31 },
   { symbol: 'SHIB', name: 'Shiba Inu', base: 0.0000185, changePct: -0.85 },
 ];
 
@@ -138,22 +138,22 @@ const KNOWN_INDICES: Record<string, { name: string; base: number; market: Market
   MIDCPNIFTY: { name: 'NIFTY MIDCAP SELECT', base: 12450.00, market: 'INDIA' },
   BANKEX: { name: 'BSE BANKEX', base: 59800.00, market: 'INDIA' },
   NIFTYNXT50: { name: 'NIFTY NEXT 50', base: 67200.00, market: 'INDIA' },
-  SPX: { name: 'S&P 500', base: 7659.40, market: 'USA' },
-  NDX: { name: 'NASDAQ 100', base: 29187.50, market: 'USA' },
-  DJI: { name: 'DOW JONES', base: 52002.40, market: 'USA' },
-  VIX: { name: 'Volatility Index', base: 18.40, market: 'USA' },
-  RUT: { name: 'Russell 2000', base: 2280.00, market: 'USA' },
+  SPX: { name: 'S&P 500', base: 7703.58, market: 'USA' },
+  NDX: { name: 'NASDAQ 100', base: 29630.77, market: 'USA' },
+  DJI: { name: 'DOW JONES', base: 51964.04, market: 'USA' },
+  VIX: { name: 'Volatility Index', base: 18.56, market: 'USA' },
+  RUT: { name: 'Russell 2000', base: 2721.37, market: 'USA' },
   DFMGI: { name: 'DFM General', base: 4850.0, market: 'UAE' },
   ADX: { name: 'ADX General', base: 9250.0, market: 'UAE' },
   'FTSE ADX 15': { name: 'FTSE ADX 15', base: 9410.20, market: 'UAE' },
 };
 
 const KNOWN_CRYPTOS: Record<string, { name: string; base: number }> = {
-  BTC: { name: 'Bitcoin', base: 83651.0 },
-  ETH: { name: 'Ethereum', base: 2687.59 },
-  SOL: { name: 'Solana', base: 103.50 },
-  BNB: { name: 'BNB', base: 754.00 },
-  DOGE: { name: 'Dogecoin', base: 0.090 },
+  BTC: { name: 'Bitcoin', base: 82010.0 },
+  ETH: { name: 'Ethereum', base: 2403.00 },
+  SOL: { name: 'Solana', base: 104.37 },
+  BNB: { name: 'BNB', base: 727.00 },
+  DOGE: { name: 'Dogecoin', base: 0.079 },
   SHIB: { name: 'Shiba Inu', base: 0.0000185 },
   XRP: { name: 'Ripple XRP', base: 0.60 },
   ADA: { name: 'Cardano', base: 0.38 },
@@ -285,7 +285,7 @@ function Sparkline({ symbol, up, changePct }: { symbol?: string; up?: boolean; c
   );
 }
 
-// ─── Index Tile with Delete Support ───────────────────────────────────────────
+// ─── Index Tile with Delete Support & Dynamic Flash ───────────────────────────
 function IndexTile({
   symbol,
   name,
@@ -311,6 +311,19 @@ function IndexTile({
   const currentPct = live ? live.changePct : changePct;
   const up = currentPct >= 0;
 
+  const [flash, setFlash] = useState<'up' | 'down' | null>(null);
+  const prevPriceRef = useRef(price);
+
+  useEffect(() => {
+    if (prevPriceRef.current !== price) {
+      const dir = price > prevPriceRef.current ? 'up' : 'down';
+      setFlash(dir);
+      prevPriceRef.current = price;
+      const t = setTimeout(() => setFlash(null), 850);
+      return () => clearTimeout(t);
+    }
+  }, [price]);
+
   return (
     <div className="relative group">
       <Link
@@ -327,7 +340,13 @@ function IndexTile({
           <Sparkline symbol={symbol} up={up} changePct={currentPct} />
         </div>
         <div className="flex items-end justify-between mt-1">
-          <span className="mono text-[16px] sm:text-[17px] font-black inst-card-text">
+          <span className={`mono text-[16px] sm:text-[17px] font-black transition-all duration-300 rounded px-1 -mx-1 ${
+            flash === 'up'
+              ? 'text-emerald-400 bg-emerald-500/20 ring-1 ring-emerald-500/30'
+              : flash === 'down'
+              ? 'text-rose-400 bg-rose-500/20 ring-1 ring-rose-500/30'
+              : 'inst-card-text'
+          }`}>
             {currency}{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           <span className={`mono text-[13px] sm:text-[14px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -354,7 +373,7 @@ function IndexTile({
   );
 }
 
-// ─── Watchlist Row with Delete Support ────────────────────────────────────────
+// ─── Watchlist Row with Delete Support & Dynamic Flash ───────────────────────
 function WatchlistRow({
   symbol,
   name,
@@ -382,6 +401,19 @@ function WatchlistRow({
   const currentPct = live ? live.changePct : changePct;
   const up = currentPct >= 0;
 
+  const [flash, setFlash] = useState<'up' | 'down' | null>(null);
+  const prevPriceRef = useRef(price);
+
+  useEffect(() => {
+    if (prevPriceRef.current !== price) {
+      const dir = price > prevPriceRef.current ? 'up' : 'down';
+      setFlash(dir);
+      prevPriceRef.current = price;
+      const t = setTimeout(() => setFlash(null), 850);
+      return () => clearTimeout(t);
+    }
+  }, [price]);
+
   return (
     <div className="relative group">
       <Link
@@ -402,7 +434,13 @@ function WatchlistRow({
         </div>
 
         <div className="text-right flex-shrink-0">
-          <div className="mono text-[14px] sm:text-[16px] font-black inst-card-text">
+          <div className={`mono text-[14px] sm:text-[16px] font-black transition-all duration-300 rounded px-1 -mx-1 ${
+            flash === 'up'
+              ? 'text-emerald-400 bg-emerald-500/20 ring-1 ring-emerald-500/30'
+              : flash === 'down'
+              ? 'text-rose-400 bg-rose-500/20 ring-1 ring-rose-500/30'
+              : 'inst-card-text'
+          }`}>
             {currency}{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className={`mono text-[12px] sm:text-[14px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -430,6 +468,274 @@ function WatchlistRow({
         >
           <span>✕</span>
           <span className="hidden sm:inline">DELETE</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Crypto Tile with Live Pulse & Flash ─────────────────────────────────────
+function CryptoTile({
+  item,
+  isEditing,
+  onDelete,
+}: {
+  item: CryptoItem;
+  isEditing?: boolean;
+  onDelete?: () => void;
+}) {
+  const { getSymbolPrice } = useTradeEngine();
+  const live = getSymbolPrice(item.symbol);
+  const price = live ? live.price : item.base;
+  const currentPct = live ? live.changePct : item.changePct;
+  const up = currentPct >= 0;
+
+  const [flash, setFlash] = useState<'up' | 'down' | null>(null);
+  const prevPriceRef = useRef(price);
+
+  useEffect(() => {
+    if (prevPriceRef.current !== price) {
+      const dir = price > prevPriceRef.current ? 'up' : 'down';
+      setFlash(dir);
+      prevPriceRef.current = price;
+      const t = setTimeout(() => setFlash(null), 850);
+      return () => clearTimeout(t);
+    }
+  }, [price]);
+
+  return (
+    <div className="relative group">
+      <Link
+        href={`/chart/${item.symbol}`}
+        className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[88px]"
+      >
+        <div className="flex items-start justify-between">
+          <div className="min-w-0 pr-4">
+            <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate block">
+              {item.symbol}
+            </span>
+            <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[70px]">{item.name}</div>
+          </div>
+          <div className="scale-90 origin-top-right">
+            <Sparkline symbol={item.symbol} up={up} changePct={currentPct} />
+          </div>
+        </div>
+        <div className="flex items-end justify-between mt-2">
+          <span className={`mono text-[13px] sm:text-[13.5px] font-black transition-all duration-300 rounded px-1 -mx-1 ${
+            flash === 'up'
+              ? 'text-emerald-400 bg-emerald-500/20 ring-1 ring-emerald-500/30'
+              : flash === 'down'
+              ? 'text-rose-400 bg-rose-500/20 ring-1 ring-rose-500/30'
+              : 'inst-card-text'
+          }`}>
+            ${price.toLocaleString(undefined, { minimumFractionDigits: price < 1 ? 4 : 2, maximumFractionDigits: price < 1 ? 7 : 2 })}
+          </span>
+          <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
+            {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
+          </span>
+        </div>
+      </Link>
+      {isEditing && onDelete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center text-[10px] font-black shadow-md z-30 transition-transform active:scale-90 cursor-pointer"
+          title={`Delete ${item.symbol} from Crypto`}
+          aria-label={`Delete ${item.symbol}`}
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Commodity Tile with Live Pulse & Flash ───────────────────────────────────
+function CommodityTile({
+  item,
+  isEditing,
+  onDelete,
+}: {
+  item: CommodityItem;
+  isEditing?: boolean;
+  onDelete?: () => void;
+}) {
+  const { getSymbolPrice } = useTradeEngine();
+  const live = getSymbolPrice(item.symbol);
+  const price = live ? live.price : item.base;
+  const currentPct = live ? live.changePct : item.changePct;
+  const up = currentPct >= 0;
+
+  const [flash, setFlash] = useState<'up' | 'down' | null>(null);
+  const prevPriceRef = useRef(price);
+
+  useEffect(() => {
+    if (prevPriceRef.current !== price) {
+      const dir = price > prevPriceRef.current ? 'up' : 'down';
+      setFlash(dir);
+      prevPriceRef.current = price;
+      const t = setTimeout(() => setFlash(null), 850);
+      return () => clearTimeout(t);
+    }
+  }, [price]);
+
+  return (
+    <div className="relative group">
+      <Link
+        href={`/chart/${item.symbol}?market=USA`}
+        className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[96px]"
+        title={`Open ${item.name} Interactive Chart`}
+      >
+        <div className="flex items-start justify-between">
+          <div className="min-w-0 pr-3">
+            <div className="flex items-center gap-1.5">
+              <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
+                {item.symbol}
+              </span>
+              <span className="mono text-[9px] px-1 py-0.2 rounded bg-amber-500/15 text-amber-500 font-bold shrink-0">
+                {item.category}
+              </span>
+            </div>
+            <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[110px]" title={item.name}>
+              {item.name}
+            </div>
+          </div>
+          <div className="scale-90 origin-top-right shrink-0">
+            <Sparkline symbol={item.symbol} up={up} changePct={currentPct} />
+          </div>
+        </div>
+        <div className="flex items-end justify-between mt-2 pt-1 border-t border-[var(--theme-card-border)]/40">
+          <div>
+            <span className={`mono text-[13px] sm:text-[13.5px] font-black transition-all duration-300 rounded px-1 -mx-1 ${
+              flash === 'up'
+                ? 'text-emerald-400 bg-emerald-500/20 ring-1 ring-emerald-500/30'
+                : flash === 'down'
+                ? 'text-rose-400 bg-rose-500/20 ring-1 ring-rose-500/30'
+                : 'inst-card-text'
+            }`}>
+              ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span className="text-[10px] text-[var(--theme-card-text-muted)] font-mono ml-1">
+              {item.unit.includes('/') ? `/${item.unit.split('/')[1].trim()}` : ''}
+            </span>
+          </div>
+          <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
+            {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
+          </span>
+        </div>
+      </Link>
+      {isEditing && onDelete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center text-[10px] font-black shadow-md z-30 transition-transform active:scale-90 cursor-pointer"
+          title={`Delete ${item.symbol} from Commodities`}
+          aria-label={`Delete ${item.symbol}`}
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Forex Tile with Live Pulse & Flash ───────────────────────────────────────
+function ForexTile({
+  item,
+  isEditing,
+  onDelete,
+}: {
+  item: ForexItem;
+  isEditing?: boolean;
+  onDelete?: () => void;
+}) {
+  const { getSymbolPrice } = useTradeEngine();
+  const live = getSymbolPrice(item.symbol);
+  const price = live ? live.price : item.base;
+  const currentPct = live ? live.changePct : item.changePct;
+  const up = currentPct >= 0;
+
+  const [flash, setFlash] = useState<'up' | 'down' | null>(null);
+  const prevPriceRef = useRef(price);
+
+  useEffect(() => {
+    if (prevPriceRef.current !== price) {
+      const dir = price > prevPriceRef.current ? 'up' : 'down';
+      setFlash(dir);
+      prevPriceRef.current = price;
+      const t = setTimeout(() => setFlash(null), 850);
+      return () => clearTimeout(t);
+    }
+  }, [price]);
+
+  return (
+    <div className="relative group">
+      <Link
+        href={`/chart/${item.symbol}?market=USA`}
+        className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[96px]"
+        title={`Open ${item.name} Interactive Chart`}
+      >
+        <div className="flex items-start justify-between">
+          <div className="min-w-0 pr-3">
+            <div className="flex items-center gap-1.5">
+              <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
+                {item.pair}
+              </span>
+              <span className="mono text-[9px] px-1 py-0.2 rounded bg-cyan-500/15 text-cyan-500 font-bold shrink-0">
+                FX
+              </span>
+            </div>
+            <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[110px]" title={item.name}>
+              {item.name}
+            </div>
+          </div>
+          <div className="scale-90 origin-top-right shrink-0">
+            <Sparkline symbol={item.symbol} up={up} changePct={currentPct} />
+          </div>
+        </div>
+        <div className="flex items-end justify-between mt-2 pt-1 border-t border-[var(--theme-card-border)]/40">
+          <div>
+            <span className={`mono text-[13px] sm:text-[13.5px] font-black transition-all duration-300 rounded px-1 -mx-1 ${
+              flash === 'up'
+                ? 'text-emerald-400 bg-emerald-500/20 ring-1 ring-emerald-500/30'
+                : flash === 'down'
+                ? 'text-rose-400 bg-rose-500/20 ring-1 ring-rose-500/30'
+                : 'inst-card-text'
+            }`}>
+              {price.toFixed(price < 2 ? 4 : 2)}
+            </span>
+            {item.pipSpread && (
+              <span className="text-[9.5px] text-[var(--theme-card-text-muted)] font-mono ml-1 hidden sm:inline">
+                ({item.pipSpread})
+              </span>
+            )}
+          </div>
+          <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
+            {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
+          </span>
+        </div>
+      </Link>
+      {isEditing && onDelete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center text-[10px] font-black shadow-md z-30 transition-transform active:scale-90 cursor-pointer"
+          title={`Delete ${item.symbol} from Forex`}
+          aria-label={`Delete ${item.symbol}`}
+        >
+          ✕
         </button>
       )}
     </div>
@@ -494,6 +800,8 @@ interface SearchSuggestion {
   base: number;
 }
 
+const STORAGE_PREFIX = 'mi007_dashboard_v7_';
+
 export default function TerminalPage() {
   const { market, setMarket, currency } = useMarket();
   const { getSymbolPrice } = useTradeEngine();
@@ -533,10 +841,10 @@ export default function TerminalPage() {
       }
 
       try {
-        const savedComm = localStorage.getItem('mi007_dashboard_commodities');
+        const savedComm = localStorage.getItem(`${STORAGE_PREFIX}commodities`);
         if (savedComm) setCommodities(JSON.parse(savedComm));
 
-        const savedFx = localStorage.getItem('mi007_dashboard_forex');
+        const savedFx = localStorage.getItem(`${STORAGE_PREFIX}forex`);
         if (savedFx) setForex(JSON.parse(savedFx));
       } catch {}
     }
@@ -545,21 +853,21 @@ export default function TerminalPage() {
   // Sync state when market changes or load from localStorage
   useEffect(() => {
     try {
-      const savedIndices = localStorage.getItem(`mi007_dashboard_indices_${market}`);
+      const savedIndices = localStorage.getItem(`${STORAGE_PREFIX}indices_${market}`);
       if (savedIndices) {
         setIndices(JSON.parse(savedIndices));
       } else {
         setIndices(market === 'INDIA' ? DEFAULT_INDIA_INDICES : market === 'USA' ? DEFAULT_USA_INDICES : DEFAULT_UAE_INDICES);
       }
 
-      const savedWatchlist = localStorage.getItem(`mi007_dashboard_watchlist_${market}`);
+      const savedWatchlist = localStorage.getItem(`${STORAGE_PREFIX}watchlist_${market}`);
       if (savedWatchlist) {
         setWatchlist(JSON.parse(savedWatchlist));
       } else {
         setWatchlist(market === 'INDIA' ? DEFAULT_INDIA_WATCHLIST : market === 'USA' ? DEFAULT_USA_WATCHLIST : DEFAULT_UAE_WATCHLIST);
       }
 
-      const savedCrypto = localStorage.getItem('mi007_dashboard_crypto');
+      const savedCrypto = localStorage.getItem(`${STORAGE_PREFIX}crypto`);
       if (savedCrypto) {
         setCrypto(JSON.parse(savedCrypto));
       } else {
@@ -574,7 +882,7 @@ export default function TerminalPage() {
   const updateIndices = (newList: IndexItem[]) => {
     setIndices(newList);
     try {
-      localStorage.setItem(`mi007_dashboard_indices_${market}`, JSON.stringify(newList));
+      localStorage.setItem(`${STORAGE_PREFIX}indices_${market}`, JSON.stringify(newList));
     } catch {}
   };
 
@@ -582,7 +890,7 @@ export default function TerminalPage() {
   const updateWatchlist = (newList: WatchlistItem[]) => {
     setWatchlist(newList);
     try {
-      localStorage.setItem(`mi007_dashboard_watchlist_${market}`, JSON.stringify(newList));
+      localStorage.setItem(`${STORAGE_PREFIX}watchlist_${market}`, JSON.stringify(newList));
     } catch {}
   };
 
@@ -590,7 +898,7 @@ export default function TerminalPage() {
   const updateCrypto = (newList: CryptoItem[]) => {
     setCrypto(newList);
     try {
-      localStorage.setItem('mi007_dashboard_crypto', JSON.stringify(newList));
+      localStorage.setItem(`${STORAGE_PREFIX}crypto`, JSON.stringify(newList));
     } catch {}
   };
 
@@ -598,7 +906,7 @@ export default function TerminalPage() {
   const updateCommodities = (newList: CommodityItem[]) => {
     setCommodities(newList);
     try {
-      localStorage.setItem('mi007_dashboard_commodities', JSON.stringify(newList));
+      localStorage.setItem(`${STORAGE_PREFIX}commodities`, JSON.stringify(newList));
     } catch {}
   };
 
@@ -606,7 +914,7 @@ export default function TerminalPage() {
   const updateForex = (newList: ForexItem[]) => {
     setForex(newList);
     try {
-      localStorage.setItem('mi007_dashboard_forex', JSON.stringify(newList));
+      localStorage.setItem(`${STORAGE_PREFIX}forex`, JSON.stringify(newList));
     } catch {}
   };
 
@@ -650,8 +958,11 @@ export default function TerminalPage() {
     updateCommodities(DEFAULT_COMMODITIES);
     updateForex(DEFAULT_FOREX);
     try {
-      localStorage.removeItem('mi007_dashboard_commodities');
-      localStorage.removeItem('mi007_dashboard_forex');
+      localStorage.removeItem(`${STORAGE_PREFIX}commodities`);
+      localStorage.removeItem(`${STORAGE_PREFIX}forex`);
+      localStorage.removeItem(`${STORAGE_PREFIX}indices_${market}`);
+      localStorage.removeItem(`${STORAGE_PREFIX}watchlist_${market}`);
+      localStorage.removeItem(`${STORAGE_PREFIX}crypto`);
     } catch {}
     showToast(`Reset ${MARKETS[market].label} dashboard to factory defaults`);
   };
@@ -1252,68 +1563,14 @@ export default function TerminalPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-                    {commodities.map(c => {
-                      const live = getSymbolPrice(c.symbol);
-                      const price = live ? live.price : c.base;
-                      const currentPct = live ? live.changePct : c.changePct;
-                      const up = currentPct >= 0;
-                      return (
-                        <div key={c.symbol} className="relative group">
-                          <Link
-                            href={`/chart/${c.symbol}?market=USA`}
-                            className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[96px]"
-                            title={`Open ${c.name} Interactive Chart`}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="min-w-0 pr-3">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
-                                    {c.symbol}
-                                  </span>
-                                  <span className="mono text-[9px] px-1 py-0.2 rounded bg-amber-500/15 text-amber-500 font-bold shrink-0">
-                                    {c.category}
-                                  </span>
-                                </div>
-                                <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[110px]" title={c.name}>
-                                  {c.name}
-                                </div>
-                              </div>
-                              <div className="scale-90 origin-top-right shrink-0">
-                                <Sparkline symbol={c.symbol} up={up} changePct={currentPct} />
-                              </div>
-                            </div>
-                            <div className="flex items-end justify-between mt-2 pt-1 border-t border-[var(--theme-card-border)]/40">
-                              <div>
-                                <span className="mono text-[13px] sm:text-[13.5px] font-black inst-card-text">
-                                  ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                                <span className="text-[10px] text-[var(--theme-card-text-muted)] font-mono ml-1">
-                                  {c.unit.includes('/') ? `/${c.unit.split('/')[1].trim()}` : ''}
-                                </span>
-                              </div>
-                              <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
-                              </span>
-                            </div>
-                          </Link>
-                          {isEditing && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDeleteCommodity(c.symbol);
-                              }}
-                              className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center text-[10px] font-black shadow-md z-30 transition-transform active:scale-90 cursor-pointer"
-                              title={`Delete ${c.symbol} from Commodities`}
-                              aria-label={`Delete ${c.symbol}`}
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {commodities.map(c => (
+                      <CommodityTile
+                        key={c.symbol}
+                        item={c}
+                        isEditing={isEditing}
+                        onDelete={() => handleDeleteCommodity(c.symbol)}
+                      />
+                    ))}
                   </div>
                 )}
               </>
@@ -1335,70 +1592,14 @@ export default function TerminalPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-                    {forex.map(f => {
-                      const live = getSymbolPrice(f.symbol);
-                      const price = live ? live.price : f.base;
-                      const currentPct = live ? live.changePct : f.changePct;
-                      const up = currentPct >= 0;
-                      return (
-                        <div key={f.symbol} className="relative group">
-                          <Link
-                            href={`/chart/${f.symbol}?market=USA`}
-                            className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[96px]"
-                            title={`Open ${f.name} Interactive Chart`}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="min-w-0 pr-3">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
-                                    {f.pair}
-                                  </span>
-                                  <span className="mono text-[9px] px-1 py-0.2 rounded bg-cyan-500/15 text-cyan-500 font-bold shrink-0">
-                                    FX
-                                  </span>
-                                </div>
-                                <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[110px]" title={f.name}>
-                                  {f.name}
-                                </div>
-                              </div>
-                              <div className="scale-90 origin-top-right shrink-0">
-                                <Sparkline symbol={f.symbol} up={up} changePct={currentPct} />
-                              </div>
-                            </div>
-                            <div className="flex items-end justify-between mt-2 pt-1 border-t border-[var(--theme-card-border)]/40">
-                              <div>
-                                <span className="mono text-[13px] sm:text-[13.5px] font-black inst-card-text">
-                                  {price.toFixed(price < 2 ? 4 : 2)}
-                                </span>
-                                {f.pipSpread && (
-                                  <span className="text-[9.5px] text-[var(--theme-card-text-muted)] font-mono ml-1 hidden sm:inline">
-                                    ({f.pipSpread})
-                                  </span>
-                                )}
-                              </div>
-                              <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
-                              </span>
-                            </div>
-                          </Link>
-                          {isEditing && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDeleteForex(f.symbol);
-                              }}
-                              className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center text-[10px] font-black shadow-md z-30 transition-transform active:scale-90 cursor-pointer"
-                              title={`Delete ${f.symbol} from Forex`}
-                              aria-label={`Delete ${f.symbol}`}
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {forex.map(f => (
+                      <ForexTile
+                        key={f.symbol}
+                        item={f}
+                        isEditing={isEditing}
+                        onDelete={() => handleDeleteForex(f.symbol)}
+                      />
+                    ))}
                   </div>
                 )}
               </>
@@ -1420,55 +1621,14 @@ export default function TerminalPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-                    {crypto.map(c => {
-                      const live = getSymbolPrice(c.symbol);
-                      const price = live ? live.price : c.base;
-                      const currentPct = live ? live.changePct : c.changePct;
-                      const up = currentPct >= 0;
-                      return (
-                        <div key={c.symbol} className="relative group">
-                          <Link
-                            href={`/chart/${c.symbol}`}
-                            className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[88px]"
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="min-w-0 pr-4">
-                                <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate block">
-                                  {c.symbol}
-                                </span>
-                                <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[70px]">{c.name}</div>
-                              </div>
-                              <div className="scale-90 origin-top-right">
-                                <Sparkline symbol={c.symbol} up={up} changePct={currentPct} />
-                              </div>
-                            </div>
-                            <div className="flex items-end justify-between mt-2">
-                              <span className="mono text-[13px] sm:text-[13.5px] font-black inst-card-text">
-                                ${price.toLocaleString(undefined, { minimumFractionDigits: price < 1 ? 4 : 2, maximumFractionDigits: price < 1 ? 7 : 2 })}
-                              </span>
-                              <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
-                              </span>
-                            </div>
-                          </Link>
-                          {isEditing && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDeleteCrypto(c.symbol);
-                              }}
-                              className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white hover:bg-rose-600 border border-white/20 flex items-center justify-center text-[10px] font-black shadow-md z-30 transition-transform active:scale-90 cursor-pointer"
-                              title={`Delete ${c.symbol} from Crypto`}
-                              aria-label={`Delete ${c.symbol}`}
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {crypto.map(c => (
+                      <CryptoTile
+                        key={c.symbol}
+                        item={c}
+                        isEditing={isEditing}
+                        onDelete={() => handleDeleteCrypto(c.symbol)}
+                      />
+                    ))}
                   </div>
                 )}
               </>

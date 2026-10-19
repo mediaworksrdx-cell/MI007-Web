@@ -62,15 +62,15 @@ const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number;
   { symbol: 'BHARTIARTL', price: 1882.80, change: 28.80, changePct: 1.55 },
 
   // USA
-  { symbol: 'SPX', price: 7659.40, change: 38.50, changePct: 0.51 },
-  { symbol: 'S&P 500', price: 7659.40, change: 38.50, changePct: 0.51 },
-  { symbol: 'NDX', price: 29187.50, change: 165.20, changePct: 0.57 },
-  { symbol: 'NASDAQ 100', price: 29187.50, change: 165.20, changePct: 0.57 },
-  { symbol: 'NASDAQ', price: 29187.50, change: 165.20, changePct: 0.57 },
-  { symbol: 'DJI', price: 52002.40, change: -85.40, changePct: -0.16 },
-  { symbol: 'DOW JONES', price: 52002.40, change: -85.40, changePct: -0.16 },
-  { symbol: 'VIX', price: 18.40, change: -0.25, changePct: -1.25 },
-  { symbol: 'QQQ', price: 715.20, change: 5.40, changePct: 0.76 },
+  { symbol: 'SPX', price: 7703.58, change: 44.14, changePct: 0.58 },
+  { symbol: 'S&P 500', price: 7703.58, change: 44.14, changePct: 0.58 },
+  { symbol: 'NDX', price: 29630.77, change: 443.22, changePct: 1.52 },
+  { symbol: 'NASDAQ 100', price: 29630.77, change: 443.22, changePct: 1.52 },
+  { symbol: 'NASDAQ', price: 29630.77, change: 443.22, changePct: 1.52 },
+  { symbol: 'DJI', price: 51964.04, change: -38.37, changePct: -0.07 },
+  { symbol: 'DOW JONES', price: 51964.04, change: -38.37, changePct: -0.07 },
+  { symbol: 'VIX', price: 18.56, change: -1.43, changePct: -7.15 },
+  { symbol: 'QQQ', price: 717.71, change: 7.88, changePct: 1.11 },
   { symbol: 'NVDA', price: 214.10, change: 3.80, changePct: 1.81 },
   { symbol: 'AAPL', price: 343.50, change: 2.20, changePct: 0.64 },
   { symbol: 'MSFT', price: 529.00, change: -2.60, changePct: -0.49 },
@@ -94,11 +94,11 @@ const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number;
   { symbol: 'AIRARABIA', price: 2.65, change: 0.03, changePct: 1.15 },
 
   // Crypto
-  { symbol: 'BTC', price: 83651.00, change: 1024.50, changePct: 1.24 },
-  { symbol: 'ETH', price: 2687.59, change: 23.40, changePct: 0.88 },
-  { symbol: 'SOL', price: 103.50, change: 2.48, changePct: 2.45 },
-  { symbol: 'BNB', price: 754.00, change: 3.15, changePct: 0.42 },
-  { symbol: 'DOGE', price: 0.090, change: -0.001, changePct: -1.15 },
+  { symbol: 'BTC', price: 82010.00, change: 922.33, changePct: 1.14 },
+  { symbol: 'ETH', price: 2403.00, change: 36.38, changePct: 1.54 },
+  { symbol: 'SOL', price: 104.37, change: 2.36, changePct: 2.31 },
+  { symbol: 'BNB', price: 727.00, change: 15.40, changePct: 2.16 },
+  { symbol: 'DOGE', price: 0.079, change: 0.0018, changePct: 2.31 },
   { symbol: 'SHIB', price: 0.0000185, change: -0.00000015, changePct: -0.85 },
   { symbol: 'XRP', price: 0.60, change: 0.008, changePct: 1.35 },
   { symbol: 'ADA', price: 0.45, change: 0.006, changePct: 1.35 },
@@ -153,7 +153,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     { symbol: 'XAG/USD', value: '31.50' },
     { symbol: 'US10Y', value: '4.25%' },
     { symbol: 'BRENT', value: '74.50' },
-    { symbol: 'VIX', value: '18.40' },
+    { symbol: 'VIX', value: '18.56' },
   ]);
   const [lastTick, setLastTick] = useState<TradeEngineTick | null>(null);
 
@@ -264,29 +264,43 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   }, [refreshHttpSnapshot]);
 
   // 2. Continuous Real-time Micro-Tick Heartbeat Engine (every 1.0 - 1.2s)
-  // Ensures tickers, hero telemetry, watchlists, and charts actively tick 24/7 with realistic micro-variations
+  // Ensures US indices, crypto, and market benchmarks actively tick 24/7 with realistic micro-variations
   useEffect(() => {
+    const PRIORITY_TICK_KEYS = ['BTC', 'ETH', 'SOL', 'SPX', 'NDX', 'DJI', 'VIX', 'QQQ', 'NVDA', 'AAPL', 'TSLA'];
+
     const tickInterval = setInterval(() => {
+      const now = Date.now();
+      let generatedTick: TradeEngineTick | null = null;
+
       setLivePrices(prev => {
         if (prev.size === 0) return prev;
         const next = new Map(prev);
-        const keys = Array.from(prev.keys()).filter(k => !k.includes('.') && !k.toLowerCase().includes('usdt'));
-        if (keys.length === 0) return prev;
+        const allKeys = Array.from(prev.keys()).filter(k => !k.includes('.') && !k.toLowerCase().includes('usdt'));
+        if (allKeys.length === 0) return prev;
 
-        const numToPulse = Math.min(4, Math.max(2, Math.floor(keys.length / 8)));
-        const now = Date.now();
+        // Guarantee at least 2 core priority symbols (BTC/US) + 2 general symbols per pulse
+        const targetKeys: string[] = [];
+        const availablePriority = PRIORITY_TICK_KEYS.filter(k => next.has(k));
+        for (let i = 0; i < 2 && availablePriority.length > 0; i++) {
+          const pk = availablePriority[Math.floor(Math.random() * availablePriority.length)];
+          if (!targetKeys.includes(pk)) targetKeys.push(pk);
+        }
+        for (let i = 0; i < 2; i++) {
+          const rk = allKeys[Math.floor(Math.random() * allKeys.length)];
+          if (!targetKeys.includes(rk)) targetKeys.push(rk);
+        }
 
-        for (let i = 0; i < numToPulse; i++) {
-          const randKey = keys[Math.floor(Math.random() * keys.length)];
+        for (const randKey of targetKeys) {
           const entry = next.get(randKey);
           if (!entry || entry.price <= 0) continue;
 
-          // Gentle micro-tick: ±0.015% to ±0.035%
-          const pct = (Math.random() - 0.49) * 0.00035;
+          // Gentle realistic micro-tick: ±0.015% to ±0.04%
+          const pct = (Math.random() - 0.49) * 0.0004;
           const delta = entry.price * pct;
-          const newPrice = +(entry.price + delta).toFixed(entry.price < 1 ? 6 : entry.price < 10 ? 4 : 2);
+          const decimals = entry.price < 1 ? 6 : entry.price < 10 ? 4 : 2;
+          const newPrice = +(entry.price + delta).toFixed(decimals);
           const newChange = +(entry.change + delta).toFixed(2);
-          const newPct = +((newChange / (newPrice - newChange)) * 100).toFixed(2);
+          const newPct = +((newChange / Math.max(1, newPrice - newChange)) * 100).toFixed(2);
           const dir: 'up' | 'down' = delta >= 0 ? 'up' : 'down';
 
           const updated: LiveSymbolData = {
@@ -302,6 +316,19 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
           const cleanKey = normalizeSymbolKey(randKey);
           next.set(cleanKey, updated);
 
+          if (cleanKey === 'BTC') {
+            next.set('BTC', updated);
+            next.set('BTCUSDT', updated);
+            next.set('BITCOIN', updated);
+          }
+          if (cleanKey === 'ETH') {
+            next.set('ETH', updated);
+            next.set('ETHUSDT', updated);
+          }
+          if (cleanKey === 'SOL') {
+            next.set('SOL', updated);
+            next.set('SOLUSDT', updated);
+          }
           if (cleanKey === 'NIFTY') {
             next.set('NIFTY', updated);
             next.set('NIFTY 50', updated);
@@ -329,20 +356,25 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             next.set('DOW JONES', updated);
           }
 
-          const tick: TradeEngineTick = {
-            symbol: entry.symbol,
-            price: newPrice,
-            volume: +(Math.random() * 5 + 1).toFixed(2),
-            timestamp: now,
-          };
-
-          setLastTick(tick);
-          listenersRef.current.forEach(cb => {
-            try { cb(tick); } catch (e) { console.error(e); }
-          });
+          if (!generatedTick) {
+            generatedTick = {
+              symbol: entry.symbol,
+              price: newPrice,
+              volume: +(Math.random() * 5 + 1).toFixed(2),
+              timestamp: now,
+            };
+          }
         }
         return next;
       });
+
+      if (generatedTick) {
+        const tick = generatedTick;
+        setLastTick(tick);
+        listenersRef.current.forEach(cb => {
+          try { cb(tick); } catch (e) { console.error(e); }
+        });
+      }
     }, 1100);
 
     return () => clearInterval(tickInterval);
@@ -448,26 +480,20 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     };
   }, []);
 
-  const livePricesRef = useRef<Map<string, LiveSymbolData>>(livePrices);
-  useEffect(() => {
-    livePricesRef.current = livePrices;
-  }, [livePrices]);
-
   const getSymbolPrice = useCallback((symbol: string): LiveSymbolData | undefined => {
     if (!symbol) return undefined;
     const cleanKey = normalizeSymbolKey(symbol);
     const upper = symbol.toUpperCase().trim();
-    const map = livePricesRef.current;
     return (
-      map.get(cleanKey) ||
-      map.get(symbol) ||
-      map.get(upper) ||
-      map.get(`${cleanKey}.NS`) ||
-      map.get(`${upper}.NS`) ||
-      map.get(symbol.replace(/\s+/g, '')) ||
-      map.get(symbol.replace(/\.NS$/, ''))
+      livePrices.get(cleanKey) ||
+      livePrices.get(symbol) ||
+      livePrices.get(upper) ||
+      livePrices.get(`${cleanKey}.NS`) ||
+      livePrices.get(`${upper}.NS`) ||
+      livePrices.get(symbol.replace(/\s+/g, '')) ||
+      livePrices.get(symbol.replace(/\.NS$/, ''))
     );
-  }, []);
+  }, [livePrices]);
 
   const subscribeToTicks = useCallback((callback: (tick: TradeEngineTick) => void) => {
     listenersRef.current.add(callback);

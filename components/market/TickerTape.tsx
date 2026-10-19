@@ -19,7 +19,7 @@ const MACRO_ITEMS = [
   { symbol: 'XAG/USD', displayVal: '31.50', isMacro: true, change: 0, changePct: 0, price: 31.50 },
   { symbol: 'US10Y', displayVal: '4.25%', isMacro: true, change: 0, changePct: 0, price: 4.25 },
   { symbol: 'BRENT', displayVal: '$74.50', isMacro: true, change: 0, changePct: 0, price: 74.50 },
-  { symbol: 'VIX', displayVal: '18.40', isMacro: true, change: 0, changePct: 0, price: 18.40 },
+  { symbol: 'VIX', displayVal: '18.56', isMacro: true, change: -1.43, changePct: -7.15, price: 18.56 },
 ];
 
 export function TickerTape({ market: propMarket, currency: propCurrency }: TickerTapeProps) {
