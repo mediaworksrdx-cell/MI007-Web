@@ -292,39 +292,23 @@ export function CandlestickCanvas({
     }
   }, [activeDrawingTool]);
 
-  // Defensive auto-healing: sanitize any cached Frankenstein wicks or dislocated bars before rendering
+  // Defensive auto-healing: only fix truly corrupt data (NaN, zero, negative, impossible OHLC)
   const cleanCandles = useMemo(() => {
     if (!candles || candles.length === 0) return [];
-    const referencePrice = (currentPriceOverride && currentPriceOverride > 0)
-      ? currentPriceOverride
-      : (candles[candles.length - 1]?.close || 1000);
-    const minAcceptable = referencePrice * 0.85;
-    const maxAcceptable = referencePrice * 1.15;
-
     return candles.map(c => {
       if (!c) return c;
-      const safeClose = (c.close >= minAcceptable && c.close <= maxAcceptable) ? c.close : referencePrice;
-      let safeOpen = (c.open >= minAcceptable && c.open <= maxAcceptable) ? c.open : safeClose;
-      // Gently clamp open if an extreme outlier exceeds 6% of price
-      if (Math.abs(safeOpen - safeClose) > safeClose * 0.06) {
-        safeOpen = safeClose + (safeOpen > safeClose ? 1 : -1) * safeClose * 0.04;
-      }
-      const top = Math.max(safeOpen, safeClose);
-      const bottom = Math.min(safeOpen, safeClose);
-      const bodyH = Math.abs(safeClose - safeOpen);
-      // Realistic wick envelope: maximum 2.5x body or 0.5% price
-      const maxWick = Math.max(bodyH * 2.5, top * 0.005);
-      const safeHigh = Math.min(Math.max(c.high, top), Number((top + maxWick).toFixed(2)));
-      const safeLow = Math.max(Math.min(c.low, bottom), Number(Math.max(1, bottom - maxWick).toFixed(2)));
-      return {
-        ...c,
-        open: safeOpen,
-        close: safeClose,
-        high: safeHigh,
-        low: safeLow,
-      };
+      // Fix NaN / zero / negative values by falling back to close, then prior candle-safe defaults
+      let o = (Number.isFinite(c.open) && c.open > 0) ? c.open : c.close;
+      let h = (Number.isFinite(c.high) && c.high > 0) ? c.high : c.close;
+      let l = (Number.isFinite(c.low) && c.low > 0) ? c.low : c.close;
+      const cl = (Number.isFinite(c.close) && c.close > 0) ? c.close : o;
+      // Ensure high >= max(open, close) and low <= min(open, close)
+      h = Math.max(h, o, cl);
+      l = Math.min(l, o, cl);
+      if (o === c.open && h === c.high && l === c.low && cl === c.close) return c;
+      return { ...c, open: o, high: h, low: l, close: cl };
     });
-  }, [candles, currentPriceOverride]);
+  }, [candles]);
 
   // Viewport calculation with responsive zoom and dynamic candle scaling
   const visibleCount = Math.max(8, Math.round(VISIBLE_CANDLES_BASE / zoom));

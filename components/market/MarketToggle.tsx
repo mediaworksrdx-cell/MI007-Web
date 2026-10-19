@@ -59,7 +59,7 @@ export function MarketToggle({ selected, onChange, className = '' }: MarketToggl
   };
 
   return (
-    <div ref={dropdownRef} className={`relative inline-block text-left ${className}`}>
+    <div ref={dropdownRef} className={`relative inline-block text-left ${isOpen ? 'z-50' : ''} ${className}`}>
       {/* Trigger Button */}
       <button
         type="button"

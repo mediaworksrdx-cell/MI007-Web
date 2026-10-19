@@ -89,37 +89,36 @@ export function computeChartPriceBounds(
 ): { pMin: number; pMax: number; pRange: number; minValidBound: number; maxValidBound: number } {
   const safeStart = Math.max(0, startIdx);
   const safeEnd = Math.min(endIdx, candles.length);
-  const visSlice = candles.slice(safeStart, safeEnd).filter(c => c && c.close > 0);
-  const closes = visSlice.map(c => c.close).sort((a, b) => a - b);
-  const medClose = closes.length > 0 ? closes[Math.floor(closes.length / 2)] : 1000;
-  const anchorPrice = (currentPriceOverride && currentPriceOverride > 0)
-    ? currentPriceOverride
-    : medClose;
-  const minValidBound = anchorPrice * 0.85;
-  const maxValidBound = anchorPrice * 1.15;
 
   let pMin = Infinity, pMax = -Infinity;
   for (let i = safeStart; i < safeEnd; i++) {
     const c = candles[i];
-    const safeLow = Math.max(minValidBound, Math.min(maxValidBound, (c.low >= minValidBound && c.low <= maxValidBound) ? c.low : c.close));
-    const safeHigh = Math.min(maxValidBound, Math.max(minValidBound, (c.high >= minValidBound && c.high <= maxValidBound) ? c.high : c.close));
-    pMin = Math.min(pMin, safeLow);
-    pMax = Math.max(pMax, safeHigh);
+    if (!c || !Number.isFinite(c.low) || !Number.isFinite(c.high)) continue;
+    if (c.low > 0) pMin = Math.min(pMin, c.low);
+    if (c.high > 0) pMax = Math.max(pMax, c.high);
+  }
+  // Fallback if no valid data
+  if (!Number.isFinite(pMin) || !Number.isFinite(pMax) || pMin >= pMax) {
+    const fallback = (currentPriceOverride && currentPriceOverride > 0) ? currentPriceOverride : 1000;
+    pMin = fallback * 0.99;
+    pMax = fallback * 1.01;
   }
   if (currentPriceOverride && currentPriceOverride > 0 && endIdx >= candles.length) {
-    pMin = Math.min(pMin, Math.max(minValidBound, currentPriceOverride));
-    pMax = Math.max(pMax, Math.min(maxValidBound, currentPriceOverride));
+    pMin = Math.min(pMin, currentPriceOverride);
+    pMax = Math.max(pMax, currentPriceOverride);
   }
   const pad = (pMax - pMin) * 0.05 || 1;
   pMin -= pad; pMax += pad;
-  pMin = Math.max(minValidBound * 0.95, pMin);
-  pMax = Math.min(maxValidBound * 1.05, pMax);
 
   const center = (pMax + pMin) / 2 + priceOffset;
   const scaledRange = (pMax - pMin) * priceScaleRatio;
   pMin = center - scaledRange / 2;
   pMax = center + scaledRange / 2;
   const pRange = Math.max(pMax - pMin, 0.01);
+
+  // minValidBound/maxValidBound kept for API compatibility but set to very wide range
+  const minValidBound = pMin * 0.5;
+  const maxValidBound = pMax * 2.0;
 
   return { pMin, pMax, pRange, minValidBound, maxValidBound };
 }
@@ -1181,21 +1180,14 @@ export function renderChart(
       const effectiveClose = (isLastBar && options.currentPriceOverride && options.currentPriceOverride > 0)
         ? options.currentPriceOverride
         : c.close;
-      const effectiveHigh = isLastBar ? Math.min(Math.max(c.high, effectiveClose), effectiveClose * 1.02) : c.high;
-      const effectiveLow = isLastBar ? Math.max(Math.min(c.low, effectiveClose), effectiveClose * 0.98) : c.low;
+      const effectiveHigh = isLastBar ? Math.max(c.high, effectiveClose) : c.high;
+      const effectiveLow = isLastBar ? Math.min(c.low, effectiveClose) : c.low;
 
-      // Defensive sanity bounds: prevent distorted multi-hundred-point pillars from corrupted caches
-      const barClose = Math.max(minValidBound, Math.min(maxValidBound, effectiveClose));
-      let barOpen = (c.open >= minValidBound && c.open <= maxValidBound) ? c.open : barClose;
-      if (Math.abs(barOpen - barClose) > barClose * 0.05) {
-        barOpen = barClose + (barOpen > barClose ? 1 : -1) * barClose * 0.03;
-      }
-      const topPrice = Math.max(barOpen, barClose);
-      const botPrice = Math.min(barOpen, barClose);
-      const barDelta = Math.abs(topPrice - botPrice);
-      const maxWick = Math.max(barDelta * 2.5, topPrice * 0.005);
-      const barHigh = Math.min(Math.max(effectiveHigh, topPrice), topPrice + maxWick);
-      const barLow = Math.max(Math.min(effectiveLow, botPrice), Math.max(minValidBound, botPrice - maxWick));
+      // Use actual OHLC values directly — data sanitization is handled upstream
+      const barClose = effectiveClose;
+      const barOpen = c.open;
+      const barHigh = effectiveHigh;
+      const barLow = effectiveLow;
 
       const isOriginalBear = (c.close < c.open);
       const bull = isOriginalBear ? false : (barClose >= barOpen);

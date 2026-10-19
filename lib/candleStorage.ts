@@ -1,7 +1,7 @@
 import { Candle } from './types';
 
 const DB_NAME = 'MI007_MarketData';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'candles';
 
 function getStorageKey(symbol: string, timeframe: string): string {
@@ -195,17 +195,13 @@ export function mergeCandleArrays(base: Candle[], incoming: Candle[], timeframeM
         if (divergence > 0.05 || isExistingCorrupt || hasDeformedWick) {
           candleMap.set(bTime, { ...c, openTime: bTime });
         } else {
-          const safeOpen = (existing.open > 0 && Math.abs(existing.open - c.close) / c.close <= 0.05) ? existing.open : c.open;
-          const top = Math.max(safeOpen, c.close);
-          const bot = Math.min(safeOpen, c.close);
-          const bodyH = Math.abs(top - bot);
-          const maxWick = Math.max(bodyH * 2.5, top * 0.005);
+          // Merge preserving actual OHLC extremes — incoming close is authoritative
           candleMap.set(bTime, {
             openTime: bTime,
-            open: safeOpen,
+            open: existing.open > 0 ? existing.open : c.open,
             close: c.close,
-            high: Math.min(Math.max(c.high, top), Number((top + maxWick).toFixed(2))),
-            low: Math.max(Math.min(c.low, bot), Number(Math.max(1, bot - maxWick).toFixed(2))),
+            high: Math.max(existing.high, c.high),
+            low: Math.min(existing.low, c.low),
             volume: Math.max(existing.volume, c.volume),
           });
         }
