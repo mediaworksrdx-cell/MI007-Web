@@ -1,7 +1,7 @@
 import { Candle } from './types';
 
-const DB_NAME = 'MI007_MarketData';
-const DB_VERSION = 2;
+const DB_NAME = 'MI007_MarketData_v3';
+const DB_VERSION = 1;
 const STORE_NAME = 'candles';
 
 function getStorageKey(symbol: string, timeframe: string): string {
@@ -9,6 +9,23 @@ function getStorageKey(symbol: string, timeframe: string): string {
 }
 
 let dbPromise: Promise<IDBDatabase | null> | null = null;
+
+// Purge legacy corrupt database from prior versions on client startup
+if (typeof window !== 'undefined') {
+  try {
+    if (window.indexedDB) {
+      window.indexedDB.deleteDatabase('MI007_MarketData');
+    }
+    if (window.localStorage) {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('mi007_candles_')) {
+          localStorage.removeItem(k);
+        }
+      }
+    }
+  } catch {}
+}
 
 function getDB(): Promise<IDBDatabase | null> {
   if (typeof window === 'undefined' || !window.indexedDB) {
@@ -187,24 +204,14 @@ export function mergeCandleArrays(base: Candle[], incoming: Candle[], timeframeM
       const bTime = getBucket(c.openTime);
       const existing = candleMap.get(bTime);
       if (existing) {
-        // Guard against scale mismatch: if existing and incoming prices diverge by > 5% or existing is corrupt,
-        // incoming authoritative candle overwrites existing completely instead of combining with Math.max/min
-        const divergence = existing.close > 0 ? Math.abs(c.close - existing.close) / existing.close : 1;
-        const isExistingCorrupt = (existing.high - existing.low) / Math.max(1, existing.low) > 0.08;
-        const hasDeformedWick = (existing.high - existing.low) > Math.max(1, Math.abs(existing.close - existing.open) * 15);
-        if (divergence > 0.05 || isExistingCorrupt || hasDeformedWick) {
-          candleMap.set(bTime, { ...c, openTime: bTime });
-        } else {
-          // Merge preserving actual OHLC extremes — incoming close is authoritative
-          candleMap.set(bTime, {
-            openTime: bTime,
-            open: existing.open > 0 ? existing.open : c.open,
-            close: c.close,
-            high: Math.max(existing.high, c.high),
-            low: Math.min(existing.low, c.low),
-            volume: Math.max(existing.volume, c.volume),
-          });
-        }
+        candleMap.set(bTime, {
+          openTime: bTime,
+          open: existing.open > 0 ? existing.open : c.open,
+          close: c.close > 0 ? c.close : existing.close,
+          high: Math.max(existing.high, c.high),
+          low: (existing.low > 0 && c.low > 0) ? Math.min(existing.low, c.low) : (c.low || existing.low),
+          volume: Math.max(existing.volume, c.volume),
+        });
       } else {
         candleMap.set(bTime, { ...c, openTime: bTime });
       }

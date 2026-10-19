@@ -53,127 +53,30 @@ function getExpectedPrice(market: MarketType, symbol: string): number {
   return 1000;
 }
 
-function sanitizeCandleScale(candles: Candle[], targetPrice: number): Candle[] {
-  if (!candles || candles.length === 0 || targetPrice <= 0) return candles;
-  
-  // Filter out any corrupted or zero-price candles
-  const valid = candles.filter(c => c && c.close > 0 && c.open > 0 && c.high > 0 && c.low > 0);
-  if (valid.length === 0) return [];
+function validateAndCleanCandles(candles: Candle[]): Candle[] {
+  if (!candles || candles.length === 0) return [];
 
-  // Determine median price to establish baseline scale
-  const sortedCloses = [...valid].map(c => c.close).sort((a, b) => a - b);
-  const medianPrice = sortedCloses[Math.floor(sortedCloses.length / 2)];
+  return candles
+    .filter(c => c && Number.isFinite(c.openTime) && c.close > 0)
+    .map(c => {
+      const close = Number(c.close);
+      const open = (Number.isFinite(c.open) && c.open > 0) ? Number(c.open) : close;
+      const rawHigh = (Number.isFinite(c.high) && c.high > 0) ? Number(c.high) : close;
+      const rawLow = (Number.isFinite(c.low) && c.low > 0) ? Number(c.low) : close;
+      const high = Math.max(rawHigh, open, close);
+      const low = Math.min(rawLow, open, close);
+      const volume = (Number.isFinite(c.volume) && c.volume >= 0) ? Number(c.volume) : 0;
 
-  // Case A: Rebase series if the baseline diverges from target price by > 4%
-  const seriesRatio = targetPrice / medianPrice;
-  let rebased = valid;
-  if (seriesRatio < 0.96 || seriesRatio > 1.04) {
-    rebased = valid.map(c => ({
-      ...c,
-      open: Number((c.open * seriesRatio).toFixed(2)),
-      high: Number((c.high * seriesRatio).toFixed(2)),
-      low: Number((c.low * seriesRatio).toFixed(2)),
-      close: Number((c.close * seriesRatio).toFixed(2)),
-    }));
-  }
-
-  // Case B: Filter out individual rogue outlier candles and repair Frankenstein spikes
-  // Acceptable price corridor: ±15% of target price
-  const minAcceptable = targetPrice * 0.85;
-  const maxAcceptable = targetPrice * 1.15;
-
-  const filtered = rebased.filter(c => {
-    // Both open and close must be within realistic boundary
-    if (c.open < minAcceptable || c.open > maxAcceptable) return false;
-    if (c.close < minAcceptable || c.close > maxAcceptable) return false;
-    return true;
-  });
-
-  // Self-heal Frankenstein spikes & wide bars with proportional wick envelope
-  return filtered.map(c => {
-    const top = Math.max(c.open, c.close);
-    const bottom = Math.min(c.open, c.close);
-    const maxBarRange = top * 0.06;
-    const safeOpen = Math.abs(c.open - c.close) > maxBarRange
-      ? (c.open > c.close ? Number((c.close + maxBarRange).toFixed(2)) : Number((c.close - maxBarRange).toFixed(2)))
-      : c.open;
-    const bodyTop = Math.max(safeOpen, c.close);
-    const bodyBot = Math.min(safeOpen, c.close);
-    const bodyH = Math.abs(bodyTop - bodyBot);
-    const maxWick = Math.max(bodyH * 2.5, bodyTop * 0.005);
-    const safeHigh = Math.min(Math.max(c.high, bodyTop), Number((bodyTop + maxWick).toFixed(2)));
-    const safeLow = Math.max(Math.min(c.low, bodyBot), Number(Math.max(1, bodyBot - maxWick).toFixed(2)));
-    return {
-      ...c,
-      open: safeOpen,
-      close: c.close,
-      high: safeHigh,
-      low: safeLow,
-    };
-  });
-}
-
-/** Prepend seamless historical warmup candles so indicators (SMA 20/50/200, RSI, MACD, etc.) render edge-to-edge from bar 0 */
-function ensureWarmupBuffer(
-  candles: Candle[],
-  targetPrice: number,
-  timeframeMs: number,
-  minTotal: number = 320
-): Candle[] {
-  if (!candles || candles.length === 0) return candles;
-  if (candles.length >= minTotal) return candles;
-
-  const needed = minTotal - candles.length;
-  const first = candles[0];
-  const startTime = first.openTime;
-  const seedPrice = first.open > 0 ? first.open : targetPrice;
-
-  const isHighTf = timeframeMs >= 86_400_000;
-  const isMedTf = timeframeMs >= 3_600_000;
-  const basePct = isHighTf ? 0.005 : isMedTf ? 0.003 : 0.0015;
-
-  const backwardBars: Candle[] = [];
-  let price = seedPrice;
-  let waveTrend = 1;
-  let waveSteps = 4;
-
-  for (let i = 0; i < needed; i++) {
-    if (waveSteps <= 0) {
-      waveTrend = (i % 7 < 3) ? 1 : -1;
-      waveSteps = 3 + (i % 4);
-    }
-    waveSteps--;
-
-    // Controlled mean reversion towards targetPrice so historical price remains in realistic corridor
-    const reversion = ((targetPrice - price) / Math.max(1, targetPrice)) * 0.06;
-    const movePct = (basePct * waveTrend) + reversion;
-    const prevPrice = Math.max(price * 0.5, price - price * movePct);
-    const open = prevPrice;
-    const close = price;
-    const top = Math.max(open, close);
-    const bot = Math.min(open, close);
-    const bodyH = Math.abs(close - open);
-    const wick = Math.max(bodyH * 0.25, top * 0.001);
-    const high = top + wick;
-    const low = Math.max(bot - wick, bot * 0.995);
-    const volume = Math.floor((first.volume || 2000) * (0.8 + ((i % 5) * 0.08)));
-
-    const openTime = startTime - (i + 1) * timeframeMs;
-
-    backwardBars.push({
-      openTime,
-      open: Number(open.toFixed(2)),
-      high: Number(high.toFixed(2)),
-      low: Number(low.toFixed(2)),
-      close: Number(close.toFixed(2)),
-      volume,
-    });
-
-    price = prevPrice;
-  }
-
-  backwardBars.reverse();
-  return [...backwardBars, ...candles];
+      return {
+        openTime: c.openTime,
+        open,
+        high,
+        low,
+        close,
+        volume,
+      };
+    })
+    .sort((a, b) => a.openTime - b.openTime);
 }
 
 export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
@@ -264,86 +167,54 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
       try {
         const live = getSymbolPrice(selectedSymbol);
         const expectedPrice = (live && live.price > 0) ? live.price : getExpectedPrice(market, selectedSymbol);
-
         const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
 
-        // 1. Instant load from IndexedDB cache with auto-purge of corrupted scale data
+        // 1. Instant load from IndexedDB cache with purge of dislocated historical data
         let rawCached = await loadStoredCandles(selectedSymbol, timeframe);
         if (rawCached && rawCached.length > 0) {
-          const sortedCloses = rawCached.filter(c => c && c.close > 0).map(c => c.close).sort((a, b) => a - b);
-          const cachedMed = sortedCloses[Math.floor(sortedCloses.length / 2)] || 0;
-          const hasSpike = rawCached.some(c => (c.high - c.low) / Math.max(1, c.low) > 0.08);
-          const hasDeformedWick = rawCached.some(c => {
-            const body = Math.abs(c.close - c.open);
-            const wick = c.high - c.low;
-            return body > 0 && (wick / body > 20) && (wick > c.close * 0.008);
-          });
-          const isScaleDislocated = cachedMed > 0 && (Math.abs(cachedMed - expectedPrice) / expectedPrice > 0.12);
-          if (hasSpike || hasDeformedWick || isScaleDislocated) {
-            console.warn(`[ChartContainer] Auto-purging corrupted cache for ${selectedSymbol} (cachedMed: ${cachedMed}, expected: ${expectedPrice})`);
-            await purgeStoredCandles(selectedSymbol, timeframe);
-            rawCached = null;
+          const lastC = rawCached[rawCached.length - 1];
+          // If cached dataset has massive scale dislocation from live/expected price (> 50%), purge it
+          if (expectedPrice > 0 && lastC && lastC.close > 0) {
+            const dislocation = Math.abs(lastC.close - expectedPrice) / expectedPrice;
+            if (dislocation > 0.50) {
+              console.warn(`[ChartContainer] Auto-purging dislocated cache for ${selectedSymbol} (cached: ${lastC.close}, expected: ${expectedPrice})`);
+              await purgeStoredCandles(selectedSymbol, timeframe);
+              rawCached = null;
+            }
           }
         }
 
-        const sanitizedRawCached = sanitizeCandleScale(rawCached || [], expectedPrice);
-        const cached = mergeCandleArrays([], sanitizedRawCached, tfMs);
-        const bufferedCached = ensureWarmupBuffer(cached, expectedPrice, tfMs, 320);
+        const cleanCached = validateAndCleanCandles(rawCached || []);
 
-        if (!isCancelled && bufferedCached && bufferedCached.length > 0) {
-          setCandles(bufferedCached);
-          const lastC = bufferedCached[bufferedCached.length - 1];
+        if (!isCancelled && cleanCached.length > 0) {
+          setCandles(cleanCached);
+          const lastC = cleanCached[cleanCached.length - 1];
           setCurrentPrice(lastC?.close);
           setIsLoadingCandles(false);
         }
 
-        // 2. Fetch latest candles from Trade Engine API with scale sanitization
+        // 2. Fetch latest candles from Trade Engine API
         const rawEngine = await fetchCandles(selectedSymbol, timeframe);
-        const sanitizedRawEngine = sanitizeCandleScale(rawEngine || [], expectedPrice);
-        const engineCandles = mergeCandleArrays([], sanitizedRawEngine, tfMs);
+        const cleanEngine = validateAndCleanCandles(rawEngine || []);
 
         if (!isCancelled) {
-          if (engineCandles && engineCandles.length > 5) {
-            const merged = mergeCandleArrays(cached || [], engineCandles, tfMs);
-            const sanitizedMerged = sanitizeCandleScale(merged, expectedPrice);
-            const bufferedMerged = ensureWarmupBuffer(sanitizedMerged, expectedPrice, tfMs, 320);
-            setCandles(prev => {
-              if (prev && prev.length > 0) {
-                const prevLast = prev[prev.length - 1];
-                const mergedLast = bufferedMerged[bufferedMerged.length - 1];
-                // If prev has an active live candle for the same bucket, preserve the live close/high/low only if on matching scale
-                if (prevLast && mergedLast && prevLast.openTime === mergedLast.openTime && prevLast.close > 0) {
-                  const ratio = prevLast.close / mergedLast.close;
-                  if (ratio >= 0.95 && ratio <= 1.05) {
-                    const liveClose = prevLast.close;
-                    const preservedMerged = [...bufferedMerged];
-                    preservedMerged[preservedMerged.length - 1] = {
-                      ...mergedLast,
-                      close: liveClose,
-                      high: Math.min(Math.max(mergedLast.high, liveClose), Number((liveClose * 1.02).toFixed(2))),
-                      low: Math.max(Math.min(mergedLast.low, liveClose), Number((liveClose * 0.98).toFixed(2))),
-                    };
-                    return preservedMerged;
-                  }
-                }
-              }
-              return bufferedMerged;
-            });
-            const lastC = bufferedMerged[bufferedMerged.length - 1];
+          if (cleanEngine.length > 0) {
+            const merged = mergeCandleArrays(cleanCached, cleanEngine, tfMs);
+            const cleanMerged = validateAndCleanCandles(merged);
+
+            setCandles(cleanMerged);
+            const lastC = cleanMerged[cleanMerged.length - 1];
             setCurrentPrice(prev => (prev && prev > 0 ? prev : lastC?.close));
             setIsLiveFromEngine(true);
-            // Persist sanitized dataset to IndexedDB
-            saveStoredCandles(selectedSymbol, timeframe, bufferedMerged);
-          } else if (!cached || cached.length === 0) {
-            // Fallback to high-quality generator if offline or empty
-            const fallback = getMockCandles(market, selectedSymbol, timeframe, 320);
-            const sanitizedFallback = sanitizeCandleScale(fallback, expectedPrice);
-            const cleanFallback = mergeCandleArrays([], sanitizedFallback, tfMs);
-            const bufferedFallback = ensureWarmupBuffer(cleanFallback, expectedPrice, tfMs, 320);
-            setCandles(bufferedFallback);
-            setCurrentPrice(bufferedFallback[bufferedFallback.length - 1]?.close);
+            saveStoredCandles(selectedSymbol, timeframe, cleanMerged);
+          } else if (cleanCached.length === 0) {
+            // Fallback to mock data if offline or no candles returned
+            const fallback = getMockCandles(market, selectedSymbol, timeframe, 150);
+            const cleanFallback = validateAndCleanCandles(fallback);
+            setCandles(cleanFallback);
+            setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);
             setIsLiveFromEngine(false);
-            saveStoredCandles(selectedSymbol, timeframe, bufferedFallback);
+            saveStoredCandles(selectedSymbol, timeframe, cleanFallback);
           }
         }
       } catch (err) {
@@ -377,7 +248,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   // Listen to live WebSocket ticks from the Trade Engine with clock-aligned candle formation
   useEffect(() => {
     const unsub = subscribeToTicks((tick) => {
-      if (areSymbolsEqual(tick.symbol, selectedSymbol)) {
+      if (areSymbolsEqual(tick.symbol, selectedSymbol) && tick.price > 0) {
         setIsLiveFromEngine(true);
         setCurrentPrice(tick.price);
 
@@ -385,83 +256,48 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           if (prev.length === 0) return prev;
           const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
           const now = tick.timestamp || Date.now();
-          // True interval binning: calculate the bucket openTime for the current time
           const currentBucketOpenTime = Math.floor(now / tfMs) * tfMs;
-          const lastCandle = prev[prev.length - 1];
+          const currentLast = prev[prev.length - 1];
 
-          // Scale guard: if existing candles are dislocated from live tick price
-          let baseCandles = prev;
-          if (lastCandle && lastCandle.close > 0 && tick.price > 0) {
-            const ratio = tick.price / lastCandle.close;
-            if (ratio < 0.95 || ratio > 1.05) {
-              baseCandles = prev.map(c => ({
-                ...c,
-                open: Number((c.open * ratio).toFixed(2)),
-                high: Number((c.high * ratio).toFixed(2)),
-                low: Number((c.low * ratio).toFixed(2)),
-                close: Number((c.close * ratio).toFixed(2)),
-              }));
-            }
-          }
-
-          const currentLast = baseCandles[baseCandles.length - 1];
           let next: Candle[];
 
           // Case 1: Tick falls into currently active bucket
           if (currentLast.openTime === currentBucketOpenTime) {
-            const rawOpen = currentLast.open;
-            const safeOpen = (rawOpen <= 0 || Math.abs(rawOpen - tick.price) / tick.price > 0.025)
-              ? tick.price
-              : rawOpen;
-            const top = Math.max(safeOpen, tick.price);
-            const bot = Math.min(safeOpen, tick.price);
-            const rawHigh = currentLast.high;
-            const safeHigh = Math.min(Math.max(rawHigh, top), Number((top * 1.01).toFixed(2)));
-            const rawLow = currentLast.low;
-            const safeLow = Math.max(Math.min(rawLow, bot), Number((bot * 0.99).toFixed(2)));
+            const open = currentLast.open > 0 ? currentLast.open : tick.price;
             const updated: Candle = {
               ...currentLast,
-              open: safeOpen,
+              open,
               close: tick.price,
-              high: safeHigh,
-              low: safeLow,
+              high: Math.max(currentLast.high, tick.price),
+              low: currentLast.low > 0 ? Math.min(currentLast.low, tick.price) : tick.price,
               volume: currentLast.volume + (tick.volume > 0 ? tick.volume : 1),
             };
-            next = [...baseCandles];
+            next = [...prev];
             next[next.length - 1] = updated;
           } else if (currentBucketOpenTime > currentLast.openTime) {
-            // Case 2: New time bucket started — start ONE single new candle stamped at currentBucketOpenTime
-            const safeOpen = (currentLast.close <= 0 || Math.abs(currentLast.close - tick.price) / tick.price > 0.025)
-              ? tick.price
-              : currentLast.close;
-            const top = Math.max(safeOpen, tick.price);
-            const bot = Math.min(safeOpen, tick.price);
+            // Case 2: New time bucket started — start clean new candle
             const newBar: Candle = {
               openTime: currentBucketOpenTime,
-              open: safeOpen,
-              high: Number((top * 1.005).toFixed(2)),
-              low: Number((bot * 0.995).toFixed(2)),
+              open: tick.price,
+              high: tick.price,
+              low: tick.price,
               close: tick.price,
               volume: tick.volume > 0 ? tick.volume : 1,
             };
-            next = [...baseCandles.slice(-999), newBar];
+            next = [...prev.slice(-999), newBar];
           } else {
-            // Case 3: Prior/matching sub-bucket update
-            const top = Math.max(currentLast.open, tick.price);
-            const bot = Math.min(currentLast.open, tick.price);
-            const safeHigh = Math.min(Math.max(currentLast.high, top), Number((top * 1.01).toFixed(2)));
-            const safeLow = Math.max(Math.min(currentLast.low, bot), Number((bot * 0.99).toFixed(2)));
+            // Case 3: Matching sub-bucket update
             const updated: Candle = {
               ...currentLast,
               close: tick.price,
-              high: safeHigh,
-              low: safeLow,
+              high: Math.max(currentLast.high, tick.price),
+              low: currentLast.low > 0 ? Math.min(currentLast.low, tick.price) : tick.price,
             };
-            next = [...baseCandles];
+            next = [...prev];
             next[next.length - 1] = updated;
           }
 
-          // Throttle save to storage every 4 seconds or on new candle
+          // Throttle save to storage every 4 seconds
           const nowTime = Date.now();
           if (nowTime - lastSaveTimeRef.current > 4000) {
             lastSaveTimeRef.current = nowTime;
@@ -525,7 +361,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     const live = getSymbolPrice(selectedSymbol);
     return (live && live.price > 0) ? live.price : getExpectedPrice(market, selectedSymbol);
   }, [market, selectedSymbol, getSymbolPrice]);
-  const safeDisplayPrice = (rawDisplayPrice > 0 && Math.abs(rawDisplayPrice - expectedBenchmarkPrice) / expectedBenchmarkPrice <= 0.15)
+  const safeDisplayPrice = (rawDisplayPrice > 0)
     ? rawDisplayPrice
     : expectedBenchmarkPrice;
   const displayPrice = safeDisplayPrice;
@@ -540,13 +376,11 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     const last = candles[candles.length - 1];
     if (!last || last.close === targetClose) return candles;
     const updated = [...candles];
-    const top = Math.max(last.open, targetClose);
-    const bot = Math.min(last.open, targetClose);
     updated[updated.length - 1] = {
       ...last,
       close: targetClose,
-      high: Math.min(Math.max(last.high, top), Number((top * 1.01).toFixed(2))),
-      low: Math.max(Math.min(last.low, bot), Number((bot * 0.99).toFixed(2))),
+      high: Math.max(last.high, targetClose),
+      low: (last.low > 0) ? Math.min(last.low, targetClose) : targetClose,
     };
     return updated;
   }, [candles, currentPrice, displayPrice]);
