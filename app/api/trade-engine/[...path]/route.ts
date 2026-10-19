@@ -302,8 +302,8 @@ async function fetchTradeEngineUsPrices(): Promise<any[]> {
 }
 
 async function getActiveUsPrices(): Promise<any[]> {
-  // Check 15-minute server cache
-  const cached = getCached('trade-engine-us-prices', 15 * 60 * 1000);
+  // Check 30-minute server cache
+  const cached = getCached('trade-engine-us-prices', 30 * 60 * 1000);
   if (cached && cached.length > 0) {
     return cached;
   }
@@ -341,8 +341,8 @@ export async function GET(
   // 1. Check in-memory cache for macro-data (Commodities & Forex via Yahoo Finance, 0 Twelve Data credits)
   if (pathStr === 'macro-data') {
     const isCommOpen = isMarketOpen('COMMODITY');
-    // Active session: 10m TTL (only 48 requests/hr across 8 symbols, <3% of Yahoo limit). Weekend closed: 60m TTL.
-    const ttl = isCommOpen ? (10 * 60 * 1000) : (60 * 60 * 1000);
+    // Active session: 30m TTL (only 30 requests/hr across 15 symbols, ~1.5% of Yahoo limit). Weekend closed: 60m TTL.
+    const ttl = isCommOpen ? (30 * 60 * 1000) : (60 * 60 * 1000);
 
     const cachedMacro = getCached(cacheKey, ttl);
     if (cachedMacro) {
