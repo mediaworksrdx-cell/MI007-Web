@@ -9,6 +9,7 @@ import { MarketToggle } from '@/components/market/MarketToggle';
 import { MarketType, MARKETS } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
+import { isSymbolMarketOpen } from '@/lib/marketHours';
 import { searchZerodhaStocks, findZerodhaStockBySymbol } from '@/lib/screener/zerodhaStocks';
 import { ChartContainer } from '@/components/chart/ChartContainer';
 
@@ -310,11 +311,17 @@ function IndexTile({
   const price = live ? live.price : base;
   const currentPct = live ? live.changePct : changePct;
   const up = currentPct >= 0;
+  const isOpen = isSymbolMarketOpen(symbol);
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
 
   useEffect(() => {
+    if (!isOpen) {
+      setFlash(null);
+      prevPriceRef.current = price;
+      return;
+    }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       setFlash(dir);
@@ -322,7 +329,7 @@ function IndexTile({
       const t = setTimeout(() => setFlash(null), 850);
       return () => clearTimeout(t);
     }
-  }, [price]);
+  }, [price, isOpen]);
 
   return (
     <div className="relative group">
@@ -332,9 +339,18 @@ function IndexTile({
       >
         <div className="flex items-start justify-between">
           <div className="min-w-0 pr-4">
-            <span className="mono text-[16px] font-black inst-card-text group-hover:text-emerald-500 transition-colors tracking-wide truncate block">
-              {symbol}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="mono text-[16px] font-black inst-card-text group-hover:text-emerald-500 transition-colors tracking-wide truncate block">
+                {symbol}
+              </span>
+              <span className={`mono text-[9px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
+                isOpen
+                  ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                  : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
+              }`}>
+                {isOpen ? '● LIVE' : 'CLOSED'}
+              </span>
+            </div>
             <div className="text-[13px] sm:text-[14px] inst-card-text-muted font-bold truncate">{name}</div>
           </div>
           <Sparkline symbol={symbol} up={up} changePct={currentPct} />
@@ -400,11 +416,17 @@ function WatchlistRow({
   const price = live ? live.price : base;
   const currentPct = live ? live.changePct : changePct;
   const up = currentPct >= 0;
+  const isOpen = isSymbolMarketOpen(symbol);
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
 
   useEffect(() => {
+    if (!isOpen) {
+      setFlash(null);
+      prevPriceRef.current = price;
+      return;
+    }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       setFlash(dir);
@@ -412,7 +434,7 @@ function WatchlistRow({
       const t = setTimeout(() => setFlash(null), 850);
       return () => clearTimeout(t);
     }
-  }, [price]);
+  }, [price, isOpen]);
 
   return (
     <div className="relative group">
@@ -425,7 +447,16 @@ function WatchlistRow({
         </div>
 
         <div className="flex-1 min-w-0">
-          <span className="mono text-[14px] sm:text-[16px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate block">{symbol}</span>
+          <div className="flex items-center gap-2">
+            <span className="mono text-[14px] sm:text-[16px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate block">{symbol}</span>
+            <span className={`mono text-[8.5px] px-1.5 py-0.2 rounded font-black uppercase tracking-wider ${
+              isOpen
+                ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
+            }`}>
+              {isOpen ? 'LIVE' : 'CLOSED'}
+            </span>
+          </div>
           <div className="text-[12px] sm:text-[14px] inst-card-text-muted font-bold truncate">{name}</div>
         </div>
 
@@ -511,9 +542,14 @@ function CryptoTile({
       >
         <div className="flex items-start justify-between">
           <div className="min-w-0 pr-4">
-            <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate block">
-              {item.symbol}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate block">
+                {item.symbol}
+              </span>
+              <span className="mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+                24/7
+              </span>
+            </div>
             <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[70px]">{item.name}</div>
           </div>
           <div className="scale-90 origin-top-right">
@@ -569,11 +605,17 @@ function CommodityTile({
   const price = live ? live.price : item.base;
   const currentPct = live ? live.changePct : item.changePct;
   const up = currentPct >= 0;
+  const isOpen = isSymbolMarketOpen(item.symbol);
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
 
   useEffect(() => {
+    if (!isOpen) {
+      setFlash(null);
+      prevPriceRef.current = price;
+      return;
+    }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       setFlash(dir);
@@ -581,7 +623,7 @@ function CommodityTile({
       const t = setTimeout(() => setFlash(null), 850);
       return () => clearTimeout(t);
     }
-  }, [price]);
+  }, [price, isOpen]);
 
   return (
     <div className="relative group">
@@ -596,8 +638,12 @@ function CommodityTile({
               <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
                 {item.symbol}
               </span>
-              <span className="mono text-[9px] px-1 py-0.2 rounded bg-amber-500/15 text-amber-500 font-bold shrink-0">
-                {item.category}
+              <span className={`mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
+                isOpen
+                  ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
+                  : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
+              }`}>
+                {isOpen ? item.category : 'CLOSED'}
               </span>
             </div>
             <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[110px]" title={item.name}>
@@ -662,11 +708,17 @@ function ForexTile({
   const price = live ? live.price : item.base;
   const currentPct = live ? live.changePct : item.changePct;
   const up = currentPct >= 0;
+  const isOpen = isSymbolMarketOpen(item.symbol);
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
 
   useEffect(() => {
+    if (!isOpen) {
+      setFlash(null);
+      prevPriceRef.current = price;
+      return;
+    }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       setFlash(dir);
@@ -674,7 +726,7 @@ function ForexTile({
       const t = setTimeout(() => setFlash(null), 850);
       return () => clearTimeout(t);
     }
-  }, [price]);
+  }, [price, isOpen]);
 
   return (
     <div className="relative group">
@@ -689,8 +741,12 @@ function ForexTile({
               <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
                 {item.pair}
               </span>
-              <span className="mono text-[9px] px-1 py-0.2 rounded bg-cyan-500/15 text-cyan-500 font-bold shrink-0">
-                FX
+              <span className={`mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
+                isOpen
+                  ? 'bg-cyan-500/15 text-cyan-500 border border-cyan-500/30'
+                  : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
+              }`}>
+                {isOpen ? 'FX LIVE' : 'CLOSED'}
               </span>
             </div>
             <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[110px]" title={item.name}>

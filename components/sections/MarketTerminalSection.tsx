@@ -4,6 +4,7 @@ import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useAppTheme } from '@/lib/themeContext';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
+import { isSymbolMarketOpen } from '@/lib/marketHours';
 
 interface CandleData {
   time: string;
@@ -188,9 +189,10 @@ export default function MarketTerminalSection() {
     setHoveredCandle(data[data.length - 1]);
   }, [activeSymbolIdx, activeSymbol.basePrice, generateInitialData]);
 
-  // Live real-time tick pulse simulator
+  // Live real-time tick pulse simulator (ONLY active when market for activeSymbol is OPEN)
   useEffect(() => {
     if (!isInView || candles.length === 0) return;
+    if (!isSymbolMarketOpen(activeSymbol.symbol)) return;
 
     const interval = setInterval(() => {
       setCandles((prev) => {
@@ -209,7 +211,7 @@ export default function MarketTerminalSection() {
     }, 900);
 
     return () => clearInterval(interval);
-  }, [isInView, candles.length, activeSymbol.basePrice]);
+  }, [isInView, candles.length, activeSymbol.basePrice, activeSymbol.symbol]);
 
   // Canvas Render Loop
   useEffect(() => {

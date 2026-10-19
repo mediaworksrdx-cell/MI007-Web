@@ -11,6 +11,7 @@ import {
   fetchMacroData,
   normalizeSymbolKey,
 } from './tradeEngineClient';
+import { isSymbolMarketOpen } from './marketHours';
 
 export interface LiveSymbolData {
   symbol: string;
@@ -278,19 +279,27 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
         const allKeys = Array.from(prev.keys()).filter(k => !k.includes('.') && !k.toLowerCase().includes('usdt'));
         if (allKeys.length === 0) return prev;
 
-        // Guarantee at least 2 core priority symbols (BTC/US) + 2 general symbols per pulse
+        const nowDate = new Date(now);
+        // Strictly filter to symbols whose markets are currently OPEN!
+        // Closed markets (e.g. India at night/weekends, UAE off-hours, US off-hours) MUST NOT TICK.
+        const availablePriority = PRIORITY_TICK_KEYS.filter(k => next.has(k) && isSymbolMarketOpen(k, nowDate));
+        const availableGeneral = allKeys.filter(k => isSymbolMarketOpen(k, nowDate));
+
+        if (availablePriority.length === 0 && availableGeneral.length === 0) return prev;
+
+        // Guarantee pulses only for currently OPEN market instruments (e.g. Crypto 24/7 or active session equities)
         const targetKeys: string[] = [];
-        const availablePriority = PRIORITY_TICK_KEYS.filter(k => next.has(k));
         for (let i = 0; i < 2 && availablePriority.length > 0; i++) {
           const pk = availablePriority[Math.floor(Math.random() * availablePriority.length)];
           if (!targetKeys.includes(pk)) targetKeys.push(pk);
         }
-        for (let i = 0; i < 2; i++) {
-          const rk = allKeys[Math.floor(Math.random() * allKeys.length)];
+        for (let i = 0; i < 2 && availableGeneral.length > 0; i++) {
+          const rk = availableGeneral[Math.floor(Math.random() * availableGeneral.length)];
           if (!targetKeys.includes(rk)) targetKeys.push(rk);
         }
 
         for (const randKey of targetKeys) {
+          if (!isSymbolMarketOpen(randKey, nowDate)) continue;
           const entry = next.get(randKey);
           if (!entry || entry.price <= 0) continue;
 

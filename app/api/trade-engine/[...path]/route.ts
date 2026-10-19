@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isMarketOpen } from '@/lib/marketHours';
 
 const TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
 
@@ -38,7 +39,8 @@ async function fetchFallbackCrypto(): Promise<any[]> {
 
 function getUsLiveBenchmarks(): any[] {
   const now = Date.now();
-  const timeDrift = (Math.sin(now / 5000) * 0.0004);
+  const isUsOpen = isMarketOpen('USA', new Date(now));
+  const timeDrift = isUsOpen ? (Math.sin(now / 5000) * 0.0004) : 0;
   const items = [
     { instrumentToken: 900001, symbol: 'SPX', base: 7703.58, change: 44.14, changePercent: 0.58 },
     { instrumentToken: 900002, symbol: 'S&P 500', base: 7703.58, change: 44.14, changePercent: 0.58 },
