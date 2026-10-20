@@ -1583,7 +1583,6 @@ export default function TerminalPage() {
               <>
                 <SectionHeader
                   title="Core Indices"
-                  badge={`${indices.length} ACTIVE`}
                   isEditing={isEditing}
                   onToggleEdit={() => setIsEditing(v => !v)}
                   onResetDefaults={handleResetDefaults}
