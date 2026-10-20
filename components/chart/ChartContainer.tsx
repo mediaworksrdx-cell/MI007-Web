@@ -181,10 +181,12 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         const legacyCustom = localStorage.getItem('mi007_indicator_configs');
         const customMap = legacyCustom ? JSON.parse(legacyCustom) : {};
         if (Array.isArray(types) && types.length > 0) {
-          return types.map((t, idx) => {
+          const list: IndicatorConfig[] = [];
+          types.forEach((t, idx) => {
             const d = INDICATOR_DEFAULTS[t];
+            if (!d) return;
             const c = customMap[t] || {};
-            return {
+            list.push({
               id: `${t.toLowerCase()}-${Date.now()}-${idx}`,
               type: t,
               period: c.period ?? d.period,
@@ -195,14 +197,20 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
               secondaryColor: c.secondaryColor ?? d.secondaryColor,
               tertiaryColor: c.tertiaryColor ?? d.tertiaryColor,
               enabled: true,
-            };
+            });
           });
+          return list;
         }
       }
     } catch {}
     return [];
   });
   const [editingIndicatorId, setEditingIndicatorId] = useState<string | null>(null);
+
+  // Template System: 5 renameable slots with persistent storage
+  const [templates, setTemplates] = useState<ChartTemplate[]>(() => getStoredTemplates());
+  const [activeTemplateId, setActiveTemplateIdState] = useState<string>(() => getActiveTemplateId());
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
 
   // Active indicator types set (for backward compatibility)
   const activeIndicators = useMemo(() => {
@@ -970,7 +978,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     ctx.textBaseline = 'middle';
     ctx.font = `${Math.round(10.5 * dpr)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     ctx.fillStyle = '#94A3B8';
-    const activeIndNames = indicatorConfigs.map(c => `${INDICATOR_DEFAULTS[c.type].label}(${c.period})`);
+    const activeIndNames = indicatorConfigs.map(c => `${INDICATOR_DEFAULTS[c.type]?.label || c.type}(${c.period})`);
     if (showSmcOverlay) activeIndNames.push('SMC Pro');
     if (showVolumeProfile) activeIndNames.push('VPVR');
     const indString = activeIndNames.length > 0 ? `Active: ${activeIndNames.join(' · ')}` : 'Clean Technical View';

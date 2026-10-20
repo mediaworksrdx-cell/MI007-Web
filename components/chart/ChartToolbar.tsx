@@ -291,7 +291,7 @@ export function ChartToolbar({
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cfg.color }} />
                             <span className={`font-mono text-xs truncate ${cfg.enabled ? 'font-bold text-slate-800 dark:text-slate-100' : 'text-slate-400 line-through'}`}>
-                              {INDICATOR_DEFAULTS[cfg.type].label} ({cfg.period})
+                              {INDICATOR_DEFAULTS[cfg.type]?.label || cfg.type} ({cfg.period})
                             </span>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
