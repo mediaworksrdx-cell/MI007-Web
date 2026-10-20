@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import type { DrawingItem, FibLevelItem } from '@/lib/drawingTypes';
+import type { Candle } from '@/lib/types';
+import { resolveDrawingPointIndex } from '@/lib/chartRenderer';
 
 interface DrawingSettingsModalProps {
   isOpen: boolean;
   drawing: DrawingItem | null;
+  candles?: Candle[];
   onClose: () => void;
   onSave: (updated: DrawingItem) => void;
 }
@@ -31,6 +34,7 @@ const PRESET_COLORS = [
 export function DrawingSettingsModal({
   isOpen,
   drawing,
+  candles,
   onClose,
   onSave,
 }: DrawingSettingsModalProps) {
@@ -80,15 +84,20 @@ export function DrawingSettingsModal({
 
     if (drawing.points && drawing.points.length > 0) {
       setPointCoords(
-        drawing.points.map((p) => ({
-          price: p.price != null ? Number(p.price).toFixed(2) : '0.00',
-          index: p.index != null ? String(p.index) : '0',
-        }))
+        drawing.points.map((p) => {
+          const resolvedIdx = (candles && candles.length > 0)
+            ? resolveDrawingPointIndex(p, candles)
+            : p.index;
+          return {
+            price: p.price != null ? String(p.price) : '0',
+            index: String(resolvedIdx ?? 0),
+          };
+        })
       );
     } else {
       setPointCoords([]);
     }
-  }, [drawing]);
+  }, [drawing, candles]);
 
   if (!isOpen || !drawing || !mounted) return null;
 
@@ -147,10 +156,37 @@ export function DrawingSettingsModal({
       if (!coord) return p;
       const parsedPrice = parseFloat(coord.price);
       const parsedIndex = parseInt(coord.index, 10);
+      const finalPrice = !isNaN(parsedPrice) ? parsedPrice : p.price;
+      const finalIndex = !isNaN(parsedIndex) ? parsedIndex : p.index;
+
+      // Crucial: Calculate exact timestamp for finalIndex using candles
+      // so resolveDrawingPointIndex will never overwrite or revert the user's coordinate!
+      let newTime = p.time;
+      if (!isNaN(parsedIndex) && candles && candles.length > 0) {
+        if (parsedIndex >= 0 && parsedIndex < candles.length) {
+          newTime = candles[parsedIndex].openTime;
+        } else if (parsedIndex >= candles.length) {
+          const lastBar = candles[candles.length - 1];
+          const prevBar = candles[candles.length - 2];
+          const barDuration = (prevBar && lastBar.openTime > prevBar.openTime)
+            ? (lastBar.openTime - prevBar.openTime)
+            : 86_400_000;
+          newTime = lastBar.openTime + (parsedIndex - (candles.length - 1)) * barDuration;
+        } else {
+          const firstBar = candles[0];
+          const secondBar = candles[1];
+          const barDuration = (secondBar && secondBar.openTime > firstBar.openTime)
+            ? (secondBar.openTime - firstBar.openTime)
+            : 86_400_000;
+          newTime = firstBar.openTime + parsedIndex * barDuration;
+        }
+      }
+
       return {
         ...p,
-        price: !isNaN(parsedPrice) ? parsedPrice : p.price,
-        index: !isNaN(parsedIndex) ? parsedIndex : p.index,
+        price: finalPrice,
+        index: finalIndex,
+        time: newTime,
       };
     });
 
@@ -166,6 +202,8 @@ export function DrawingSettingsModal({
       text: text.trim() || undefined,
       fontSize,
       textAlign,
+      entryPrice: updatedPoints[0]?.price,
+      stopPrice: updatedPoints[1]?.price,
       riskRewardRatio: isRiskRewardTool ? riskRewardRatio : drawing.riskRewardRatio,
       fibLevels: isFibTool ? fibLevels : drawing.fibLevels,
       visibilityIntervals: [
@@ -278,49 +316,71 @@ export function DrawingSettingsModal({
                 Enter exact numerical price levels below to position the drawing with pinpoint accuracy.
               </div>
 
-              {pointCoords.map((coord, idx) => (
-                <div
-                  key={idx}
-                  className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5"
-                >
-                  <div className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                    <span>Point {idx + 1} Coordinates</span>
-                    <span className="font-mono text-[10px] text-slate-400">Anchor #{idx + 1}</span>
-                  </div>
+              {pointCoords.map((coord, idx) => {
+                const bIdx = parseInt(coord.index, 10);
+                let barTimeLabel: string | null = null;
+                if (!isNaN(bIdx) && candles && candles.length > 0) {
+                  if (bIdx >= 0 && bIdx < candles.length) {
+                    const d = new Date(candles[bIdx].openTime);
+                    barTimeLabel = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                  } else if (bIdx >= candles.length) {
+                    barTimeLabel = `+${bIdx - candles.length + 1} bars ahead (Future Projection)`;
+                  }
+                }
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Exact Price Input */}
-                    <div>
-                      <label className="block text-[10.5px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                        Price {idx + 1}
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={coord.price}
-                        onChange={(e) => handlePriceChange(idx, e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#1e222d] text-slate-900 dark:text-slate-100 font-mono font-bold text-xs focus:outline-hidden focus:border-blue-500"
-                        placeholder="0.00"
-                      />
+                return (
+                  <div
+                    key={idx}
+                    className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5"
+                  >
+                    <div className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                      <span>Point {idx + 1} Coordinates</span>
+                      <span className="font-mono text-[10px] text-slate-400">Anchor #{idx + 1}</span>
                     </div>
 
-                    {/* Bar # / Time index */}
-                    <div>
-                      <label className="block text-[10.5px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                        Bar #{idx + 1}
-                      </label>
-                      <input
-                        type="number"
-                        step="1"
-                        value={coord.index}
-                        onChange={(e) => handleIndexChange(idx, e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#1e222d] text-slate-900 dark:text-slate-100 font-mono font-bold text-xs focus:outline-hidden focus:border-blue-500"
-                        placeholder="0"
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Exact Price Input */}
+                      <div>
+                        <label className="block text-[10.5px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                          Price {idx + 1}
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={coord.price}
+                          onChange={(e) => handlePriceChange(idx, e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+                          className="w-full px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#1e222d] text-slate-900 dark:text-slate-100 font-mono font-bold text-xs focus:outline-hidden focus:border-blue-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+
+                      {/* Bar # / Time index */}
+                      <div>
+                        <label className="block text-[10.5px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                          Bar #{idx + 1}
+                        </label>
+                        <input
+                          type="number"
+                          step="1"
+                          value={coord.index}
+                          onChange={(e) => handleIndexChange(idx, e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+                          className="w-full px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#1e222d] text-slate-900 dark:text-slate-100 font-mono font-bold text-xs focus:outline-hidden focus:border-blue-500"
+                          placeholder="0"
+                        />
+                      </div>
                     </div>
+
+                    {barTimeLabel && (
+                      <div className="text-[10.5px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5 pt-0.5">
+                        <span className="opacity-70">Timestamp:</span>
+                        <span className="font-semibold text-blue-600 dark:text-blue-400">{barTimeLabel}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {/* For Risk-Reward: Target Ratio Input */}
               {isRiskRewardTool && (

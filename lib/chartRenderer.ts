@@ -260,9 +260,13 @@ export function resolveDrawingPointIndex(
   pt: { index: number; time?: number },
   candles: Candle[]
 ): number {
-  let idx = pt.index;
-  if (pt.time && candles && candles.length > 0) {
-    if (candles[idx]?.openTime !== pt.time) {
+  if (!candles || candles.length === 0) return pt.index ?? 0;
+  let idx = pt.index ?? 0;
+  const lastIdx = candles.length - 1;
+
+  // If point is within known candle history
+  if (idx >= 0 && idx <= lastIdx) {
+    if (pt.time && candles[idx]?.openTime !== pt.time) {
       let bestIdx = idx;
       let minDiff = Infinity;
       for (let i = 0; i < candles.length; i++) {
@@ -274,8 +278,26 @@ export function resolveDrawingPointIndex(
       }
       idx = bestIdx;
     }
+    return idx;
   }
-  return Math.max(0, Math.min((candles?.length || 1) - 1, idx));
+
+  // If point is projected forward into future/buffer bars
+  if (idx > lastIdx) {
+    if (pt.time && candles[lastIdx]) {
+      const lastBar = candles[lastIdx];
+      const prevBar = candles[lastIdx - 1];
+      const barDuration = (prevBar && lastBar.openTime > prevBar.openTime)
+        ? (lastBar.openTime - prevBar.openTime)
+        : 86_400_000;
+      if (pt.time > lastBar.openTime) {
+        const projectedOffset = Math.round((pt.time - lastBar.openTime) / barDuration);
+        return lastIdx + Math.max(1, projectedOffset);
+      }
+    }
+    return idx;
+  }
+
+  return Math.max(0, idx);
 }
 
 /**

@@ -1097,6 +1097,19 @@ export function CandlestickCanvas({
       try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
     }
     if (adjustingRef.current) {
+      const pt = getPointFromEvent(e.clientX, e.clientY);
+      if (pt) {
+        const target = drawings.find(d => d.id === adjustingRef.current!.drawingId);
+        if (target) {
+          const updatedPoints = target.points.map((p, pIdx) => {
+            if (pIdx === adjustingRef.current!.pointIdx) {
+              return { index: pt.index, time: pt.time, price: pt.price };
+            }
+            return { ...p, index: resolveDrawingPointIndex(p, cleanCandles) };
+          });
+          onUpdateDrawing?.({ ...target, points: updatedPoints });
+        }
+      }
       adjustingRef.current = null;
       setIsAdjustingDrawing(false);
       try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
@@ -1274,19 +1287,27 @@ export function CandlestickCanvas({
 
       // 1. Check if clicking near any existing drawing endpoint to adjust it
       let targetAdjust: { drawingId: string; pointIdx: number } | null = null;
-      for (const d of drawings) {
+      let minAdjustDist = 24;
+
+      // Prioritize selected drawing's points first so clicking its anchors always adjusts them
+      const prioritizedDrawings = selectedDrawingId
+        ? [...drawings.filter(d => d.id === selectedDrawingId), ...drawings.filter(d => d.id !== selectedDrawingId)]
+        : drawings;
+
+      for (const d of prioritizedDrawings) {
         if (d.locked || d.hidden) continue;
         for (let i = 0; i < d.points.length; i++) {
           const p = d.points[i];
           const idx = resolveDrawingPointIndex(p, cleanCandles);
           const ptX = (idx - startIdx) * candleW + candleW / 2;
           const ptY = chartH * (1 - (p.price - pMin) / pRange);
-          if (Math.hypot(x - ptX, y - ptY) <= 24) {
+          const dist = Math.hypot(x - ptX, y - ptY);
+          if (dist <= minAdjustDist) {
+            minAdjustDist = dist;
             targetAdjust = { drawingId: d.id, pointIdx: i };
-            break;
           }
         }
-        if (targetAdjust) break;
+        if (targetAdjust && d.id === selectedDrawingId && minAdjustDist <= 16) break;
       }
 
       if (targetAdjust) {
@@ -1417,6 +1438,7 @@ export function CandlestickCanvas({
       if (reqPoints > 0 && committedPointsRef.current.length + 1 >= reqPoints) {
         // Final point!
         const finalPoints = [...committedPointsRef.current, { index: pt.index, time: pt.time, price: pt.price }];
+        const newDrawingId = drawingInProgress!.id;
         if (activeDrawingTool === 'CALLOUT') {
           const text = window.prompt('Enter callout annotation note:', 'Key Pivot');
           onAddDrawing?.({
@@ -1432,6 +1454,7 @@ export function CandlestickCanvas({
             completed: true,
           });
         }
+        onSelectDrawing?.(newDrawingId);
         committedPointsRef.current = [];
         setDrawingInProgress(null);
         if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
@@ -1799,9 +1822,27 @@ export function CandlestickCanvas({
       <DrawingSettingsModal
         isOpen={isSettingsModalOpen}
         drawing={selectedDrawing || null}
+        candles={cleanCandles}
         onClose={() => setIsSettingsModalOpen(false)}
         onSave={(updated) => {
-          onUpdateDrawing?.(updated);
+          // Re-sync timestamps with cleanCandles to guarantee 100% exact alignment
+          const syncedPoints = updated.points.map(p => {
+            let time = p.time;
+            if (cleanCandles.length > 0) {
+              if (p.index >= 0 && p.index < cleanCandles.length) {
+                time = cleanCandles[p.index].openTime;
+              } else if (p.index >= cleanCandles.length) {
+                const lastBar = cleanCandles[cleanCandles.length - 1];
+                const prevBar = cleanCandles[cleanCandles.length - 2];
+                const barDuration = (prevBar && lastBar.openTime > prevBar.openTime)
+                  ? (lastBar.openTime - prevBar.openTime)
+                  : 86_400_000;
+                time = lastBar.openTime + (p.index - (cleanCandles.length - 1)) * barDuration;
+              }
+            }
+            return { ...p, time };
+          });
+          onUpdateDrawing?.({ ...updated, points: syncedPoints });
         }}
       />
 
