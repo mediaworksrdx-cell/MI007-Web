@@ -308,7 +308,7 @@ export default function HeroSection() {
           transition={{ duration: 0.7, delay: 0.35 }}
           className="text-2xl xs:text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black tracking-[-0.02em] leading-tight page-heading"
         >
-          <span className="hero-title-gradient whitespace-nowrap inline-block">
+          <span className="hero-title-gradient whitespace-normal sm:whitespace-nowrap inline-block">
             MARKET INTELLIGENCE MI-007
           </span>
         </motion.h1>
@@ -318,7 +318,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.38 }}
-          className="mono text-[11px] xs:text-[12px] sm:text-[15px] md:text-[17px] font-extrabold uppercase tracking-[0.22em] sm:tracking-[0.28em] text-emerald-500 mt-2.5 sm:mt-3.5 mb-3 sm:mb-5"
+          className="mono text-[11px] xs:text-[12px] sm:text-[15px] md:text-[17px] font-extrabold uppercase tracking-[0.16em] xs:tracking-[0.22em] sm:tracking-[0.28em] text-emerald-500 mt-2.5 sm:mt-3.5 mb-3 sm:mb-5"
         >
           Intelligence Beyond the Noise
         </motion.div>

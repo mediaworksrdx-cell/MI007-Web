@@ -155,18 +155,18 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             />
           </div>
           <div className="flex flex-col leading-tight min-w-0 justify-center">
-            <span className="navbar-brand-title font-black text-[13.5px] xs:text-[15px] sm:text-[17px] md:text-[18px] tracking-tight uppercase font-sans whitespace-nowrap">
+            <span className="navbar-brand-title font-black text-[12.5px] xs:text-[14.5px] sm:text-[17px] md:text-[18px] tracking-tight uppercase font-sans truncate sm:whitespace-nowrap">
               MARKET INTELLIGENCE MI-007
             </span>
-            {/* Tagline Always Visible */}
-            <span className="navbar-brand-subtitle block text-[9px] xs:text-[9.5px] sm:text-[11px] tracking-[0.16em] sm:tracking-[0.18em] font-extrabold uppercase font-mono mt-0.5 whitespace-nowrap">
+            {/* Tagline Always Visible on screens >= xs */}
+            <span className="navbar-brand-subtitle text-[8.5px] xs:text-[9.5px] sm:text-[11px] tracking-[0.14em] sm:tracking-[0.18em] font-extrabold uppercase font-mono mt-0.5 truncate hidden xs:block">
               Intelligence Beyond the Noise
             </span>
           </div>
         </Link>
 
         {/* ── Desktop Nav Links (High Contrast, Clear Active State) ── */}
-        <nav className="hidden md:flex items-center gap-1.5">
+        <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2">
           {(isTerminalOrDashboard ? TERMINAL_NAV_LINKS : PUBLIC_NAV_LINKS).map(({ href, label }) => {
             const isActive =
               pathname === href ||
@@ -433,7 +433,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           <button
             type="button"
             aria-label="Toggle navigation menu"
-            className="md:hidden flex items-center justify-center min-h-[44px] min-w-[44px] p-2 rounded-xl touch-manipulation cursor-pointer opacity-80 hover:opacity-100"
+            className="lg:hidden flex items-center justify-center min-h-[44px] min-w-[44px] p-2 rounded-xl touch-manipulation cursor-pointer opacity-80 hover:opacity-100"
             onClick={() => setMenuOpen((v) => !v)}
           >
             <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
@@ -452,7 +452,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
       {/* ── Mobile Menu with iOS Safe Area Handling ── */}
       {menuOpen && (
-        <div className="md:hidden mobile-drawer-panel border-t px-4 py-3 pb-6 safe-bottom flex flex-col gap-2 shadow-xl max-h-[calc(100dvh-5.5rem)] overflow-y-auto">
+        <div className="lg:hidden mobile-drawer-panel border-t px-4 py-3 pb-6 safe-bottom flex flex-col gap-2 shadow-xl max-h-[calc(100dvh-5.5rem)] overflow-y-auto">
           {/* Mobile Quick Action Buttons: Combined Settings & Login */}
           <div className="py-2.5 border-b border-current opacity-90 mb-2 flex items-center gap-2">
             <button

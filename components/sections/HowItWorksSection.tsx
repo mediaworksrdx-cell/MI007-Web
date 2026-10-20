@@ -23,9 +23,9 @@ export default function HowItWorksSection() {
           transition={{ duration: 0.8 }}
           className="text-center mb-12"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text whitespace-nowrap">
+          <div className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs max-w-full">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+            <span className="mono text-[10.5px] xs:text-[12px] sm:text-[13px] tracking-[0.14em] xs:tracking-[0.18em] sm:tracking-[0.25em] uppercase font-black page-section-pill-text truncate">
               03 // MARKET INTELLIGENCE MI-007 ANALYSIS
             </span>
           </div>

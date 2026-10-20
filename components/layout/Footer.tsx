@@ -5,17 +5,18 @@ import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 export function Footer() {
   return (
     <footer className="border-t footer-panel mt-auto">
-      <div className="mx-auto max-w-[1600px] px-6 py-10">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
-          {/* Brand Column */}
-          <div className="md:col-span-5 lg:col-span-4 flex flex-col gap-3">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 flex-shrink-0 flex items-center justify-center overflow-visible">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-10 sm:py-12">
+        {/* Responsive Grid: Stacks cleanly on mobile, dedicated top brand banner on tablet, 12-col layout on desktop */}
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+          {/* Brand Column: Spans full width on tablet (sm:col-span-2) so it NEVER squishes the links, and 4 cols on lg */}
+          <div className="sm:col-span-2 lg:col-span-4 flex flex-col gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 md:gap-5">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 flex-shrink-0 flex items-center justify-center overflow-visible">
                 <Falcon3DLogo
                   src="/images/logo-falcon-transparent.png"
                   alt="MARKET INTELLIGENCE MI-007"
-                  width={112}
-                  height={112}
+                  width={96}
+                  height={96}
                   className="w-full h-full object-contain"
                   popoutScale={1.1}
                 />
@@ -23,7 +24,7 @@ export function Footer() {
               <div className="min-w-0">
                 <div className="leading-tight">
                   <span
-                    className="font-extrabold text-[15px] sm:text-[17px] md:text-[18px] uppercase font-sans tracking-tight footer-brand-title text-white whitespace-nowrap"
+                    className="font-extrabold text-[15px] sm:text-[17px] md:text-[18px] uppercase font-sans tracking-tight footer-brand-title text-white block"
                     style={{ color: '#FFFFFF' }}
                   >
                     MARKET INTELLIGENCE MI-007
@@ -31,7 +32,7 @@ export function Footer() {
                 </div>
 
                 <div
-                  className="text-[11px] sm:text-[12px] tracking-[0.18em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-200 whitespace-nowrap"
+                  className="text-[10.5px] sm:text-[11.5px] md:text-[12px] tracking-[0.16em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-200"
                   style={{ color: '#E2E8F0' }}
                 >
                   <span>Intelligence Beyond the Noise</span>
@@ -47,7 +48,7 @@ export function Footer() {
             </div>
 
             {/* Market Regional Chips */}
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex flex-wrap items-center gap-2 mt-1">
               <span
                 className="footer-chip rounded-md px-2.5 py-1 text-[11px] font-bold font-mono tracking-wide shadow-2xs border text-white"
                 style={{ color: '#FFFFFF' }}
@@ -70,7 +71,7 @@ export function Footer() {
           </div>
 
           {/* Platform Column */}
-          <div className="md:col-span-2 lg:col-span-2">
+          <div className="sm:col-span-1 lg:col-span-2">
             <h4
               className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading text-white"
               style={{ color: '#FFFFFF' }}
@@ -81,7 +82,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/"
-                  className="text-[15px] font-semibold footer-link text-white transition-colors"
+                  className="text-[14px] sm:text-[15px] font-semibold footer-link text-white transition-colors"
                   style={{ color: '#FFFFFF' }}
                 >
                   Home
@@ -90,7 +91,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/about"
-                  className="text-[15px] font-semibold footer-link text-white transition-colors"
+                  className="text-[14px] sm:text-[15px] font-semibold footer-link text-white transition-colors"
                   style={{ color: '#FFFFFF' }}
                 >
                   About Us
@@ -99,7 +100,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/contact"
-                  className="text-[15px] font-semibold footer-link text-white transition-colors"
+                  className="text-[14px] sm:text-[15px] font-semibold footer-link text-white transition-colors"
                   style={{ color: '#FFFFFF' }}
                 >
                   Contact
@@ -109,14 +110,14 @@ export function Footer() {
           </div>
 
           {/* Coverage Column */}
-          <div className="md:col-span-3 lg:col-span-3">
+          <div className="sm:col-span-1 lg:col-span-3">
             <h4
               className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading text-white"
               style={{ color: '#FFFFFF' }}
             >
               Coverage
             </h4>
-            <ul className="flex flex-col gap-2 text-[15px] font-semibold footer-list text-white">
+            <ul className="flex flex-col gap-2 text-[14px] sm:text-[15px] font-semibold footer-list text-white">
               <li>
                 <span style={{ color: '#F1F5F9' }}>🇺🇸 S&P 500 · NASDAQ 100 · DOW JONES</span>
               </li>
@@ -126,7 +127,7 @@ export function Footer() {
               <li>
                 <span style={{ color: '#F1F5F9' }}>🇦🇪 DFMGI · ADXGI · FTSE ADX 15</span>
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex items-center gap-2 flex-wrap">
                 <span style={{ color: '#F1F5F9' }}>🇪🇺 DAX · FTSE 100 · CAC 40</span>
                 <span
                   className="footer-coming-soon text-[10px] mono font-bold px-1.5 py-0.5 rounded"
@@ -135,7 +136,7 @@ export function Footer() {
                   COMING SOON
                 </span>
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex items-center gap-2 flex-wrap">
                 <span style={{ color: '#F1F5F9' }}>🇦🇺 ASX 200 · SPI 200</span>
                 <span
                   className="footer-coming-soon text-[10px] mono font-bold px-1.5 py-0.5 rounded"
@@ -148,14 +149,14 @@ export function Footer() {
           </div>
 
           {/* Legal / Compliance Column */}
-          <div className="md:col-span-2 lg:col-span-3">
+          <div className="sm:col-span-2 lg:col-span-3">
             <h4
               className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading text-white"
               style={{ color: '#FFFFFF' }}
             >
               Legal
             </h4>
-            <ul className="flex flex-col gap-2 text-[15px] font-semibold leading-relaxed footer-list text-white">
+            <ul className="flex flex-col gap-2 text-[13.5px] sm:text-[14px] font-semibold leading-relaxed footer-list text-white">
               <li>
                 <span style={{ color: '#F1F5F9' }}>For informational purposes only.</span>
               </li>

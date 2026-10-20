@@ -53,7 +53,7 @@ export default function CinematicHomePage() {
         </div>
 
         {/* 07. Final CTA — Institutional Access */}
-        <div id="final-cta" className="bg-transparent" style={{ minHeight: '100vh', pointerEvents: 'auto' }}>
+        <div id="final-cta" className="bg-transparent" style={{ pointerEvents: 'auto' }}>
           <FinalCTASection />
         </div>
 

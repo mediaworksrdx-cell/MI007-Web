@@ -37,9 +37,9 @@ export default function AboutSection() {
           transition={{ duration: 0.8 }}
           className="text-center mb-12"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-cyan-600 animate-pulse" />
-            <span className="mono text-[13px] tracking-[0.25em] uppercase font-black page-section-pill-text">
+          <div className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1 rounded-full border page-section-pill mb-3 shadow-xs max-w-full">
+            <span className="w-2 h-2 rounded-full bg-cyan-600 animate-pulse shrink-0" />
+            <span className="mono text-[10.5px] xs:text-[12px] sm:text-[13px] tracking-[0.14em] xs:tracking-[0.18em] sm:tracking-[0.25em] uppercase font-black page-section-pill-text truncate">
               02 // MARKET INTELLIGENCE MI-007
             </span>
           </div>
@@ -174,7 +174,7 @@ export default function AboutSection() {
         </motion.div>
 
         {/* 5-Stage Forces Matrix */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
           {forces.map((force, i) => (
             <motion.div
               key={force.id}

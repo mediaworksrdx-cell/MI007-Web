@@ -14,7 +14,7 @@ export default function FinalCTASection() {
     <section
       ref={containerRef}
       id="final-cta"
-      className="relative min-h-screen flex flex-col items-center justify-center bg-transparent z-10 px-4 sm:px-6 py-12 sm:py-16"
+      className="relative flex flex-col items-center justify-center bg-transparent z-10 px-4 sm:px-6 py-16 sm:py-20 md:py-24"
     >
       {/* Clean Ambient Obsidian Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,136,0.06)_0%,transparent_70%)] pointer-events-none" />
@@ -23,7 +23,7 @@ export default function FinalCTASection() {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={isInView ? { opacity: 1, scale: 1 } : {}}
         transition={{ duration: 0.8, ease: 'easeOut' }}
-        className="flex flex-col items-center text-center max-w-3xl mx-auto w-full relative z-10 p-8 sm:p-12 md:p-14 rounded-3xl border final-cta-card shadow-xl my-auto"
+        className="flex flex-col items-center text-center max-w-3xl mx-auto w-full relative z-10 p-8 sm:p-12 md:p-14 rounded-3xl border final-cta-card shadow-xl"
       >
         {/* Falcon Emblem Logo Composed Neatly Into Card */}
         <div className="mb-4 sm:mb-5 relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 flex items-center justify-center">
@@ -39,7 +39,7 @@ export default function FinalCTASection() {
 
         <h2 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight mb-2 sm:mb-3 final-cta-title flex flex-col items-center justify-center gap-1">
           <span>Step Into</span>
-          <span className="whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">
+          <span className="whitespace-normal sm:whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500">
             MARKET INTELLIGENCE MI-007
           </span>
         </h2>
