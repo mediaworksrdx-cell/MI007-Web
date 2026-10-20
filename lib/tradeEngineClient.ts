@@ -85,6 +85,30 @@ export function normalizeSymbolKey(sym: string): string {
   if (clean === 'BNB' || clean === 'BINANCECOIN') {
     return 'BNB';
   }
+  if (clean === 'DOGE' || clean === 'DOGECOIN') {
+    return 'DOGE';
+  }
+  if (clean === 'SHIB' || clean === 'SHIBAINU') {
+    return 'SHIB';
+  }
+  if (clean === 'XRP' || clean === 'RIPPLE') {
+    return 'XRP';
+  }
+  if (clean === 'ADA' || clean === 'CARDANO') {
+    return 'ADA';
+  }
+  if (clean === 'AVAX' || clean === 'AVALANCHE') {
+    return 'AVAX';
+  }
+  if (clean === 'DOT' || clean === 'POLKADOT') {
+    return 'DOT';
+  }
+  if (clean === 'LINK' || clean === 'CHAINLINK') {
+    return 'LINK';
+  }
+  if (clean === 'MATIC' || clean === 'POLYGON' || clean === 'POL') {
+    return 'MATIC';
+  }
 
   return clean;
 }

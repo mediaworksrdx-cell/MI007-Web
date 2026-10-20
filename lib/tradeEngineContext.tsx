@@ -100,9 +100,12 @@ const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number;
   { symbol: 'BNB', price: 727.00, change: 15.40, changePct: 2.16 },
   { symbol: 'DOGE', price: 0.079, change: 0.0018, changePct: 2.31 },
   { symbol: 'SHIB', price: 0.0000185, change: -0.00000015, changePct: -0.85 },
-  { symbol: 'XRP', price: 0.60, change: 0.008, changePct: 1.35 },
-  { symbol: 'ADA', price: 0.45, change: 0.006, changePct: 1.35 },
-  { symbol: 'AVAX', price: 28.50, change: 0.45, changePct: 1.60 },
+  { symbol: 'XRP', price: 1.31, change: 0.015, changePct: 1.15 },
+  { symbol: 'ADA', price: 0.218, change: 0.002, changePct: 0.92 },
+  { symbol: 'AVAX', price: 9.60, change: 0.12, changePct: 1.26 },
+  { symbol: 'DOT', price: 1.16, change: -0.01, changePct: -0.85 },
+  { symbol: 'LINK', price: 12.09, change: 0.18, changePct: 1.51 },
+  { symbol: 'MATIC', price: 0.126, change: 0.001, changePct: 0.80 },
 
   // Macro Commodities
   { symbol: 'GOLD', price: 2650.50, change: 11.80, changePct: 0.45 },
@@ -235,19 +238,23 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               ? c.current_price > prevEntry.price ? 'up' : c.current_price < prevEntry.price ? 'down' : 'neutral'
               : 'neutral';
 
+            const chgPct = Number.isFinite(c.price_change_percentage_24h) ? Number(c.price_change_percentage_24h) : 0;
             const data: LiveSymbolData = {
               symbol: c.symbol.toUpperCase(),
               price: c.current_price,
-              change: (c.current_price * c.price_change_percentage_24h) / 100,
-              changePct: c.price_change_percentage_24h,
+              change: (c.current_price * chgPct) / 100,
+              changePct: chgPct,
               timestamp: now,
               tickDirection,
               lastUpdated: now,
             };
             next.set(key, data);
             next.set(c.symbol.toUpperCase(), data);
+            next.set(c.symbol.toLowerCase(), data);
             next.set(c.id.toLowerCase(), data);
             next.set(`${c.symbol.toUpperCase()}USDT`, data);
+            next.set(`${c.symbol.toUpperCase()}-USD`, data);
+            next.set(`${c.symbol.toUpperCase()}/USD`, data);
           }
           return next;
         });

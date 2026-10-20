@@ -59,11 +59,12 @@ export const MASTER_CHART_INSTRUMENTS: ChartInstrumentItem[] = [
   { symbol: 'BNB', name: 'Binance Coin', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 727.00, sector: 'Exchange Ecosystem' },
   { symbol: 'DOGE', name: 'Dogecoin', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.079, sector: 'Meme & Payment' },
   { symbol: 'SHIB', name: 'Shiba Inu', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.0000185, sector: 'Meme Ecosystem' },
-  { symbol: 'XRP', name: 'Ripple XRP', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.60, sector: 'Cross-Border Payments' },
-  { symbol: 'ADA', name: 'Cardano', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.38, sector: 'Proof of Stake L1' },
-  { symbol: 'AVAX', name: 'Avalanche', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 28.50, sector: 'Layer 1' },
-  { symbol: 'LINK', name: 'Chainlink', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 14.50, sector: 'Oracle Network' },
-  { symbol: 'MATIC', name: 'Polygon', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.42, sector: 'Ethereum L2' },
+  { symbol: 'XRP', name: 'Ripple XRP', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 1.31, sector: 'Cross-Border Payments' },
+  { symbol: 'ADA', name: 'Cardano', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.218, sector: 'Proof of Stake L1' },
+  { symbol: 'AVAX', name: 'Avalanche', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 9.60, sector: 'Layer 1' },
+  { symbol: 'DOT', name: 'Polkadot', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 1.16, sector: 'Interoperability' },
+  { symbol: 'LINK', name: 'Chainlink', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 12.09, sector: 'Oracle Network' },
+  { symbol: 'MATIC', name: 'Polygon', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.126, sector: 'Ethereum L2' },
 
   // ─── US STOCKS ───
   { symbol: 'NVDA', name: 'NVIDIA Corporation', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 214.10, sector: 'Technology' },

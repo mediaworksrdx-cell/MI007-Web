@@ -110,6 +110,12 @@ const DEFAULT_CRYPTO: CryptoItem[] = [
   { symbol: 'BNB', name: 'BNB', base: 727.00, changePct: 2.16 },
   { symbol: 'DOGE', name: 'Dogecoin', base: 0.079, changePct: 2.31 },
   { symbol: 'SHIB', name: 'Shiba Inu', base: 0.0000185, changePct: -0.85 },
+  { symbol: 'XRP', name: 'Ripple XRP', base: 1.31, changePct: 0.85 },
+  { symbol: 'ADA', name: 'Cardano', base: 0.218, changePct: 0.45 },
+  { symbol: 'AVAX', name: 'Avalanche', base: 9.60, changePct: 1.20 },
+  { symbol: 'DOT', name: 'Polkadot', base: 1.16, changePct: -0.50 },
+  { symbol: 'LINK', name: 'Chainlink', base: 12.09, changePct: 1.10 },
+  { symbol: 'MATIC', name: 'Polygon', base: 0.126, changePct: 0.75 },
 ];
 
 const DEFAULT_COMMODITIES: CommodityItem[] = [
@@ -158,12 +164,12 @@ const KNOWN_CRYPTOS: Record<string, { name: string; base: number }> = {
   BNB: { name: 'BNB', base: 727.00 },
   DOGE: { name: 'Dogecoin', base: 0.079 },
   SHIB: { name: 'Shiba Inu', base: 0.0000185 },
-  XRP: { name: 'Ripple XRP', base: 0.60 },
-  ADA: { name: 'Cardano', base: 0.38 },
-  AVAX: { name: 'Avalanche', base: 28.50 },
-  DOT: { name: 'Polkadot', base: 6.80 },
-  LINK: { name: 'Chainlink', base: 14.50 },
-  MATIC: { name: 'Polygon', base: 0.42 },
+  XRP: { name: 'Ripple XRP', base: 1.31 },
+  ADA: { name: 'Cardano', base: 0.218 },
+  AVAX: { name: 'Avalanche', base: 9.60 },
+  DOT: { name: 'Polkadot', base: 1.16 },
+  LINK: { name: 'Chainlink', base: 12.09 },
+  MATIC: { name: 'Polygon', base: 0.126 },
 };
 
 const KNOWN_COMMODITIES: Record<string, { name: string; base: number; unit: string; category: string }> = {
@@ -931,7 +937,16 @@ export default function TerminalPage() {
 
       const savedCrypto = localStorage.getItem(`${STORAGE_PREFIX}crypto`);
       if (savedCrypto) {
-        setCrypto(JSON.parse(savedCrypto));
+        try {
+          const parsed = JSON.parse(savedCrypto);
+          if (Array.isArray(parsed) && parsed.length >= 12) {
+            setCrypto(parsed);
+          } else {
+            setCrypto(DEFAULT_CRYPTO);
+          }
+        } catch {
+          setCrypto(DEFAULT_CRYPTO);
+        }
       } else {
         setCrypto(DEFAULT_CRYPTO);
       }

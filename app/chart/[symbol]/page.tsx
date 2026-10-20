@@ -12,7 +12,7 @@ interface ChartPageProps {
   searchParams: Promise<{ market?: string; from?: string }>;
 }
 
-const CRYPTO_SET = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX']);
+const CRYPTO_SET = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC']);
 const COMMODITIES_SET = new Set(['GOLD', 'XAUUSD', 'SILVER', 'XAGUSD', 'CRUDEOIL', 'BRENT', 'WTI', 'NATGAS', 'COPPER', 'PLATINUM']);
 const FOREX_SET = new Set(['EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDAED', 'AUDUSD', 'USDCAD', 'AUDCAD', 'UADCAD', 'USDCHF', 'NZDUSD']);
 const USA_SET = new Set([

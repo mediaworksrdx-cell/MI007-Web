@@ -5,35 +5,107 @@ const TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
 
 export const dynamic = 'force-dynamic';
 
-async function fetchFallbackCrypto(): Promise<any[]> {
+const COINGECKO_CRYPTO_IDS = [
+  'bitcoin',
+  'ethereum',
+  'solana',
+  'binancecoin',
+  'dogecoin',
+  'shiba-inu',
+  'ripple',
+  'cardano',
+  'avalanche-2',
+  'polkadot',
+  'chainlink',
+  'matic-network'
+];
+
+const YAHOO_CRYPTO_MAP = [
+  { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', y: 'BTC-USD', base: 82010.0 },
+  { id: 'ethereum', symbol: 'eth', name: 'Ethereum', y: 'ETH-USD', base: 2410.0 },
+  { id: 'solana', symbol: 'sol', name: 'Solana', y: 'SOL-USD', base: 105.17 },
+  { id: 'binancecoin', symbol: 'bnb', name: 'BNB', y: 'BNB-USD', base: 729.80 },
+  { id: 'dogecoin', symbol: 'doge', name: 'Dogecoin', y: 'DOGE-USD', base: 0.0797 },
+  { id: 'shiba-inu', symbol: 'shib', name: 'Shiba Inu', y: 'SHIB-USD', base: 0.00000502 },
+  { id: 'ripple', symbol: 'xrp', name: 'XRP', y: 'XRP-USD', base: 1.31 },
+  { id: 'cardano', symbol: 'ada', name: 'Cardano', y: 'ADA-USD', base: 0.218 },
+  { id: 'avalanche-2', symbol: 'avax', name: 'Avalanche', y: 'AVAX-USD', base: 9.60 },
+  { id: 'polkadot', symbol: 'dot', name: 'Polkadot', y: 'DOT-USD', base: 1.16 },
+  { id: 'chainlink', symbol: 'link', name: 'Chainlink', y: 'LINK-USD', base: 12.09 },
+  { id: 'matic-network', symbol: 'matic', name: 'Polygon', y: 'POL-USD', base: 0.126 },
+];
+
+async function fetchCoinGeckoCrypto(): Promise<any[] | null> {
   try {
-    const res = await fetch(
-      'https://api.binance.com/api/v3/ticker/24hr?symbols=%5B%22BTCUSDT%22,%22ETHUSDT%22,%22SOLUSDT%22,%22BNBUSDT%22,%22DOGEUSDT%22%5D',
-      { cache: 'no-store' }
-    );
-    if (!res.ok) return [];
-    const raw = await res.json();
-    if (!Array.isArray(raw)) return [];
-    const nameMap: Record<string, { id: string; name: string; symbol: string }> = {
-      BTCUSDT: { id: 'bitcoin', name: 'Bitcoin', symbol: 'btc' },
-      ETHUSDT: { id: 'ethereum', name: 'Ethereum', symbol: 'eth' },
-      SOLUSDT: { id: 'solana', name: 'Solana', symbol: 'sol' },
-      BNBUSDT: { id: 'binancecoin', name: 'BNB', symbol: 'bnb' },
-      DOGEUSDT: { id: 'dogecoin', name: 'Dogecoin', symbol: 'doge' },
-    };
-    return raw.map((item: any) => {
-      const meta = nameMap[item.symbol] || { id: item.symbol.toLowerCase(), name: item.symbol, symbol: item.symbol.toLowerCase() };
-      return {
-        id: meta.id,
-        symbol: meta.symbol,
-        name: meta.name,
-        current_price: parseFloat(item.lastPrice),
-        price_change_percentage_24h: parseFloat(item.priceChangePercent),
-        market_cap: 0,
-      };
+    const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${COINGECKO_CRYPTO_IDS.join(',')}&order=market_cap_desc&sparkline=false`;
+    const res = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      },
+      cache: 'no-store',
     });
+    if (!res.ok) return null;
+    const raw = await res.json();
+    if (!Array.isArray(raw) || raw.length === 0) return null;
+
+    return raw.map((c: any) => ({
+      id: String(c.id || '').toLowerCase(),
+      symbol: String(c.symbol || '').toLowerCase(),
+      name: String(c.name || ''),
+      current_price: Number(c.current_price || 0),
+      price_change_percentage_24h: Number(c.price_change_percentage_24h || 0),
+      market_cap: Number(c.market_cap || 0),
+    }));
+  } catch (err) {
+    console.warn('[CoinGecko] Error fetching live crypto prices:', err);
+    return null;
+  }
+}
+
+async function fetchYahooCryptoFallback(): Promise<any[]> {
+  try {
+    const promises = YAHOO_CRYPTO_MAP.map(async (item) => {
+      try {
+        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(item.y)}?interval=1d&range=1d`, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          cache: 'no-store',
+        });
+        if (!res.ok) throw new Error('status');
+        const json = await res.json();
+        const meta = json?.chart?.result?.[0]?.meta;
+        const p = meta?.regularMarketPrice ?? item.base;
+        const prev = meta?.chartPreviousClose || p;
+        const chgPct = p && prev ? +(((p - prev) / prev) * 100).toFixed(2) : 0;
+        return {
+          id: item.id,
+          symbol: item.symbol,
+          name: item.name,
+          current_price: p,
+          price_change_percentage_24h: chgPct,
+          market_cap: 0,
+        };
+      } catch {
+        return {
+          id: item.id,
+          symbol: item.symbol,
+          name: item.name,
+          current_price: item.base,
+          price_change_percentage_24h: 0.25,
+          market_cap: 0,
+        };
+      }
+    });
+    return await Promise.all(promises);
   } catch {
-    return [];
+    return YAHOO_CRYPTO_MAP.map(i => ({
+      id: i.id,
+      symbol: i.symbol,
+      name: i.name,
+      current_price: i.base,
+      price_change_percentage_24h: 0.25,
+      market_cap: 0,
+    }));
   }
 }
 
@@ -448,8 +520,10 @@ function mapSymbolToYahooTicker(symbol: string): string | null {
     XRP: 'XRP-USD',
     ADA: 'ADA-USD',
     AVAX: 'AVAX-USD',
+    DOT: 'DOT-USD',
     LINK: 'LINK-USD',
-    MATIC: 'MATIC-USD',
+    MATIC: 'POL-USD',
+    POL: 'POL-USD',
   };
   if (CRYPTO_MAP[clean]) return CRYPTO_MAP[clean];
 
@@ -531,7 +605,8 @@ function getSymbolBaselinePrice(symbol: string): number {
     CRUDEOIL: 74.20, BRENT: 74.20, WTI: 70.80, NATGAS: 2.85, COPPER: 4.38, PLATINUM: 1024.50,
     EURUSD: 1.1232, GBPUSD: 1.2980, USDJPY: 152.40, USDINR: 84.08, USDCAD: 1.4092, AUDCAD: 0.9838,
     UADCAD: 1.4092, USDCHF: 0.8850, AUDUSD: 0.6650, USDAED: 3.6725,
-    BTC: 81800.0, ETH: 2403.0, SOL: 104.37, BNB: 727.0, DOGE: 0.079, SHIB: 0.0000185, XRP: 0.60,
+    BTC: 82010.0, ETH: 2403.0, SOL: 104.37, BNB: 727.0, DOGE: 0.079, SHIB: 0.0000185, XRP: 1.31,
+    ADA: 0.218, AVAX: 9.60, DOT: 1.16, LINK: 12.09, MATIC: 0.126, POL: 0.126,
   };
   return BASES[clean] || BASES[symbol.toUpperCase()] || 100.0;
 }
@@ -709,13 +784,53 @@ export async function GET(
     }
   }
 
-  // 3. Check in-memory cache for crypto-prices (20s TTL)
+  // 3. Check in-memory cache and fetch crypto-prices (15s TTL)
   if (pathStr === 'crypto-prices') {
-    const cachedCrypto = getCached(cacheKey, 20 * 1000);
-    if (cachedCrypto) {
+    const cachedCrypto = getCached(cacheKey, 15 * 1000);
+    if (cachedCrypto && Array.isArray(cachedCrypto) && cachedCrypto.length > 0) {
       return NextResponse.json(cachedCrypto, {
         status: 200,
         headers: { 'X-Cache': 'HIT', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
+    // A. Priority 1: Remote Trade Engine (User's CoinGecko service)
+    try {
+      const remoteRes = await fetch(`${TRADE_ENGINE_URL}/crypto-prices${search}`, {
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store',
+      });
+      if (remoteRes.ok) {
+        const remoteData = await remoteRes.json();
+        if (Array.isArray(remoteData) && remoteData.length > 0) {
+          setCached(cacheKey, remoteData);
+          return NextResponse.json(remoteData, {
+            status: 200,
+            headers: { 'X-Cache': 'MISS-REMOTE', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[TradeEngineProxy] Remote engine crypto-prices unavailable:', err);
+    }
+
+    // B. Priority 2: Direct CoinGecko Public Markets API (All 12 assets)
+    const cgData = await fetchCoinGeckoCrypto();
+    if (cgData && Array.isArray(cgData) && cgData.length > 0) {
+      setCached(cacheKey, cgData);
+      return NextResponse.json(cgData, {
+        status: 200,
+        headers: { 'X-Cache': 'MISS-COINGECKO', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
+    // C. Priority 3: Yahoo Finance Multi-Crypto Failover
+    const yData = await fetchYahooCryptoFallback();
+    if (yData && Array.isArray(yData) && yData.length > 0) {
+      setCached(cacheKey, yData);
+      return NextResponse.json(yData, {
+        status: 200,
+        headers: { 'X-Cache': 'MISS-YAHOO', 'Access-Control-Allow-Origin': '*' },
       });
     }
   }
@@ -796,7 +911,7 @@ export async function GET(
 
       // If crypto-prices returned empty array from remote engine, fallback to live market feed
       if (pathStr === 'crypto-prices' && (!Array.isArray(data) || data.length === 0)) {
-        const fallback = await fetchFallbackCrypto();
+        const fallback = (await fetchCoinGeckoCrypto()) || (await fetchYahooCryptoFallback());
         if (fallback.length > 0) data = fallback;
       }
 
@@ -820,7 +935,7 @@ export async function GET(
 
     // Response was not ok, check fallback for crypto or live-prices
     if (pathStr === 'crypto-prices') {
-      const fallback = await fetchFallbackCrypto();
+      const fallback = (await fetchCoinGeckoCrypto()) || (await fetchYahooCryptoFallback());
       if (fallback.length > 0) {
         return NextResponse.json(fallback, { status: 200 });
       }
@@ -840,7 +955,7 @@ export async function GET(
 
     // Graceful fallbacks on connection error
     if (pathStr === 'crypto-prices') {
-      const fallback = await fetchFallbackCrypto();
+      const fallback = (await fetchCoinGeckoCrypto()) || (await fetchYahooCryptoFallback());
       if (fallback.length > 0) {
         return NextResponse.json(fallback, { status: 200 });
       }
