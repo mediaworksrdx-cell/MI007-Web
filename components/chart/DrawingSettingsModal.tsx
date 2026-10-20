@@ -57,6 +57,9 @@ export function DrawingSettingsModal({
   // Coordinates state (exact price & index for each point)
   const [pointCoords, setPointCoords] = useState<{ price: string; index: string }[]>([]);
 
+  // Track initialization to prevent live candles streaming from wiping out user's edits
+  const lastInitIdRef = useRef<string | null>(null);
+
   // Timeframe visibility
   const [visSeconds, setVisSeconds] = useState(true);
   const [visMinutes, setVisMinutes] = useState(true);
@@ -69,7 +72,15 @@ export function DrawingSettingsModal({
   }, []);
 
   useEffect(() => {
-    if (!drawing) return;
+    if (!isOpen || !drawing) {
+      lastInitIdRef.current = null;
+      return;
+    }
+
+    // Only initialize form fields and coordinates once per modal session / drawing ID change
+    if (lastInitIdRef.current === drawing.id) return;
+    lastInitIdRef.current = drawing.id;
+
     setColor(drawing.color || '#2563EB');
     setLineWidth(drawing.lineWidth || 2);
     setLineStyle(drawing.lineStyle || 'solid');
@@ -97,7 +108,7 @@ export function DrawingSettingsModal({
     } else {
       setPointCoords([]);
     }
-  }, [drawing, candles]);
+  }, [isOpen, drawing]);
 
   if (!isOpen || !drawing || !mounted) return null;
 
@@ -154,7 +165,8 @@ export function DrawingSettingsModal({
     const updatedPoints = drawing.points.map((p, idx) => {
       const coord = pointCoords[idx];
       if (!coord) return p;
-      const parsedPrice = parseFloat(coord.price);
+      const cleanPriceStr = String(coord.price).replace(/,/g, '').trim();
+      const parsedPrice = parseFloat(cleanPriceStr);
       const parsedIndex = parseInt(coord.index, 10);
       const finalPrice = !isNaN(parsedPrice) ? parsedPrice : p.price;
       const finalIndex = !isNaN(parsedIndex) ? parsedIndex : p.index;

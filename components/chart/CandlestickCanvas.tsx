@@ -551,6 +551,16 @@ export function CandlestickCanvas({
         }
 
         // 6. Area bounding for 2D shapes
+        if (d.tool === 'CIRCLE' && pts.length >= 2) {
+          const center = pts[0];
+          const edge = pts[1];
+          const r = Math.hypot(edge.x - center.x, edge.y - center.y);
+          const dist = Math.hypot(x - center.x, y - center.y);
+          if (dist <= r + 8) {
+            return d;
+          }
+        }
+
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
         for (const ptItem of pts) {
           if (ptItem.x < minX) minX = ptItem.x;
@@ -559,7 +569,7 @@ export function CandlestickCanvas({
           if (ptItem.y > maxY) maxY = ptItem.y;
         }
         const isAreaTool = [
-          'RECTANGLE', 'ROTATED_RECTANGLE', 'CIRCLE', 'ELLIPSE', 'TRIANGLE',
+          'RECTANGLE', 'ROTATED_RECTANGLE', 'ELLIPSE', 'TRIANGLE',
           'CHANNEL', 'DISJOINT_CHANNEL', 'FIB_CHANNEL', 'GANN_BOX', 'GANN_FAN',
           'RISK_REWARD_LONG', 'RISK_REWARD_SHORT', 'PRICE_RANGE', 'DATE_RANGE', 'MEASURE',
           'XABCD_PATTERN', 'ABCD_PATTERN', 'HEAD_AND_SHOULDERS', 'ELLIOTT_IMPULSE', 'ELLIOTT_CORRECTION'
@@ -858,6 +868,15 @@ export function CandlestickCanvas({
               }
             }
             if (!hoveredBody) {
+              if (d.tool === 'CIRCLE' && pts.length >= 2) {
+                const center = pts[0];
+                const edge = pts[1];
+                const r = Math.hypot(edge.x - center.x, edge.y - center.y);
+                const dist = Math.hypot(x - center.x, y - center.y);
+                if (dist <= r + 8) {
+                  hoveredBody = true;
+                }
+              }
               let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
               for (const ptItem of pts) {
                 if (ptItem.x < minX) minX = ptItem.x;
@@ -866,7 +885,7 @@ export function CandlestickCanvas({
                 if (ptItem.y > maxY) maxY = ptItem.y;
               }
               const isAreaTool = [
-                'RECTANGLE', 'ROTATED_RECTANGLE', 'CIRCLE', 'ELLIPSE', 'TRIANGLE',
+                'RECTANGLE', 'ROTATED_RECTANGLE', 'ELLIPSE', 'TRIANGLE',
                 'CHANNEL', 'DISJOINT_CHANNEL', 'FIB_CHANNEL', 'GANN_BOX',
                 'RISK_REWARD_LONG', 'RISK_REWARD_SHORT', 'PRICE_RANGE', 'DATE_RANGE', 'MEASURE',
                 'XABCD_PATTERN', 'ABCD_PATTERN'
@@ -1143,6 +1162,7 @@ export function CandlestickCanvas({
           const pt = getPointFromEvent(e.clientX, e.clientY);
           if (pt) {
             const finalPoints = [committedPointsRef.current[0], { index: pt.index, time: pt.time, price: pt.price }];
+            const newDrawingId = drawingInProgress.id;
             if (activeDrawingTool === 'CALLOUT') {
               const text = window.prompt('Enter callout annotation note:', 'Key Pivot');
               onAddDrawing?.({
@@ -1158,6 +1178,7 @@ export function CandlestickCanvas({
                 completed: true,
               });
             }
+            onSelectDrawing?.(newDrawingId);
             committedPointsRef.current = [];
             setDrawingInProgress(null);
             if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
@@ -1307,7 +1328,7 @@ export function CandlestickCanvas({
             targetAdjust = { drawingId: d.id, pointIdx: i };
           }
         }
-        if (targetAdjust && d.id === selectedDrawingId && minAdjustDist <= 16) break;
+        if (targetAdjust && d.id === selectedDrawingId) break;
       }
 
       if (targetAdjust) {
@@ -1838,6 +1859,13 @@ export function CandlestickCanvas({
                   ? (lastBar.openTime - prevBar.openTime)
                   : 86_400_000;
                 time = lastBar.openTime + (p.index - (cleanCandles.length - 1)) * barDuration;
+              } else {
+                const firstBar = cleanCandles[0];
+                const secondBar = cleanCandles[1];
+                const barDuration = (secondBar && secondBar.openTime > firstBar.openTime)
+                  ? (secondBar.openTime - firstBar.openTime)
+                  : 86_400_000;
+                time = firstBar.openTime + p.index * barDuration;
               }
             }
             return { ...p, time };

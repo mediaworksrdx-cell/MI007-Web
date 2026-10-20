@@ -1940,6 +1940,9 @@ export function renderChart(
           ctx.fill();
           ctx.stroke();
           ctx.restore();
+          // Anchors: Center point (p1) and radius perimeter handle (p2)
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'RISK_REWARD_LONG') {
           const entryP = p1.price;
           const stopP = p2.price < entryP ? p2.price : entryP * 0.98;
@@ -2185,6 +2188,9 @@ export function renderChart(
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText(`${angle}°`, x1 + 26 * dpr, y1 - 5.5 * dpr);
           ctx.restore();
+          // Anchors: Origin (p1) and angle terminal endpoint (p2)
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'DISJOINT_CHANNEL') {
           const p3 = item.points[2] || { price: p2.price, index: p2.index };
           const x3 = getPointX(p3);
@@ -3311,6 +3317,25 @@ export function renderOverlay(
           ctx.beginPath(); ctx.arc(x1, y1, r, 0, Math.PI * 2);
           ctx.fillStyle = item.color ? `${item.color}1A` : 'rgba(37, 99, 235, 0.10)';
           ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+        } else if (item.tool === 'TREND_ANGLE') {
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          ctx.save();
+          ctx.setLineDash([3 * dpr, 3 * dpr]);
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y1); ctx.stroke();
+          ctx.restore();
+          const angle = Math.round(Math.atan2(-(y2 - y1), x2 - x1) * 180 / Math.PI);
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          ctx.save();
+          ctx.fillStyle = '#0F172A';
+          ctx.fillRect(x1 + 8 * dpr, y1 - 12 * dpr, 36 * dpr, 13 * dpr);
+          ctx.fillStyle = '#22D3EE';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(`${angle}°`, x1 + 26 * dpr, y1 - 5.5 * dpr);
+          ctx.restore();
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else {
           ctx.setLineDash([4 * dpr, 3 * dpr]);
           ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
