@@ -113,21 +113,21 @@ const DEFAULT_CRYPTO: CryptoItem[] = [
 ];
 
 const DEFAULT_COMMODITIES: CommodityItem[] = [
-  { symbol: 'GOLD', name: 'Gold Bullion', base: 2735.40, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.65 },
-  { symbol: 'SILVER', name: 'Silver Spot', base: 31.85, unit: 'USD / oz', category: 'Precious Metals', changePct: 1.20 },
+  { symbol: 'GOLD', name: 'Gold', base: 2735.40, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.65 },
+  { symbol: 'SILVER', name: 'Silver', base: 31.85, unit: 'USD / oz', category: 'Precious Metals', changePct: 1.20 },
   { symbol: 'CRUDEOIL', name: 'Brent Crude', base: 74.20, unit: 'USD / bbl', category: 'Energy', changePct: -0.45 },
-  { symbol: 'WTI', name: 'WTI Crude Oil', base: 70.80, unit: 'USD / bbl', category: 'Energy', changePct: -0.35 },
+  { symbol: 'WTI', name: 'WTI Crude', base: 70.80, unit: 'USD / bbl', category: 'Energy', changePct: -0.35 },
   { symbol: 'NATGAS', name: 'Natural Gas', base: 2.85, unit: 'USD / MMBtu', category: 'Energy', changePct: 2.15 },
-  { symbol: 'COPPER', name: 'High Grade Copper', base: 4.38, unit: 'USD / lb', category: 'Industrial Metals', changePct: 0.82 },
+  { symbol: 'COPPER', name: 'Copper', base: 4.38, unit: 'USD / lb', category: 'Industrial Metals', changePct: 0.82 },
 ];
 
 const DEFAULT_FOREX: ForexItem[] = [
-  { symbol: 'EURUSD', name: 'Euro / US Dollar', pair: 'EUR / USD', base: 1.0845, pipSpread: '0.8 pips', changePct: 0.18 },
-  { symbol: 'GBPUSD', name: 'British Pound / USD', pair: 'GBP / USD', base: 1.2980, pipSpread: '1.0 pips', changePct: 0.22 },
-  { symbol: 'USDJPY', name: 'USD / Japanese Yen', pair: 'USD / JPY', base: 152.40, pipSpread: '0.9 pips', changePct: -0.35 },
-  { symbol: 'USDINR', name: 'USD / Indian Rupee', pair: 'USD / INR', base: 84.08, pipSpread: '1.2 pips', changePct: 0.05 },
-  { symbol: 'USDCHF', name: 'USD / Swiss Franc', pair: 'USD / CHF', base: 0.8850, pipSpread: '0.9 pips', changePct: -0.15 },
-  { symbol: 'AUDUSD', name: 'Australian Dollar / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips', changePct: 0.40 },
+  { symbol: 'EURUSD', name: 'EUR / USD', pair: 'EUR / USD', base: 1.0845, pipSpread: '0.8 pips', changePct: 0.18 },
+  { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP / USD', base: 1.2980, pipSpread: '1.0 pips', changePct: 0.22 },
+  { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD / JPY', base: 152.40, pipSpread: '0.9 pips', changePct: -0.35 },
+  { symbol: 'USDINR', name: 'USD / INR', pair: 'USD / INR', base: 84.08, pipSpread: '1.2 pips', changePct: 0.05 },
+  { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD / CHF', base: 0.8850, pipSpread: '0.9 pips', changePct: -0.15 },
+  { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips', changePct: 0.40 },
 ];
 
 // Predefined catalog of recognized indices & cryptos for instantaneous auto-detection
@@ -165,23 +165,23 @@ const KNOWN_CRYPTOS: Record<string, { name: string; base: number }> = {
 };
 
 const KNOWN_COMMODITIES: Record<string, { name: string; base: number; unit: string; category: string }> = {
-  GOLD: { name: 'Gold Bullion', base: 2735.40, unit: 'USD / oz', category: 'Precious Metals' },
-  SILVER: { name: 'Silver Spot', base: 31.85, unit: 'USD / oz', category: 'Precious Metals' },
+  GOLD: { name: 'Gold', base: 2735.40, unit: 'USD / oz', category: 'Precious Metals' },
+  SILVER: { name: 'Silver', base: 31.85, unit: 'USD / oz', category: 'Precious Metals' },
   CRUDEOIL: { name: 'Brent Crude', base: 74.20, unit: 'USD / bbl', category: 'Energy' },
   BRENT: { name: 'Brent Crude', base: 74.20, unit: 'USD / bbl', category: 'Energy' },
-  WTI: { name: 'WTI Light Crude', base: 70.80, unit: 'USD / bbl', category: 'Energy' },
+  WTI: { name: 'WTI Crude', base: 70.80, unit: 'USD / bbl', category: 'Energy' },
   NATGAS: { name: 'Natural Gas', base: 2.85, unit: 'USD / MMBtu', category: 'Energy' },
-  COPPER: { name: 'High Grade Copper', base: 4.38, unit: 'USD / lb', category: 'Industrial Metals' },
-  PLATINUM: { name: 'Platinum Spot', base: 1024.50, unit: 'USD / oz', category: 'Precious Metals' },
+  COPPER: { name: 'Copper', base: 4.38, unit: 'USD / lb', category: 'Industrial Metals' },
+  PLATINUM: { name: 'Platinum', base: 1024.50, unit: 'USD / oz', category: 'Precious Metals' },
 };
 
 const KNOWN_FOREX: Record<string, { name: string; base: number; pair: string; pipSpread: string }> = {
-  EURUSD: { name: 'Euro / US Dollar', pair: 'EUR / USD', base: 1.0845, pipSpread: '0.8 pips' },
-  GBPUSD: { name: 'British Pound / USD', pair: 'GBP / USD', base: 1.2980, pipSpread: '1.0 pips' },
-  USDJPY: { name: 'USD / Japanese Yen', pair: 'USD / JPY', base: 152.40, pipSpread: '0.9 pips' },
-  USDINR: { name: 'USD / Indian Rupee', pair: 'USD / INR', base: 84.08, pipSpread: '1.2 pips' },
-  USDAED: { name: 'USD / UAE Dirham', pair: 'USD / AED', base: 3.6725, pipSpread: '0.5 pips' },
-  AUDUSD: { name: 'Australian Dollar / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips' },
+  EURUSD: { name: 'EUR / USD', pair: 'EUR / USD', base: 1.0845, pipSpread: '0.8 pips' },
+  GBPUSD: { name: 'GBP / USD', pair: 'GBP / USD', base: 1.2980, pipSpread: '1.0 pips' },
+  USDJPY: { name: 'USD / JPY', pair: 'USD / JPY', base: 152.40, pipSpread: '0.9 pips' },
+  USDINR: { name: 'USD / INR', pair: 'USD / INR', base: 84.08, pipSpread: '1.2 pips' },
+  USDAED: { name: 'USD / AED', pair: 'USD / AED', base: 3.6725, pipSpread: '0.5 pips' },
+  AUDUSD: { name: 'AUD / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips' },
 };
 
 const KNOWN_US_STOCKS: Record<string, { name: string; base: number; sector: string }> = {
@@ -638,15 +638,13 @@ function CommodityTile({
               <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
                 {item.symbol}
               </span>
-              <span className={`mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
-                isOpen
-                  ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
-                  : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
-              }`}>
-                {isOpen ? item.category : 'CLOSED'}
-              </span>
+              {!isOpen && (
+                <span className="mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 bg-slate-500/15 text-slate-400 border border-slate-500/30">
+                  CLOSED
+                </span>
+              )}
             </div>
-            <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[110px]" title={item.name}>
+            <div className="text-[11px] inst-card-text-muted font-bold truncate" title={item.name}>
               {item.name}
             </div>
           </div>
@@ -741,15 +739,13 @@ function ForexTile({
               <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
                 {item.pair}
               </span>
-              <span className={`mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
-                isOpen
-                  ? 'bg-cyan-500/15 text-cyan-500 border border-cyan-500/30'
-                  : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
-              }`}>
-                {isOpen ? 'FX LIVE' : 'CLOSED'}
-              </span>
+              {!isOpen && (
+                <span className="mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 bg-slate-500/15 text-slate-400 border border-slate-500/30">
+                  CLOSED
+                </span>
+              )}
             </div>
-            <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[110px]" title={item.name}>
+            <div className="text-[11px] inst-card-text-muted font-bold truncate" title={item.name}>
               {item.name}
             </div>
           </div>
@@ -768,11 +764,6 @@ function ForexTile({
             }`}>
               {price.toFixed(price < 2 ? 4 : 2)}
             </span>
-            {item.pipSpread && (
-              <span className="text-[9.5px] text-[var(--theme-card-text-muted)] font-mono ml-1 hidden sm:inline">
-                ({item.pipSpread})
-              </span>
-            )}
           </div>
           <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
             {up ? '▲' : '▼'} {Math.abs(currentPct).toFixed(2)}%
@@ -1073,7 +1064,7 @@ export default function TerminalPage() {
     // 3. Check known forex
     Object.entries(KNOWN_FOREX).forEach(([sym, data]) => {
       if (sym.includes(q) || data.name.toUpperCase().includes(q) || data.pair.toUpperCase().includes(q)) {
-        results.push({ symbol: sym, name: `${data.name} (${data.pair})`, category: 'FOREX', base: data.base });
+        results.push({ symbol: sym, name: data.pair, category: 'FOREX', base: data.base });
       }
     });
 
