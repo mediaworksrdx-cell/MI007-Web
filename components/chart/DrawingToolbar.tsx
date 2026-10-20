@@ -323,7 +323,7 @@ export function DrawingToolbar({
 
       {/* ── 2. Tool Groups (Lines, Fib, Shapes, Harmonics, Positions, Text) ── */}
       <div className="flex flex-col items-center gap-1">
-        {TOOL_GROUPS.map((group) => {
+        {TOOL_GROUPS.map((group, groupIndex) => {
           const isGroupActive = group.tools.some((t) => t.id === activeDrawingTool);
           const currentToolId = isGroupActive
             ? activeDrawingTool
@@ -365,7 +365,7 @@ export function DrawingToolbar({
 
               {/* Flyout Submenu */}
               {isMenuOpen && (
-                <div className="absolute left-full top-0 ml-1.5 w-72 max-h-[80vh] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E131F] shadow-2xl py-1 z-[100] animate-in fade-in duration-75">
+                <div className={`absolute left-full ml-1.5 w-72 max-h-[75vh] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E131F] shadow-2xl py-1 z-[100] animate-in fade-in duration-75 ${groupIndex > 2 ? 'bottom-0' : 'top-0'}`}>
                   <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-[#0E131F] z-10">
                     {group.title}
                   </div>

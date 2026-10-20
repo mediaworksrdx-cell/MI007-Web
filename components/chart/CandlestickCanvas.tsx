@@ -1638,6 +1638,8 @@ export function CandlestickCanvas({
         <DrawingQuickBar
           drawing={selectedDrawing}
           position={quickBarPos}
+          containerWidth={size.w}
+          containerHeight={size.h}
           onUpdateDrawing={(updated) => onUpdateDrawing?.(updated)}
           onDeleteDrawing={(id) => {
             onDeleteDrawing?.(id);

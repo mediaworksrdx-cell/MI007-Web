@@ -935,7 +935,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         <div ref={chartWrapperRef} className="flex-1 min-h-0 relative bg-white overflow-hidden">
           {/* Top-Left Active Indicator Legend overlay */}
           {indicatorConfigs.length > 0 && (
-            <div className="absolute top-2 left-3 z-10 flex flex-wrap items-center gap-1.5 pointer-events-auto">
+            <div className="absolute top-2 left-3 z-10 flex flex-wrap items-center gap-1.5 pointer-events-auto max-w-[calc(100%-90px)]">
               {indicatorConfigs.map(cfg => (
                 <div
                   key={cfg.type}
