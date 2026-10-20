@@ -345,7 +345,8 @@ export function CandlestickCanvas({
   // Viewport calculation with responsive zoom, dynamic candle scaling,
   // and a forward projection empty space buffer of 6 bars (~35-50px) to the right of the latest candle
   const RIGHT_BUFFER_BARS = 6;
-  const visibleCount = Math.max(8, Math.round(VISIBLE_CANDLES_BASE / zoom));
+  const baseVisible = size.w < 640 ? 55 : size.w < 1024 ? 90 : 140;
+  const visibleCount = Math.max(8, Math.round(baseVisible / zoom));
   const maxScrollOffset = Math.max(0, cleanCandles.length - 8);
   const minScrollOffset = -RIGHT_BUFFER_BARS * 2;
   const effectiveScroll = Math.max(minScrollOffset, Math.min(maxScrollOffset, scrollOffset));
@@ -1661,7 +1662,7 @@ export function CandlestickCanvas({
   }, [activeDrawingTool, cursorMode, hoverDrawingZone, hoverScaleZone, isAdjustingDrawing, isDragging, isMovingDrawing]);
 
   return (
-    <div ref={containerRef} className={`relative w-full h-full overflow-hidden ${className}`}>
+    <div ref={containerRef} className={`relative w-full h-full overflow-hidden tabular-nums ${className}`}>
       {/* ── Layer 1: Background Canvas (Candles, Indicators, Grids, SMC, Volume Profile) ── */}
       <canvas
         ref={canvasRef}

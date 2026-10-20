@@ -41,6 +41,9 @@ const PANEL_SEP = '#E2E8F0';
 const VOL_LABEL = '#0284C7';
 const VOL_AXIS = '#64748B';
 
+// TradingView standard typography stack
+export const TV_FONT_STACK = '-apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif';
+
 // ── Formatters ────────────────────────────────────────────────────────────
 export function formatPrice(p: number): string {
   if (p >= 10000) return p.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -102,7 +105,7 @@ export function computeCalendarTimeTicks(
   candleW: number,
   isDailyOrHigher: boolean,
   dpr: number
-): { x: number; label: string }[] {
+): { x: number; label: string; isYear?: boolean }[] {
   const safeStart = Math.max(0, startIdx);
   const safeEnd = Math.min(endIdx, candles.length);
   if (safeEnd <= safeStart || candles.length === 0) return [];
@@ -111,10 +114,14 @@ export function computeCalendarTimeTicks(
   const lastTs = candles[safeEnd - 1].openTime;
   const spanMs = Math.max(1, lastTs - firstTs);
   const spanDays = spanMs / 86_400_000;
-  const minSpacing = 72 * dpr;
+  const minSpacing = 68 * dpr;
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const ticks: { x: number; label: string }[] = [];
+  const ticks: { x: number; label: string; isYear?: boolean }[] = [];
+
+  const startYear = new Date(firstTs).getFullYear();
+  const endYear = new Date(lastTs).getFullYear();
+  const crossesYear = endYear > startYear;
 
   // Binary search helper to find the first trading candle on or immediately after target timestamp
   function findClosestCandleIndex(targetTs: number): number {
@@ -139,7 +146,7 @@ export function computeCalendarTimeTicks(
   }
 
   if (isDailyOrHigher) {
-    const anchors: { ts: number; label: string }[] = [];
+    const anchors: { ts: number; label: string; isYear?: boolean }[] = [];
     const startDate = new Date(firstTs);
     const endDate = new Date(lastTs);
 
@@ -147,13 +154,19 @@ export function computeCalendarTimeTicks(
       // Multi-year: Jan 1 of each year
       for (let y = startDate.getFullYear(); y <= endDate.getFullYear() + 1; y++) {
         const d = new Date(y, 0, 1);
-        anchors.push({ ts: d.getTime(), label: `${y}` });
+        anchors.push({ ts: d.getTime(), label: `${y}`, isYear: true });
       }
-    } else if (spanDays > 180) {
-      // Multi-month: 1st of every month
+    } else if (spanDays > 120) {
+      // Multi-month: 1st of every month (Aug, Sep, Oct...).
+      // Only highlight year at Jan 1 or when range crosses distinct calendar years
       const cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
       while (cur.getTime() <= lastTs + 15 * 86_400_000) {
-        anchors.push({ ts: cur.getTime(), label: `1 ${months[cur.getMonth()]}` });
+        const isJan = cur.getMonth() === 0;
+        anchors.push({
+          ts: cur.getTime(),
+          label: isJan ? `${cur.getFullYear()}` : months[cur.getMonth()],
+          isYear: isJan,
+        });
         cur.setMonth(cur.getMonth() + 1);
       }
     } else if (spanDays > 32) {
@@ -161,28 +174,49 @@ export function computeCalendarTimeTicks(
       const cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
       while (cur.getTime() <= lastTs + 15 * 86_400_000) {
         const d1 = new Date(cur.getFullYear(), cur.getMonth(), 1);
-        anchors.push({ ts: d1.getTime(), label: `1 ${months[cur.getMonth()]}` });
+        const isJan = d1.getMonth() === 0;
+        anchors.push({
+          ts: d1.getTime(),
+          label: isJan ? `${d1.getFullYear()}` : months[d1.getMonth()],
+          isYear: isJan,
+        });
         const d15 = new Date(cur.getFullYear(), cur.getMonth(), 15);
-        anchors.push({ ts: d15.getTime(), label: `15 ${months[cur.getMonth()]}` });
+        anchors.push({ ts: d15.getTime(), label: '15', isYear: false });
         cur.setMonth(cur.getMonth() + 1);
       }
     } else if (spanDays > 12) {
-      // Weekly: Every Monday
+      // Weekly: Every Monday, with month names on first week of month
       const cur = new Date(startDate);
       const day = cur.getDay();
       const diff = (day === 0 ? 1 : (day === 1 ? 0 : 8 - day));
       cur.setDate(cur.getDate() + diff);
       cur.setHours(0, 0, 0, 0);
+      let prevMonth = -1;
       while (cur.getTime() <= lastTs + 7 * 86_400_000) {
-        anchors.push({ ts: cur.getTime(), label: `${cur.getDate()} ${months[cur.getMonth()]}` });
+        const curM = cur.getMonth();
+        const isNewMonth = prevMonth !== -1 && prevMonth !== curM;
+        anchors.push({
+          ts: cur.getTime(),
+          label: (isNewMonth && cur.getDate() <= 7) ? months[curM] : `${cur.getDate()}`,
+          isYear: false,
+        });
+        prevMonth = curM;
         cur.setDate(cur.getDate() + 7);
       }
     } else {
       // Short: Every 2 days
       const cur = new Date(startDate);
       cur.setHours(0, 0, 0, 0);
+      let prevMonth = -1;
       while (cur.getTime() <= lastTs + 2 * 86_400_000) {
-        anchors.push({ ts: cur.getTime(), label: `${cur.getDate()} ${months[cur.getMonth()]}` });
+        const curM = cur.getMonth();
+        const isNewMonth = prevMonth !== -1 && prevMonth !== curM;
+        anchors.push({
+          ts: cur.getTime(),
+          label: (isNewMonth && cur.getDate() <= 2) ? months[curM] : `${cur.getDate()}`,
+          isYear: false,
+        });
+        prevMonth = curM;
         cur.setDate(cur.getDate() + 2);
       }
     }
@@ -199,12 +233,8 @@ export function computeCalendarTimeTicks(
 
       const li = idx - startIdx;
       const x = Math.round(li * candleW + candleW / 2);
-      if (x >= 24 * dpr && x <= chartW - 24 * dpr && x - lastX >= minSpacing) {
-        const cDate = new Date(c.openTime);
-        const candleLabel = spanDays > 730
-          ? `${cDate.getFullYear()}`
-          : `${cDate.getDate()} ${months[cDate.getMonth()]}`;
-        ticks.push({ x, label: candleLabel });
+      if (x >= 20 * dpr && x <= chartW - 20 * dpr && x - lastX >= minSpacing) {
+        ticks.push({ x, label: anchor.label, isYear: anchor.isYear });
         lastX = x;
         seenIndices.add(idx);
       }
@@ -231,7 +261,7 @@ export function computeCalendarTimeTicks(
         label = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
       }
       prevDay = curDay;
-      ticks.push({ x, label });
+      ticks.push({ x, label, isYear: false });
       lastX = x;
     }
   }
@@ -1119,12 +1149,13 @@ export function renderChart(
 
   // ── LAYER 1: Grid & Axes (Light Mode with Institutional Nice Numbers) ──
   ctx.save();
-  const gridDash = [4 * dpr, 4 * dpr];
+  const tvFontStack = TV_FONT_STACK;
+  const gridDash = [Math.max(1, 1.5 * dpr), Math.max(1.5, 2 * dpr)];
   ctx.setLineDash(gridDash);
-  ctx.lineWidth = 0.8 * dpr;
-  ctx.strokeStyle = '#F1F5F9';
-  ctx.font = `bold ${12 * dpr}px "JetBrains Mono",monospace`;
-  ctx.fillStyle = '#475569';
+  ctx.lineWidth = 1 * dpr;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+  ctx.font = `500 ${11 * dpr}px ${tvFontStack}`;
+  ctx.fillStyle = '#787B86';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
 
@@ -1141,18 +1172,25 @@ export function renderChart(
 
   // Vertical grid + uniform calendar-aligned date/time labels
   const timeTicks = computeCalendarTimeTicks(candles, startIdx, endIdx, chartW, candleW, isDailyOrHigher, dpr);
-  ctx.font = `bold ${10.5 * dpr}px "JetBrains Mono",monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (const tick of timeTicks) {
-    ctx.strokeStyle = '#F1F5F9';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
     ctx.beginPath();
     ctx.moveTo(tick.x, 0);
     ctx.lineTo(tick.x, chartH);
     ctx.stroke();
 
-    ctx.fillStyle = '#475569';
+    ctx.save();
+    if (tick.isYear) {
+      ctx.font = `bold ${11 * dpr}px ${tvFontStack}`;
+      ctx.fillStyle = '#1E293B';
+    } else {
+      ctx.font = `500 ${11 * dpr}px ${tvFontStack}`;
+      ctx.fillStyle = '#787B86';
+    }
     ctx.fillText(tick.label, tick.x, chartH + BM / 2);
+    ctx.restore();
   }
 
   // Solid separators for right price scale and bottom time scale
@@ -1341,20 +1379,15 @@ export function renderChart(
   }
 
 
-  // ── LAYER 4: Volume Overlay (behind candles - 32% quiet opacity & faint baseline divider) ──
+  // ── LAYER 4: Volume Overlay (behind candles - quiet opacity & anchored baseline divider) ──
   if (options.showVolume && !options.showVolumePanel) {
-    const volHeightRatio = 0.12; // roughly 12% height from the bottom
+    const volHeightRatio = 0.13; // locked to 13% of canvas height
     const volH = chartH * volHeightRatio;
-    const volDividerY = Math.round(chartH - volH) + 0.5; // faint 1px baseline divider
+    const volDividerY = Math.floor(chartH - volH) + 0.5; // razor-sharp 1px baseline line
 
-    // Subtle boxed container backdrop & faint 1px horizontal rule matching grid line tone with 30-40% opacity
     ctx.save();
-    // Ultra-subtle boxed container backdrop for grounded volume histogram
-    ctx.fillStyle = 'rgba(248, 250, 252, 0.40)';
-    ctx.fillRect(0, volDividerY, chartW, chartH - volDividerY);
-
-    // 1px horizontal rule right across the top boundary of the volume bars (grid line tone with 35% opacity)
-    ctx.strokeStyle = 'rgba(100, 116, 139, 0.35)';
+    // 1px anchored baseline divider across volume pane
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
     ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
     ctx.moveTo(0, volDividerY);
@@ -1362,7 +1395,8 @@ export function renderChart(
     ctx.stroke();
     ctx.restore();
 
-    const volBodyW = candleW * 0.70;
+    const volGap = Math.max(1.5 * dpr, Math.min(3 * dpr, candleW * 0.25));
+    const volBodyW = Math.max(1 * dpr, candleW - volGap);
     let maxV = 0;
     for (let i = safeStart; i < safeEnd; i++) maxV = Math.max(maxV, candles[i].volume);
     if (maxV > 0) {
@@ -1370,12 +1404,12 @@ export function renderChart(
         const li = i - startIdx;
         const x = Math.round(li * candleW + (candleW - volBodyW) / 2);
         const c = candles[i];
-        const ratio = Math.min(1, Math.max(0.08, c.volume / maxV));
-        const barH = Math.round(ratio * volH * 0.92);
+        const ratio = Math.min(1, Math.max(0.06, c.volume / maxV));
+        const barH = Math.round(ratio * volH * 0.95);
         const bTop = Math.round(chartH - barH);
         const bull = c.close >= c.open;
-        ctx.fillStyle = bull ? 'rgba(8, 153, 129, 0.32)' : 'rgba(242, 54, 69, 0.32)';
-        ctx.fillRect(x, bTop, Math.round(volBodyW), barH);
+        ctx.fillStyle = bull ? 'rgba(8, 153, 129, 0.28)' : 'rgba(242, 54, 69, 0.28)';
+        ctx.fillRect(x, bTop, Math.max(1, Math.round(volBodyW)), barH);
       }
     }
   }
@@ -1412,8 +1446,8 @@ export function renderChart(
     }
   } else {
     // Candlestick, Hollow, Heikin-Ashi
-    const candleGap = Math.max(1.5 * dpr, candleW * 0.28);
-    const bodyW = Math.max(2 * dpr, candleW - candleGap);
+    const candleGap = Math.max(1.5 * dpr, Math.min(3 * dpr, candleW * 0.25));
+    const bodyW = Math.max(1 * dpr, candleW - candleGap);
     const wickW = Math.max(1 * dpr, 1);
     const isHollow = options.chartType === 'HOLLOW_CANDLE';
     for (let i = safeStart; i < Math.min(safeEnd, drawCandles.length); i++) {
@@ -1522,18 +1556,22 @@ export function renderChart(
     const accent = bull ? BULL : BEAR;
     const rawY = priceToY(curPrice);
     const clY = Math.max(2, Math.min(chartH - 2, rawY));
-    // Glow halo
-    ctx.strokeStyle = bull ? 'rgba(8, 153, 129, 0.28)' : 'rgba(242, 54, 69, 0.28)';
-    ctx.lineWidth = 3.5*dpr;
-    ctx.beginPath(); ctx.moveTo(0, clY); ctx.lineTo(chartW, clY); ctx.stroke();
-    // Dashed line
-    ctx.save(); ctx.setLineDash([6*dpr, 4*dpr]);
-    ctx.strokeStyle = accent; ctx.lineWidth = 1.6*dpr;
-    ctx.beginPath(); ctx.moveTo(0, clY); ctx.lineTo(chartW, clY); ctx.stroke();
-    ctx.setLineDash([]); ctx.restore();
+
+    // Dotted active tracker line across to price scale (TradingView standard)
+    ctx.save();
+    const lineY = Math.floor(clY) + 0.5;
+    ctx.setLineDash([2 * dpr, 4 * dpr]);
+    ctx.strokeStyle = bull ? 'rgba(8, 153, 129, 0.65)' : 'rgba(242, 54, 69, 0.65)';
+    ctx.lineWidth = 1 * dpr;
+    ctx.beginPath();
+    ctx.moveTo(0, lineY);
+    ctx.lineTo(chartW, lineY);
+    ctx.stroke();
+    ctx.restore();
+
     // Pill badge on right axis
     const prStr = formatPrice(curPrice);
-    ctx.font = `900 ${11.5 * dpr}px "JetBrains Mono",monospace`;
+    ctx.font = `bold ${11.5 * dpr}px ${TV_FONT_STACK}`;
     const tm = ctx.measureText(prStr);
     const padH = 6 * dpr, padV = 3.5 * dpr, dotR = 2.5 * dpr;
     const bW = Math.max(tm.width + padH * 2 + 10 * dpr, W - chartW - 4 * dpr);
@@ -1558,7 +1596,7 @@ export function renderChart(
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillText(prStr, bL + padH + dotR * 2 + 3 * dpr, Math.round(bT + bH2 / 2));
 
-    // ── Real-time Candle Countdown Timer (Clean 2.5px margin below price pill) ──
+    // ── Real-time Candle Countdown Timer (Clean stacked container with boundary clamping) ──
     const TF_DURATIONS: Record<string, number> = {
       '1M': 60_000,
       '5M': 300_000,
@@ -1598,10 +1636,10 @@ export function renderChart(
     const tW = bW; // Perfectly matches width of price pill for clean vertical stacking
     const tL = bL;
 
-    // Position 2.5px below price pill, or flip 2.5px above if near bottom edge
-    const marginGap = Math.round(2.5 * dpr);
+    // Position 3px below price pill, or flip 3px above if near bottom scale
+    const marginGap = Math.round(3 * dpr);
     let tT = bT + bH2 + marginGap;
-    if (tT + tH > chartH + BM - 2 * dpr) {
+    if (tT + tH > chartH - 8 * dpr) {
       tT = bT - tH - marginGap;
     }
 
@@ -1623,9 +1661,9 @@ export function renderChart(
       ctx.closePath();
       ctx.fill();
 
-      // Muted text opacity (72%) so the active price badge remains high-contrast
-      ctx.fillStyle = 'rgba(241, 245, 249, 0.72)';
-      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+      // Clean muted tabular typography for countdown
+      ctx.fillStyle = 'rgba(241, 245, 249, 0.78)';
+      ctx.font = `600 ${9.5 * dpr}px ${TV_FONT_STACK}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(timerBadgeStr, tL + tW / 2, tT + tH / 2);
@@ -3180,7 +3218,7 @@ export function renderChart(
     if (cy <= chartH) {
       const price = pMax - (cy / chartH) * pRange;
       const pTxt = formatPrice(price);
-      ctx.font = `bold ${12 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `600 ${11.5 * dpr}px ${TV_FONT_STACK}`;
       const pMeas = ctx.measureText(pTxt);
       const pLW = Math.min(W - chartW, pMeas.width + 16 * dpr);
       const pLH = 22 * dpr;
@@ -3198,7 +3236,7 @@ export function renderChart(
       const c = candles[cidx];
       const ts = c.openTime;
       const tStr = formatCrosshairTime(ts, isDailyOrHigher);
-      ctx.font = `bold ${11.5 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `600 ${11 * dpr}px ${TV_FONT_STACK}`;
       const tMeas = ctx.measureText(tStr);
       const tLW = tMeas.width + 16 * dpr;
       const tLH = 22 * dpr;
@@ -3435,7 +3473,7 @@ export function renderOverlay(
 
       const price = pMax - (cy / chartH) * pRange;
       const pTxt = formatPrice(price);
-      ctx.font = `bold ${12 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `600 ${11.5 * dpr}px ${TV_FONT_STACK}`;
       const pMeas = ctx.measureText(pTxt);
       const pLW = Math.min(W - chartW, pMeas.width + 16 * dpr);
       const pLH = 22 * dpr;
@@ -3459,7 +3497,7 @@ export function renderOverlay(
       const c = candles[cidx];
       const ts = c.openTime;
       const tStr = formatCrosshairTime(ts, isDailyOrHigher);
-      ctx.font = `bold ${11.5 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `600 ${11 * dpr}px ${TV_FONT_STACK}`;
       const tMeas = ctx.measureText(tStr);
       const tLW = tMeas.width + 16 * dpr;
       const tLH = 22 * dpr;
