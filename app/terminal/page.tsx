@@ -862,8 +862,8 @@ export default function TerminalPage() {
   const { market, setMarket, currency } = useMarket();
   const { getSymbolPrice } = useTradeEngine();
 
-  // Active terminal module tab: 'all' (Full Dashboard) | 'commodities' | 'forex' | 'charts'
-  const [activeTab, setActiveTab] = useState<'all' | 'commodities' | 'forex' | 'charts'>('all');
+  // Active terminal module tab: 'all' (Full Dashboard) | 'commodities' | 'forex' | 'crypto' | 'charts'
+  const [activeTab, setActiveTab] = useState<'all' | 'commodities' | 'forex' | 'crypto' | 'charts'>('all');
 
   // State: Edit mode toggle
   const [isEditing, setIsEditing] = useState(false);
@@ -892,6 +892,9 @@ export default function TerminalPage() {
       } else if (view === 'forex' || window.location.hash === '#forex') {
         setActiveTab('forex');
         setTargetCategory('FOREX');
+      } else if (view === 'crypto' || window.location.hash === '#crypto') {
+        setActiveTab('crypto');
+        setTargetCategory('CRYPTO');
       } else if (view === 'charts' || window.location.hash === '#charts') {
         setActiveTab('charts');
       }
@@ -1363,6 +1366,21 @@ export default function TerminalPage() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => {
+                    setActiveTab('crypto');
+                    setTargetCategory('CRYPTO');
+                  }}
+                  className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    activeTab === 'crypto'
+                      ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                      : 'font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <span>🪙</span>
+                  <span>CRYPTO</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setActiveTab('charts')}
                   className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     activeTab === 'charts'
@@ -1385,7 +1403,7 @@ export default function TerminalPage() {
 
 
 
-            {/* ── Search Bar with Add Button for Stocks, Index, Commodities, Forex, or Crypto (Dashboard, Commodities, and Forex tabs) ── */}
+            {/* ── Search Bar with Add Button for Stocks, Index, Commodities, Forex, or Crypto ── */}
             {activeTab !== 'charts' && (
               <div className="p-4 sm:p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-md mb-6 relative z-30" ref={searchContainerRef}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
@@ -1396,6 +1414,8 @@ export default function TerminalPage() {
                         ? 'Add Commodity to Commodities Intelligence'
                         : activeTab === 'forex'
                         ? 'Add Currency Pair to Forex Intelligence'
+                        : activeTab === 'crypto'
+                        ? 'Add Cryptocurrency to Crypto Intelligence'
                         : 'Add New Instrument to Dashboard'}
                     </span>
                   </div>
@@ -1443,6 +1463,8 @@ export default function TerminalPage() {
                           ? 'Search commodities (GOLD, CRUDEOIL, SILVER, NATGAS) to add...'
                           : activeTab === 'forex'
                           ? 'Search major currency pairs (EURUSD, GBPUSD, USDJPY, USDINR) to add...'
+                          : activeTab === 'crypto'
+                          ? 'Search cryptocurrencies (BTC, ETH, SOL, BNB, DOGE) to add...'
                           : market === 'INDIA'
                           ? 'Search from 3,800+ Zerodha stocks, indices, or crypto...'
                           : 'Search stocks, indices, or crypto...'
@@ -1603,8 +1625,8 @@ export default function TerminalPage() {
               </>
             )}
 
-            {/* ── Commodities Intelligence (Shown on Dashboard and Commodities tab) ── */}
-            {(activeTab === 'commodities' || activeTab === 'all') && (
+            {/* ── Commodities Intelligence (Shown ONLY on Commodities tab) ── */}
+            {activeTab === 'commodities' && (
               <>
                 <SectionHeader
                   title="Commodities Intelligence"
@@ -1632,8 +1654,8 @@ export default function TerminalPage() {
               </>
             )}
 
-            {/* ── Forex Intelligence (Shown on Dashboard and Forex tab) ── */}
-            {(activeTab === 'forex' || activeTab === 'all') && (
+            {/* ── Forex Intelligence (Shown ONLY on Forex tab) ── */}
+            {activeTab === 'forex' && (
               <>
                 <SectionHeader
                   title="Forex Intelligence"
@@ -1661,8 +1683,8 @@ export default function TerminalPage() {
               </>
             )}
 
-            {/* ── Crypto Section (Shown on Full Dashboard) ── */}
-            {activeTab === 'all' && (
+            {/* ── Crypto Intelligence (Shown ONLY on Crypto tab) ── */}
+            {activeTab === 'crypto' && (
               <>
                 <SectionHeader
                   title="Crypto Intelligence"
