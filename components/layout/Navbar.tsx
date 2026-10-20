@@ -29,13 +29,27 @@ const TERMINAL_NAV_LINKS = [
   { href: '/terminal/screener', label: 'Screeners' },
 ];
 
-const DEFAULT_NOTIFICATIONS = [
+interface NotificationItem {
+  id: string;
+  icon: string;
+  title: string;
+  desc: string;
+  time: string;
+  symbol: string;
+  market: 'INDIA' | 'USA' | 'UAE';
+  href: string;
+}
+
+const DEFAULT_NOTIFICATIONS: NotificationItem[] = [
   {
     id: 'notif-1',
     icon: '⚡',
     title: 'NIFTY 50 Breakout Alert',
     desc: 'Broke above 24,580 structural resistance with 1.8x volume surge.',
     time: '2m ago',
+    symbol: 'NIFTY 50',
+    market: 'INDIA',
+    href: '/chart/NIFTY50?market=INDIA',
   },
   {
     id: 'notif-2',
@@ -43,6 +57,9 @@ const DEFAULT_NOTIFICATIONS = [
     title: 'Gold Spot Absorption',
     desc: 'XAU/USD holding $2,653.13 support block with aggressive limit buyer absorption.',
     time: '14m ago',
+    symbol: 'GOLD',
+    market: 'USA',
+    href: '/chart/GOLD?market=USA',
   },
   {
     id: 'notif-3',
@@ -50,6 +67,9 @@ const DEFAULT_NOTIFICATIONS = [
     title: 'EUR/USD Interbank Spread',
     desc: 'Interbank spread narrowed to 0.8 pips at 1.0845 on US market opening flow.',
     time: '32m ago',
+    symbol: 'EURUSD',
+    market: 'USA',
+    href: '/chart/EURUSD?market=USA',
   },
 ];
 
@@ -70,7 +90,8 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(3);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(DEFAULT_NOTIFICATIONS);
+  const unreadCount = notifications.length;
   const [userSession, setUserSession] = useState<{ name: string; role: string; deskId: string } | null>(null);
 
   const [brandHovered, setBrandHovered] = useState(false);
@@ -244,7 +265,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                   {unreadCount > 0 && (
                     <button
                       type="button"
-                      onClick={() => setUnreadCount(0)}
+                      onClick={() => setNotifications([])}
                       className="text-[11px] font-mono text-emerald-500 hover:underline cursor-pointer"
                     >
                       Clear
@@ -253,21 +274,63 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                 </div>
 
                 <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto">
-                  {DEFAULT_NOTIFICATIONS.map((n) => (
-                    <div
-                      key={n.id}
-                      className="p-2.5 rounded-xl border border-current/10 bg-current/5 hover:bg-current/10 transition-colors flex items-start gap-2.5 text-left"
-                    >
-                      <span className="text-base shrink-0 mt-0.5">{n.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-xs font-bold font-mono truncate">{n.title}</span>
-                          <span className="text-[10px] font-mono opacity-60 shrink-0">{n.time}</span>
-                        </div>
-                        <p className="text-[11.5px] opacity-80 leading-snug mt-0.5">{n.desc}</p>
+                  {notifications.length === 0 ? (
+                    <div className="py-6 px-4 text-center flex flex-col items-center justify-center gap-2">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
                       </div>
+                      <div className="text-xs font-mono font-bold">All caught up</div>
+                      <p className="text-[11px] opacity-60">No pending alerts. You will be notified when real-time breakout conditions trigger.</p>
+                      <button
+                        type="button"
+                        onClick={() => setNotifications(DEFAULT_NOTIFICATIONS)}
+                        className="mt-1 text-[11px] font-mono font-bold text-emerald-400 hover:text-emerald-300 px-2.5 py-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                      >
+                        Restore Sample Alerts
+                      </button>
                     </div>
-                  ))}
+                  ) : (
+                    notifications.map((n) => (
+                      <Link
+                        key={n.id}
+                        href={n.href}
+                        onClick={() => setNotificationMenuOpen(false)}
+                        className="group relative p-2.5 rounded-xl border border-current/10 bg-current/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all flex items-start gap-2.5 text-left cursor-pointer"
+                      >
+                        <span className="text-base shrink-0 mt-0.5">{n.icon}</span>
+                        <div className="flex-1 min-w-0 pr-4">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-xs font-bold font-mono truncate group-hover:text-emerald-400 transition-colors">
+                              {n.title}
+                            </span>
+                            <span className="text-[10px] font-mono opacity-60 shrink-0">{n.time}</span>
+                          </div>
+                          <p className="text-[11.5px] opacity-80 leading-snug mt-0.5">{n.desc}</p>
+                          <div className="flex items-center gap-2 mt-1.5 text-[10px] font-mono font-bold text-emerald-400">
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/15">{n.market}</span>
+                            <span className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                              Open Chart →
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setNotifications((prev) => prev.filter((item) => item.id !== n.id));
+                          }}
+                          className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center opacity-40 hover:opacity-100 hover:bg-current/10 transition-all text-xs font-mono cursor-pointer"
+                          title="Dismiss alert"
+                          aria-label="Dismiss alert"
+                        >
+                          ✕
+                        </button>
+                      </Link>
+                    ))
+                  )}
                 </div>
 
                 <div className="border-t border-current/15 pt-2 flex items-center justify-between">
