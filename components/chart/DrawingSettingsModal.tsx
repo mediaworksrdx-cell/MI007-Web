@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { DrawingItem, FibLevelItem } from '@/lib/drawingTypes';
 import type { Candle } from '@/lib/types';
 import { resolveDrawingPointIndex } from '@/lib/chartRenderer';
