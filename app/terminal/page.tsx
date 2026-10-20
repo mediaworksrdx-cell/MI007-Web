@@ -126,6 +126,8 @@ const DEFAULT_FOREX: ForexItem[] = [
   { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP / USD', base: 1.2980, pipSpread: '1.0 pips', changePct: 0.22 },
   { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD / JPY', base: 152.40, pipSpread: '0.9 pips', changePct: -0.35 },
   { symbol: 'USDINR', name: 'USD / INR', pair: 'USD / INR', base: 84.08, pipSpread: '1.2 pips', changePct: 0.05 },
+  { symbol: 'USDCAD', name: 'USD / CAD', pair: 'USD / CAD', base: 1.4092, pipSpread: '0.9 pips', changePct: 0.12 },
+  { symbol: 'AUDCAD', name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9838, pipSpread: '1.2 pips', changePct: 0.23 },
   { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD / CHF', base: 0.8850, pipSpread: '0.9 pips', changePct: -0.15 },
   { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips', changePct: 0.40 },
 ];
@@ -180,8 +182,12 @@ const KNOWN_FOREX: Record<string, { name: string; base: number; pair: string; pi
   GBPUSD: { name: 'GBP / USD', pair: 'GBP / USD', base: 1.2980, pipSpread: '1.0 pips' },
   USDJPY: { name: 'USD / JPY', pair: 'USD / JPY', base: 152.40, pipSpread: '0.9 pips' },
   USDINR: { name: 'USD / INR', pair: 'USD / INR', base: 84.08, pipSpread: '1.2 pips' },
+  USDCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4092, pipSpread: '0.9 pips' },
+  AUDCAD: { name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9838, pipSpread: '1.2 pips' },
+  USDCHF: { name: 'USD / CHF', pair: 'USD / CHF', base: 0.8850, pipSpread: '0.9 pips' },
   USDAED: { name: 'USD / AED', pair: 'USD / AED', base: 3.6725, pipSpread: '0.5 pips' },
   AUDUSD: { name: 'AUD / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips' },
+  UADCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4092, pipSpread: '0.9 pips' },
 };
 
 const KNOWN_US_STOCKS: Record<string, { name: string; base: number; sector: string }> = {
@@ -892,10 +898,20 @@ export default function TerminalPage() {
 
       try {
         const savedComm = localStorage.getItem(`${STORAGE_PREFIX}commodities`);
-        if (savedComm) setCommodities(JSON.parse(savedComm));
+        if (savedComm) {
+          const parsed: CommodityItem[] = JSON.parse(savedComm);
+          const existingSyms = new Set(parsed.map(p => p.symbol));
+          const missingDefaults = DEFAULT_COMMODITIES.filter(d => !existingSyms.has(d.symbol));
+          setCommodities(missingDefaults.length > 0 ? [...parsed, ...missingDefaults] : parsed);
+        }
 
         const savedFx = localStorage.getItem(`${STORAGE_PREFIX}forex`);
-        if (savedFx) setForex(JSON.parse(savedFx));
+        if (savedFx) {
+          const parsed: ForexItem[] = JSON.parse(savedFx);
+          const existingSyms = new Set(parsed.map(p => p.symbol));
+          const missingDefaults = DEFAULT_FOREX.filter(d => !existingSyms.has(d.symbol));
+          setForex(missingDefaults.length > 0 ? [...parsed, ...missingDefaults] : parsed);
+        }
       } catch {}
     }
   }, []);
@@ -1062,9 +1078,13 @@ export default function TerminalPage() {
     });
 
     // 3. Check known forex
+    const seenForex = new Set<string>();
     Object.entries(KNOWN_FOREX).forEach(([sym, data]) => {
-      if (sym.includes(q) || data.name.toUpperCase().includes(q) || data.pair.toUpperCase().includes(q)) {
-        results.push({ symbol: sym, name: data.pair, category: 'FOREX', base: data.base });
+      const canonical = sym === 'UADCAD' ? 'USDCAD' : sym;
+      if (seenForex.has(canonical)) return;
+      if (sym.includes(q) || data.name.toUpperCase().includes(q) || data.pair.toUpperCase().includes(q) || (q.includes('UAD') && canonical === 'USDCAD')) {
+        seenForex.add(canonical);
+        results.push({ symbol: canonical, name: data.pair, category: 'FOREX', base: data.base });
       }
     });
 
@@ -1178,13 +1198,14 @@ export default function TerminalPage() {
 
     // Add to Forex
     if (targetCat === 'FOREX') {
-      if (forex.some(f => f.symbol.toUpperCase() === rawSym)) {
-        showToast(`${rawSym} is already in Forex Intelligence`, true);
+      const canonicalSym = rawSym === 'UADCAD' ? 'USDCAD' : rawSym;
+      if (forex.some(f => f.symbol.toUpperCase() === canonicalSym)) {
+        showToast(`${canonicalSym} is already in Forex Intelligence`, true);
         return;
       }
-      const fxData = KNOWN_FOREX[rawSym] || { name: item?.name || `${rawSym} FX Pair`, base: item?.base || 1.0, pair: rawSym.length === 6 ? `${rawSym.slice(0, 3)} / ${rawSym.slice(3)}` : rawSym, pipSpread: '1.0 pips' };
+      const fxData = KNOWN_FOREX[canonicalSym] || KNOWN_FOREX[rawSym] || { name: item?.name || `${canonicalSym} FX Pair`, base: item?.base || 1.0, pair: canonicalSym.length === 6 ? `${canonicalSym.slice(0, 3)} / ${canonicalSym.slice(3)}` : canonicalSym, pipSpread: '1.0 pips' };
       const newForexItem: ForexItem = {
-        symbol: rawSym,
+        symbol: canonicalSym,
         name: fxData.name,
         pair: fxData.pair,
         base: fxData.base,
@@ -1192,7 +1213,7 @@ export default function TerminalPage() {
         changePct: +(Math.random() * 0.8 - 0.4).toFixed(2),
       };
       updateForex([...forex, newForexItem]);
-      showToast(`✓ Added ${rawSym} to Forex Intelligence`);
+      showToast(`✓ Added ${canonicalSym} to Forex Intelligence`);
       setSearchQuery('');
       setIsDropdownOpen(false);
       return;
@@ -1660,7 +1681,7 @@ export default function TerminalPage() {
                     No forex pairs in this section. Use the search bar above or click Reset Defaults.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
                     {forex.map(f => (
                       <ForexTile
                         key={f.symbol}

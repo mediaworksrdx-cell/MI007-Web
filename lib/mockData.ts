@@ -89,6 +89,9 @@ export const FOREX_BASE_PRICES: Record<string, number> = {
   GBPUSD: 1.2980,
   USDJPY: 152.40,
   USDINR: 84.08,
+  USDCAD: 1.4092,
+  AUDCAD: 0.9838,
+  USDCHF: 0.8850,
   USDAED: 3.6725,
   AUDUSD: 0.6650,
 };

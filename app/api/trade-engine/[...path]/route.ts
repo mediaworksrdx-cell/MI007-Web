@@ -104,11 +104,13 @@ async function fetchYahooMacroData(): Promise<{ value: any[]; Count: number } | 
     { yahoo: 'NG=F', symbols: ['NATGAS', 'NATURALGAS'], format: (p: number) => p.toFixed(3) },
     { yahoo: 'HG=F', symbols: ['COPPER', 'HIGH_GRADE_COPPER'], format: (p: number) => p.toFixed(3) },
 
-    // 6 Major Forex Pairs
+    // Major Forex Pairs
     { yahoo: 'EURUSD=X', symbols: ['EURUSD', 'EUR/USD'], format: (p: number) => p.toFixed(4) },
     { yahoo: 'GBPUSD=X', symbols: ['GBPUSD', 'GBP/USD'], format: (p: number) => p.toFixed(4) },
     { yahoo: 'USDJPY=X', symbols: ['USDJPY', 'USD/JPY'], format: (p: number) => p.toFixed(2) },
     { yahoo: 'USDINR=X', symbols: ['USDINR', 'USD/INR'], format: (p: number) => p.toFixed(2) },
+    { yahoo: 'USDCAD=X', symbols: ['USDCAD', 'USD/CAD', 'UADCAD', 'UAD/CAD'], format: (p: number) => p.toFixed(4) },
+    { yahoo: 'AUDCAD=X', symbols: ['AUDCAD', 'AUD/CAD'], format: (p: number) => p.toFixed(4) },
     { yahoo: 'USDCHF=X', symbols: ['USDCHF', 'USD/CHF'], format: (p: number) => p.toFixed(4) },
     { yahoo: 'AUDUSD=X', symbols: ['AUDUSD', 'AUD/USD'], format: (p: number) => p.toFixed(4) },
 

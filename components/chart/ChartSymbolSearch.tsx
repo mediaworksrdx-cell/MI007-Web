@@ -46,6 +46,9 @@ export const MASTER_CHART_INSTRUMENTS: ChartInstrumentItem[] = [
   { symbol: 'GBPUSD', name: 'British Pound / US Dollar', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 1.2980, sector: 'Major Currency' },
   { symbol: 'USDJPY', name: 'US Dollar / Japanese Yen', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 152.40, sector: 'Major Currency' },
   { symbol: 'USDINR', name: 'US Dollar / Indian Rupee', category: 'FOREX', exchange: 'FOREX', currency: '₹', flag: '💱', basePrice: 84.08, sector: 'Emerging Pair' },
+  { symbol: 'USDCAD', name: 'US Dollar / Canadian Dollar', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 1.4092, sector: 'Major Currency' },
+  { symbol: 'AUDCAD', name: 'Australian Dollar / Canadian Dollar', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 0.9838, sector: 'Commodity Currency' },
+  { symbol: 'USDCHF', name: 'US Dollar / Swiss Franc', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 0.8850, sector: 'Safe Haven' },
   { symbol: 'USDAED', name: 'US Dollar / UAE Dirham', category: 'FOREX', exchange: 'FOREX', currency: 'AED', flag: '💱', basePrice: 3.6725, sector: 'Pegged Currency' },
   { symbol: 'AUDUSD', name: 'Australian Dollar / USD', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 0.6650, sector: 'Commodity Currency' },
 
@@ -202,12 +205,13 @@ export function ChartSymbolSearch({
     if (!q) {
       results = pool.slice(0, 16);
     } else {
-      // Direct matches from master catalog
+      // Direct matches from master catalog (with typo tolerance for UAD -> USD / AUD)
       results = pool.filter(
         (i) =>
           i.symbol.toUpperCase().includes(q) ||
           i.name.toUpperCase().includes(q) ||
-          (i.sector && i.sector.toUpperCase().includes(q))
+          (i.sector && i.sector.toUpperCase().includes(q)) ||
+          (q.includes('UAD') && (i.symbol.includes('USD') || i.symbol.includes('AUD')))
       );
 
       // If in ALL or STOCKS mode, search 3,800+ Zerodha stocks for deep match

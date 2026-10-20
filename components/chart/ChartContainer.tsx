@@ -181,7 +181,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     const sym = selectedSymbol.toUpperCase().replace(/[\s\/-]+/g, '');
     if (['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX', 'LINK', 'MATIC', 'DOT'].includes(sym)) return '$';
     if (['GOLD', 'XAU', 'XAUUSD', 'SILVER', 'XAG', 'XAGUSD', 'CRUDEOIL', 'BRENT', 'WTI', 'NATGAS', 'COPPER', 'PLATINUM'].includes(sym)) return '$';
-    if (['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(sym)) return '$';
+    if (['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'AUDCAD', 'UADCAD', 'USDCHF', 'NZDUSD'].includes(sym)) return '$';
     if (['USDINR'].includes(sym)) return '₹';
     if (['USDAED'].includes(sym)) return 'AED ';
     if (['DFMGI', 'ADXGI', 'EMAAR', 'FAB', 'DEWA', 'ALDAR', 'ENBD', 'ADNOC', 'AIRARABIA', 'SALIK'].includes(sym)) return 'AED ';

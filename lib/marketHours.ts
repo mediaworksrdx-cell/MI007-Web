@@ -88,8 +88,8 @@ export function getSymbolMarket(sym: string): MarketRegion {
   }
 
   // Forex
-  const FOREX_LIST = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDAED', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD'];
-  if (FOREX_LIST.includes(clean) || clean.includes('/USD') || clean.includes('/INR') || clean.includes('/AED')) {
+  const FOREX_LIST = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDAED', 'AUDUSD', 'USDCAD', 'AUDCAD', 'UADCAD', 'USDCHF', 'NZDUSD'];
+  if (FOREX_LIST.includes(clean) || clean.includes('/USD') || clean.includes('/INR') || clean.includes('/AED') || clean.includes('/CAD')) {
     return 'FOREX';
   }
 

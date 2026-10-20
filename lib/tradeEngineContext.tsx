@@ -331,6 +331,14 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
                 next.set('USDCHF', data);
                 next.set('USD/CHF', data);
               }
+              if (m.symbol === 'USD/CAD' || m.symbol === 'USDCAD' || m.symbol === 'UADCAD' || m.symbol === 'UAD/CAD') {
+                next.set('USDCAD', data);
+                next.set('USD/CAD', data);
+              }
+              if (m.symbol === 'AUD/CAD' || m.symbol === 'AUDCAD') {
+                next.set('AUDCAD', data);
+                next.set('AUD/CAD', data);
+              }
               if (m.symbol === 'AUD/USD' || m.symbol === 'AUDUSD') {
                 next.set('AUDUSD', data);
                 next.set('AUD/USD', data);
