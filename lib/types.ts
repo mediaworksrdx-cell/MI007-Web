@@ -34,6 +34,7 @@ export function isOverlay(t: IndicatorType): boolean {
 }
 
 export interface IndicatorConfig {
+  id?: string;
   type: IndicatorType;
   period: number;
   secondaryPeriod: number;
@@ -175,7 +176,7 @@ export interface ChartOptions {
   fnoLevels?: FnoOverlayLevels;
   strategyOverlay?: StrategyPayoffOverlay;
   indicators: IndicatorConfig[];
-  indicatorResults: Map<IndicatorType, unknown>;
+  indicatorResults: Map<string, unknown>;
   currentPriceOverride?: number;
   timeframe: string;
   cursorMode?: string;

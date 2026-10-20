@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Timeframe, IndicatorType, INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES } from '@/lib/types';
+import { Timeframe, IndicatorType, IndicatorConfig, INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES } from '@/lib/types';
 import type { ChartType } from '@/lib/types';
 import { ChartTemplate } from '@/lib/chartTemplates';
 
@@ -39,6 +39,7 @@ interface ChartToolbarProps {
   showSmcOverlay: boolean;
   showVolumeProfile: boolean;
   activeIndicators: IndicatorType[];
+  indicators?: IndicatorConfig[];
   engineStatus?: string;
   isLiveFromEngine?: boolean;
   currency?: string;
@@ -55,7 +56,10 @@ interface ChartToolbarProps {
   onToggleSmcOverlay: () => void;
   onToggleVolumeProfile: () => void;
   onToggleIndicator: (type: IndicatorType) => void;
-  onOpenIndicatorSettings?: (type: IndicatorType) => void;
+  onAddIndicator?: (type: IndicatorType) => void;
+  onRemoveIndicator?: (idOrType: string) => void;
+  onToggleIndicatorVisibility?: (idOrType: string) => void;
+  onOpenIndicatorSettings?: (idOrType: string) => void;
   onSelectTemplate: (template: ChartTemplate) => void;
   onSaveToTemplate: (slotId: string) => void;
   onRenameTemplate: (slotId: string, newName: string) => void;
@@ -73,6 +77,7 @@ export function ChartToolbar({
   showSmcOverlay,
   showVolumeProfile,
   activeIndicators,
+  indicators,
   engineStatus,
   isLiveFromEngine,
   currency = '₹',
@@ -89,6 +94,9 @@ export function ChartToolbar({
   onToggleSmcOverlay,
   onToggleVolumeProfile,
   onToggleIndicator,
+  onAddIndicator,
+  onRemoveIndicator,
+  onToggleIndicatorVisibility,
   onOpenIndicatorSettings,
   onSaveChartLayout,
   onClearAllIndicators,
@@ -96,6 +104,8 @@ export function ChartToolbar({
   onSelectTemplate,
 }: ChartToolbarProps) {
   const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | null>(null);
+  const [indicatorSearch, setIndicatorSearch] = useState('');
+  const [recentlyAddedType, setRecentlyAddedType] = useState<string | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   // Close menus on outside click or Escape key
@@ -217,81 +227,174 @@ export function ChartToolbar({
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
-        {/* 3. Indicators Simple Dropdown Menu */}
+        {/* 3. TradingView-Standard Multi-Instance Indicators Menu */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setOpenMenu(openMenu === 'INDICATORS' ? null : 'INDICATORS')}
             className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
-              openMenu === 'INDICATORS' || activeIndicators.length > 0
+              openMenu === 'INDICATORS' || (indicators ? indicators.length > 0 : activeIndicators.length > 0)
                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
                 : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
             <span className="font-mono font-black text-xs px-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">ƒx</span>
             <span>Indicators</span>
-            {activeIndicators.length > 0 && (
+            {((indicators && indicators.length > 0) || activeIndicators.length > 0) && (
               <span className="h-4 px-1.5 rounded-full bg-emerald-600 text-white font-mono text-[10px] font-bold flex items-center justify-center">
-                {activeIndicators.length}
+                {indicators ? indicators.length : activeIndicators.length}
               </span>
             )}
             <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
           </button>
 
           {openMenu === 'INDICATORS' && (
-            <div className="absolute top-full left-0 mt-1 w-64 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-xl py-1 z-[100] max-h-96 overflow-y-auto animate-in fade-in duration-75">
-              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span>Indicators</span>
-                {activeIndicators.length > 0 && (
-                  <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[9px] font-bold">{activeIndicators.length} active</span>
-                )}
+            <div className="absolute top-full left-0 mt-1 w-80 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl py-2 z-[100] max-h-[480px] flex flex-col animate-in fade-in duration-75">
+              {/* Search Bar */}
+              <div className="px-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={indicatorSearch}
+                    onChange={(e) => setIndicatorSearch(e.target.value)}
+                    placeholder="Search indicators (e.g. EMA, RSI)..."
+                    className="w-full pl-7 pr-7 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-emerald-500"
+                  />
+                  <span className="absolute left-2 top-2 text-slate-400 text-xs">🔍</span>
+                  {indicatorSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setIndicatorSearch('')}
+                      className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="py-1">
-                {ALL_INDICATOR_TYPES.map((type) => {
+              {/* Active Indicators on Chart (with Eye, Settings, Delete) */}
+              {indicators && indicators.length > 0 && (
+                <div className="px-3 py-2 bg-slate-50/80 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Active on Chart</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[9px] font-bold">{indicators.length}</span>
+                  </div>
+                  <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                    {indicators.map((cfg) => {
+                      const id = cfg.id || cfg.type;
+                      return (
+                        <div
+                          key={id}
+                          className="flex items-center justify-between px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs"
+                        >
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cfg.color }} />
+                            <span className={`font-mono text-xs truncate ${cfg.enabled ? 'font-bold text-slate-800 dark:text-slate-100' : 'text-slate-400 line-through'}`}>
+                              {INDICATOR_DEFAULTS[cfg.type].label} ({cfg.period})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => onToggleIndicatorVisibility?.(id)}
+                              title={cfg.enabled ? "Hide Indicator" : "Show Indicator"}
+                              className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] cursor-pointer"
+                            >
+                              {cfg.enabled ? '👁' : '👁‍🗨'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onOpenIndicatorSettings?.(id);
+                                setOpenMenu(null);
+                              }}
+                              title="Configure Settings"
+                              className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] cursor-pointer"
+                            >
+                              ⚙
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onRemoveIndicator?.(id)}
+                              title="Remove"
+                              className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-xs cursor-pointer"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Indicators Library (Click to Add multiple times) */}
+              <div className="flex-1 overflow-y-auto py-1">
+                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                  <span>Indicators Library</span>
+                  <span className="text-[9px] text-slate-400">Click + to add again & again</span>
+                </div>
+                {ALL_INDICATOR_TYPES.filter(type => {
+                  if (!indicatorSearch.trim()) return true;
+                  const query = indicatorSearch.toLowerCase();
                   const meta = INDICATOR_DEFAULTS[type];
-                  const active = isIndicatorActive(type);
+                  return meta.label.toLowerCase().includes(query) || type.toLowerCase().includes(query);
+                }).map((type) => {
+                  const meta = INDICATOR_DEFAULTS[type];
+                  const count = indicators ? indicators.filter(c => c.type === type).length : (isIndicatorActive(type) ? 1 : 0);
+                  const isJustAdded = recentlyAddedType === type;
+
+                  const handleAdd = () => {
+                    if (onAddIndicator) {
+                      onAddIndicator(type);
+                    } else {
+                      onToggleIndicator(type);
+                    }
+                    setRecentlyAddedType(type);
+                    setTimeout(() => setRecentlyAddedType(null), 1000);
+                  };
+
                   return (
                     <div
                       key={type}
-                      className={`flex items-center justify-between px-3 py-1.5 transition-colors cursor-pointer ${
-                        active ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                      }`}
-                      onClick={() => onToggleIndicator(type)}
+                      className="flex items-center justify-between px-3 py-1.5 transition-colors cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-200 group"
+                      onClick={handleAdd}
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
-                        <span className="text-xs truncate">{meta.label}</span>
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
+                        <span className="text-xs font-medium truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          {meta.label}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                        {active && onOpenIndicatorSettings && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onOpenIndicatorSettings(type);
-                              setOpenMenu(null);
-                            }}
-                            title="Configure Settings"
-                            className="p-1 rounded text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 text-xs"
-                          >
-                            ⚙
-                          </button>
+                        {count > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                            {count} active
+                          </span>
                         )}
-                        <input
-                          type="checkbox"
-                          checked={active}
-                          onChange={() => onToggleIndicator(type)}
-                          className="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
-                        />
+                        <button
+                          type="button"
+                          onClick={handleAdd}
+                          title={`Add ${meta.label} (can add again and again for multiple periods)`}
+                          className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                            isJustAdded
+                              ? 'bg-emerald-600 text-white scale-105 shadow-xs'
+                              : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-600 dark:text-slate-300'
+                          }`}
+                        >
+                          {isJustAdded ? '✓ Added' : '+ Add'}
+                        </button>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              {activeIndicators.length > 0 && onClearAllIndicators && (
-                <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
+              {((indicators && indicators.length > 0) || activeIndicators.length > 0) && onClearAllIndicators && (
+                <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shrink-0">
                   <button
                     type="button"
                     onClick={() => {

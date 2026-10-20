@@ -46,6 +46,27 @@ const TIMEFRAME_MS: Record<string, number> = {
   '1M': 30 * 86_400_000,
 };
 
+const DEFAULT_PERIOD_PROGRESSIONS: Partial<Record<IndicatorType, number[]>> = {
+  EMA: [9, 21, 50, 200, 100],
+  SMA: [20, 50, 200, 100],
+  RSI: [14, 7, 21],
+  BOLLINGER_BANDS: [20, 50],
+  SUPERTREND: [10, 14],
+  ATR: [14, 20],
+  MACD: [12, 8],
+  STOCHASTIC: [14, 21],
+  HMA: [9, 21],
+  DONCHIAN: [20, 50],
+};
+
+const DEFAULT_COLOR_PROGRESSIONS: Partial<Record<IndicatorType, string[]>> = {
+  EMA: ['#3B82F6', '#F59E0B', '#10B981', '#EC4899', '#8B5CF6'], // Blue, Amber, Emerald, Pink, Violet
+  SMA: ['#6366F1', '#EC4899', '#14B8A6', '#F97316', '#06B6D4'], // Indigo, Pink, Teal, Orange, Cyan
+  RSI: ['#8B5CF6', '#EC4899', '#06B6D4'],
+  BOLLINGER_BANDS: ['#6366F1', '#3B82F6'],
+  SUPERTREND: ['#10B981', '#059669'],
+};
+
 function getExpectedPrice(market: MarketType, symbol: string): number {
   try {
     const symClean = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
@@ -139,21 +160,54 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [showVolumePanel, setShowVolumePanel] = useState(false);
   const [showSmcOverlay, setShowSmcOverlay] = useState(false);
   const [showVolumeProfile, setShowVolumeProfile] = useState(false);
-  const [activeIndicators, setActiveIndicators] = useState<IndicatorType[]>([]);
-  const [customConfigs, setCustomConfigs] = useState<Partial<Record<IndicatorType, Partial<IndicatorConfig>>>>({});
-  const [editingIndicator, setEditingIndicator] = useState<IndicatorType | null>(null);
-
-  // Template System: 5 renameable slots with persistent storage
-  const [templates, setTemplates] = useState<ChartTemplate[]>(() => getStoredTemplates());
-  const [activeTemplateId, setActiveTemplateIdState] = useState<string>(() => getActiveTemplateId());
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
-
-  useEffect(() => {
+  const [indicatorConfigs, setIndicatorConfigs] = useState<IndicatorConfig[]>(() => {
+    if (typeof window === 'undefined') return [];
     try {
-      const saved = localStorage.getItem('mi007_indicator_configs');
-      if (saved) setCustomConfigs(JSON.parse(saved));
+      const savedV2 = localStorage.getItem('mi007_chart_indicators_v2');
+      if (savedV2) {
+        const parsed = JSON.parse(savedV2);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item, idx) => ({
+            ...item,
+            id: item.id || `${item.type.toLowerCase()}-${Date.now()}-${idx}`,
+            enabled: item.enabled ?? true,
+          }));
+        }
+      }
+      // Migration from legacy mi007_active_indicators / mi007_indicator_configs if any
+      const legacyTypes = localStorage.getItem('mi007_active_indicators');
+      if (legacyTypes) {
+        const types: IndicatorType[] = JSON.parse(legacyTypes);
+        const legacyCustom = localStorage.getItem('mi007_indicator_configs');
+        const customMap = legacyCustom ? JSON.parse(legacyCustom) : {};
+        if (Array.isArray(types) && types.length > 0) {
+          return types.map((t, idx) => {
+            const d = INDICATOR_DEFAULTS[t];
+            const c = customMap[t] || {};
+            return {
+              id: `${t.toLowerCase()}-${Date.now()}-${idx}`,
+              type: t,
+              period: c.period ?? d.period,
+              secondaryPeriod: c.secondaryPeriod ?? d.secondaryPeriod,
+              tertiaryPeriod: c.tertiaryPeriod ?? d.tertiaryPeriod,
+              multiplier: c.multiplier ?? d.multiplier,
+              color: c.color ?? d.color,
+              secondaryColor: c.secondaryColor ?? d.secondaryColor,
+              tertiaryColor: c.tertiaryColor ?? d.tertiaryColor,
+              enabled: true,
+            };
+          });
+        }
+      }
     } catch {}
-  }, []);
+    return [];
+  });
+  const [editingIndicatorId, setEditingIndicatorId] = useState<string | null>(null);
+
+  // Active indicator types set (for backward compatibility)
+  const activeIndicators = useMemo(() => {
+    return Array.from(new Set(indicatorConfigs.filter(c => c.enabled).map(c => c.type)));
+  }, [indicatorConfigs]);
 
   const [candles, setCandles] = useState<Candle[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | undefined>();
@@ -424,44 +478,11 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   }, [selectedSymbol, timeframe, subscribeToTicks]);
 
 
-  // Build IndicatorConfig array from active indicator types + user customizations
-  const indicatorConfigs: IndicatorConfig[] = useMemo(() => {
-    return activeIndicators.map(t => {
-      const d = INDICATOR_DEFAULTS[t];
-      const custom = customConfigs[t];
-      return {
-        type: t,
-        period: custom?.period ?? d.period,
-        secondaryPeriod: custom?.secondaryPeriod ?? d.secondaryPeriod,
-        tertiaryPeriod: custom?.tertiaryPeriod ?? d.tertiaryPeriod,
-        color: custom?.color ?? d.color,
-        secondaryColor: custom?.secondaryColor ?? d.secondaryColor,
-        tertiaryColor: custom?.tertiaryColor ?? d.tertiaryColor,
-        enabled: true,
-        multiplier: custom?.multiplier ?? d.multiplier,
-      };
-    });
-  }, [activeIndicators, customConfigs]);
-
-  // Currently editing indicator config
+  // Currently editing indicator config by unique instance ID
   const currentEditingConfig: IndicatorConfig | null = useMemo(() => {
-    if (!editingIndicator) return null;
-    const existing = indicatorConfigs.find(c => c.type === editingIndicator);
-    if (existing) return existing;
-    const d = INDICATOR_DEFAULTS[editingIndicator];
-    const custom = customConfigs[editingIndicator];
-    return {
-      type: editingIndicator,
-      period: custom?.period ?? d.period,
-      secondaryPeriod: custom?.secondaryPeriod ?? d.secondaryPeriod,
-      tertiaryPeriod: custom?.tertiaryPeriod ?? d.tertiaryPeriod,
-      color: custom?.color ?? d.color,
-      secondaryColor: custom?.secondaryColor ?? d.secondaryColor,
-      tertiaryColor: custom?.tertiaryColor ?? d.tertiaryColor,
-      enabled: true,
-      multiplier: custom?.multiplier ?? d.multiplier,
-    };
-  }, [editingIndicator, indicatorConfigs, customConfigs]);
+    if (!editingIndicatorId) return null;
+    return indicatorConfigs.find(c => (c.id || c.type) === editingIndicatorId) || null;
+  }, [editingIndicatorId, indicatorConfigs]);
 
   const quote = useMemo(() => getMockQuote(market, selectedSymbol), [market, selectedSymbol]);
 
@@ -507,47 +528,151 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
 
   // Compute indicator results on active synchronized candles with warmup history
   const indicatorResults = useMemo(() => {
-    const map = new Map<IndicatorType, unknown>();
+    const map = new Map<string, unknown>();
     for (const cfg of indicatorConfigs) {
+      if (!cfg.enabled) continue;
+      const key = cfg.id || cfg.type;
+      let res: unknown = null;
       switch (cfg.type) {
-        case 'SMA': map.set('SMA', calculateSMA(activeCandles, cfg.period)); break;
-        case 'EMA': map.set('EMA', calculateEMA(activeCandles, cfg.period)); break;
-        case 'RSI': map.set('RSI', calculateRSI(activeCandles, cfg.period)); break;
-        case 'MACD': map.set('MACD', calculateMACD(activeCandles, cfg.period, cfg.secondaryPeriod, cfg.tertiaryPeriod)); break;
-        case 'BOLLINGER_BANDS': map.set('BOLLINGER_BANDS', calculateBollingerBands(activeCandles, cfg.period, cfg.multiplier)); break;
-        case 'VWAP': map.set('VWAP', calculateVWAP(activeCandles)); break;
-        case 'SUPERTREND': map.set('SUPERTREND', calculateSupertrend(activeCandles, cfg.period, cfg.multiplier)); break;
-        case 'ICHIMOKU': map.set('ICHIMOKU', calculateIchimoku(activeCandles, cfg.period, cfg.secondaryPeriod, cfg.tertiaryPeriod)); break;
-        case 'ATR': map.set('ATR', calculateATR(activeCandles, cfg.period)); break;
-        case 'STOCHASTIC': map.set('STOCHASTIC', calculateStochastic(activeCandles, cfg.period, cfg.secondaryPeriod)); break;
-        case 'CVD': map.set('CVD', calculateCVD(activeCandles)); break;
-        case 'PARABOLIC_SAR': map.set('PARABOLIC_SAR', calculateParabolicSAR(activeCandles)); break;
-        case 'ADX': map.set('ADX', calculateADX(activeCandles, cfg.period)); break;
-        case 'OBV': map.set('OBV', calculateOBV(activeCandles)); break;
-        case 'CCI': map.set('CCI', calculateCCI(activeCandles, cfg.period)); break;
-        case 'WILLIAMS_R': map.set('WILLIAMS_R', calculateWilliamsR(activeCandles, cfg.period)); break;
-        case 'MFI': map.set('MFI', calculateMFI(activeCandles, cfg.period)); break;
-        case 'EMA_RIBBON': map.set('EMA_RIBBON', calculateEmaRibbon(activeCandles)); break;
-        case 'PIVOT_POINTS': map.set('PIVOT_POINTS', calculatePivotPoints(activeCandles)); break;
-        case 'DONCHIAN': map.set('DONCHIAN', calculateDonchian(activeCandles, cfg.period)); break;
-        case 'HMA': map.set('HMA', calculateHMA(activeCandles, cfg.period)); break;
-        case 'CMF': map.set('CMF', calculateCMF(activeCandles, cfg.period)); break;
+        case 'SMA': res = calculateSMA(activeCandles, cfg.period); break;
+        case 'EMA': res = calculateEMA(activeCandles, cfg.period); break;
+        case 'RSI': res = calculateRSI(activeCandles, cfg.period); break;
+        case 'MACD': res = calculateMACD(activeCandles, cfg.period, cfg.secondaryPeriod, cfg.tertiaryPeriod); break;
+        case 'BOLLINGER_BANDS': res = calculateBollingerBands(activeCandles, cfg.period, cfg.multiplier); break;
+        case 'VWAP': res = calculateVWAP(activeCandles); break;
+        case 'SUPERTREND': res = calculateSupertrend(activeCandles, cfg.period, cfg.multiplier); break;
+        case 'ICHIMOKU': res = calculateIchimoku(activeCandles, cfg.period, cfg.secondaryPeriod, cfg.tertiaryPeriod); break;
+        case 'ATR': res = calculateATR(activeCandles, cfg.period); break;
+        case 'STOCHASTIC': res = calculateStochastic(activeCandles, cfg.period, cfg.secondaryPeriod); break;
+        case 'CVD': res = calculateCVD(activeCandles); break;
+        case 'PARABOLIC_SAR': res = calculateParabolicSAR(activeCandles); break;
+        case 'ADX': res = calculateADX(activeCandles, cfg.period); break;
+        case 'OBV': res = calculateOBV(activeCandles); break;
+        case 'CCI': res = calculateCCI(activeCandles, cfg.period); break;
+        case 'WILLIAMS_R': res = calculateWilliamsR(activeCandles, cfg.period); break;
+        case 'MFI': res = calculateMFI(activeCandles, cfg.period); break;
+        case 'EMA_RIBBON': res = calculateEmaRibbon(activeCandles); break;
+        case 'PIVOT_POINTS': res = calculatePivotPoints(activeCandles); break;
+        case 'DONCHIAN': res = calculateDonchian(activeCandles, cfg.period); break;
+        case 'HMA': res = calculateHMA(activeCandles, cfg.period); break;
+        case 'CMF': res = calculateCMF(activeCandles, cfg.period); break;
+      }
+      if (res !== null) {
+        map.set(key, res);
+        // Fallback key by type if not already populated
+        if (cfg.id && !map.has(cfg.type)) {
+          map.set(cfg.type, res);
+        }
       }
     }
     return map;
   }, [activeCandles, indicatorConfigs]);
 
+  const handleAddIndicator = useCallback((type: IndicatorType) => {
+    setIndicatorConfigs(prev => {
+      const existingCount = prev.filter(c => c.type === type).length;
+      const d = INDICATOR_DEFAULTS[type];
+      const periods = DEFAULT_PERIOD_PROGRESSIONS[type] || [];
+      const colors = DEFAULT_COLOR_PROGRESSIONS[type] || [];
+
+      const period = existingCount < periods.length ? periods[existingCount] : d.period;
+      const color = existingCount < colors.length ? colors[existingCount] : d.color;
+
+      const newId = `${type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const newConfig: IndicatorConfig = {
+        id: newId,
+        type,
+        period,
+        secondaryPeriod: d.secondaryPeriod,
+        tertiaryPeriod: d.tertiaryPeriod,
+        multiplier: d.multiplier,
+        color,
+        secondaryColor: d.secondaryColor,
+        tertiaryColor: d.tertiaryColor,
+        enabled: true,
+      };
+
+      const next = [...prev, newConfig];
+      try {
+        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const handleRemoveIndicator = useCallback((idOrType: string) => {
+    setIndicatorConfigs(prev => {
+      const hasExactId = prev.some(c => c.id === idOrType);
+      const next = hasExactId
+        ? prev.filter(c => c.id !== idOrType)
+        : prev.filter(c => c.type !== idOrType);
+      try {
+        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+    setEditingIndicatorId(curr => (curr === idOrType ? null : curr));
+  }, []);
+
+  const handleToggleIndicatorVisibility = useCallback((idOrType: string) => {
+    setIndicatorConfigs(prev => {
+      const hasExactId = prev.some(c => c.id === idOrType);
+      const next = prev.map(c => {
+        const match = hasExactId ? c.id === idOrType : c.type === idOrType;
+        if (match) {
+          return { ...c, enabled: !c.enabled };
+        }
+        return c;
+      });
+      try {
+        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
   const toggleIndicator = useCallback((type: IndicatorType) => {
-    setActiveIndicators(prev =>
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
-    );
+    setIndicatorConfigs(prev => {
+      const exists = prev.some(c => c.type === type);
+      let next: IndicatorConfig[];
+      if (exists) {
+        next = prev.filter(c => c.type !== type);
+      } else {
+        const d = INDICATOR_DEFAULTS[type];
+        next = [
+          ...prev,
+          {
+            id: `${type.toLowerCase()}-${Date.now()}`,
+            type,
+            period: d.period,
+            secondaryPeriod: d.secondaryPeriod,
+            tertiaryPeriod: d.tertiaryPeriod,
+            multiplier: d.multiplier,
+            color: d.color,
+            secondaryColor: d.secondaryColor,
+            tertiaryColor: d.tertiaryColor,
+            enabled: true,
+          },
+        ];
+      }
+      try {
+        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   }, []);
 
   const handleSaveIndicatorConfig = useCallback((updated: IndicatorConfig) => {
-    setCustomConfigs(prev => {
-      const next = { ...prev, [updated.type]: updated };
+    setIndicatorConfigs(prev => {
+      const targetId = updated.id || updated.type;
+      const next = prev.map(c => {
+        if ((c.id && c.id === targetId) || (!c.id && c.type === targetId)) {
+          return { ...c, ...updated };
+        }
+        return c;
+      });
       try {
-        localStorage.setItem('mi007_indicator_configs', JSON.stringify(next));
+        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(next));
       } catch {}
       return next;
     });
@@ -632,10 +757,42 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     setActiveTemplateId(tpl.id);
     setTimeframe(tpl.timeframe);
     setChartType(tpl.chartType);
-    setActiveIndicators(tpl.activeIndicators);
     setShowSmcOverlay(tpl.showSmcOverlay);
     setShowVolumeProfile(tpl.showVolumeProfile);
     setShowVolume(tpl.showVolume);
+
+    if (tpl.indicatorConfigs && tpl.indicatorConfigs.length > 0) {
+      setIndicatorConfigs(tpl.indicatorConfigs);
+      try {
+        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(tpl.indicatorConfigs));
+      } catch {}
+    } else if (tpl.activeIndicators && tpl.activeIndicators.length > 0) {
+      const migrated: IndicatorConfig[] = tpl.activeIndicators.map((t, idx) => {
+        const d = INDICATOR_DEFAULTS[t];
+        const custom = tpl.customConfigs?.[t];
+        return {
+          id: `${t.toLowerCase()}-${Date.now()}-${idx}`,
+          type: t,
+          period: custom?.period ?? d.period,
+          secondaryPeriod: custom?.secondaryPeriod ?? d.secondaryPeriod,
+          tertiaryPeriod: custom?.tertiaryPeriod ?? d.tertiaryPeriod,
+          multiplier: custom?.multiplier ?? d.multiplier,
+          color: custom?.color ?? d.color,
+          secondaryColor: custom?.secondaryColor ?? d.secondaryColor,
+          tertiaryColor: custom?.tertiaryColor ?? d.tertiaryColor,
+          enabled: true,
+        };
+      });
+      setIndicatorConfigs(migrated);
+      try {
+        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(migrated));
+      } catch {}
+    } else {
+      setIndicatorConfigs([]);
+      try {
+        localStorage.removeItem('mi007_chart_indicators_v2');
+      } catch {}
+    }
   }, []);
 
   const handleSaveToTemplate = useCallback((slotId: string) => {
@@ -648,6 +805,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
       timeframe,
       chartType,
       activeIndicators,
+      indicatorConfigs,
       showSmcOverlay,
       showVolumeProfile,
       showVolume,
@@ -659,7 +817,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     setActiveTemplateId(slotId);
     setSaveStatus('saved');
     setTimeout(() => setSaveStatus('idle'), 2000);
-  }, [timeframe, chartType, activeIndicators, showSmcOverlay, showVolumeProfile, showVolume, templates]);
+  }, [timeframe, chartType, activeIndicators, indicatorConfigs, showSmcOverlay, showVolumeProfile, showVolume, templates]);
 
   const handleSaveChartLayout = useCallback(() => {
     const slotId = activeTemplateId || 'tpl_1';
@@ -677,9 +835,12 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   }, []);
 
   const handleClearAllIndicators = useCallback(() => {
-    setActiveIndicators([]);
+    setIndicatorConfigs([]);
     setShowSmcOverlay(false);
     setShowVolumeProfile(false);
+    try {
+      localStorage.removeItem('mi007_chart_indicators_v2');
+    } catch {}
   }, []);
 
   const handleExportSnapshot = useCallback((mode: 'download' | 'clipboard' = 'download') => {
@@ -875,6 +1036,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         showSmcOverlay={showSmcOverlay}
         showVolumeProfile={showVolumeProfile}
         activeIndicators={activeIndicators}
+        indicators={indicatorConfigs}
         engineStatus={status}
         isLiveFromEngine={isLiveFromEngine}
         currency={currency}
@@ -891,7 +1053,10 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         onToggleSmcOverlay={() => setShowSmcOverlay(v => !v)}
         onToggleVolumeProfile={() => setShowVolumeProfile(v => !v)}
         onToggleIndicator={toggleIndicator}
-        onOpenIndicatorSettings={t => setEditingIndicator(t)}
+        onAddIndicator={handleAddIndicator}
+        onRemoveIndicator={handleRemoveIndicator}
+        onToggleIndicatorVisibility={handleToggleIndicatorVisibility}
+        onOpenIndicatorSettings={(idOrType) => setEditingIndicatorId(idOrType)}
         onSelectTemplate={handleSelectTemplate}
         onSaveToTemplate={handleSaveToTemplate}
         onRenameTemplate={handleRenameTemplate}
@@ -937,34 +1102,55 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
           {/* Top-Left Active Indicator Legend overlay */}
           {indicatorConfigs.length > 0 && (
             <div className="absolute top-2 left-3 z-10 flex flex-wrap items-center gap-1.5 pointer-events-auto max-w-[calc(100%-90px)]">
-              {indicatorConfigs.map(cfg => (
-                <div
-                  key={cfg.type}
-                  className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/95 border border-slate-200 shadow-xs text-[11px] font-mono text-slate-700 backdrop-blur-xs group hover:border-slate-300 transition-colors"
-                >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cfg.color }} />
-                  <span className="font-bold">
-                    {INDICATOR_DEFAULTS[cfg.type].label} ({cfg.period})
-                  </span>
-                  <button
-                    onClick={() => setEditingIndicator(cfg.type)}
-                    title="Settings"
-                    className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              {indicatorConfigs.map(cfg => {
+                const instanceId = cfg.id || cfg.type;
+                const isVis = cfg.enabled !== false;
+                return (
+                  <div
+                    key={instanceId}
+                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border shadow-xs text-[11px] font-mono backdrop-blur-xs group transition-colors ${
+                      isVis
+                        ? 'bg-white/95 border-slate-200 text-slate-700 hover:border-slate-300'
+                        : 'bg-white/60 border-slate-200/60 text-slate-400 line-through'
+                    }`}
                   >
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => toggleIndicator(cfg.type)}
-                    title="Remove"
-                    className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors font-bold text-xs"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+                    <span
+                      className={`w-2 h-2 rounded-full flex-shrink-0 ${!isVis ? 'opacity-40' : ''}`}
+                      style={{ backgroundColor: cfg.color }}
+                    />
+                    <span className="font-bold select-none">
+                      {INDICATOR_DEFAULTS[cfg.type]?.label || cfg.type} ({cfg.period})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleIndicatorVisibility(instanceId)}
+                      title={isVis ? 'Hide Indicator' : 'Show Indicator'}
+                      className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-[10px] cursor-pointer"
+                    >
+                      {isVis ? '👁' : '👁‍🗨'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingIndicatorId(instanceId)}
+                      title="Settings"
+                      className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveIndicator(instanceId)}
+                      title="Remove"
+                      className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors font-bold text-xs cursor-pointer"
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -1020,10 +1206,10 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
       {/* ── Indicator Settings Modal ── */}
       {currentEditingConfig && (
         <IndicatorSettingsModal
-          key={currentEditingConfig.type}
+          key={currentEditingConfig.id || currentEditingConfig.type}
           indicator={currentEditingConfig}
-          isOpen={!!editingIndicator}
-          onClose={() => setEditingIndicator(null)}
+          isOpen={!!editingIndicatorId}
+          onClose={() => setEditingIndicatorId(null)}
           onSave={handleSaveIndicatorConfig}
         />
       )}

@@ -2531,7 +2531,7 @@ export function renderChart(
   ctx.beginPath(); ctx.rect(0, 0, chartW, chartH); ctx.clip();
   for (const cfg of options.indicators) {
     if (!cfg.enabled || !isOverlay(cfg.type)) continue;
-    const result = options.indicatorResults.get(cfg.type);
+    const result = options.indicatorResults.get(cfg.id || cfg.type);
     if (!result) continue;
 
     function drawLine(vals: (number|null)[], color: string, sw: number) {
@@ -2719,7 +2719,7 @@ export function renderChart(
   if (endIdx >= candles.length && !options.skipCrosshair) {
     for (const cfg of options.indicators) {
       if (!cfg.enabled || !isOverlay(cfg.type)) continue;
-      const result = options.indicatorResults.get(cfg.type);
+      const result = options.indicatorResults.get(cfg.id || cfg.type);
       if (!result) continue;
       let lastVal: number | null = null;
       if (Array.isArray(result)) {
@@ -2989,7 +2989,7 @@ export function renderChart(
 
   // Indicator Panels
   for (const cfg of panelInds) {
-    const result = options.indicatorResults.get(cfg.type);
+    const result = options.indicatorResults.get(cfg.id || cfg.type);
     // Panel bg + separator
     ctx.fillStyle = PANEL_BG; ctx.fillRect(0, panelOffset, chartW+RM, pH);
     ctx.strokeStyle = PANEL_SEP; ctx.lineWidth = 1*dpr;

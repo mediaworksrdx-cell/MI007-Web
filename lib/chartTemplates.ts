@@ -9,6 +9,7 @@ export interface ChartTemplate {
   timeframe: Timeframe;
   chartType: ChartType;
   activeIndicators: IndicatorType[];
+  indicatorConfigs?: IndicatorConfig[];
   customConfigs?: Partial<Record<IndicatorType, Partial<IndicatorConfig>>>;
   showVolume: boolean;
   showSmcOverlay: boolean;
