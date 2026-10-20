@@ -587,7 +587,7 @@ export function CandlestickCanvas({
     return null;
   }, [drawings, cleanCandles, indicators, showVolumePanel, size.h, size.w, visibleCount, startIdx, endIdx, currentPriceOverride, priceOffset, priceScaleRatio]);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
     const canvas = overlayCanvasRef.current || canvasRef.current;
     if (!canvas) return;
@@ -778,7 +778,7 @@ export function CandlestickCanvas({
 
   // Pointer events
   // Pointer events with Interactive Axis Dragging & 120 FPS Precision
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
     const canvas = overlayCanvasRef.current || canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -1085,7 +1085,7 @@ export function CandlestickCanvas({
     }
   }, [activeDrawingTool, visibleCount, cleanCandles, drawings, drawingInProgress, getPointFromEvent, onUpdateDrawing, size.h, size.w, startIdx, endIdx, priceOffset, priceScaleRatio, showVolumePanel, indicators, isMagnetActive, isShiftHeld, requestOverlayRender]);
 
-  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLElement>) => {
     // Flush any pending scale or pan animations
     if (panRafIdRef.current !== null) {
       cancelAnimationFrame(panRafIdRef.current);
@@ -1189,7 +1189,11 @@ export function CandlestickCanvas({
     }
   }, [activeDrawingTool, drawingInProgress, getPointFromEvent, isDrawingModeLocked, onAddDrawing, onDrawingToolChange]);
 
-  const handlePointerLeave = useCallback(() => {
+  const handlePointerLeave = useCallback((e?: React.PointerEvent<HTMLElement>) => {
+    // If pointer moves onto a child element within container (e.g. zoom controls dock), do not clear crosshair
+    if (e && e.relatedTarget && containerRef.current?.contains(e.relatedTarget as Node)) {
+      return;
+    }
     crosshairRef.current = null;
     magnetReticleRef.current = null;
     onHoverCandle?.(null);
@@ -1204,7 +1208,7 @@ export function CandlestickCanvas({
     }
   }, [requestOverlayRender]);
 
-  const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
     // Finish Polyline on double click
     if (activeDrawingTool === 'POLYLINE' && committedPointsRef.current.length >= 2) {
       if (drawingInProgress) {
@@ -1243,7 +1247,7 @@ export function CandlestickCanvas({
     }
   }, [activeDrawingTool, drawingInProgress, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, size, findDrawingAtCoords, onSelectDrawing]);
 
-  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
     // Ignore right-click in pointerDown (contextmenu handles right-click)
     if (e.button === 2) {
       setQuickBarPos(null);
@@ -1572,7 +1576,7 @@ export function CandlestickCanvas({
   }, [cleanCandles.length]);
 
   useEffect(() => {
-    const el = overlayCanvasRef.current;
+    const el = containerRef.current;
     if (!el) return;
     el.addEventListener('wheel', handleWheel, { passive: false });
     return () => el.removeEventListener('wheel', handleWheel);
@@ -1581,7 +1585,7 @@ export function CandlestickCanvas({
   // ── Multi-Touch Pinch-to-Zoom & Long-Press Crosshair ──
   const lastTouchX = useRef<number | null>(null);
 
-  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+  const handleTouchStart = (e: React.TouchEvent<HTMLElement>) => {
     if (e.touches.length === 2) {
       const dist = Math.hypot(
         e.touches[1].clientX - e.touches[0].clientX,
@@ -1606,7 +1610,7 @@ export function CandlestickCanvas({
     }
   };
 
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+  const handleTouchMove = (e: React.TouchEvent<HTMLElement>) => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -1669,10 +1673,9 @@ export function CandlestickCanvas({
         className="chart-bg absolute inset-0 block w-full h-full pointer-events-none select-none"
       />
 
-      {/* ── Layer 2: Foreground Overlay Canvas (120 FPS Crosshair, Anchors, Magnet, Events) ── */}
-      <canvas
-        ref={overlayCanvasRef}
-        className={`chart-overlay absolute inset-0 block w-full h-full select-none ${canvasCursor}`}
+      {/* ── Layer 2: Interactive Event Surface (Drag, Pan, Scale, Drawings, ContextMenu) ── */}
+      <div
+        className={`chart-event-surface absolute inset-0 block w-full h-full select-none z-10 ${canvasCursor}`}
         style={{ touchAction: 'none' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -1684,55 +1687,12 @@ export function CandlestickCanvas({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       />
-      {/* ── Floating Chart Controls Dock (Zoom & Pan Navigation) ── */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-full shadow-lg shadow-slate-900/10 px-2.5 py-1 select-none transition-all">
-        {/* Step Pan Left (◀) */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setScrollOffset(s => Math.min(Math.max(0, cleanCandles.length - 8), s + 15));
-          }}
-          title="Pan left (earlier candles)"
-          aria-label="Pan left"
-          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
 
-        {/* Zoom Out (-) */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setZoom(z => Math.max(0.15, +(z / 1.25).toFixed(2)));
-          }}
-          title="Zoom out (-)"
-          aria-label="Zoom out"
-          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
-
-        {/* Zoom Reset (100%) */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setZoom(1);
-            setScrollOffset(0);
-          }}
-          title="Reset zoom to 100% and jump to live"
-          aria-label="Reset zoom"
-          className="px-2 h-7 flex items-center justify-center text-[10px] font-mono font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all cursor-pointer"
-        >
-          {Math.round(zoom * 100)}%
-        </button>
-
+      {/* ── Layer 3: Floating Chart Controls Dock (Zoom Only: + and -) ── */}
+      <div
+        className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-full shadow-md shadow-slate-900/10 px-1.5 py-1 select-none transition-all opacity-80 hover:opacity-100 hover:bg-white dark:hover:bg-slate-900"
+        onPointerMove={(e) => handlePointerMove(e as unknown as React.PointerEvent<HTMLElement>)}
+      >
         {/* Zoom In (+) */}
         <button
           type="button"
@@ -1750,60 +1710,30 @@ export function CandlestickCanvas({
           </svg>
         </button>
 
-        {/* Step Pan Right (▶) */}
+        <div className="w-[1px] h-3.5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+        {/* Zoom Out (-) */}
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setScrollOffset(s => Math.max(-RIGHT_BUFFER_BARS * 2, s - 15));
+            setZoom(z => Math.max(0.15, +(z / 1.25).toFixed(2)));
           }}
-          title="Pan right (later candles)"
-          aria-label="Pan right"
+          title="Zoom out (-)"
+          aria-label="Zoom out"
           className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6" />
+            <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         </button>
-
-        {/* Price Scale Auto-Fit Reset Button */}
-        {(Math.abs(priceScaleRatio - 1.0) > 0.001 || Math.abs(priceOffset) > 0.001) && (
-          <>
-            <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setPriceScaleRatio(1.0);
-                setPriceOffset(0);
-              }}
-              title="Reset price scale to auto-fit (or double-click price axis)"
-              aria-label="Auto fit price scale"
-              className="px-2 h-7 flex items-center gap-1 text-[10px] font-mono font-bold text-amber-600 hover:text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-full transition-all cursor-pointer shadow-xs border border-amber-500/20"
-            >
-              AUTO
-            </button>
-          </>
-        )}
-
-        {/* Snap to Live Button (when scrolled) */}
-        {Math.abs(scrollOffset) > 2 && (
-          <>
-            <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setScrollOffset(0);
-              }}
-              title="Jump to live candles"
-              className="px-2 h-7 flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-full transition-all cursor-pointer animate-pulse"
-            >
-              »» LIVE
-            </button>
-          </>
-        )}
       </div>
+
+      {/* ── Layer 4: Foreground Overlay Canvas (120 FPS Crosshair, Anchors, Magnet, Events) ── */}
+      <canvas
+        ref={overlayCanvasRef}
+        className="chart-overlay absolute inset-0 block w-full h-full pointer-events-none select-none z-30"
+      />
 
       {Math.abs(scrollOffset) > 5 && (
         <button
