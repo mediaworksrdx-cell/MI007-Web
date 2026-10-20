@@ -582,14 +582,17 @@ export function CandlestickCanvas({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    // Dismiss floating quickbar on right click
+    setQuickBarPos(null);
+
     const hit = findDrawingAtCoords(x, y) || (selectedDrawingId ? drawings.find(d => d.id === selectedDrawingId) : null);
     if (hit) {
       onSelectDrawing?.(hit.id);
-      setQuickBarPos({ x, y });
       setContextMenuDrawing(hit);
       setContextMenuPos({ x: e.clientX, y: e.clientY });
     } else {
       setContextMenuPos(null);
+      setContextMenuDrawing(null);
     }
   }, [drawings, findDrawingAtCoords, onSelectDrawing, selectedDrawingId]);
 
@@ -1189,6 +1192,11 @@ export function CandlestickCanvas({
   }, [activeDrawingTool, drawingInProgress, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, size, findDrawingAtCoords, onSelectDrawing]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    // Ignore right-click in pointerDown (contextmenu handles right-click)
+    if (e.button === 2) {
+      setQuickBarPos(null);
+      return;
+    }
     pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
     const canvas = overlayCanvasRef.current || canvasRef.current;
     if (!canvas) return;
@@ -1743,8 +1751,8 @@ export function CandlestickCanvas({
         </button>
       )}
 
-      {/* Floating Drawing Quick Actions Bar */}
-      {selectedDrawing && quickBarPos && (
+      {/* Floating Drawing Quick Actions Bar (hidden when context menu is active) */}
+      {selectedDrawing && quickBarPos && !contextMenuPos && (
         <DrawingQuickBar
           drawing={selectedDrawing}
           position={quickBarPos}
@@ -1760,6 +1768,7 @@ export function CandlestickCanvas({
           onOpenContextMenu={(pos) => {
             setContextMenuDrawing(selectedDrawing);
             setContextMenuPos(pos);
+            setQuickBarPos(null);
           }}
           onClose={() => {
             onSelectDrawing?.(null);
