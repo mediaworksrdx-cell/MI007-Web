@@ -79,13 +79,13 @@ const DEFAULT_USA_INDICES: IndexItem[] = [
 ];
 
 const DEFAULT_USA_WATCHLIST: WatchlistItem[] = [
-  { symbol: 'NVDA', name: 'NVIDIA Corporation', base: 217.09, sector: 'Semis & AI', changePct: 1.38 },
-  { symbol: 'AAPL', name: 'Apple Inc.', base: 342.94, sector: 'Consumer Tech', changePct: -0.15 },
-  { symbol: 'MSFT', name: 'Microsoft Corporation', base: 533.52, sector: 'Enterprise & Cloud', changePct: 0.84 },
-  { symbol: 'TSLA', name: 'Tesla Inc.', base: 368.06, sector: 'EV & Autonomous', changePct: 3.76 },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.', base: 262.45, sector: 'eCommerce & AWS', changePct: 4.98 },
-  { symbol: 'META', name: 'Meta Platforms Inc.', base: 705.44, sector: 'Social & AI', changePct: -0.55 },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', base: 344.18, sector: 'Search & Cloud', changePct: 1.05 },
+  { symbol: 'NVDA', name: 'NVIDIA Corporation', base: 217.09, sector: 'Technology', changePct: 1.38 },
+  { symbol: 'AAPL', name: 'Apple Inc.', base: 342.94, sector: 'Technology', changePct: -0.15 },
+  { symbol: 'MSFT', name: 'Microsoft Corporation', base: 533.52, sector: 'Technology', changePct: 0.84 },
+  { symbol: 'TSLA', name: 'Tesla Inc.', base: 368.06, sector: 'Consumer Cyclical', changePct: 3.76 },
+  { symbol: 'AMZN', name: 'Amazon.com Inc.', base: 262.45, sector: 'Consumer Cyclical', changePct: 4.98 },
+  { symbol: 'META', name: 'Meta Platforms Inc.', base: 705.44, sector: 'Communication Services', changePct: -0.55 },
+  { symbol: 'GOOGL', name: 'Alphabet Inc.', base: 344.18, sector: 'Communication Services', changePct: 1.05 },
 ];
 
 const DEFAULT_UAE_INDICES: IndexItem[] = [
@@ -191,16 +191,16 @@ const KNOWN_FOREX: Record<string, { name: string; base: number; pair: string; pi
 };
 
 const KNOWN_US_STOCKS: Record<string, { name: string; base: number; sector: string }> = {
-  NVDA: { name: 'NVIDIA Corporation', base: 214.10, sector: 'Semis & AI' },
-  AAPL: { name: 'Apple Inc.', base: 343.50, sector: 'Consumer Tech' },
-  MSFT: { name: 'Microsoft Corporation', base: 529.00, sector: 'Enterprise & Cloud' },
-  TSLA: { name: 'Tesla Inc.', base: 354.70, sector: 'EV & Autonomous' },
-  AMZN: { name: 'Amazon.com Inc.', base: 250.00, sector: 'eCommerce & AWS' },
-  META: { name: 'Meta Platforms Inc.', base: 733.40, sector: 'Social & AI' },
-  GOOGL: { name: 'Alphabet Inc.', base: 340.60, sector: 'Search & Cloud' },
-  AMD: { name: 'Advanced Micro Devices', base: 168.50, sector: 'Semiconductors' },
-  NFLX: { name: 'Netflix Inc.', base: 685.00, sector: 'Media & Streaming' },
-  INTC: { name: 'Intel Corporation', base: 28.40, sector: 'Semiconductors' },
+  NVDA: { name: 'NVIDIA Corporation', base: 214.10, sector: 'Technology' },
+  AAPL: { name: 'Apple Inc.', base: 343.50, sector: 'Technology' },
+  MSFT: { name: 'Microsoft Corporation', base: 529.00, sector: 'Technology' },
+  TSLA: { name: 'Tesla Inc.', base: 354.70, sector: 'Consumer Cyclical' },
+  AMZN: { name: 'Amazon.com Inc.', base: 250.00, sector: 'Consumer Cyclical' },
+  META: { name: 'Meta Platforms Inc.', base: 733.40, sector: 'Communication Services' },
+  GOOGL: { name: 'Alphabet Inc.', base: 340.60, sector: 'Communication Services' },
+  AMD: { name: 'Advanced Micro Devices', base: 168.50, sector: 'Technology' },
+  NFLX: { name: 'Netflix Inc.', base: 685.00, sector: 'Communication Services' },
+  INTC: { name: 'Intel Corporation', base: 28.40, sector: 'Technology' },
 };
 
 const KNOWN_UAE_STOCKS: Record<string, { name: string; base: number; sector: string }> = {
@@ -464,10 +464,6 @@ function WatchlistRow({
             </span>
           </div>
           <div className="text-[12px] sm:text-[14px] inst-card-text-muted font-bold truncate">{name}</div>
-        </div>
-
-        <div className="hidden md:block">
-          <span className="rounded px-2.5 py-0.5 text-[12px] font-bold inst-card-text border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] mono">{sector}</span>
         </div>
 
         <div className="text-right flex-shrink-0">
@@ -1529,11 +1525,6 @@ export default function TerminalPage() {
                             <span className="text-[12px] text-[var(--theme-card-text)] truncate max-w-xs sm:max-w-md">
                               {item.name}
                             </span>
-                            {item.sector && (
-                              <span className="hidden sm:inline-block mono text-[10px] px-1.5 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)]">
-                                {item.sector}
-                              </span>
-                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="mono text-[10.5px] font-bold px-2 py-0.5 rounded bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] border border-[var(--theme-card-border)]">

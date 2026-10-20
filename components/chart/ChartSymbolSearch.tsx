@@ -66,16 +66,16 @@ export const MASTER_CHART_INSTRUMENTS: ChartInstrumentItem[] = [
   { symbol: 'MATIC', name: 'Polygon', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.42, sector: 'Ethereum L2' },
 
   // ─── US STOCKS ───
-  { symbol: 'NVDA', name: 'NVIDIA Corporation', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 214.10, sector: 'Semis & AI Compute' },
-  { symbol: 'AAPL', name: 'Apple Inc.', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 343.50, sector: 'Consumer Technology' },
-  { symbol: 'MSFT', name: 'Microsoft Corporation', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 529.00, sector: 'Enterprise & Cloud' },
-  { symbol: 'TSLA', name: 'Tesla Inc.', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 354.70, sector: 'EV & Robotics' },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 250.00, sector: 'eCommerce & AWS' },
-  { symbol: 'META', name: 'Meta Platforms Inc.', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 733.40, sector: 'Social & Metaverse' },
-  { symbol: 'GOOGL', name: 'Alphabet Inc. (Google)', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 340.60, sector: 'Search & Cloud' },
-  { symbol: 'AMD', name: 'Advanced Micro Devices', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 168.50, sector: 'Semiconductors' },
-  { symbol: 'NFLX', name: 'Netflix Inc.', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 685.00, sector: 'Streaming Entertainment' },
-  { symbol: 'INTC', name: 'Intel Corporation', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 28.40, sector: 'Semiconductors' },
+  { symbol: 'NVDA', name: 'NVIDIA Corporation', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 214.10, sector: 'Technology' },
+  { symbol: 'AAPL', name: 'Apple Inc.', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 343.50, sector: 'Technology' },
+  { symbol: 'MSFT', name: 'Microsoft Corporation', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 529.00, sector: 'Technology' },
+  { symbol: 'TSLA', name: 'Tesla Inc.', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 354.70, sector: 'Consumer Cyclical' },
+  { symbol: 'AMZN', name: 'Amazon.com Inc.', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 250.00, sector: 'Consumer Cyclical' },
+  { symbol: 'META', name: 'Meta Platforms Inc.', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 733.40, sector: 'Communication Services' },
+  { symbol: 'GOOGL', name: 'Alphabet Inc. (Google)', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 340.60, sector: 'Communication Services' },
+  { symbol: 'AMD', name: 'Advanced Micro Devices', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 168.50, sector: 'Technology' },
+  { symbol: 'NFLX', name: 'Netflix Inc.', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 685.00, sector: 'Communication Services' },
+  { symbol: 'INTC', name: 'Intel Corporation', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 28.40, sector: 'Technology' },
 
   // ─── UAE STOCKS ───
   { symbol: 'EMAAR', name: 'Emaar Properties PJSC', category: 'STOCK', market: 'UAE', exchange: 'DFM', currency: 'AED', flag: '🇦🇪', basePrice: 8.45, sector: 'Real Estate' },
