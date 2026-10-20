@@ -1613,7 +1613,6 @@ export default function TerminalPage() {
                 {/* ── Strategic Watchlist ── */}
                 <SectionHeader
                   title={`${MARKETS[market].label} Strategic Watchlist`}
-                  badge={`${watchlist.length} MONITORED`}
                   isEditing={isEditing}
                   onToggleEdit={() => setIsEditing(v => !v)}
                   onResetDefaults={handleResetDefaults}
