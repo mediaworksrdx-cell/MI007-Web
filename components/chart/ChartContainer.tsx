@@ -126,6 +126,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [cursorMode, setCursorMode] = useState<CursorMode>('crosshair');
   const [drawings, setDrawings] = useState<DrawingItem[]>([]);
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
+  const [hoveredCandle, setHoveredCandle] = useState<Candle | null>(null);
   const [isDrawingsManagerOpen, setIsDrawingsManagerOpen] = useState(false);
   const [isMagnetActive, setIsMagnetActive] = useState(false);
   const [isDrawingModeLocked, setIsDrawingModeLocked] = useState(false);
@@ -903,10 +904,10 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
       {/* ── OHLCV Bar with Symbol context ── */}
       <OHLCVHeader
         symbol={selectedSymbol}
-        candle={lastCandle}
+        candle={hoveredCandle || lastCandle}
         currency={currency}
         timeframe={timeframe}
-        currentPrice={displayPrice}
+        currentPrice={hoveredCandle ? hoveredCandle.close : displayPrice}
       />
 
       {/* ── Main Chart Workspace: Left Institutional Drawing Toolbar + Canvas Area ── */}
@@ -1010,6 +1011,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             onToggleHideAllDrawings={() => setIsAllDrawingsHidden(h => !h)}
             onExportSnapshot={handleExportSnapshot}
             onOpenObjectTree={() => setIsDrawingsManagerOpen(true)}
+            onHoverCandle={setHoveredCandle}
             className="h-full"
           />
         </div>

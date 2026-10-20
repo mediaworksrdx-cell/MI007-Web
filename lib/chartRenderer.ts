@@ -3162,7 +3162,8 @@ export function renderChart(
     // Time label on bottom
     const cidx = startIdx + Math.floor(cx / candleW);
     if (cidx >= 0 && cidx < candles.length) {
-      const ts = candles[cidx].openTime;
+      const c = candles[cidx];
+      const ts = c.openTime;
       const tStr = formatCrosshairTime(ts, isDailyOrHigher);
       ctx.font = `bold ${11.5 * dpr}px "JetBrains Mono",monospace`;
       const tMeas = ctx.measureText(tStr);
@@ -3175,6 +3176,53 @@ export function renderChart(
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(tStr, tLX + tLW / 2, chartH + BM / 2);
+
+      // TradingView Canvas OHLC Overlay Badge (Top Left of chart)
+      const isUp = c.close >= c.open;
+      const diff = c.close - c.open;
+      const diffPct = (diff / (c.open || 1)) * 100;
+      const sign = diff >= 0 ? '+' : '';
+      const badgeY = 16 * dpr;
+      let badgeX = 14 * dpr;
+
+      ctx.save();
+      ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+
+      const ohlcText = `O ${formatPrice(c.open)}  H ${formatPrice(c.high)}  L ${formatPrice(c.low)}  C ${formatPrice(c.close)}  ${sign}${formatPrice(diff)} (${sign}${diffPct.toFixed(2)}%)`;
+      const textMetrics = ctx.measureText(ohlcText);
+      const pillW = textMetrics.width + 16 * dpr;
+      const pillH = 20 * dpr;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(badgeX - 4 * dpr, badgeY - 2 * dpr, pillW, pillH, 4 * dpr);
+      } else {
+        ctx.rect(badgeX - 4 * dpr, badgeY - 2 * dpr, pillW, pillH);
+      }
+      ctx.fill();
+
+      const parts = [
+        { label: 'O', val: formatPrice(c.open), color: '#94A3B8' },
+        { label: 'H', val: formatPrice(c.high), color: '#34D399' },
+        { label: 'L', val: formatPrice(c.low), color: '#F87171' },
+        { label: 'C', val: formatPrice(c.close), color: isUp ? '#34D399' : '#F87171' },
+        { label: '', val: `${sign}${formatPrice(diff)} (${sign}${diffPct.toFixed(2)}%)`, color: isUp ? '#34D399' : '#F87171' },
+      ];
+
+      for (const p of parts) {
+        if (p.label) {
+          ctx.fillStyle = '#64748B';
+          ctx.fillText(p.label + ' ', badgeX, badgeY);
+          badgeX += ctx.measureText(p.label + ' ').width;
+        }
+        ctx.fillStyle = p.color;
+        ctx.fillText(p.val + '  ', badgeX, badgeY);
+        badgeX += ctx.measureText(p.val + '  ').width;
+      }
+      ctx.restore();
     }
     ctx.restore();
   }
@@ -3403,7 +3451,8 @@ export function renderOverlay(
 
     const cidx = startIdx + Math.floor(cx / candleW);
     if (cidx >= 0 && cidx < candles.length) {
-      const ts = candles[cidx].openTime;
+      const c = candles[cidx];
+      const ts = c.openTime;
       const tStr = formatCrosshairTime(ts, isDailyOrHigher);
       ctx.font = `bold ${11.5 * dpr}px "JetBrains Mono",monospace`;
       const tMeas = ctx.measureText(tStr);
@@ -3416,6 +3465,53 @@ export function renderOverlay(
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(tStr, tLX + tLW / 2, chartH + BM / 2);
+
+      // TradingView Canvas OHLC Overlay Badge (Top Left of chart)
+      const isUp = c.close >= c.open;
+      const diff = c.close - c.open;
+      const diffPct = (diff / (c.open || 1)) * 100;
+      const sign = diff >= 0 ? '+' : '';
+      const badgeY = 16 * dpr;
+      let badgeX = 14 * dpr;
+
+      ctx.save();
+      ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+
+      const ohlcText = `O ${formatPrice(c.open)}  H ${formatPrice(c.high)}  L ${formatPrice(c.low)}  C ${formatPrice(c.close)}  ${sign}${formatPrice(diff)} (${sign}${diffPct.toFixed(2)}%)`;
+      const textMetrics = ctx.measureText(ohlcText);
+      const pillW = textMetrics.width + 16 * dpr;
+      const pillH = 20 * dpr;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(badgeX - 4 * dpr, badgeY - 2 * dpr, pillW, pillH, 4 * dpr);
+      } else {
+        ctx.rect(badgeX - 4 * dpr, badgeY - 2 * dpr, pillW, pillH);
+      }
+      ctx.fill();
+
+      const parts = [
+        { label: 'O', val: formatPrice(c.open), color: '#94A3B8' },
+        { label: 'H', val: formatPrice(c.high), color: '#34D399' },
+        { label: 'L', val: formatPrice(c.low), color: '#F87171' },
+        { label: 'C', val: formatPrice(c.close), color: isUp ? '#34D399' : '#F87171' },
+        { label: '', val: `${sign}${formatPrice(diff)} (${sign}${diffPct.toFixed(2)}%)`, color: isUp ? '#34D399' : '#F87171' },
+      ];
+
+      for (const p of parts) {
+        if (p.label) {
+          ctx.fillStyle = '#64748B';
+          ctx.fillText(p.label + ' ', badgeX, badgeY);
+          badgeX += ctx.measureText(p.label + ' ').width;
+        }
+        ctx.fillStyle = p.color;
+        ctx.fillText(p.val + '  ', badgeX, badgeY);
+        badgeX += ctx.measureText(p.val + '  ').width;
+      }
+      ctx.restore();
     }
     ctx.restore();
   }

@@ -45,6 +45,7 @@ interface CandlestickCanvasProps {
   onToggleHideAllDrawings?: () => void;
   onExportSnapshot?: (mode: 'download' | 'clipboard') => void;
   onOpenObjectTree?: () => void;
+  onHoverCandle?: (candle: Candle | null) => void;
 }
 
 export function getToolRequiredPoints(tool: DrawingToolType): number {
@@ -165,6 +166,7 @@ export function CandlestickCanvas({
   onToggleHideAllDrawings,
   onExportSnapshot,
   onOpenObjectTree,
+  onHoverCandle,
 }: CandlestickCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -944,6 +946,20 @@ export function CandlestickCanvas({
     }
     requestOverlayRender();
 
+    // Notify hovered candle for OHLC display
+    const chartW = size.w - CHART_RIGHT_MARGIN;
+    const visCnt = visibleCount;
+    if (visCnt > 0 && chartW > 0 && cleanCandles.length > 0) {
+      const candleW = chartW / visCnt;
+      const offsetIdx = Math.floor(x / candleW);
+      const rawIdx = startIdx + offsetIdx;
+      if (rawIdx >= 0 && rawIdx < cleanCandles.length) {
+        onHoverCandle?.(cleanCandles[rawIdx]);
+      } else {
+        onHoverCandle?.(null);
+      }
+    }
+
     // 1. If currently adjusting an existing drawing endpoint
     if (adjustingRef.current) {
       const pt = getPointFromEvent(e.clientX, e.clientY);
@@ -1141,6 +1157,7 @@ export function CandlestickCanvas({
   const handlePointerLeave = useCallback(() => {
     crosshairRef.current = null;
     magnetReticleRef.current = null;
+    onHoverCandle?.(null);
     requestOverlayRender();
     if (hoverScaleZoneRef.current !== 'none') {
       hoverScaleZoneRef.current = 'none';
@@ -1579,6 +1596,7 @@ export function CandlestickCanvas({
     if (crosshairRef.current !== null) {
       crosshairRef.current = null;
       magnetReticleRef.current = null;
+      onHoverCandle?.(null);
       requestOverlayRender();
     }
     touchStartDistRef.current = null;
