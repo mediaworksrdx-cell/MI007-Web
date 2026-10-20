@@ -365,9 +365,16 @@ export function DrawingToolbar({
 
               {/* Flyout Submenu */}
               {isMenuOpen && (
-                <div className={`absolute left-full ml-1.5 w-72 max-h-[75vh] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E131F] shadow-2xl py-1 z-[100] animate-in fade-in duration-75 ${groupIndex > 2 ? 'bottom-0' : 'top-0'}`}>
-                  <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-[#0E131F] z-10">
-                    {group.title}
+                <div
+                  className={`absolute left-full ml-1.5 w-72 max-h-[min(480px,calc(100vh-140px))] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E131F] shadow-2xl py-1 z-[100] animate-in fade-in duration-75 ${
+                    groupIndex === 0 ? '-top-10' : groupIndex > 2 ? 'bottom-0' : 'top-0'
+                  }`}
+                >
+                  <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-[#0E131F] z-10 flex items-center justify-between">
+                    <span>{group.title}</span>
+                    <span className="text-[9px] font-mono text-slate-400 opacity-70">
+                      {group.tools.length} Tools
+                    </span>
                   </div>
                   {group.tools.map((tool) => (
                     <button
@@ -378,7 +385,7 @@ export function DrawingToolbar({
                         onDrawingToolChange(tool.id);
                         setOpenGroupId(null);
                       }}
-                      className={`flex items-start gap-2.5 w-full px-3 py-2 text-left transition-colors cursor-pointer ${
+                      className={`flex items-start gap-2.5 w-full px-3 py-1.5 text-left transition-colors cursor-pointer ${
                         activeDrawingTool === tool.id
                           ? 'bg-[#089981]/15 text-[#089981] dark:text-[#089981] font-bold'
                           : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'

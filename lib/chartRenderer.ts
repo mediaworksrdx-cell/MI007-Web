@@ -1924,6 +1924,7 @@ export function renderChart(
           // Anchors
           ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
           ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x1, y1p, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'RECTANGLE') {
           const rx = Math.min(x1, x2), ry = Math.min(y1, y2);
           const rw = Math.abs(x2 - x1), rh = Math.abs(y2 - y1);
@@ -2195,6 +2196,10 @@ export function renderChart(
           ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.lineTo(x1, y1 + (y3 - y2)); ctx.closePath();
           ctx.fill();
           ctx.restore();
+          // Anchors
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x3, y3, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'ROTATED_RECTANGLE') {
           const p3 = item.points[2] || { price: p1.price + (pMax - pMin) * 0.03, index: p1.index };
           const offY = priceToY(p3.price) - y1;
