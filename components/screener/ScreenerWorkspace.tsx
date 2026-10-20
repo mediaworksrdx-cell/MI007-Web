@@ -15,6 +15,7 @@ import {
   getWatchlists,
   saveWatchlist,
   toggleSymbolInWatchlist,
+  addSymbolToWatchlist,
   getCustomRatios,
   saveCustomRatio,
   deleteCustomRatio,
@@ -538,6 +539,10 @@ export function ScreenerWorkspace() {
           onBackToScreener={() => setActiveTab('screener')}
           onRemoveSymbol={(wlId, sym) => {
             const updated = toggleSymbolInWatchlist(wlId, sym);
+            setWatchlists(updated);
+          }}
+          onAddSymbol={(wlId, sym) => {
+            const updated = addSymbolToWatchlist(wlId, sym);
             setWatchlists(updated);
           }}
           onCreateWatchlist={(name, desc) => {

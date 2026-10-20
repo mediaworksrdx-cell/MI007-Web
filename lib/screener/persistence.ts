@@ -193,6 +193,20 @@ export function toggleSymbolInWatchlist(watchlistId: string, symbol: string): Wa
   });
 }
 
+export function addSymbolToWatchlist(watchlistId: string, symbol: string): Watchlist[] {
+  const all = getWatchlists();
+  const target = all.find((w) => w.id === watchlistId);
+  if (!target) return all;
+
+  const clean = symbol.trim().toUpperCase();
+  if (target.symbols.includes(clean)) return all;
+
+  return saveWatchlist({
+    ...target,
+    symbols: [...target.symbols, clean],
+  });
+}
+
 // ── Custom Ratios Management ─────────────────────────────────────────────────
 export function getCustomRatios(): CustomRatio[] {
   if (typeof window === 'undefined') return DEFAULT_CUSTOM_RATIOS;
