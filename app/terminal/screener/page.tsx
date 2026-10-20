@@ -26,7 +26,7 @@ export default function ScreenerTerminalPage() {
             <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 pointer-events-none" />
 
             {/* ── Outer Bezel Header ── */}
-            <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-[var(--theme-card-border)] relative z-40">
+            <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-[var(--theme-card-border)] relative z-[100]">
               <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
                 <Link
                   href="/terminal"

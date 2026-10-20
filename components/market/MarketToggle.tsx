@@ -12,13 +12,12 @@ interface MarketToggleProps {
 const MARKET_OPTIONS: {
   key: MarketType;
   label: string;
-  flag: string;
   currency: string;
   exchanges: string;
 }[] = [
-  { key: 'USA',   label: 'USA',   flag: '🇺🇸', currency: '$', exchanges: 'NYSE · NASDAQ · CBOE' },
-  { key: 'INDIA', label: 'INDIA', flag: '🇮🇳', currency: '₹', exchanges: 'NSE · BSE' },
-  { key: 'UAE',   label: 'UAE',   flag: '🇦🇪', currency: 'AED', exchanges: 'DFM · ADX' },
+  { key: 'USA',   label: 'USA',   currency: '$', exchanges: 'NYSE · NASDAQ · CBOE' },
+  { key: 'INDIA', label: 'INDIA', currency: '₹', exchanges: 'NSE · BSE' },
+  { key: 'UAE',   label: 'UAE',   currency: 'AED', exchanges: 'DFM · ADX' },
 ];
 
 export function MarketToggle({ selected, onChange, className = '' }: MarketToggleProps) {
@@ -59,7 +58,7 @@ export function MarketToggle({ selected, onChange, className = '' }: MarketToggl
   };
 
   return (
-    <div ref={dropdownRef} className={`relative inline-block text-left ${isOpen ? 'z-50' : ''} ${className}`}>
+    <div ref={dropdownRef} className={`relative inline-block text-left ${isOpen ? 'z-[110]' : 'z-30'} ${className}`}>
       {/* Trigger Button */}
       <button
         type="button"
@@ -77,7 +76,6 @@ export function MarketToggle({ selected, onChange, className = '' }: MarketToggl
           ${isOpen ? 'border-emerald-500 ring-2 ring-emerald-500/30' : ''}
         `}
       >
-        <span className="text-[15px] sm:text-[16px] leading-none select-none">{activeMarket.flag}</span>
         <span className="font-mono font-black tracking-wide">{activeMarket.label}</span>
         <svg
           className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180 text-emerald-500' : 'text-slate-400'}`}
@@ -93,13 +91,13 @@ export function MarketToggle({ selected, onChange, className = '' }: MarketToggl
       {isOpen && (
         <div
           role="listbox"
-          className="absolute right-0 top-full mt-1.5 z-50 w-56 sm:w-60 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95"
+          className="absolute right-0 top-full mt-1.5 z-[150] w-56 sm:w-60 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95"
         >
           <div className="px-2.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--theme-card-text-muted)] border-b border-[var(--theme-card-border)] mb-1">
             Active Market Region
           </div>
           <div className="flex flex-col gap-1">
-            {MARKET_OPTIONS.map(({ key, label, flag, currency, exchanges }) => {
+            {MARKET_OPTIONS.map(({ key, label, currency, exchanges }) => {
               const isActive = selected === key;
               return (
                 <button
@@ -117,7 +115,6 @@ export function MarketToggle({ selected, onChange, className = '' }: MarketToggl
                   `}
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="text-[17px] leading-none select-none">{flag}</span>
                     <div>
                       <div className="text-[13px] font-bold tracking-wide flex items-center gap-1.5">
                         <span>{label}</span>
