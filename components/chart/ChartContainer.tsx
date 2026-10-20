@@ -14,6 +14,7 @@ import {
   calculateEmaRibbon, calculatePivotPoints, calculateDonchian, calculateHMA, calculateCMF,
 } from '@/lib/chartRenderer';
 import { getMockCandles, getMockQuote } from '@/lib/mockData';
+import { findZerodhaStockBySymbol } from '@/lib/screener/zerodhaStocks';
 import { fetchCandles, areSymbolsEqual } from '@/lib/tradeEngineClient';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { loadStoredCandles, saveStoredCandles, mergeCandleArrays, purgeStoredCandles } from '@/lib/candleStorage';
@@ -47,6 +48,10 @@ const TIMEFRAME_MS: Record<string, number> = {
 
 function getExpectedPrice(market: MarketType, symbol: string): number {
   try {
+    const symClean = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
+    const zd = findZerodhaStockBySymbol(symClean);
+    if (zd && zd.lastPrice && zd.lastPrice > 0) return zd.lastPrice;
+
     const q = getMockQuote(market, symbol);
     if (q && q.price > 0) return q.price;
   } catch {}
@@ -206,10 +211,10 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         let rawCached = await loadStoredCandles(selectedSymbol, timeframe);
         if (rawCached && rawCached.length > 0) {
           const lastC = rawCached[rawCached.length - 1];
-          // If cached dataset has massive scale dislocation from live/expected price (> 35%), purge it
+          // If cached dataset has scale dislocation from live/expected price (> 20%), purge it
           if (expectedPrice > 0 && lastC && lastC.close > 0) {
             const dislocation = Math.abs(lastC.close - expectedPrice) / expectedPrice;
-            if (dislocation > 0.35) {
+            if (dislocation > 0.20) {
               console.warn(`[ChartContainer] Auto-purging dislocated cache for ${selectedSymbol} (cached: ${lastC.close}, expected: ${expectedPrice})`);
               await purgeStoredCandles(selectedSymbol, timeframe);
               rawCached = null;
@@ -230,21 +235,24 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         const rawEngine = await fetchCandles(selectedSymbol, timeframe);
         let cleanEngine = validateAndCleanCandles(rawEngine || [], timeframe);
 
-        // Scale reconciliation for US benchmark indices (NDX, SPX, DJI):
-        // If the backend Trade Engine returned ETF-scale candles (e.g. QQQ ~$490 for NDX, SPY ~$580 for SPX, DIA ~$425 for DJI)
-        // while the instrument is an index with expected price > 2000, dynamically scale candle prices to true index scale.
-        const isUsIndex = ['NDX', 'NASDAQ 100', 'NASDAQ', 'SPX', 'S&P 500', 'DJI', 'DOW JONES'].some(s => areSymbolsEqual(s, selectedSymbol));
-        if (isUsIndex && expectedPrice > 2000 && cleanEngine.length > 0) {
+        // Universal scale reconciliation across all markets (Forex, Commodities, Indices, Stocks):
+        // If the backend Trade Engine returned dislocated candles (e.g. ETF proxy or dummy scale)
+        // while expectedPrice is known, dynamically scale candle prices to authentic scale.
+        if (expectedPrice > 0 && cleanEngine.length > 0) {
           const engineLast = cleanEngine[cleanEngine.length - 1];
-          if (engineLast && engineLast.close > 0 && engineLast.close < 2000) {
-            const scaleMultiplier = expectedPrice / engineLast.close;
-            cleanEngine = cleanEngine.map(c => ({
-              ...c,
-              open: +(c.open * scaleMultiplier).toFixed(2),
-              high: +(c.high * scaleMultiplier).toFixed(2),
-              low: +(c.low * scaleMultiplier).toFixed(2),
-              close: +(c.close * scaleMultiplier).toFixed(2),
-            }));
+          if (engineLast && engineLast.close > 0) {
+            const dislocation = Math.abs(engineLast.close - expectedPrice) / expectedPrice;
+            if (dislocation > 0.20) {
+              const scaleMultiplier = expectedPrice / engineLast.close;
+              const decimals = expectedPrice < 2 ? 4 : expectedPrice < 10 ? 3 : 2;
+              cleanEngine = cleanEngine.map(c => ({
+                ...c,
+                open: +(c.open * scaleMultiplier).toFixed(decimals),
+                high: +(c.high * scaleMultiplier).toFixed(decimals),
+                low: +(c.low * scaleMultiplier).toFixed(decimals),
+                close: +(c.close * scaleMultiplier).toFixed(decimals),
+              }));
+            }
           }
         }
 
@@ -477,6 +485,13 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
     if (!targetClose || targetClose <= 0) return candles;
     const last = candles[candles.length - 1];
     if (!last || last.close === targetClose) return candles;
+
+    // Safety guard: If targetClose has massive scale dislocation from last bar (> 25%), do not distort the candle
+    const dislocation = Math.abs(targetClose - last.close) / Math.max(last.close, 0.0001);
+    if (dislocation > 0.25) {
+      return candles;
+    }
+
     const updated = [...candles];
     updated[updated.length - 1] = {
       ...last,

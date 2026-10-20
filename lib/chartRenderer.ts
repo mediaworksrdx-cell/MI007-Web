@@ -306,9 +306,14 @@ export function computeChartPriceBounds(
     pMin = fallback * 0.99;
     pMax = fallback * 1.01;
   }
-  if (currentPriceOverride && currentPriceOverride > 0 && endIdx >= candles.length) {
-    pMin = Math.min(pMin, currentPriceOverride);
-    pMax = Math.max(pMax, currentPriceOverride);
+  if (currentPriceOverride && currentPriceOverride > 0 && endIdx >= candles.length && Number.isFinite(pMin) && Number.isFinite(pMax)) {
+    const disMin = Math.abs(currentPriceOverride - pMin) / Math.max(0.0001, pMin);
+    const disMax = Math.abs(currentPriceOverride - pMax) / Math.max(0.0001, pMax);
+    // Scale dislocation guard: only expand viewport bounds if currentPriceOverride is reasonably continuous (< 30%)
+    if (disMin < 0.30 || disMax < 0.30) {
+      pMin = Math.min(pMin, currentPriceOverride);
+      pMax = Math.max(pMax, currentPriceOverride);
+    }
   }
   const pad = (pMax - pMin) * 0.05 || 1;
   pMin -= pad; pMax += pad;
@@ -1393,7 +1398,10 @@ export function renderChart(
       const li = i - startIdx;
       const c = drawCandles[i];
       const isLastBar = i === drawCandles.length - 1;
-      const effectiveClose = (isLastBar && options.currentPriceOverride && options.currentPriceOverride > 0)
+      const isDislocated = (isLastBar && c.close > 0 && options.currentPriceOverride && options.currentPriceOverride > 0)
+        ? Math.abs(options.currentPriceOverride - c.close) / c.close > 0.25
+        : false;
+      const effectiveClose = (isLastBar && options.currentPriceOverride && options.currentPriceOverride > 0 && !isDislocated)
         ? options.currentPriceOverride
         : c.close;
       const effectiveHigh = isLastBar ? Math.max(c.high, effectiveClose) : c.high;
