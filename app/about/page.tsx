@@ -108,7 +108,7 @@ const REGIONS = [
     flag: '🇮🇳',
     name: 'India — NSE / BSE (HQ)',
     city: 'Chennai, Tamil Nadu',
-    description: 'Global engineering headquarters in Chennai with full coverage of the National Stock Exchange (NSE) and Bombay Stock Exchange (BSE), including all F&O instruments, NIFTY 50, BANK NIFTY, MIDCAP 150, and sectoral indices.',
+    description: 'Comprehensive coverage of India’s financial markets through the NSE and BSE, spanning NIFTY 50, BANK NIFTY, NIFTY Midcap 150, sectoral indices, and the full range of F&O instruments—all supported by our global engineering headquarters in Chennai.',
     instruments: 'NIFTY 50, BANK NIFTY, SENSEX, NIFTY IT, NIFTY PHARMA, NIFTY AUTO',
   },
   {
