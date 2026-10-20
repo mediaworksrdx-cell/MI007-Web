@@ -382,8 +382,8 @@ export function CustomQueryBuilderView({
                 setQueryText(e.target.value);
                 setSaveFeedback(null);
               }}
-              placeholder={`ROCE > 20\nAND Return on Equity > 18\nAND Debt to Equity < 0.5\nAND Profit Growth 3Y > 12`}
-              className="w-full font-mono text-[14px] leading-relaxed p-4 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500 font-bold resize-y flex-1"
+              placeholder="Type screening conditions (e.g. ROCE > 20 AND Debt to Equity < 0.5)..."
+              className="w-full font-mono text-[14px] leading-relaxed p-4 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] placeholder:italic placeholder:font-normal placeholder:opacity-50 placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500 font-bold resize-y flex-1"
               spellCheck={false}
             />
 

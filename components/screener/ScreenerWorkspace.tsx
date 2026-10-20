@@ -412,7 +412,10 @@ export function ScreenerWorkspace() {
                 el?.scrollIntoView({ behavior: 'smooth' });
               }
             }}
-            onResetQuery={() => setCurrentQuery('')}
+            onResetQuery={() => {
+              setCurrentQuery('');
+              setSectorFilter('ALL');
+            }}
             onOpenSaveScreen={() => setSaveScreenModalOpen(true)}
             matchCount={filteredCompanies.length}
           />

@@ -24,11 +24,12 @@ export function QueryEditor({
   matchCount,
 }: QueryEditorProps) {
   const [parseResult, setParseResult] = useState<QueryParseResult>({ valid: true });
-  const [suggestionOpen, setSuggestionOpen] = useState(false);
-  const [filterWord, setFilterWord] = useState('');
+  const [metricHelperOpen, setMetricHelperOpen] = useState(false);
+  const [helperSearch, setHelperSearch] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const helperRef = useRef<HTMLDivElement>(null);
 
-  // Validate on query change
+  // Validate AST on query change
   useEffect(() => {
     if (!query.trim()) {
       setParseResult({ valid: true });
@@ -38,42 +39,44 @@ export function QueryEditor({
     setParseResult(result);
   }, [query]);
 
-  // Autocomplete suggestions
-  const suggestions = METRIC_DEFINITIONS.filter((m) => {
-    if (!filterWord) return false;
-    const fw = filterWord.toLowerCase();
-    return (
-      m.label.toLowerCase().includes(fw) ||
-      m.key.toLowerCase().includes(fw) ||
-      m.aliases.some((a) => a.toLowerCase().includes(fw))
-    );
-  }).slice(0, 5);
+  // Close helper on Escape or outside click
+  useEffect(() => {
+    if (!metricHelperOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMetricHelperOpen(false);
+        textareaRef.current?.focus();
+      }
+    };
+    const handleClickOutside = (e: MouseEvent) => {
+      if (helperRef.current && !helperRef.current.contains(e.target as Node)) {
+        setMetricHelperOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [metricHelperOpen]);
 
+  // Clean, direct text change handler without intrusive popups
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    onChangeQuery(val);
-
-    // Detect word at cursor for autocomplete
-    const cursorPos = e.target.selectionStart;
-    const textBefore = val.slice(0, cursorPos);
-    const lastWordMatch = textBefore.match(/([a-zA-Z0-9%]+)$/);
-
-    if (lastWordMatch && lastWordMatch[1].length >= 2) {
-      setFilterWord(lastWordMatch[1]);
-      setSuggestionOpen(true);
-    } else {
-      setSuggestionOpen(false);
-    }
+    onChangeQuery(e.target.value);
   };
 
-  const insertSuggestion = (metricLabel: string) => {
-    if (!textareaRef.current) return;
-    const cursorPos = textareaRef.current.selectionStart;
-    const textBefore = query.slice(0, cursorPos);
-    const textAfter = query.slice(cursorPos);
-    const newTextBefore = textBefore.replace(/([a-zA-Z0-9%]+)$/, metricLabel);
-    onChangeQuery(`${newTextBefore} > `);
-    setSuggestionOpen(false);
+  const handleReset = () => {
+    onChangeQuery('');
+    setMetricHelperOpen(false);
+    onResetQuery();
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 50);
+  };
+
+  const handleLoadExample = () => {
+    onChangeQuery('ROCE > 20\nAND Return on Equity > 18\nAND Debt to Equity < 0.5\nAND Profit Growth 3Y > 12');
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 50);
@@ -85,7 +88,27 @@ export function QueryEditor({
     } else {
       onChangeQuery(`${query.trim()}\nAND ${snippet}`);
     }
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 50);
   };
+
+  const insertMetric = (metricLabel: string) => {
+    insertSnippet(`${metricLabel} > `);
+    setMetricHelperOpen(false);
+  };
+
+  // Filter metrics for the optional helper panel
+  const filteredMetrics = METRIC_DEFINITIONS.filter((m) => {
+    if (!helperSearch.trim()) return true;
+    const s = helperSearch.toLowerCase();
+    return (
+      m.label.toLowerCase().includes(s) ||
+      m.key.toLowerCase().includes(s) ||
+      m.category.toLowerCase().includes(s) ||
+      m.aliases.some((a) => a.toLowerCase().includes(s))
+    );
+  }).slice(0, 24);
 
   return (
     <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md overflow-hidden">
@@ -125,32 +148,10 @@ export function QueryEditor({
           rows={5}
           value={query}
           onChange={handleTextChange}
-          placeholder={`Enter financial screening conditions, e.g.:\nMarket Capitalization > 5000\nAND Sales Growth 5Y > 15\nAND ROCE > 18\nAND Debt to Equity < 0.5\nAND Interest Coverage Ratio > 5`}
-          className="w-full font-mono text-[14px] leading-relaxed p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-y shadow-inner"
+          placeholder="Type conditions here (e.g. Market Cap > 5000 AND ROCE > 20) or click metric chips below..."
+          className="w-full font-mono text-[14px] leading-relaxed p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] placeholder:italic placeholder:font-normal placeholder:opacity-50 placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-y shadow-inner"
           spellCheck={false}
         />
-
-        {/* Autocomplete Popup */}
-        {suggestionOpen && suggestions.length > 0 && (
-          <div className="absolute left-6 bottom-20 z-30 w-80 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-2xl p-1.5 divide-y divide-[var(--theme-card-border)]/50">
-            <div className="px-2 py-1 text-[10.5px] mono font-bold text-[var(--theme-card-text-muted)] uppercase tracking-wider">
-              Autocomplete Financial Metrics
-            </div>
-            {suggestions.map((m) => (
-              <div
-                key={m.key}
-                onClick={() => insertSuggestion(m.label)}
-                className="p-2 hover:bg-emerald-500/10 rounded-lg cursor-pointer transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="mono text-[12.5px] font-bold text-emerald-400">{m.label}</span>
-                  <span className="mono text-[10.5px] text-[var(--theme-card-text-muted)] font-bold">{m.unit}</span>
-                </div>
-                <div className="text-[10.5px] text-[var(--theme-card-text-muted)] truncate">{m.description}</div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Quick Insert Metric Snippet Chips */}
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -171,23 +172,120 @@ export function QueryEditor({
               key={chip.label}
               type="button"
               onClick={() => insertSnippet(chip.snippet)}
-              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] mono text-[11.5px] font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:border-emerald-500 transition-colors"
+              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] mono text-[11.5px] font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:border-emerald-500 transition-colors cursor-pointer"
             >
               + {chip.label}
             </button>
           ))}
+
+          {/* Clean Metric Browser Helper Toggle */}
+          <button
+            type="button"
+            onClick={() => setMetricHelperOpen((v) => !v)}
+            className={`px-2.5 py-1 rounded-lg border mono text-[11.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+              metricHelperOpen
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-xs'
+                : 'border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:border-emerald-500'
+            }`}
+          >
+            <span>{metricHelperOpen ? '✕ Close Helper' : '🔍 Browse 40+ Metrics'}</span>
+          </button>
         </div>
+
+        {/* Docked Metric Browser Drawer (Cleanly positioned BELOW chips, never obstructing textarea) */}
+        {metricHelperOpen && (
+          <div
+            ref={helperRef}
+            className="mt-3 p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-lg animate-in fade-in duration-150"
+          >
+            <div className="flex items-center justify-between gap-3 mb-2.5 pb-2 border-b border-[var(--theme-card-border)]">
+              <div className="flex items-center gap-2">
+                <span className="mono text-[12px] font-black text-emerald-400 uppercase tracking-wider">
+                  Browse Financial Metrics
+                </span>
+                <span className="mono text-[10.5px] text-[var(--theme-card-text-muted)]">
+                  (Click any metric to insert condition)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMetricHelperOpen(false)}
+                className="text-xs mono font-bold text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] px-2 py-0.5 rounded cursor-pointer"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {/* Metric Search Input inside Helper */}
+            <input
+              type="text"
+              value={helperSearch}
+              onChange={(e) => setHelperSearch(e.target.value)}
+              placeholder="Search metrics (e.g. Sales, Debt, Margins, Cash Flow)..."
+              className="w-full px-3 py-2 mb-2.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] mono text-[12.5px] focus:outline-none focus:border-emerald-500"
+              autoFocus
+            />
+
+            {/* Grid of Available Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-56 overflow-y-auto pr-1">
+              {filteredMetrics.map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  onClick={() => insertMetric(m.label)}
+                  className="p-2 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] hover:border-emerald-500 hover:bg-emerald-500/10 transition-all text-left flex flex-col gap-0.5 cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="mono text-[12px] font-black text-emerald-400 group-hover:underline truncate">
+                      {m.label}
+                    </span>
+                    <span className="mono text-[10px] text-[var(--theme-card-text-muted)] font-bold shrink-0 ml-1">
+                      {m.unit}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[var(--theme-card-text-muted)] line-clamp-1">
+                    {m.description}
+                  </span>
+                </button>
+              ))}
+              {filteredMetrics.length === 0 && (
+                <div className="col-span-full py-4 text-center mono text-xs text-[var(--theme-card-text-muted)]">
+                  No metrics match &ldquo;{helperSearch}&rdquo;
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
-        <button
-          type="button"
-          onClick={onResetQuery}
-          className="mono text-[12.5px] font-bold text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] transition-colors cursor-pointer"
-        >
-          Reset Filters
-        </button>
+      <div className="flex flex-wrap items-center justify-between px-4 py-3 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="mono text-[12px] font-bold text-[var(--theme-card-text-muted)] hover:text-rose-400 px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] hover:border-rose-500/40 bg-[var(--theme-card-bg)] transition-colors cursor-pointer flex items-center gap-1.5"
+            title="Clear all conditions in the query box"
+          >
+            <span>🗑</span>
+            <span>Clear Query</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLoadExample}
+            className="mono text-[12px] font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] hover:border-emerald-500/40 bg-[var(--theme-card-bg)] transition-colors cursor-pointer"
+            title="Load default compounder example conditions"
+          >
+            Load Example
+          </button>
+
+          {query.trim() === '' && (
+            <span className="mono text-[11px] text-[var(--theme-card-text-muted)] italic hidden sm:inline">
+              (Empty: showing all companies)
+            </span>
+          )}
+        </div>
 
         <div className="flex items-center gap-2.5">
           {onOpenSaveScreen && (
