@@ -108,8 +108,8 @@ export function TechnicalStrategyScreenerView({
                 10 Quantitative Models
               </span>
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 mono text-[10.5px] font-bold">
-                <span className={`w-1.5 h-1.5 rounded-full ${tradeEngineStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                <span>KITE TICK LIVE</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>LIVE FEED</span>
               </div>
             </div>
             <p className="text-[12.5px] text-[var(--theme-card-text-muted)] font-medium mt-0.5">

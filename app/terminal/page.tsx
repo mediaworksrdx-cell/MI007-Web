@@ -1489,7 +1489,7 @@ export default function TerminalPage() {
                           : activeTab === 'crypto'
                           ? 'Search cryptocurrencies (BTC, ETH, SOL, BNB, DOGE) to add...'
                           : market === 'INDIA'
-                          ? 'Search from 3,800+ Zerodha stocks, indices, or crypto...'
+                          ? 'Search from 3,800+ Indian stocks, indices, or crypto...'
                           : 'Search stocks, indices, or crypto...'
                       }
                       className="w-full px-4 py-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] placeholder-slate-400 mono text-[13px] font-medium focus:outline-none focus:border-emerald-500 shadow-inner"

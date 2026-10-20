@@ -109,15 +109,11 @@ export function CompanyAnalysisView({
                     ? 'bg-rose-400'
                     : 'bg-emerald-400/60'
                 } animate-pulse`}
-                title="Kite Live Streaming"
+                title="Live Streaming"
               />
             </div>
             <div className={`mono text-[13px] font-bold ${priceChangePct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {priceChangePct >= 0 ? '▲ +' : '▼ '}{priceChangePct.toFixed(2)}% Today
-            </div>
-            <div className="text-[10px] mono text-emerald-400/90 font-bold flex items-center justify-end gap-1 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
-              <span>Zerodha Kite Live</span>
             </div>
           </div>
 

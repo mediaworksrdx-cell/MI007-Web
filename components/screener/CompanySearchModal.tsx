@@ -43,18 +43,18 @@ export function CompanySearchModal({
   // Pull fresh instruments directly from Zerodha Kite endpoint
   const handlePullFromZerodha = async () => {
     setSyncing(true);
-    setSyncMessage('Connecting to Zerodha Kite Connect API...');
+    setSyncMessage('Updating exchange directory...');
     try {
       const res = await fetch('/api/screener/zerodha-stocks?action=sync');
       const data = await res.json();
       if (data.success) {
         setTotalZerodha(data.count);
-        setSyncMessage(`✓ Synced ${data.count} active NSE equity stocks from Zerodha!`);
+        setSyncMessage(`✓ Synced ${data.count} active NSE equity stocks!`);
       } else {
-        setSyncMessage(data.message || 'Updated catalog from Zerodha');
+        setSyncMessage(data.message || 'Updated catalog');
       }
     } catch {
-      setSyncMessage('Failed to contact Zerodha endpoint');
+      setSyncMessage('Failed to contact catalog endpoint');
     } finally {
       setSyncing(false);
     }
@@ -94,7 +94,7 @@ export function CompanySearchModal({
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search all 3,800+ Zerodha stocks (e.g. RELIANCE, TCS, ETERNAL, SUZLON, HAL)..."
+            placeholder="Search all 3,800+ NSE stocks (e.g. RELIANCE, TCS, ETERNAL, SUZLON, HAL)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full bg-transparent mono text-[14px] sm:text-[15px] font-bold text-[var(--theme-card-text)] placeholder:text-slate-400 focus:outline-none min-w-0"
@@ -138,7 +138,7 @@ export function CompanySearchModal({
                   : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
               }`}
             >
-              ⚡ Zerodha Kite ({query ? zerodhaMatches.length : totalZerodha})
+              ⚡ All NSE Stocks ({query ? zerodhaMatches.length : totalZerodha})
             </button>
           </div>
 
@@ -146,10 +146,10 @@ export function CompanySearchModal({
             onClick={handlePullFromZerodha}
             disabled={syncing}
             className="px-2.5 py-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold mono text-[11px] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-            title="Pull fresh stock instruments from Zerodha Kite Connect"
+            title="Sync fresh stock instruments from exchange directory"
           >
             <span className={syncing ? 'animate-spin' : ''}>⚡</span>
-            <span>{syncing ? 'Pulling Zerodha...' : 'Pull from Zerodha'}</span>
+            <span>{syncing ? 'Syncing...' : 'Sync Catalog'}</span>
           </button>
         </div>
 
@@ -233,7 +233,7 @@ export function CompanySearchModal({
                             {z.symbol}
                           </span>
                           <span className="mono text-[10.5px] font-bold px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 inline-flex items-center leading-none">
-                            Zerodha Kite
+                            NSE Equity
                           </span>
                           <span className="mono text-[10px] text-[var(--theme-card-text-muted)]">
                             Token: #{z.token}
@@ -258,7 +258,7 @@ export function CompanySearchModal({
 
         {/* Footer info banner */}
         <div className="px-4 py-2 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center justify-between text-[11px] text-[var(--theme-card-text-muted)] mono">
-          <span>⚡ Connected to Zerodha Kite Connect ({totalZerodha.toLocaleString()} active NSE instruments)</span>
+          <span>⚡ Active Exchange Directory ({totalZerodha.toLocaleString()} active NSE instruments)</span>
           <span>Press ESC to close</span>
         </div>
       </div>

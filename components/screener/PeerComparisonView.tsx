@@ -198,7 +198,7 @@ export function PeerComparisonView({
                                 ? 'bg-rose-400'
                                 : 'bg-emerald-400/70'
                             } animate-pulse`}
-                            title="Kite Live Streaming"
+                            title="Live Streaming"
                           />
                         )}
                       </div>

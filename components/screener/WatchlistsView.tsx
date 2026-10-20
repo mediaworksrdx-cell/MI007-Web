@@ -371,7 +371,7 @@ export function WatchlistsView({
                           {z.symbol}
                         </span>
                         <span className="mono text-[10px] px-1.5 py-0.2 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold">
-                          NSE · Zerodha
+                          NSE Equity
                         </span>
                       </div>
                       <div className="text-[11.5px] text-[var(--theme-card-text-muted)] truncate font-medium">
@@ -501,7 +501,7 @@ export function WatchlistsView({
                                     ? 'bg-rose-400'
                                     : 'bg-emerald-400/70'
                                 } animate-pulse`}
-                                title="Kite Live Streaming"
+                                title="Live Streaming"
                               />
                             )}
                           </button>

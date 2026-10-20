@@ -622,11 +622,11 @@ export default function MarketTerminalSection() {
               </button>
             </div>
 
-            {/* Live Symbol Price & Kite Connection Status */}
+            {/* Live Symbol Price & Feed Status */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>KITE LIVE</span>
+                <span>LIVE</span>
               </span>
               <span className="text-slate-900 font-bold text-[15px] sm:text-[17px]">
                 {activeSymbol.currency}

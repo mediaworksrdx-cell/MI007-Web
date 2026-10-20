@@ -298,8 +298,8 @@ export function ResultsTable({
               <span>Freshness: {dataFreshness} · Computed in {executionTimeMs}ms</span>
               <span className="opacity-40">|</span>
               <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
-                <span className={`w-1.5 h-1.5 rounded-full ${tradeEngineStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                <span>{tradeEngineStatus === 'connected' ? 'Kite Engine Streaming' : 'Kite Standby'}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Live Streaming</span>
               </span>
             </div>
           </div>
@@ -436,7 +436,7 @@ export function ResultsTable({
                                   ? 'bg-rose-400'
                                   : 'bg-emerald-400/70'
                               } animate-pulse`}
-                              title="Kite Live Streaming"
+                              title="Live Streaming"
                             />
                           )}
                         </button>
