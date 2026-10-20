@@ -4,9 +4,9 @@ import Image from 'next/image';
 export function Footer() {
   return (
     <footer className="border-t footer-panel mt-auto">
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-10 sm:py-12">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-5 sm:py-6">
         {/* Responsive Grid: Stacks cleanly on mobile, dedicated top brand banner on tablet, 12-col layout on desktop */}
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-12 lg:gap-6">
           {/* Brand Column: Spans full width on tablet (sm:col-span-2) so it NEVER squishes the links, and 4 cols on lg */}
           <div className="sm:col-span-2 lg:col-span-4 flex flex-col gap-4">
             <div className="flex items-center gap-3 sm:gap-4">
@@ -212,7 +212,7 @@ export function Footer() {
         </div>
 
         {/* Bottom strip */}
-        <div className="h-[1px] w-full border-t border-white/20 mt-8 mb-4" />
+        <div className="h-[1px] w-full border-t border-white/20 mt-4 mb-2" />
         <div
           className="text-[13px] font-semibold text-center sm:text-left footer-copy text-slate-300 flex items-center justify-between flex-wrap gap-2"
           style={{ color: '#CBD5E1' }}

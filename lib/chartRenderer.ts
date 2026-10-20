@@ -1638,18 +1638,24 @@ export function renderChart(
 
       if (item.tool === 'HORIZONTAL') {
         ctx.save();
-        ctx.setLineDash([6 * dpr, 4 * dpr]);
+        if (item.lineStyle === 'solid') ctx.setLineDash([]);
+        else if (item.lineStyle === 'dotted') ctx.setLineDash([2 * dpr, 2 * dpr]);
+        else ctx.setLineDash([6 * dpr, 4 * dpr]);
         ctx.beginPath(); ctx.moveTo(0, y1); ctx.lineTo(chartW, y1); ctx.stroke();
         ctx.restore();
         ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillText(`H-Line: ${formatPrice(p1.price)}`, 6 * dpr, y1 - 5 * dpr);
+        const label = item.text ? `${item.text}: ${formatPrice(p1.price)}` : `H-Line: ${formatPrice(p1.price)}`;
+        ctx.fillText(label, 6 * dpr, y1 - 5 * dpr);
       } else if (item.tool === 'HORIZONTAL_RAY') {
         ctx.save();
-        ctx.setLineDash([6 * dpr, 4 * dpr]);
+        if (item.lineStyle === 'solid') ctx.setLineDash([]);
+        else if (item.lineStyle === 'dotted') ctx.setLineDash([2 * dpr, 2 * dpr]);
+        else ctx.setLineDash([6 * dpr, 4 * dpr]);
         ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(chartW, y1); ctx.stroke();
         ctx.restore();
         ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillText(`H-Ray: ${formatPrice(p1.price)}`, x1 + 6 * dpr, y1 - 5 * dpr);
+        const label = item.text ? `${item.text}: ${formatPrice(p1.price)}` : `H-Ray: ${formatPrice(p1.price)}`;
+        ctx.fillText(label, x1 + 6 * dpr, y1 - 5 * dpr);
       } else if (item.tool === 'VERTICAL_LINE') {
         ctx.save();
         ctx.setLineDash([6 * dpr, 4 * dpr]);
@@ -1813,7 +1819,37 @@ export function renderChart(
         const y2 = priceToY(p2.price);
 
         if (item.tool === 'TRENDLINE') {
-          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          if (item.lineStyle === 'dashed') ctx.setLineDash([6 * dpr, 4 * dpr]);
+          else if (item.lineStyle === 'dotted') ctx.setLineDash([2 * dpr, 2 * dpr]);
+          else ctx.setLineDash([]);
+
+          let startX = x1, startY = y1, endX = x2, endY = y2;
+          const dx = x2 - x1, dy = y2 - y1;
+          const hyp = Math.hypot(dx, dy);
+          if (hyp > 0.001) {
+            const factor = Math.max(chartW, chartH) * 2 / hyp;
+            if (item.extendLeft) {
+              startX = x1 - dx * factor;
+              startY = y1 - dy * factor;
+            }
+            if (item.extendRight) {
+              endX = x2 + dx * factor;
+              endY = y2 + dy * factor;
+            }
+          }
+          ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
+          ctx.setLineDash([]);
+
+          if (item.text) {
+            ctx.save();
+            ctx.font = `bold ${(item.fontSize || 10) * dpr}px "JetBrains Mono",monospace`;
+            ctx.fillStyle = item.color || '#2563EB';
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            ctx.fillText(item.text, midX + 4 * dpr, midY - 6 * dpr);
+            ctx.restore();
+          }
+
           ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
           ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'RAY') {
@@ -1986,22 +2022,28 @@ export function renderChart(
           ctx.fillText(txt, x2 + 6 * dpr, y2);
           ctx.restore();
         } else if (item.tool === 'FIBONACCI') {
-          const levels = [
-            { lvl: 0.0,   color: '#EF4444', label: '0.0%' },
-            { lvl: 0.236, color: '#F97316', label: '23.6%' },
-            { lvl: 0.382, color: '#F59E0B', label: '38.2%' },
-            { lvl: 0.5,   color: '#10B981', label: '50.0%' },
-            { lvl: 0.618, color: '#06B6D4', label: '61.8%' },
-            { lvl: 0.786, color: '#8B5CF6', label: '78.6%' },
-            { lvl: 1.0,   color: '#EF4444', label: '100.0%' },
-          ];
+          const levels = (item.fibLevels && item.fibLevels.length > 0)
+            ? item.fibLevels.filter(f => f.enabled !== false).map(f => ({
+                lvl: f.lvl,
+                color: f.color,
+                label: f.label || `${(f.lvl * 100).toFixed(1)}%`,
+              }))
+            : [
+                { lvl: 0.0,   color: '#EF4444', label: '0.0%' },
+                { lvl: 0.236, color: '#F97316', label: '23.6%' },
+                { lvl: 0.382, color: '#F59E0B', label: '38.2%' },
+                { lvl: 0.5,   color: '#10B981', label: '50.0%' },
+                { lvl: 0.618, color: '#06B6D4', label: '61.8%' },
+                { lvl: 0.786, color: '#8B5CF6', label: '78.6%' },
+                { lvl: 1.0,   color: '#EF4444', label: '100.0%' },
+              ];
           const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
 
           // Golden pocket fill (0.382 - 0.618)
           const y382 = y1 + (y2 - y1) * 0.382;
           const y618 = y1 + (y2 - y1) * 0.618;
           ctx.save();
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.10)';
+          ctx.fillStyle = item.fillColor || 'rgba(16, 185, 129, 0.10)';
           ctx.fillRect(minX, Math.min(y382, y618), maxX - minX, Math.abs(y618 - y382));
           ctx.restore();
 
@@ -2385,19 +2427,26 @@ export function renderChart(
         }
       }
 
-      // Selection Highlight Anchors
+      // Selection Highlight Anchors (TradingView Circular Rings)
       if (options.selectedDrawingId && options.selectedDrawingId === item.id && !options.skipCrosshair) {
         ctx.save();
         for (const pt of item.points) {
           const px = getPointX(pt);
           const py = priceToY(pt.price);
+          // Outer white circular ring with TradingView blue border
           ctx.beginPath();
-          ctx.arc(px, py, 5.5 * dpr, 0, Math.PI * 2);
-          ctx.fillStyle = '#2563EB';
+          ctx.arc(px, py, 6 * dpr, 0, Math.PI * 2);
+          ctx.fillStyle = '#FFFFFF';
           ctx.fill();
           ctx.lineWidth = 2 * dpr;
-          ctx.strokeStyle = '#FFFFFF';
+          ctx.strokeStyle = '#2563EB';
           ctx.stroke();
+
+          // Inner blue center dot
+          ctx.beginPath();
+          ctx.arc(px, py, 2 * dpr, 0, Math.PI * 2);
+          ctx.fillStyle = '#2563EB';
+          ctx.fill();
         }
         ctx.restore();
       }
@@ -3252,19 +3301,19 @@ export function renderOverlay(
       for (const pt of sel.points) {
         const px = getPointX(pt);
         const py = priceToY(pt.price);
-        // Outer drop shadow ring
+        // Outer circular ring with TradingView blue border and white fill
         ctx.beginPath();
-        ctx.arc(px, py, 7 * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = '#2563EB';
+        ctx.arc(px, py, 6 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF';
         ctx.fill();
-        ctx.lineWidth = 2.5 * dpr;
-        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2 * dpr;
+        ctx.strokeStyle = '#2563EB';
         ctx.stroke();
 
-        // Inner white dot
+        // Inner blue center dot
         ctx.beginPath();
-        ctx.arc(px, py, 2.5 * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = '#FFFFFF';
+        ctx.arc(px, py, 2 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = '#2563EB';
         ctx.fill();
       }
       ctx.restore();

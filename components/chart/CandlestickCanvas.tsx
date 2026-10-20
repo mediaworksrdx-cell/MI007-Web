@@ -6,6 +6,8 @@ import { isOverlay, CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN } from '@/lib/types'
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
 import { renderChart, renderOverlay, resolveDrawingPointIndex, computeChartPriceBounds } from '@/lib/chartRenderer';
 import { DrawingQuickBar } from './DrawingQuickBar';
+import { DrawingSettingsModal } from './DrawingSettingsModal';
+import { DrawingContextMenu } from './DrawingContextMenu';
 import type { CursorMode } from './DrawingToolbar';
 
 interface CandlestickCanvasProps {
@@ -42,6 +44,7 @@ interface CandlestickCanvasProps {
   onToggleLockAllDrawings?: () => void;
   onToggleHideAllDrawings?: () => void;
   onExportSnapshot?: (mode: 'download' | 'clipboard') => void;
+  onOpenObjectTree?: () => void;
 }
 
 export function getToolRequiredPoints(tool: DrawingToolType): number {
@@ -161,6 +164,7 @@ export function CandlestickCanvas({
   onToggleLockAllDrawings,
   onToggleHideAllDrawings,
   onExportSnapshot,
+  onOpenObjectTree,
 }: CandlestickCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -171,6 +175,9 @@ export function CandlestickCanvas({
   const [isDragging, setIsDragging] = useState(false);
   const [drawingInProgress, setDrawingInProgress] = useState<DrawingItem | null>(null);
   const [quickBarPos, setQuickBarPos] = useState<{ x: number; y: number } | null>(null);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenuDrawing, setContextMenuDrawing] = useState<DrawingItem | null>(null);
   const [dpr, setDpr] = useState(1);
   const pointerDownPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const committedPointsRef = useRef<Array<{ index: number; time: number; price: number }>>([]);
@@ -418,6 +425,173 @@ export function CandlestickCanvas({
     }
     return { index: rawIdx, time, price, x: finalX, y };
   }, [cleanCandles, startIdx, endIdx, visibleCount, indicators, isMagnetActive, isShiftHeld, priceOffset, priceScaleRatio, showVolumePanel, size, currentPriceOverride]);
+
+  const handleCloneDrawing = useCallback((drawingToClone: DrawingItem) => {
+    const cloned: DrawingItem = {
+      ...drawingToClone,
+      id: `drawing-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      points: drawingToClone.points.map(p => ({
+        ...p,
+        price: p.price * 1.005,
+        index: p.index + 2,
+      })),
+    };
+    onAddDrawing?.(cloned);
+    onSelectDrawing?.(cloned.id);
+  }, [onAddDrawing, onSelectDrawing]);
+
+  const findDrawingAtCoords = useCallback((x: number, y: number): DrawingItem | null => {
+    if (!drawings || drawings.length === 0 || cleanCandles.length === 0) return null;
+
+    const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
+    const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
+    const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
+    const chartH = size.h - panelH - CHART_BOTTOM_MARGIN;
+    const chartW = size.w - CHART_RIGHT_MARGIN;
+    const visCnt = visibleCount;
+    const candleW = visCnt > 0 ? chartW / visCnt : 1;
+
+    const { pMin, pRange } = computeChartPriceBounds(
+      cleanCandles,
+      startIdx,
+      endIdx,
+      currentPriceOverride,
+      priceOffset,
+      priceScaleRatio
+    );
+
+    for (let di = drawings.length - 1; di >= 0; di--) {
+      const d = drawings[di];
+      if (d.hidden || !d.points || d.points.length === 0) continue;
+      const pts = d.points.map(p => {
+        const idx = resolveDrawingPointIndex(p, cleanCandles);
+        return {
+          x: (idx - startIdx) * candleW + candleW / 2,
+          y: chartH * (1 - (p.price - pMin) / pRange),
+          rawPrice: p.price,
+        };
+      });
+
+      // 1. Anchor point check
+      for (const ptItem of pts) {
+        if (Math.hypot(x - ptItem.x, y - ptItem.y) <= 22) {
+          return d;
+        }
+      }
+
+      const p1 = pts[0];
+
+      // 2. Horizontal / Vertical Lines
+      if (d.tool === 'HORIZONTAL') {
+        if (Math.abs(y - p1.y) <= 18) return d;
+      } else if (d.tool === 'HORIZONTAL_RAY') {
+        if (Math.abs(y - p1.y) <= 18 && x >= p1.x - 12) return d;
+      } else if (d.tool === 'VERTICAL_LINE') {
+        if (Math.abs(x - p1.x) <= 18) return d;
+      } else if (d.tool === 'CROSS_LINE') {
+        if (Math.abs(y - p1.y) <= 18 || Math.abs(x - p1.x) <= 18) return d;
+      }
+
+      // 3. Fibonacci Retracement
+      if (d.tool === 'FIBONACCI' && pts.length >= 2) {
+        const p2 = pts[1];
+        const minX = Math.min(p1.x, p2.x), maxX = Math.max(p1.x, p2.x);
+        const minY = Math.min(p1.y, p2.y), maxY = Math.max(p1.y, p2.y);
+        if (x >= minX - 18 && x <= maxX + 18) {
+          const fibLvls = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0, 1.618, 2.618];
+          let hitFib = false;
+          for (const fl of fibLvls) {
+            const ly = p1.y + (p2.y - p1.y) * fl;
+            if (Math.abs(y - ly) <= 18) { hitFib = true; break; }
+          }
+          if (hitFib || (y >= minY - 10 && y <= maxY + 10)) {
+            return d;
+          }
+        }
+      }
+
+      // 4. Fibonacci Extension
+      if (d.tool === 'FIBONACCI_EXTENSION' && pts.length >= 2) {
+        const p2 = pts[1];
+        const p3 = pts[2] || p2;
+        const minX = Math.min(p1.x, p2.x);
+        const baseRange = p2.rawPrice - p1.rawPrice;
+        if (x >= minX - 18) {
+          const extLvls = [0.0, 0.618, 1.0, 1.618, 2.618];
+          for (const el of extLvls) {
+            const targetP = p3.rawPrice + baseRange * el;
+            const ly = chartH * (1 - (targetP - pMin) / pRange);
+            if (Math.abs(y - ly) <= 18) return d;
+          }
+        }
+      }
+
+      // 5. Line segments
+      if (pts.length >= 2) {
+        for (let si = 0; si < pts.length - 1; si++) {
+          const pa = pts[si], pb = pts[si + 1];
+          const dx = pb.x - pa.x, dy = pb.y - pa.y;
+          const lenSq = dx * dx + dy * dy;
+          if (lenSq > 0) {
+            let t = ((x - pa.x) * dx + (y - pa.y) * dy) / lenSq;
+            if (d.tool === 'RAY' && si === pts.length - 2) {
+              t = Math.max(0, t);
+            } else if (d.tool === 'EXTENDED_LINE') {
+              // infinite
+            } else {
+              t = Math.max(0, Math.min(1, t));
+            }
+            const px = pa.x + t * dx, py = pa.y + t * dy;
+            if (Math.hypot(x - px, y - py) <= 20) {
+              return d;
+            }
+          }
+        }
+
+        // 6. Area bounding for 2D shapes
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const ptItem of pts) {
+          if (ptItem.x < minX) minX = ptItem.x;
+          if (ptItem.x > maxX) maxX = ptItem.x;
+          if (ptItem.y < minY) minY = ptItem.y;
+          if (ptItem.y > maxY) maxY = ptItem.y;
+        }
+        const isAreaTool = [
+          'RECTANGLE', 'ROTATED_RECTANGLE', 'CIRCLE', 'ELLIPSE', 'TRIANGLE',
+          'CHANNEL', 'DISJOINT_CHANNEL', 'FIB_CHANNEL', 'GANN_BOX', 'GANN_FAN',
+          'RISK_REWARD_LONG', 'RISK_REWARD_SHORT', 'PRICE_RANGE', 'DATE_RANGE', 'MEASURE',
+          'XABCD_PATTERN', 'ABCD_PATTERN', 'HEAD_AND_SHOULDERS', 'ELLIOTT_IMPULSE', 'ELLIOTT_CORRECTION'
+        ].includes(d.tool);
+        if (isAreaTool && x >= minX - 12 && x <= maxX + 12 && y >= minY - 12 && y <= maxY + 12) {
+          return d;
+        }
+      } else if (pts.length === 1) {
+        if (Math.hypot(x - p1.x, y - p1.y) <= 26) {
+          return d;
+        }
+      }
+    }
+    return null;
+  }, [drawings, cleanCandles, indicators, showVolumePanel, size.h, size.w, visibleCount, startIdx, endIdx, currentPriceOverride, priceOffset, priceScaleRatio]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = overlayCanvasRef.current || canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const hit = findDrawingAtCoords(x, y) || (selectedDrawingId ? drawings.find(d => d.id === selectedDrawingId) : null);
+    if (hit) {
+      onSelectDrawing?.(hit.id);
+      setQuickBarPos({ x, y });
+      setContextMenuDrawing(hit);
+      setContextMenuPos({ x: e.clientX, y: e.clientY });
+    } else {
+      setContextMenuPos(null);
+    }
+  }, [drawings, findDrawingAtCoords, onSelectDrawing, selectedDrawingId]);
 
   // ── Sync latest props and states to refs for direct 120 FPS overlay rendering ──
   const cleanCandlesRef = useRef(cleanCandles);
@@ -1005,8 +1179,14 @@ export function CandlestickCanvas({
       // Double click on bottom time scale: reset zoom & snap to live
       setZoom(1.0);
       setScrollOffset(0);
+    } else {
+      const hit = findDrawingAtCoords(x, y);
+      if (hit) {
+        onSelectDrawing?.(hit.id);
+        setIsSettingsModalOpen(true);
+      }
     }
-  }, [activeDrawingTool, drawingInProgress, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, size]);
+  }, [activeDrawingTool, drawingInProgress, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, size, findDrawingAtCoords, onSelectDrawing]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
@@ -1101,80 +1281,9 @@ export function CandlestickCanvas({
         return;
       }
 
-      // 2. Universal Hit-Testing for All 38 Tools
-      let clickedDrawingId: string | null = null;
-      for (const d of drawings) {
-        if (d.hidden || !d.points || d.points.length === 0) continue;
-        const pts = d.points.map(p => {
-          const idx = resolveDrawingPointIndex(p, cleanCandles);
-          return {
-            x: (idx - startIdx) * candleW + candleW / 2,
-            y: chartH * (1 - (p.price - pMin) / pRange),
-          };
-        });
-
-        const p1 = pts[0];
-        if (d.points.length === 1) {
-          if (d.tool === 'HORIZONTAL') {
-            if (Math.abs(y - p1.y) <= 18) { clickedDrawingId = d.id; break; }
-          } else if (d.tool === 'HORIZONTAL_RAY') {
-            if (Math.abs(y - p1.y) <= 18 && x >= p1.x - 8) { clickedDrawingId = d.id; break; }
-          } else if (d.tool === 'VERTICAL_LINE') {
-            if (Math.abs(x - p1.x) <= 18) { clickedDrawingId = d.id; break; }
-          } else if (d.tool === 'CROSS_LINE') {
-            if (Math.abs(y - p1.y) <= 18 || Math.abs(x - p1.x) <= 18) { clickedDrawingId = d.id; break; }
-          } else {
-            // Anchor point hit test for 1-point markers (TEXT, ANCHORED_TEXT, PRICE_LABEL, ARROW_UP, ARROW_DOWN, FLAG)
-            if (Math.hypot(x - p1.x, y - p1.y) <= 26) { clickedDrawingId = d.id; break; }
-          }
-        } else if (pts.length >= 2) {
-          // Distance to any line segment between consecutive points
-          let hitSegment = false;
-          for (let si = 0; si < pts.length - 1; si++) {
-            const pa = pts[si], pb = pts[si + 1];
-            const dx = pb.x - pa.x, dy = pb.y - pa.y;
-            const lenSq = dx * dx + dy * dy;
-            if (lenSq > 0) {
-              let t = ((x - pa.x) * dx + (y - pa.y) * dy) / lenSq;
-              if (d.tool === 'RAY' && si === pts.length - 2) {
-                t = Math.max(0, t);
-              } else if (d.tool === 'EXTENDED_LINE') {
-                // infinite
-              } else {
-                t = Math.max(0, Math.min(1, t));
-              }
-              const px = pa.x + t * dx, py = pa.y + t * dy;
-              if (Math.hypot(x - px, y - py) <= 20) {
-                hitSegment = true;
-                break;
-              }
-            }
-          }
-          if (hitSegment) {
-            clickedDrawingId = d.id;
-            break;
-          }
-
-          // Area bounding test for box-like / polygon shapes
-          let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-          for (const ptItem of pts) {
-            if (ptItem.x < minX) minX = ptItem.x;
-            if (ptItem.x > maxX) maxX = ptItem.x;
-            if (ptItem.y < minY) minY = ptItem.y;
-            if (ptItem.y > maxY) maxY = ptItem.y;
-          }
-          const isAreaTool = [
-            'RECTANGLE', 'ROTATED_RECTANGLE', 'CIRCLE', 'ELLIPSE', 'TRIANGLE',
-            'CHANNEL', 'DISJOINT_CHANNEL', 'FIB_CHANNEL', 'GANN_BOX',
-            'RISK_REWARD_LONG', 'RISK_REWARD_SHORT', 'PRICE_RANGE', 'DATE_RANGE', 'MEASURE',
-            'XABCD_PATTERN', 'ABCD_PATTERN'
-          ].includes(d.tool);
-          if (isAreaTool && x >= minX - 12 && x <= maxX + 12 && y >= minY - 12 && y <= maxY + 12) {
-            clickedDrawingId = d.id;
-            break;
-          }
-        }
-      }
+      // 2. Universal Hit-Testing for All Drawing Tools
+      const hitDrawing = findDrawingAtCoords(x, y);
+      const clickedDrawingId: string | null = hitDrawing ? hitDrawing.id : null;
 
       if (clickedDrawingId) {
         if (cursorMode === 'eraser' && !isAllDrawingsLocked) {
@@ -1499,6 +1608,7 @@ export function CandlestickCanvas({
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerLeave}
         onDoubleClick={handleDoubleClick}
+        onContextMenu={handleContextMenu}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -1633,7 +1743,7 @@ export function CandlestickCanvas({
         </button>
       )}
 
-      {/* Floating Drawing Quick Actions Bar (Color, Width, RR ratio, Delete) */}
+      {/* Floating Drawing Quick Actions Bar */}
       {selectedDrawing && quickBarPos && (
         <DrawingQuickBar
           drawing={selectedDrawing}
@@ -1646,10 +1756,57 @@ export function CandlestickCanvas({
             onSelectDrawing?.(null);
             setQuickBarPos(null);
           }}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
+          onOpenContextMenu={(pos) => {
+            setContextMenuDrawing(selectedDrawing);
+            setContextMenuPos(pos);
+          }}
           onClose={() => {
             onSelectDrawing?.(null);
             setQuickBarPos(null);
           }}
+        />
+      )}
+
+      {/* TradingView Clean Settings Modal (Coordinates / Style / Text / Visibility) */}
+      <DrawingSettingsModal
+        isOpen={isSettingsModalOpen}
+        drawing={selectedDrawing || null}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onSave={(updated) => {
+          onUpdateDrawing?.(updated);
+        }}
+      />
+
+      {/* TradingView Context Menu */}
+      {contextMenuDrawing && contextMenuPos && (
+        <DrawingContextMenu
+          isOpen={Boolean(contextMenuPos)}
+          position={contextMenuPos}
+          drawing={contextMenuDrawing}
+          onClose={() => {
+            setContextMenuPos(null);
+            setContextMenuDrawing(null);
+          }}
+          onOpenSettings={() => {
+            setIsSettingsModalOpen(true);
+          }}
+          onClone={() => {
+            handleCloneDrawing(contextMenuDrawing);
+          }}
+          onToggleLock={() => {
+            onUpdateDrawing?.({ ...contextMenuDrawing, locked: !contextMenuDrawing.locked });
+          }}
+          onToggleHide={() => {
+            onUpdateDrawing?.({ ...contextMenuDrawing, hidden: !contextMenuDrawing.hidden });
+            onSelectDrawing?.(null);
+          }}
+          onDelete={() => {
+            onDeleteDrawing?.(contextMenuDrawing.id);
+            onSelectDrawing?.(null);
+            setQuickBarPos(null);
+          }}
+          onOpenObjectTree={onOpenObjectTree}
         />
       )}
     </div>

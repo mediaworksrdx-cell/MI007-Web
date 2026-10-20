@@ -57,6 +57,13 @@ export interface DrawingPoint {
   price: number;
 }
 
+export interface FibLevelItem {
+  lvl: number;
+  color: string;
+  label?: string;
+  enabled: boolean;
+}
+
 export interface DrawingItem {
   id: string;
   tool: DrawingToolType;
@@ -74,4 +81,11 @@ export interface DrawingItem {
   lineStyle?: 'solid' | 'dashed' | 'dotted';
   locked?: boolean;
   hidden?: boolean;
+  extendLeft?: boolean;
+  extendRight?: boolean;
+  fontSize?: number;
+  textAlign?: 'left' | 'center' | 'right';
+  fibLevels?: FibLevelItem[];
+  showLabels?: boolean;
+  visibilityIntervals?: string[];
 }

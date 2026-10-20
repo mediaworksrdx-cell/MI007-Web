@@ -1297,8 +1297,8 @@ export default function TerminalPage() {
       <Navbar market={market} onMarketChange={setMarket} />
 
       <main className="min-h-screen pt-28 sm:pt-32 relative z-20 bg-transparent pb-20">
-        {/* ── Master Dashboard Layer ── */}
-        <div className="mx-auto max-w-7xl px-3 sm:px-4 py-4 sm:py-8 relative z-20 isolate">
+        {/* ── Master Dashboard Layer (Extended width: exactly 1 inch margin on left and right) ── */}
+        <div className="w-full px-3 sm:px-6 lg:px-[1in] py-4 sm:py-6 relative z-20 isolate">
           <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-3.5 sm:p-6 lg:p-9 overflow-hidden">
             {/* Top Outer Hairline Accent */}
             <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 pointer-events-none" />

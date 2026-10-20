@@ -1009,6 +1009,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             onToggleLockAllDrawings={() => setIsAllDrawingsLocked(l => !l)}
             onToggleHideAllDrawings={() => setIsAllDrawingsHidden(h => !h)}
             onExportSnapshot={handleExportSnapshot}
+            onOpenObjectTree={() => setIsDrawingsManagerOpen(true)}
             className="h-full"
           />
         </div>
