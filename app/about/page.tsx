@@ -101,7 +101,7 @@ const REGIONS = [
     flag: '🇺🇸',
     name: 'USA — NYSE / NASDAQ',
     city: 'New York, USA',
-    description: 'Direct optical interconnects to Wall Street and New Jersey data centers with institutional microstructure coverage across the NYSE, NASDAQ, S&P 500, NASDAQ 100, and mega-cap equity derivatives.',
+    description: 'Direct optical connectivity to Wall Street’s financial infrastructure, delivering institutional-grade market microstructure intelligence across US equities, major indices, equity derivatives, forex, commodities, and cryptocurrencies.',
     instruments: 'S&P 500, NASDAQ 100, DOW JONES, NVDA, AAPL, MSFT, TSLA, AMZN',
   },
   {
