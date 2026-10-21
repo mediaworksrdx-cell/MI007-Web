@@ -232,6 +232,53 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   const [isLoadingCandles, setIsLoadingCandles] = useState(true);
   const [isLiveFromEngine, setIsLiveFromEngine] = useState(false);
 
+  // Fullscreen container support
+  const fullscreenContainerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleToggleFullscreen = useCallback(() => {
+    const el = fullscreenContainerRef.current;
+    if (!el) return;
+
+    if (!document.fullscreenElement) {
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(err => {
+          console.warn('[ChartContainer] Fullscreen error:', err);
+        });
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(err => {
+          console.warn('[ChartContainer] Exit fullscreen error:', err);
+        });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Keyboard shortcut 'F' to toggle fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = (document.activeElement as HTMLElement)?.tagName;
+      if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || (document.activeElement as HTMLElement)?.isContentEditable) {
+        return;
+      }
+      if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        handleToggleFullscreen();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleToggleFullscreen]);
+
   const { status, getSymbolPrice, subscribeToTicks } = useTradeEngine();
 
   // Sync with defaultSymbol whenever URL/prop changes
@@ -1029,7 +1076,14 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   }, [selectedSymbol, timeframe, market, currency, displayPrice, displayChangePct, indicatorConfigs, showSmcOverlay, showVolumeProfile]);
 
   return (
-    <div className="flex flex-col h-full rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs relative">
+    <div
+      ref={fullscreenContainerRef}
+      className={`flex flex-col h-full bg-white overflow-hidden relative transition-all ${
+        isFullscreen
+          ? 'fixed inset-0 z-[9999] rounded-none border-none shadow-none w-screen h-screen'
+          : 'rounded-xl border border-slate-200 shadow-xs'
+      }`}
+    >
       {/* ── Top Instrument Search Bar ── */}
       <ChartSymbolSearch
         selectedSymbol={selectedSymbol}
@@ -1066,6 +1120,8 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         templates={templates}
         activeTemplateId={activeTemplateId}
         saveStatus={saveStatus}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={handleToggleFullscreen}
         onTimeframeChange={setTimeframe}
         onChartTypeChange={setChartType}
         onToggleVolume={() => setShowVolume(v => !v)}

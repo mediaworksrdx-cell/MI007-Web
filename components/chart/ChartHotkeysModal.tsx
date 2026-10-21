@@ -60,6 +60,7 @@ const SECTIONS: HotkeySection[] = [
     title: 'Terminal Utilities',
     icon: '📸',
     items: [
+      { keys: ['F'], label: 'Toggle Full Screen', desc: 'Expand chart to full screen' },
       { keys: ['Alt', 'S'], label: 'Chart Snapshot', desc: 'High-res card export' },
       { keys: ['?'], label: 'Cheat Sheet', desc: 'Toggle hotkeys guide' },
     ],

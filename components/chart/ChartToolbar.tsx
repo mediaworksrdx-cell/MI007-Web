@@ -67,6 +67,8 @@ interface ChartToolbarProps {
   onSaveChartLayout: () => void;
   onClearAllIndicators?: () => void;
   onExportSnapshot?: (mode: 'download' | 'clipboard') => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 export function ChartToolbar({
@@ -102,6 +104,8 @@ export function ChartToolbar({
   onClearAllIndicators,
   onExportSnapshot,
   onSelectTemplate,
+  isFullscreen,
+  onToggleFullscreen,
 }: ChartToolbarProps) {
   const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | null>(null);
   const [indicatorSearch, setIndicatorSearch] = useState('');
@@ -480,6 +484,31 @@ export function ChartToolbar({
           >
             <span className="text-sm leading-none">📷</span>
             <span className="hidden md:inline">SNAPSHOT</span>
+          </button>
+        )}
+
+        {/* 7.5 FULLSCREEN TOGGLE */}
+        {onToggleFullscreen && (
+          <button
+            type="button"
+            onClick={onToggleFullscreen}
+            title={isFullscreen ? 'Exit Full Screen (Esc / F)' : 'Full Screen (F)'}
+            className={`h-7 px-2.5 rounded-lg border font-bold text-xs font-mono flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+              isFullscreen
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-black'
+                : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-slate-800'
+            }`}
+          >
+            {isFullscreen ? (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+              </svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+              </svg>
+            )}
+            <span className="hidden md:inline">{isFullscreen ? 'EXIT' : 'FULL'}</span>
           </button>
         )}
 
