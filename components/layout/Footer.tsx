@@ -4,26 +4,27 @@ import Image from 'next/image';
 export function Footer() {
   return (
     <footer className="border-t footer-panel mt-auto">
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-5 sm:py-6">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-7 sm:py-8">
         {/* Responsive Grid: Stacks cleanly on mobile, dedicated top brand banner on tablet, 12-col layout on desktop */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-12 lg:gap-6">
-          {/* Brand Column: Spans full width on tablet (sm:col-span-2) so it NEVER squishes the links, and 4 cols on lg */}
-          <div className="sm:col-span-2 lg:col-span-4 flex flex-col gap-4">
-            <div className="flex items-center gap-3 sm:gap-4">
-              {/* 2D Simple Logo */}
-              <div className="h-11 w-11 sm:h-12 sm:w-12 md:h-13 md:w-13 flex-shrink-0 flex items-center justify-center">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8 items-start">
+          {/* Brand Column: Spans full width on tablet (sm:col-span-2) and 5 cols on lg for prominent logo branding */}
+          <div className="sm:col-span-2 lg:col-span-5 flex flex-col gap-4">
+            <Link href="/" className="group flex items-center gap-4 sm:gap-5 flex-shrink-0">
+              {/* Big Falcon Emblem Logo */}
+              <div className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 flex-shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
                 <Image
                   src="/images/logo-falcon-transparent.png"
                   alt="MARKET INTELLIGENCE MI-007"
-                  width={52}
-                  height={52}
-                  className="w-full h-full object-contain"
+                  width={140}
+                  height={140}
+                  priority
+                  className="w-full h-full object-contain drop-shadow-[0_6px_28px_rgba(16,185,129,0.35)]"
                 />
               </div>
               <div className="min-w-0">
                 <div className="leading-tight">
                   <span
-                    className="font-extrabold text-[15px] sm:text-[17px] md:text-[18px] uppercase font-sans tracking-tight footer-brand-title text-white block"
+                    className="font-extrabold text-[16px] sm:text-[18px] md:text-[20px] lg:text-[21px] uppercase font-sans tracking-tight footer-brand-title text-white block group-hover:text-emerald-400 transition-colors"
                     style={{ color: '#FFFFFF' }}
                   >
                     MARKET INTELLIGENCE MI-007
@@ -31,20 +32,20 @@ export function Footer() {
                 </div>
 
                 <div
-                  className="text-[10.5px] sm:text-[11.5px] md:text-[12px] tracking-[0.16em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-200"
+                  className="text-[11px] sm:text-[12px] md:text-[12.5px] tracking-[0.16em] uppercase font-extrabold font-mono mt-1.5 footer-brand-subtitle text-slate-200"
                   style={{ color: '#E2E8F0' }}
                 >
                   <span>Intelligence Beyond the Noise</span>
                 </div>
 
                 <div
-                  className="text-[10px] sm:text-[10.5px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1"
+                  className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1"
                   style={{ color: '#34D399' }}
                 >
                   <span>A Synthetix Analytics Product</span>
                 </div>
               </div>
-            </div>
+            </Link>
 
             {/* Market Regional Chips */}
             <div className="flex flex-wrap items-center gap-2 mt-1">
@@ -148,7 +149,7 @@ export function Footer() {
           </div>
 
           {/* 4 Simple 2D Social Logos */}
-          <div className="sm:col-span-2 lg:col-span-3 flex items-start sm:justify-start lg:justify-end">
+          <div className="sm:col-span-2 lg:col-span-2 flex items-start sm:justify-start lg:justify-end">
             <div className="flex items-center gap-2 sm:gap-2.5 pt-1">
               {/* 1. LinkedIn */}
               <a
