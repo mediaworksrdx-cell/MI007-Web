@@ -100,7 +100,7 @@ export const FOREX_BASE_PRICES: Record<string, number> = {
 export function generateMockCandles(
   market: MarketType,
   symbol: string,
-  count: number = 300,
+  count: number = 800,
   timeframeMs: number = 60 * 60 * 1000 // 1H default
 ): Candle[] {
   const symClean = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
@@ -184,7 +184,7 @@ export function getMockCandles(
   market: MarketType,
   symbol: string,
   timeframe: string,
-  count: number = 250
+  count: number = 800
 ): Candle[] {
   const ms = TIMEFRAME_MS[timeframe] ?? TIMEFRAME_MS['1H'];
   return generateMockCandles(market, symbol, count, ms);

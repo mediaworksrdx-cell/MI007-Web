@@ -346,7 +346,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             saveStoredCandles(selectedSymbol, timeframe, cleanMerged);
           } else if (cleanCached.length === 0) {
             // Fallback to mock data ONLY in-memory (never pollute persistent storage with mock candles)
-            const fallback = getMockCandles(market, selectedSymbol, timeframe, 150);
+            const fallback = getMockCandles(market, selectedSymbol, timeframe, 800);
             const cleanFallback = validateAndCleanCandles(fallback, timeframe);
             setCandles(cleanFallback);
             setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);

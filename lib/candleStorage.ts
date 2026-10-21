@@ -102,12 +102,12 @@ export async function loadStoredCandles(symbol: string, timeframe: string): Prom
   return null;
 }
 
-/** Save candles to IndexedDB with fallback to localStorage (caps at max 1000 candles) */
+/** Save candles to IndexedDB with fallback to localStorage (caps at max 1500 candles) */
 export async function saveStoredCandles(symbol: string, timeframe: string, candles: Candle[]): Promise<void> {
   if (!candles || candles.length === 0) return;
   const key = getStorageKey(symbol, timeframe);
-  // Keep the most recent 1000 candles to optimize disk & memory
-  const trimmed = candles.slice(-1000);
+  // Keep the most recent 1500 candles to optimize disk & memory while providing deep indicator history
+  const trimmed = candles.slice(-1500);
 
   try {
     const db = await getDB();
@@ -126,9 +126,9 @@ export async function saveStoredCandles(symbol: string, timeframe: string, candl
       return;
     }
 
-    // Fallback: localStorage (keep recent 300 for quota safety)
+    // Fallback: localStorage (keep recent 800 for quota safety)
     if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem(`mi007_candles_${key}`, JSON.stringify(trimmed.slice(-300)));
+      localStorage.setItem(`mi007_candles_${key}`, JSON.stringify(trimmed.slice(-800)));
     }
   } catch (err) {
     console.warn(`[CandleStorage] Error saving candles for ${key}:`, err);
