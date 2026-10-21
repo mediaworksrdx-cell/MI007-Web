@@ -52,8 +52,23 @@ export function normalizeSymbolKey(sym: string): string {
   if (clean === 'FINNIFTY' || clean === 'CNXFINANCE' || clean === 'NIFTYFINSERVICE' || clean === 'FIN_NIFTY') {
     return 'FINNIFTY';
   }
+  if (clean === 'MIDCPNIFTY' || clean === 'NIFTYMIDCAPSELECT' || clean === 'NIFTYMIDSELECT') {
+    return 'MIDCPNIFTY';
+  }
   if (clean === 'SENSEX' || clean === 'BSESENSEX' || clean === 'BSE30') {
     return 'SENSEX';
+  }
+  if (clean === 'BANKEX' || clean === 'BSEBANKEX') {
+    return 'BANKEX';
+  }
+  if (clean === 'TATAMOTORS' || clean === 'TATA_MOTORS' || clean === 'TMPV' || clean === 'TMCV') {
+    return 'TATAMOTORS';
+  }
+  if (clean === 'ZOMATO' || clean === 'ETERNAL') {
+    return 'ZOMATO';
+  }
+  if (clean === 'LTIM' || clean === 'LTIMINDTREE' || clean === 'LTI') {
+    return 'LTIM';
   }
   if (clean === 'MIDCAP150' || clean === 'NIFTYMIDCAP150') {
     return 'MIDCAP150';

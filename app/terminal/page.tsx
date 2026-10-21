@@ -1120,16 +1120,17 @@ export default function TerminalPage() {
       }
     });
 
-    // 7. Check 3,800+ Indian Zerodha catalog
-    if (market === 'INDIA' || results.length < 6) {
-      const zerodhaMatches = searchZerodhaStocks(q, 10);
+    // 7. Check 3,820+ Indian Zerodha catalog
+    if (market === 'INDIA' || results.length < 10) {
+      const zerodhaMatches = searchZerodhaStocks(q, 30);
       zerodhaMatches.forEach((z) => {
         if (!results.some(r => r.symbol === z.symbol)) {
+          const isIdx = z.sector?.includes('Index') || z.name?.includes('INDEX');
           results.push({
             symbol: z.symbol,
             name: z.name,
-            category: 'STOCK',
-            sector: z.sector || 'Equities',
+            category: isIdx ? 'INDEX' : 'STOCK',
+            sector: z.sector || (isIdx ? 'Benchmark Index' : 'Equities'),
             base: z.lastPrice && z.lastPrice > 0 ? z.lastPrice : 500,
           });
         }
@@ -1138,10 +1139,10 @@ export default function TerminalPage() {
 
     // Filter by selected category if user specified one
     if (targetCategory !== 'AUTO') {
-      return results.filter(r => r.category === targetCategory).slice(0, 10);
+      return results.filter(r => r.category === targetCategory).slice(0, 20);
     }
 
-    return results.slice(0, 10);
+    return results.slice(0, 20);
   }, [searchQuery, targetCategory, market]);
 
   // Execute Add to Dashboard

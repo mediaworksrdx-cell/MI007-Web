@@ -22,6 +22,8 @@ export const MASTER_CHART_INSTRUMENTS: ChartInstrumentItem[] = [
   { symbol: 'BANKNIFTY', name: 'BANK NIFTY', category: 'INDEX', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 55844.00, sector: 'Banking Index' },
   { symbol: 'SENSEX', name: 'BSE SENSEX', category: 'INDEX', market: 'INDIA', exchange: 'BSE', currency: '₹', flag: '🇮🇳', basePrice: 74729.27, sector: 'Benchmark Index' },
   { symbol: 'FINNIFTY', name: 'NIFTY Financial Services', category: 'INDEX', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 25480.00, sector: 'Financials Index' },
+  { symbol: 'MIDCPNIFTY', name: 'NIFTY Midcap Select', category: 'INDEX', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 12480.00, sector: 'Midcap Benchmark' },
+  { symbol: 'BANKEX', name: 'BSE BANKEX Index', category: 'INDEX', market: 'INDIA', exchange: 'BSE', currency: '₹', flag: '🇮🇳', basePrice: 62450.00, sector: 'Banking Benchmark' },
   { symbol: 'SPX', name: 'S&P 500 Index', category: 'INDEX', market: 'USA', exchange: 'NYSE', currency: '$', flag: '🇺🇸', basePrice: 7703.58, sector: 'US Benchmark' },
   { symbol: 'NDX', name: 'NASDAQ 100 Index', category: 'INDEX', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 29630.77, sector: 'US Tech Benchmark' },
   { symbol: 'DJI', name: 'Dow Jones Industrial', category: 'INDEX', market: 'USA', exchange: 'NYSE', currency: '$', flag: '🇺🇸', basePrice: 51964.04, sector: 'US Bluechips' },
@@ -98,6 +100,8 @@ export const MASTER_CHART_INSTRUMENTS: ChartInstrumentItem[] = [
   { symbol: 'SBIN', name: 'State Bank of India', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 865.40, sector: 'Public Banking' },
   { symbol: 'BHARTIARTL', name: 'Bharti Airtel Ltd.', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 1882.80, sector: 'Telecom' },
   { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd.', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 283.70, sector: 'Automotive & EV' },
+  { symbol: 'ZOMATO', name: 'Zomato (Eternal)', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 248.50, sector: 'Food Delivery & Quick Commerce' },
+  { symbol: 'LTIM', name: 'LTIMindtree Ltd.', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 5420.00, sector: 'IT Services' },
   { symbol: 'LT', name: 'Larsen & Toubro Ltd.', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 3749.10, sector: 'Infrastructure' },
   { symbol: 'TITAN', name: 'Titan Company Ltd.', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 3480.00, sector: 'Consumer Luxury' },
   { symbol: 'BAJFINANCE', name: 'Bajaj Finance Ltd.', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 7120.40, sector: 'Consumer Finance' },
@@ -215,29 +219,33 @@ export function ChartSymbolSearch({
           (q.includes('UAD') && (i.symbol.includes('USD') || i.symbol.includes('AUD')))
       );
 
-      // If in ALL or STOCKS mode, search 3,800+ Zerodha stocks for deep match
-      if (categoryFilter === 'ALL' || categoryFilter === 'STOCKS') {
-        const zdMatches = searchZerodhaStocks(q, 10);
+      // Deep match across 3,820+ Zerodha Kite stocks & indices
+      if (categoryFilter === 'ALL' || categoryFilter === 'STOCKS' || categoryFilter === 'INDICES') {
+        const zdMatches = searchZerodhaStocks(q, 35);
         const existingSyms = new Set(results.map((r) => r.symbol.toUpperCase()));
         for (const zd of zdMatches) {
           if (!existingSyms.has(zd.symbol.toUpperCase())) {
+            const isIdx = zd.sector?.includes('Index') || zd.name?.includes('INDEX');
+            if (categoryFilter === 'INDICES' && !isIdx) continue;
+            if (categoryFilter === 'STOCKS' && isIdx) continue;
+
             results.push({
               symbol: zd.symbol,
               name: zd.name,
-              category: 'STOCK',
+              category: isIdx ? 'INDEX' : 'STOCK',
               market: 'INDIA',
               exchange: zd.exchange || 'NSE',
               currency: '₹',
               flag: '🇮🇳',
               basePrice: zd.lastPrice || 1000,
-              sector: zd.sector || 'Indian Equity',
+              sector: zd.sector || (isIdx ? 'Benchmark Index' : 'Indian Equity'),
             });
           }
         }
       }
     }
 
-    return results.slice(0, 24);
+    return results.slice(0, 36);
   }, [query, categoryFilter]);
 
   // Auto-reset highlight index on search change

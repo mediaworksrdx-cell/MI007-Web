@@ -19,6 +19,27 @@ let dynamicCatalog: ZerodhaStockItem[] = staticCatalog as ZerodhaStockItem[];
 
 // Fast lookup map by uppercase symbol
 const symbolMap = new Map<string, ZerodhaStockItem>();
+
+// Common retail / Kite alias mappings
+export const ZERODHA_ALIASES: Record<string, string> = {
+  'TATAMOTORS': 'TATAMOTORS',
+  'TATA MOTORS': 'TATAMOTORS',
+  'TMPV': 'TATAMOTORS',
+  'TMCV': 'TATAMOTORS',
+  'ZOMATO': 'ZOMATO',
+  'ETERNAL': 'ZOMATO',
+  'LTIM': 'LTIM',
+  'LTIMINDTREE': 'LTIM',
+  'NIFTY': 'NIFTY',
+  'NIFTY50': 'NIFTY 50',
+  'BANKNIFTY': 'BANKNIFTY',
+  'BANK NIFTY': 'NIFTY BANK',
+  'FINNIFTY': 'FINNIFTY',
+  'MIDCPNIFTY': 'MIDCPNIFTY',
+  'SENSEX': 'SENSEX',
+  'BANKEX': 'BANKEX',
+};
+
 function rebuildIndex() {
   symbolMap.clear();
   for (const item of dynamicCatalog) {
@@ -41,28 +62,36 @@ export function getZerodhaStocksCount(): number {
 export function findZerodhaStockBySymbol(symbol: string): ZerodhaStockItem | undefined {
   if (!symbol) return undefined;
   const clean = symbol.trim().toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
-  return symbolMap.get(clean);
+  const aliased = ZERODHA_ALIASES[clean] || clean;
+  return symbolMap.get(aliased) || symbolMap.get(clean);
 }
 
 /** Search Zerodha stocks by query (symbol or name) with limit */
-export function searchZerodhaStocks(query: string, limit: number = 30): ZerodhaStockItem[] {
+export function searchZerodhaStocks(query: string, limit: number = 50): ZerodhaStockItem[] {
   if (!query || !query.trim()) {
     return dynamicCatalog.slice(0, limit);
   }
   const q = query.trim().toUpperCase();
+  const aliasTarget = ZERODHA_ALIASES[q];
 
   // Exact prefix match prioritised, then contains
   const exactPrefix: ZerodhaStockItem[] = [];
   const nameMatch: ZerodhaStockItem[] = [];
+
+  // Prioritize alias match if present
+  if (aliasTarget) {
+    const aliasedItem = symbolMap.get(aliasTarget);
+    if (aliasedItem) exactPrefix.push(aliasedItem);
+  }
 
   for (const item of dynamicCatalog) {
     const sym = item.symbol.toUpperCase();
     const nm = item.name.toUpperCase();
 
     if (sym === q) {
-      exactPrefix.unshift(item);
+      if (!exactPrefix.includes(item)) exactPrefix.unshift(item);
     } else if (sym.startsWith(q)) {
-      exactPrefix.push(item);
+      if (!exactPrefix.includes(item)) exactPrefix.push(item);
     } else if (sym.includes(q) || nm.includes(q)) {
       nameMatch.push(item);
     }
@@ -270,14 +299,18 @@ export async function fetchLiveZerodhaInstruments(): Promise<{
       if (!line) continue;
       const r = parseCSVLine(line);
 
-      // NSE Equity segment
-      if (r[10] !== 'NSE' || r[9] !== 'EQ') continue;
+      // Accept NSE Equities AND Kite Indices segment
+      const isNseEq = r[10] === 'NSE' && r[9] === 'EQ';
+      const isIndex = r[10] === 'INDICES';
+      if (!isNseEq && !isIndex) continue;
       const symbol = r[2]?.trim();
       if (!symbol) continue;
 
-      // Filter out government securities, debt, NCDs, SGBs
-      if (/-S[GM]|-[GNTYZ]\d|-TB|-GS|-SG|-GB/.test(symbol)) continue;
-      if (/\d{2,}/.test(symbol) && /%/.test(r[3] || '')) continue;
+      // Filter out government securities, debt, NCDs, SGBs (for EQ only)
+      if (isNseEq) {
+        if (/-S[GM]|-[GNTYZ]\d|-TB|-GS|-SG|-GB/.test(symbol)) continue;
+        if (/\d{2,}/.test(symbol) && /%/.test(r[3] || '')) continue;
+      }
 
       const name = (r[3] || '').replace(/^"|"$/g, '').trim();
       const token = Number(r[0]) || 0;
@@ -287,11 +320,31 @@ export async function fetchLiveZerodhaInstruments(): Promise<{
         token,
         symbol,
         name,
-        sector: guessSectorFromName(name, symbol),
+        sector: isIndex ? 'Benchmark Index' : guessSectorFromName(name, symbol),
         exchange: 'NSE',
         lastPrice: lastPrice > 0 ? lastPrice : undefined,
       });
     }
+
+    // Ensure core benchmark indices & top retail aliases are guaranteed present
+    const essentialSeeds: ZerodhaStockItem[] = [
+      { token: 256265, symbol: 'NIFTY', name: 'NIFTY 50 INDEX', sector: 'Benchmark Index', exchange: 'NSE' },
+      { token: 256265, symbol: 'NIFTY 50', name: 'NIFTY 50 INDEX', sector: 'Benchmark Index', exchange: 'NSE' },
+      { token: 260105, symbol: 'BANKNIFTY', name: 'NIFTY BANK INDEX', sector: 'Banking Index', exchange: 'NSE' },
+      { token: 260105, symbol: 'NIFTY BANK', name: 'NIFTY BANK INDEX', sector: 'Banking Index', exchange: 'NSE' },
+      { token: 257801, symbol: 'FINNIFTY', name: 'NIFTY FINANCIAL SERVICES', sector: 'Financials Index', exchange: 'NSE' },
+      { token: 288009, symbol: 'MIDCPNIFTY', name: 'NIFTY MIDCAP SELECT', sector: 'Midcap Index', exchange: 'NSE' },
+      { token: 265, symbol: 'SENSEX', name: 'BSE SENSEX INDEX', sector: 'Benchmark Index', exchange: 'BSE' },
+      { token: 266, symbol: 'BANKEX', name: 'BSE BANKEX INDEX', sector: 'Banking Index', exchange: 'BSE' },
+      { token: 884737, symbol: 'TATAMOTORS', name: 'TATA MOTORS (TMPV)', sector: 'Automotive', exchange: 'NSE' },
+      { token: 1304833, symbol: 'ZOMATO', name: 'ZOMATO (ETERNAL)', sector: 'Consumer & Retail', exchange: 'NSE' },
+      { token: 4544513, symbol: 'LTIM', name: 'LTIMINDTREE', sector: 'Information Technology', exchange: 'NSE' },
+    ];
+    essentialSeeds.forEach(item => {
+      if (!newCatalog.some(x => x.symbol.toUpperCase() === item.symbol.toUpperCase())) {
+        newCatalog.unshift(item);
+      }
+    });
 
     if (newCatalog.length > 500) {
       dynamicCatalog = newCatalog;
@@ -299,7 +352,7 @@ export async function fetchLiveZerodhaInstruments(): Promise<{
       return {
         success: true,
         count: newCatalog.length,
-        message: `Successfully pulled ${newCatalog.length} active NSE equity stocks from Zerodha Kite.`,
+        message: `Successfully pulled ${newCatalog.length} active NSE equity stocks & indices from Zerodha Kite.`,
       };
     } else {
       return {

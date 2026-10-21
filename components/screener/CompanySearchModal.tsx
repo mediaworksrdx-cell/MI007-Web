@@ -9,6 +9,7 @@ import {
   searchZerodhaStocks,
   ZerodhaStockItem,
   getZerodhaStocksCount,
+  getZerodhaCatalog,
 } from '@/lib/screener/zerodhaStocks';
 
 interface CompanySearchModalProps {
@@ -73,12 +74,17 @@ export function CompanySearchModal({
     );
   }, [companies, query]);
 
-  // Matches from complete 3,800+ Zerodha catalog
+  // Matches from complete 3,820+ Zerodha Kite catalog
   const zerodhaMatches = useMemo<ZerodhaStockItem[]>(() => {
-    if (!query.trim()) return [];
     const screenedSyms = new Set(screenedMatches.map((c) => c.symbol.toUpperCase()));
-    return searchZerodhaStocks(query, 30).filter((z) => !screenedSyms.has(z.symbol.toUpperCase()));
-  }, [query, screenedMatches]);
+    if (!query.trim()) {
+      if (activeTab === 'zerodha') {
+        return getZerodhaCatalog().slice(0, 50).filter((z) => !screenedSyms.has(z.symbol.toUpperCase()));
+      }
+      return [];
+    }
+    return searchZerodhaStocks(query, 50).filter((z) => !screenedSyms.has(z.symbol.toUpperCase()));
+  }, [query, screenedMatches, activeTab]);
 
   if (!isOpen) return null;
 
