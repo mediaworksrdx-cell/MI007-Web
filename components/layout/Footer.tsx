@@ -1,7 +1,12 @@
+'use client';
+
+import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 
 export function Footer() {
+  const [brandHovered, setBrandHovered] = useState(false);
+
   return (
     <footer className="border-t footer-panel mt-auto">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-7 sm:py-8">
@@ -9,10 +14,15 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8 items-start">
           {/* Brand Column: Spans full width on tablet (sm:col-span-2) and 5 cols on lg for prominent logo branding */}
           <div className="sm:col-span-2 lg:col-span-5 flex flex-col gap-4">
-            <Link href="/" className="group flex items-center gap-4 sm:gap-6 flex-shrink-0">
-              {/* Massive Falcon Emblem Logo (180px–220px guaranteed unshrinkable) */}
+            <Link
+              href="/"
+              className="group flex items-center gap-4 sm:gap-6 flex-shrink-0 select-none min-w-0"
+              onMouseEnter={() => setBrandHovered(true)}
+              onMouseLeave={() => setBrandHovered(false)}
+            >
+              {/* Massive Falcon Emblem Logo (180px–220px) with 3D Pop-Up Animation */}
               <div
-                className="flex-shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
+                className="relative z-10 flex-shrink-0 flex items-center justify-center overflow-visible"
                 style={{
                   width: 'clamp(160px, 16vw, 220px)',
                   height: 'clamp(160px, 16vw, 220px)',
@@ -20,18 +30,16 @@ export function Footer() {
                   minHeight: '160px',
                 }}
               >
-                <Image
+                <Falcon3DLogo
                   src="/images/logo-falcon-transparent.png"
                   alt="MARKET INTELLIGENCE MI-007"
                   width={220}
                   height={220}
                   priority
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                  }}
-                  className="drop-shadow-[0_8px_36px_rgba(16,185,129,0.45)]"
+                  className="w-full h-full object-contain drop-shadow-[0_8px_36px_rgba(16,185,129,0.45)]"
+                  popoutScale={1.12}
+                  isNavbar={false}
+                  isHoveredExternal={brandHovered}
                 />
               </div>
               <div className="min-w-0 flex flex-col justify-center">
