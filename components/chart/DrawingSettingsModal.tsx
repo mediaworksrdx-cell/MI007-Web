@@ -51,7 +51,7 @@ export function DrawingSettingsModal({
   const [text, setText] = useState('');
   const [fontSize, setFontSize] = useState(13);
   const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>('left');
-  const [riskRewardRatio, setRiskRewardRatio] = useState(2.0);
+  const [riskRewardRatio, setRiskRewardRatio] = useState<string>('2.0');
   const [fibLevels, setFibLevels] = useState<FibLevelItem[]>(DEFAULT_FIB_LEVELS);
   
   // Coordinates state (exact price & index for each point)
@@ -90,7 +90,7 @@ export function DrawingSettingsModal({
     setText(drawing.text || '');
     setFontSize(drawing.fontSize || 13);
     setTextAlign(drawing.textAlign || 'left');
-    setRiskRewardRatio(drawing.riskRewardRatio || 2.0);
+    setRiskRewardRatio(String(drawing.riskRewardRatio || 2.0));
     setFibLevels(drawing.fibLevels && drawing.fibLevels.length > 0 ? drawing.fibLevels : DEFAULT_FIB_LEVELS);
 
     if (drawing.points && drawing.points.length > 0) {
@@ -216,7 +216,7 @@ export function DrawingSettingsModal({
       textAlign,
       entryPrice: updatedPoints[0]?.price,
       stopPrice: updatedPoints[1]?.price,
-      riskRewardRatio: isRiskRewardTool ? riskRewardRatio : drawing.riskRewardRatio,
+      riskRewardRatio: isRiskRewardTool ? (Number.isFinite(parseFloat(riskRewardRatio)) && parseFloat(riskRewardRatio) > 0 ? parseFloat(riskRewardRatio) : 2.0) : drawing.riskRewardRatio,
       fibLevels: isFibTool ? fibLevels : drawing.fibLevels,
       visibilityIntervals: [
         ...(visSeconds ? ['1s'] : []),
@@ -406,7 +406,8 @@ export function DrawingSettingsModal({
                     min="0.1"
                     max="50"
                     value={riskRewardRatio}
-                    onChange={(e) => setRiskRewardRatio(parseFloat(e.target.value) || 2.0)}
+                    placeholder="2.0"
+                    onChange={(e) => setRiskRewardRatio(e.target.value)}
                     className="w-full px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#1e222d] text-slate-900 dark:text-slate-100 font-mono font-bold text-xs focus:outline-hidden focus:border-blue-500"
                   />
                 </div>

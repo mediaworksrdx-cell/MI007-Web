@@ -230,8 +230,9 @@ export function BacktestingView({
             </label>
             <input
               type="number"
-              value={initialCapital}
-              onChange={(e) => setInitialCapital(Number(e.target.value))}
+              value={initialCapital || ''}
+              placeholder="100000"
+              onChange={(e) => setInitialCapital(e.target.value === '' ? ('' as any) : Number(e.target.value))}
               step={10000}
               className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-white mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             />
@@ -244,8 +245,9 @@ export function BacktestingView({
             </label>
             <input
               type="number"
-              value={takeProfitPct}
-              onChange={(e) => setTakeProfitPct(Number(e.target.value))}
+              value={takeProfitPct || ''}
+              placeholder="10"
+              onChange={(e) => setTakeProfitPct(e.target.value === '' ? ('' as any) : Number(e.target.value))}
               step={1}
               className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-white mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             />
@@ -258,8 +260,9 @@ export function BacktestingView({
             </label>
             <input
               type="number"
-              value={stopLossPct}
-              onChange={(e) => setStopLossPct(Number(e.target.value))}
+              value={stopLossPct || ''}
+              placeholder="5"
+              onChange={(e) => setStopLossPct(e.target.value === '' ? ('' as any) : Number(e.target.value))}
               step={1}
               className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-white mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             />
@@ -272,8 +275,9 @@ export function BacktestingView({
             </label>
             <input
               type="number"
-              value={maxHoldingDays}
-              onChange={(e) => setMaxHoldingDays(Number(e.target.value))}
+              value={maxHoldingDays || ''}
+              placeholder="30"
+              onChange={(e) => setMaxHoldingDays(e.target.value === '' ? ('' as any) : Number(e.target.value))}
               step={5}
               className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-white mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             />

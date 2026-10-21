@@ -44,6 +44,8 @@ export interface IndicatorConfig {
   tertiaryColor: string;
   enabled: boolean;
   multiplier: number;
+  step?: number;
+  maxAf?: number;
 }
 
 export interface MACDResult {
@@ -224,6 +226,8 @@ export const INDICATOR_DEFAULTS: Record<
     secondaryColor: string;
     tertiaryColor: string;
     multiplier: number;
+    step?: number;
+    maxAf?: number;
     label: string;
   }
 > = {
@@ -233,7 +237,7 @@ export const INDICATOR_DEFAULTS: Record<
   VWAP:            { period: 1,  secondaryPeriod: 0,  tertiaryPeriod: 0,  color: '#FFEB3B', secondaryColor: '#42A5F5', tertiaryColor: '#EF5350', multiplier: 1, label: 'VWAP' },
   SUPERTREND:      { period: 10, secondaryPeriod: 0,  tertiaryPeriod: 0,  color: '#00E676', secondaryColor: '#42A5F5', tertiaryColor: '#EF5350', multiplier: 3, label: 'Supertrend' },
   ICHIMOKU:        { period: 9,  secondaryPeriod: 26, tertiaryPeriod: 52, color: '#26A69A', secondaryColor: '#42A5F5', tertiaryColor: '#EF5350', multiplier: 1, label: 'Ichimoku' },
-  PARABOLIC_SAR:   { period: 0,  secondaryPeriod: 0,  tertiaryPeriod: 0,  color: '#D32F2F', secondaryColor: '#42A5F5', tertiaryColor: '#EF5350', multiplier: 1, label: 'SAR' },
+  PARABOLIC_SAR:   { period: 0,  secondaryPeriod: 0,  tertiaryPeriod: 0,  color: '#D32F2F', secondaryColor: '#42A5F5', tertiaryColor: '#EF5350', multiplier: 1, step: 0.02, maxAf: 0.20, label: 'SAR' },
   RSI:             { period: 14, secondaryPeriod: 0,  tertiaryPeriod: 0,  color: '#AB47BC', secondaryColor: '#42A5F5', tertiaryColor: '#EF5350', multiplier: 1, label: 'RSI' },
   MACD:            { period: 12, secondaryPeriod: 26, tertiaryPeriod: 9,  color: '#29B6F6', secondaryColor: '#42A5F5', tertiaryColor: '#EF5350', multiplier: 1, label: 'MACD' },
   STOCHASTIC:      { period: 14, secondaryPeriod: 3,  tertiaryPeriod: 0,  color: '#FF7043', secondaryColor: '#42A5F5', tertiaryColor: '#EF5350', multiplier: 1, label: 'Stochastic' },
@@ -250,6 +254,57 @@ export const INDICATOR_DEFAULTS: Record<
   HMA:             { period: 9,  secondaryPeriod: 0,   tertiaryPeriod: 0,   color: '#A855F7', secondaryColor: '#C084FC', tertiaryColor: '#E9D5FF', multiplier: 1, label: 'Hull MA' },
   CMF:             { period: 20, secondaryPeriod: 0,   tertiaryPeriod: 0,   color: '#10B981', secondaryColor: '#EF4444', tertiaryColor: '#64748B', multiplier: 1, label: 'CMF' },
 };
+
+export function formatIndicatorBadgeLabel(cfg: IndicatorConfig): string {
+  switch (cfg.type) {
+    case 'SMA':
+      return `SMA (${cfg.period})`;
+    case 'EMA':
+      return `EMA (${cfg.period})`;
+    case 'BOLLINGER_BANDS':
+      return `BB (${cfg.period}, ${cfg.multiplier ?? 2})`;
+    case 'VWAP':
+      return 'VWAP';
+    case 'SUPERTREND':
+      return `Supertrend (${cfg.period}, ${cfg.multiplier ?? 3})`;
+    case 'ICHIMOKU':
+      return `Ichimoku (${cfg.period}, ${cfg.secondaryPeriod}, ${cfg.tertiaryPeriod})`;
+    case 'PARABOLIC_SAR':
+      return `SAR (${cfg.step ?? 0.02}, ${cfg.maxAf ?? 0.2})`;
+    case 'EMA_RIBBON':
+      return `Ribbon (${cfg.period || 20}, ${cfg.secondaryPeriod || 50}, ${cfg.multiplier || 100}, ${cfg.tertiaryPeriod || 200})`;
+    case 'PIVOT_POINTS':
+      return `Pivots (${cfg.period || 15})`;
+    case 'DONCHIAN':
+      return `Donchian (${cfg.period || 20})`;
+    case 'HMA':
+      return `HMA (${cfg.period || 9})`;
+    case 'RSI':
+      return `RSI (${cfg.period})`;
+    case 'MACD':
+      return `MACD (${cfg.period}, ${cfg.secondaryPeriod}, ${cfg.tertiaryPeriod})`;
+    case 'STOCHASTIC':
+      return `Stoch (${cfg.period}, ${cfg.secondaryPeriod})`;
+    case 'ATR':
+      return `ATR (${cfg.period})`;
+    case 'CVD':
+      return 'CVD';
+    case 'ADX':
+      return `ADX (${cfg.period})`;
+    case 'OBV':
+      return 'OBV';
+    case 'CCI':
+      return `CCI (${cfg.period})`;
+    case 'WILLIAMS_R':
+      return `%R (${cfg.period})`;
+    case 'MFI':
+      return `MFI (${cfg.period})`;
+    case 'CMF':
+      return `CMF (${cfg.period})`;
+    default:
+      return `${INDICATOR_DEFAULTS[cfg.type]?.label || cfg.type}${cfg.period > 0 ? ` (${cfg.period})` : ''}`;
+  }
+}
 
 export interface Instrument {
   symbol: string;

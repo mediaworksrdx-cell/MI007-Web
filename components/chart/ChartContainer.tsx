@@ -6,6 +6,7 @@ import type { Candle, ChartType, IndicatorType, IndicatorConfig } from '@/lib/ty
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
 import {
   INDICATOR_DEFAULTS,
+  formatIndicatorBadgeLabel,
   calculateSMA, calculateEMA, calculateRSI, calculateMACD,
   calculateBollingerBands, calculateVWAP, calculateSupertrend,
   calculateATR, calculateStochastic, calculateIchimoku,
@@ -167,11 +168,20 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
       if (savedV2) {
         const parsed = JSON.parse(savedV2);
         if (Array.isArray(parsed)) {
-          return parsed.map((item, idx) => ({
-            ...item,
-            id: item.id || `${item.type.toLowerCase()}-${Date.now()}-${idx}`,
-            enabled: item.enabled ?? true,
-          }));
+          return parsed.map((item, idx) => {
+            const def = INDICATOR_DEFAULTS[item.type];
+            const validPeriod = (def && def.period > 0 && (!item.period || item.period <= 0))
+              ? def.period
+              : (item.period ?? def?.period ?? 14);
+            return {
+              ...item,
+              id: item.id || `${item.type.toLowerCase()}-${Date.now()}-${idx}`,
+              period: validPeriod,
+              step: item.step ?? def?.step ?? 0.02,
+              maxAf: item.maxAf ?? def?.maxAf ?? 0.20,
+              enabled: item.enabled ?? true,
+            };
+          });
         }
       }
       // Migration from legacy mi007_active_indicators / mi007_indicator_configs if any
@@ -553,14 +563,14 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         case 'ATR': res = calculateATR(activeCandles, cfg.period); break;
         case 'STOCHASTIC': res = calculateStochastic(activeCandles, cfg.period, cfg.secondaryPeriod); break;
         case 'CVD': res = calculateCVD(activeCandles); break;
-        case 'PARABOLIC_SAR': res = calculateParabolicSAR(activeCandles); break;
+        case 'PARABOLIC_SAR': res = calculateParabolicSAR(activeCandles, cfg.step ?? 0.02, cfg.maxAf ?? 0.20); break;
         case 'ADX': res = calculateADX(activeCandles, cfg.period); break;
         case 'OBV': res = calculateOBV(activeCandles); break;
         case 'CCI': res = calculateCCI(activeCandles, cfg.period); break;
         case 'WILLIAMS_R': res = calculateWilliamsR(activeCandles, cfg.period); break;
         case 'MFI': res = calculateMFI(activeCandles, cfg.period); break;
-        case 'EMA_RIBBON': res = calculateEmaRibbon(activeCandles); break;
-        case 'PIVOT_POINTS': res = calculatePivotPoints(activeCandles); break;
+        case 'EMA_RIBBON': res = calculateEmaRibbon(activeCandles, cfg.period || 20, cfg.secondaryPeriod || 50, cfg.multiplier || 100, cfg.tertiaryPeriod || 200); break;
+        case 'PIVOT_POINTS': res = calculatePivotPoints(activeCandles, cfg.period || 15); break;
         case 'DONCHIAN': res = calculateDonchian(activeCandles, cfg.period); break;
         case 'HMA': res = calculateHMA(activeCandles, cfg.period); break;
         case 'CMF': res = calculateCMF(activeCandles, cfg.period); break;
@@ -594,6 +604,8 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
         secondaryPeriod: d.secondaryPeriod,
         tertiaryPeriod: d.tertiaryPeriod,
         multiplier: d.multiplier,
+        step: d.step ?? 0.02,
+        maxAf: d.maxAf ?? 0.20,
         color,
         secondaryColor: d.secondaryColor,
         tertiaryColor: d.tertiaryColor,
@@ -1127,7 +1139,7 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
                       style={{ backgroundColor: cfg.color }}
                     />
                     <span className="font-bold select-none">
-                      {INDICATOR_DEFAULTS[cfg.type]?.label || cfg.type} ({cfg.period})
+                      {formatIndicatorBadgeLabel(cfg)}
                     </span>
                     <button
                       type="button"

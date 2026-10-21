@@ -12,7 +12,7 @@ import {
   SmcFvg, SmcLiquiditySweep, SmcOrderBlock, SmcStructureBreak, SmcAnalysis,
   FnoOverlayLevels, StrategyPayoffOverlay,
   ChartOptions, ViewState, Crosshair, MagnetReticle, ScaleState,
-  INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay,
+  INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay, formatIndicatorBadgeLabel,
   CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN,
 } from './types';
 
@@ -25,7 +25,7 @@ export type {
   FnoOverlayLevels, StrategyPayoffOverlay,
   ChartOptions, ViewState, Crosshair, MagnetReticle, ScaleState,
 };
-export { INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay };
+export { INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay, formatIndicatorBadgeLabel };
 
 
 // ── Color Constants (Soft Institutional Theme) ──────────────────────────
@@ -700,12 +700,12 @@ export function calculateVolumeProfile(candles: Candle[], priceMin: number, pric
 }
 
 // EMA Ribbon (4 EMAs: 20, 50, 100, 200)
-export function calculateEmaRibbon(candles: Candle[]) {
+export function calculateEmaRibbon(candles: Candle[], p1 = 20, p2 = 50, p3 = 100, p4 = 200) {
   return {
-    ema20: calculateEMA(candles, 20),
-    ema50: calculateEMA(candles, 50),
-    ema100: calculateEMA(candles, 100),
-    ema200: calculateEMA(candles, 200),
+    ema20: calculateEMA(candles, p1),
+    ema50: calculateEMA(candles, p2),
+    ema100: calculateEMA(candles, p3),
+    ema200: calculateEMA(candles, p4),
   };
 }
 
@@ -3129,7 +3129,7 @@ export function renderChart(
     ctx.strokeStyle = PANEL_SEP; ctx.lineWidth = 1*dpr;
     ctx.beginPath(); ctx.moveTo(0, panelOffset); ctx.lineTo(chartW+RM, panelOffset); ctx.stroke();
     // Label with live value
-    const baseLabel = `${INDICATOR_DEFAULTS[cfg.type].label}${cfg.period > 0 ? ` (${cfg.period})` : ''}`;
+    const baseLabel = formatIndicatorBadgeLabel(cfg);
     let valSnippet = '';
     if (result) {
       if (cfg.type === 'RSI') {
