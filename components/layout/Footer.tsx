@@ -9,22 +9,35 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8 items-start">
           {/* Brand Column: Spans full width on tablet (sm:col-span-2) and 5 cols on lg for prominent logo branding */}
           <div className="sm:col-span-2 lg:col-span-5 flex flex-col gap-4">
-            <Link href="/" className="group flex items-center gap-4 sm:gap-5 flex-shrink-0">
-              {/* Big Falcon Emblem Logo */}
-              <div className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 flex-shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+            <Link href="/" className="group flex items-center gap-4 sm:gap-6 flex-shrink-0">
+              {/* Massive Falcon Emblem Logo (180px–220px guaranteed unshrinkable) */}
+              <div
+                className="flex-shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
+                style={{
+                  width: 'clamp(160px, 16vw, 220px)',
+                  height: 'clamp(160px, 16vw, 220px)',
+                  minWidth: '160px',
+                  minHeight: '160px',
+                }}
+              >
                 <Image
                   src="/images/logo-falcon-transparent.png"
                   alt="MARKET INTELLIGENCE MI-007"
-                  width={140}
-                  height={140}
+                  width={220}
+                  height={220}
                   priority
-                  className="w-full h-full object-contain drop-shadow-[0_6px_28px_rgba(16,185,129,0.35)]"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                  }}
+                  className="drop-shadow-[0_8px_36px_rgba(16,185,129,0.45)]"
                 />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex flex-col justify-center">
                 <div className="leading-tight">
                   <span
-                    className="font-extrabold text-[16px] sm:text-[18px] md:text-[20px] lg:text-[21px] uppercase font-sans tracking-tight footer-brand-title text-white block group-hover:text-emerald-400 transition-colors"
+                    className="font-extrabold text-[18px] sm:text-[20px] md:text-[22px] lg:text-[24px] uppercase font-sans tracking-tight footer-brand-title text-white block group-hover:text-emerald-400 transition-colors"
                     style={{ color: '#FFFFFF' }}
                   >
                     MARKET INTELLIGENCE MI-007
@@ -32,14 +45,14 @@ export function Footer() {
                 </div>
 
                 <div
-                  className="text-[11px] sm:text-[12px] md:text-[12.5px] tracking-[0.16em] uppercase font-extrabold font-mono mt-1.5 footer-brand-subtitle text-slate-200"
+                  className="text-[11px] sm:text-[12px] md:text-[13px] tracking-[0.18em] uppercase font-extrabold font-mono mt-2 footer-brand-subtitle text-slate-200"
                   style={{ color: '#E2E8F0' }}
                 >
                   <span>Intelligence Beyond the Noise</span>
                 </div>
 
                 <div
-                  className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1"
+                  className="text-[10.5px] sm:text-[11.5px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1.5"
                   style={{ color: '#34D399' }}
                 >
                   <span>A Synthetix Analytics Product</span>
