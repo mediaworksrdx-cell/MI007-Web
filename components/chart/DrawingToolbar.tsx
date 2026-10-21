@@ -89,31 +89,6 @@ const TOOL_GROUPS: ToolGroup[] = [
     ],
   },
   {
-    id: 'patterns',
-    title: 'Harmonics & Waves',
-    defaultTool: 'HEAD_AND_SHOULDERS',
-    tools: [
-      { id: 'HEAD_AND_SHOULDERS', label: 'Head & Shoulders', desc: '5 points: LS, Head, RS & Neckline', icon: '👤' },
-      { id: 'ELLIOTT_IMPULSE', label: 'Elliott Wave 1-5', desc: '5 points: Motive impulse wave ①-⑤', icon: '①' },
-      { id: 'ELLIOTT_CORRECTION', label: 'Elliott Wave ABC', desc: '3 points: Corrective wave Ⓐ-Ⓑ-Ⓒ', icon: 'Ⓐ' },
-      { id: 'XABCD_PATTERN', label: 'Harmonic XABCD', desc: '5 points: Gartley/Bat/Butterfly harmonic', icon: '⧓' },
-      { id: 'ABCD_PATTERN', label: 'ABCD Pattern', desc: '4 points: Classic ABCD swing harmonic', icon: '⋈' },
-    ],
-  },
-  {
-    id: 'prediction',
-    title: 'Risk & Forecasting',
-    defaultTool: 'RISK_REWARD_LONG',
-    tools: [
-      { id: 'RISK_REWARD_LONG', label: 'Long Position Box', desc: 'Entry, stop-loss & take-profit targets', icon: '▲' },
-      { id: 'RISK_REWARD_SHORT', label: 'Short Position Box', desc: 'Short entry, stop & reward projection', icon: '▼' },
-      { id: 'PRICE_RANGE', label: 'Price Range', desc: 'Vertical delta price and percentage badge', icon: '↕' },
-      { id: 'DATE_RANGE', label: 'Date Range', desc: 'Horizontal bar count and time span', icon: '↔' },
-      { id: 'MEASURE', label: 'Price & Bar Measure', desc: 'Delta price, %, and bar count', icon: '📏' },
-      { id: 'BARS_PATTERN', label: 'Bars Pattern', desc: 'Clone & project candle bars pattern', icon: '⑃' },
-    ],
-  },
-  {
     id: 'annotations',
     title: 'Text & Annotations',
     defaultTool: 'TEXT',
@@ -165,8 +140,6 @@ export function DrawingToolbar({
     lines: 'TRENDLINE',
     fib: 'FIBONACCI',
     shapes: 'RECTANGLE',
-    patterns: 'HEAD_AND_SHOULDERS',
-    prediction: 'RISK_REWARD_LONG',
     annotations: 'TEXT',
   });
   const toolbarRef = useRef<HTMLDivElement>(null);

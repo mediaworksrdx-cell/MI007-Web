@@ -1738,38 +1738,67 @@ export function renderChart(
         ctx.fillText(`+ ${formatPrice(p1.price)}`, Math.max(6 * dpr, x1 + 6 * dpr), y1 - 5 * dpr);
       } else if (item.tool === 'TEXT') {
         const textContent = item.text || 'Annotation';
-        ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
-        const tm = ctx.measureText(textContent);
-        const bW = tm.width + 12 * dpr;
-        const bH = 18 * dpr;
+        const lines = textContent.split('\n');
+        ctx.font = `bold ${11.5 * dpr}px "JetBrains Mono",monospace`;
+        const lineH = 16 * dpr;
+        let maxW = 0;
+        for (const l of lines) {
+          maxW = Math.max(maxW, ctx.measureText(l).width);
+        }
+        const bW = maxW + 14 * dpr;
+        const bH = lines.length * lineH + 8 * dpr;
         ctx.save();
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
         ctx.beginPath();
-        const cr = 3 * dpr;
-        ctx.moveTo(x1 + cr, y1 - bH); ctx.lineTo(x1 + bW - cr, y1 - bH); ctx.arcTo(x1 + bW, y1 - bH, x1 + bW, y1, cr);
-        ctx.lineTo(x1 + bW, y1 - cr); ctx.arcTo(x1 + bW, y1, x1 + bW - cr, y1, cr);
-        ctx.lineTo(x1 + cr, y1); ctx.arcTo(x1, y1, x1, y1 - cr, cr);
-        ctx.lineTo(x1, y1 - bH + cr); ctx.arcTo(x1, y1 - bH, x1 + cr, y1 - bH, cr);
-        ctx.closePath(); ctx.fill();
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(x1, y1 - bH, bW, bH, 4 * dpr);
+        } else {
+          ctx.rect(x1, y1 - bH, bW, bH);
+        }
+        ctx.fill();
+        ctx.strokeStyle = color || '#3B82F6';
+        ctx.lineWidth = 1 * dpr;
+        ctx.stroke();
         ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(textContent, x1 + 6 * dpr, y1 - bH / 2);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        lines.forEach((l, li) => {
+          ctx.fillText(l, x1 + 7 * dpr, y1 - bH + 5 * dpr + li * lineH);
+        });
         ctx.restore();
       } else if (item.tool === 'ANCHORED_TEXT') {
         const textContent = item.text || 'Note';
-        ctx.font = `bold ${11 * dpr}px "JetBrains Mono",monospace`;
-        const tm = ctx.measureText(textContent);
-        const bW = tm.width + 14 * dpr, bH = 20 * dpr;
+        const lines = textContent.split('\n');
+        ctx.font = `bold ${11.5 * dpr}px "JetBrains Mono",monospace`;
+        const lineH = 16 * dpr;
+        let maxW = 0;
+        for (const l of lines) {
+          maxW = Math.max(maxW, ctx.measureText(l).width);
+        }
+        const bW = maxW + 14 * dpr;
+        const bH = lines.length * lineH + 8 * dpr;
         ctx.save();
         ctx.beginPath(); ctx.arc(x1, y1, 4 * dpr, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 + 14 * dpr, y1 - 14 * dpr); ctx.stroke();
         ctx.fillStyle = '#0F172A';
-        ctx.fillRect(x1 + 14 * dpr, y1 - 14 * dpr - bH / 2, bW, bH);
+        const bx = x1 + 14 * dpr;
+        const by = y1 - 14 * dpr - bH / 2;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(bx, by, bW, bH, 4 * dpr);
+        } else {
+          ctx.rect(bx, by, bW, bH);
+        }
+        ctx.fill();
         ctx.strokeStyle = color;
-        ctx.strokeRect(x1 + 14 * dpr, y1 - 14 * dpr - bH / 2, bW, bH);
+        ctx.lineWidth = 1 * dpr;
+        ctx.stroke();
         ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(textContent, x1 + 20 * dpr, y1 - 14 * dpr);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        lines.forEach((l, li) => {
+          ctx.fillText(l, bx + 7 * dpr, by + 4 * dpr + li * lineH);
+        });
         ctx.restore();
       } else if (item.tool === 'PRICE_LABEL') {
         const priceStr = formatPrice(p1.price);
@@ -2074,16 +2103,33 @@ export function renderChart(
           ctx.closePath(); ctx.fill();
 
           const txt = item.text || 'Key Level';
-          ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-          const tm = ctx.measureText(txt);
-          const bw = tm.width + 12 * dpr, bh = 18 * dpr;
+          const lines = txt.split('\n');
+          ctx.font = `bold ${10.5 * dpr}px "JetBrains Mono",monospace`;
+          const lineH = 15 * dpr;
+          let maxW = 0;
+          for (const l of lines) {
+            maxW = Math.max(maxW, ctx.measureText(l).width);
+          }
+          const bw = maxW + 14 * dpr;
+          const bh = lines.length * lineH + 6 * dpr;
           ctx.fillStyle = '#0F172A';
-          ctx.fillRect(x2, y2 - bh / 2, bw, bh);
-          ctx.strokeStyle = item.color || '#2563EB';
-          ctx.strokeRect(x2, y2 - bh / 2, bw, bh);
+          const bx = x2;
+          const by = y2 - bh / 2;
+          ctx.beginPath();
+          if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(bx, by, bw, bh, 4 * dpr);
+          } else {
+            ctx.rect(bx, by, bw, bh);
+          }
+          ctx.fill();
+          ctx.strokeStyle = item.color || '#0284C7';
+          ctx.lineWidth = 1 * dpr;
+          ctx.stroke();
           ctx.fillStyle = '#FFFFFF';
-          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-          ctx.fillText(txt, x2 + 6 * dpr, y2);
+          ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+          lines.forEach((l, li) => {
+            ctx.fillText(l, bx + 7 * dpr, by + 3 * dpr + li * lineH);
+          });
           ctx.restore();
         } else if (item.tool === 'FIBONACCI') {
           const levels = (item.fibLevels && item.fibLevels.length > 0)

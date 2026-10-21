@@ -3,7 +3,7 @@
 import { useRef, useEffect, useCallback, useState, useLayoutEffect, useMemo } from 'react';
 import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels, StrategyPayoffOverlay, MagnetReticle, ScaleState } from '@/lib/types';
 import { isOverlay, CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN } from '@/lib/types';
-import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
+import type { DrawingItem, DrawingToolType, DrawingPoint } from '@/lib/drawingTypes';
 import { renderChart, renderOverlay, resolveDrawingPointIndex, computeChartPriceBounds } from '@/lib/chartRenderer';
 import { DrawingQuickBar } from './DrawingQuickBar';
 import { DrawingSettingsModal } from './DrawingSettingsModal';
@@ -186,6 +186,84 @@ export function CandlestickCanvas({
   const isBrushingRef = useRef(false);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [clockTick, setClockTick] = useState(0);
+
+  // ── In-Chart Text Annotation Inline Editor ──
+  interface InlineTextEditorState {
+    isOpen: boolean;
+    mode: 'create' | 'edit';
+    drawingId?: string;
+    tool: DrawingToolType;
+    point: DrawingPoint;
+    calloutAnchor?: DrawingPoint;
+    x: number;
+    y: number;
+    initialText: string;
+  }
+  const [inlineTextEditor, setInlineTextEditor] = useState<InlineTextEditorState | null>(null);
+  const [inlineTextValue, setInlineTextValue] = useState('');
+  const inlineInputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (inlineTextEditor?.isOpen) {
+      const timer = setTimeout(() => {
+        if (inlineInputRef.current) {
+          inlineInputRef.current.focus();
+          inlineInputRef.current.select();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [inlineTextEditor]);
+
+  const handleCommitInlineText = useCallback(() => {
+    if (!inlineTextEditor) return;
+    const trimmed = inlineTextValue.trim();
+    if (!trimmed) {
+      setInlineTextEditor(null);
+      if (!isDrawingModeLocked && inlineTextEditor.mode === 'create') {
+        onDrawingToolChange?.('NONE');
+      }
+      return;
+    }
+
+    if (inlineTextEditor.mode === 'create') {
+      const newId = `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+      const newDrawing: DrawingItem = {
+        id: newId,
+        tool: inlineTextEditor.tool,
+        points: inlineTextEditor.calloutAnchor
+          ? [inlineTextEditor.calloutAnchor, inlineTextEditor.point]
+          : [inlineTextEditor.point],
+        text: trimmed,
+        color: inlineTextEditor.tool === 'CALLOUT' ? '#0284C7' : '#1E293B',
+        lineWidth: 1,
+        fontSize: 13,
+        completed: true,
+      };
+      onAddDrawing?.(newDrawing);
+      onSelectDrawing?.(newId);
+      if (!isDrawingModeLocked) {
+        onDrawingToolChange?.('NONE');
+      }
+    } else if (inlineTextEditor.mode === 'edit' && inlineTextEditor.drawingId) {
+      const target = drawings.find(d => d.id === inlineTextEditor.drawingId);
+      if (target) {
+        onUpdateDrawing?.({
+          ...target,
+          text: trimmed,
+        });
+      }
+    }
+
+    setInlineTextEditor(null);
+  }, [inlineTextEditor, inlineTextValue, onAddDrawing, onSelectDrawing, onUpdateDrawing, isDrawingModeLocked, onDrawingToolChange, drawings]);
+
+  const handleCancelInlineText = useCallback(() => {
+    setInlineTextEditor(null);
+    if (!isDrawingModeLocked && inlineTextEditor?.mode === 'create') {
+      onDrawingToolChange?.('NONE');
+    }
+  }, [inlineTextEditor, isDrawingModeLocked, onDrawingToolChange]);
 
   // ── High-Performance 120 FPS Interaction & Overlay Refs ──
   const crosshairRef = useRef<{ x: number; y: number } | null>(null);
@@ -483,6 +561,27 @@ export function CandlestickCanvas({
       }
 
       const p1 = pts[0];
+
+      // 1.5 Text Annotations / Anchored Text / Price Label
+      if (d.tool === 'TEXT' || d.tool === 'ANCHORED_TEXT' || d.tool === 'PRICE_LABEL') {
+        const textLen = (d.text || 'Annotation').length;
+        const boxW = Math.max(50, textLen * 9 + 20);
+        const boxH = 28;
+        if (x >= p1.x - 8 && x <= p1.x + boxW + 8 && y >= p1.y - boxH - 8 && y <= p1.y + 12) {
+          return d;
+        }
+      }
+
+      // Callout Balloon Box
+      if (d.tool === 'CALLOUT' && pts.length >= 2) {
+        const p2 = pts[1];
+        const textLen = (d.text || 'Note').length;
+        const boxW = Math.max(50, textLen * 9 + 20);
+        const boxH = 26;
+        if (x >= p2.x - 8 && x <= p2.x + boxW + 8 && y >= p2.y - boxH && y <= p2.y + boxH) {
+          return d;
+        }
+      }
 
       // 2. Horizontal / Vertical Lines
       if (d.tool === 'HORIZONTAL') {
@@ -1165,24 +1264,36 @@ export function CandlestickCanvas({
             const finalPoints = [committedPointsRef.current[0], { index: pt.index, time: pt.time, price: pt.price }];
             const newDrawingId = drawingInProgress.id;
             if (activeDrawingTool === 'CALLOUT') {
-              const text = window.prompt('Enter callout annotation note:', 'Key Pivot');
-              onAddDrawing?.({
-                ...drawingInProgress,
-                points: finalPoints,
-                text: text?.trim() || 'Key Pivot',
-                completed: true,
+              const canvas = overlayCanvasRef.current || canvasRef.current;
+              const rect = canvas ? canvas.getBoundingClientRect() : { left: 0, top: 0 };
+              const clickX = e.clientX - rect.left;
+              const clickY = e.clientY - rect.top;
+              setInlineTextEditor({
+                isOpen: true,
+                mode: 'create',
+                tool: 'CALLOUT',
+                point: { index: pt.index, time: pt.time, price: pt.price },
+                calloutAnchor: committedPointsRef.current[0],
+                x: clickX,
+                y: clickY,
+                initialText: '',
               });
+              setInlineTextValue('');
+              committedPointsRef.current = [];
+              setDrawingInProgress(null);
+              return;
             } else {
               onAddDrawing?.({
                 ...drawingInProgress,
                 points: finalPoints,
                 completed: true,
               });
+              onSelectDrawing?.(newDrawingId);
+              committedPointsRef.current = [];
+              setDrawingInProgress(null);
+              if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
+              return;
             }
-            onSelectDrawing?.(newDrawingId);
-            committedPointsRef.current = [];
-            setDrawingInProgress(null);
-            if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
           }
         }
       }
@@ -1241,6 +1352,23 @@ export function CandlestickCanvas({
     } else {
       const hit = findDrawingAtCoords(x, y);
       if (hit) {
+        if (hit.tool === 'TEXT' || hit.tool === 'ANCHORED_TEXT' || hit.tool === 'CALLOUT') {
+          const lastPt = hit.points[hit.points.length - 1];
+          setInlineTextEditor({
+            isOpen: true,
+            mode: 'edit',
+            drawingId: hit.id,
+            tool: hit.tool,
+            point: lastPt,
+            calloutAnchor: hit.points.length > 1 ? hit.points[0] : undefined,
+            x,
+            y,
+            initialText: hit.text || '',
+          });
+          setInlineTextValue(hit.text || '');
+          onSelectDrawing?.(hit.id);
+          return;
+        }
         onSelectDrawing?.(hit.id);
         setIsSettingsModalOpen(true);
       }
@@ -1248,6 +1376,12 @@ export function CandlestickCanvas({
   }, [activeDrawingTool, drawingInProgress, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, size, findDrawingAtCoords, onSelectDrawing]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
+    // If inline text editor is already open and user clicks chart, commit it
+    if (inlineTextEditor) {
+      handleCommitInlineText();
+      return;
+    }
+
     // Ignore right-click in pointerDown (contextmenu handles right-click)
     if (e.button === 2) {
       setQuickBarPos(null);
@@ -1401,18 +1535,19 @@ export function CandlestickCanvas({
     // 1-Point Instant Tools
     if (reqPoints === 1) {
       if (activeDrawingTool === 'TEXT' || activeDrawingTool === 'ANCHORED_TEXT') {
-        const text = window.prompt(activeDrawingTool === 'ANCHORED_TEXT' ? 'Enter anchored note text:' : 'Enter annotation text:', 'Key Level');
-        if (text && text.trim()) {
-          onAddDrawing?.({
-            id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-            tool: activeDrawingTool,
-            points: [{ index: pt.index, time: pt.time, price: pt.price }],
-            text: text.trim(),
-            color: '#1E293B',
-            lineWidth: 1,
-            completed: true,
-          });
-        }
+        setInlineTextEditor({
+          isOpen: true,
+          mode: 'create',
+          tool: activeDrawingTool,
+          point: { index: pt.index, time: pt.time, price: pt.price },
+          x,
+          y,
+          initialText: '',
+        });
+        setInlineTextValue('');
+        committedPointsRef.current = [];
+        setDrawingInProgress(null);
+        return;
       } else {
         onAddDrawing?.({
           id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
@@ -1463,27 +1598,34 @@ export function CandlestickCanvas({
       // Check if this click satisfies the required points
       if (reqPoints > 0 && committedPointsRef.current.length + 1 >= reqPoints) {
         // Final point!
-        const finalPoints = [...committedPointsRef.current, { index: pt.index, time: pt.time, price: pt.price }];
-        const newDrawingId = drawingInProgress!.id;
         if (activeDrawingTool === 'CALLOUT') {
-          const text = window.prompt('Enter callout annotation note:', 'Key Pivot');
-          onAddDrawing?.({
-            ...drawingInProgress!,
-            points: finalPoints,
-            text: text?.trim() || 'Key Pivot',
-            completed: true,
+          setInlineTextEditor({
+            isOpen: true,
+            mode: 'create',
+            tool: 'CALLOUT',
+            point: { index: pt.index, time: pt.time, price: pt.price },
+            calloutAnchor: committedPointsRef.current[0],
+            x,
+            y,
+            initialText: '',
           });
+          setInlineTextValue('');
+          committedPointsRef.current = [];
+          setDrawingInProgress(null);
+          return;
         } else {
+          const finalPoints = [...committedPointsRef.current, { index: pt.index, time: pt.time, price: pt.price }];
+          const newDrawingId = drawingInProgress!.id;
           onAddDrawing?.({
             ...drawingInProgress!,
             points: finalPoints,
             completed: true,
           });
+          onSelectDrawing?.(newDrawingId);
+          committedPointsRef.current = [];
+          setDrawingInProgress(null);
+          if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
         }
-        onSelectDrawing?.(newDrawingId);
-        committedPointsRef.current = [];
-        setDrawingInProgress(null);
-        if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
       } else {
         // Append point and wait for remaining points
         committedPointsRef.current.push({ index: pt.index, time: pt.time, price: pt.price });
@@ -1493,7 +1635,7 @@ export function CandlestickCanvas({
         }) : null);
       }
     }
-  }, [activeDrawingTool, cleanCandles, endIdx, startIdx, cursorMode, drawings, drawingInProgress, getPointFromEvent, indicators, isAllDrawingsHidden, isAllDrawingsLocked, isDrawingModeLocked, onDeleteDrawing, onAddDrawing, onDrawingToolChange, onSelectDrawing, priceOffset, priceScaleRatio, scrollOffset, showVolumePanel, size, visibleCount]);
+  }, [activeDrawingTool, cleanCandles, endIdx, startIdx, cursorMode, drawings, drawingInProgress, getPointFromEvent, indicators, isAllDrawingsHidden, isAllDrawingsLocked, isDrawingModeLocked, onDeleteDrawing, onAddDrawing, onDrawingToolChange, onSelectDrawing, priceOffset, priceScaleRatio, scrollOffset, showVolumePanel, size, visibleCount, inlineTextEditor, handleCommitInlineText]);
 
   // ── Keyboard Shortcuts (Alt+Tool, Space to Live, ?, Undo, Delete) ──
   useEffect(() => {
@@ -1835,6 +1977,68 @@ export function CandlestickCanvas({
           }}
           onOpenObjectTree={onOpenObjectTree}
         />
+      )}
+      {/* ── Layer 5: In-Chart Floating Text Editor (TradingView Parity) ── */}
+      {inlineTextEditor && (
+        <div
+          className="absolute z-40 rounded-xl bg-white dark:bg-[#0C121D] border-2 border-emerald-500 shadow-2xl p-2.5 flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-100 select-none"
+          style={{
+            left: `${Math.max(8, Math.min(size.w - CHART_RIGHT_MARGIN - 270, inlineTextEditor.x))}px`,
+            top: `${Math.max(8, Math.min(size.h - CHART_BOTTOM_MARGIN - 115, inlineTextEditor.y - 50))}px`,
+            width: '260px',
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+              <span className="font-bold">T</span>
+              <span>{inlineTextEditor.tool === 'CALLOUT' ? 'Callout Note' : inlineTextEditor.tool === 'ANCHORED_TEXT' ? 'Anchored Note' : 'Text Annotation'}</span>
+            </span>
+            <span className="text-[10px] text-slate-400">Esc to cancel</span>
+          </div>
+
+          <textarea
+            ref={inlineInputRef}
+            value={inlineTextValue}
+            onChange={(e) => setInlineTextValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleCommitInlineText();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                handleCancelInlineText();
+              }
+            }}
+            placeholder="Type your note inside the chart..."
+            rows={2}
+            className="w-full resize-none text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-2 font-sans focus:outline-hidden focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-950 placeholder-slate-400"
+          />
+
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            <span className="text-[9.5px] font-mono text-slate-400">
+              ↵ Enter to save
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleCancelInlineText}
+                className="px-2 py-1 rounded text-[11px] font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCommitInlineText}
+                className="px-3 py-1 rounded-md text-[11px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-xs cursor-pointer flex items-center gap-1"
+              >
+                <span>✓</span>
+                <span>Save</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
