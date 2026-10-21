@@ -1175,61 +1175,6 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
 
         {/* Chart Canvas Area */}
         <div ref={chartWrapperRef} className="flex-1 min-h-0 relative bg-white overflow-hidden">
-          {/* Top-Left Active Indicator Legend overlay */}
-          {indicatorConfigs.length > 0 && (
-            <div className="absolute top-2 left-3 z-10 flex flex-wrap items-center gap-1.5 pointer-events-auto max-w-[calc(100%-90px)]">
-              {indicatorConfigs.map(cfg => {
-                const instanceId = cfg.id || cfg.type;
-                const isVis = cfg.enabled !== false;
-                return (
-                  <div
-                    key={instanceId}
-                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border shadow-xs text-[11px] font-mono backdrop-blur-xs group transition-colors ${
-                      isVis
-                        ? 'bg-white/95 border-slate-200 text-slate-700 hover:border-slate-300'
-                        : 'bg-white/60 border-slate-200/60 text-slate-400 line-through'
-                    }`}
-                  >
-                    <span
-                      className={`w-2 h-2 rounded-full flex-shrink-0 ${!isVis ? 'opacity-40' : ''}`}
-                      style={{ backgroundColor: cfg.color }}
-                    />
-                    <span className="font-bold select-none">
-                      {formatIndicatorBadgeLabel(cfg)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleIndicatorVisibility(instanceId)}
-                      title={isVis ? 'Hide Indicator' : 'Show Indicator'}
-                      className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-[10px] cursor-pointer"
-                    >
-                      {isVis ? '👁' : '👁‍🗨'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingIndicatorId(instanceId)}
-                      title="Settings"
-                      className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                    >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveIndicator(instanceId)}
-                      title="Remove"
-                      className="w-4 h-4 flex items-center justify-center rounded text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors font-bold text-xs cursor-pointer"
-                    >
-                      ×
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
           {isLoadingCandles && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-xs pointer-events-none">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-[12px] mono font-bold shadow-md">
@@ -1276,6 +1221,83 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
             onHoverCandle={setHoveredCandle}
             className="h-full"
           />
+
+          {/* Top-Left Active Indicator Legend overlay (positioned above canvas and crosshairs) */}
+          {indicatorConfigs.length > 0 && (
+            <div
+              className="absolute top-2 left-3 z-40 flex flex-wrap items-center gap-1.5 pointer-events-auto max-w-[calc(100%-90px)]"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {indicatorConfigs.map(cfg => {
+                const instanceId = cfg.id || cfg.type;
+                const isVis = cfg.enabled !== false;
+                return (
+                  <div
+                    key={instanceId}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      setEditingIndicatorId(instanceId);
+                    }}
+                    title="Double-click to open settings"
+                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border shadow-sm text-[11px] font-mono group transition-colors cursor-pointer select-none ${
+                      isVis
+                        ? 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+                        : 'bg-white/70 border-slate-200/70 text-slate-400 line-through'
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full flex-shrink-0 ${!isVis ? 'opacity-40' : ''}`}
+                      style={{ backgroundColor: cfg.color }}
+                    />
+                    <span className="font-bold select-none">
+                      {formatIndicatorBadgeLabel(cfg)}
+                    </span>
+                    <button
+                      type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleIndicatorVisibility(instanceId);
+                      }}
+                      title={isVis ? 'Hide Indicator' : 'Show Indicator'}
+                      className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-[10px] cursor-pointer"
+                    >
+                      {isVis ? '👁' : '👁‍🗨'}
+                    </button>
+                    <button
+                      type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingIndicatorId(instanceId);
+                      }}
+                      title="Settings"
+                      className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveIndicator(instanceId);
+                      }}
+                      title="Remove"
+                      className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors font-bold text-xs cursor-pointer"
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
