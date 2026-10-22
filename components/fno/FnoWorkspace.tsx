@@ -112,39 +112,8 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
     return getFuturesTermStructure(selectedInstrument.symbol, liveSpot);
   }, [selectedInstrument.symbol, liveSpot]);
 
-  // Active Strategy Legs (seeded with initial preset aligned to live spot)
-  const [activeLegs, setActiveLegs] = useState<StrategyLeg[]>(() => {
-    const defaultPreset = INSTITUTIONAL_STRATEGY_PRESETS[0]; // Bull Call Spread / Long Call
-    const initialPrice = liveSpot && liveSpot > 0 ? liveSpot : selectedInstrument.spotPrice;
-    return buildLegsFromPreset(
-      defaultPreset,
-      initialPrice,
-      selectedInstrument.strikeStep,
-      selectedInstrument.currentExpiry,
-      selectedInstrument.lotSize
-    );
-  });
-
-  // Automatically align initial default leg when live spot feed connects
-  const alignedSymbolRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (liveSpot && liveSpot > 0 && activeLegs.length === 1) {
-      const legStrike = activeLegs[0]?.strike ?? 0;
-      const driftPct = Math.abs(legStrike - liveSpot) / liveSpot;
-      if (driftPct > 0.04 && alignedSymbolRef.current !== `${selectedInstrument.symbol}-${Math.round(liveSpot)}`) {
-        alignedSymbolRef.current = `${selectedInstrument.symbol}-${Math.round(liveSpot)}`;
-        const defaultPreset = INSTITUTIONAL_STRATEGY_PRESETS[0];
-        const alignedLegs = buildLegsFromPreset(
-          defaultPreset,
-          liveSpot,
-          selectedInstrument.strikeStep,
-          selectedExpiry,
-          selectedInstrument.lotSize
-        );
-        setActiveLegs(alignedLegs);
-      }
-    }
-  }, [liveSpot, selectedInstrument.symbol, selectedInstrument.strikeStep, selectedExpiry, selectedInstrument.lotSize, activeLegs]);
+  // Active Strategy Legs (Starts clean and empty until user adds legs or selects a preset)
+  const [activeLegs, setActiveLegs] = useState<StrategyLeg[]>([]);
 
   // Switch instrument
   const handleSelectInstrument = (inst: FnoInstrument) => {
@@ -153,18 +122,6 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
     if (inst.market && inst.market !== market) {
       setMarket(inst.market);
     }
-
-    alignedSymbolRef.current = `${inst.symbol}-${Math.round(inst.spotPrice)}`;
-    const currentLive = getSymbolPrice(inst.symbol)?.price || inst.spotPrice;
-    const defaultPreset = INSTITUTIONAL_STRATEGY_PRESETS[0];
-    const newLegs = buildLegsFromPreset(
-      defaultPreset,
-      currentLive,
-      inst.strikeStep,
-      inst.currentExpiry,
-      inst.lotSize
-    );
-    setActiveLegs(newLegs);
   };
 
   // Add leg from Option Chain table

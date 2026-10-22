@@ -9,11 +9,14 @@ interface PayoffDiagramProps {
   expiryPoints: PayoffPoint[];
   todayPoints: PayoffPoint[];
   spotPrice: number;
+  originalSpotPrice?: number;
   breakevens: number[];
   timeShiftDays: number;
   onChangeTimeShift: (days: number) => void;
   ivShiftPct: number;
   onChangeIvShift: (iv: number) => void;
+  spotShockPct?: number;
+  onChangeSpotShock?: (spot: number) => void;
   daysToExpiry?: number;
   activeLegs?: StrategyLeg[];
   payoff?: StrategyPayoff;
@@ -22,15 +25,104 @@ interface PayoffDiagramProps {
   onSaveStrategy?: () => void;
 }
 
+/**
+ * Reusable Opstra Definedge Style Slider with discrete tick dots and Teardrop Pin Balloon
+ */
+function OpstraSlider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  color = '#800040',
+  infoTooltip,
+  ticksCount = 21,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (val: number) => void;
+  color?: string;
+  infoTooltip?: string;
+  ticksCount?: number;
+}) {
+  const pct = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-24 text-[11px] font-bold text-slate-700 select-none shrink-0">{label}</span>
+      <div className="flex-1 relative flex items-center h-8 select-none">
+        {/* Discrete tick marks across track */}
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none px-1">
+          {Array.from({ length: ticksCount }).map((_, idx) => (
+            <div
+              key={idx}
+              className={`w-1 h-1 rounded-full ${
+                (idx / (ticksCount - 1)) * 100 <= pct ? 'bg-slate-700' : 'bg-slate-300'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Center horizontal dotted line */}
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1px] border-b border-dotted border-slate-700 pointer-events-none" />
+
+        {/* Teardrop Balloon Pin above Thumb */}
+        <div
+          className="absolute -top-4 -translate-x-1/2 flex flex-col items-center pointer-events-none z-20 transition-all duration-75"
+          style={{ left: `${pct}%` }}
+        >
+          <div
+            className="text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[20px] text-center shadow-md leading-none"
+            style={{ backgroundColor: color }}
+          >
+            {value > 0 && label.includes('(%)') ? `+${value}` : value}
+          </div>
+          <div
+            className="w-0 h-0 border-l-[3.5px] border-l-transparent border-r-[3.5px] border-r-transparent border-t-[4px]"
+            style={{ borderTopColor: color }}
+          />
+        </div>
+
+        {/* Native Range Input */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="w-full relative z-10 appearance-none bg-transparent cursor-pointer h-6 focus:outline-hidden"
+          style={{ accentColor: color }}
+        />
+      </div>
+
+      {/* Info Icon with Tooltip */}
+      <div
+        className="w-4 h-4 rounded-full bg-slate-400 text-white text-[10px] font-bold flex items-center justify-center cursor-help shrink-0 shadow-2xs hover:bg-slate-600 transition"
+        title={infoTooltip || label}
+      >
+        ?
+      </div>
+    </div>
+  );
+}
+
 export function PayoffDiagram({
   expiryPoints,
   todayPoints,
   spotPrice,
+  originalSpotPrice,
   breakevens,
   timeShiftDays,
   onChangeTimeShift,
   ivShiftPct,
   onChangeIvShift,
+  spotShockPct,
+  onChangeSpotShock,
   daysToExpiry = 7,
   activeLegs = [],
   payoff,
@@ -46,15 +138,35 @@ export function PayoffDiagram({
   const [hoverX, setHoverX] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'PAYOFF' | 'FUTURES' | 'GREEKS' | 'PNL'>('PAYOFF');
   const [isSpotMode, setIsSpotMode] = useState<boolean>(true);
-  const [spotShockPct, setSpotShockPct] = useState<number>(0);
+  
+  const [internalSpotShock, setInternalSpotShock] = useState<number>(0);
+  const activeSpotShock = spotShockPct !== undefined ? spotShockPct : internalSpotShock;
+  const handleSpotShockChange = onChangeSpotShock || setInternalSpotShock;
 
-  const currentPnl = useMemo(() => {
-    return activeLegs.filter((l) => !l.disabled).reduce((sum, leg) => {
-      const cur = leg.currentPrice ?? leg.entryPrice;
-      const mult = leg.action === 'BUY' ? 1 : -1;
-      return sum + (cur - leg.entryPrice) * leg.lots * leg.lotSize * mult;
-    }, 0);
-  }, [activeLegs]);
+  const scenarioPnl = useMemo(() => {
+    if (!activeLegs || activeLegs.length === 0) return 0;
+    if (activeSpotShock === 0 && ivShiftPct === 0 && timeShiftDays === 0) {
+      return activeLegs.filter((l) => !l.disabled).reduce((sum, leg) => {
+        const cur = leg.currentPrice ?? leg.entryPrice;
+        const mult = leg.action === 'BUY' ? 1 : -1;
+        return sum + (cur - leg.entryPrice) * leg.lots * leg.lotSize * mult;
+      }, 0);
+    }
+    // Dynamic simulated PnL under slider shocks evaluated at simulated spot
+    if (todayPoints && todayPoints.length > 0) {
+      let closestPt = todayPoints[0];
+      let minDiff = Math.abs(todayPoints[0].price - spotPrice);
+      for (const pt of todayPoints) {
+        const diff = Math.abs(pt.price - spotPrice);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestPt = pt;
+        }
+      }
+      return closestPt.pnl;
+    }
+    return 0;
+  }, [activeLegs, activeSpotShock, ivShiftPct, timeShiftDays, todayPoints, spotPrice]);
 
   // SVG Chart Dimensions
   const width = 840;
@@ -65,25 +177,32 @@ export function PayoffDiagram({
   const plotHeight = height - padding.top - padding.bottom;
 
   // Standard Deviation Bands (Opstra top markers: -2σ, -1σ, Spot, +1σ, +2σ)
+  const baseSpot = originalSpotPrice || spotPrice;
   const sigma1 = useMemo(() => {
     const dteSafe = Math.max(1, daysToExpiry);
-    return spotPrice * (iv / 100.0) * Math.sqrt(dteSafe / 365.0);
-  }, [spotPrice, iv, daysToExpiry]);
+    return baseSpot * (iv / 100.0) * Math.sqrt(dteSafe / 365.0);
+  }, [baseSpot, iv, daysToExpiry]);
 
   const sdMarkers = useMemo(() => {
     return [
-      { label: '-2σ', price: Math.round(spotPrice - 2 * sigma1) },
-      { label: '-1σ', price: Math.round(spotPrice - 1 * sigma1) },
-      { label: `${spotPrice}`, price: Math.round(spotPrice), isSpot: true },
-      { label: '+1σ', price: Math.round(spotPrice + 1 * sigma1) },
-      { label: '+2σ', price: Math.round(spotPrice + 2 * sigma1) },
+      { label: '-2σ', price: Math.round(baseSpot - 2 * sigma1) },
+      { label: '-1σ', price: Math.round(baseSpot - 1 * sigma1) },
+      { label: `${spotPrice.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, price: Math.round(spotPrice), isSpot: true },
+      { label: '+1σ', price: Math.round(baseSpot + 1 * sigma1) },
+      { label: '+2σ', price: Math.round(baseSpot + 2 * sigma1) },
     ];
-  }, [spotPrice, sigma1]);
+  }, [baseSpot, spotPrice, sigma1, loc]);
 
   // Price & PnL Domains
   const { minPrice, maxPrice, minPnl, maxPnl } = useMemo(() => {
     if (!expiryPoints || expiryPoints.length === 0) {
-      return { minPrice: 20950, maxPrice: 24310, minPnl: -40000, maxPnl: 120000 };
+      const sp = baseSpot > 0 ? baseSpot : 22000;
+      return {
+        minPrice: Math.round(sp * 0.92),
+        maxPrice: Math.round(sp * 1.08),
+        minPnl: -20000,
+        maxPnl: 20000,
+      };
     }
     const allPrices = expiryPoints.map((p) => p.price);
     const allPnls = [...expiryPoints.map((p) => p.pnl), ...todayPoints.map((p) => p.pnl)];
@@ -98,7 +217,7 @@ export function PayoffDiagram({
     maxL += pnlSpan * 0.12;
 
     return { minPrice: minP, maxPrice: maxP, minPnl: minL, maxPnl: maxL };
-  }, [expiryPoints, todayPoints]);
+  }, [expiryPoints, todayPoints, baseSpot]);
 
   const priceRange = Math.max(1, maxPrice - minPrice);
   const pnlRange = Math.max(1, maxPnl - minPnl);
@@ -275,12 +394,12 @@ export function PayoffDiagram({
           <button
             type="button"
             onClick={() => {
-              setSpotShockPct(0);
+              handleSpotShockChange(0);
               onChangeTimeShift(0);
               onChangeIvShift(0);
             }}
-            className="text-slate-500 hover:text-slate-800 pb-2 cursor-pointer"
-            title="Reset"
+            className="text-slate-500 hover:text-slate-800 pb-2 cursor-pointer transition"
+            title="Reset All Simulation Sliders"
           >
             🔄
           </button>
@@ -372,14 +491,53 @@ export function PayoffDiagram({
                 Underlying Price
               </text>
 
+              {/* ── Opstra Standard Deviation Probability Zones ── */}
+              {/* ±2σ Zone: 95.4% Probability Band (Soft Slate Background) */}
+              {(() => {
+                const x2Left = Math.max(padding.left, getX(baseSpot - 2 * sigma1));
+                const x2Right = Math.min(width - padding.right, getX(baseSpot + 2 * sigma1));
+                if (x2Right > x2Left) {
+                  return (
+                    <rect
+                      x={x2Left}
+                      y={padding.top}
+                      width={x2Right - x2Left}
+                      height={plotHeight}
+                      fill="#F8FAFC"
+                      opacity="0.8"
+                    />
+                  );
+                }
+                return null;
+              })()}
+
+              {/* ±1σ Zone: 68.2% Probability Cone (Soft Mint Opstra Band) */}
+              {(() => {
+                const x1Left = Math.max(padding.left, getX(baseSpot - 1 * sigma1));
+                const x1Right = Math.min(width - padding.right, getX(baseSpot + 1 * sigma1));
+                if (x1Right > x1Left) {
+                  return (
+                    <rect
+                      x={x1Left}
+                      y={padding.top}
+                      width={x1Right - x1Left}
+                      height={plotHeight}
+                      fill="#EBFBF2"
+                      opacity="0.75"
+                    />
+                  );
+                }
+                return null;
+              })()}
+
               {/* ── Exact Opstra Shaded Areas ── */}
               {/* Soft Light Green Profit Area (above zero line) */}
               {profitAreaPath && (
-                <path d={profitAreaPath} fill="#DEF7EC" opacity="0.85" />
+                <path d={profitAreaPath} fill="#D4EDDA" opacity="0.85" />
               )}
-              {/* Soft Light Orange Loss Area (below zero line) */}
+              {/* Soft Light Peach Loss Area (below zero line) */}
               {lossAreaPath && (
-                <path d={lossAreaPath} fill="#FEF08A" opacity="0.65" />
+                <path d={lossAreaPath} fill="#FCE8E6" opacity="0.85" />
               )}
 
               {/* Zero PnL Horizontal Line */}
@@ -392,18 +550,37 @@ export function PayoffDiagram({
                 strokeWidth="1.2"
               />
 
-              {/* Standard Deviation Top Markers (-2σ, -1σ, Spot, +1σ, +2σ) */}
+              {/* Standard Deviation Top Markers & Subtle Vertical Guidelines */}
               {sdMarkers.map((m) => {
                 const sX = getX(m.price);
                 if (sX < padding.left || sX > width - padding.right) return null;
                 return (
                   <g key={m.label}>
-                    <line x1={sX} y1={padding.top} x2={sX} y2={padding.top - 6} stroke="#334155" strokeWidth="1" />
+                    {/* Vertical guideline */}
+                    <line
+                      x1={sX}
+                      y1={padding.top}
+                      x2={sX}
+                      y2={height - padding.bottom}
+                      stroke={m.isSpot ? '#16A34A' : '#CBD5E1'}
+                      strokeDasharray={m.isSpot ? '3 3' : '2 3'}
+                      strokeWidth={m.isSpot ? '1.5' : '1'}
+                    />
+                    {/* Top tick mark */}
+                    <line
+                      x1={sX}
+                      y1={padding.top}
+                      x2={sX}
+                      y2={padding.top - 5}
+                      stroke={m.isSpot ? '#16A34A' : '#64748B'}
+                      strokeWidth="1.2"
+                    />
+                    {/* Label at top */}
                     <text
                       x={sX}
-                      y={padding.top - 9}
+                      y={padding.top - 8}
                       fill={m.isSpot ? '#15803D' : '#475569'}
-                      fontSize={m.isSpot ? '9.5' : '9'}
+                      fontSize={m.isSpot ? '10' : '9'}
                       fontFamily="sans-serif"
                       fontWeight={m.isSpot ? 'bold' : 'normal'}
                       textAnchor="middle"
@@ -414,39 +591,26 @@ export function PayoffDiagram({
                 );
               })}
 
-              {/* Dotted Vertical Green Line at Current Spot */}
-              {spotX >= padding.left && spotX <= width - padding.right && (
-                <line
-                  x1={spotX}
-                  y1={padding.top}
-                  x2={spotX}
-                  y2={height - padding.bottom}
-                  stroke="#10B981"
-                  strokeDasharray="3 3"
-                  strokeWidth="1.5"
-                />
-              )}
-
-              {/* Expiry Curve (Solid Green/Blue line matching Opstra) */}
+              {/* Expiry Curve (Solid Royal Blue line matching Opstra) */}
               {expiryPath && (
                 <path
                   d={expiryPath}
                   fill="none"
-                  stroke="#16A34A"
-                  strokeWidth="2.2"
+                  stroke="#0000FF"
+                  strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               )}
 
-              {/* T+0 Scenario Curve (Dashed Orange line) */}
+              {/* T+n Scenario Curve (Dashed Green line matching Opstra) */}
               {todayPath && (
                 <path
                   d={todayPath}
                   fill="none"
-                  stroke="#D97706"
-                  strokeWidth="1.8"
-                  strokeDasharray="4 2"
+                  stroke="#16A34A"
+                  strokeWidth="2.2"
+                  strokeDasharray="4 3"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
@@ -457,9 +621,37 @@ export function PayoffDiagram({
                 const beX = getX(be);
                 if (beX < padding.left || beX > width - padding.right) return null;
                 return (
-                  <circle key={be} cx={beX} cy={zeroY} r="4" fill="#F59E0B" stroke="#000" strokeWidth="1" />
+                  <g key={be}>
+                    <circle cx={beX} cy={zeroY} r="4.5" fill="#F59E0B" stroke="#000" strokeWidth="1" />
+                    <text
+                      x={beX}
+                      y={zeroY + 12}
+                      fill="#B45309"
+                      fontSize="9"
+                      fontWeight="bold"
+                      fontFamily="sans-serif"
+                      textAnchor="middle"
+                    >
+                      {be.toLocaleString(loc)}
+                    </text>
+                  </g>
                 );
               })}
+
+              {/* Opstra Curve Legend */}
+              <g transform={`translate(${padding.left + 8}, ${padding.top + 16})`}>
+                <rect x="0" y="0" width="165" height="38" rx="3" fill="#FFFFFF" fillOpacity="0.9" stroke="#E2E8F0" strokeWidth="1" />
+                {/* Expiry line */}
+                <line x1="8" y1="12" x2="28" y2="12" stroke="#0000FF" strokeWidth="2.5" />
+                <text x="34" y="15" fill="#1E293B" fontSize="9.5" fontFamily="sans-serif" fontWeight="600">
+                  Expiry P&amp;L
+                </text>
+                {/* Today line */}
+                <line x1="8" y1="26" x2="28" y2="26" stroke="#16A34A" strokeWidth="2.2" strokeDasharray="4 2" />
+                <text x="34" y="29" fill="#1E293B" fontSize="9.5" fontFamily="sans-serif" fontWeight="600">
+                  Today (T+{timeShiftDays}) P&amp;L
+                </text>
+              </g>
 
               {/* Watermark in bottom right */}
               <text
@@ -486,8 +678,8 @@ export function PayoffDiagram({
                     strokeOpacity="0.3"
                     strokeDasharray="2 2"
                   />
-                  <circle cx={hoverData.x} cy={hoverData.yExp} r="4.5" fill="#16A34A" stroke="#000" />
-                  <circle cx={hoverData.x} cy={hoverData.yTod} r="4" fill="#D97706" stroke="#000" />
+                  <circle cx={hoverData.x} cy={hoverData.yExp} r="4.5" fill="#0000FF" stroke="#fff" strokeWidth="1.5" />
+                  <circle cx={hoverData.x} cy={hoverData.yTod} r="4.5" fill="#16A34A" stroke="#fff" strokeWidth="1.5" />
 
                   <g transform={`translate(${Math.min(width - 150, Math.max(padding.left + 5, hoverData.x - 70))}, ${padding.top + 5})`}>
                     <rect width="140" height="55" rx="4" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1" />
@@ -497,20 +689,35 @@ export function PayoffDiagram({
                     <text
                       x="8"
                       y="32"
-                      fill={hoverData.expiryPnl >= 0 ? '#15803D' : '#DC2626'}
+                      fill="#0000FF"
                       fontSize="10.5"
                       fontFamily="sans-serif"
                       fontWeight="bold"
                     >
                       Exp PnL: {hoverData.expiryPnl >= 0 ? '+' : ''}{curr}{hoverData.expiryPnl.toLocaleString(loc)}
                     </text>
-                    <text x="8" y="47" fill="#D97706" fontSize="9.5" fontFamily="sans-serif">
+                    <text x="8" y="47" fill="#16A34A" fontSize="9.5" fontFamily="sans-serif" fontWeight="600">
                       T+{timeShiftDays} PnL: {hoverData.todayPnl >= 0 ? '+' : ''}{curr}{hoverData.todayPnl.toLocaleString(loc)}
                     </text>
                   </g>
                 </g>
               )}
             </svg>
+
+            {/* Empty State Overlay when no positions are added */}
+            {activeLegs.length === 0 && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[1px]">
+                <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 max-w-sm text-center">
+                  <div className="w-10 h-10 mx-auto mb-2.5 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 text-lg">
+                    📈
+                  </div>
+                  <h4 className="text-[13px] font-bold text-slate-800 mb-1">Payoff Chart Ready</h4>
+                  <p className="text-[11.5px] text-slate-500 leading-normal">
+                    No active positions. Add strikes from the Option Chain below or select an institutional preset from the gallery to visualize your strategy payoff curve.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -596,47 +803,52 @@ export function PayoffDiagram({
         </div>
         <div>
           <span>Total PNL: </span>
-          <strong className={currentPnl >= 0 ? 'text-[#0E9F6E]' : 'text-[#E02424]'}>
-            {currentPnl >= 0 ? `${curr} +${currentPnl.toLocaleString(loc)}` : `-${curr} ${Math.abs(currentPnl).toLocaleString(loc)}`}
+          <strong className={scenarioPnl >= 0 ? 'text-[#0E9F6E]' : 'text-[#E02424]'}>
+            {scenarioPnl >= 0 ? `${curr} +${scenarioPnl.toLocaleString(loc)}` : `-${curr} ${Math.abs(scenarioPnl).toLocaleString(loc)}`}
           </strong>
         </div>
       </div>
 
-      {/* ── 5. Bottom Scenario Shock Sliders with Purple Pin (Exact Opstra Style) ── */}
-      <div className="px-4 py-3 bg-white border-t border-slate-200 space-y-3 text-[11px] font-semibold text-slate-600">
-        {/* Spot Slider */}
-        <div className="flex items-center gap-4">
-          <span className="w-16">Spot (%):</span>
-          <div className="flex-1 relative flex items-center">
-            <input
-              type="range"
-              min={-5}
-              max={5}
-              step={0.5}
-              value={spotShockPct}
-              onChange={(e) => setSpotShockPct(Number(e.target.value))}
-              className="w-full h-1 bg-purple-700 rounded-lg appearance-none cursor-pointer accent-purple-700"
-            />
-          </div>
-          <span className="w-8 text-center text-purple-800 font-bold">{spotShockPct}</span>
-        </div>
+      {/* ── 5. Bottom Scenario Shock Sliders (Exact Opstra Definedge Style) ── */}
+      <div className="px-4 py-3 bg-white border-t border-slate-200 space-y-2.5">
+        {/* Spot (%) Slider */}
+        <OpstraSlider
+          label="Spot (%)"
+          value={activeSpotShock}
+          min={-10}
+          max={10}
+          step={0.5}
+          onChange={handleSpotShockChange}
+          color="#800040"
+          infoTooltip="Simulate underlying price movement by percentage shock"
+          ticksCount={21}
+        />
 
-        {/* IV Slider */}
-        <div className="flex items-center gap-4">
-          <span className="w-16">IV (%):</span>
-          <div className="flex-1 relative flex items-center">
-            <input
-              type="range"
-              min={-15}
-              max={15}
-              step={1}
-              value={ivShiftPct}
-              onChange={(e) => onChangeIvShift(Number(e.target.value))}
-              className="w-full h-1 bg-purple-700 rounded-lg appearance-none cursor-pointer accent-purple-700"
-            />
-          </div>
-          <span className="w-8 text-center text-purple-800 font-bold">{ivShiftPct}</span>
-        </div>
+        {/* IV (%) Slider */}
+        <OpstraSlider
+          label="IV (%)"
+          value={ivShiftPct}
+          min={-20}
+          max={20}
+          step={1}
+          onChange={onChangeIvShift}
+          color="#800040"
+          infoTooltip="Simulate implied volatility shift across all legs"
+          ticksCount={21}
+        />
+
+        {/* Next n Days Slider */}
+        <OpstraSlider
+          label="Next n Days"
+          value={timeShiftDays}
+          min={0}
+          max={Math.max(1, daysToExpiry)}
+          step={1}
+          onChange={onChangeTimeShift}
+          color="#718096"
+          infoTooltip="Simulate forward time decay towards contract expiration"
+          ticksCount={Math.min(15, Math.max(1, daysToExpiry) + 1)}
+        />
       </div>
     </div>
   );

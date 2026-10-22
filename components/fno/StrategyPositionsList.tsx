@@ -28,6 +28,7 @@ export function StrategyPositionsList({
   const loc = instrument.market === 'INDIA' ? 'en-IN' : 'en-US';
 
   const activeLegs = legs.filter((l) => !l.disabled);
+  const hasLegs = activeLegs.length > 0;
 
   // Live real unrealized PnL from legs' current prices vs entry prices
   const currentPnl = activeLegs.reduce((sum, leg) => {
@@ -208,7 +209,7 @@ export function StrategyPositionsList({
           <div className="flex items-center justify-between py-1 border-b border-slate-100">
             <span className="text-slate-700">Prob. of Profit</span>
             <span className="font-bold text-slate-900">
-              {payoff.probabilityOfProfit.toFixed(2)}%
+              {hasLegs ? `${payoff.probabilityOfProfit.toFixed(2)}%` : '-'}
             </span>
           </div>
 
@@ -216,7 +217,9 @@ export function StrategyPositionsList({
           <div className="flex items-center justify-between py-1 border-b border-slate-100">
             <span className="text-slate-700">Max. Profit</span>
             <span className="font-bold text-slate-900">
-              {typeof payoff.maxProfit === 'number'
+              {!hasLegs
+                ? '-'
+                : typeof payoff.maxProfit === 'number'
                 ? `${curr}${payoff.maxProfit.toLocaleString(loc)}`
                 : 'Unlimited (∞)'}
             </span>
@@ -226,7 +229,9 @@ export function StrategyPositionsList({
           <div className="flex items-center justify-between py-1 border-b border-slate-100">
             <span className="text-slate-700">Max. Loss</span>
             <span className="font-bold text-slate-900">
-              {typeof payoff.maxLoss === 'number'
+              {!hasLegs
+                ? '-'
+                : typeof payoff.maxLoss === 'number'
                 ? `-${curr}${Math.abs(payoff.maxLoss).toLocaleString(loc)} (-${maxLossPct.toFixed(1)}%)`
                 : 'Unlimited Risk'}
             </span>
@@ -236,7 +241,11 @@ export function StrategyPositionsList({
           <div className="flex items-center justify-between py-1 border-b border-slate-100">
             <span className="text-slate-700">Max. RR Ratio</span>
             <span className="font-bold text-slate-900">
-              {payoff.riskRewardRatio.includes('Unlimited') ? '1 : Unlimited' : payoff.riskRewardRatio}
+              {!hasLegs
+                ? '-'
+                : payoff.riskRewardRatio.includes('Unlimited')
+                ? '1 : Unlimited'
+                : payoff.riskRewardRatio}
             </span>
           </div>
 
@@ -244,7 +253,9 @@ export function StrategyPositionsList({
           <div className="flex items-center justify-between py-1 border-b border-slate-100">
             <span className="text-slate-700">Breakevens</span>
             <span className="font-bold text-slate-900">
-              {payoff.breakevens.length > 0 ? payoff.breakevens.map((b) => `${curr}${b.toLocaleString(loc, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}`).join(', ') : 'None'}
+              {hasLegs && payoff.breakevens.length > 0
+                ? payoff.breakevens.map((b) => `${curr}${b.toLocaleString(loc, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}`).join(', ')
+                : 'None'}
             </span>
           </div>
 
@@ -256,7 +267,9 @@ export function StrategyPositionsList({
                 currentPnl >= 0 ? 'text-[#0E9F6E]' : 'text-[#E02424]'
               }`}
             >
-              {currentPnl >= 0 ? `+${curr}${currentPnl.toLocaleString(loc)}` : `-${curr}${Math.abs(currentPnl).toLocaleString(loc)}`} ({currentPnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%)
+              {hasLegs
+                ? `${currentPnl >= 0 ? `+${curr}${currentPnl.toLocaleString(loc)}` : `-${curr}${Math.abs(currentPnl).toLocaleString(loc)}`} (${currentPnl >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)`
+                : `${curr}0 (0.00%)`}
             </span>
           </div>
 

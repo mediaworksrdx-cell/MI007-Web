@@ -47,6 +47,7 @@ export function StrategyBuilderTab({
   const [strategyCategory, setStrategyCategory] = useState<StrategyCategory>('BULLISH');
   const [timeShiftDays, setTimeShiftDays] = useState<number>(0);
   const [ivShiftPct, setIvShiftPct] = useState<number>(0);
+  const [spotShockPct, setSpotShockPct] = useState<number>(0);
   const [savedToast, setSavedToast] = useState(false);
 
   // Futures price
@@ -59,22 +60,37 @@ export function StrategyBuilderTab({
 
   const ivValue = 15.87;
   const ivPercentile = 75.51;
-  const daysToExpiry = 0; // Opstra shows DTE: 0 or days to expiry
 
-  // Calculate Payoff
+  // Dynamic Days to Expiry derived from selectedExpiry
+  const daysToExpiry = useMemo(() => {
+    if (selectedExpiry) {
+      const expDate = new Date(selectedExpiry);
+      if (!isNaN(expDate.getTime())) {
+        const diffMs = expDate.getTime() - Date.now();
+        const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        return Math.max(1, days);
+      }
+    }
+    return 7;
+  }, [selectedExpiry]);
+
+  // Dynamic simulated spot price under slider scenario shock
+  const simulatedSpot = spotPrice * (1 + spotShockPct / 100);
+
+  // Calculate Payoff with active simulation parameters
   const payoff = useMemo(() => {
     return calculateStrategyPayoff(
       activeLegs,
-      spotPrice,
+      simulatedSpot,
       strategyName,
       strategyCategory,
       {
         timeShiftDays,
         ivShiftPct,
-        daysToExpiry: 7,
+        daysToExpiry,
       }
     );
-  }, [activeLegs, spotPrice, strategyName, strategyCategory, timeShiftDays, ivShiftPct]);
+  }, [activeLegs, simulatedSpot, strategyName, strategyCategory, timeShiftDays, ivShiftPct, daysToExpiry]);
 
   // Apply a preset from modal
   const handleApplyPreset = (newLegs: StrategyLeg[], replaceAll: boolean) => {
@@ -288,12 +304,15 @@ export function StrategyBuilderTab({
           <PayoffDiagram
             expiryPoints={payoff.expiryPoints}
             todayPoints={payoff.todayPoints}
-            spotPrice={spotPrice}
+            spotPrice={simulatedSpot}
+            originalSpotPrice={spotPrice}
             breakevens={payoff.breakevens}
             timeShiftDays={timeShiftDays}
             onChangeTimeShift={setTimeShiftDays}
             ivShiftPct={ivShiftPct}
             onChangeIvShift={setIvShiftPct}
+            spotShockPct={spotShockPct}
+            onChangeSpotShock={setSpotShockPct}
             daysToExpiry={daysToExpiry}
             activeLegs={activeLegs}
             payoff={payoff}
