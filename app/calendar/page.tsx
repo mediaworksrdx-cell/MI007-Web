@@ -10,9 +10,9 @@ export default function EconomicCalendarPage() {
     <div className="min-h-screen flex flex-col bg-[var(--theme-page-bg)] text-[var(--theme-page-text)] transition-colors duration-300">
       <Navbar />
 
-      <main className="flex-1 pt-24 sm:pt-28 pb-12 px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto w-full">
+      <main className="flex-1 pt-20 sm:pt-22 pb-8 px-3 sm:px-5 lg:px-6 max-w-[1600px] mx-auto w-full">
         {/* Header Telemetry Banner */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4 sm:mb-5">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -41,7 +41,7 @@ export default function EconomicCalendarPage() {
         </div>
 
         {/* Calendar View Container */}
-        <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-3.5 sm:p-6 lg:p-8 overflow-hidden bg-[var(--theme-card-bg)]">
+        <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-3 sm:p-5 overflow-hidden bg-[var(--theme-card-bg)]">
           <EconomicCalendarView />
         </div>
       </main>

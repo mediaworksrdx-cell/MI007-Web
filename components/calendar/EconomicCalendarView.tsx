@@ -9,6 +9,43 @@ import {
   filterEconomicEvents,
 } from '@/lib/terminal/economicCalendarData';
 
+// Helper to parse and sanitize event title, subtitle, and deduplicate periods
+function parseEventTitle(rawEvent: string, rawPeriod?: string): { title: string; subtitle: string | null; periodTag: string | null } {
+  if (!rawEvent) return { title: '', subtitle: null, periodTag: null };
+
+  let title = rawEvent.trim();
+  let subtitle: string | null = null;
+
+  // Extract trailing date/period clutter separated by colon (e.g. "Producer price inflation, UK: September 2026...")
+  const colonIdx = title.indexOf(': ');
+  if (colonIdx > 0 && colonIdx < 55) {
+    subtitle = title.slice(colonIdx + 2).trim();
+    title = title.slice(0, colonIdx).trim();
+  }
+
+  // If subtitle is very long, shorten to clean month/quarter
+  if (subtitle && subtitle.length > 30) {
+    const match = subtitle.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{4}|Q[1-4]\s*\d{4}/i);
+    subtitle = match ? match[0] : subtitle.slice(0, 26) + '...';
+  }
+
+  // Deduplicate rawPeriod
+  let periodTag: string | null = null;
+  if (rawPeriod && rawPeriod.trim()) {
+    const p = rawPeriod.trim();
+    const isDup =
+      (subtitle && subtitle.toLowerCase().includes(p.toLowerCase())) ||
+      title.toLowerCase().includes(p.toLowerCase()) ||
+      p.toLowerCase().includes(title.toLowerCase());
+    if (!isDup) {
+      const match = p.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{4}|Q[1-4]\s*\d{4}/i);
+      periodTag = match ? match[0] : p.length > 20 ? p.slice(0, 18) + '...' : p;
+    }
+  }
+
+  return { title, subtitle, periodTag };
+}
+
 export function EconomicCalendarView() {
   const [events, setEvents] = useState<EconomicEvent[]>(() => getBaselineEconomicEvents());
   const [range, setRange] = useState<'today' | 'tomorrow' | 'week' | 'all'>('week');
@@ -81,46 +118,46 @@ export function EconomicCalendarView() {
   const missCount = useMemo(() => filteredList.filter((e) => e.isBeat === false).length, [filteredList]);
 
   return (
-    <div className="w-full flex flex-col gap-6">
+    <div className="w-full flex flex-col gap-4">
       {/* ── Top Countdown & Intelligence Banner ── */}
       {nextHighImpact && countdownStr && (
-        <div className="p-4 sm:p-5 rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <span className="text-2xl sm:text-3xl shrink-0 p-2 rounded-xl bg-amber-500/20 border border-amber-500/30">
+        <div className="p-3 sm:p-3.5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-xl sm:text-2xl shrink-0 p-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30">
               ⚡
             </span>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="mono text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 tracking-wider">
+                <span className="mono text-[9.5px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 tracking-wider">
                   NEXT HIGH-IMPACT RELEASE
                 </span>
-                <span className="mono text-[11px] font-bold opacity-75">
+                <span className="mono text-[10.5px] font-bold opacity-75">
                   {nextHighImpact.flag} {nextHighImpact.country}
                 </span>
               </div>
-              <h3 className="text-[15px] sm:text-[17px] font-black tracking-tight mt-0.5 truncate">
+              <h3 className="text-[14px] sm:text-[15px] font-black tracking-tight mt-0.5 truncate">
                 {nextHighImpact.event}
               </h3>
-              <p className="text-[12px] opacity-70 truncate max-w-xl">
+              <p className="text-[11.5px] opacity-70 truncate max-w-xl">
                 {nextHighImpact.description}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 shrink-0 border-t md:border-t-0 md:border-l border-amber-500/20 pt-2 md:pt-0 md:pl-5">
+          <div className="flex items-center gap-4 shrink-0 border-t md:border-t-0 md:border-l border-amber-500/20 pt-2 md:pt-0 md:pl-4">
             <div>
-              <div className="text-[10px] mono font-bold uppercase tracking-wider opacity-60">
+              <div className="text-[9.5px] mono font-bold uppercase tracking-wider opacity-60">
                 COUNTDOWN
               </div>
-              <div className="mono text-[18px] sm:text-[20px] font-black text-amber-400 tabular-nums">
+              <div className="mono text-[16px] sm:text-[18px] font-black text-amber-400 tabular-nums">
                 {countdownStr}
               </div>
             </div>
             <div className="hidden sm:block text-right">
-              <div className="text-[10px] mono font-bold uppercase tracking-wider opacity-60">
+              <div className="text-[9.5px] mono font-bold uppercase tracking-wider opacity-60">
                 FORECAST
               </div>
-              <div className="mono text-[14px] font-black">
+              <div className="mono text-[13px] font-black">
                 {nextHighImpact.forecast || '--'}
               </div>
             </div>
@@ -129,11 +166,11 @@ export function EconomicCalendarView() {
       )}
 
       {/* ── Filter Controls Bar ── */}
-      <div className="p-4 sm:p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-md flex flex-col gap-4">
+      <div className="p-3 sm:p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-sm flex flex-col gap-2.5">
         {/* Row 1: Date Horizons & Live Status */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           {/* Date Segmented Tabs */}
-          <div className="inline-flex items-center p-1 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-2xs gap-1">
+          <div className="inline-flex items-center p-0.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-2xs gap-0.5">
             {(['today', 'tomorrow', 'week', 'all'] as const).map((r) => {
               const labels = {
                 today: 'Today',
@@ -147,7 +184,7 @@ export function EconomicCalendarView() {
                   key={r}
                   type="button"
                   onClick={() => setRange(r)}
-                  className={`px-3 py-1.5 rounded-lg mono text-[12px] font-bold transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md mono text-[11px] font-bold transition-all cursor-pointer ${
                     active
                       ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
                       : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-white/5'
@@ -160,23 +197,23 @@ export function EconomicCalendarView() {
           </div>
 
           {/* Impact Quick Toggle */}
-          <div className="flex items-center gap-2">
-            <span className="mono text-[11px] font-bold uppercase tracking-wider opacity-60 hidden md:inline">
+          <div className="flex items-center gap-1.5">
+            <span className="mono text-[10.5px] font-bold uppercase tracking-wider opacity-60 hidden md:inline">
               Impact:
             </span>
             {(['ALL', 'HIGH', 'MEDIUM'] as const).map((imp) => {
               const active = impact === imp;
               const labels = {
                 ALL: 'All Impact',
-                HIGH: '🔴 High Only',
-                MEDIUM: '🟡 Medium+',
+                HIGH: '🔴 High',
+                MEDIUM: '🟡 Med+',
               };
               return (
                 <button
                   key={imp}
                   type="button"
                   onClick={() => setImpact(imp)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] mono font-bold border transition-all cursor-pointer ${
+                  className={`px-2 py-0.5 rounded-md text-[10.5px] mono font-bold border transition-all cursor-pointer ${
                     active
                       ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400 font-black'
                       : 'border-transparent text-[var(--theme-card-text-muted)] hover:border-[var(--theme-card-border)]'
@@ -190,16 +227,16 @@ export function EconomicCalendarView() {
         </div>
 
         {/* Row 2: Regional Toggles & Search */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-2 border-t border-[var(--theme-card-border)]/60">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 pt-2 border-t border-[var(--theme-card-border)]/50">
           {/* Region Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1">
             {(
               [
                 { id: 'ALL', label: 'All Regions' },
-                { id: 'INDIA', label: '🇮🇳 India (RBI)' },
-                { id: 'USA', label: '🇺🇸 USA (Fed)' },
+                { id: 'INDIA', label: '🇮🇳 India' },
+                { id: 'USA', label: '🇺🇸 USA' },
                 { id: 'EUROPE', label: '🇪🇺 Eurozone' },
-                { id: 'UAE', label: '🇦🇪 UAE / OPEC+' },
+                { id: 'UAE', label: '🇦🇪 UAE' },
                 { id: 'GLOBAL', label: '🌐 Global' },
               ] as const
             ).map((reg) => {
@@ -209,7 +246,7 @@ export function EconomicCalendarView() {
                   key={reg.id}
                   type="button"
                   onClick={() => setRegion(reg.id)}
-                  className={`px-2.5 py-1 rounded-md text-[11.5px] font-mono font-bold transition-colors cursor-pointer ${
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold transition-colors cursor-pointer ${
                     active
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                       : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-white/5'
@@ -223,10 +260,10 @@ export function EconomicCalendarView() {
 
           {/* Live Sync Pill & Search Bar */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] mono font-black uppercase tracking-wider shrink-0">
-              <span className="relative flex h-2 w-2">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9.5px] mono font-black uppercase tracking-wider shrink-0">
+              <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
               </span>
               LIVE MACRO WIRE
             </span>
@@ -234,27 +271,27 @@ export function EconomicCalendarView() {
               type="button"
               onClick={() => loadData()}
               disabled={loading}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded border border-[var(--theme-card-border)] text-[10px] mono hover:bg-white/5 cursor-pointer disabled:opacity-40 transition-all shrink-0"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-[var(--theme-card-border)] text-[9.5px] mono hover:bg-white/5 cursor-pointer disabled:opacity-40 transition-all shrink-0"
               title="Refresh calendar"
             >
               <span>{loading ? '⏳' : '🔄'}</span>
               <span>{loading ? 'Updating...' : 'Sync'}</span>
             </button>
 
-            <div className="relative min-w-[200px] flex-1">
+            <div className="relative min-w-[180px] flex-1">
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Filter by indicator (CPI, GDP, Jobs)..."
-                className="w-full px-3 py-1.5 pl-8 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-xs mono text-[var(--theme-card-text)] placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500"
+                placeholder="Filter by indicator (CPI, GDP)..."
+                className="w-full px-2.5 py-1 pl-7 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[11.5px] mono text-[var(--theme-card-text)] placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500"
               />
-              <span className="absolute left-2.5 top-2 text-xs opacity-50">🔍</span>
+              <span className="absolute left-2 top-1.5 text-[11px] opacity-50">🔍</span>
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="absolute right-2.5 top-1.5 text-xs opacity-60 hover:opacity-100 cursor-pointer font-bold"
+                  className="absolute right-2 top-1 text-[11px] opacity-60 hover:opacity-100 cursor-pointer font-bold"
                 >
                   ×
                 </button>
@@ -264,164 +301,182 @@ export function EconomicCalendarView() {
         </div>
       </div>
 
-      {/* ── Key Metrics Summary Bar ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
-          <div className="text-[11px] mono font-bold uppercase opacity-60">Total Scheduled</div>
-          <div className="text-[18px] sm:text-[22px] font-black mono text-[var(--theme-card-text)] mt-0.5">
+      {/* ── Key Metrics Summary Bar (Compact) ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="p-2.5 sm:p-3 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
+          <div className="text-[10px] mono font-bold uppercase opacity-60">Total Scheduled</div>
+          <div className="text-[16px] sm:text-[19px] font-black mono text-[var(--theme-card-text)] mt-0.5">
             {filteredList.length}
           </div>
         </div>
-        <div className="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/5">
-          <div className="text-[11px] mono font-bold uppercase text-rose-400 opacity-90">High Impact</div>
-          <div className="text-[18px] sm:text-[22px] font-black mono text-rose-400 mt-0.5">
+        <div className="p-2.5 sm:p-3 rounded-xl border border-rose-500/30 bg-rose-500/5">
+          <div className="text-[10px] mono font-bold uppercase text-rose-400 opacity-90">High Impact</div>
+          <div className="text-[16px] sm:text-[19px] font-black mono text-rose-400 mt-0.5">
             {highImpactCount}
           </div>
         </div>
-        <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
-          <div className="text-[11px] mono font-bold uppercase text-emerald-400 opacity-90">Beats (Positive)</div>
-          <div className="text-[18px] sm:text-[22px] font-black mono text-emerald-400 mt-0.5">
+        <div className="p-2.5 sm:p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+          <div className="text-[10px] mono font-bold uppercase text-emerald-400 opacity-90">Beats (Positive)</div>
+          <div className="text-[16px] sm:text-[19px] font-black mono text-emerald-400 mt-0.5">
             {beatCount}
           </div>
         </div>
-        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5">
-          <div className="text-[11px] mono font-bold uppercase text-amber-400 opacity-90">Misses (Negative)</div>
-          <div className="text-[18px] sm:text-[22px] font-black mono text-amber-400 mt-0.5">
+        <div className="p-2.5 sm:p-3 rounded-xl border border-amber-500/30 bg-amber-500/5">
+          <div className="text-[10px] mono font-bold uppercase text-amber-400 opacity-90">Misses (Negative)</div>
+          <div className="text-[16px] sm:text-[19px] font-black mono text-amber-400 mt-0.5">
             {missCount}
           </div>
         </div>
       </div>
 
-      {/* ── Economic Events Table & Cards ── */}
-      <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md overflow-hidden">
+      {/* ── Economic Events High-Density Table ── */}
+      <div className="rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center mono text-sm flex items-center justify-center gap-2.5 opacity-60">
+          <div className="p-10 text-center mono text-sm flex items-center justify-center gap-2.5 opacity-60">
             <span className="w-3.5 h-3.5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
             <span>Synchronizing macroeconomic telemetry...</span>
           </div>
         ) : filteredList.length === 0 ? (
-          <div className="p-12 text-center mono text-sm opacity-60">
+          <div className="p-10 text-center mono text-sm opacity-60">
             No economic events match the selected filters.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse table-fixed">
+              <colgroup>
+                <col className="w-[95px] sm:w-[105px]" />
+                <col className="w-[66px] sm:w-[74px]" />
+                <col className="w-[66px] sm:w-[74px]" />
+                <col className="w-auto" />
+                <col className="w-[95px] sm:w-[110px]" />
+                <col className="w-[85px] sm:w-[95px]" />
+                <col className="w-[85px] sm:w-[95px]" />
+                <col className="w-[85px] sm:w-[95px]" />
+              </colgroup>
               <thead>
-                <tr className="border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] mono text-[11px] font-black uppercase tracking-wider text-[var(--theme-card-text-muted)]">
-                  <th className="py-3 px-4">Time (Local)</th>
-                  <th className="py-3 px-3">Region</th>
-                  <th className="py-3 px-3">Impact</th>
-                  <th className="py-3 px-4">Economic Event</th>
-                  <th className="py-3 px-3 text-right">Actual</th>
-                  <th className="py-3 px-3 text-right">Forecast</th>
-                  <th className="py-3 px-3 text-right">Previous</th>
-                  <th className="py-3 px-4 text-center">Outcome</th>
+                <tr className="border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] mono text-[10px] font-black uppercase tracking-wider text-[var(--theme-card-text-muted)]">
+                  <th className="py-2.5 px-3">Time (Local)</th>
+                  <th className="py-2.5 px-2.5">Region</th>
+                  <th className="py-2.5 px-2.5">Impact</th>
+                  <th className="py-2.5 px-3">Economic Event</th>
+                  <th className="py-2.5 px-2.5 text-right">Actual</th>
+                  <th className="py-2.5 px-2.5 text-right">Forecast</th>
+                  <th className="py-2.5 px-2.5 text-right">Previous</th>
+                  <th className="py-2.5 px-3 text-center">Outcome</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--theme-card-border)]/50 text-[13px]">
+              <tbody className="divide-y divide-[var(--theme-card-border)]/40 text-[12.5px]">
                 {filteredList.map((item) => {
                   const isExpanded = expandedId === item.id;
                   const isPast = item.actual !== null;
+                  const { title, subtitle, periodTag } = parseEventTitle(item.event, item.period);
 
                   return (
                     <React.Fragment key={item.id}>
                       <tr
                         onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                        className={`hover:bg-white/[0.03] transition-colors cursor-pointer group ${
-                          isExpanded ? 'bg-white/[0.04]' : ''
+                        className={`hover:bg-emerald-500/[0.04] transition-colors cursor-pointer group ${
+                          isExpanded ? 'bg-emerald-500/[0.06]' : ''
                         }`}
                       >
                         {/* Time */}
-                        <td className="py-3.5 px-4 whitespace-nowrap mono font-bold">
-                          <div className="text-[13px]">{item.timeStr}</div>
-                          <div className="text-[10px] opacity-60 font-normal">{item.dateStr}</div>
+                        <td className="py-2 px-3 whitespace-nowrap mono align-middle">
+                          <div className="font-bold text-[12px] leading-tight">{item.timeStr}</div>
+                          <div className="text-[9.5px] opacity-60 font-normal">{item.dateStr}</div>
                         </td>
 
                         {/* Region */}
-                        <td className="py-3.5 px-3 whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[11px] mono font-bold">
+                        <td className="py-2 px-2.5 whitespace-nowrap align-middle">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[10.5px] mono font-bold">
                             <span>{item.flag}</span>
                             <span>{item.countryCode}</span>
                           </span>
                         </td>
 
                         {/* Impact */}
-                        <td className="py-3.5 px-3 whitespace-nowrap">
+                        <td className="py-2 px-2.5 whitespace-nowrap align-middle">
                           {item.impact === 'HIGH' ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-500 font-mono">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-rose-500 font-mono">
                               <span>🔴</span>
                               <span>HIGH</span>
                             </span>
                           ) : item.impact === 'MEDIUM' ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-500 font-mono">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-500 font-mono">
                               <span>🟡</span>
                               <span>MED</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 font-mono">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 font-mono">
                               <span>🟢</span>
                               <span>LOW</span>
                             </span>
                           )}
                         </td>
 
-                        {/* Event Name */}
-                        <td className="py-3.5 px-4">
-                          <div className="font-bold text-[13.5px] group-hover:text-emerald-400 transition-colors">
-                            {item.event}
+                        {/* Event Name (absorbs remaining width, never awkwardly wrapped) */}
+                        <td className="py-2 px-3 align-middle">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-[12.5px] text-[var(--theme-card-text)] group-hover:text-emerald-400 transition-colors leading-snug">
+                              {title}
+                            </span>
+                            {periodTag && (
+                              <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.2 rounded bg-black/20 border border-[var(--theme-card-border)] opacity-75 shrink-0">
+                                {periodTag}
+                              </span>
+                            )}
                           </div>
-                          {item.period && (
-                            <div className="text-[10.5px] mono opacity-60 mt-0.5">
-                              Period: {item.period}
+                          {subtitle && (
+                            <div className="text-[10px] font-mono text-emerald-400/80 leading-tight mt-0.5 truncate max-w-xl">
+                              {subtitle}
                             </div>
                           )}
                         </td>
 
                         {/* Actual */}
-                        <td className="py-3.5 px-3 text-right mono font-black whitespace-nowrap">
+                        <td className="py-2 px-2.5 text-right mono font-black whitespace-nowrap align-middle text-[12px]">
                           {item.actual ? (
                             <span
                               className={`px-1.5 py-0.5 rounded ${
                                 item.isBeat === true
-                                  ? 'text-emerald-400 bg-emerald-500/10'
+                                  ? 'text-emerald-400 bg-emerald-500/15'
                                   : item.isBeat === false
-                                  ? 'text-rose-400 bg-rose-500/10'
+                                  ? 'text-rose-400 bg-rose-500/15'
                                   : 'text-[var(--theme-card-text)]'
                               }`}
                             >
                               {item.actual}
                             </span>
                           ) : (
-                            <span className="opacity-40 font-normal">Pending</span>
+                            <span className="opacity-40 font-normal text-[11px]">Pending</span>
                           )}
                         </td>
 
                         {/* Forecast */}
-                        <td className="py-3.5 px-3 text-right mono font-bold opacity-80 whitespace-nowrap">
+                        <td className="py-2 px-2.5 text-right mono font-semibold opacity-75 whitespace-nowrap align-middle text-[11.5px]">
                           {item.forecast || '--'}
                         </td>
 
                         {/* Previous */}
-                        <td className="py-3.5 px-3 text-right mono opacity-60 whitespace-nowrap">
+                        <td className="py-2 px-2.5 text-right mono opacity-55 whitespace-nowrap align-middle text-[11.5px]">
                           {item.previous || '--'}
                         </td>
 
                         {/* Outcome Pill */}
-                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        <td className="py-2 px-3 text-center whitespace-nowrap align-middle">
                           {item.isBeat === true ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10.5px] font-black mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            <span className="px-2 py-0.5 rounded-full text-[9.5px] font-black mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                               ▲ BEAT
                             </span>
                           ) : item.isBeat === false ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10.5px] font-black mono bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                            <span className="px-2 py-0.5 rounded-full text-[9.5px] font-black mono bg-rose-500/15 text-rose-400 border border-rose-500/30">
                               ▼ MISS
                             </span>
                           ) : isPast ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold mono bg-slate-500/15 text-slate-300">
+                            <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold mono bg-slate-500/15 text-slate-300">
                               IN LINE
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold mono bg-white/5 text-slate-400 border border-white/10">
+                            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold mono bg-white/5 text-slate-400 border border-white/10">
                               UPCOMING
                             </span>
                           )}
@@ -430,15 +485,15 @@ export function EconomicCalendarView() {
 
                       {/* Expandable Context Drawer */}
                       {isExpanded && (
-                        <tr className="bg-[var(--theme-card-surface)]/70">
-                          <td colSpan={8} className="py-3 px-6 text-xs text-[var(--theme-card-text)]">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                              <p className="leading-relaxed opacity-85 max-w-2xl">
+                        <tr className="bg-[var(--theme-card-surface)]/80">
+                          <td colSpan={8} className="py-2.5 px-4 text-xs text-[var(--theme-card-text)]">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                              <p className="leading-relaxed opacity-85 max-w-2xl font-sans text-[12px]">
                                 {item.description || 'Monitored by institutional macro trading desks for interest rate deviations.'}
                               </p>
-                              <div className="flex items-center gap-2 shrink-0 text-[11px] mono">
-                                <span className="opacity-60">Segment:</span>
-                                <span className="font-bold uppercase">{item.country}</span>
+                              <div className="flex items-center gap-2 shrink-0 text-[10.5px] mono">
+                                <span className="opacity-60">Region:</span>
+                                <span className="font-bold uppercase text-emerald-400">{item.country}</span>
                                 <span className="opacity-30">•</span>
                                 <span className="opacity-60">Status:</span>
                                 <span className="font-bold">{isPast ? 'Reported' : 'Scheduled'}</span>
