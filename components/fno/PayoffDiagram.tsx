@@ -48,6 +48,14 @@ export function PayoffDiagram({
   const [isSpotMode, setIsSpotMode] = useState<boolean>(true);
   const [spotShockPct, setSpotShockPct] = useState<number>(0);
 
+  const currentPnl = useMemo(() => {
+    return activeLegs.filter((l) => !l.disabled).reduce((sum, leg) => {
+      const cur = leg.currentPrice ?? leg.entryPrice;
+      const mult = leg.action === 'BUY' ? 1 : -1;
+      return sum + (cur - leg.entryPrice) * leg.lots * leg.lotSize * mult;
+    }, 0);
+  }, [activeLegs]);
+
   // SVG Chart Dimensions
   const width = 840;
   const height = 380;
@@ -588,8 +596,8 @@ export function PayoffDiagram({
         </div>
         <div>
           <span>Total PNL: </span>
-          <strong className="text-[#0E9F6E]">
-            {payoff && payoff.netDebitCredit >= 0 ? `${curr} +${payoff.netDebitCredit.toLocaleString(loc)}` : `${curr} +91`}
+          <strong className={currentPnl >= 0 ? 'text-[#0E9F6E]' : 'text-[#E02424]'}>
+            {currentPnl >= 0 ? `${curr} +${currentPnl.toLocaleString(loc)}` : `-${curr} ${Math.abs(currentPnl).toLocaleString(loc)}`}
           </strong>
         </div>
       </div>

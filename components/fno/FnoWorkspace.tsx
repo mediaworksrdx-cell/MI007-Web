@@ -1,7 +1,7 @@
 // ─── F&O Intelligence Hub Master Workspace ──────────────────────────────────
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 import { MarketToggle } from '@/components/market/MarketToggle';
@@ -112,17 +112,39 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
     return getFuturesTermStructure(selectedInstrument.symbol, liveSpot);
   }, [selectedInstrument.symbol, liveSpot]);
 
-  // Active Strategy Legs (seeded with initial preset)
+  // Active Strategy Legs (seeded with initial preset aligned to live spot)
   const [activeLegs, setActiveLegs] = useState<StrategyLeg[]>(() => {
-    const defaultPreset = INSTITUTIONAL_STRATEGY_PRESETS[0]; // Bull Call Spread
+    const defaultPreset = INSTITUTIONAL_STRATEGY_PRESETS[0]; // Bull Call Spread / Long Call
+    const initialPrice = liveSpot && liveSpot > 0 ? liveSpot : selectedInstrument.spotPrice;
     return buildLegsFromPreset(
       defaultPreset,
-      selectedInstrument.spotPrice,
+      initialPrice,
       selectedInstrument.strikeStep,
       selectedInstrument.currentExpiry,
       selectedInstrument.lotSize
     );
   });
+
+  // Automatically align initial default leg when live spot feed connects
+  const alignedSymbolRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (liveSpot && liveSpot > 0 && activeLegs.length === 1) {
+      const legStrike = activeLegs[0]?.strike ?? 0;
+      const driftPct = Math.abs(legStrike - liveSpot) / liveSpot;
+      if (driftPct > 0.04 && alignedSymbolRef.current !== `${selectedInstrument.symbol}-${Math.round(liveSpot)}`) {
+        alignedSymbolRef.current = `${selectedInstrument.symbol}-${Math.round(liveSpot)}`;
+        const defaultPreset = INSTITUTIONAL_STRATEGY_PRESETS[0];
+        const alignedLegs = buildLegsFromPreset(
+          defaultPreset,
+          liveSpot,
+          selectedInstrument.strikeStep,
+          selectedExpiry,
+          selectedInstrument.lotSize
+        );
+        setActiveLegs(alignedLegs);
+      }
+    }
+  }, [liveSpot, selectedInstrument.symbol, selectedInstrument.strikeStep, selectedExpiry, selectedInstrument.lotSize, activeLegs]);
 
   // Switch instrument
   const handleSelectInstrument = (inst: FnoInstrument) => {
@@ -132,11 +154,12 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
       setMarket(inst.market);
     }
 
-    // Rebuild default preset for new instrument
+    alignedSymbolRef.current = `${inst.symbol}-${Math.round(inst.spotPrice)}`;
+    const currentLive = getSymbolPrice(inst.symbol)?.price || inst.spotPrice;
     const defaultPreset = INSTITUTIONAL_STRATEGY_PRESETS[0];
     const newLegs = buildLegsFromPreset(
       defaultPreset,
-      inst.spotPrice,
+      currentLive,
       inst.strikeStep,
       inst.currentExpiry,
       inst.lotSize

@@ -27,6 +27,29 @@ export function StrategyPositionsList({
   const curr = instrument.market === 'USA' ? '$' : instrument.market === 'UAE' ? 'AED ' : '₹';
   const loc = instrument.market === 'INDIA' ? 'en-IN' : 'en-US';
 
+  const activeLegs = legs.filter((l) => !l.disabled);
+
+  // Live real unrealized PnL from legs' current prices vs entry prices
+  const currentPnl = activeLegs.reduce((sum, leg) => {
+    const cur = leg.currentPrice ?? leg.entryPrice;
+    const mult = leg.action === 'BUY' ? 1 : -1;
+    return sum + (cur - leg.entryPrice) * leg.lots * leg.lotSize * mult;
+  }, 0);
+
+  const capitalBase = payoff.capitalRequired > 0
+    ? payoff.capitalRequired
+    : (payoff.marginRequired > 0 ? payoff.marginRequired : Math.max(1, Math.abs(payoff.netDebitCredit)));
+
+  const pnlPct = capitalBase > 0 ? (currentPnl / capitalBase) * 100 : 0;
+
+  const maxLossPct = typeof payoff.maxLoss === 'number' && capitalBase > 0
+    ? (Math.abs(payoff.maxLoss) / capitalBase) * 100
+    : 100;
+
+  const requiredCapital = payoff.marginRequired > 0
+    ? payoff.marginRequired
+    : (payoff.capitalRequired > 0 ? payoff.capitalRequired : Math.abs(payoff.netDebitCredit));
+
   return (
     <div className="space-y-4">
       {/* ── 1. Strategy Positions Container ── */}
@@ -195,7 +218,7 @@ export function StrategyPositionsList({
             <span className="font-bold text-slate-900">
               {typeof payoff.maxProfit === 'number'
                 ? `${curr}${payoff.maxProfit.toLocaleString(loc)}`
-                : `${curr}Undefined`}
+                : 'Unlimited (∞)'}
             </span>
           </div>
 
@@ -204,8 +227,8 @@ export function StrategyPositionsList({
             <span className="text-slate-700">Max. Loss</span>
             <span className="font-bold text-slate-900">
               {typeof payoff.maxLoss === 'number'
-                ? `-${curr}${Math.abs(payoff.maxLoss).toLocaleString(loc)} (-44.51%)`
-                : `${curr}Undefined`}
+                ? `-${curr}${Math.abs(payoff.maxLoss).toLocaleString(loc)} (-${maxLossPct.toFixed(1)}%)`
+                : 'Unlimited Risk'}
             </span>
           </div>
 
@@ -213,7 +236,7 @@ export function StrategyPositionsList({
           <div className="flex items-center justify-between py-1 border-b border-slate-100">
             <span className="text-slate-700">Max. RR Ratio</span>
             <span className="font-bold text-slate-900">
-              {payoff.riskRewardRatio.includes('Unlimited') ? 'NA' : payoff.riskRewardRatio}
+              {payoff.riskRewardRatio.includes('Unlimited') ? '1 : Unlimited' : payoff.riskRewardRatio}
             </span>
           </div>
 
@@ -221,7 +244,7 @@ export function StrategyPositionsList({
           <div className="flex items-center justify-between py-1 border-b border-slate-100">
             <span className="text-slate-700">Breakevens</span>
             <span className="font-bold text-slate-900">
-              {payoff.breakevens.length > 0 ? payoff.breakevens.map((b) => `${curr}${b}`).join(', ') : 'None'}
+              {payoff.breakevens.length > 0 ? payoff.breakevens.map((b) => `${curr}${b.toLocaleString(loc, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}`).join(', ') : 'None'}
             </span>
           </div>
 
@@ -230,10 +253,10 @@ export function StrategyPositionsList({
             <span className="text-slate-700">Total PNL</span>
             <span
               className={`font-bold ${
-                payoff.netDebitCredit >= 0 ? 'text-[#0E9F6E]' : 'text-[#E02424]'
+                currentPnl >= 0 ? 'text-[#0E9F6E]' : 'text-[#E02424]'
               }`}
             >
-              {curr}{payoff.netDebitCredit >= 0 ? `+${payoff.netDebitCredit.toLocaleString(loc)}` : payoff.netDebitCredit.toLocaleString(loc)} (0.31%)
+              {currentPnl >= 0 ? `+${curr}${currentPnl.toLocaleString(loc)}` : `-${curr}${Math.abs(currentPnl).toLocaleString(loc)}`} ({currentPnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%)
             </span>
           </div>
 
@@ -251,7 +274,7 @@ export function StrategyPositionsList({
           <div className="flex items-center justify-between py-1">
             <span className="text-slate-700">Estimated Margin/Premium</span>
             <span className="font-bold text-slate-900">
-              {curr}+{(payoff.marginRequired || 29439).toLocaleString(loc)}
+              {curr}{requiredCapital.toLocaleString(loc)}
             </span>
           </div>
         </div>
