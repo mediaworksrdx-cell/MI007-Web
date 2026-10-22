@@ -7,6 +7,7 @@ interface DrawingContextMenuProps {
   isOpen: boolean;
   position: { x: number; y: number };
   drawing: DrawingItem;
+  isAllDrawingsLocked?: boolean;
   onClose: () => void;
   onOpenSettings: () => void;
   onClone: () => void;
@@ -20,6 +21,7 @@ export function DrawingContextMenu({
   isOpen,
   position,
   drawing,
+  isAllDrawingsLocked = false,
   onClose,
   onOpenSettings,
   onClone,
@@ -28,6 +30,7 @@ export function DrawingContextMenu({
   onDelete,
   onOpenObjectTree,
 }: DrawingContextMenuProps) {
+  const isLocked = Boolean(drawing.locked || isAllDrawingsLocked);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close on click outside or Escape
@@ -82,11 +85,17 @@ export function DrawingContextMenu({
       {/* Settings Action */}
       <button
         type="button"
+        disabled={isLocked}
         onClick={() => {
+          if (isLocked) return;
           onOpenSettings();
           onClose();
         }}
-        className="w-full px-2.5 py-1 flex items-center gap-2 text-left hover:bg-blue-50 dark:hover:bg-blue-600/15 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer font-medium"
+        className={`w-full px-2.5 py-1 flex items-center gap-2 text-left transition-colors font-medium ${
+          isLocked
+            ? 'opacity-40 cursor-not-allowed'
+            : 'hover:bg-blue-50 dark:hover:bg-blue-600/15 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer'
+        }`}
       >
         <svg className="w-3 h-3 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="12" r="3" />
@@ -152,7 +161,7 @@ export function DrawingContextMenu({
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
           <circle cx="12" cy="12" r="3" />
         </svg>
-        <span>Hide</span>
+        <span>{drawing.hidden ? 'Show' : 'Hide'}</span>
       </button>
 
       {/* Object Tree */}
@@ -183,11 +192,18 @@ export function DrawingContextMenu({
       {/* Remove / Delete */}
       <button
         type="button"
+        disabled={isLocked}
         onClick={() => {
+          if (isLocked) return;
           onDelete();
           onClose();
         }}
-        className="w-full px-2.5 py-1 flex items-center gap-2 text-left hover:bg-rose-500/10 text-rose-500 hover:text-rose-600 transition-colors cursor-pointer font-semibold"
+        title={isLocked ? 'Drawing is locked — unlock to remove' : 'Remove drawing'}
+        className={`w-full px-2.5 py-1 flex items-center gap-2 text-left transition-colors font-semibold ${
+          isLocked
+            ? 'text-slate-400 opacity-40 cursor-not-allowed'
+            : 'hover:bg-rose-500/10 text-rose-500 hover:text-rose-600 cursor-pointer'
+        }`}
       >
         <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="3 6 5 6 21 6" />

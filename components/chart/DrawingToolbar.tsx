@@ -382,21 +382,7 @@ export function DrawingToolbar({
 
       <div className="w-5 h-[1px] bg-slate-200 dark:bg-slate-800 my-1.5" />
 
-      {/* ── 3. Quick Measure Ruler (TradingView Measure Tool) ── */}
-      <button
-        type="button"
-        onClick={() => onDrawingToolChange(activeDrawingTool === 'MEASURE' ? 'NONE' : 'MEASURE')}
-        title="Measure Tool (Distance, % and Bars)"
-        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 text-sm font-mono ${
-          activeDrawingTool === 'MEASURE'
-            ? 'bg-[#089981] text-white font-bold shadow-md'
-            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-        }`}
-      >
-        📏
-      </button>
-
-      {/* ── 4. Smart Magnet Snap Mode ── */}
+      {/* ── 3. Smart Magnet Snap Mode ── */}
       <button
         type="button"
         onClick={() => onToggleMagnet?.()}

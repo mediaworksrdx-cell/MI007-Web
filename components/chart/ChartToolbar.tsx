@@ -253,9 +253,31 @@ export function ChartToolbar({
           </button>
 
           {openMenu === 'INDICATORS' && (
-            <div className="absolute top-full left-0 mt-1 w-80 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl py-2 z-[100] max-h-[480px] flex flex-col animate-in fade-in duration-75">
+            <div
+              className="absolute top-full left-0 mt-1 w-80 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[480px] flex flex-col animate-in fade-in duration-75 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header with Close (×) Icon */}
+              <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-black text-[11px] px-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">ƒx</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100">Indicators & Strategies</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenMenu(null);
+                  }}
+                  title="Close Indicators menu"
+                  className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer font-bold text-sm"
+                >
+                  ✕
+                </button>
+              </div>
+
               {/* Search Bar */}
-              <div className="px-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
                 <div className="relative">
                   <input
                     type="text"
@@ -268,7 +290,11 @@ export function ChartToolbar({
                   {indicatorSearch && (
                     <button
                       type="button"
-                      onClick={() => setIndicatorSearch('')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIndicatorSearch('');
+                      }}
+                      title="Clear search"
                       className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
                     >
                       ×
@@ -285,31 +311,37 @@ export function ChartToolbar({
                     <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[9px] font-bold">{indicators.length}</span>
                   </div>
                   <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
-                    {indicators.map((cfg) => {
+                    {indicators.map((cfg, idx) => {
                       const id = cfg.id || cfg.type;
                       return (
                         <div
-                          key={id}
+                          key={`${id}-${idx}`}
                           className="flex items-center justify-between px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs"
                         >
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cfg.color }} />
-                            <span className={`font-mono text-xs truncate ${cfg.enabled ? 'font-bold text-slate-800 dark:text-slate-100' : 'text-slate-400 line-through'}`}>
+                            <span className={`font-mono text-xs truncate ${cfg.enabled !== false ? 'font-bold text-slate-800 dark:text-slate-100' : 'text-slate-400 line-through'}`}>
                               {INDICATOR_DEFAULTS[cfg.type]?.label || cfg.type} ({cfg.period})
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                             <button
                               type="button"
-                              onClick={() => onToggleIndicatorVisibility?.(id)}
-                              title={cfg.enabled ? "Hide Indicator" : "Show Indicator"}
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleIndicatorVisibility?.(id);
+                              }}
+                              title={cfg.enabled !== false ? "Hide Indicator" : "Show Indicator"}
                               className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] cursor-pointer"
                             >
-                              {cfg.enabled ? '👁' : '👁‍🗨'}
+                              {cfg.enabled !== false ? '👁' : '👁‍🗨'}
                             </button>
                             <button
                               type="button"
-                              onClick={() => {
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 onOpenIndicatorSettings?.(id);
                                 setOpenMenu(null);
                               }}
@@ -320,11 +352,15 @@ export function ChartToolbar({
                             </button>
                             <button
                               type="button"
-                              onClick={() => onRemoveIndicator?.(id)}
-                              title="Remove"
-                              className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-xs cursor-pointer"
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRemoveIndicator?.(id);
+                              }}
+                              title="Remove indicator from chart"
+                              className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/15 font-bold text-xs cursor-pointer"
                             >
-                              ×
+                              ✕
                             </button>
                           </div>
                         </div>

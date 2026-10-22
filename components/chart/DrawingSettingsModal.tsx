@@ -55,10 +55,77 @@ export function DrawingSettingsModal({
   const [fibLevels, setFibLevels] = useState<FibLevelItem[]>(DEFAULT_FIB_LEVELS);
   
   // Coordinates state (exact price & index for each point)
-  const [pointCoords, setPointCoords] = useState<{ price: string; index: string }[]>([]);
+  const [pointCoords, setPointCoords] = useState<{ price: string; index: string; priceEdited?: boolean; indexEdited?: boolean }[]>([]);
 
-  // Track initialization to prevent live candles streaming from wiping out user's edits
+  // Track modal open session so live candles streaming doesn't wipe out user's edits while modal is open
+  const wasOpenRef = useRef(false);
   const lastInitIdRef = useRef<string | null>(null);
+
+  // Helper: Find the candle index that matches an entered price (exact OHLC match or containing [low, high] range)
+  const findMatchingCandleIndex = (targetPrice: number, currentIdx: number, barList?: Candle[]): number => {
+    if (!barList || barList.length === 0 || !Number.isFinite(targetPrice)) return currentIdx;
+    const clampedCurrent = Math.min(Math.max(0, currentIdx), barList.length - 1);
+    const tol = Math.max(0.055, Math.abs(targetPrice) * 0.00015);
+
+    const matchesOHLC = (c: Candle) =>
+      Math.abs(c.open - targetPrice) <= tol ||
+      Math.abs(c.high - targetPrice) <= tol ||
+      Math.abs(c.low - targetPrice) <= tol ||
+      Math.abs(c.close - targetPrice) <= tol;
+
+    // 1. If the current bar already matches one of its OHLC values, keep it
+    if (currentIdx >= 0 && currentIdx < barList.length && matchesOHLC(barList[currentIdx])) {
+      return currentIdx;
+    }
+
+    // 2. Search for the closest candle whose Open, High, Low, or Close matches the entered price
+    let bestOhlcIdx = -1;
+    let bestOhlcDist = Infinity;
+    for (let i = 0; i < barList.length; i++) {
+      const c = barList[i];
+      const minDiff = Math.min(
+        Math.abs(c.open - targetPrice),
+        Math.abs(c.high - targetPrice),
+        Math.abs(c.low - targetPrice),
+        Math.abs(c.close - targetPrice)
+      );
+      if (minDiff <= tol) {
+        const barDist = Math.abs(i - clampedCurrent);
+        // Score combines price precision and proximity to the drawn anchor bar
+        const score = barDist + (minDiff / tol) * 2;
+        if (score < bestOhlcDist) {
+          bestOhlcDist = score;
+          bestOhlcIdx = i;
+        }
+      }
+    }
+    if (bestOhlcIdx !== -1) {
+      return bestOhlcIdx;
+    }
+
+    // 3. If currentIdx is out of bounds (e.g. in right-hand buffer) or targetPrice is outside current candle's [low, high],
+    // find the nearest candle whose [low, high] wicks contain targetPrice
+    const curCandle = currentIdx >= 0 && currentIdx < barList.length ? barList[currentIdx] : null;
+    if (!curCandle || targetPrice < curCandle.low - tol || targetPrice > curCandle.high + tol) {
+      let bestRangeIdx = -1;
+      let bestRangeDist = Infinity;
+      for (let i = 0; i < barList.length; i++) {
+        const c = barList[i];
+        if (targetPrice >= c.low - tol && targetPrice <= c.high + tol) {
+          const dist = Math.abs(i - clampedCurrent);
+          if (dist < bestRangeDist) {
+            bestRangeDist = dist;
+            bestRangeIdx = i;
+          }
+        }
+      }
+      if (bestRangeIdx !== -1) {
+        return bestRangeIdx;
+      }
+    }
+
+    return currentIdx >= 0 && currentIdx < barList.length ? currentIdx : clampedCurrent;
+  };
 
   // Timeframe visibility
   const [visSeconds, setVisSeconds] = useState(true);
@@ -73,12 +140,14 @@ export function DrawingSettingsModal({
 
   useEffect(() => {
     if (!isOpen || !drawing) {
+      wasOpenRef.current = false;
       lastInitIdRef.current = null;
       return;
     }
 
-    // Only initialize form fields and coordinates once per modal session / drawing ID change
-    if (lastInitIdRef.current === drawing.id) return;
+    // Initialize every time the modal transitions from closed -> open, or when switching drawings
+    if (wasOpenRef.current && lastInitIdRef.current === drawing.id) return;
+    wasOpenRef.current = true;
     lastInitIdRef.current = drawing.id;
 
     setColor(drawing.color || '#2563EB');
@@ -100,15 +169,17 @@ export function DrawingSettingsModal({
             ? resolveDrawingPointIndex(p, candles)
             : p.index;
           return {
-            price: p.price != null ? String(p.price) : '0',
+            price: p.price != null ? String(Number(p.price.toFixed(2))) : '0',
             index: String(resolvedIdx ?? 0),
+            priceEdited: false,
+            indexEdited: false,
           };
         })
       );
     } else {
       setPointCoords([]);
     }
-  }, [isOpen, drawing]);
+  }, [isOpen, drawing, candles]);
 
   if (!isOpen || !drawing || !mounted) return null;
 
@@ -124,7 +195,18 @@ export function DrawingSettingsModal({
     setPointCoords((prev) => {
       const next = [...prev];
       if (next[index]) {
-        next[index] = { ...next[index], price: val };
+        const cleanVal = String(val).replace(/,/g, '').trim();
+        const parsedPrice = parseFloat(cleanVal);
+        let nextIndexStr = next[index].index;
+        if (!next[index].indexEdited && !isNaN(parsedPrice) && candles && candles.length > 0) {
+          const origPt = drawing?.points?.[index];
+          const baseIdx = origPt
+            ? resolveDrawingPointIndex(origPt, candles)
+            : parseInt(next[index].index, 10) || 0;
+          const matchedIdx = findMatchingCandleIndex(parsedPrice, baseIdx, candles);
+          nextIndexStr = String(matchedIdx);
+        }
+        next[index] = { ...next[index], price: val, index: nextIndexStr, priceEdited: true };
       }
       return next;
     });
@@ -134,7 +216,7 @@ export function DrawingSettingsModal({
     setPointCoords((prev) => {
       const next = [...prev];
       if (next[index]) {
-        next[index] = { ...next[index], index: val };
+        next[index] = { ...next[index], index: val, indexEdited: true };
       }
       return next;
     });
@@ -169,34 +251,58 @@ export function DrawingSettingsModal({
       const parsedPrice = parseFloat(cleanPriceStr);
       const parsedIndex = parseInt(coord.index, 10);
       const finalPrice = !isNaN(parsedPrice) ? parsedPrice : p.price;
-      const finalIndex = !isNaN(parsedIndex) ? parsedIndex : p.index;
+      const resolvedOrigIdx = (candles && candles.length > 0)
+        ? resolveDrawingPointIndex(p, candles)
+        : p.index;
+      let finalIndex = !isNaN(parsedIndex) ? parsedIndex : resolvedOrigIdx;
+
+      // If user edited Price without manually overriding Bar #, ensure finalIndex is synced with the matching candle
+      if (coord.priceEdited && !coord.indexEdited && candles && candles.length > 0) {
+        finalIndex = findMatchingCandleIndex(finalPrice, resolvedOrigIdx, candles);
+      }
+
+      // If finalPrice matches one of the target candle's OHLC values within rounding tolerance (0.015),
+      // snap to the exact unrounded OHLC value of that candle for 100% sub-pixel alignment
+      let alignedPrice = finalPrice;
+      if (candles && finalIndex >= 0 && finalIndex < candles.length) {
+        const targetCandle = candles[finalIndex];
+        const ohlcCandidates = [targetCandle.open, targetCandle.high, targetCandle.low, targetCandle.close];
+        let minDiff = 0.015;
+        for (const val of ohlcCandidates) {
+          const diff = Math.abs(val - finalPrice);
+          if (diff <= minDiff) {
+            minDiff = diff;
+            alignedPrice = val;
+          }
+        }
+      }
 
       // Crucial: Calculate exact timestamp for finalIndex using candles
       // so resolveDrawingPointIndex will never overwrite or revert the user's coordinate!
       let newTime = p.time;
-      if (!isNaN(parsedIndex) && candles && candles.length > 0) {
-        if (parsedIndex >= 0 && parsedIndex < candles.length) {
-          newTime = candles[parsedIndex].openTime;
-        } else if (parsedIndex >= candles.length) {
+      if (Number.isFinite(finalIndex) && candles && candles.length > 0) {
+        if (finalIndex >= 0 && finalIndex < candles.length) {
+          newTime = candles[finalIndex].openTime;
+        } else if (finalIndex >= candles.length) {
           const lastBar = candles[candles.length - 1];
           const prevBar = candles[candles.length - 2];
           const barDuration = (prevBar && lastBar.openTime > prevBar.openTime)
             ? (lastBar.openTime - prevBar.openTime)
             : 86_400_000;
-          newTime = lastBar.openTime + (parsedIndex - (candles.length - 1)) * barDuration;
+          newTime = lastBar.openTime + (finalIndex - (candles.length - 1)) * barDuration;
         } else {
           const firstBar = candles[0];
           const secondBar = candles[1];
           const barDuration = (secondBar && secondBar.openTime > firstBar.openTime)
             ? (secondBar.openTime - firstBar.openTime)
             : 86_400_000;
-          newTime = firstBar.openTime + parsedIndex * barDuration;
+          newTime = firstBar.openTime + finalIndex * barDuration;
         }
       }
 
       return {
         ...p,
-        price: finalPrice,
+        price: alignedPrice,
         index: finalIndex,
         time: newTime,
       };
@@ -239,7 +345,7 @@ export function DrawingSettingsModal({
     setExtendRight(false);
     setText('');
     setFibLevels(DEFAULT_FIB_LEVELS);
-    setRiskRewardRatio(2.0);
+    setRiskRewardRatio('2.0');
   };
 
   return (
@@ -385,9 +491,39 @@ export function DrawingSettingsModal({
                     </div>
 
                     {barTimeLabel && (
-                      <div className="text-[10.5px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5 pt-0.5">
-                        <span className="opacity-70">Timestamp:</span>
-                        <span className="font-semibold text-blue-600 dark:text-blue-400">{barTimeLabel}</span>
+                      <div className="text-[10.5px] font-mono text-slate-500 dark:text-slate-400 flex items-center justify-between gap-1.5 pt-0.5 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="opacity-70">Candle:</span>
+                          <span className="font-semibold text-blue-600 dark:text-blue-400">{barTimeLabel}</span>
+                        </div>
+                        {candles && bIdx >= 0 && bIdx < candles.length && (
+                          <div className="flex items-center gap-1">
+                            {([
+                              { k: 'O', v: candles[bIdx].open },
+                              { k: 'H', v: candles[bIdx].high },
+                              { k: 'L', v: candles[bIdx].low },
+                              { k: 'C', v: candles[bIdx].close },
+                            ] as const).map((item) => (
+                              <button
+                                key={item.k}
+                                type="button"
+                                onClick={() => {
+                                  setPointCoords((prev) => {
+                                    const next = [...prev];
+                                    if (next[idx]) {
+                                      next[idx] = { ...next[idx], price: String(Number(item.v.toFixed(2))), priceEdited: true };
+                                    }
+                                    return next;
+                                  });
+                                }}
+                                className="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-[9.5px] font-bold transition-colors cursor-pointer"
+                                title={`Snap Price ${idx + 1} to Candle ${item.k}: ${item.v.toFixed(2)}`}
+                              >
+                                {item.k}: {item.v.toFixed(2)}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

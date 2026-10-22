@@ -164,6 +164,29 @@ export function ChartContainer({
   const [isAllDrawingsLocked, setIsAllDrawingsLocked] = useState(false);
   const [isAllDrawingsHidden, setIsAllDrawingsHidden] = useState(false);
   const chartWrapperRef = useRef<HTMLDivElement>(null);
+  const drawingHistoryRef = useRef<DrawingItem[][]>([]);
+  const lastUsedDrawingToolRef = useRef<DrawingToolType>('TRENDLINE');
+
+  const handleSelectDrawingTool = useCallback((tool: DrawingToolType) => {
+    if (tool !== 'NONE') {
+      lastUsedDrawingToolRef.current = tool;
+    }
+    setActiveDrawingTool(tool);
+  }, []);
+
+  const handleToggleDrawingModeLock = useCallback(() => {
+    setIsDrawingModeLocked(prev => {
+      const next = !prev;
+      if (!next) {
+        // When Stay in Drawing Mode is turned OFF, immediately exit active drawing tool
+        setActiveDrawingTool('NONE');
+      } else {
+        // When Stay in Drawing Mode is turned ON, activate the current or last used drawing tool
+        setActiveDrawingTool(curr => (curr === 'NONE' ? lastUsedDrawingToolRef.current : curr));
+      }
+      return next;
+    });
+  }, []);
 
   // Default clean view: Volume on, but all indicators and overlays off initially
   const [showVolume, setShowVolume] = useState(true);
@@ -756,6 +779,7 @@ export function ChartContainer({
 
   // Load drawings from localStorage per symbol
   useEffect(() => {
+    drawingHistoryRef.current = [];
     try {
       const saved = localStorage.getItem(`mi007_drawings_${selectedSymbol}`);
       if (saved) {
@@ -774,8 +798,17 @@ export function ChartContainer({
     }
   }, [selectedSymbol]);
 
+  const pushDrawingHistory = useCallback((snapshot: DrawingItem[]) => {
+    const cloned = snapshot.map(d => ({
+      ...d,
+      points: d.points.map(p => ({ ...p })),
+    }));
+    drawingHistoryRef.current = [...drawingHistoryRef.current.slice(-49), cloned];
+  }, []);
+
   const handleAddDrawing = useCallback((item: DrawingItem) => {
     setDrawings(prev => {
+      pushDrawingHistory(prev);
       const next = [...prev, item];
       try {
         localStorage.setItem(`mi007_drawings_${selectedSymbol}`, JSON.stringify(next));
@@ -786,7 +819,7 @@ export function ChartContainer({
     if (!isDrawingModeLocked) {
       setActiveDrawingTool('NONE');
     }
-  }, [selectedSymbol, isDrawingModeLocked]);
+  }, [selectedSymbol, isDrawingModeLocked, pushDrawingHistory]);
 
   const handleUpdateDrawing = useCallback((item: DrawingItem) => {
     setDrawings(prev => {
@@ -799,33 +832,64 @@ export function ChartContainer({
   }, [selectedSymbol]);
 
   const handleClearDrawings = useCallback(() => {
-    setDrawings([]);
+    if (isAllDrawingsLocked) return;
+    setDrawings(prev => {
+      const unlockedCount = prev.filter(d => !d.locked).length;
+      if (unlockedCount === 0) return prev;
+      pushDrawingHistory(prev);
+      const remaining = prev.filter(d => d.locked);
+      try {
+        if (remaining.length > 0) {
+          localStorage.setItem(`mi007_drawings_${selectedSymbol}`, JSON.stringify(remaining));
+        } else {
+          localStorage.removeItem(`mi007_drawings_${selectedSymbol}`);
+        }
+      } catch {}
+      return remaining;
+    });
     setSelectedDrawingId(null);
-    try {
-      localStorage.removeItem(`mi007_drawings_${selectedSymbol}`);
-    } catch {}
-  }, [selectedSymbol]);
+  }, [selectedSymbol, isAllDrawingsLocked, pushDrawingHistory]);
 
   const handleDeleteDrawing = useCallback((id: string) => {
+    if (isAllDrawingsLocked) return;
+    let wasDeleted = false;
     setDrawings(prev => {
+      const target = prev.find(d => d.id === id);
+      if (!target || target.locked) return prev;
+      wasDeleted = true;
+      pushDrawingHistory(prev);
       const next = prev.filter(d => d.id !== id);
       try {
         localStorage.setItem(`mi007_drawings_${selectedSymbol}`, JSON.stringify(next));
       } catch {}
       return next;
     });
-    setSelectedDrawingId(curr => curr === id ? null : curr);
-  }, [selectedSymbol]);
+    if (wasDeleted) {
+      setSelectedDrawingId(curr => curr === id ? null : curr);
+    }
+  }, [selectedSymbol, isAllDrawingsLocked, pushDrawingHistory]);
 
   const handleUndoDrawing = useCallback(() => {
     setDrawings(prev => {
-      const next = prev.slice(0, -1);
+      if (drawingHistoryRef.current.length > 0) {
+        const previousSnapshot = drawingHistoryRef.current[drawingHistoryRef.current.length - 1];
+        drawingHistoryRef.current = drawingHistoryRef.current.slice(0, -1);
+        try {
+          localStorage.setItem(`mi007_drawings_${selectedSymbol}`, JSON.stringify(previousSnapshot));
+        } catch {}
+        return previousSnapshot;
+      }
+      if (isAllDrawingsLocked || prev.length === 0) return prev;
+      // Fallback: remove last unlocked drawing
+      const lastUnlockedIdx = [...prev].map((d, i) => (!d.locked ? i : -1)).filter(i => i !== -1).pop();
+      if (lastUnlockedIdx === undefined) return prev;
+      const next = prev.filter((_, idx) => idx !== lastUnlockedIdx);
       try {
         localStorage.setItem(`mi007_drawings_${selectedSymbol}`, JSON.stringify(next));
       } catch {}
       return next;
     });
-  }, [selectedSymbol]);
+  }, [selectedSymbol, isAllDrawingsLocked]);
 
   // Chart Template Action Handlers
   const handleSelectTemplate = useCallback((tpl: ChartTemplate) => {
@@ -838,9 +902,14 @@ export function ChartContainer({
     setShowVolume(tpl.showVolume);
 
     if (tpl.indicatorConfigs && tpl.indicatorConfigs.length > 0) {
-      setIndicatorConfigs(tpl.indicatorConfigs);
+      const normalized = tpl.indicatorConfigs.map((cfg, idx) => ({
+        ...cfg,
+        id: cfg.id || `${cfg.type.toLowerCase()}-${Date.now()}-${idx}`,
+        enabled: cfg.enabled ?? true,
+      }));
+      setIndicatorConfigs(normalized);
       try {
-        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(tpl.indicatorConfigs));
+        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(normalized));
       } catch {}
     } else if (tpl.activeIndicators && tpl.activeIndicators.length > 0) {
       const migrated: IndicatorConfig[] = tpl.activeIndicators.map((t, idx) => {
@@ -1170,7 +1239,7 @@ export function ChartContainer({
         <DrawingToolbar
           activeDrawingTool={activeDrawingTool}
           cursorMode={cursorMode}
-          onDrawingToolChange={setActiveDrawingTool}
+          onDrawingToolChange={handleSelectDrawingTool}
           onCursorModeChange={setCursorMode}
           onClearDrawings={handleClearDrawings}
           onUndoDrawing={handleUndoDrawing}
@@ -1178,7 +1247,7 @@ export function ChartContainer({
           isMagnetActive={isMagnetActive}
           onToggleMagnet={() => setIsMagnetActive(m => !m)}
           isDrawingModeLocked={isDrawingModeLocked}
-          onToggleDrawingModeLock={() => setIsDrawingModeLocked(l => !l)}
+          onToggleDrawingModeLock={handleToggleDrawingModeLock}
           isAllDrawingsLocked={isAllDrawingsLocked}
           onToggleLockAllDrawings={() => setIsAllDrawingsLocked(l => !l)}
           isAllDrawingsHidden={isAllDrawingsHidden}
@@ -1224,9 +1293,9 @@ export function ChartContainer({
             onDeleteDrawing={handleDeleteDrawing}
             onSelectDrawing={setSelectedDrawingId}
             onUndoDrawing={handleUndoDrawing}
-            onDrawingToolChange={setActiveDrawingTool}
+            onDrawingToolChange={handleSelectDrawingTool}
             onToggleMagnet={() => setIsMagnetActive(m => !m)}
-            onToggleDrawingModeLock={() => setIsDrawingModeLocked(l => !l)}
+            onToggleDrawingModeLock={handleToggleDrawingModeLock}
             onToggleLockAllDrawings={() => setIsAllDrawingsLocked(l => !l)}
             onToggleHideAllDrawings={() => setIsAllDrawingsHidden(h => !h)}
             onExportSnapshot={handleExportSnapshot}
@@ -1331,9 +1400,9 @@ export function ChartContainer({
         onClose={() => setIsDrawingsManagerOpen(false)}
         drawings={drawings}
         selectedDrawingId={selectedDrawingId}
+        isAllDrawingsLocked={isAllDrawingsLocked}
         onSelectDrawing={(id) => {
           setSelectedDrawingId(id);
-          setIsDrawingsManagerOpen(false);
         }}
         onUpdateDrawing={handleUpdateDrawing}
         onDeleteDrawing={handleDeleteDrawing}

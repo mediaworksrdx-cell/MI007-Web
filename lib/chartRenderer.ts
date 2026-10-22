@@ -1768,7 +1768,7 @@ export function renderChart(
     };
 
     for (const item of allDrawings) {
-      if (!item.points || item.points.length === 0) continue;
+      if (item.hidden || !item.points || item.points.length === 0) continue;
       const p1 = item.points[0];
       const x1 = getPointX(p1);
       const y1 = priceToY(p1.price);
@@ -2024,6 +2024,9 @@ export function renderChart(
           ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
           ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'RAY') {
+          if (item.lineStyle === 'dashed') ctx.setLineDash([6 * dpr, 4 * dpr]);
+          else if (item.lineStyle === 'dotted') ctx.setLineDash([2 * dpr, 2 * dpr]);
+          else ctx.setLineDash([]);
           const dx = x2 - x1, dy = y2 - y1;
           const len = Math.hypot(dx, dy);
           if (len > 0) {
@@ -2031,10 +2034,14 @@ export function renderChart(
             const rayX = x1 + dx * factor;
             const rayY = y1 + dy * factor;
             ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(rayX, rayY); ctx.stroke();
-            ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
           }
+          ctx.setLineDash([]);
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'EXTENDED_LINE') {
+          if (item.lineStyle === 'dashed') ctx.setLineDash([6 * dpr, 4 * dpr]);
+          else if (item.lineStyle === 'dotted') ctx.setLineDash([2 * dpr, 2 * dpr]);
+          else ctx.setLineDash([]);
           const dx = x2 - x1, dy = y2 - y1;
           if (Math.abs(dx) > 0.001) {
             const slope = dy / dx;
@@ -2044,13 +2051,17 @@ export function renderChart(
           } else {
             ctx.beginPath(); ctx.moveTo(x1, 0); ctx.lineTo(x1, chartH); ctx.stroke();
           }
+          ctx.setLineDash([]);
           ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
           ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'CHANNEL') {
           const p3 = item.points[2] || { price: p1.price + (pMax - pMin) * 0.04, index: p1.index };
-          const pOffset = p3.price - p1.price;
-          const y1p = priceToY(p1.price + pOffset);
-          const y2p = priceToY(p2.price + pOffset);
+          const x3 = getPointX(p3);
+          const y3 = priceToY(p3.price);
+          const yBaseAtX3 = Math.abs(x2 - x1) > 0.001 ? y1 + ((x3 - x1) / (x2 - x1)) * (y2 - y1) : y1;
+          const dyOffset = y3 - yBaseAtX3;
+          const y1p = y1 + dyOffset;
+          const y2p = y2 + dyOffset;
           const y1m = (y1 + y1p) / 2;
           const y2m = (y2 + y2p) / 2;
 
@@ -2073,7 +2084,7 @@ export function renderChart(
           // Anchors
           ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
           ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
-          ctx.beginPath(); ctx.arc(x1, y1p, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x3, y3, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'RECTANGLE') {
           const rx = Math.min(x1, x2), ry = Math.min(y1, y2);
           const rw = Math.abs(x2 - x1), rh = Math.abs(y2 - y1);
@@ -2374,7 +2385,9 @@ export function renderChart(
           ctx.beginPath(); ctx.arc(x3, y3, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'ROTATED_RECTANGLE') {
           const p3 = item.points[2] || { price: p1.price + (pMax - pMin) * 0.03, index: p1.index };
-          const offY = priceToY(p3.price) - y1;
+          const x3 = getPointX(p3), y3 = priceToY(p3.price);
+          const yBaseAtX3 = Math.abs(x2 - x1) > 0.001 ? y1 + ((x3 - x1) / (x2 - x1)) * (y2 - y1) : y1;
+          const offY = y3 - yBaseAtX3;
           ctx.save();
           ctx.fillStyle = color ? `${color}1F` : 'rgba(37, 99, 235, 0.12)';
           ctx.beginPath();
@@ -2382,6 +2395,9 @@ export function renderChart(
           ctx.closePath();
           ctx.fill(); ctx.stroke();
           ctx.restore();
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x3, y3, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'ELLIPSE') {
           const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
           const rx = Math.max(1, Math.abs(x2 - x1) / 2);
@@ -2412,7 +2428,9 @@ export function renderChart(
           ctx.restore();
         } else if (item.tool === 'FIB_CHANNEL') {
           const p3 = item.points[2] || { price: p1.price + (pMax - pMin) * 0.05, index: p1.index };
-          const baseDy = priceToY(p3.price) - y1;
+          const x3 = getPointX(p3), y3 = priceToY(p3.price);
+          const yBaseAtX3 = Math.abs(x2 - x1) > 0.001 ? y1 + ((x3 - x1) / (x2 - x1)) * (y2 - y1) : y1;
+          const baseDy = y3 - yBaseAtX3;
           const fibRatios = [0, 0.382, 0.5, 0.618, 1.0, 1.618];
           ctx.save();
           for (const r of fibRatios) {
@@ -2423,6 +2441,9 @@ export function renderChart(
             ctx.fillText(`${r}`, x2 + 4 * dpr, y2 + off);
           }
           ctx.restore();
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x3, y3, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'FIB_TIME_ZONE') {
           const fibSeq = [1, 2, 3, 5, 8, 13, 21, 34, 55];
           const dxIdx = Math.max(1, Math.abs(p2.index - p1.index));
@@ -3476,8 +3497,61 @@ export function renderOverlay(
         const x2 = getPointX(p2);
         const y2 = priceToY(p2.price);
 
-        if (item.tool === 'TRENDLINE' || item.tool === 'RAY' || item.tool === 'EXTENDED_LINE' || item.tool === 'CALLOUT') {
+        if (item.tool === 'TRENDLINE' || item.tool === 'CALLOUT') {
           ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+        } else if (item.tool === 'RAY') {
+          const dx = x2 - x1, dy = y2 - y1;
+          const len = Math.hypot(dx, dy);
+          if (len > 0) {
+            const factor = Math.max(chartW, chartH) * 3 / len;
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 + dx * factor, y1 + dy * factor); ctx.stroke();
+          }
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+        } else if (item.tool === 'EXTENDED_LINE') {
+          const dx = x2 - x1, dy = y2 - y1;
+          if (Math.abs(dx) > 0.001) {
+            const slope = dy / dx;
+            ctx.beginPath(); ctx.moveTo(0, y1 - x1 * slope); ctx.lineTo(chartW, y1 + (chartW - x1) * slope); ctx.stroke();
+          } else {
+            ctx.beginPath(); ctx.moveTo(x1, 0); ctx.lineTo(x1, chartH); ctx.stroke();
+          }
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+        } else if (item.tool === 'FIB_CHANNEL') {
+          if (item.points.length >= 3) {
+            const p3 = item.points[2];
+            const x3 = getPointX(p3), y3 = priceToY(p3.price);
+            const yBaseAtX3 = Math.abs(x2 - x1) > 0.001 ? y1 + ((x3 - x1) / (x2 - x1)) * (y2 - y1) : y1;
+            const baseDy = y3 - yBaseAtX3;
+            const fibRatios = [0, 0.382, 0.5, 0.618, 1.0, 1.618];
+            ctx.save();
+            for (const r of fibRatios) {
+              const off = baseDy * r;
+              ctx.setLineDash(r === 0 || r === 1.0 ? [] : [3 * dpr, 3 * dpr]);
+              ctx.beginPath(); ctx.moveTo(x1, y1 + off); ctx.lineTo(x2, y2 + off); ctx.stroke();
+            }
+            ctx.restore();
+            ctx.beginPath(); ctx.arc(x3, y3, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          } else {
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          }
+          ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+        } else if (item.tool === 'CHANNEL') {
+          if (item.points.length >= 3) {
+            const p3 = item.points[2];
+            const x3 = getPointX(p3), y3 = priceToY(p3.price);
+            const yBaseAtX3 = Math.abs(x2 - x1) > 0.001 ? y1 + ((x3 - x1) / (x2 - x1)) * (y2 - y1) : y1;
+            const dyOffset = y3 - yBaseAtX3;
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x1, y1 + dyOffset); ctx.lineTo(x2, y2 + dyOffset); ctx.stroke();
+            ctx.beginPath(); ctx.arc(x3, y3, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+          } else {
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          }
           ctx.beginPath(); ctx.arc(x1, y1, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
           ctx.beginPath(); ctx.arc(x2, y2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
         } else if (item.tool === 'RECTANGLE') {
@@ -3523,7 +3597,7 @@ export function renderOverlay(
   // 2. Draw Selected Drawing Anchor Rings & Selection Outline
   if (options.selectedDrawingId && options.drawings) {
     const sel = options.drawings.find(d => d.id === options.selectedDrawingId);
-    if (sel && sel.points) {
+    if (sel && !sel.hidden && sel.points) {
       ctx.save();
       for (const pt of sel.points) {
         const px = getPointX(pt);

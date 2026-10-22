@@ -8,6 +8,7 @@ interface DrawingQuickBarProps {
   position: { x: number; y: number };
   containerWidth?: number;
   containerHeight?: number;
+  isAllDrawingsLocked?: boolean;
   onUpdateDrawing: (drawing: DrawingItem) => void;
   onDeleteDrawing: (drawingId: string) => void;
   onOpenSettings?: () => void;
@@ -26,12 +27,14 @@ export function DrawingQuickBar({
   position,
   containerWidth,
   containerHeight,
+  isAllDrawingsLocked = false,
   onUpdateDrawing,
   onDeleteDrawing,
   onOpenSettings,
   onOpenContextMenu,
   onClose,
 }: DrawingQuickBarProps) {
+  const isLocked = Boolean(drawing.locked || isAllDrawingsLocked);
   const barRef = useRef<HTMLDivElement>(null);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
   const isDraggingRef = useRef(false);
@@ -135,25 +138,30 @@ export function DrawingQuickBar({
   };
 
   const handleColorChange = (color: string) => {
+    if (isLocked) return;
     onUpdateDrawing({ ...drawing, color });
     setActivePopover(null);
   };
 
   const handleWidthChange = (lineWidth: number) => {
+    if (isLocked) return;
     onUpdateDrawing({ ...drawing, lineWidth });
     setActivePopover(null);
   };
 
   const handleStyleChange = (lineStyle: 'solid' | 'dashed' | 'dotted') => {
+    if (isLocked) return;
     onUpdateDrawing({ ...drawing, lineStyle });
     setActivePopover(null);
   };
 
   const handleToggleLock = () => {
     onUpdateDrawing({ ...drawing, locked: !drawing.locked });
+    setActivePopover(null);
   };
 
   const handleEditText = () => {
+    if (isLocked) return;
     const current = drawing.text || '';
     const updated = window.prompt('Enter annotation label / text:', current);
     if (updated !== null) {
@@ -196,12 +204,16 @@ export function DrawingQuickBar({
       <div className="relative shrink-0">
         <button
           type="button"
+          disabled={isLocked}
           onClick={(e) => {
             e.stopPropagation();
+            if (isLocked) return;
             setActivePopover(activePopover === 'color' ? null : 'color');
           }}
-          title="Line color"
-          className="w-5 h-5 rounded flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          title={isLocked ? 'Drawing is locked' : 'Line color'}
+          className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${
+            isLocked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
+          }`}
         >
           <span
             className="w-3 h-3 rounded-full ring-1 ring-black/10 shadow-xs"
@@ -209,7 +221,7 @@ export function DrawingQuickBar({
           />
         </button>
 
-        {activePopover === 'color' && (
+        {activePopover === 'color' && !isLocked && (
           <div
             className="absolute left-0 top-full mt-1 p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e222d] shadow-xl z-50 grid grid-cols-5 gap-1 w-32 animate-in fade-in zoom-in-95 duration-100"
             onClick={(e) => e.stopPropagation()}
@@ -234,9 +246,12 @@ export function DrawingQuickBar({
       {/* 3. Text Button ('T') */}
       <button
         type="button"
+        disabled={isLocked}
         onClick={handleEditText}
-        title="Edit text / annotation"
-        className="w-5 h-5 rounded flex items-center justify-center text-[11px] font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 font-serif"
+        title={isLocked ? 'Drawing is locked' : 'Edit text / annotation'}
+        className={`w-5 h-5 rounded flex items-center justify-center text-[11px] font-bold transition-colors shrink-0 font-serif ${
+          isLocked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
+        }`}
       >
         T
       </button>
@@ -245,17 +260,21 @@ export function DrawingQuickBar({
       <div className="relative shrink-0">
         <button
           type="button"
+          disabled={isLocked}
           onClick={(e) => {
             e.stopPropagation();
+            if (isLocked) return;
             setActivePopover(activePopover === 'width' ? null : 'width');
           }}
-          title="Line thickness"
-          className="px-1 h-5 rounded flex items-center justify-center text-[10px] font-mono font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          title={isLocked ? 'Drawing is locked' : 'Line thickness'}
+          className={`px-1 h-5 rounded flex items-center justify-center text-[10px] font-mono font-bold transition-colors ${
+            isLocked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
+          }`}
         >
           {drawing.lineWidth || 2}px
         </button>
 
-        {activePopover === 'width' && (
+        {activePopover === 'width' && !isLocked && (
           <div
             className="absolute left-0 top-full mt-1 p-0.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e222d] shadow-xl z-50 flex flex-col gap-0.5 w-16 animate-in fade-in zoom-in-95 duration-100"
             onClick={(e) => e.stopPropagation()}
@@ -282,12 +301,16 @@ export function DrawingQuickBar({
       <div className="relative shrink-0">
         <button
           type="button"
+          disabled={isLocked}
           onClick={(e) => {
             e.stopPropagation();
+            if (isLocked) return;
             setActivePopover(activePopover === 'style' ? null : 'style');
           }}
-          title="Line style"
-          className="w-5 h-5 rounded flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          title={isLocked ? 'Drawing is locked' : 'Line style'}
+          className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${
+            isLocked ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
+          }`}
         >
           {drawing.lineStyle === 'dashed' ? (
             <span className="font-mono text-[10px] tracking-tighter">--</span>
@@ -298,7 +321,7 @@ export function DrawingQuickBar({
           )}
         </button>
 
-        {activePopover === 'style' && (
+        {activePopover === 'style' && !isLocked && (
           <div
             className="absolute left-0 top-full mt-1 p-0.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1e222d] shadow-xl z-50 flex flex-col gap-0.5 w-20 animate-in fade-in zoom-in-95 duration-100 text-[11px]"
             onClick={(e) => e.stopPropagation()}
@@ -327,9 +350,17 @@ export function DrawingQuickBar({
       {onOpenSettings && (
         <button
           type="button"
-          onClick={onOpenSettings}
-          title="Settings (Coordinates, Style, Visibility)"
-          className="w-5 h-5 rounded flex items-center justify-center text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+          disabled={isLocked}
+          onClick={() => {
+            if (isLocked) return;
+            onOpenSettings();
+          }}
+          title={isLocked ? 'Drawing is locked — unlock to edit settings' : 'Settings (Coordinates, Style, Visibility)'}
+          className={`w-5 h-5 rounded flex items-center justify-center transition-colors shrink-0 ${
+            isLocked
+              ? 'text-slate-400 opacity-40 cursor-not-allowed'
+              : 'text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
+          }`}
         >
           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="3" />
@@ -365,9 +396,17 @@ export function DrawingQuickBar({
       {/* 8. Delete Button (🗑️) */}
       <button
         type="button"
-        onClick={() => onDeleteDrawing(drawing.id)}
-        title="Delete this drawing (Delete key)"
-        className="w-5 h-5 rounded flex items-center justify-center text-rose-500 hover:bg-rose-500/15 hover:text-rose-600 transition-all cursor-pointer font-bold shrink-0"
+        disabled={isLocked}
+        onClick={() => {
+          if (isLocked) return;
+          onDeleteDrawing(drawing.id);
+        }}
+        title={isLocked ? 'Drawing is locked — unlock to delete' : 'Delete this drawing (Delete key)'}
+        className={`w-5 h-5 rounded flex items-center justify-center transition-all font-bold shrink-0 ${
+          isLocked
+            ? 'text-slate-400 opacity-35 cursor-not-allowed'
+            : 'text-rose-500 hover:bg-rose-500/15 hover:text-rose-600 cursor-pointer'
+        }`}
       >
         <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="3 6 5 6 21 6" />

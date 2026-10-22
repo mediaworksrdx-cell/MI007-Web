@@ -182,6 +182,7 @@ export function CandlestickCanvas({
   const [contextMenuDrawing, setContextMenuDrawing] = useState<DrawingItem | null>(null);
   const [dpr, setDpr] = useState(1);
   const pointerDownPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const hasDraggedDrawingRef = useRef(false);
   const committedPointsRef = useRef<Array<{ index: number; time: number; price: number }>>([]);
   const isBrushingRef = useRef(false);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -1081,10 +1082,16 @@ export function CandlestickCanvas({
 
     // 1. If currently adjusting an existing drawing endpoint
     if (adjustingRef.current) {
+      if (!hasDraggedDrawingRef.current) {
+        if (Math.hypot(e.clientX - pointerDownPosRef.current.x, e.clientY - pointerDownPosRef.current.y) < 4) {
+          return;
+        }
+        hasDraggedDrawingRef.current = true;
+      }
       const pt = getPointFromEvent(e.clientX, e.clientY);
       if (pt) {
         const target = drawings.find(d => d.id === adjustingRef.current!.drawingId);
-        if (target) {
+        if (target && !target.locked && !isAllDrawingsLocked) {
           const updatedPoints = target.points.map((p, pIdx) => {
             if (pIdx === adjustingRef.current!.pointIdx) {
               return {
@@ -1107,10 +1114,16 @@ export function CandlestickCanvas({
 
     // 1.5. If currently dragging / moving an entire drawing across price & time
     if (movingDrawingRef.current) {
+      if (!hasDraggedDrawingRef.current) {
+        if (Math.hypot(e.clientX - pointerDownPosRef.current.x, e.clientY - pointerDownPosRef.current.y) < 4) {
+          return;
+        }
+        hasDraggedDrawingRef.current = true;
+      }
       const pt = getPointFromEvent(e.clientX, e.clientY);
       if (pt) {
         const target = drawings.find(d => d.id === movingDrawingRef.current!.drawingId);
-        if (target) {
+        if (target && !target.locked && !isAllDrawingsLocked) {
           const deltaIdx = pt.index - movingDrawingRef.current.startPt.index;
           const deltaPrice = pt.price - movingDrawingRef.current.startPt.price;
 
@@ -1216,25 +1229,29 @@ export function CandlestickCanvas({
       try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
     }
     if (adjustingRef.current) {
-      const pt = getPointFromEvent(e.clientX, e.clientY);
-      if (pt) {
-        const target = drawings.find(d => d.id === adjustingRef.current!.drawingId);
-        if (target) {
-          const updatedPoints = target.points.map((p, pIdx) => {
-            if (pIdx === adjustingRef.current!.pointIdx) {
-              return { index: pt.index, time: pt.time, price: pt.price };
-            }
-            return { ...p, index: resolveDrawingPointIndex(p, cleanCandles) };
-          });
-          onUpdateDrawing?.({ ...target, points: updatedPoints });
+      if (hasDraggedDrawingRef.current) {
+        const pt = getPointFromEvent(e.clientX, e.clientY);
+        if (pt) {
+          const target = drawings.find(d => d.id === adjustingRef.current!.drawingId);
+          if (target && !target.locked && !isAllDrawingsLocked) {
+            const updatedPoints = target.points.map((p, pIdx) => {
+              if (pIdx === adjustingRef.current!.pointIdx) {
+                return { index: pt.index, time: pt.time, price: pt.price };
+              }
+              return { ...p, index: resolveDrawingPointIndex(p, cleanCandles) };
+            });
+            onUpdateDrawing?.({ ...target, points: updatedPoints });
+          }
         }
       }
       adjustingRef.current = null;
+      hasDraggedDrawingRef.current = false;
       setIsAdjustingDrawing(false);
       try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
     }
     if (movingDrawingRef.current) {
       movingDrawingRef.current = null;
+      hasDraggedDrawingRef.current = false;
       setIsMovingDrawing(false);
       try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
     }
@@ -1263,11 +1280,11 @@ export function CandlestickCanvas({
           if (pt) {
             const finalPoints = [committedPointsRef.current[0], { index: pt.index, time: pt.time, price: pt.price }];
             const newDrawingId = drawingInProgress.id;
+            const canvas = overlayCanvasRef.current || canvasRef.current;
+            const rect = canvas ? canvas.getBoundingClientRect() : { left: 0, top: 0 };
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
             if (activeDrawingTool === 'CALLOUT') {
-              const canvas = overlayCanvasRef.current || canvasRef.current;
-              const rect = canvas ? canvas.getBoundingClientRect() : { left: 0, top: 0 };
-              const clickX = e.clientX - rect.left;
-              const clickY = e.clientY - rect.top;
               setInlineTextEditor({
                 isOpen: true,
                 mode: 'create',
@@ -1289,11 +1306,25 @@ export function CandlestickCanvas({
                 completed: true,
               });
               onSelectDrawing?.(newDrawingId);
+              setQuickBarPos({ x: clickX, y: clickY });
               committedPointsRef.current = [];
               setDrawingInProgress(null);
               if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
               return;
             }
+          }
+        }
+      } else if (reqPoints >= 3 && committedPointsRef.current.length === 1) {
+        const dist = Math.hypot(e.clientX - pointerDownPosRef.current.x, e.clientY - pointerDownPosRef.current.y);
+        // If user dragged to place Point 2 of a 3-point tool (e.g. Fib Channel / Parallel Channel), commit Point 2
+        if (dist > 20) {
+          const pt = getPointFromEvent(e.clientX, e.clientY);
+          if (pt) {
+            committedPointsRef.current.push({ index: pt.index, time: pt.time, price: pt.price });
+            setDrawingInProgress(prev => prev ? ({
+              ...prev,
+              points: [...committedPointsRef.current],
+            }) : null);
           }
         }
       }
@@ -1352,6 +1383,10 @@ export function CandlestickCanvas({
     } else {
       const hit = findDrawingAtCoords(x, y);
       if (hit) {
+        onSelectDrawing?.(hit.id);
+        if (hit.locked || isAllDrawingsLocked) {
+          return;
+        }
         if (hit.tool === 'TEXT' || hit.tool === 'ANCHORED_TEXT' || hit.tool === 'CALLOUT') {
           const lastPt = hit.points[hit.points.length - 1];
           setInlineTextEditor({
@@ -1366,10 +1401,8 @@ export function CandlestickCanvas({
             initialText: hit.text || '',
           });
           setInlineTextValue(hit.text || '');
-          onSelectDrawing?.(hit.id);
           return;
         }
-        onSelectDrawing?.(hit.id);
         setIsSettingsModalOpen(true);
       }
     }
@@ -1388,6 +1421,7 @@ export function CandlestickCanvas({
       return;
     }
     pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
+    hasDraggedDrawingRef.current = false;
     const canvas = overlayCanvasRef.current || canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -1492,7 +1526,8 @@ export function CandlestickCanvas({
       const clickedDrawingId: string | null = hitDrawing ? hitDrawing.id : null;
 
       if (clickedDrawingId) {
-        if (cursorMode === 'eraser' && !isAllDrawingsLocked) {
+        const target = drawings.find(d => d.id === clickedDrawingId);
+        if (cursorMode === 'eraser' && !isAllDrawingsLocked && !target?.locked) {
           onDeleteDrawing?.(clickedDrawingId);
           onSelectDrawing?.(null);
           setQuickBarPos(null);
@@ -1502,7 +1537,6 @@ export function CandlestickCanvas({
         setQuickBarPos({ x, y });
 
         // Start dragging the entire drawing!
-        const target = drawings.find(d => d.id === clickedDrawingId);
         if (target && !target.locked && !isAllDrawingsLocked) {
           movingDrawingRef.current = {
             drawingId: target.id,
@@ -1549,14 +1583,17 @@ export function CandlestickCanvas({
         setDrawingInProgress(null);
         return;
       } else {
+        const newId = `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
         onAddDrawing?.({
-          id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          id: newId,
           tool: activeDrawingTool,
           points: [{ index: pt.index, time: pt.time, price: pt.price }],
           color: getDefaultToolColor(activeDrawingTool),
           lineWidth: 2,
           completed: true,
         });
+        onSelectDrawing?.(newId);
+        setQuickBarPos({ x, y });
       }
       committedPointsRef.current = [];
       setDrawingInProgress(null);
@@ -1622,6 +1659,7 @@ export function CandlestickCanvas({
             completed: true,
           });
           onSelectDrawing?.(newDrawingId);
+          setQuickBarPos({ x, y });
           committedPointsRef.current = [];
           setDrawingInProgress(null);
           if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
@@ -1663,10 +1701,13 @@ export function CandlestickCanvas({
           if (!isDrawingModeLocked) onDrawingToolChange?.('NONE');
         }
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedDrawingId) {
-          onDeleteDrawing?.(selectedDrawingId);
-          onSelectDrawing?.(null);
-          setQuickBarPos(null);
+        if (selectedDrawingId && !isAllDrawingsLocked) {
+          const selObj = drawings.find(d => d.id === selectedDrawingId);
+          if (!selObj?.locked) {
+            onDeleteDrawing?.(selectedDrawingId);
+            onSelectDrawing?.(null);
+            setQuickBarPos(null);
+          }
         }
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
         onUndoDrawing?.();
@@ -1677,7 +1718,6 @@ export function CandlestickCanvas({
         else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); onDrawingToolChange?.('FIBONACCI'); }
         else if (e.key === 'b' || e.key === 'B') { e.preventDefault(); onDrawingToolChange?.('RECTANGLE'); }
         else if (e.key === 'c' || e.key === 'C') { e.preventDefault(); onDrawingToolChange?.('CHANNEL'); }
-        else if (e.key === 'm' || e.key === 'M') { e.preventDefault(); onDrawingToolChange?.('MEASURE'); }
         else if (e.key === 's' || e.key === 'S') { e.preventDefault(); onExportSnapshot?.('download'); }
       } else if (e.key === ' ') {
         e.preventDefault();
@@ -1893,13 +1933,18 @@ export function CandlestickCanvas({
           position={quickBarPos}
           containerWidth={size.w}
           containerHeight={size.h}
+          isAllDrawingsLocked={isAllDrawingsLocked}
           onUpdateDrawing={(updated) => onUpdateDrawing?.(updated)}
           onDeleteDrawing={(id) => {
+            if (selectedDrawing.locked || isAllDrawingsLocked) return;
             onDeleteDrawing?.(id);
             onSelectDrawing?.(null);
             setQuickBarPos(null);
           }}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
+          onOpenSettings={() => {
+            if (selectedDrawing.locked || isAllDrawingsLocked) return;
+            setIsSettingsModalOpen(true);
+          }}
           onOpenContextMenu={(pos) => {
             setContextMenuDrawing(selectedDrawing);
             setContextMenuPos(pos);
@@ -1953,11 +1998,13 @@ export function CandlestickCanvas({
           isOpen={Boolean(contextMenuPos)}
           position={contextMenuPos}
           drawing={contextMenuDrawing}
+          isAllDrawingsLocked={isAllDrawingsLocked}
           onClose={() => {
             setContextMenuPos(null);
             setContextMenuDrawing(null);
           }}
           onOpenSettings={() => {
+            if (contextMenuDrawing.locked || isAllDrawingsLocked) return;
             setIsSettingsModalOpen(true);
           }}
           onClone={() => {
@@ -1971,6 +2018,7 @@ export function CandlestickCanvas({
             onSelectDrawing?.(null);
           }}
           onDelete={() => {
+            if (contextMenuDrawing.locked || isAllDrawingsLocked) return;
             onDeleteDrawing?.(contextMenuDrawing.id);
             onSelectDrawing?.(null);
             setQuickBarPos(null);
