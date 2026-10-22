@@ -147,7 +147,14 @@ export function MarketNewsView() {
 
         {/* Search & Active Filter Chips */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[var(--theme-card-border)]/60">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] mono font-black uppercase tracking-wider">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              REAL-TIME WIRE
+            </span>
             {selectedTicker && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[11px] mono font-black">
                 <span>Filter: ${selectedTicker}</span>
@@ -163,6 +170,16 @@ export function MarketNewsView() {
             <span className="mono text-[11.5px] opacity-60">
               Showing {filteredNews.length} verified news reports
             </span>
+            <button
+              type="button"
+              onClick={() => loadData()}
+              disabled={loading}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-[var(--theme-card-border)] text-[10px] mono hover:bg-white/5 cursor-pointer disabled:opacity-40 transition-all"
+              title="Refresh live news"
+            >
+              <span>{loading ? '⏳' : '🔄'}</span>
+              <span>{loading ? 'Updating...' : 'Sync'}</span>
+            </button>
           </div>
 
           <div className="relative min-w-[260px]">

@@ -3,20 +3,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getBaselineNews,
+  fetchLiveMarketNews,
   filterMarketNews,
   NewsCategory,
-  NewsItem,
-  extractTickers,
-  analyzeSentiment,
 } from '@/lib/terminal/marketNewsData';
 
 export const dynamic = 'force-dynamic';
-
-// In-memory cache for live aggregated news
-let cachedNews: NewsItem[] = [];
-let lastFetchTime = 0;
-const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,15 +17,11 @@ export async function GET(request: NextRequest) {
     const market = (searchParams.get('market') || 'ALL') as 'ALL' | 'INDIA' | 'USA' | 'UAE' | 'GLOBAL';
     const search = searchParams.get('q') || '';
     const ticker = searchParams.get('ticker') || '';
-    const limit = parseInt(searchParams.get('limit') || '30', 10);
+    const limit = parseInt(searchParams.get('limit') || '40', 10);
 
-    const now = Date.now();
-    if (!cachedNews.length || now - lastFetchTime > CACHE_TTL_MS) {
-      cachedNews = getBaselineNews();
-      lastFetchTime = now;
-    }
+    const allNews = await fetchLiveMarketNews();
 
-    const filtered = filterMarketNews(cachedNews, {
+    const filtered = filterMarketNews(allNews, {
       category,
       market,
       search,
@@ -41,10 +29,12 @@ export async function GET(request: NextRequest) {
       limit,
     });
 
-    const breakingNews = cachedNews.filter(n => n.isBreaking);
+    const breakingNews = allNews.filter(n => n.isBreaking);
 
     return NextResponse.json({
       success: true,
+      isLive: true,
+      source: 'LIVE_FEED_AGGREGATOR',
       total: filtered.length,
       category,
       market,

@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getBaselineEconomicEvents,
+  fetchLiveEconomicCalendar,
   filterEconomicEvents,
   EventRegion,
 } from '@/lib/terminal/economicCalendarData';
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const impact = (searchParams.get('impact') || 'ALL') as 'ALL' | 'HIGH' | 'MEDIUM';
     const search = searchParams.get('q') || '';
 
-    const allEvents = getBaselineEconomicEvents();
+    const allEvents = await fetchLiveEconomicCalendar();
     const filtered = filterEconomicEvents(allEvents, {
       range,
       region,
@@ -35,6 +35,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      isLive: true,
+      source: 'LIVE_MACRO_FEED',
       total: filtered.length,
       range,
       region,

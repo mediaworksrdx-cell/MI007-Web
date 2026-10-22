@@ -221,25 +221,45 @@ export function EconomicCalendarView() {
             })}
           </div>
 
-          {/* Search Bar */}
-          <div className="relative min-w-[240px]">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter by indicator (CPI, GDP, Jobs)..."
-              className="w-full px-3 py-1.5 pl-8 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-xs mono text-[var(--theme-card-text)] placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500"
-            />
-            <span className="absolute left-2.5 top-2 text-xs opacity-50">🔍</span>
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1.5 text-xs opacity-60 hover:opacity-100 cursor-pointer font-bold"
-              >
-                ×
-              </button>
-            )}
+          {/* Live Sync Pill & Search Bar */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] mono font-black uppercase tracking-wider shrink-0">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              LIVE MACRO WIRE
+            </span>
+            <button
+              type="button"
+              onClick={() => loadData()}
+              disabled={loading}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded border border-[var(--theme-card-border)] text-[10px] mono hover:bg-white/5 cursor-pointer disabled:opacity-40 transition-all shrink-0"
+              title="Refresh calendar"
+            >
+              <span>{loading ? '⏳' : '🔄'}</span>
+              <span>{loading ? 'Updating...' : 'Sync'}</span>
+            </button>
+
+            <div className="relative min-w-[200px] flex-1">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Filter by indicator (CPI, GDP, Jobs)..."
+                className="w-full px-3 py-1.5 pl-8 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-xs mono text-[var(--theme-card-text)] placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500"
+              />
+              <span className="absolute left-2.5 top-2 text-xs opacity-50">🔍</span>
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute right-2.5 top-1.5 text-xs opacity-60 hover:opacity-100 cursor-pointer font-bold"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

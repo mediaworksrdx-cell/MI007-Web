@@ -95,6 +95,166 @@ function getRelativeTimeAgo(minutesAgo: number): { publishedAt: string; timeAgo:
   return { publishedAt: d.toISOString(), timeAgo };
 }
 
+// ─── Real-Time Live RSS Wire Ingestion Engine ────────────────────────────────
+let cachedLiveNews: NewsItem[] = [];
+let lastNewsFetchTime = 0;
+const NEWS_CACHE_TTL = 3 * 60 * 1000; // 3 minutes cache
+
+/** Fetch live financial news from verified financial wires (ET Markets, Moneycontrol, MarketWatch) */
+export async function fetchLiveMarketNews(): Promise<NewsItem[]> {
+  const now = Date.now();
+  if (cachedLiveNews.length > 0 && now - lastNewsFetchTime < NEWS_CACHE_TTL) {
+    return cachedLiveNews;
+  }
+
+  const feeds = [
+    {
+      source: 'Economic Times',
+      url: 'https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms',
+      defaultMarket: 'INDIA' as const,
+    },
+    {
+      source: 'MarketWatch',
+      url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories',
+      defaultMarket: 'USA' as const,
+    },
+    {
+      source: 'Moneycontrol',
+      url: 'https://www.moneycontrol.com/rss/MCtopnews.xml',
+      defaultMarket: 'INDIA' as const,
+    },
+  ];
+
+  const parsedItems: NewsItem[] = [];
+  const seenTitles = new Set<string>();
+
+  for (const feed of feeds) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(feed.url, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'text/xml, application/xml, */*',
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) continue;
+      const xml = await res.text();
+      const itemMatches = Array.from(xml.matchAll(/<item>([\s\S]*?)<\/item>/gi));
+
+      for (let idx = 0; idx < itemMatches.length && idx < 30; idx++) {
+        const block = itemMatches[idx][1];
+        const getTag = (tag: string): string => {
+          const match = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'));
+          if (!match) return '';
+          let val = match[1];
+          // Strip CDATA
+          val = val.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1').trim();
+          // Strip HTML tags
+          val = val.replace(/<[^>]+>/g, '').trim();
+          // Unescape common HTML entities
+          val = val
+            .replace(/&amp;/g, '&')
+            .replace(/&#39;/g, "'")
+            .replace(/&apos;/g, "'")
+            .replace(/&quot;/g, '"')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&#8377;/g, '₹');
+          return val;
+        };
+
+        const title = getTag('title');
+        const description = getTag('description') || title;
+        const link = getTag('link') || '#';
+        const pubDateStr = getTag('pubDate');
+
+        if (!title || seenTitles.has(title.toLowerCase())) continue;
+        seenTitles.add(title.toLowerCase());
+
+        let publishedDate: Date;
+        if (pubDateStr) {
+          const parsed = new Date(pubDateStr);
+          publishedDate = isNaN(parsed.getTime()) ? new Date() : parsed;
+        } else {
+          publishedDate = new Date();
+        }
+
+        const minutesAgo = Math.max(0, Math.floor((Date.now() - publishedDate.getTime()) / 60000));
+        const timeAgo =
+          minutesAgo < 1
+            ? 'Just now'
+            : minutesAgo < 60
+            ? `${minutesAgo}m ago`
+            : minutesAgo < 1440
+            ? `${Math.floor(minutesAgo / 60)}h ago`
+            : `${Math.floor(minutesAgo / 1440)}d ago`;
+
+        const fullText = `${title} ${description}`;
+        const tickers = extractTickers(fullText);
+        const sentiment = analyzeSentiment(fullText);
+
+        // Classify Category
+        let category: NewsCategory = 'EQUITIES';
+        const lower = fullText.toLowerCase();
+        if (/\b(bitcoin|crypto|ethereum|btc|eth|solana|binance|blockchain)\b/.test(lower)) {
+          category = 'CRYPTO';
+        } else if (/\b(crude|oil|brent|wti|gold|silver|copper|natgas|gas|commodity|opec)\b/.test(lower)) {
+          category = 'COMMODITIES';
+        } else if (/\b(forex|rupee|dollar|fx|eur\/usd|currency|yield|bond|treasury)\b/.test(lower)) {
+          category = 'FOREX';
+        } else if (/\b(gdp|inflation|cpi|wpi|deficit|budget|rbi policy|fed rate|interest rate|fomc)\b/.test(lower)) {
+          category = 'MACRO';
+        }
+
+        // Classify Market
+        let market: 'INDIA' | 'USA' | 'UAE' | 'GLOBAL' = feed.defaultMarket;
+        if (/\b(india|nifty|sensex|rbi|sebi|dalal street|mumbai|rupee|crore|lakh)\b/.test(lower)) {
+          market = 'INDIA';
+        } else if (/\b(fed|nasdaq|s&p|wall street|dow jones|us stocks|white house)\b/.test(lower)) {
+          market = 'USA';
+        } else if (/\b(uae|dubai|abu dhabi|saudi|aramco|middle east)\b/.test(lower)) {
+          market = 'UAE';
+        }
+
+        parsedItems.push({
+          id: `live-rss-${parsedItems.length + 1}-${Date.now().toString(36)}`,
+          title,
+          summary: description.length > 280 ? description.substring(0, 277) + '...' : description,
+          url: link,
+          source: feed.source,
+          publishedAt: publishedDate.toISOString(),
+          timeAgo,
+          category,
+          market,
+          sentiment,
+          tickers: tickers.length > 0 ? tickers : market === 'INDIA' ? ['NIFTY'] : ['S&P500'],
+          isBreaking: parsedItems.length < 3 && minutesAgo < 180,
+        });
+      }
+    } catch (e) {
+      console.warn(`[MarketNews] Error fetching ${feed.source}:`, e);
+    }
+  }
+
+  if (parsedItems.length >= 10) {
+    cachedLiveNews = parsedItems;
+    lastNewsFetchTime = now;
+    return parsedItems;
+  }
+
+  // Fallback / blend with baseline news if network yields limited items
+  const baseline = getBaselineNews();
+  const blended = [...parsedItems, ...baseline.filter((b) => !seenTitles.has(b.title.toLowerCase()))];
+  cachedLiveNews = blended;
+  lastNewsFetchTime = now;
+  return blended;
+}
+
 // Institutional Seed Newsfeed (24/7 Resilience covering all asset classes)
 export function getBaselineNews(): NewsItem[] {
   return [
