@@ -40,6 +40,47 @@ function getTimeWithDate(daysOffset: number, hours: number, minutes: number): { 
   return { dateStr, timeStr, timestamp: d.getTime() };
 }
 
+// Helper to extract clean, simple numbers from verbose data (e.g. "+3.5% YoY (core 2.8%)..." -> "+3.5%", "high rate 4.155%..." -> "4.155%")
+export function formatSimpleNumber(val: string | number | null | undefined): string {
+  if (val === null || val === undefined) return '--';
+  const str = String(val).trim();
+  if (!str || str === '--' || str.toLowerCase() === 'pending' || str.toLowerCase() === 'null') {
+    return str || '--';
+  }
+
+  // 1. Check for percentage with optional sign (e.g. "+3.5%", "4.155%", "-0.2%", "5.469%")
+  const pctMatch = str.match(/([+-]?\d+(?:\.\d+)?%)/);
+  if (pctMatch) {
+    return pctMatch[1];
+  }
+
+  // 2. Check for currency values (e.g. "-$29.65B", "$701.2B", "₹12.4T", "€50M", "$28.50B")
+  const currMatch = str.match(/([+-]?[₹$€£]\d+(?:\.\d+)?[BMKbmk]?)/);
+  if (currMatch) {
+    return currMatch[1];
+  }
+
+  // 3. Check for shorthand number with B/M/K suffix (e.g. "250K", "1.2M", "-30B")
+  const suffixMatch = str.match(/([+-]?\d+(?:\.\d+)?[BMKbmk])/);
+  if (suffixMatch) {
+    return suffixMatch[1].toUpperCase();
+  }
+
+  // 4. If short and clean (e.g. "Neutral", "Dovish", "Hawkish", "54.1"), return it directly
+  if (str.length <= 10 && !str.includes(';') && !str.includes('(') && !str.includes(',')) {
+    return str;
+  }
+
+  // 5. Check for standalone decimal / integer number (e.g. "54.1", "104.20")
+  const numMatch = str.match(/([+-]?\d+(?:\.\d+)?)/);
+  if (numMatch) {
+    return numMatch[1];
+  }
+
+  // Fallback: take first token before punctuation or slice to 10 chars
+  return str.split(/[\s;,]+/)[0] || str.slice(0, 10).trim();
+}
+
 // ─── Real-Time Live Economic Calendar Ingestion Engine ──────────────────────
 let cachedLiveCalendar: EconomicEvent[] = [];
 let lastCalendarFetchTime = 0;
@@ -217,10 +258,10 @@ export async function fetchLiveEconomicCalendar(): Promise<EconomicEvent[]> {
           else if (imp === 'low') impact = 'LOW';
           else if (imp === 'medium') impact = 'MEDIUM';
 
-          // Actual, Forecast, Previous
-          const actual = item.actual ? String(item.actual) : null;
-          const forecast = item.consensus || item.forecast ? String(item.consensus || item.forecast) : null;
-          const previous = item.prior || item.previous ? String(item.prior || item.previous) : null;
+          // Actual, Forecast, Previous (simplified numbers only)
+          const actual = item.actual ? formatSimpleNumber(item.actual) : null;
+          const forecast = item.consensus || item.forecast ? formatSimpleNumber(item.consensus || item.forecast) : null;
+          const previous = item.prior || item.previous ? formatSimpleNumber(item.prior || item.previous) : null;
 
           // Beat / Miss calculation
           let isBeat: boolean | null = null;

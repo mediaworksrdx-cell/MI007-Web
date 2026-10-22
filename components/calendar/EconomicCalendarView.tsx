@@ -7,6 +7,7 @@ import {
   EventImpact,
   getBaselineEconomicEvents,
   filterEconomicEvents,
+  formatSimpleNumber,
 } from '@/lib/terminal/economicCalendarData';
 
 // Helper to parse and sanitize event title, subtitle, and deduplicate periods
@@ -391,7 +392,7 @@ export function EconomicCalendarView() {
                                   : 'text-[var(--theme-card-text)]'
                               }`}
                             >
-                              {item.actual}
+                              {formatSimpleNumber(item.actual)}
                             </span>
                           ) : (
                             <span className="opacity-40 font-normal text-[11px]">Pending</span>
@@ -400,12 +401,12 @@ export function EconomicCalendarView() {
 
                         {/* Forecast */}
                         <td className="py-2 px-2.5 text-right mono font-semibold opacity-75 whitespace-nowrap align-middle text-[11.5px]">
-                          {item.forecast || '--'}
+                          {formatSimpleNumber(item.forecast)}
                         </td>
 
                         {/* Previous */}
                         <td className="py-2 px-2.5 text-right mono opacity-55 whitespace-nowrap align-middle text-[11.5px]">
-                          {item.previous || '--'}
+                          {formatSimpleNumber(item.previous)}
                         </td>
 
                         {/* Outcome Pill */}
@@ -438,7 +439,12 @@ export function EconomicCalendarView() {
                               <p className="leading-relaxed opacity-85 max-w-2xl font-sans text-[12px]">
                                 {item.description || 'Monitored by institutional macro trading desks for interest rate deviations.'}
                               </p>
-                              <div className="flex items-center gap-2 shrink-0 text-[10.5px] mono">
+                              <div className="flex flex-wrap items-center gap-2 shrink-0 text-[10.5px] mono">
+                                {item.actual && item.actual.length > 8 && item.actual !== formatSimpleNumber(item.actual) && (
+                                  <span className="opacity-90 mr-2 text-[var(--theme-card-text)]">
+                                    Detail: <strong className="text-emerald-400">{item.actual}</strong>
+                                  </span>
+                                )}
                                 <span className="opacity-60">Region:</span>
                                 <span className="font-bold uppercase text-emerald-400">{item.country}</span>
                                 <span className="opacity-30">•</span>
