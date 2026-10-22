@@ -280,6 +280,9 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
             <DerivativesAnalyticsTab
               instrument={selectedInstrument}
               chainData={chainData}
+              weeklyChainData={weeklyChainData}
+              monthlyChainData={monthlyChainData}
+              onDeployStrategy={handleLoadSavedStrategy}
               onOpenBuilderTab={() => setActiveTab('builder')}
             />
           )}
