@@ -7,6 +7,8 @@ import { fetchLiveMarketNews } from '@/lib/terminal/marketNewsData';
 import { fetchLiveEconomicCalendar } from '@/lib/terminal/economicCalendarData';
 import { AppNotification, BASELINE_SIGNALS } from '@/lib/terminal/notificationTypes';
 
+const TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -15,7 +17,29 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') || 'ALL'; // 'ALL' | 'NEWS' | 'CALENDAR' | 'SIGNAL'
     const limit = parseInt(searchParams.get('limit') || '25', 10);
 
-    // Fetch news & calendar concurrently with graceful error handling
+    // 1. Primary: Query Kotlin JVM Trade Engine
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const remoteRes = await fetch(`${TRADE_ENGINE_URL}/notifications?${searchParams.toString()}`, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+        cache: 'no-store',
+      });
+      clearTimeout(timeoutId);
+
+      if (remoteRes.ok) {
+        const remoteData = await remoteRes.json();
+        if (remoteData && Array.isArray(remoteData.notifications) && remoteData.notifications.length > 0) {
+          return NextResponse.json({
+            ...remoteData,
+            source: 'TRADE_ENGINE_KOTLIN',
+          });
+        }
+      }
+    } catch {}
+
+    // 2. Secondary Failover: Local In-Memory Aggregator
     const [newsResult, calendarResult] = await Promise.allSettled([
       fetchLiveMarketNews(),
       fetchLiveEconomicCalendar(),

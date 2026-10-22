@@ -8,6 +8,8 @@ import {
   NewsCategory,
 } from '@/lib/terminal/marketNewsData';
 
+const TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -19,6 +21,37 @@ export async function GET(request: NextRequest) {
     const ticker = searchParams.get('ticker') || '';
     const limit = parseInt(searchParams.get('limit') || '40', 10);
 
+    // 1. Primary: Query Kotlin JVM Trade Engine
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const remoteRes = await fetch(`${TRADE_ENGINE_URL}/news?${searchParams.toString()}`, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+        cache: 'no-store',
+      });
+      clearTimeout(timeoutId);
+
+      if (remoteRes.ok) {
+        const remoteNews = await remoteRes.json();
+        if (Array.isArray(remoteNews) && remoteNews.length > 0) {
+          const breaking = remoteNews.filter((n: any) => n.isBreaking);
+          return NextResponse.json({
+            success: true,
+            isLive: true,
+            source: 'TRADE_ENGINE_KOTLIN',
+            total: remoteNews.length,
+            category,
+            market,
+            breaking: breaking.slice(0, 3),
+            news: remoteNews,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
+    } catch {}
+
+    // 2. Secondary Failover: Local In-Memory Live Feed Aggregator
     const allNews = await fetchLiveMarketNews();
 
     const filtered = filterMarketNews(allNews, {

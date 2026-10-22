@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isMarketOpen } from '@/lib/marketHours';
+import { fetchLiveMarketNews } from '@/lib/terminal/marketNewsData';
+import { fetchLiveEconomicCalendar } from '@/lib/terminal/economicCalendarData';
 
 const TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
 
@@ -946,6 +948,16 @@ export async function GET(
       return NextResponse.json(usItems, { status: 200 });
     }
 
+    if (pathStr === 'news') {
+      const fallbackNews = await fetchLiveMarketNews();
+      return NextResponse.json(fallbackNews, { status: 200 });
+    }
+
+    if (pathStr === 'economic-calendar') {
+      const fallbackEvents = await fetchLiveEconomicCalendar();
+      return NextResponse.json(fallbackEvents, { status: 200 });
+    }
+
     return NextResponse.json(
       { error: `Trade engine responded with status ${response.status}` },
       { status: response.status }
@@ -964,6 +976,16 @@ export async function GET(
     if (pathStr === 'live-prices') {
       const usItems = await getActiveUsPrices();
       return NextResponse.json(usItems, { status: 200 });
+    }
+
+    if (pathStr === 'news') {
+      const fallbackNews = await fetchLiveMarketNews();
+      return NextResponse.json(fallbackNews, { status: 200 });
+    }
+
+    if (pathStr === 'economic-calendar') {
+      const fallbackEvents = await fetchLiveEconomicCalendar();
+      return NextResponse.json(fallbackEvents, { status: 200 });
     }
 
     console.error(`[TradeEngineProxy] Error proxying GET to ${targetUrl}:`, message);
