@@ -308,12 +308,12 @@ export function ChartSymbolSearch({
         {backHref && (
           <Link
             href={backHref}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-500 hover:bg-emerald-500/10 text-slate-800 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 font-mono font-bold text-xs transition-colors shrink-0 shadow-2xs group"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-500 hover:bg-emerald-500/10 text-slate-800 dark:text-slate-100 hover:text-emerald-600 dark:hover:text-emerald-400 font-mono font-black text-xs transition-colors shrink-0 shadow-xs group cursor-pointer"
             title={`Return to ${backLabel || 'Terminal'}`}
           >
-            <span className="text-emerald-500 group-hover:-translate-x-0.5 transition-transform font-bold">←</span>
-            <span className="hidden sm:inline font-bold">{backLabel || 'Terminal'}</span>
-            <span className="sm:hidden font-bold">Back</span>
+            <span className="text-emerald-500 group-hover:-translate-x-0.5 transition-transform font-black text-sm leading-none">←</span>
+            <span className="hidden sm:inline font-black tracking-wide">{backLabel || 'BACK TO TERMINAL'}</span>
+            <span className="sm:hidden font-black">BACK</span>
           </Link>
         )}
 

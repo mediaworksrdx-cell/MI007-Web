@@ -54,18 +54,18 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
   }, []);
 
   let backHref = '/terminal';
-  let backLabel = 'Terminal';
+  let backLabel = 'BACK TO TERMINAL';
 
   if (isFromScreener) {
     if (returnTab === 'technicalScreener') {
       backHref = '/terminal/screener?tab=technicalScreener';
-      backLabel = 'Technical Strategies';
+      backLabel = 'BACK TO STRATEGIES';
     } else if (returnTab === 'watchlists') {
       backHref = '/terminal/screener?tab=watchlists';
-      backLabel = 'Watchlists';
+      backLabel = 'BACK TO WATCHLISTS';
     } else {
       backHref = `/terminal/screener?tab=analysis&symbol=${cleanSym}`;
-      backLabel = `${cleanSym} Analysis`;
+      backLabel = `BACK TO ${cleanSym}`;
     }
   }
 
@@ -73,7 +73,7 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
     <>
       <Navbar market={market} onMarketChange={setMarket} />
 
-      <main className="pt-[53px] sm:pt-[57px] h-screen flex flex-col bg-transparent relative z-10 overflow-hidden">
+      <main className="pt-[89px] sm:pt-[93px] h-screen flex flex-col bg-transparent relative z-10 overflow-hidden">
         {/* ── Full Chart Terminal ── */}
         <div className="flex-1 min-h-0 w-full h-full p-0">
           <ChartContainer
