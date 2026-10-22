@@ -9,6 +9,7 @@ import {
   TradeAction,
   Greeks,
 } from '@/lib/fno/fnoTypes';
+import { findFnoInstrument } from '@/lib/fno/fnoDataService';
 
 interface OptionChainTabProps {
   chainData: OptionChainData;
@@ -31,6 +32,9 @@ export function OptionChainTab({
   onAddLegToBuilder,
   onOpenBuilderTab,
 }: OptionChainTabProps) {
+  const inst = findFnoInstrument(chainData.underlyingSymbol);
+  const curr = inst.market === 'USA' ? '$' : inst.market === 'UAE' ? 'AED ' : '₹';
+
   const [viewMode, setViewMode] = useState<ViewMode>('ALL');
   const [strikeRange, setStrikeRange] = useState<StrikeRange>('ALL');
   const [searchStrike, setSearchStrike] = useState('');
@@ -81,7 +85,7 @@ export function OptionChainTab({
       contract.impliedVolatility,
       contract.greeks
     );
-    setToastMessage(`Added ${action} ${contract.strike} ${instrument} @ ₹${contract.ltp}`);
+    setToastMessage(`Added ${action} ${contract.strike} ${instrument} @ ${curr}${contract.ltp}`);
     setTimeout(() => setToastMessage(null), 2800);
   };
 
@@ -344,7 +348,7 @@ export function OptionChainTab({
                         isITMCall ? 'bg-rose-500/10 text-rose-300' : 'text-[var(--theme-card-text)]'
                       }`}
                     >
-                      ₹{row.call.ltp.toFixed(2)}
+                      {curr}{row.call.ltp.toFixed(2)}
                     </td>
 
                     {/* ── Central Strike ── */}
@@ -356,7 +360,7 @@ export function OptionChainTab({
                       }`}
                     >
                       <div className="flex items-center justify-center gap-1">
-                        <span>₹{row.strike}</span>
+                        <span>{curr}{row.strike}</span>
                         {isATM && (
                           <span className="text-[8px] px-1 py-0.2 bg-amber-500 text-slate-950 rounded font-black">
                             ATM
@@ -371,7 +375,7 @@ export function OptionChainTab({
                         isITMPut ? 'bg-emerald-500/10 text-emerald-300' : 'text-[var(--theme-card-text)]'
                       }`}
                     >
-                      ₹{row.put.ltp.toFixed(2)}
+                      {curr}{row.put.ltp.toFixed(2)}
                     </td>
 
                     {/* ── Put Bid/Ask ── */}

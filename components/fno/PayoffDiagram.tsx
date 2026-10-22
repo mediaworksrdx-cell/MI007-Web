@@ -3,6 +3,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { PayoffPoint, StrategyLeg, StrategyPayoff } from '@/lib/fno/fnoTypes';
+import { findFnoInstrument } from '@/lib/fno/fnoDataService';
 
 interface PayoffDiagramProps {
   expiryPoints: PayoffPoint[];
@@ -37,6 +38,10 @@ export function PayoffDiagram({
   symbol = 'NIFTY',
   onSaveStrategy,
 }: PayoffDiagramProps) {
+  const inst = findFnoInstrument(symbol);
+  const curr = inst.market === 'USA' ? '$' : inst.market === 'UAE' ? 'AED ' : '₹';
+  const loc = inst.market === 'INDIA' ? 'en-IN' : 'en-US';
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverX, setHoverX] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'PAYOFF' | 'FUTURES' | 'GREEKS' | 'PNL'>('PAYOFF');
@@ -485,7 +490,7 @@ export function PayoffDiagram({
                   <g transform={`translate(${Math.min(width - 150, Math.max(padding.left + 5, hoverData.x - 70))}, ${padding.top + 5})`}>
                     <rect width="140" height="55" rx="4" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1" />
                     <text x="8" y="15" fill="#1E293B" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
-                      Price: ₹{hoverData.price.toLocaleString('en-IN')}
+                      Price: {curr}{hoverData.price.toLocaleString(loc)}
                     </text>
                     <text
                       x="8"
@@ -495,10 +500,10 @@ export function PayoffDiagram({
                       fontFamily="sans-serif"
                       fontWeight="bold"
                     >
-                      Exp PnL: {hoverData.expiryPnl >= 0 ? '+' : ''}₹{hoverData.expiryPnl.toLocaleString('en-IN')}
+                      Exp PnL: {hoverData.expiryPnl >= 0 ? '+' : ''}{curr}{hoverData.expiryPnl.toLocaleString(loc)}
                     </text>
                     <text x="8" y="47" fill="#D97706" fontSize="9.5" fontFamily="sans-serif">
-                      T+{timeShiftDays} PnL: {hoverData.todayPnl >= 0 ? '+' : ''}₹{hoverData.todayPnl.toLocaleString('en-IN')}
+                      T+{timeShiftDays} PnL: {hoverData.todayPnl >= 0 ? '+' : ''}{curr}{hoverData.todayPnl.toLocaleString(loc)}
                     </text>
                   </g>
                 </g>
@@ -511,7 +516,7 @@ export function PayoffDiagram({
       {/* VIEW 2: FUTURES CHART */}
       {activeTab === 'FUTURES' && (
         <div className="p-6 bg-white text-center text-slate-600 text-[13px]">
-          Underlying Futures chart tracking spot ₹{spotPrice.toLocaleString('en-IN')}.
+          Underlying Futures chart tracking spot {curr}{spotPrice.toLocaleString(loc)}.
         </div>
       )}
 
@@ -542,8 +547,8 @@ export function PayoffDiagram({
                   <td className="py-2 px-2">{leg.iv.toFixed(1)}%</td>
                   <td className="py-2 px-2 font-bold">{leg.greeks.delta.toFixed(3)}</td>
                   <td className="py-2 px-2">{leg.greeks.gamma.toFixed(4)}</td>
-                  <td className="py-2 px-2">₹{leg.greeks.theta.toFixed(1)}</td>
-                  <td className="py-2 px-2">₹{leg.greeks.vega.toFixed(1)}</td>
+                  <td className="py-2 px-2">{curr}{leg.greeks.theta.toFixed(1)}</td>
+                  <td className="py-2 px-2">{curr}{leg.greeks.vega.toFixed(1)}</td>
                 </tr>
               ))}
             </tbody>
@@ -565,12 +570,12 @@ export function PayoffDiagram({
             <tbody>
               {expiryPoints.filter((_, i) => i % 6 === 0).map((pt, i) => (
                 <tr key={pt.price} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="py-2 px-3 font-semibold text-slate-800">₹{pt.price}</td>
+                  <td className="py-2 px-3 font-semibold text-slate-800">{curr}{pt.price}</td>
                   <td className={`py-2 px-3 font-bold ${pt.pnl >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                    {pt.pnl >= 0 ? '+' : ''}₹{pt.pnl.toLocaleString('en-IN')}
+                    {pt.pnl >= 0 ? '+' : ''}{curr}{pt.pnl.toLocaleString(loc)}
                   </td>
                   <td className="py-2 px-3 font-bold text-slate-700">
-                    ₹{todayPoints[i]?.pnl ?? pt.pnl}
+                    {curr}{todayPoints[i]?.pnl ?? pt.pnl}
                   </td>
                 </tr>
               ))}
@@ -590,7 +595,7 @@ export function PayoffDiagram({
         <div>
           <span>Total PNL: </span>
           <strong className="text-[#0E9F6E]">
-            {payoff && payoff.netDebitCredit >= 0 ? `₹ +${payoff.netDebitCredit.toLocaleString('en-IN')}` : '₹ +91'}
+            {payoff && payoff.netDebitCredit >= 0 ? `${curr} +${payoff.netDebitCredit.toLocaleString(loc)}` : `${curr} +91`}
           </strong>
         </div>
       </div>

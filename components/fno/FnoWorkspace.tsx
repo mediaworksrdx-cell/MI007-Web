@@ -257,6 +257,7 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
 
           {activeTab === 'buildup' && (
             <BuildupScannerTab
+              market={selectedInstrument.market}
               onSelectInstrument={handleSelectInstrument}
               onOpenChainTab={() => setActiveTab('chain')}
             />

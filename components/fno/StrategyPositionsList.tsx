@@ -24,6 +24,8 @@ export function StrategyPositionsList({
   onToggleAll,
 }: StrategyPositionsListProps) {
   const allEnabled = legs.length > 0 && legs.every((l) => !l.disabled);
+  const curr = instrument.market === 'USA' ? '$' : instrument.market === 'UAE' ? 'AED ' : '₹';
+  const loc = instrument.market === 'INDIA' ? 'en-IN' : 'en-US';
 
   return (
     <div className="space-y-4">
@@ -114,7 +116,7 @@ export function StrategyPositionsList({
 
                     {/* Leg Description */}
                     <span className="text-[12px] font-semibold text-slate-800 truncate">
-                      {leg.lots}x {leg.expiry} {leg.instrument === 'FUT' ? 'FUT' : `${leg.strike}${leg.instrument}`} - ₹ {leg.entryPrice.toFixed(1)}
+                      {leg.lots}x {leg.expiry} {leg.instrument === 'FUT' ? 'FUT' : `${leg.strike}${leg.instrument}`} - {curr}{leg.entryPrice.toFixed(1)}
                     </span>
 
                     {/* Small PnL indicator */}
@@ -197,8 +199,8 @@ export function StrategyPositionsList({
             <span className="text-slate-700">Max. Profit</span>
             <span className="font-bold text-slate-900">
               {typeof payoff.maxProfit === 'number'
-                ? `₹ ${payoff.maxProfit.toLocaleString('en-IN')}`
-                : '₹ Undefined'}
+                ? `${curr}${payoff.maxProfit.toLocaleString(loc)}`
+                : `${curr}Undefined`}
             </span>
           </div>
 
@@ -207,8 +209,8 @@ export function StrategyPositionsList({
             <span className="text-slate-700">Max. Loss</span>
             <span className="font-bold text-slate-900">
               {typeof payoff.maxLoss === 'number'
-                ? `₹ -${Math.abs(payoff.maxLoss).toLocaleString('en-IN')} (-44.51%)`
-                : '₹ Undefined'}
+                ? `-${curr}${Math.abs(payoff.maxLoss).toLocaleString(loc)} (-44.51%)`
+                : `${curr}Undefined`}
             </span>
           </div>
 
@@ -224,7 +226,7 @@ export function StrategyPositionsList({
           <div className="flex items-center justify-between py-1 border-b border-slate-100">
             <span className="text-slate-700">Breakevens</span>
             <span className="font-bold text-slate-900">
-              {payoff.breakevens.length > 0 ? payoff.breakevens.join(', ') : 'None'}
+              {payoff.breakevens.length > 0 ? payoff.breakevens.map((b) => `${curr}${b}`).join(', ') : 'None'}
             </span>
           </div>
 
@@ -236,7 +238,7 @@ export function StrategyPositionsList({
                 payoff.netDebitCredit >= 0 ? 'text-[#0E9F6E]' : 'text-[#E02424]'
               }`}
             >
-              ₹ {payoff.netDebitCredit >= 0 ? `+${payoff.netDebitCredit.toLocaleString('en-IN')}` : payoff.netDebitCredit.toLocaleString('en-IN')} (0.31%)
+              {curr}{payoff.netDebitCredit >= 0 ? `+${payoff.netDebitCredit.toLocaleString(loc)}` : payoff.netDebitCredit.toLocaleString(loc)} (0.31%)
             </span>
           </div>
 
@@ -246,7 +248,7 @@ export function StrategyPositionsList({
               {payoff.netDebitCredit >= 0 ? 'Net Credit' : 'Net Debit'}
             </span>
             <span className="font-bold text-slate-900">
-              ₹ {Math.abs(payoff.netDebitCredit).toLocaleString('en-IN')}
+              {curr}{Math.abs(payoff.netDebitCredit).toLocaleString(loc)}
             </span>
           </div>
 
@@ -254,7 +256,7 @@ export function StrategyPositionsList({
           <div className="flex items-center justify-between py-1">
             <span className="text-slate-700">Estimated Margin/Premium</span>
             <span className="font-bold text-slate-900">
-              ₹ +{(payoff.marginRequired || 29439).toLocaleString('en-IN')}
+              {curr}+{(payoff.marginRequired || 29439).toLocaleString(loc)}
             </span>
           </div>
         </div>

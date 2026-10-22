@@ -24,7 +24,31 @@ export function MarketOverviewTab({
   onOpenChainTab,
   onOpenBuildupTab,
 }: MarketOverviewTabProps) {
-  const SECTOR_HEATMAP = [
+  const curr = instrument.market === 'USA' ? '$' : instrument.market === 'UAE' ? 'AED ' : '₹';
+  const loc = instrument.market === 'INDIA' ? 'en-IN' : 'en-US';
+  const oiSuffix = instrument.market === 'INDIA' ? ' L' : ' K';
+  const oiDivisor = instrument.market === 'INDIA' ? 100000 : 1000;
+  const contractsUnit = instrument.market === 'INDIA' ? 'Lakh Contracts' : 'Contracts';
+
+  const SECTOR_HEATMAP = instrument.market === 'USA' ? [
+    { sector: 'INFORMATION TECH', change: 1.85, flow: 'Long Buildup', sentiment: 'bullish' },
+    { sector: 'SEMICONDUCTORS', change: 2.45, flow: 'Long Buildup', sentiment: 'bullish' },
+    { sector: 'COMMUNICATION SERVICES', change: 1.15, flow: 'Short Covering', sentiment: 'bullish' },
+    { sector: 'FINANCIALS & BANKS', change: 0.48, flow: 'Short Covering', sentiment: 'neutral' },
+    { sector: 'CONSUMER DISCRETIONARY', change: -0.32, flow: 'Long Unwinding', sentiment: 'bearish' },
+    { sector: 'HEALTHCARE & BIOTECH', change: -0.85, flow: 'Short Buildup', sentiment: 'bearish' },
+    { sector: 'ENERGY & UTILITIES', change: -1.12, flow: 'Short Buildup', sentiment: 'bearish' },
+    { sector: 'INDUSTRIALS', change: -0.45, flow: 'Long Unwinding', sentiment: 'bearish' },
+  ] : instrument.market === 'UAE' ? [
+    { sector: 'REAL ESTATE & DEV', change: 1.65, flow: 'Long Buildup', sentiment: 'bullish' },
+    { sector: 'BANKING & FINANCIALS', change: 0.95, flow: 'Long Buildup', sentiment: 'bullish' },
+    { sector: 'UTILITIES & ENERGY', change: 0.45, flow: 'Short Covering', sentiment: 'neutral' },
+    { sector: 'TRANSPORT & AVIATION', change: 0.35, flow: 'Short Covering', sentiment: 'neutral' },
+    { sector: 'TELECOMMUNICATION', change: -0.22, flow: 'Long Unwinding', sentiment: 'bearish' },
+    { sector: 'INVESTMENT & HOLDINGS', change: -0.55, flow: 'Short Buildup', sentiment: 'bearish' },
+    { sector: 'INSURANCE', change: -0.40, flow: 'Long Unwinding', sentiment: 'bearish' },
+    { sector: 'CONSUMER STAPLES', change: -0.15, flow: 'Long Unwinding', sentiment: 'bearish' },
+  ] : [
     { sector: 'INFORMATION TECH', change: 1.85, flow: 'Long Buildup', sentiment: 'bullish' },
     { sector: 'CAPITAL GOODS & INFRA', change: 1.15, flow: 'Long Buildup', sentiment: 'bullish' },
     { sector: 'TELECOMMUNICATION', change: 0.95, flow: 'Short Covering', sentiment: 'bullish' },
@@ -52,7 +76,7 @@ export function MarketOverviewTab({
             </p>
           </div>
           <div className="mono text-[11px] text-[var(--theme-card-subtitle)]">
-            Spot Reference: <span className="font-bold text-[var(--theme-card-text)]">₹{chainData.spotPrice.toLocaleString('en-IN')}</span>
+            Spot Reference: <span className="font-bold text-[var(--theme-card-text)]">{curr}{chainData.spotPrice.toLocaleString(loc)}</span>
           </div>
         </div>
 
@@ -62,7 +86,7 @@ export function MarketOverviewTab({
             <thead>
               <tr className="border-b border-[var(--theme-card-border)] text-[10px] text-[var(--theme-card-subtitle)] uppercase tracking-wider">
                 <th className="py-2.5 px-3">Contract Expiry</th>
-                <th className="py-2.5 px-3">LTP (₹)</th>
+                <th className="py-2.5 px-3">LTP ({curr.trim()})</th>
                 <th className="py-2.5 px-3">Change (%)</th>
                 <th className="py-2.5 px-3">Basis (Spread)</th>
                 <th className="py-2.5 px-3">Cost of Carry</th>
@@ -84,7 +108,7 @@ export function MarketOverviewTab({
                       <span>{contract.expiry}</span>
                     </td>
                     <td className="py-3 px-3 font-black text-[var(--theme-card-text)]">
-                      ₹{contract.ltp.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      {curr}{contract.ltp.toLocaleString(loc, { minimumFractionDigits: 2 })}
                     </td>
                     <td className={`py-3 px-3 font-bold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {isPositive ? '+' : ''}{contract.changePct.toFixed(2)}%
@@ -101,13 +125,13 @@ export function MarketOverviewTab({
                       +{(contract.basis * 0.08).toFixed(2)}% p.a.
                     </td>
                     <td className="py-3 px-3 text-[var(--theme-card-text)] font-semibold">
-                      {(contract.openInterest / 100000).toFixed(2)} L
+                      {(contract.openInterest / oiDivisor).toFixed(1)}{oiSuffix}
                     </td>
                     <td className="py-3 px-3 font-bold text-emerald-400">
-                      +{((contract.changeInOI / 100000)).toFixed(2)} L
+                      +{((contract.changeInOI / oiDivisor)).toFixed(1)}{oiSuffix}
                     </td>
                     <td className="py-3 px-3 text-[var(--theme-card-subtitle)]">
-                      {(contract.volume / 100000).toFixed(2)} L
+                      {(contract.volume / oiDivisor).toFixed(1)}{oiSuffix}
                     </td>
                   </tr>
                 );
@@ -132,11 +156,11 @@ export function MarketOverviewTab({
           </div>
           <div className="mt-3 flex items-baseline justify-between">
             <div className="mono text-[26px] font-black text-[var(--theme-card-text)]">
-              ₹{chainData.highestCallOIStrike.toLocaleString('en-IN')}
+              {curr}{chainData.highestCallOIStrike.toLocaleString(loc)}
             </div>
             <div className="text-right">
               <div className="mono text-[13px] font-extrabold text-rose-400">
-                {(chainData.totalCallOI / 100000).toFixed(2)} Lakh Contracts
+                {(chainData.totalCallOI / oiDivisor).toFixed(1)} {contractsUnit}
               </div>
               <div className="text-[10px] mono text-[var(--theme-card-subtitle)]">
                 Highest Open Interest Concentration
@@ -144,7 +168,7 @@ export function MarketOverviewTab({
             </div>
           </div>
           <p className="mt-2.5 text-[11px] text-[var(--theme-card-subtitle)] leading-relaxed">
-            Market makers and option writers have constructed a strong technical ceiling here. A decisive breakout above ₹{chainData.highestCallOIStrike} triggers massive short covering.
+            Market makers and option writers have constructed a strong technical ceiling here. A decisive breakout above {curr}{chainData.highestCallOIStrike.toLocaleString(loc)} triggers massive short covering.
           </p>
         </div>
 
@@ -161,11 +185,11 @@ export function MarketOverviewTab({
           </div>
           <div className="mt-3 flex items-baseline justify-between">
             <div className="mono text-[26px] font-black text-[var(--theme-card-text)]">
-              ₹{chainData.highestPutOIStrike.toLocaleString('en-IN')}
+              {curr}{chainData.highestPutOIStrike.toLocaleString(loc)}
             </div>
             <div className="text-right">
               <div className="mono text-[13px] font-extrabold text-emerald-400">
-                {(chainData.totalPutOI / 100000).toFixed(2)} Lakh Contracts
+                {(chainData.totalPutOI / oiDivisor).toFixed(1)} {contractsUnit}
               </div>
               <div className="text-[10px] mono text-[var(--theme-card-subtitle)]">
                 Highest Put Base Defense

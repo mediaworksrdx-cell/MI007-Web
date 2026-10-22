@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import { OptionChainData, StrategyLeg, TradeAction } from '@/lib/fno/fnoTypes';
+import { findFnoInstrument } from '@/lib/fno/fnoDataService';
 
 interface CollapsibleOptionChainProps {
   chainData: OptionChainData;
@@ -14,6 +15,8 @@ export function CollapsibleOptionChain({
   onAddLeg,
 }: CollapsibleOptionChainProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const inst = findFnoInstrument(chainData.underlyingSymbol);
+  const curr = inst.market === 'USA' ? '$' : inst.market === 'UAE' ? 'AED ' : '₹';
 
   const handleAddContract = (
     action: TradeAction,
@@ -114,7 +117,7 @@ export function CollapsibleOptionChain({
                       </div>
                     </td>
                     <td className="py-1 px-1.5 font-bold text-emerald-700">
-                      ₹{row.call.ltp.toFixed(1)}
+                      {curr}{row.call.ltp.toFixed(1)}
                     </td>
                     <td className="py-1 px-1.5 text-slate-500">
                       {(row.call.openInterest / 1000).toFixed(0)}k
@@ -140,7 +143,7 @@ export function CollapsibleOptionChain({
                       {(row.put.openInterest / 1000).toFixed(0)}k
                     </td>
                     <td className="py-1 px-1.5 font-bold text-rose-700">
-                      ₹{row.put.ltp.toFixed(1)}
+                      {curr}{row.put.ltp.toFixed(1)}
                     </td>
                     {/* Put Actions */}
                     <td className="py-1 px-1.5">

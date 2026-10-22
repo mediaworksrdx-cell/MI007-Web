@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { TrackedStrategy, StrategyLeg } from '@/lib/fno/fnoTypes';
+import { findFnoInstrument } from '@/lib/fno/fnoDataService';
 import {
   getTrackedStrategies,
   deleteTrackedStrategy,
@@ -61,6 +62,9 @@ export function SavedStrategiesTab({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {strategies.map((strat) => {
               const isProfit = strat.currentPnl >= 0;
+              const inst = findFnoInstrument(strat.symbol);
+              const curr = inst.market === 'USA' ? '$' : inst.market === 'UAE' ? 'AED ' : '₹';
+              const loc = inst.market === 'INDIA' ? 'en-IN' : 'en-US';
               return (
                 <div
                   key={strat.id}
@@ -99,7 +103,7 @@ export function SavedStrategiesTab({
                           isProfit ? 'text-emerald-400' : 'text-rose-400'
                         }`}
                       >
-                        {isProfit ? '+' : ''}₹{strat.currentPnl.toLocaleString('en-IN')}
+                        {isProfit ? '+' : ''}{curr}{strat.currentPnl.toLocaleString(loc)}
                       </div>
                       <div className="text-[9.5px] mono text-[var(--theme-card-subtitle)]">
                         POP: {strat.probabilityOfProfit}%
@@ -119,10 +123,10 @@ export function SavedStrategiesTab({
                             leg.action === 'BUY' ? 'text-emerald-400' : 'text-rose-400'
                           }`}
                         >
-                          {leg.action} {leg.lots * leg.lotSize} {leg.instrument} @ ₹{leg.strike}
+                          {leg.action} {leg.lots * leg.lotSize} {leg.instrument} @ {curr}{leg.strike}
                         </span>
                         <span className="text-[var(--theme-card-subtitle)]">
-                          ₹{leg.entryPrice.toFixed(2)}
+                          {curr}{leg.entryPrice.toFixed(2)}
                         </span>
                       </div>
                     ))}
@@ -134,7 +138,7 @@ export function SavedStrategiesTab({
                       <div className="text-[9px] text-[var(--theme-card-subtitle)]">MAX PROFIT</div>
                       <div className="font-bold text-emerald-400 mt-0.5 truncate">
                         {typeof strat.maxProfit === 'number'
-                          ? `₹${strat.maxProfit.toLocaleString('en-IN')}`
+                          ? `${curr}${strat.maxProfit.toLocaleString(loc)}`
                           : 'UNLIMITED'}
                       </div>
                     </div>
@@ -142,14 +146,14 @@ export function SavedStrategiesTab({
                       <div className="text-[9px] text-[var(--theme-card-subtitle)]">MAX LOSS</div>
                       <div className="font-bold text-rose-400 mt-0.5 truncate">
                         {typeof strat.maxLoss === 'number'
-                          ? `-₹${Math.abs(strat.maxLoss).toLocaleString('en-IN')}`
+                          ? `-${curr}${Math.abs(strat.maxLoss).toLocaleString(loc)}`
                           : 'UNLIMITED'}
                       </div>
                     </div>
                     <div>
                       <div className="text-[9px] text-[var(--theme-card-subtitle)]">BREAKEVEN</div>
                       <div className="font-bold text-[var(--theme-card-text)] mt-0.5 truncate">
-                        {strat.breakevens.length > 0 ? strat.breakevens.join(', ') : 'None'}
+                        {strat.breakevens.length > 0 ? strat.breakevens.map((b) => `${curr}${b}`).join(', ') : 'None'}
                       </div>
                     </div>
                   </div>

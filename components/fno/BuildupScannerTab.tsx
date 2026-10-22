@@ -4,8 +4,10 @@
 import React, { useState, useMemo } from 'react';
 import { BuildupRecord, BuildupType, FnoInstrument } from '@/lib/fno/fnoTypes';
 import { getBuildupScannerData, findFnoInstrument } from '@/lib/fno/fnoDataService';
+import { MarketType } from '@/lib/types';
 
 interface BuildupScannerTabProps {
+  market?: MarketType;
   onSelectInstrument: (inst: FnoInstrument) => void;
   onOpenChainTab?: () => void;
 }
@@ -14,6 +16,7 @@ type FilterTab = 'ALL' | BuildupType;
 type SortField = 'priceChangePct' | 'oiChangePct' | 'openInterest' | 'volume';
 
 export function BuildupScannerTab({
+  market = 'INDIA',
   onSelectInstrument,
   onOpenChainTab,
 }: BuildupScannerTabProps) {
@@ -22,7 +25,13 @@ export function BuildupScannerTab({
   const [sortField, setSortField] = useState<SortField>('oiChangePct');
   const [sortAsc, setSortAsc] = useState(false);
 
-  const rawData = useMemo(() => getBuildupScannerData(), []);
+  const rawData = useMemo(() => getBuildupScannerData(market), [market]);
+
+  const curr = market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹';
+  const loc = market === 'INDIA' ? 'en-IN' : 'en-US';
+  const volSuffix = market === 'INDIA' ? ' L' : ' K';
+  const volDivisor = market === 'INDIA' ? 100000 : 1000;
+  const volHeader = market === 'INDIA' ? 'Volume (Lakhs)' : 'Volume (Contracts)';
 
   // Filter and sort records
   const filteredRecords = useMemo(() => {
@@ -217,7 +226,7 @@ export function BuildupScannerTab({
                   }}
                   className="py-2.5 px-3 text-right cursor-pointer hover:text-emerald-400"
                 >
-                  Spot (₹) · % Chg {sortField === 'priceChangePct' && (sortAsc ? '▲' : '▼')}
+                  Spot ({curr.trim()}) · % Chg {sortField === 'priceChangePct' && (sortAsc ? '▲' : '▼')}
                 </th>
                 <th
                   onClick={() => {
@@ -239,7 +248,7 @@ export function BuildupScannerTab({
                 </th>
                 <th className="py-2.5 px-3 text-center">Buildup Classification</th>
                 <th className="py-2.5 px-3 text-center">Flow Bias</th>
-                <th className="py-2.5 px-3 text-right">Volume (Lakhs)</th>
+                <th className="py-2.5 px-3 text-right">{volHeader}</th>
                 <th className="py-2.5 px-3 text-center">Action</th>
               </tr>
             </thead>
@@ -266,7 +275,7 @@ export function BuildupScannerTab({
                     {/* Spot & % Chg */}
                     <td className="py-3 px-3 text-right">
                       <div className="font-black text-[var(--theme-card-text)]">
-                        ₹{r.spotPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        {curr}{r.spotPrice.toLocaleString(loc, { minimumFractionDigits: 2 })}
                       </div>
                       <div
                         className={`text-[10.5px] font-bold ${
@@ -293,7 +302,7 @@ export function BuildupScannerTab({
 
                     {/* Total OI */}
                     <td className="py-3 px-3 text-right font-medium text-[var(--theme-card-text)]">
-                      {(r.openInterest / 100000).toFixed(2)} L
+                      {(r.openInterest / volDivisor).toFixed(1)}{volSuffix}
                     </td>
 
                     {/* Buildup Classification Badge */}
@@ -322,7 +331,7 @@ export function BuildupScannerTab({
 
                     {/* Volume */}
                     <td className="py-3 px-3 text-right text-[var(--theme-card-text)]">
-                      {(r.volume / 100000).toFixed(2)} L
+                      {(r.volume / volDivisor).toFixed(1)}{volSuffix}
                     </td>
 
                     {/* Action */}

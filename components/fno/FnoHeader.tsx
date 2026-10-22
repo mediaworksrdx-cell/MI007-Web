@@ -73,12 +73,14 @@ export function FnoHeader({
     return marketInstruments.slice(0, 7);
   }, [marketInstruments]);
 
-  const filteredInstruments = SUPPORTED_FNO_INSTRUMENTS.filter(
-    (i) =>
-      i.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      i.sector.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredInstruments = useMemo(() => {
+    return marketInstruments.filter(
+      (i) =>
+        i.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        i.sector.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [marketInstruments, searchQuery]);
 
   return (
     <div className="relative z-30 mb-5 bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl p-3 sm:p-4 shadow-sm">
@@ -116,7 +118,7 @@ export function FnoHeader({
             <input
               ref={inputRef}
               type="text"
-              placeholder={`Search ${SUPPORTED_FNO_INSTRUMENTS.length}+ F&O assets... (Press /)`}
+              placeholder={`Search ${marketInstruments.length} ${selectedInstrument.market} F&O assets... (Press /)`}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -146,7 +148,7 @@ export function FnoHeader({
             {searchOpen && (
               <div className="absolute right-0 top-10 w-full sm:w-88 max-h-80 bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 backdrop-blur-md">
                 <div className="px-2 py-1 text-[9.5px] mono font-bold text-[var(--theme-card-subtitle)] uppercase border-b border-[var(--theme-card-border)] flex items-center justify-between">
-                  <span>SUPPORTED F&amp;O UNIVERSE</span>
+                  <span>{selectedInstrument.market} F&amp;O UNIVERSE</span>
                   <span>{filteredInstruments.length} RESULTS</span>
                 </div>
                 <div className="overflow-y-auto max-h-64 flex flex-col gap-0.5 no-scrollbar">

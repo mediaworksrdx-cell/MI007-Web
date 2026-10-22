@@ -30,6 +30,11 @@ export function DerivativesAnalyticsTab({
   const [candidatePrice, setCandidatePrice] = useState<number>(chainData.maxPain);
   const [hoveredStrike, setHoveredStrike] = useState<number | null>(null);
 
+  const curr = instrument.market === 'USA' ? '$' : instrument.market === 'UAE' ? 'AED ' : '₹';
+  const loc = instrument.market === 'INDIA' ? 'en-IN' : 'en-US';
+  const unit = instrument.market === 'INDIA' ? 'Cr' : 'M';
+  const currencyName = instrument.market === 'USA' ? 'dollar' : instrument.market === 'UAE' ? 'dirham' : 'rupee';
+
   const lotSize = instrument.lotSize || chainData.lotSize || 1;
   const spot = chainData.spotPrice;
 
@@ -256,10 +261,10 @@ export function DerivativesAnalyticsTab({
   // Quick Pillar Navigation Options
   const PILLARS: Array<{ id: ActivePillar; label: string; icon: string; countBadge?: string }> = [
     { id: 'ALL', label: 'ALL 5 PILLARS', icon: '⚡' },
-    { id: 'MAX_PAIN', label: 'MAX PAIN', icon: '🎯', countBadge: `₹${maxPainData.maxPainStrike}` },
+    { id: 'MAX_PAIN', label: 'MAX PAIN', icon: '🎯', countBadge: `${curr}${maxPainData.maxPainStrike}` },
     { id: 'PCR', label: 'PCR GAUGE', icon: '⚖️', countBadge: `${pcrData.oiPcr}` },
     { id: 'GREEKS', label: 'GREEKS MATRIX', icon: '📐', countBadge: 'Δ Γ Θ ν ρ' },
-    { id: 'DEX', label: 'DEX (DELTA EXPOSURE)', icon: '⚡', countBadge: `${dexData.totalNetDex >= 0 ? '+' : ''}${dexData.totalNetDex}Cr` },
+    { id: 'DEX', label: 'DEX (DELTA EXPOSURE)', icon: '⚡', countBadge: `${dexData.totalNetDex >= 0 ? '+' : ''}${dexData.totalNetDex}${unit}` },
     { id: 'IV', label: 'IV SMILE & SKEW', icon: '🌊', countBadge: `${ivData.atmIV}%` },
   ];
 
@@ -283,7 +288,7 @@ export function DerivativesAnalyticsTab({
             <span className="text-amber-400 text-xs">🎯</span>
           </div>
           <div className="mono text-[19px] sm:text-[21px] font-black text-amber-300 mt-1">
-            ₹{maxPainData.maxPainStrike.toLocaleString()}
+            {curr}{maxPainData.maxPainStrike.toLocaleString(loc)}
           </div>
           <div className="text-[11px] mono text-[var(--theme-card-subtitle)] mt-0.5 truncate">
             Spot gap: {maxPainData.distanceToSpot.toFixed(1)} ({maxPainData.distancePct}%)
@@ -352,10 +357,10 @@ export function DerivativesAnalyticsTab({
             <span className="text-purple-400 text-xs">⚡</span>
           </div>
           <div className={`mono text-[19px] sm:text-[21px] font-black mt-1 ${dexData.totalNetDex >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {dexData.totalNetDex >= 0 ? '+' : ''}₹{dexData.totalNetDex} Cr
+            {dexData.totalNetDex >= 0 ? '+' : ''}{curr}{dexData.totalNetDex} {unit}
           </div>
           <div className="text-[11px] mono text-[var(--theme-card-subtitle)] mt-0.5 truncate">
-            Flip: <span className="font-bold text-[var(--theme-card-text)]">₹{dexData.flipStrike}</span> · {dexData.regime.badge}
+            Flip: <span className="font-bold text-[var(--theme-card-text)]">{curr}{dexData.flipStrike}</span> · {dexData.regime.badge}
           </div>
         </div>
 
@@ -428,15 +433,15 @@ export function DerivativesAnalyticsTab({
                 </h3>
               </div>
               <p className="text-[11.5px] text-[var(--theme-card-subtitle)] mt-0.5">
-                Evaluates total cumulative writer payout liability. Expiry tends to pin near the strike that inflicts maximum financial pain on option buyers (₹{maxPainData.maxPainStrike}).
+                Evaluates total cumulative writer payout liability. Expiry tends to pin near the strike that inflicts maximum financial pain on option buyers ({curr}{maxPainData.maxPainStrike}).
               </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="mono text-xs px-2.5 py-1 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-300 font-bold">
-                Max Pain Strike: ₹{maxPainData.maxPainStrike}
+                Max Pain Strike: {curr}{maxPainData.maxPainStrike}
               </span>
               <span className="mono text-xs px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-subsurface)] text-[var(--theme-card-text)] font-bold">
-                Min Writer Loss: ₹{maxPainData.minLossCr} Cr
+                Min Writer Loss: {curr}{maxPainData.minLossCr} {unit}
               </span>
             </div>
           </div>
@@ -458,7 +463,7 @@ export function DerivativesAnalyticsTab({
               />
             </div>
             <div className="flex items-center gap-3 mono text-xs">
-              <span>Candidate: <strong className="text-amber-300 font-black">₹{candidatePrice}</strong></span>
+              <span>Candidate: <strong className="text-amber-300 font-black">{curr}{candidatePrice}</strong></span>
               <button
                 type="button"
                 onClick={() => setCandidatePrice(maxPainData.maxPainStrike)}
@@ -491,7 +496,7 @@ export function DerivativesAnalyticsTab({
                 >
                   <div className="w-20 font-black flex items-center gap-1.5 shrink-0">
                     <span className={isMaxPain ? 'text-amber-300' : 'text-[var(--theme-card-text)]'}>
-                      ₹{pt.strike}
+                      {curr}{pt.strike}
                     </span>
                     {isAtm && (
                       <span className="text-[9px] px-1 rounded bg-cyan-500/20 text-cyan-400 font-bold">ATM</span>
@@ -504,13 +509,13 @@ export function DerivativesAnalyticsTab({
                     <div
                       className="h-full bg-rose-500/60"
                       style={{ width: `${(pt.callLossCr / maxPainData.maxLoss) * 100}%` }}
-                      title={`Call Loss: ₹${pt.callLossCr} Cr`}
+                      title={`Call Loss: ${curr}${pt.callLossCr} ${unit}`}
                     />
                     {/* Put Loss Portion */}
                     <div
                       className="h-full bg-emerald-500/60"
                       style={{ width: `${(pt.putLossCr / maxPainData.maxLoss) * 100}%` }}
-                      title={`Put Loss: ₹${pt.putLossCr} Cr`}
+                      title={`Put Loss: ${curr}${pt.putLossCr} ${unit}`}
                     />
                     {isMaxPain && (
                       <div className="absolute right-2 text-[9.5px] font-black text-amber-300 tracking-wider">
@@ -521,7 +526,7 @@ export function DerivativesAnalyticsTab({
 
                   <div className="w-28 text-right font-black shrink-0">
                     <span className={isMaxPain ? 'text-amber-300 font-black' : 'text-[var(--theme-card-text)]'}>
-                      ₹{pt.totalLossCr.toLocaleString()} Cr
+                      {curr}{pt.totalLossCr.toLocaleString()} {unit}
                     </span>
                   </div>
                 </div>
@@ -741,7 +746,7 @@ export function DerivativesAnalyticsTab({
                       row.isATM ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-[var(--theme-card-text)]'
                     }`}
                   >
-                    ₹{row.strike}
+                    {curr}{row.strike}
                   </div>
 
                   {/* Put Value (Right) */}
@@ -779,17 +784,17 @@ export function DerivativesAnalyticsTab({
                 </h3>
               </div>
               <p className="text-[11.5px] text-[var(--theme-card-subtitle)] mt-0.5">
-                Quantifies the rupee delta sensitivity across strikes. Spot trading above the Zero DEX Flip (₹{dexData.flipStrike}) forces dealers into stabilizing long delta; trading below forces aggressive downside selling.
+                Quantifies the {currencyName} delta sensitivity across strikes. Spot trading above the Zero DEX Flip ({curr}{dexData.flipStrike}) forces dealers into stabilizing long delta; trading below forces aggressive downside selling.
               </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="mono text-xs px-2.5 py-1 rounded-lg border border-purple-500/40 bg-purple-500/10 text-purple-300 font-bold">
-                Zero Flip: ₹{dexData.flipStrike}
+                Zero Flip: {curr}{dexData.flipStrike}
               </span>
               <span className={`mono text-xs px-2.5 py-1 rounded-lg border font-black ${
                 dexData.totalNetDex >= 0 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' : 'border-rose-500/40 bg-rose-500/10 text-rose-300'
               }`}>
-                Net DEX: {dexData.totalNetDex >= 0 ? '+' : ''}₹{dexData.totalNetDex} Cr
+                Net DEX: {dexData.totalNetDex >= 0 ? '+' : ''}{curr}{dexData.totalNetDex} {unit}
               </span>
             </div>
           </div>
@@ -814,7 +819,7 @@ export function DerivativesAnalyticsTab({
                 >
                   <div className="w-20 font-black shrink-0 flex items-center gap-1">
                     <span className={isFlip ? 'text-purple-300' : 'text-[var(--theme-card-text)]'}>
-                      ₹{row.strike}
+                      {curr}{row.strike}
                     </span>
                     {isFlip && <span className="text-[9px] px-1 rounded bg-purple-500 text-slate-950 font-black">FLIP</span>}
                   </div>
@@ -951,7 +956,7 @@ export function DerivativesAnalyticsTab({
                       <g>
                         <line x1={x} y1="10" x2={x} y2="190" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="4 4" />
                         <text x={x} y="8" fill="#f59e0b" fontSize="9" textAnchor="middle" className="mono font-bold">
-                          ATM SPOT ₹{spot}
+                          ATM SPOT {curr}{spot}
                         </text>
                       </g>
                     );
@@ -976,7 +981,7 @@ export function DerivativesAnalyticsTab({
                       : 'border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]'
                   }`}
                 >
-                  <div className="font-black text-[var(--theme-card-text)]">₹{r.strike}</div>
+                  <div className="font-black text-[var(--theme-card-text)]">{curr}{r.strike}</div>
                   <div className="flex items-center justify-between text-[10.5px] mt-1">
                     <span className="text-cyan-400 font-bold">{r.callIV}%</span>
                     <span className="text-pink-400 font-bold">{r.putIV}%</span>
