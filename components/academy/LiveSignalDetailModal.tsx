@@ -50,7 +50,7 @@ export function LiveSignalDetailModal({
               {regime}
             </span>
             <div>
-              <div className="mono text-[10px] font-black uppercase opacity-60">Live Signal Telemetry</div>
+              <div className="mono text-[10px] font-black uppercase opacity-60">Signal Overview</div>
               <h2 className="text-lg font-black uppercase tracking-tight">{symbol} · {strategy}</h2>
             </div>
           </div>
@@ -211,7 +211,7 @@ export function LiveSignalDetailModal({
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[12px] font-black text-center transition-all cursor-pointer shadow-xs"
           >
-            📊 Open Live Candlestick Chart
+            📊 Open Candlestick Chart
           </Link>
 
           <button

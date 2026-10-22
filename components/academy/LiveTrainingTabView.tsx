@@ -30,13 +30,13 @@ export function LiveTrainingTabView({
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="mono text-[11px] font-black uppercase tracking-wider text-emerald-400">
-            LIVE SIGNAL MONITORING & SIMULATION ENGINE
+            TRAINING & SIMULATION
           </span>
         </div>
 
         <div className="flex items-center gap-3">
           <span className="font-mono text-[11px] font-bold opacity-75">
-            {simulationMode ? 'SIMULATION DRILL ACTIVE' : 'SIMULATION MODE'}
+            {simulationMode ? 'SIMULATION ACTIVE' : 'SIMULATION MODE'}
           </span>
           <button
             type="button"
@@ -57,10 +57,10 @@ export function LiveTrainingTabView({
         <div className="p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 flex flex-wrap items-center justify-between gap-3 font-mono">
           <div>
             <div className="text-[10px] font-black uppercase text-emerald-400">
-              ⚡ LIVE REPLAY DRILL ENGAGED
+              ⚡ SIMULATION DRILL ENGAGED
             </div>
             <div className="text-xs opacity-90 mt-0.5 font-sans">
-              Simulating real-time market replay for NIFTY 50. Delta-neutral gamma hedge active.
+              Simulating market replay for NIFTY 50. Delta-neutral gamma hedge active.
             </div>
           </div>
           <div className="text-right">

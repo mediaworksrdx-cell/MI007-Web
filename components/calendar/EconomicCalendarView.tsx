@@ -119,52 +119,6 @@ export function EconomicCalendarView() {
 
   return (
     <div className="w-full flex flex-col gap-4">
-      {/* ── Top Countdown & Intelligence Banner ── */}
-      {nextHighImpact && countdownStr && (
-        <div className="p-3 sm:p-3.5 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="text-xl sm:text-2xl shrink-0 p-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30">
-              ⚡
-            </span>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="mono text-[9.5px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 tracking-wider">
-                  NEXT HIGH-IMPACT RELEASE
-                </span>
-                <span className="mono text-[10.5px] font-bold opacity-75">
-                  {nextHighImpact.flag} {nextHighImpact.country}
-                </span>
-              </div>
-              <h3 className="text-[14px] sm:text-[15px] font-black tracking-tight mt-0.5 truncate">
-                {nextHighImpact.event}
-              </h3>
-              <p className="text-[11.5px] opacity-70 truncate max-w-xl">
-                {nextHighImpact.description}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 shrink-0 border-t md:border-t-0 md:border-l border-amber-500/20 pt-2 md:pt-0 md:pl-4">
-            <div>
-              <div className="text-[9.5px] mono font-bold uppercase tracking-wider opacity-60">
-                COUNTDOWN
-              </div>
-              <div className="mono text-[16px] sm:text-[18px] font-black text-amber-400 tabular-nums">
-                {countdownStr}
-              </div>
-            </div>
-            <div className="hidden sm:block text-right">
-              <div className="text-[9.5px] mono font-bold uppercase tracking-wider opacity-60">
-                FORECAST
-              </div>
-              <div className="mono text-[13px] font-black">
-                {nextHighImpact.forecast || '--'}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Filter Controls Bar ── */}
       <div className="p-3 sm:p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-sm flex flex-col gap-2.5">
         {/* Row 1: Date Horizons & Live Status */}
@@ -258,15 +212,8 @@ export function EconomicCalendarView() {
             })}
           </div>
 
-          {/* Live Sync Pill & Search Bar */}
+          {/* Refresh & Search Bar */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9.5px] mono font-black uppercase tracking-wider shrink-0">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-              </span>
-              LIVE MACRO WIRE
-            </span>
             <button
               type="button"
               onClick={() => loadData()}

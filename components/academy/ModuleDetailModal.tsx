@@ -271,7 +271,7 @@ export function ModuleDetailModal({
               <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="mono text-xs font-black uppercase text-emerald-400">
-                    Live Telemetry Ready
+                    Simulation Ready
                   </div>
                   <div className="text-xs opacity-80 mt-0.5">
                     Launch the interactive simulation environment to test execution and risk metrics.
@@ -317,7 +317,7 @@ export function ModuleDetailModal({
                     Engine Runtime Standby
                   </div>
                   <p className="text-xs opacity-70 max-w-md mx-auto">
-                    Mount the simulation runtime to interact with real-time order flow and risk controls.
+                    Start the simulation to test order flow and risk controls.
                   </p>
                   <button
                     type="button"
