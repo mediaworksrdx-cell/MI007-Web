@@ -31,16 +31,11 @@ export function StrategyPositionsList({
     <div className="space-y-4">
       {/* ── 1. Strategy Positions Container ── */}
       <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-xs">
-        {/* Top NOTES button & Header */}
+        {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-          <div className="flex items-center gap-2">
-            <span className="bg-[#00A3A6] text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-2xs">
-              NOTES
-            </span>
-            <h4 className="text-[14px] font-bold text-slate-800">
-              Strategy Positions
-            </h4>
-          </div>
+          <h4 className="text-[14px] font-bold text-slate-800">
+            Strategy Positions
+          </h4>
           <button
             type="button"
             onClick={onClearAll}

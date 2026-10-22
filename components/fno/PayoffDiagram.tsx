@@ -205,19 +205,13 @@ export function PayoffDiagram({
 
   return (
     <div className="bg-white border border-slate-200 rounded-sm shadow-xs space-y-0">
-      {/* ── 1. Top Header Banner & SAVE STRATEGY Button (Exact Opstra Style) ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 border-b border-slate-200 bg-white">
-        {/* Promotional pill */}
-        <div className="hidden sm:flex items-center gap-2 bg-[#004D40] text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-xs">
-          <span>Manage All Your Positions In One Place</span>
-          <span className="text-[#FFD54F] font-bold">★ With Live Terminal</span>
-        </div>
-
+      {/* ── 1. Top Header & SAVE STRATEGY Button ── */}
+      <div className="flex items-center justify-end p-3 border-b border-slate-200 bg-white">
         {/* Black [ SAVE STRATEGY ] Button */}
         <button
           type="button"
           onClick={onSaveStrategy}
-          className="bg-slate-900 hover:bg-black text-white font-bold text-[11px] uppercase tracking-wider px-5 py-2 rounded-sm transition-colors cursor-pointer shadow-xs ml-auto"
+          className="bg-slate-900 hover:bg-black text-white font-bold text-[11px] uppercase tracking-wider px-5 py-2 rounded-sm transition-colors cursor-pointer shadow-xs"
         >
           SAVE STRATEGY
         </button>
