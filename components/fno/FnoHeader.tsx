@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { FnoInstrument, OptionChainData, FuturesTermStructure } from '@/lib/fno/fnoTypes';
-import { SUPPORTED_FNO_INSTRUMENTS } from '@/lib/fno/fnoDataService';
+import { SUPPORTED_FNO_INSTRUMENTS, searchFnoInstruments } from '@/lib/fno/fnoDataService';
 
 interface FnoHeaderProps {
   selectedInstrument: FnoInstrument;
@@ -74,13 +74,8 @@ export function FnoHeader({
   }, [marketInstruments]);
 
   const filteredInstruments = useMemo(() => {
-    return marketInstruments.filter(
-      (i) =>
-        i.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        i.sector.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [marketInstruments, searchQuery]);
+    return searchFnoInstruments(searchQuery, selectedInstrument.market, 60);
+  }, [searchQuery, selectedInstrument.market]);
 
   return (
     <div className="relative z-30 mb-5 bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl p-3 sm:p-4 shadow-sm">
@@ -118,7 +113,11 @@ export function FnoHeader({
             <input
               ref={inputRef}
               type="text"
-              placeholder={`Search ${marketInstruments.length} ${selectedInstrument.market} F&O assets... (Press /)`}
+              placeholder={
+                selectedInstrument.market === 'INDIA'
+                  ? 'Search 3,800+ Zerodha Kite & NSE F&O assets... (Press /)'
+                  : `Search ${selectedInstrument.market} Derivatives... (Press /)`
+              }
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -148,7 +147,11 @@ export function FnoHeader({
             {searchOpen && (
               <div className="absolute right-0 top-10 w-full sm:w-88 max-h-80 bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 backdrop-blur-md">
                 <div className="px-2 py-1 text-[9.5px] mono font-bold text-[var(--theme-card-subtitle)] uppercase border-b border-[var(--theme-card-border)] flex items-center justify-between">
-                  <span>{selectedInstrument.market} F&amp;O UNIVERSE</span>
+                  <span>
+                    {selectedInstrument.market === 'INDIA'
+                      ? 'INDIA F&O UNIVERSE (3,800+ KITE EQUITIES)'
+                      : `${selectedInstrument.market} F&O UNIVERSE`}
+                  </span>
                   <span>{filteredInstruments.length} RESULTS</span>
                 </div>
                 <div className="overflow-y-auto max-h-64 flex flex-col gap-0.5 no-scrollbar">
@@ -180,6 +183,11 @@ export function FnoHeader({
                               <span className="text-[9px] px-1 py-0.2 rounded bg-[var(--theme-card-subsurface)] text-[var(--theme-card-subtitle)] font-normal">
                                 {item.exchange} · Lot {item.lotSize}
                               </span>
+                              {item.isZerodha && (
+                                <span className="text-[8.5px] px-1 py-0.2 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold tracking-wide">
+                                  KITE
+                                </span>
+                              )}
                             </div>
                             <div className="text-[10px] text-[var(--theme-card-subtitle)] truncate max-w-[190px]">
                               {item.name} · {item.sector}

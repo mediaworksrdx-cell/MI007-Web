@@ -14,6 +14,11 @@ import {
 } from './fnoTypes';
 import { calculateBSPrice, calculateBSGreeks } from './blackScholes';
 import { MarketType } from '@/lib/types';
+import {
+  searchZerodhaStocks,
+  findZerodhaStockBySymbol,
+  ZerodhaStockItem,
+} from '@/lib/screener/zerodhaStocks';
 
 export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
   // ── Indian Indices ──
@@ -256,6 +261,96 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -32.20,
     changePct: -0.45,
     sector: 'Financial Services - NBFC',
+    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
+    currentExpiry: '29 OCT 2026',
+  },
+  {
+    symbol: 'TITAN',
+    name: 'Titan Company Ltd',
+    exchange: 'NSE',
+    market: 'INDIA',
+    lotSize: 175,
+    tickSize: 0.05,
+    strikeStep: 20,
+    spotPrice: 3480.00,
+    change: 72.00,
+    changePct: 2.10,
+    sector: 'Consumer & Jewelry',
+    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
+    currentExpiry: '29 OCT 2026',
+  },
+  {
+    symbol: 'ZOMATO',
+    name: 'Zomato Ltd (Eternal)',
+    exchange: 'NSE',
+    market: 'INDIA',
+    lotSize: 2200,
+    tickSize: 0.05,
+    strikeStep: 5,
+    spotPrice: 268.40,
+    change: 5.65,
+    changePct: 2.15,
+    sector: 'Consumer Internet / Quick Commerce',
+    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
+    currentExpiry: '29 OCT 2026',
+  },
+  {
+    symbol: 'TATASTEEL',
+    name: 'Tata Steel Ltd',
+    exchange: 'NSE',
+    market: 'INDIA',
+    lotSize: 5500,
+    tickSize: 0.05,
+    strikeStep: 2.5,
+    spotPrice: 154.20,
+    change: 1.30,
+    changePct: 0.85,
+    sector: 'Metals & Mining',
+    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
+    currentExpiry: '29 OCT 2026',
+  },
+  {
+    symbol: 'ADANIENT',
+    name: 'Adani Enterprises Ltd',
+    exchange: 'NSE',
+    market: 'INDIA',
+    lotSize: 300,
+    tickSize: 0.05,
+    strikeStep: 50,
+    spotPrice: 2980.50,
+    change: -19.50,
+    changePct: -0.65,
+    sector: 'Diversified Conglomerate',
+    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
+    currentExpiry: '29 OCT 2026',
+  },
+  {
+    symbol: 'BEL',
+    name: 'Bharat Electronics Ltd',
+    exchange: 'NSE',
+    market: 'INDIA',
+    lotSize: 1900,
+    tickSize: 0.05,
+    strikeStep: 5,
+    spotPrice: 295.40,
+    change: 5.20,
+    changePct: 1.80,
+    sector: 'Aerospace & Defense',
+    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
+    currentExpiry: '29 OCT 2026',
+  },
+  {
+    symbol: 'HAL',
+    name: 'Hindustan Aeronautics Ltd',
+    exchange: 'NSE',
+    market: 'INDIA',
+    lotSize: 150,
+    tickSize: 0.05,
+    strikeStep: 50,
+    spotPrice: 4420.00,
+    change: 41.50,
+    changePct: 0.95,
+    sector: 'Aerospace & Defense',
     expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
     currentExpiry: '29 OCT 2026',
   },
@@ -565,16 +660,373 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
   },
 ];
 
-/** Lookup an instrument by symbol */
+/** Top Indian equity prices for realistic Zerodha Kite integration */
+export const KNOWN_ZERODHA_PRICES: Record<string, number> = {
+  'NIFTY 50': 23146.15,
+  'NIFTY': 23146.15,
+  'BANKNIFTY': 55844.00,
+  'FINNIFTY': 25480.00,
+  'MIDCPNIFTY': 12850.40,
+  'SENSEX': 76450.00,
+  'BANKEX': 62150.00,
+  'RELIANCE': 1211.20,
+  'HDFCBANK': 1782.30,
+  'ICICIBANK': 1286.40,
+  'INFY': 1885.60,
+  'TCS': 3892.50,
+  'TATAMOTORS': 283.70,
+  'BHARTIARTL': 1690.50,
+  'ITC': 485.50,
+  'KOTAKBANK': 1780.20,
+  'LT': 3620.00,
+  'BAJFINANCE': 7120.40,
+  'SBIN': 865.40,
+  'AXISBANK': 1184.50,
+  'MARUTI': 12450.00,
+  'TITAN': 3480.00,
+  'ZOMATO': 268.40,
+  'TATASTEEL': 154.20,
+  'ADANIENT': 2980.50,
+  'BEL': 295.40,
+  'HAL': 4420.00,
+  'ADANIPORTS': 1290.00,
+  'ADANIGREEN': 1680.00,
+  'ADANIPOWER': 590.00,
+  'APOLLOHOSP': 6950.00,
+  'ASIANPAINT': 2890.00,
+  'ASTRAL': 1860.00,
+  'AUROPHARMA': 1450.00,
+  'BAJAJ-AUTO': 9800.00,
+  'BAJAJFINSV': 1720.00,
+  'BALKRISIND': 2950.00,
+  'BANDHANBNK': 175.00,
+  'BANKBARODA': 248.00,
+  'BATAINDIA': 1380.00,
+  'BERGEPAINT': 525.00,
+  'BHARATFORG': 1420.00,
+  'BHEL': 245.00,
+  'BIOCON': 345.00,
+  'BOSCHLTD': 34500.00,
+  'BPCL': 345.00,
+  'BRITANNIA': 5420.00,
+  'BSOFT': 640.00,
+  'CANBK': 108.00,
+  'CANFINHOME': 840.00,
+  'CDSL': 1480.00,
+  'CHAMBLFERT': 490.00,
+  'CHOLAFIN': 1450.00,
+  'CIPLA': 1520.00,
+  'COALINDIA': 492.00,
+  'COFORGE': 7850.00,
+  'COLPAL': 3250.00,
+  'CONCOR': 870.00,
+  'COROMANDEL': 1680.00,
+  'CROMPTON': 395.00,
+  'CUMMINSIND': 3680.00,
+  'DABUR': 535.00,
+  'DALBHARAT': 1850.00,
+  'DEEPAKNTR': 2750.00,
+  'DELTACORP': 125.00,
+  'DIVISLAB': 5200.00,
+  'DIXON': 13950.00,
+  'DLF': 865.00,
+  'DRREDDY': 6550.00,
+  'EICHERMOT': 4850.00,
+  'ESCORTS': 3850.00,
+  'EXIDEIND': 460.00,
+  'FEDERALBNK': 198.00,
+  'GAIL': 228.00,
+  'GLENMARK': 1620.00,
+  'GMRINFRA': 85.00,
+  'GNFC': 620.00,
+  'GODREJCP': 1260.00,
+  'GODREJPROP': 2850.00,
+  'GRANULES': 560.00,
+  'GRASIM': 2680.00,
+  'GUJGASLTD': 540.00,
+  'HAVELLS': 1750.00,
+  'HCLTECH': 1820.00,
+  'HDFCAMC': 4420.00,
+  'HDFCLIFE': 715.00,
+  'HEROMOTOCO': 4950.00,
+  'HINDALCO': 675.00,
+  'HINDCOPPER': 310.00,
+  'HINDPETRO': 390.00,
+  'HINDUNILVR': 2480.00,
+  'HINDZINC': 510.00,
+  'ICICIGI': 1980.00,
+  'ICICIPRULI': 680.00,
+  'IDEA': 11.20,
+  'IDFCFIRSTB': 72.00,
+  'IEX': 185.00,
+  'INDHOTEL': 720.00,
+  'INDIACEM': 220.00,
+  'INDIAMART': 2650.00,
+  'INDIGO': 4350.00,
+  'INDUSINDBK': 1380.00,
+  'INDUSTOWER': 365.00,
+  'IOC': 168.00,
+  'IPCALAB': 1520.00,
+  'IRCTC': 885.00,
+  'IREDA': 225.00,
+  'IRFC': 148.00,
+  'JINDALSTEL': 980.00,
+  'JSWENERGY': 680.00,
+  'JSWSTEEL': 980.00,
+  'JUBLFOOD': 620.00,
+  'KALYANKJIL': 680.00,
+  'LALPATHLAB': 3150.00,
+  'LICHSGFIN': 640.00,
+  'LICI': 980.00,
+  'LTIM': 5850.00,
+  'LTTS': 5200.00,
+  'LUPIN': 2180.00,
+  'M&M': 2890.00,
+  'MARICO': 640.00,
+  'MAZDOCK': 4350.00,
+  'MCX': 5850.00,
+  'METROPOLIS': 2150.00,
+  'MFSL': 1180.00,
+  'MGL': 1680.00,
+  'MOTHERSON': 175.00,
+  'MPHASIS': 2950.00,
+  'MRF': 134000.00,
+  'MUTHOOTFIN': 1850.00,
+  'NATIONALUM': 220.00,
+  'NAUKRI': 7450.00,
+  'NAVINFLUOR': 3450.00,
+  'NESTLEIND': 2380.00,
+  'NHPC': 88.00,
+  'NMDC': 235.00,
+  'NTPC': 418.00,
+  'OBEROIRLTY': 1850.00,
+  'OFSS': 11800.00,
+  'ONGC': 288.00,
+  'PAGEIND': 44500.00,
+  'PAYTM': 745.20,
+  'PEL': 1040.00,
+  'PERSISTENT': 5450.00,
+  'PETRONET': 340.00,
+  'PFC': 475.00,
+  'PIDILITIND': 3080.00,
+  'PIIND': 4350.00,
+  'PNB': 102.00,
+  'POLYCAB': 6750.00,
+  'POWERGRID': 325.00,
+  'PRESTIGE': 1680.00,
+  'PVRINOX': 1480.00,
+  'RAMCOCEM': 840.00,
+  'RBLBANK': 195.00,
+  'RECLTD': 520.00,
+  'RVNL': 465.00,
+  'SAIL': 135.00,
+  'SBICARD': 720.00,
+  'SBILIFE': 1680.00,
+  'SHREECEM': 26500.00,
+  'SIEMENS': 7450.00,
+  'SRF': 2350.00,
+  'SUNPHARMA': 1720.00,
+  'SUNTV': 760.00,
+  'SUZLON': 65.80,
+  'SYNGENE': 840.00,
+  'TATACHEM': 1045.00,
+  'TATACOMM': 1920.00,
+  'TATACONSUM': 1080.00,
+  'TATAPOWER': 430.00,
+  'TECHM': 1650.00,
+  'TORNTPOWER': 1820.00,
+  'TRENT': 7650.00,
+  'TVSMOTOR': 2450.00,
+  'UBL': 1980.00,
+  'ULTRACEMCO': 11200.00,
+  'UPL': 540.00,
+  'VEDL': 495.60,
+  'VOLTAS': 1720.00,
+  'WIPRO': 545.00,
+  'YESBANK': 22.40,
+  'ZEEL': 128.00,
+  'ZYDUSLIFE': 1060.00,
+};
+
+/** Calculates standard NSE strike intervals based on price tier */
+export function calculateRealisticStrikeStep(spot: number): number {
+  if (spot >= 25000) return 500;
+  if (spot >= 10000) return 200;
+  if (spot >= 5000) return 100;
+  if (spot >= 2500) return 50;
+  if (spot >= 1000) return 20;
+  if (spot >= 500) return 10;
+  if (spot >= 200) return 5;
+  if (spot >= 100) return 2.5;
+  if (spot >= 50) return 1;
+  return 0.5;
+}
+
+/** Calculates standard NSE lot sizes aiming for ₹7.5 Lakhs contract value */
+export function calculateRealisticLotSize(spot: number): number {
+  const targetContractValue = 750000;
+  if (spot <= 0) return 100;
+  const rawLot = targetContractValue / spot;
+  if (rawLot >= 5000) return Math.min(10000, Math.round(rawLot / 500) * 500);
+  if (rawLot >= 2000) return Math.round(rawLot / 250) * 250;
+  if (rawLot >= 1000) return Math.round(rawLot / 100) * 100;
+  if (rawLot >= 500) return Math.round(rawLot / 50) * 50;
+  if (rawLot >= 200) return Math.round(rawLot / 25) * 25;
+  if (rawLot >= 100) return Math.round(rawLot / 25) * 25;
+  if (rawLot >= 50) return Math.round(rawLot / 10) * 10;
+  return Math.max(5, Math.round(rawLot / 5) * 5);
+}
+
+function getDeterministicSpotPrice(item: ZerodhaStockItem): number {
+  if (item.lastPrice && item.lastPrice > 0) return item.lastPrice;
+  const sym = item.symbol.toUpperCase();
+  if (KNOWN_ZERODHA_PRICES[sym]) return KNOWN_ZERODHA_PRICES[sym];
+
+  let hash = 0;
+  const str = `${item.symbol}-${item.token || 1000}`;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const abs = Math.abs(hash);
+  const tiers = [
+    { min: 45, max: 280 },
+    { min: 280, max: 950 },
+    { min: 950, max: 2400 },
+    { min: 2400, max: 4800 },
+  ];
+  const tier = tiers[abs % tiers.length];
+  const price = tier.min + (abs % (tier.max - tier.min)) + ((abs % 90) + 10) / 100;
+  return Math.round(price * 100) / 100;
+}
+
+function getDeterministicDailyChange(
+  item: ZerodhaStockItem,
+  spot: number
+): { change: number; changePct: number } {
+  let hash = 0;
+  const str = `change-${item.symbol}-${item.token || 500}`;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const abs = Math.abs(hash);
+  const pct = Math.round((((abs % 700) - 330) / 100) * 100) / 100;
+  const change = Math.round(spot * (pct / 100) * 100) / 100;
+  return { change, changePct: pct };
+}
+
+/** Convert a Zerodha catalog stock into an institutional FnoInstrument */
+export function convertZerodhaToFnoInstrument(
+  item: ZerodhaStockItem,
+  livePrice?: number
+): FnoInstrument {
+  const spot = livePrice && livePrice > 0 ? livePrice : getDeterministicSpotPrice(item);
+  const strikeStep = calculateRealisticStrikeStep(spot);
+  const lotSize = calculateRealisticLotSize(spot);
+  const { change, changePct } = getDeterministicDailyChange(item, spot);
+
+  return {
+    symbol: item.symbol.toUpperCase(),
+    name: item.name || item.symbol,
+    exchange: item.exchange || 'NSE',
+    market: 'INDIA',
+    lotSize,
+    tickSize: 0.05,
+    strikeStep,
+    spotPrice: spot,
+    change,
+    changePct,
+    sector: item.sector || 'Indian Equity',
+    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
+    currentExpiry: '29 OCT 2026',
+    isZerodha: true,
+    token: item.token,
+  };
+}
+
+/** Lookup an instrument by symbol across curated list and 3,800+ Zerodha Kite catalog */
 export function findFnoInstrument(symbol: string): FnoInstrument {
+  if (!symbol) return SUPPORTED_FNO_INSTRUMENTS[0];
   const norm = symbol.trim().toUpperCase();
-  const found = SUPPORTED_FNO_INSTRUMENTS.find(
+
+  // 1. Direct match in curated instruments
+  const exact = SUPPORTED_FNO_INSTRUMENTS.find((i) => i.symbol.toUpperCase() === norm);
+  if (exact) return exact;
+
+  // 2. Partial match in curated instruments
+  const partial = SUPPORTED_FNO_INSTRUMENTS.find(
     (i) =>
-      i.symbol.toUpperCase() === norm ||
       i.name.toUpperCase().includes(norm) ||
       norm.includes(i.symbol.toUpperCase())
   );
-  return found || SUPPORTED_FNO_INSTRUMENTS[0]; // fallback to NIFTY 50
+  if (partial) return partial;
+
+  // 3. Zerodha catalog lookup
+  const zItem = findZerodhaStockBySymbol(norm);
+  if (zItem) {
+    return convertZerodhaToFnoInstrument(zItem);
+  }
+
+  return SUPPORTED_FNO_INSTRUMENTS[0]; // fallback to NIFTY 50
+}
+
+/**
+ * Searches instruments scoped to active market.
+ * For INDIA, seamlessly aggregates curated derivatives with 3,800+ Zerodha Kite NSE stocks.
+ */
+export function searchFnoInstruments(
+  query: string,
+  market: MarketType,
+  limit: number = 50
+): FnoInstrument[] {
+  const q = (query || '').trim().toUpperCase();
+
+  // Non-Indian markets: strictly return assets from that market
+  if (market !== 'INDIA') {
+    const marketList = SUPPORTED_FNO_INSTRUMENTS.filter((i) => i.market === market);
+    if (!q) return marketList;
+    return marketList.filter(
+      (i) =>
+        i.symbol.toUpperCase().includes(q) ||
+        i.name.toUpperCase().includes(q) ||
+        i.sector.toUpperCase().includes(q)
+    );
+  }
+
+  // INDIA Market:
+  const curatedIndia = SUPPORTED_FNO_INSTRUMENTS.filter((i) => i.market === 'INDIA');
+  const seenSymbols = new Set<string>();
+  const results: FnoInstrument[] = [];
+
+  // Match against curated list first
+  const curatedMatches = q
+    ? curatedIndia.filter(
+        (i) =>
+          i.symbol.toUpperCase().includes(q) ||
+          i.name.toUpperCase().includes(q) ||
+          i.sector.toUpperCase().includes(q)
+      )
+    : curatedIndia;
+
+  for (const inst of curatedMatches) {
+    seenSymbols.add(inst.symbol.toUpperCase());
+    results.push(inst);
+    if (results.length >= limit) return results;
+  }
+
+  // Aggregate with 3,800+ Zerodha Kite stocks
+  const zerodhaMatches = searchZerodhaStocks(query, limit);
+  for (const zItem of zerodhaMatches) {
+    const sym = zItem.symbol.toUpperCase();
+    if (!seenSymbols.has(sym)) {
+      seenSymbols.add(sym);
+      results.push(convertZerodhaToFnoInstrument(zItem));
+      if (results.length >= limit) break;
+    }
+  }
+
+  return results;
 }
 
 /**
@@ -605,7 +1057,7 @@ export function generateOptionChain(
   let totalPutVolume = 0;
 
   for (let i = -strikeCount; i <= strikeCount; i++) {
-    const strike = atmStrike + i * step;
+    const strike = Math.round((atmStrike + i * step) * 100) / 100;
     const isATM = strike === atmStrike;
     const moneyness = (strike - spot) / spot; // negative = strike below spot
 

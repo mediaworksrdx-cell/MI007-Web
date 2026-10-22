@@ -41,6 +41,8 @@ export interface FnoInstrument {
   sector: string;
   expiries: string[];
   currentExpiry: string;
+  isZerodha?: boolean;
+  token?: number;
 }
 
 export interface OptionContract {

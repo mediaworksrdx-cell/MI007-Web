@@ -365,7 +365,7 @@ export function buildLegsFromPreset(
   overrideOffsets?: number[],
   overrideLots?: number
 ): StrategyLeg[] {
-  const atmStrike = Math.round(spotPrice / strikeStep) * strikeStep;
+  const atmStrike = Math.round((spotPrice / strikeStep)) * strikeStep;
   const timeYears = 7 / 365.0; // 7 days baseline
   const baseIV = 0.145;
 
@@ -373,7 +373,7 @@ export function buildLegsFromPreset(
     const offset = overrideOffsets && overrideOffsets[index] !== undefined
       ? overrideOffsets[index]
       : tmpl.strikeOffset;
-    const strike = atmStrike + offset * strikeStep;
+    const strike = Math.round((atmStrike + offset * strikeStep) * 100) / 100;
     const lots = overrideLots !== undefined ? overrideLots : tmpl.lots;
     let entryPrice = 100.0;
     let greeks = { delta: 0.5, gamma: 0.001, theta: -10, vega: 12 };

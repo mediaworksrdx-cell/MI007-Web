@@ -52,6 +52,10 @@ export function calculateBSPrice(
   const r = params.rate ?? 0.068; // Indian Repo rate ~6.8% or default
   const q = params.dividendYield ?? 0.0;
 
+  if (S <= 0 || K <= 0) {
+    return 0;
+  }
+
   if (T <= 0.0001) {
     // At expiration intrinsic value
     return type === 'CE' ? Math.max(0, S - K) : Math.max(0, K - S);
@@ -81,6 +85,10 @@ export function calculateBSGreeks(
   const { spot: S, strike: K, timeYears: T, volatility: sigma } = params;
   const r = params.rate ?? 0.068;
   const q = params.dividendYield ?? 0.0;
+
+  if (S <= 0 || K <= 0) {
+    return { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0 };
+  }
 
   if (T <= 0.0001 || sigma <= 0.0001) {
     const isITM = type === 'CE' ? S > K : K > S;
