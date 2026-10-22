@@ -118,9 +118,9 @@ export function EconomicCalendarView() {
   const missCount = useMemo(() => filteredList.filter((e) => e.isBeat === false).length, [filteredList]);
 
   return (
-    <div className="w-full flex flex-col gap-4">
+    <div className="w-full flex flex-col gap-5 sm:gap-6">
       {/* ── Filter Controls Bar ── */}
-      <div className="p-3 sm:p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-sm flex flex-col gap-2.5">
+      <div className="p-4 sm:p-5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-sm flex flex-col gap-3">
         {/* Row 1: Date Horizons & Live Status */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           {/* Date Segmented Tabs */}

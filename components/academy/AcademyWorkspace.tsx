@@ -38,9 +38,9 @@ export function AcademyWorkspace() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Tab Selector Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--theme-card-border)] pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--theme-card-border)] pb-4">
         <div className="flex items-center gap-2 font-mono text-[13px] font-bold">
           <button
             type="button"
