@@ -264,6 +264,8 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
               onUpdateLegs={setActiveLegs}
               selectedExpiry={selectedExpiry}
               onOpenSavedTab={() => setActiveTab('strategies')}
+              chainData={chainData}
+              termStructure={termStructure}
             />
           )}
 

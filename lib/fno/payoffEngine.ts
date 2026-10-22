@@ -20,7 +20,9 @@ export function calculateStrategyPayoff(
   category: StrategyCategory = 'BULLISH',
   options: PayoffSimulationOptions = {}
 ): StrategyPayoff {
-  if (!legs || legs.length === 0) {
+  const activeLegs = (legs || []).filter((l) => !l.disabled);
+
+  if (!activeLegs || activeLegs.length === 0) {
     return {
       strategyName,
       category,
@@ -48,7 +50,7 @@ export function calculateStrategyPayoff(
   const timeYearsScenario = remainingDays / 365.0;
 
   // Determine calculation price range: min/max strikes with 8% padding
-  const strikes = legs.filter((l) => l.instrument !== 'FUT').map((l) => l.strike);
+  const strikes = activeLegs.filter((l) => l.instrument !== 'FUT').map((l) => l.strike);
   const minStrike = strikes.length > 0 ? Math.min(...strikes, spotPrice) : spotPrice;
   const maxStrike = strikes.length > 0 ? Math.max(...strikes, spotPrice) : spotPrice;
 
@@ -66,7 +68,7 @@ export function calculateStrategyPayoff(
   let capitalRequired = 0;
   let marginRequired = 0;
 
-  for (const leg of legs) {
+  for (const leg of activeLegs) {
     const totalLegCost = leg.entryPrice * leg.lots * leg.lotSize;
     if (leg.action === 'BUY') {
       netCashFlow -= totalLegCost;
@@ -84,7 +86,7 @@ export function calculateStrategyPayoff(
     let pnlExpiry = 0;
     let pnlToday = 0;
 
-    for (const leg of legs) {
+    for (const leg of activeLegs) {
       const multiplier = leg.action === 'BUY' ? 1 : -1;
       const contractQty = leg.lots * leg.lotSize;
 
@@ -169,7 +171,7 @@ export function calculateStrategyPayoff(
   let netVega = 0;
   let netRho = 0;
 
-  for (const leg of legs) {
+  for (const leg of activeLegs) {
     const mult = (leg.action === 'BUY' ? 1 : -1) * leg.lots * leg.lotSize;
     netDelta += leg.greeks.delta * mult;
     netGamma += leg.greeks.gamma * mult;

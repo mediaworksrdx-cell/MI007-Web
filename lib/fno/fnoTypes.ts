@@ -133,6 +133,7 @@ export interface StrategyLeg {
   currentPrice: number;
   iv: number;
   greeks: Greeks;
+  disabled?: boolean;
 }
 
 export interface PayoffPoint {
@@ -163,6 +164,7 @@ export interface OptionStrategyPreset {
   category: StrategyCategory;
   description: string;
   outlook: string;
+  payoffSvgPath?: string;
   legsTemplate: Array<{
     action: TradeAction;
     instrument: InstrumentType;
