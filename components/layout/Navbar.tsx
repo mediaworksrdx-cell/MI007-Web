@@ -32,6 +32,7 @@ const TERMINAL_NAV_LINKS = [
   { href: '/terminal',          label: 'Dashboard' },
   { href: '/chart/NIFTY',       label: 'Charts' },
   { href: '/terminal/screener', label: 'Screeners' },
+  { href: '/terminal/fno',      label: 'F&O' },
   { href: '/academy',           label: 'Academy' },
   { href: '/calendar',          label: 'Calendar' },
   { href: '/news',              label: 'News' },
@@ -49,7 +50,8 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
     pathname.startsWith('/screener') ||
     pathname.startsWith('/academy') ||
     pathname.startsWith('/calendar') ||
-    pathname.startsWith('/news');
+    pathname.startsWith('/news') ||
+    pathname.startsWith('/fno');
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -271,6 +273,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               (href === '/chart/NIFTY' && pathname.startsWith('/chart')) ||
               (href === '/terminal' && (pathname === '/terminal' || pathname === '/dashboard')) ||
               (href === '/terminal/screener' && (pathname.startsWith('/terminal/screener') || pathname.startsWith('/screener'))) ||
+              (href === '/terminal/fno' && (pathname.startsWith('/terminal/fno') || pathname.startsWith('/fno'))) ||
               (href === '/academy' && (pathname.startsWith('/academy') || pathname.startsWith('/terminal/academy'))) ||
               (href === '/calendar' && pathname.startsWith('/calendar')) ||
               (href === '/news' && pathname.startsWith('/news'));
@@ -737,6 +740,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               (href === '/chart/NIFTY' && pathname.startsWith('/chart')) ||
               (href === '/terminal' && (pathname === '/terminal' || pathname === '/dashboard')) ||
               (href === '/terminal/screener' && (pathname.startsWith('/terminal/screener') || pathname.startsWith('/screener'))) ||
+              (href === '/terminal/fno' && (pathname.startsWith('/terminal/fno') || pathname.startsWith('/fno'))) ||
               (href === '/academy' && (pathname.startsWith('/academy') || pathname.startsWith('/terminal/academy'))) ||
               (href === '/calendar' && pathname.startsWith('/calendar')) ||
               (href === '/news' && pathname.startsWith('/news'));
