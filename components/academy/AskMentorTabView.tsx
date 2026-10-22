@@ -22,7 +22,7 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
   ]);
   const [input, setInput] = useState(initialQuery ?? '');
   const [isTyping, setIsTyping] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const chatBodyRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -31,8 +31,11 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
     }
   }, [initialQuery]);
 
+  // Keep internal chat scrolled to latest message without scrolling the window/page
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+    }
   }, [messages, isTyping]);
 
   const handleSend = async (textToSend?: string) => {
@@ -195,7 +198,10 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
       </div>
 
       {/* Chat Messages Body */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-3.5 font-sans text-sm">
+      <div
+        ref={chatBodyRef}
+        className="flex-1 p-4 overflow-y-auto space-y-3.5 font-sans text-sm"
+      >
         {messages.map(msg => {
           // Hide placeholder bubble while thinking and no text received yet
           if (!msg.message && msg.isMentor && isTyping) {
@@ -231,7 +237,6 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
             <span>Aarka AI is thinking...</span>
           </div>
         )}
-        <div ref={scrollRef} />
       </div>
 
       {/* Query Input Footer */}

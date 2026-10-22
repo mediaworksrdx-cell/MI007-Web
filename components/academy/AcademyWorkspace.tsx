@@ -44,7 +44,10 @@ export function AcademyWorkspace() {
         <div className="flex items-center gap-2 font-mono text-[13px] font-bold">
           <button
             type="button"
-            onClick={() => setSelectedTab('LIBRARY')}
+            onClick={(e) => {
+              e.preventDefault();
+              setSelectedTab('LIBRARY');
+            }}
             className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
               selectedTab === 'LIBRARY'
                 ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
@@ -56,7 +59,10 @@ export function AcademyWorkspace() {
 
           <button
             type="button"
-            onClick={() => setSelectedTab('MENTOR')}
+            onClick={(e) => {
+              e.preventDefault();
+              setSelectedTab('MENTOR');
+            }}
             className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
               selectedTab === 'MENTOR'
                 ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
@@ -69,7 +75,10 @@ export function AcademyWorkspace() {
 
           <button
             type="button"
-            onClick={() => setSelectedTab('TRAINING')}
+            onClick={(e) => {
+              e.preventDefault();
+              setSelectedTab('TRAINING');
+            }}
             className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
               selectedTab === 'TRAINING'
                 ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
@@ -89,25 +98,25 @@ export function AcademyWorkspace() {
         </div>
       </div>
 
-      {/* Primary Tab Content */}
-      {selectedTab === 'LIBRARY' && (
+      {/* Primary Tab Content (preserve DOM elements to prevent layout jumps and maintain chat state) */}
+      <div className={selectedTab === 'LIBRARY' ? 'block' : 'hidden'}>
         <CurriculumTabView
           modules={modules}
           activeMarket={activeMarketCode}
           onSelectModule={mod => setSelectedModule(mod)}
         />
-      )}
+      </div>
 
-      {selectedTab === 'MENTOR' && (
+      <div className={selectedTab === 'MENTOR' ? 'block' : 'hidden'}>
         <AskMentorTabView initialQuery={mentorQuery} />
-      )}
+      </div>
 
-      {selectedTab === 'TRAINING' && (
+      <div className={selectedTab === 'TRAINING' ? 'block' : 'hidden'}>
         <LiveTrainingTabView
           onOpenSignal={sig => setSelectedFnoSignal(sig)}
           onOpenScannerSignal={sig => setSelectedScannerSignal(sig)}
         />
-      )}
+      </div>
 
       {/* Module Detail Overlay Modal */}
       {selectedModule && (
