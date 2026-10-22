@@ -112,19 +112,19 @@ export function OptionChainTab({
           </span>
           {(
             [
-              { id: 'ALL', label: 'All Columns' },
-              { id: 'OI_VOL', label: 'OI & Volume' },
-              { id: 'GREEKS', label: 'Greeks Matrix' },
-              { id: 'PRICING', label: 'LTP & Spreads' },
+              { id: 'ALL', label: '📊 All Columns' },
+              { id: 'OI_VOL', label: '📈 OI & Volume' },
+              { id: 'GREEKS', label: '🧮 Greeks Matrix' },
+              { id: 'PRICING', label: '🏷️ LTP & Spreads' },
             ] as const
           ).map((m) => (
             <button
               key={m.id}
               onClick={() => setViewMode(m.id)}
-              className={`px-2.5 py-1 rounded-md text-[11px] mono font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-[11px] mono font-bold transition-all cursor-pointer ${
                 viewMode === m.id
                   ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                  : 'text-[var(--theme-card-text)] hover:bg-[var(--theme-card-border)]/40'
+                  : 'text-[var(--theme-card-text)] hover:text-emerald-400 hover:bg-[var(--theme-card-border)]/40'
               }`}
             >
               {m.label}
@@ -138,10 +138,10 @@ export function OptionChainTab({
           <div className="flex items-center gap-1 bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] p-1 rounded-lg">
             {(
               [
-                { id: 'ALL', label: 'All' },
+                { id: 'ALL', label: '🌐 All' },
                 { id: '20', label: '±10 Strikes' },
                 { id: '10', label: '±5 Strikes' },
-                { id: 'NEAR_ATM', label: 'Near ATM' },
+                { id: 'NEAR_ATM', label: '🎯 Near ATM' },
               ] as const
             ).map((r) => (
               <button
@@ -150,9 +150,9 @@ export function OptionChainTab({
                   setStrikeRange(r.id);
                   setSearchStrike('');
                 }}
-                className={`px-2 py-0.5 rounded text-[10.5px] mono font-bold transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-[10.5px] mono font-bold transition-all cursor-pointer ${
                   strikeRange === r.id && !searchStrike
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
                     : 'text-[var(--theme-card-subtitle)] hover:text-[var(--theme-card-text)]'
                 }`}
               >

@@ -60,10 +60,10 @@ export function FnoHeader({
               <button
                 key={sym}
                 onClick={() => inst && onSelectInstrument(inst)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] mono font-bold transition-all shrink-0 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-[11px] mono font-bold transition-all shrink-0 cursor-pointer ${
                   isSelected
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-xs'
-                    : 'bg-[var(--theme-card-subsurface)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] hover:border-emerald-500/30'
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                    : 'bg-[var(--theme-card-subsurface)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] hover:border-emerald-500/40 hover:text-emerald-400'
                 }`}
               >
                 {sym}

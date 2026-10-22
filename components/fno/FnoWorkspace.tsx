@@ -135,12 +135,12 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
   };
 
   const WORKSPACE_TABS = [
-    { id: 'overview' as const, label: '1. Overview & Futures' },
-    { id: 'chain' as const, label: '2. Advanced Option Chain' },
-    { id: 'buildup' as const, label: '3. Buildup Scanner' },
-    { id: 'analytics' as const, label: '4. Derivatives Analytics' },
-    { id: 'builder' as const, label: '5. Strategy Builder' },
-    { id: 'strategies' as const, label: '6. Saved Strategies' },
+    { id: 'overview' as const, label: 'OVERVIEW', icon: '⚡' },
+    { id: 'chain' as const, label: 'OPTION CHAIN', icon: '⛓️' },
+    { id: 'buildup' as const, label: 'BUILDUP SCANNER', icon: '📡' },
+    { id: 'analytics' as const, label: 'ANALYTICS', icon: '📊' },
+    { id: 'builder' as const, label: 'STRATEGY BUILDER', icon: '🛠️' },
+    { id: 'strategies' as const, label: 'SAVED STRATEGIES', icon: '💼' },
   ];
 
   return (
@@ -185,6 +185,30 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
           </div>
         </div>
 
+        {/* ── Centered Segmented Module Tabs (Institutional Style) ── */}
+        <div className="flex justify-center mb-6">
+          <div className="w-full sm:w-fit inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-xs">
+            {WORKSPACE_TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    isActive
+                      ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                      : 'font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* ── F&O Market Header ── */}
         <FnoHeader
           selectedInstrument={selectedInstrument}
@@ -196,26 +220,6 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
           liveSpot={liveSpot}
           engineConnected={tradeEngineStatus === 'connected'}
         />
-
-        {/* ── Workspace Tab Navigation ── */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-5 border-b border-[var(--theme-card-border)]">
-          {WORKSPACE_TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3.5 py-2 rounded-t-lg text-[12px] mono font-bold transition-all shrink-0 cursor-pointer border-b-2 ${
-                  isActive
-                    ? 'bg-[var(--theme-card-surface)] text-emerald-400 border-emerald-400 font-black shadow-xs'
-                    : 'text-[var(--theme-card-subtitle)] hover:text-[var(--theme-card-text)] hover:bg-[var(--theme-card-subsurface)]/50 border-transparent'
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
 
         {/* ── Active Tab Workspace Body ── */}
         <div>

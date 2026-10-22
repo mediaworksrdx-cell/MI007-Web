@@ -167,20 +167,20 @@ export function BuildupScannerTab({
         <div className="flex items-center gap-1 bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] p-1 rounded-lg overflow-x-auto no-scrollbar">
           {(
             [
-              { id: 'ALL', label: 'All Quadrants' },
-              { id: 'LONG_BUILDUP', label: 'Long Buildup' },
-              { id: 'SHORT_BUILDUP', label: 'Short Buildup' },
-              { id: 'SHORT_COVERING', label: 'Short Covering' },
-              { id: 'LONG_UNWINDING', label: 'Long Unwinding' },
+              { id: 'ALL', label: '🌐 All Quadrants' },
+              { id: 'LONG_BUILDUP', label: '🟢 Long Buildup' },
+              { id: 'SHORT_BUILDUP', label: '🔴 Short Buildup' },
+              { id: 'SHORT_COVERING', label: '🔵 Short Covering' },
+              { id: 'LONG_UNWINDING', label: '🟡 Long Unwinding' },
             ] as const
           ).map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1 rounded-md text-[11px] mono font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-lg text-[11px] mono font-bold transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === tab.id
                   ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                  : 'text-[var(--theme-card-text)] hover:bg-[var(--theme-card-border)]/40'
+                  : 'text-[var(--theme-card-text)] hover:text-emerald-400 hover:bg-[var(--theme-card-border)]/40'
               }`}
             >
               {tab.label}
