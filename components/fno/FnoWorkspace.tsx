@@ -22,6 +22,7 @@ import {
   INSTITUTIONAL_STRATEGY_PRESETS,
   buildLegsFromPreset,
 } from '@/lib/fno/strategyPresets';
+import { useFnoDataFeed } from '@/lib/fno/useFnoDataFeed';
 import { FnoHeader } from './FnoHeader';
 import { MarketOverviewTab } from './MarketOverviewTab';
 import { OptionChainTab } from './OptionChainTab';
@@ -70,9 +71,18 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
     }
   }, [market, selectedInstrument.market]);
 
-  // Synchronize with live price from tradeEngine
+  // Connect to dedicated Twelve Data F&O Engine (isolated from general trade engine)
+  const fnoFeed = useFnoDataFeed({
+    symbol: selectedInstrument.symbol,
+    market: selectedInstrument.market,
+    fallbackSpot: selectedInstrument.spotPrice,
+  });
+
+  // Prioritize dedicated F&O engine spot, fallback to central trade engine
   const liveSpotData = getSymbolPrice(selectedInstrument.symbol);
-  const liveSpot = liveSpotData ? liveSpotData.price : selectedInstrument.spotPrice;
+  const liveSpot = fnoFeed.liveSpot && fnoFeed.liveSpot > 0
+    ? fnoFeed.liveSpot
+    : (liveSpotData ? liveSpotData.price : selectedInstrument.spotPrice);
 
   // Option Chain Data
   const chainData = useMemo(() => {
@@ -233,6 +243,7 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
           termStructure={termStructure}
           liveSpot={liveSpot}
           engineConnected={tradeEngineStatus === 'connected'}
+          fnoEngineStatus={fnoFeed.engineStatus}
         />
 
         {/* ── Active Tab Workspace Body ── */}

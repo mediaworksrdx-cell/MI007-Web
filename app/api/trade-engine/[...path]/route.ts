@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isMarketOpen } from '@/lib/marketHours';
 import { fetchLiveMarketNews } from '@/lib/terminal/marketNewsData';
 import { fetchLiveEconomicCalendar } from '@/lib/terminal/economicCalendarData';
+import {
+  fetchFnoSpotQuote,
+  fetchFnoOptionChain,
+  getFnoEngineStatus,
+} from '@/lib/fno/fnoTwelveDataEngine';
 
 const TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
 
@@ -749,6 +754,48 @@ export async function GET(
   const pathStr = path.join('/');
   const search = request.nextUrl.search;
   const cacheKey = `${pathStr}${search}`;
+
+  // ── Dedicated F&O Engine Routes (Completely Isolated from General Trade Engine) ──
+  if (pathStr === 'fno/quote' || pathStr === 'fno/spot') {
+    const symbol = request.nextUrl.searchParams.get('symbol') || 'SPX';
+    const quote = await fetchFnoSpotQuote(symbol);
+    return NextResponse.json(quote, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+        'X-Fno-Engine': 'TradeEngine-TwelveData-Isolated',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  }
+
+  if (pathStr === 'fno/chain') {
+    const symbol = request.nextUrl.searchParams.get('symbol') || 'SPX';
+    const expiry = request.nextUrl.searchParams.get('expiry') || undefined;
+    const spotParam = request.nextUrl.searchParams.get('spot');
+    const overrideSpot = spotParam ? parseFloat(spotParam) : undefined;
+    const chain = await fetchFnoOptionChain(symbol, expiry, overrideSpot);
+    return NextResponse.json(chain, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+        'X-Fno-Engine': 'TradeEngine-TwelveData-Isolated',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  }
+
+  if (pathStr === 'fno/status') {
+    const status = getFnoEngineStatus();
+    return NextResponse.json(status, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+        'X-Fno-Engine': 'TradeEngine-TwelveData-Isolated',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  }
 
   // 1. Check in-memory cache for macro-data (Commodities & Forex via Yahoo Finance, 0 Twelve Data credits)
   if (pathStr === 'macro-data') {
