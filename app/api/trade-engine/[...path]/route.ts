@@ -775,9 +775,9 @@ export async function GET(
     }
   }
 
-  // 2. Check in-memory cache for live-prices (15s TTL)
+  // 2. Check in-memory cache for live-prices (1.5s TTL for sub-second real-time responsiveness)
   if (pathStr === 'live-prices') {
-    const cachedLive = getCached(cacheKey, 15 * 1000);
+    const cachedLive = getCached(cacheKey, 1500);
     if (cachedLive) {
       return NextResponse.json(cachedLive, {
         status: 200,

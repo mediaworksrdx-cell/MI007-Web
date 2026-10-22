@@ -168,11 +168,84 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Initial and periodic HTTP Reconciliation (polls live snapshot every 5 seconds)
-  const refreshHttpSnapshot = useCallback(async () => {
+  // 1. High-frequency Real-Time Equities & Indices Polling (every 2 seconds)
+  const syncLivePrices = useCallback(async () => {
     try {
-      const [prices, cryptos, macros] = await Promise.all([
-        fetchLivePrices(),
+      const prices = await fetchLivePrices();
+      if (!prices || prices.length === 0) return;
+
+      const now = Date.now();
+      setStatus('connected');
+
+      setLivePrices(prev => {
+        const next = new Map(prev);
+        for (const p of prices) {
+          if (!p.symbol || typeof p.ltp !== 'number' || p.ltp <= 0) continue;
+          const key = normalizeSymbolKey(p.symbol);
+          const prevEntry = next.get(key) || next.get(p.symbol.toUpperCase());
+          const tickDirection = prevEntry
+            ? p.ltp > prevEntry.price ? 'up' : p.ltp < prevEntry.price ? 'down' : 'neutral'
+            : 'neutral';
+
+          const entry: LiveSymbolData = {
+            symbol: p.symbol,
+            price: p.ltp,
+            change: p.change,
+            changePct: p.changePercent,
+            timestamp: p.timestamp || now,
+            tickDirection,
+            lastUpdated: now,
+          };
+
+          next.set(key, entry);
+          next.set(p.symbol, entry);
+          next.set(p.symbol.toUpperCase(), entry);
+          next.set(p.symbol.replace(/\s+/g, ''), entry);
+          next.set(p.symbol.replace(/\.NS$/, '').replace(/\.BO$/, ''), entry);
+
+          if (key === 'NIFTY') {
+            next.set('NIFTY', entry);
+            next.set('NIFTY 50', entry);
+            next.set('NIFTY50', entry);
+          }
+          if (key === 'BANKNIFTY') {
+            next.set('BANKNIFTY', entry);
+            next.set('BANK NIFTY', entry);
+          }
+          if (key === 'FINNIFTY') {
+            next.set('FINNIFTY', entry);
+            next.set('FIN NIFTY', entry);
+          }
+          if (key === 'SENSEX') {
+            next.set('SENSEX', entry);
+            next.set('BSE SENSEX', entry);
+          }
+
+          // Emit synthetic tick to chart subscribers if price changed or on initial update
+          if (!prevEntry || prevEntry.price !== p.ltp) {
+            const tick: TradeEngineTick = {
+              symbol: p.symbol,
+              price: p.ltp,
+              volume: 0,
+              timestamp: p.timestamp || now,
+            };
+            setLastTick(tick);
+            listenersRef.current.forEach(listener => {
+              try { listener(tick); } catch (e) { console.error(e); }
+            });
+          }
+        }
+        return next;
+      });
+    } catch (err) {
+      console.warn('[TradeEngineProvider] syncLivePrices error:', err);
+    }
+  }, []);
+
+  // 2. Background Macro & Crypto Polling (every 8 seconds)
+  const syncCryptoAndMacro = useCallback(async () => {
+    try {
+      const [cryptos, macros] = await Promise.all([
         fetchCryptoPrices(),
         fetchMacroData(),
       ]);
@@ -182,56 +255,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
       const now = Date.now();
 
-      if (prices.length > 0) {
-        setStatus('connected');
-        setLivePrices(prev => {
-          const next = new Map(prev);
-          for (const p of prices) {
-            const key = normalizeSymbolKey(p.symbol);
-            const prevEntry = next.get(key) || next.get(p.symbol.toUpperCase());
-            const tickDirection = prevEntry
-              ? p.ltp > prevEntry.price ? 'up' : p.ltp < prevEntry.price ? 'down' : 'neutral'
-              : 'neutral';
-
-            const entry: LiveSymbolData = {
-              symbol: p.symbol,
-              price: p.ltp,
-              change: p.change,
-              changePct: p.changePercent,
-              timestamp: p.timestamp || now,
-              tickDirection,
-              lastUpdated: now,
-            };
-
-            next.set(key, entry);
-            next.set(p.symbol, entry);
-            next.set(p.symbol.toUpperCase(), entry);
-            next.set(p.symbol.replace(/\s+/g, ''), entry);
-            next.set(p.symbol.replace(/\.NS$/, '').replace(/\.BO$/, ''), entry);
-
-            if (key === 'NIFTY') {
-              next.set('NIFTY', entry);
-              next.set('NIFTY 50', entry);
-              next.set('NIFTY50', entry);
-            }
-            if (key === 'BANKNIFTY') {
-              next.set('BANKNIFTY', entry);
-              next.set('BANK NIFTY', entry);
-            }
-            if (key === 'FINNIFTY') {
-              next.set('FINNIFTY', entry);
-              next.set('FIN NIFTY', entry);
-            }
-            if (key === 'SENSEX') {
-              next.set('SENSEX', entry);
-              next.set('BSE SENSEX', entry);
-            }
-          }
-          return next;
-        });
-      }
-
-      // Also index cryptos into livePrices map
+      // Index cryptos into livePrices map
       if (cryptos.length > 0) {
         setLivePrices(prev => {
           const next = new Map(prev);
@@ -264,7 +288,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
         });
       }
 
-      // Also index commodities, forex, and macro into livePrices map
+      // Index commodities, forex, and macro into livePrices map
       if (macros.length > 0) {
         setLivePrices(prev => {
           const next = new Map(prev);
@@ -360,16 +384,39 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
         });
       }
     } catch (err) {
-      console.warn('[TradeEngineProvider] Reconciliation error:', err);
+      console.warn('[TradeEngineProvider] syncCryptoAndMacro error:', err);
     }
   }, []);
 
   useEffect(() => {
-    refreshHttpSnapshot();
-    // Steady update cadence: polls snapshots every 30 seconds without frequent jitter
-    const interval = setInterval(refreshHttpSnapshot, 30000);
-    return () => clearInterval(interval);
-  }, [refreshHttpSnapshot]);
+    // Initial immediate pull
+    syncLivePrices();
+    syncCryptoAndMacro();
+
+    // Fast 2-second polling for live equities & indices
+    const pricesInterval = setInterval(syncLivePrices, 2000);
+    // 8-second cadence for crypto and macro benchmarks
+    const macroInterval = setInterval(syncCryptoAndMacro, 8000);
+
+    // Refresh immediately when window regain visibility
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        syncLivePrices();
+        syncCryptoAndMacro();
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
+
+    return () => {
+      clearInterval(pricesInterval);
+      clearInterval(macroInterval);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibility);
+      }
+    };
+  }, [syncLivePrices, syncCryptoAndMacro]);
 
   // 3. WebSocket Real-time Tick Stream from Trade Engine Server
   useEffect(() => {
