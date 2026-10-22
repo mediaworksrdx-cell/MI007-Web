@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage, SUGGESTED_MENTOR_QUESTIONS } from '@/lib/academy/academyData';
+import { ChatMessage } from '@/lib/academy/academyData';
 import { generateMentorResponse } from '@/lib/academy/financialDomainFilter';
 
 interface AskMentorTabProps {
@@ -15,7 +15,7 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
       id: 'welcome',
       sender: 'Aarka AI',
       message:
-        'Welcome to **Aarka AI Cognitive Mentor**. I specialize strictly in institutional market structure, order book liquidity, Option Greeks, Smart Money Concepts (SMC), and quantitative risk discipline. Ask me anything about trading strategy or fundamentals.',
+        'Welcome to **Aarka AI Mentor**. I provide real-time institutional analysis across **Finance**, **Technical Analysis**, **Fundamental Valuation**, **Stock Markets**, **Forex**, **Commodities**, and **Crypto**.\n\nAsk me anything regarding trade setups, market microstructure, valuation models, option Greeks, or quantitative risk discipline.',
       isMentor: true,
       timestamp: 'Now',
     },
@@ -54,14 +54,14 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
       const mentorAnswer = generateMentorResponse(query, { spot: niftySpot });
       const botMsg: ChatMessage = {
         id: `mentor-${Date.now()}`,
-        sender: 'Aarka AI 7B',
+        sender: 'Aarka AI',
         message: mentorAnswer,
         isMentor: true,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages(prev => [...prev, botMsg]);
       setIsTyping(false);
-    }, 450);
+    }, 400);
   };
 
   return (
@@ -71,10 +71,8 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
         <div className="flex items-center gap-2.5">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="font-black uppercase tracking-wider text-emerald-400">
-            AARKA AI 7B NEURAL ENGINE
+            AARKA AI MENTOR
           </span>
-          <span className="opacity-40">|</span>
-          <span className="opacity-70">COGNITIVE MENTOR ACTIVE</span>
         </div>
         <div className="text-right text-[10.5px]">
           <span className="opacity-60">Spot Telemetry: </span>
@@ -101,7 +99,6 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
                   : 'bg-emerald-500 text-slate-950 font-medium'
               }`}
             >
-              {/* Render formatting simply with markdown whitespace */}
               <div className="whitespace-pre-wrap text-[13px]">{msg.message}</div>
             </div>
           </div>
@@ -116,21 +113,6 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
         <div ref={scrollRef} />
       </div>
 
-      {/* Suggested Questions Pills */}
-      <div className="px-4 py-2 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] flex items-center gap-2 overflow-x-auto whitespace-nowrap font-mono text-[10.5px]">
-        <span className="opacity-50 shrink-0 uppercase font-bold">Suggested:</span>
-        {SUGGESTED_MENTOR_QUESTIONS.map(q => (
-          <button
-            key={q}
-            type="button"
-            onClick={() => handleSend(q)}
-            className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] hover:border-emerald-500/50 hover:bg-emerald-500/10 text-emerald-400 transition-colors cursor-pointer shrink-0"
-          >
-            {q}
-          </button>
-        ))}
-      </div>
-
       {/* Query Input Footer */}
       <div className="p-3 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center gap-2">
         <input
@@ -140,7 +122,7 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
           onKeyDown={e => {
             if (e.key === 'Enter') handleSend();
           }}
-          placeholder="Ask Aarka AI (e.g. NIFTY 50 structure, F&O Greeks, SMC Order Blocks, Risk discipline)..."
+          placeholder="Ask Aarka AI (Finance, Technicals, Fundamentals, Stocks, Forex, Commodities, Crypto)..."
           className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[13px] font-sans focus:outline-emerald-500"
         />
 
@@ -149,7 +131,7 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
           onClick={() => handleSend()}
           className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-xs font-black transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
         >
-          Ask Mentor →
+          Ask Aarka Mentor →
         </button>
       </div>
     </div>

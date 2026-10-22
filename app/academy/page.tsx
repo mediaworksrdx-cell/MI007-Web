@@ -24,7 +24,7 @@ export default function AcademyPage() {
               Cognitive Academy & Simulation Runtime
             </h1>
             <p className="text-sm opacity-70 mt-1 max-w-2xl font-sans">
-              Institutional learning framework, Aarka AI 7B cognitive mentoring, Greeks delta-neutral hedging drills, and mathematical risk discipline.
+              Institutional learning framework, Aarka AI mentoring, Greeks delta-neutral hedging drills, and mathematical risk discipline.
             </p>
           </div>
 

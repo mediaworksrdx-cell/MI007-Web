@@ -63,7 +63,7 @@ export function AcademyWorkspace() {
                 : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] opacity-75 hover:opacity-100'
             }`}
           >
-            <span>🧠 Ask Cognitive Mentor</span>
+            <span>🧠 Ask Aarka Mentor</span>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </button>
 
