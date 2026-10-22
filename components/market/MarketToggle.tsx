@@ -4,8 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { MarketType } from '@/lib/types';
 
 interface MarketToggleProps {
-  selected: MarketType;
-  onChange: (market: MarketType) => void;
+  selected?: MarketType;
+  market?: MarketType;
+  onChange?: (market: MarketType) => void;
+  onMarketChange?: (market: MarketType) => void;
   className?: string;
 }
 
@@ -20,11 +22,18 @@ const MARKET_OPTIONS: {
   { key: 'UAE',   label: 'UAE',   currency: 'AED', exchanges: 'DFM · ADX' },
 ];
 
-export function MarketToggle({ selected, onChange, className = '' }: MarketToggleProps) {
+export function MarketToggle({
+  selected,
+  market,
+  onChange,
+  onMarketChange,
+  className = '',
+}: MarketToggleProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const activeMarket = MARKET_OPTIONS.find((m) => m.key === selected) || MARKET_OPTIONS[0];
+  const currentMarket: MarketType = selected || market || 'INDIA';
+  const activeMarket = MARKET_OPTIONS.find((m) => m.key === currentMarket) || MARKET_OPTIONS[0];
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
@@ -53,7 +62,8 @@ export function MarketToggle({ selected, onChange, className = '' }: MarketToggl
   }, [isOpen]);
 
   const handleSelect = (key: MarketType) => {
-    onChange(key);
+    onChange?.(key);
+    onMarketChange?.(key);
     setIsOpen(false);
   };
 
@@ -98,7 +108,7 @@ export function MarketToggle({ selected, onChange, className = '' }: MarketToggl
           </div>
           <div className="flex flex-col gap-1">
             {MARKET_OPTIONS.map(({ key, label, currency, exchanges }) => {
-              const isActive = selected === key;
+              const isActive = currentMarket === key;
               return (
                 <button
                   key={key}

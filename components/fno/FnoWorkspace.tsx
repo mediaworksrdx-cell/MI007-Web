@@ -47,17 +47,28 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
   const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
 
   // Active instrument
-  const [selectedInstrument, setSelectedInstrument] = useState<FnoInstrument>(
-    SUPPORTED_FNO_INSTRUMENTS[0]
-  );
+  const [selectedInstrument, setSelectedInstrument] = useState<FnoInstrument>(() => {
+    return SUPPORTED_FNO_INSTRUMENTS.find((i) => i.market === market) || SUPPORTED_FNO_INSTRUMENTS[0];
+  });
 
   // Active expiry
-  const [selectedExpiry, setSelectedExpiry] = useState<string>(
-    SUPPORTED_FNO_INSTRUMENTS[0].currentExpiry
-  );
+  const [selectedExpiry, setSelectedExpiry] = useState<string>(() => {
+    const initialInst = SUPPORTED_FNO_INSTRUMENTS.find((i) => i.market === market) || SUPPORTED_FNO_INSTRUMENTS[0];
+    return initialInst.currentExpiry;
+  });
 
   // Active workspace tab
   const [activeTab, setActiveTab] = useState<FnoTabId>(initialTab);
+
+  // Synchronize instrument when active market toggle changes
+  useEffect(() => {
+    if (selectedInstrument.market !== market) {
+      const match = SUPPORTED_FNO_INSTRUMENTS.find((i) => i.market === market);
+      if (match) {
+        handleSelectInstrument(match);
+      }
+    }
+  }, [market, selectedInstrument.market]);
 
   // Synchronize with live price from tradeEngine
   const liveSpotData = getSymbolPrice(selectedInstrument.symbol);
@@ -89,6 +100,9 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
   const handleSelectInstrument = (inst: FnoInstrument) => {
     setSelectedInstrument(inst);
     setSelectedExpiry(inst.currentExpiry);
+    if (inst.market && inst.market !== market) {
+      setMarket(inst.market);
+    }
 
     // Rebuild default preset for new instrument
     const defaultPreset = INSTITUTIONAL_STRATEGY_PRESETS[0];
@@ -181,7 +195,7 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <MarketToggle market={market} onMarketChange={setMarket} />
+            <MarketToggle selected={market} onChange={setMarket} market={market} onMarketChange={setMarket} />
           </div>
         </div>
 

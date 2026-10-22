@@ -1,7 +1,7 @@
 // ─── F&O Terminal Market Header ─────────────────────────────────────────────
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { FnoInstrument, OptionChainData, FuturesTermStructure } from '@/lib/fno/fnoTypes';
 import { SUPPORTED_FNO_INSTRUMENTS } from '@/lib/fno/fnoDataService';
 
@@ -62,14 +62,23 @@ export function FnoHeader({
   const basis = currentFuture ? Math.round((currentFuture.ltp - displaySpot) * 100) / 100 : 0;
   const isContango = basis >= 0;
 
+  const curr = selectedInstrument.market === 'USA' ? '$' : selectedInstrument.market === 'UAE' ? 'AED ' : '₹';
+  const loc = selectedInstrument.market === 'INDIA' ? 'en-IN' : 'en-US';
+
+  const marketInstruments = useMemo(() => {
+    return SUPPORTED_FNO_INSTRUMENTS.filter((i) => i.market === selectedInstrument.market);
+  }, [selectedInstrument.market]);
+
+  const quickInstruments = useMemo(() => {
+    return marketInstruments.slice(0, 7);
+  }, [marketInstruments]);
+
   const filteredInstruments = SUPPORTED_FNO_INSTRUMENTS.filter(
     (i) =>
       i.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
       i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       i.sector.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const QUICK_SYMBOLS = ['NIFTY 50', 'BANKNIFTY', 'FINNIFTY', 'RELIANCE', 'HDFCBANK', 'TCS', 'INFY'];
 
   return (
     <div className="relative z-30 mb-5 bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl p-3 sm:p-4 shadow-sm">
@@ -80,20 +89,19 @@ export function FnoHeader({
           <span className="mono text-[10.5px] font-bold text-[var(--theme-card-subtitle)] uppercase tracking-wider mr-1">
             DERIVATIVES:
           </span>
-          {QUICK_SYMBOLS.map((sym) => {
-            const isSelected = selectedInstrument.symbol === sym;
-            const inst = SUPPORTED_FNO_INSTRUMENTS.find((i) => i.symbol === sym);
+          {quickInstruments.map((inst) => {
+            const isSelected = selectedInstrument.symbol === inst.symbol;
             return (
               <button
-                key={sym}
-                onClick={() => inst && onSelectInstrument(inst)}
+                key={inst.symbol}
+                onClick={() => onSelectInstrument(inst)}
                 className={`px-3 py-1.5 rounded-lg text-[11px] mono font-bold transition-all shrink-0 cursor-pointer ${
                   isSelected
                     ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
                     : 'bg-[var(--theme-card-subsurface)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] hover:border-emerald-500/40 hover:text-emerald-400'
                 }`}
               >
-                {sym}
+                {inst.symbol}
               </button>
             );
           })}
@@ -177,7 +185,7 @@ export function FnoHeader({
                           </div>
                           <div className="text-right">
                             <div className="text-[11px] font-bold text-emerald-400">
-                              ₹{item.spotPrice.toLocaleString('en-IN')}
+                              {item.market === 'USA' ? '$' : item.market === 'UAE' ? 'AED ' : '₹'}{item.spotPrice.toLocaleString(item.market === 'INDIA' ? 'en-IN' : 'en-US')}
                             </div>
                             <div
                               className={`text-[9.5px] font-bold ${
@@ -195,12 +203,6 @@ export function FnoHeader({
               </div>
             )}
           </div>
-
-          {/* Connection Status Pill */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[10px] mono text-emerald-400 font-bold shrink-0">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>KITE CONNECT LIVE</span>
-          </div>
         </div>
       </div>
 
@@ -213,7 +215,7 @@ export function FnoHeader({
           </div>
           <div className="flex items-baseline gap-2 mt-0.5">
             <span className="mono text-[20px] sm:text-[23px] font-black text-[var(--theme-card-text)] tracking-tight">
-              ₹{displaySpot.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {curr}{displaySpot.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             <span
               className={`mono text-[11px] font-extrabold px-1.5 py-0.5 rounded ${
@@ -258,7 +260,7 @@ export function FnoHeader({
             FUTURES (NEAR)
           </div>
           <div className="mono text-[15px] font-black text-[var(--theme-card-text)] mt-0.5">
-            ₹{currentFuture?.ltp.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            {curr}{currentFuture?.ltp.toLocaleString(loc, { minimumFractionDigits: 2 })}
           </div>
           <div className="text-[10px] mono font-bold flex items-center gap-1.5 mt-0.5">
             <span className={isContango ? 'text-emerald-400' : 'text-rose-400'}>
@@ -310,7 +312,7 @@ export function FnoHeader({
             MAX PAIN STRIKE
           </div>
           <div className="mono text-[16px] font-black text-amber-400 mt-0.5">
-            ₹{chainData.maxPain.toLocaleString('en-IN')}
+            {curr}{chainData.maxPain.toLocaleString(loc)}
           </div>
           <div className="text-[9.5px] mono text-[var(--theme-card-subtitle)] mt-0.5">
             Diff: {chainData.maxPain - displaySpot >= 0 ? '+' : ''}
@@ -324,10 +326,10 @@ export function FnoHeader({
             OI MAGNET LEVELS
           </div>
           <div className="text-[11px] mono font-bold flex items-center justify-between mt-1">
-            <span className="text-rose-400">RES: ₹{chainData.highestCallOIStrike}</span>
+            <span className="text-rose-400">RES: {curr}{chainData.highestCallOIStrike.toLocaleString(loc)}</span>
           </div>
           <div className="text-[11px] mono font-bold flex items-center justify-between mt-0.5">
-            <span className="text-emerald-400">SUP: ₹{chainData.highestPutOIStrike}</span>
+            <span className="text-emerald-400">SUP: {curr}{chainData.highestPutOIStrike.toLocaleString(loc)}</span>
           </div>
         </div>
       </div>

@@ -306,20 +306,6 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             </Link>
           )}
 
-          {/* ── Institutional Spotlight Trigger (Ctrl+K) ── */}
-          <button
-            type="button"
-            onClick={() => {
-              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
-            }}
-            className="hidden md:inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border border-current/20 bg-black/10 hover:border-emerald-500/50 transition-all cursor-pointer text-[11px] font-mono font-bold opacity-85 hover:opacity-100 shadow-xs"
-            title="Open Institutional Spotlight (Ctrl+K)"
-          >
-            <span className="text-emerald-400">⌘</span>
-            <span>Search</span>
-            <kbd className="px-1.5 py-0.2 rounded border border-current/20 text-[9.5px] opacity-80">Ctrl+K</kbd>
-          </button>
-
           {/* ── Notification Bell Icon with Live Alerts Flyout ── */}
           <div className="relative" ref={notificationMenuRef}>
             <button
