@@ -1,7 +1,7 @@
 // ─── F&O Terminal Market Header ─────────────────────────────────────────────
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FnoInstrument, OptionChainData, FuturesTermStructure } from '@/lib/fno/fnoTypes';
 import { SUPPORTED_FNO_INSTRUMENTS } from '@/lib/fno/fnoDataService';
 
@@ -28,6 +28,32 @@ export function FnoHeader({
 }: FnoHeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setSearchOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Keyboard shortcut '/' to focus search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        inputRef.current?.focus();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const displaySpot = liveSpot && liveSpot > 0 ? liveSpot : selectedInstrument.spotPrice;
   const isPositive = selectedInstrument.change >= 0;
@@ -39,7 +65,8 @@ export function FnoHeader({
   const filteredInstruments = SUPPORTED_FNO_INSTRUMENTS.filter(
     (i) =>
       i.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      i.name.toLowerCase().includes(searchQuery.toLowerCase())
+      i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      i.sector.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const QUICK_SYMBOLS = ['NIFTY 50', 'BANKNIFTY', 'FINNIFTY', 'RELIANCE', 'HDFCBANK', 'TCS', 'INFY'];
@@ -72,59 +99,105 @@ export function FnoHeader({
           })}
         </div>
 
-        {/* Search Modal Trigger & Status */}
-        <div className="flex items-center gap-2 relative">
-          <div className="relative">
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="px-3 py-1 rounded-lg bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] hover:border-emerald-500/50 text-[11px] mono font-bold text-[var(--theme-card-text)] flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <span>🔍 SEARCH F&O</span>
-              <span className="text-[9px] px-1 py-0.2 bg-[var(--theme-card-border)] rounded text-[var(--theme-card-subtitle)]">
-                {SUPPORTED_FNO_INSTRUMENTS.length}
+        {/* Real-time Integrated Search Bar & Connection Status */}
+        <div className="flex items-center gap-2.5 relative flex-1 sm:flex-initial" ref={searchRef}>
+          <div className="relative w-full sm:w-72 md:w-80">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--theme-card-subtitle)] pointer-events-none">
+              🔍
+            </span>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder={`Search ${SUPPORTED_FNO_INSTRUMENTS.length}+ F&O assets... (Press /)`}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSearchOpen(true);
+              }}
+              onFocus={() => setSearchOpen(true)}
+              className="w-full pl-8 pr-16 py-1.5 rounded-xl bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] hover:border-emerald-500/50 focus:border-emerald-500 text-[11.5px] mono font-bold text-[var(--theme-card-text)] placeholder-[var(--theme-card-subtitle)] focus:outline-hidden transition-all shadow-xs"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchOpen(false);
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--theme-card-subtitle)] hover:text-[var(--theme-card-text)] px-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            ) : (
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9.5px] px-1.5 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-subtitle)] pointer-events-none font-mono">
+                /
               </span>
-            </button>
+            )}
 
-            {/* Dropdown Menu */}
+            {/* Autocomplete Dropdown */}
             {searchOpen && (
-              <div className="absolute right-0 top-9 w-72 max-h-80 bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl shadow-2xl p-2 z-50 flex flex-col gap-1.5">
-                <input
-                  type="text"
-                  placeholder="Filter F&O Stock/Index..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] text-[12px] mono text-[var(--theme-card-text)] focus:outline-hidden focus:border-emerald-500"
-                />
-                <div className="overflow-y-auto max-h-60 flex flex-col gap-1">
-                  {filteredInstruments.map((item) => (
-                    <button
-                      key={item.symbol}
-                      onClick={() => {
-                        onSelectInstrument(item);
-                        setSearchOpen(false);
-                        setSearchQuery('');
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/15 flex items-center justify-between text-[11.5px] mono text-[var(--theme-card-text)] transition-colors cursor-pointer"
-                    >
-                      <div>
-                        <div className="font-bold">{item.symbol}</div>
-                        <div className="text-[10px] text-[var(--theme-card-subtitle)] truncate max-w-[170px]">
-                          {item.name}
-                        </div>
-                      </div>
-                      <span className="text-[10.5px] font-bold text-emerald-400">
-                        ₹{item.spotPrice.toLocaleString('en-IN')}
-                      </span>
-                    </button>
-                  ))}
+              <div className="absolute right-0 top-10 w-full sm:w-88 max-h-80 bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 backdrop-blur-md">
+                <div className="px-2 py-1 text-[9.5px] mono font-bold text-[var(--theme-card-subtitle)] uppercase border-b border-[var(--theme-card-border)] flex items-center justify-between">
+                  <span>SUPPORTED F&amp;O UNIVERSE</span>
+                  <span>{filteredInstruments.length} RESULTS</span>
+                </div>
+                <div className="overflow-y-auto max-h-64 flex flex-col gap-0.5 no-scrollbar">
+                  {filteredInstruments.length === 0 ? (
+                    <div className="text-center py-6 text-[11px] mono text-[var(--theme-card-subtitle)]">
+                      No matching F&amp;O symbols found.
+                    </div>
+                  ) : (
+                    filteredInstruments.map((item) => {
+                      const isItemActive = selectedInstrument.symbol === item.symbol;
+                      return (
+                        <button
+                          key={item.symbol}
+                          type="button"
+                          onClick={() => {
+                            onSelectInstrument(item);
+                            setSearchOpen(false);
+                            setSearchQuery('');
+                          }}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between text-[11.5px] mono transition-colors cursor-pointer ${
+                            isItemActive
+                              ? 'bg-emerald-500/20 text-emerald-400 font-black'
+                              : 'hover:bg-emerald-500/10 text-[var(--theme-card-text)]'
+                          }`}
+                        >
+                          <div>
+                            <div className="font-bold flex items-center gap-1.5">
+                              <span>{item.symbol}</span>
+                              <span className="text-[9px] px-1 py-0.2 rounded bg-[var(--theme-card-subsurface)] text-[var(--theme-card-subtitle)] font-normal">
+                                {item.exchange} · Lot {item.lotSize}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-[var(--theme-card-subtitle)] truncate max-w-[190px]">
+                              {item.name} · {item.sector}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[11px] font-bold text-emerald-400">
+                              ₹{item.spotPrice.toLocaleString('en-IN')}
+                            </div>
+                            <div
+                              className={`text-[9.5px] font-bold ${
+                                item.changePct >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                              }`}
+                            >
+                              {item.changePct >= 0 ? '+' : ''}{item.changePct.toFixed(2)}%
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             )}
           </div>
 
           {/* Connection Status Pill */}
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-[10px] mono text-emerald-400 font-bold">
+          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[10px] mono text-emerald-400 font-bold shrink-0">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>KITE CONNECT LIVE</span>
           </div>
