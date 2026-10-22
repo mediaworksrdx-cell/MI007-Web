@@ -1060,6 +1060,18 @@ export function searchFnoInstruments(
 }
 
 /**
+ * Resolves the primary weekly and monthly expiries for an instrument
+ */
+export function getWeeklyAndMonthlyExpiries(expiries: string[]): { weeklyExpiry: string; monthlyExpiry: string } {
+  if (!expiries || expiries.length === 0) {
+    return { weeklyExpiry: '', monthlyExpiry: '' };
+  }
+  const weeklyExpiry = expiries[0];
+  const monthlyExpiry = expiries.length >= 3 ? expiries[2] : (expiries[1] || expiries[0]);
+  return { weeklyExpiry, monthlyExpiry };
+}
+
+/**
  * Generates an institutional-grade option chain around spot price.
  */
 export function generateOptionChain(
@@ -1135,17 +1147,21 @@ export function generateOptionChain(
     const distFromAtm = Math.abs(i);
     const decayFactor = Math.exp(-0.15 * distFromAtm);
 
+    // Differentiate Weekly vs Monthly OI volume & structure
+    const isMonthly = daysToExpiry > 14;
+    const oiScale = isMonthly ? 2.6 : 1.0;
+
     // Call OI peaks at resistance (OTM Calls: strike > spot)
-    const callOIWeight = i >= 0 ? 1.2 : 0.6;
-    const callOI = Math.round((120000 * decayFactor * strikeRoundFactor * callOIWeight) / 100) * 100;
+    const callOIWeight = isMonthly ? (i >= 1 ? 1.35 : 0.65) : (i >= 0 ? 1.2 : 0.6);
+    const callOI = Math.round((120000 * oiScale * decayFactor * strikeRoundFactor * callOIWeight) / 100) * 100;
     const callChgOI = Math.round((callOI * 0.08 * (i >= 0 ? 1 : -0.5)) / 50) * 50;
-    const callVol = Math.round(callOI * 0.45);
+    const callVol = Math.round(callOI * (isMonthly ? 0.35 : 0.45));
 
     // Put OI peaks at support (OTM Puts: strike < spot)
-    const putOIWeight = i <= 0 ? 1.3 : 0.5;
-    const putOI = Math.round((140000 * decayFactor * strikeRoundFactor * putOIWeight) / 100) * 100;
+    const putOIWeight = isMonthly ? (i <= -1 ? 1.4 : 0.55) : (i <= 0 ? 1.3 : 0.5);
+    const putOI = Math.round((140000 * oiScale * decayFactor * strikeRoundFactor * putOIWeight) / 100) * 100;
     const putChgOI = Math.round((putOI * 0.07 * (i <= 0 ? 1 : -0.4)) / 50) * 50;
-    const putVol = Math.round(putOI * 0.42);
+    const putVol = Math.round(putOI * (isMonthly ? 0.32 : 0.42));
 
     totalCallOI += callOI;
     totalPutOI += putOI;

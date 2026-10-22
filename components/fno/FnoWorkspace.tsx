@@ -17,6 +17,7 @@ import {
   SUPPORTED_FNO_INSTRUMENTS,
   generateOptionChain,
   getFuturesTermStructure,
+  getWeeklyAndMonthlyExpiries,
 } from '@/lib/fno/fnoDataService';
 import {
   INSTITUTIONAL_STRATEGY_PRESETS,
@@ -84,10 +85,27 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
     ? fnoFeed.liveSpot
     : (liveSpotData ? liveSpotData.price : selectedInstrument.spotPrice);
 
-  // Option Chain Data
+  // Option Chain Data (active selected expiry)
   const chainData = useMemo(() => {
     return generateOptionChain(selectedInstrument.symbol, selectedExpiry, liveSpot);
   }, [selectedInstrument.symbol, selectedExpiry, liveSpot]);
+
+  // Weekly & Monthly Expiries
+  const { weeklyExpiry, monthlyExpiry } = useMemo(() => {
+    return getWeeklyAndMonthlyExpiries(selectedInstrument.expiries);
+  }, [selectedInstrument.expiries]);
+
+  // Weekly Option Chain Data
+  const weeklyChainData = useMemo(() => {
+    if (selectedExpiry === weeklyExpiry) return chainData;
+    return generateOptionChain(selectedInstrument.symbol, weeklyExpiry, liveSpot);
+  }, [selectedInstrument.symbol, weeklyExpiry, liveSpot, selectedExpiry, chainData]);
+
+  // Monthly Option Chain Data
+  const monthlyChainData = useMemo(() => {
+    if (selectedExpiry === monthlyExpiry) return chainData;
+    return generateOptionChain(selectedInstrument.symbol, monthlyExpiry, liveSpot);
+  }, [selectedInstrument.symbol, monthlyExpiry, liveSpot, selectedExpiry, chainData]);
 
   // Futures Term Structure
   const termStructure = useMemo(() => {
@@ -240,6 +258,10 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
           selectedExpiry={selectedExpiry}
           onSelectExpiry={setSelectedExpiry}
           chainData={chainData}
+          weeklyChainData={weeklyChainData}
+          monthlyChainData={monthlyChainData}
+          weeklyExpiry={weeklyExpiry}
+          monthlyExpiry={monthlyExpiry}
           termStructure={termStructure}
           liveSpot={liveSpot}
           engineConnected={tradeEngineStatus === 'connected'}

@@ -12,6 +12,10 @@ interface FnoHeaderProps {
   selectedExpiry: string;
   onSelectExpiry: (expiry: string) => void;
   chainData: OptionChainData;
+  weeklyChainData?: OptionChainData | null;
+  monthlyChainData?: OptionChainData | null;
+  weeklyExpiry?: string;
+  monthlyExpiry?: string;
   termStructure: FuturesTermStructure;
   liveSpot?: number;
   engineConnected?: boolean;
@@ -24,6 +28,10 @@ export function FnoHeader({
   selectedExpiry,
   onSelectExpiry,
   chainData,
+  weeklyChainData,
+  monthlyChainData,
+  weeklyExpiry,
+  monthlyExpiry,
   termStructure,
   liveSpot,
   engineConnected = true,
@@ -57,6 +65,14 @@ export function FnoHeader({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const [metricMode, setMetricMode] = useState<'DUAL' | 'ACTIVE'>('DUAL');
+
+  const wkExp = weeklyExpiry || selectedInstrument.expiries[0] || selectedExpiry;
+  const moExp = monthlyExpiry || (selectedInstrument.expiries.length >= 3 ? selectedInstrument.expiries[2] : (selectedInstrument.expiries[1] || selectedInstrument.expiries[0] || selectedExpiry));
+
+  const wkData = weeklyChainData || chainData;
+  const moData = monthlyChainData || chainData;
 
   const displaySpot = liveSpot && liveSpot > 0 ? liveSpot : selectedInstrument.spotPrice;
   const isPositive = selectedInstrument.change >= 0;
@@ -262,19 +278,27 @@ export function FnoHeader({
 
         {/* Expiry Selector */}
         <div>
-          <label className="mono text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase tracking-wider block">
-            ACTIVE EXPIRY
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="mono text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase tracking-wider block">
+              ACTIVE EXPIRY
+            </label>
+            <span className="text-[8.5px] mono font-bold text-emerald-400">
+              {selectedExpiry === wkExp ? 'WK' : selectedExpiry === moExp ? 'MO' : 'CYCLE'}
+            </span>
+          </div>
           <select
             value={selectedExpiry}
             onChange={(e) => onSelectExpiry(e.target.value)}
             className="mt-1 w-full px-2 py-1.5 rounded-lg bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] text-[12px] mono font-bold text-[var(--theme-card-text)] focus:outline-hidden focus:border-emerald-500 cursor-pointer"
           >
-            {selectedInstrument.expiries.map((exp) => (
-              <option key={exp} value={exp} className="bg-[var(--theme-card-surface)] text-[var(--theme-card-text)]">
-                {exp}
-              </option>
-            ))}
+            {selectedInstrument.expiries.map((exp) => {
+              const tag = exp === wkExp ? ' • Weekly' : exp === moExp ? ' • Monthly' : '';
+              return (
+                <option key={exp} value={exp} className="bg-[var(--theme-card-surface)] text-[var(--theme-card-text)]">
+                  {exp}{tag}
+                </option>
+              );
+            })}
           </select>
           <div className="text-[9.5px] mono text-[var(--theme-card-subtitle)] mt-0.5">
             Lot Size: <span className="font-bold text-[var(--theme-card-text)]">{selectedInstrument.lotSize}</span>
@@ -299,65 +323,216 @@ export function FnoHeader({
           </div>
         </div>
 
-        {/* Put-Call Ratio (PCR) */}
+        {/* Put-Call Ratio (PCR) with Dual Weekly vs Monthly view */}
         <div>
-          <div className="mono text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase tracking-wider">
-            PUT-CALL RATIO (OI)
-          </div>
-          <div className="mono text-[16px] font-black mt-0.5 flex items-center gap-1.5">
-            <span
-              className={
-                chainData.pcr >= 1.2
-                  ? 'text-emerald-400'
-                  : chainData.pcr <= 0.8
-                  ? 'text-rose-400'
-                  : 'text-amber-400'
-              }
+          <div className="flex items-center justify-between">
+            <div className="mono text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase tracking-wider">
+              PUT-CALL RATIO (OI)
+            </div>
+            <button
+              type="button"
+              onClick={() => setMetricMode((m) => (m === 'DUAL' ? 'ACTIVE' : 'DUAL'))}
+              className="text-[8px] mono font-extrabold px-1.5 py-0.2 rounded bg-[var(--theme-card-subsurface)] text-cyan-400 border border-cyan-500/30 hover:border-cyan-400 transition cursor-pointer"
+              title="Toggle between Dual (Weekly + Monthly) and Active Expiry view"
             >
-              {chainData.pcr.toFixed(2)}
-            </span>
-            <span
-              className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded border ${
-                chainData.pcr >= 1.2
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                  : chainData.pcr <= 0.8
-                  ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                  : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-              }`}
-            >
-              {chainData.pcr >= 1.2 ? 'BULLISH' : chainData.pcr <= 0.8 ? 'BEARISH' : 'NEUTRAL'}
-            </span>
+              {metricMode === 'DUAL' ? 'DUAL: WK & MO' : 'ACTIVE ONLY'}
+            </button>
           </div>
-          <div className="text-[9.5px] mono text-[var(--theme-card-subtitle)] mt-0.5">
-            CE: {(chainData.totalCallOI / 100000).toFixed(1)}L · PE: {(chainData.totalPutOI / 100000).toFixed(1)}L
-          </div>
+
+          {metricMode === 'DUAL' ? (
+            <div className="mt-1 space-y-1">
+              {/* Weekly PCR */}
+              <div
+                onClick={() => onSelectExpiry(wkExp)}
+                className={`px-1.5 py-0.8 rounded text-[11px] mono flex items-center justify-between cursor-pointer transition border ${
+                  selectedExpiry === wkExp
+                    ? 'bg-amber-500/10 border-amber-500/40 text-[var(--theme-card-text)]'
+                    : 'bg-[var(--theme-card-subsurface)]/60 border-transparent hover:border-amber-500/30 text-[var(--theme-card-subtitle)]'
+                }`}
+                title={`Click to switch option chain to Weekly (${wkExp})`}
+              >
+                <div className="flex items-center gap-1">
+                  <span className="text-[8.5px] font-black px-1 py-0.2 rounded bg-amber-500/20 text-amber-400">WK</span>
+                  <span className={`font-black ${wkData.pcr >= 1.2 ? 'text-emerald-400' : wkData.pcr <= 0.8 ? 'text-rose-400' : 'text-amber-400'}`}>
+                    {wkData.pcr.toFixed(2)}
+                  </span>
+                  <span className="text-[7.5px] font-bold px-1 rounded bg-[var(--theme-card-subsurface)]">
+                    {wkData.pcr >= 1.2 ? 'BULL' : wkData.pcr <= 0.8 ? 'BEAR' : 'NEUT'}
+                  </span>
+                </div>
+                <span className="text-[8.5px]">
+                  {(wkData.totalCallOI / 100000).toFixed(1)}L / {(wkData.totalPutOI / 100000).toFixed(1)}L
+                </span>
+              </div>
+
+              {/* Monthly PCR */}
+              <div
+                onClick={() => onSelectExpiry(moExp)}
+                className={`px-1.5 py-0.8 rounded text-[11px] mono flex items-center justify-between cursor-pointer transition border ${
+                  selectedExpiry === moExp
+                    ? 'bg-indigo-500/10 border-indigo-500/40 text-[var(--theme-card-text)]'
+                    : 'bg-[var(--theme-card-subsurface)]/60 border-transparent hover:border-indigo-500/30 text-[var(--theme-card-subtitle)]'
+                }`}
+                title={`Click to switch option chain to Monthly (${moExp})`}
+              >
+                <div className="flex items-center gap-1">
+                  <span className="text-[8.5px] font-black px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-400">MO</span>
+                  <span className={`font-black ${moData.pcr >= 1.2 ? 'text-emerald-400' : moData.pcr <= 0.8 ? 'text-rose-400' : 'text-amber-400'}`}>
+                    {moData.pcr.toFixed(2)}
+                  </span>
+                  <span className="text-[7.5px] font-bold px-1 rounded bg-[var(--theme-card-subsurface)]">
+                    {moData.pcr >= 1.2 ? 'BULL' : moData.pcr <= 0.8 ? 'BEAR' : 'NEUT'}
+                  </span>
+                </div>
+                <span className="text-[8.5px]">
+                  {(moData.totalCallOI / 100000).toFixed(1)}L / {(moData.totalPutOI / 100000).toFixed(1)}L
+                </span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mono text-[16px] font-black mt-0.5 flex items-center gap-1.5">
+                <span
+                  className={
+                    chainData.pcr >= 1.2
+                      ? 'text-emerald-400'
+                      : chainData.pcr <= 0.8
+                      ? 'text-rose-400'
+                      : 'text-amber-400'
+                  }
+                >
+                  {chainData.pcr.toFixed(2)}
+                </span>
+                <span
+                  className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded border ${
+                    chainData.pcr >= 1.2
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      : chainData.pcr <= 0.8
+                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                      : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                  }`}
+                >
+                  {chainData.pcr >= 1.2 ? 'BULLISH' : chainData.pcr <= 0.8 ? 'BEARISH' : 'NEUTRAL'}
+                </span>
+              </div>
+              <div className="text-[9.5px] mono text-[var(--theme-card-subtitle)] mt-0.5">
+                CE: {(chainData.totalCallOI / 100000).toFixed(1)}L · PE: {(chainData.totalPutOI / 100000).toFixed(1)}L
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Max Pain Strike */}
+        {/* Max Pain Strike with Dual Weekly vs Monthly view */}
         <div>
           <div className="mono text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase tracking-wider">
             MAX PAIN STRIKE
           </div>
-          <div className="mono text-[16px] font-black text-amber-400 mt-0.5">
-            {curr}{chainData.maxPain.toLocaleString(loc)}
-          </div>
-          <div className="text-[9.5px] mono text-[var(--theme-card-subtitle)] mt-0.5">
-            Diff: {chainData.maxPain - displaySpot >= 0 ? '+' : ''}
-            {(chainData.maxPain - displaySpot).toFixed(1)} pts
-          </div>
+
+          {metricMode === 'DUAL' ? (
+            <div className="mt-1 space-y-1">
+              {/* Weekly Max Pain */}
+              <div
+                onClick={() => onSelectExpiry(wkExp)}
+                className={`px-1.5 py-0.8 rounded text-[11px] mono flex items-center justify-between cursor-pointer transition border ${
+                  selectedExpiry === wkExp
+                    ? 'bg-amber-500/10 border-amber-500/40 text-[var(--theme-card-text)]'
+                    : 'bg-[var(--theme-card-subsurface)]/60 border-transparent hover:border-amber-500/30 text-[var(--theme-card-subtitle)]'
+                }`}
+                title={`Weekly (${wkExp}) Max Pain`}
+              >
+                <div className="flex items-center gap-1">
+                  <span className="text-[8.5px] font-black px-1 py-0.2 rounded bg-amber-500/20 text-amber-400">WK</span>
+                  <span className="font-black text-amber-400">
+                    {curr}{wkData.maxPain.toLocaleString(loc)}
+                  </span>
+                </div>
+                <span className="text-[8.5px]">
+                  {wkData.maxPain - displaySpot >= 0 ? '+' : ''}{(wkData.maxPain - displaySpot).toFixed(1)} pts
+                </span>
+              </div>
+
+              {/* Monthly Max Pain */}
+              <div
+                onClick={() => onSelectExpiry(moExp)}
+                className={`px-1.5 py-0.8 rounded text-[11px] mono flex items-center justify-between cursor-pointer transition border ${
+                  selectedExpiry === moExp
+                    ? 'bg-indigo-500/10 border-indigo-500/40 text-[var(--theme-card-text)]'
+                    : 'bg-[var(--theme-card-subsurface)]/60 border-transparent hover:border-indigo-500/30 text-[var(--theme-card-subtitle)]'
+                }`}
+                title={`Monthly (${moExp}) Max Pain`}
+              >
+                <div className="flex items-center gap-1">
+                  <span className="text-[8.5px] font-black px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-400">MO</span>
+                  <span className="font-black text-indigo-400">
+                    {curr}{moData.maxPain.toLocaleString(loc)}
+                  </span>
+                </div>
+                <span className="text-[8.5px]">
+                  {moData.maxPain - displaySpot >= 0 ? '+' : ''}{(moData.maxPain - displaySpot).toFixed(1)} pts
+                </span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mono text-[16px] font-black text-amber-400 mt-0.5">
+                {curr}{chainData.maxPain.toLocaleString(loc)}
+              </div>
+              <div className="text-[9.5px] mono text-[var(--theme-card-subtitle)] mt-0.5">
+                Diff: {chainData.maxPain - displaySpot >= 0 ? '+' : ''}
+                {(chainData.maxPain - displaySpot).toFixed(1)} pts
+              </div>
+            </>
+          )}
         </div>
 
-        {/* OI Magnets (Support / Resistance) */}
+        {/* OI Magnets (Support / Resistance) with Dual Weekly vs Monthly view */}
         <div>
           <div className="mono text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase tracking-wider">
             OI MAGNET LEVELS
           </div>
-          <div className="text-[11px] mono font-bold flex items-center justify-between mt-1">
-            <span className="text-rose-400">RES: {curr}{chainData.highestCallOIStrike.toLocaleString(loc)}</span>
-          </div>
-          <div className="text-[11px] mono font-bold flex items-center justify-between mt-0.5">
-            <span className="text-emerald-400">SUP: {curr}{chainData.highestPutOIStrike.toLocaleString(loc)}</span>
-          </div>
+
+          {metricMode === 'DUAL' ? (
+            <div className="mt-1 space-y-1">
+              {/* Weekly Magnets */}
+              <div
+                onClick={() => onSelectExpiry(wkExp)}
+                className={`px-1.5 py-0.8 rounded text-[10px] mono font-bold flex items-center justify-between cursor-pointer transition border ${
+                  selectedExpiry === wkExp
+                    ? 'bg-amber-500/10 border-amber-500/40 text-[var(--theme-card-text)]'
+                    : 'bg-[var(--theme-card-subsurface)]/60 border-transparent hover:border-amber-500/30 text-[var(--theme-card-subtitle)]'
+                }`}
+                title={`Weekly (${wkExp}) Magnets`}
+              >
+                <span className="text-[8.5px] font-black px-1 py-0.2 rounded bg-amber-500/20 text-amber-400">WK</span>
+                <span className="text-rose-400">R: {curr}{wkData.highestCallOIStrike.toLocaleString(loc)}</span>
+                <span className="text-emerald-400">S: {curr}{wkData.highestPutOIStrike.toLocaleString(loc)}</span>
+              </div>
+
+              {/* Monthly Magnets */}
+              <div
+                onClick={() => onSelectExpiry(moExp)}
+                className={`px-1.5 py-0.8 rounded text-[10px] mono font-bold flex items-center justify-between cursor-pointer transition border ${
+                  selectedExpiry === moExp
+                    ? 'bg-indigo-500/10 border-indigo-500/40 text-[var(--theme-card-text)]'
+                    : 'bg-[var(--theme-card-subsurface)]/60 border-transparent hover:border-indigo-500/30 text-[var(--theme-card-subtitle)]'
+                }`}
+                title={`Monthly (${moExp}) Magnets`}
+              >
+                <span className="text-[8.5px] font-black px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-400">MO</span>
+                <span className="text-rose-400">R: {curr}{moData.highestCallOIStrike.toLocaleString(loc)}</span>
+                <span className="text-emerald-400">S: {curr}{moData.highestPutOIStrike.toLocaleString(loc)}</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="text-[11px] mono font-bold flex items-center justify-between mt-1">
+                <span className="text-rose-400">RES: {curr}{chainData.highestCallOIStrike.toLocaleString(loc)}</span>
+              </div>
+              <div className="text-[11px] mono font-bold flex items-center justify-between mt-0.5">
+                <span className="text-emerald-400">SUP: {curr}{chainData.highestPutOIStrike.toLocaleString(loc)}</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
