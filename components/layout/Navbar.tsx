@@ -32,6 +32,7 @@ const TERMINAL_NAV_LINKS = [
   { href: '/terminal',          label: 'Dashboard' },
   { href: '/chart/NIFTY',       label: 'Charts' },
   { href: '/terminal/screener', label: 'Screeners' },
+  { href: '/academy',           label: 'Academy' },
   { href: '/calendar',          label: 'Calendar' },
   { href: '/news',              label: 'News' },
 ];
@@ -46,6 +47,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/chart') ||
     pathname.startsWith('/screener') ||
+    pathname.startsWith('/academy') ||
     pathname.startsWith('/calendar') ||
     pathname.startsWith('/news');
 
@@ -269,6 +271,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               (href === '/chart/NIFTY' && pathname.startsWith('/chart')) ||
               (href === '/terminal' && (pathname === '/terminal' || pathname === '/dashboard')) ||
               (href === '/terminal/screener' && (pathname.startsWith('/terminal/screener') || pathname.startsWith('/screener'))) ||
+              (href === '/academy' && (pathname.startsWith('/academy') || pathname.startsWith('/terminal/academy'))) ||
               (href === '/calendar' && pathname.startsWith('/calendar')) ||
               (href === '/news' && pathname.startsWith('/news'));
             return (
@@ -478,6 +481,22 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                 <div className="border-t border-current/15 pt-2 flex flex-col gap-1.5">
                   <div className="flex items-center justify-between text-[11px] font-mono font-bold">
                     <Link
+                      href="/terminal/screener"
+                      onClick={() => setNotificationMenuOpen(false)}
+                      className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 group"
+                    >
+                      <span>⚡ Screeners</span>
+                      <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                    </Link>
+                    <Link
+                      href="/academy"
+                      onClick={() => setNotificationMenuOpen(false)}
+                      className="text-purple-400 hover:text-purple-300 flex items-center gap-1 group"
+                    >
+                      <span>🎓 Academy</span>
+                      <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                    </Link>
+                    <Link
                       href="/calendar"
                       onClick={() => setNotificationMenuOpen(false)}
                       className="text-amber-400 hover:text-amber-300 flex items-center gap-1 group"
@@ -491,14 +510,6 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                       className="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 group"
                     >
                       <span>📰 Newsroom</span>
-                      <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-                    </Link>
-                    <Link
-                      href="/terminal/screener"
-                      onClick={() => setNotificationMenuOpen(false)}
-                      className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 group"
-                    >
-                      <span>⚡ Screeners</span>
                       <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                     </Link>
                   </div>
@@ -726,6 +737,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               (href === '/chart/NIFTY' && pathname.startsWith('/chart')) ||
               (href === '/terminal' && (pathname === '/terminal' || pathname === '/dashboard')) ||
               (href === '/terminal/screener' && (pathname.startsWith('/terminal/screener') || pathname.startsWith('/screener'))) ||
+              (href === '/academy' && (pathname.startsWith('/academy') || pathname.startsWith('/terminal/academy'))) ||
               (href === '/calendar' && pathname.startsWith('/calendar')) ||
               (href === '/news' && pathname.startsWith('/news'));
             return (
