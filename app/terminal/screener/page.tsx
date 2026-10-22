@@ -37,12 +37,12 @@ export default function ScreenerTerminalPage() {
                   <span className="font-black">BACK TO DASHBOARD</span>
                 </Link>
 
-                <div className="flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center flex-shrink-0 overflow-visible">
+                <div className="flex h-[47px] w-[47px] sm:h-[55px] sm:w-[55px] items-center justify-center flex-shrink-0 overflow-visible">
                   <Falcon3DLogo
                     src="/images/logo-falcon-transparent.png"
                     alt="MARKET INTELLIGENCE MI-007"
-                    width={52}
-                    height={52}
+                    width={55}
+                    height={55}
                     className="w-full h-full object-contain"
                   />
                 </div>

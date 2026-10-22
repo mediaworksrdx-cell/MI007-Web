@@ -26,12 +26,12 @@ export default function FinalCTASection() {
         className="flex flex-col items-center text-center max-w-3xl mx-auto w-full relative z-10 p-8 sm:p-12 md:p-14 rounded-3xl border final-cta-card shadow-xl"
       >
         {/* Falcon Emblem Logo Composed Neatly Into Card */}
-        <div className="mb-4 sm:mb-5 relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 flex items-center justify-center">
+        <div className="mb-4 sm:mb-5 relative h-[83px] w-[83px] sm:h-[99px] sm:w-[99px] flex-shrink-0 flex items-center justify-center">
           <Falcon3DLogo
             src="/images/logo-falcon-transparent.png"
             alt="MARKET INTELLIGENCE MI-007"
-            width={96}
-            height={96}
+            width={99}
+            height={99}
             className="w-full h-full object-contain"
             popoutScale={1.08}
           />

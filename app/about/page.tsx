@@ -377,12 +377,12 @@ export default function AboutPage() {
           <div className="mx-auto max-w-3xl px-6">
             <div className="rounded-3xl border-2 inst-card p-8 sm:p-12 shadow-xl text-center">
               <div className="mb-5 flex justify-center">
-                <div className="h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center">
+                <div className="h-[67px] w-[67px] sm:h-[83px] sm:w-[83px] flex items-center justify-center">
                   <Falcon3DLogo
                     src="/images/logo-falcon-transparent.png"
                     alt="MARKET INTELLIGENCE MI-007"
-                    width={80}
-                    height={80}
+                    width={83}
+                    height={83}
                     className="w-full h-full object-contain"
                   />
                 </div>

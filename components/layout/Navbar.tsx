@@ -241,12 +241,12 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           onMouseEnter={() => setBrandHovered(true)}
           onMouseLeave={() => setBrandHovered(false)}
         >
-          <div className="relative z-50 h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 flex items-center justify-center overflow-visible">
+          <div className="relative z-50 h-[39px] w-[39px] sm:h-[43px] sm:w-[43px] flex-shrink-0 flex items-center justify-center overflow-visible">
             <Falcon3DLogo
               src="/images/logo-falcon-transparent.png"
               alt="MARKET INTELLIGENCE MI-007"
-              width={40}
-              height={40}
+              width={43}
+              height={43}
               priority
               className="w-full h-full object-contain"
               popoutScale={1.12}

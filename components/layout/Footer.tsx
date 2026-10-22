@@ -24,17 +24,17 @@ export function Footer() {
               <div
                 className="relative z-10 flex-shrink-0 flex items-center justify-center overflow-visible"
                 style={{
-                  width: '84px',
-                  height: '84px',
-                  minWidth: '84px',
-                  minHeight: '84px',
+                  width: '87px',
+                  height: '87px',
+                  minWidth: '87px',
+                  minHeight: '87px',
                 }}
               >
                 <Falcon3DLogo
                   src="/images/logo-falcon-transparent.png"
                   alt="MARKET INTELLIGENCE MI-007"
-                  width={84}
-                  height={84}
+                  width={87}
+                  height={87}
                   priority
                   className="w-full h-full object-contain drop-shadow-[0_4px_20px_rgba(16,185,129,0.4)]"
                   popoutScale={1.12}

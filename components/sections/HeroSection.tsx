@@ -288,12 +288,12 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="w-full flex justify-center mb-6"
         >
-          <div className="relative h-24 w-24 sm:h-28 sm:w-28 flex items-center justify-center overflow-visible">
+          <div className="relative h-[99px] w-[99px] sm:h-[115px] sm:w-[115px] flex items-center justify-center overflow-visible">
             <Falcon3DLogo
               src="/images/logo-falcon-transparent.png"
               alt="MARKET INTELLIGENCE MI-007"
-              width={112}
-              height={112}
+              width={115}
+              height={115}
               priority
               className="w-full h-full object-contain"
               popoutScale={1.1}
