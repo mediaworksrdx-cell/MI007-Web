@@ -37,6 +37,37 @@ export function CompanyAnalysisView({
   const [activeTab, setActiveTab] = useState<StatementTab>('quarterly');
   const [isConsolidated, setIsConsolidated] = useState<boolean>(company.isConsolidated);
 
+  const exportFinancialsCSV = () => {
+    const rows: string[][] = [
+      ['Company', `"${company.name}"`],
+      ['Symbol', company.symbol],
+      ['Market', company.market],
+      ['Sector', `"${company.sector}"`],
+      ['Current Price', String(currentPrice)],
+      ['Market Cap', String(liveMarketCap)],
+      ['P/E Ratio', String(livePe ?? '')],
+      ['ROCE (%)', String(company.roce ?? '')],
+      ['ROE (%)', String(company.roe ?? '')],
+      ['Debt to Equity', String(company.debtToEquity ?? '')],
+      ['Piotroski F-Score', `${piotroski.score}/9 (${piotroski.classification})`],
+      ['Altman Z-Score', `${altmanZ.score.toFixed(2)} (${altmanZ.zone})`],
+      [],
+      ['Annual Profit & Loss', ...company.annualProfitLoss.map((p) => p.year)],
+      ['Sales', ...company.annualProfitLoss.map((p) => String(p.sales))],
+      ['Operating Profit', ...company.annualProfitLoss.map((p) => String(p.operatingProfit))],
+      ['OPM %', ...company.annualProfitLoss.map((p) => String(p.opmPct))],
+      ['Net Profit', ...company.annualProfitLoss.map((p) => String(p.netProfit))],
+      ['EPS', ...company.annualProfitLoss.map((p) => String(p.eps))],
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((r) => r.join(',')).join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', `MI007_TearSheet_${company.symbol}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
   const live = getSymbolPrice(company.symbol);
   const currentPrice = live ? live.price : company.currentPrice;
@@ -142,6 +173,15 @@ export function CompanyAnalysisView({
                 Peer Matrix ⇄
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={exportFinancialsCSV}
+              className="px-3 py-2 rounded-xl mono text-[12px] font-bold border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:border-emerald-500 transition-all shadow-xs cursor-pointer"
+              title="Export Company Tear Sheet & Financials to CSV"
+            >
+              Export CSV ↓
+            </button>
 
             <Link
               href={`/chart/${company.symbol}?market=${company.market}&from=screener`}

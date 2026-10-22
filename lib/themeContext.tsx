@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { workspaceSync } from './workspaceSync';
 
 export type AppTheme = 'ocean' | 'violet' | 'cream' | 'sky';
 
@@ -137,6 +138,29 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(initialTheme);
     document.documentElement.setAttribute('data-theme', initialTheme);
     setMounted(true);
+
+    // Subscribe to multi-tab theme synchronization
+    const unsub = workspaceSync.subscribe((event) => {
+      if (event.type === 'THEME_CHANGED' && (THEMES as Record<string, ThemeConfig>)[event.theme]) {
+        const synced = event.theme as AppTheme;
+        setThemeState(synced);
+        document.documentElement.setAttribute('data-theme', synced);
+      }
+    });
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue && (THEMES as Record<string, ThemeConfig>)[e.newValue]) {
+        const synced = e.newValue as AppTheme;
+        setThemeState(synced);
+        document.documentElement.setAttribute('data-theme', synced);
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      unsub();
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   const setTheme = (newTheme: AppTheme) => {
@@ -144,6 +168,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, newTheme);
       document.documentElement.setAttribute('data-theme', newTheme);
+      workspaceSync.broadcast({ type: 'THEME_CHANGED', theme: newTheme, timestamp: Date.now() });
     }
   };
 

@@ -3,11 +3,13 @@ import './globals.css';
 import { MarketProvider } from '@/lib/marketContext';
 import { ThemeProvider } from '@/lib/themeContext';
 import { TradeEngineProvider } from '@/lib/tradeEngineContext';
+import { GlobalCommandPalette } from '@/components/ui/GlobalCommandPalette';
 
 export const metadata: Metadata = {
   title: 'MARKET INTELLIGENCE MI-007 | Intelligence Beyond the Noise',
   description: 'Intelligence Beyond the Noise. Institutional-grade quantitative analytics and multi-market microstructure telemetry across India, USA & UAE financial markets.',
   icons: { icon: '/favicon.png', apple: '/logo-falcon.png' },
+  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
@@ -58,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <MarketProvider>
             <TradeEngineProvider>
               {children}
+              <GlobalCommandPalette />
             </TradeEngineProvider>
           </MarketProvider>
         </ThemeProvider>

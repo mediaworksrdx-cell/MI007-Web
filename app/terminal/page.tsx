@@ -8,7 +8,7 @@ import { Footer } from '@/components/layout/Footer';
 import { MarketToggle } from '@/components/market/MarketToggle';
 import { MarketType, MARKETS } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
-import { useTradeEngine } from '@/lib/tradeEngineContext';
+import { useTradeEngine, useLiveSymbol } from '@/lib/tradeEngineContext';
 import { isSymbolMarketOpen } from '@/lib/marketHours';
 import { searchZerodhaStocks, findZerodhaStockBySymbol } from '@/lib/screener/zerodhaStocks';
 import { ChartContainer } from '@/components/chart/ChartContainer';
@@ -318,8 +318,7 @@ function IndexTile({
   isEditing?: boolean;
   onDelete?: () => void;
 }) {
-  const { getSymbolPrice } = useTradeEngine();
-  const live = getSymbolPrice(symbol);
+  const { live } = useLiveSymbol(symbol);
   const price = live ? live.price : base;
   const currentPct = live ? live.changePct : changePct;
   const up = currentPct >= 0;
@@ -423,8 +422,7 @@ function WatchlistRow({
   isEditing?: boolean;
   onDelete?: () => void;
 }) {
-  const { getSymbolPrice } = useTradeEngine();
-  const live = getSymbolPrice(symbol);
+  const { live } = useLiveSymbol(symbol);
   const price = live ? live.price : base;
   const currentPct = live ? live.changePct : changePct;
   const up = currentPct >= 0;
@@ -523,8 +521,7 @@ function CryptoTile({
   isEditing?: boolean;
   onDelete?: () => void;
 }) {
-  const { getSymbolPrice } = useTradeEngine();
-  const live = getSymbolPrice(item.symbol);
+  const { live } = useLiveSymbol(item.symbol);
   const price = live ? live.price : item.base;
   const currentPct = live ? live.changePct : item.changePct;
   const up = currentPct >= 0;
@@ -608,8 +605,7 @@ function CommodityTile({
   isEditing?: boolean;
   onDelete?: () => void;
 }) {
-  const { getSymbolPrice } = useTradeEngine();
-  const live = getSymbolPrice(item.symbol);
+  const { live } = useLiveSymbol(item.symbol);
   const price = live ? live.price : item.base;
   const currentPct = live ? live.changePct : item.changePct;
   const up = currentPct >= 0;
@@ -709,8 +705,7 @@ function ForexTile({
   isEditing?: boolean;
   onDelete?: () => void;
 }) {
-  const { getSymbolPrice } = useTradeEngine();
-  const live = getSymbolPrice(item.symbol);
+  const { live } = useLiveSymbol(item.symbol);
   const price = live ? live.price : item.base;
   const currentPct = live ? live.changePct : item.changePct;
   const up = currentPct >= 0;

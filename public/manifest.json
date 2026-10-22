@@ -1,0 +1,22 @@
+{
+  "name": "MARKET INTELLIGENCE MI-007",
+  "short_name": "MI-007 Terminal",
+  "description": "Intelligence Beyond the Noise. Institutional-grade quantitative analytics across India, USA & UAE financial markets.",
+  "start_url": "/terminal",
+  "display": "standalone",
+  "background_color": "#060A11",
+  "theme_color": "#060A11",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo-falcon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

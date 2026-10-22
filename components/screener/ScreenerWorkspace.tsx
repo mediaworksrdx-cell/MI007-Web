@@ -28,6 +28,7 @@ import {
 } from '@/lib/screener/persistence';
 import { PREDEFINED_SCREENS } from '@/lib/screener/templates';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
+import { workspaceSync } from '@/lib/workspaceSync';
 import { TopToolbar } from './TopToolbar';
 import { QueryEditor } from './QueryEditor';
 import { ResultsTable, TableViewPreset } from './ResultsTable';
@@ -124,6 +125,16 @@ export function ScreenerWorkspace() {
     if (tabParam) {
       setActiveTab(tabParam === 'saved' ? 'discover' : (tabParam as any));
     }
+    const queryParam = searchParams?.get('q');
+    if (queryParam) {
+      setCurrentQuery(queryParam);
+    } else if (typeof window !== 'undefined') {
+      const cmdQuery = sessionStorage.getItem('mi007_cmd_query');
+      if (cmdQuery) {
+        setCurrentQuery(cmdQuery);
+        sessionStorage.removeItem('mi007_cmd_query');
+      }
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -157,13 +168,24 @@ export function ScreenerWorkspace() {
     };
   }, []);
 
-  // Sync with client-side localStorage
+  // Sync with client-side localStorage and multi-tab BroadcastChannel
   useEffect(() => {
     setSavedScreens(getSavedScreens());
     setWatchlists(getWatchlists());
     setCustomRatios(getCustomRatios());
     setAlerts(getScreeningAlerts());
     setSelectedColumns(getColumnPreferences());
+
+    const unsub = workspaceSync.subscribe((ev) => {
+      if (ev.type === 'WATCHLIST_UPDATED') {
+        setWatchlists(getWatchlists());
+      } else if (ev.type === 'SCREENS_UPDATED') {
+        setSavedScreens(getSavedScreens());
+      } else if (ev.type === 'ALERTS_UPDATED') {
+        setAlerts(getScreeningAlerts());
+      }
+    });
+    return () => unsub();
   }, []);
 
   // Update market only when user actually switches the global market from the navbar
@@ -189,10 +211,10 @@ export function ScreenerWorkspace() {
     setPeerSymbols(DEFAULT_PEER_SYMBOLS[newMarket] || ['TCS', 'INFY']);
   };
 
-  // Keyboard shortcut '/' or 'Ctrl+K' to open search
+  // Keyboard shortcut '/' to open company search modal (Ctrl+K opens Global Command Palette)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === '/' || (e.ctrlKey && e.key === 'k')) && !searchModalOpen) {
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !searchModalOpen) {
         const target = e.target as HTMLElement;
         if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
           e.preventDefault();

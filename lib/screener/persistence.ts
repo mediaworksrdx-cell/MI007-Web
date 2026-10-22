@@ -5,6 +5,7 @@
 import { SavedScreen, Watchlist, CustomRatio, ScreeningAlert, MarketRegion } from './types';
 import { PREDEFINED_SCREENS } from './templates';
 import { DEFAULT_CUSTOM_RATIOS } from './customRatios';
+import { workspaceSync } from '../workspaceSync';
 
 const KEYS = {
   SCREENS: 'mi007_screener_saved_screens',
@@ -83,6 +84,7 @@ export function saveUserScreen(screen: SavedScreen): SavedScreen[] {
     // Persist only non-predefined screens to localStorage
     const onlyUser = deduplicated.filter((s) => !s.isPredefined);
     localStorage.setItem(KEYS.SCREENS, JSON.stringify(onlyUser));
+    workspaceSync.broadcast({ type: 'SCREENS_UPDATED', timestamp: Date.now() });
     return deduplicated;
   } catch (err) {
     console.error('[Persistence] Error saving screen:', err);
@@ -102,6 +104,7 @@ export function deleteSavedScreen(screenId: string): SavedScreen[] {
     const remaining = all.filter((s) => s.id !== screenId);
     const onlyUser = remaining.filter((s) => !s.isPredefined);
     localStorage.setItem(KEYS.SCREENS, JSON.stringify(onlyUser));
+    workspaceSync.broadcast({ type: 'SCREENS_UPDATED', timestamp: Date.now() });
     return remaining;
   } catch (err) {
     console.error('[Persistence] Error deleting screen:', err);
@@ -169,6 +172,7 @@ export function saveWatchlist(watchlist: Watchlist): Watchlist[] {
     }
 
     localStorage.setItem(KEYS.WATCHLISTS, JSON.stringify(updated));
+    workspaceSync.broadcast({ type: 'WATCHLIST_UPDATED', timestamp: Date.now() });
     return updated;
   } catch (err) {
     console.error('[Persistence] Error saving watchlist:', err);
@@ -363,6 +367,7 @@ export function saveScreeningAlert(alert: ScreeningAlert): ScreeningAlert[] {
     }
 
     localStorage.setItem(KEYS.ALERTS, JSON.stringify(updated));
+    workspaceSync.broadcast({ type: 'ALERTS_UPDATED', timestamp: Date.now() });
     return updated;
   } catch (err) {
     console.error('[Persistence] Error saving alert:', err);

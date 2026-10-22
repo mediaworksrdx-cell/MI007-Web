@@ -26,8 +26,21 @@ export function QueryEditor({
   const [parseResult, setParseResult] = useState<QueryParseResult>({ valid: true });
   const [metricHelperOpen, setMetricHelperOpen] = useState(false);
   const [helperSearch, setHelperSearch] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const helperRef = useRef<HTMLDivElement>(null);
+
+  const handleShareScreenLink = () => {
+    if (typeof window === 'undefined' || !query.trim()) return;
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'screener');
+      url.searchParams.set('q', query.trim());
+      navigator.clipboard.writeText(url.toString());
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch {}
+  };
 
   // Validate AST on query change
   useEffect(() => {
@@ -288,6 +301,18 @@ export function QueryEditor({
         </div>
 
         <div className="flex items-center gap-2.5">
+          {query.trim() && parseResult.valid && (
+            <button
+              type="button"
+              onClick={handleShareScreenLink}
+              className="px-3.5 py-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:border-emerald-500/50 mono text-[12px] font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Copy shareable deep-link URL for this exact query"
+            >
+              <span>{copiedLink ? '✓' : '🔗'}</span>
+              <span>{copiedLink ? 'LINK COPIED' : 'SHARE LINK'}</span>
+            </button>
+          )}
+
           {onOpenSaveScreen && (
             <button
               type="button"

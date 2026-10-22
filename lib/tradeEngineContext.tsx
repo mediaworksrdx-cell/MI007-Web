@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useSyncExternalStore } from 'react';
 import {
   TradeEngineLivePrice,
   TradeEngineCrypto,
@@ -23,14 +23,75 @@ export interface LiveSymbolData {
   lastUpdated: number;
 }
 
+// ── Granular Per-Symbol External Store for Zero-Lag High-Frequency Updates ────
+class SymbolPriceStore {
+  private map: Map<string, LiveSymbolData>;
+  private symbolListeners = new Map<string, Set<() => void>>();
+
+  constructor(initial: Map<string, LiveSymbolData>) {
+    this.map = initial;
+  }
+
+  public getMap(): Map<string, LiveSymbolData> {
+    return this.map;
+  }
+
+  public getSymbol(symbol: string): LiveSymbolData | undefined {
+    if (!symbol) return undefined;
+    const cleanKey = normalizeSymbolKey(symbol);
+    const upper = symbol.toUpperCase().trim();
+    return (
+      this.map.get(cleanKey) ||
+      this.map.get(symbol) ||
+      this.map.get(upper) ||
+      this.map.get(`${cleanKey}.NS`) ||
+      this.map.get(`${upper}.NS`) ||
+      this.map.get(symbol.replace(/\s+/g, '')) ||
+      this.map.get(symbol.replace(/\.NS$/, ''))
+    );
+  }
+
+  public updateBatch(updater: (prev: Map<string, LiveSymbolData>) => { next: Map<string, LiveSymbolData>; changedKeys: Set<string> }): boolean {
+    const { next, changedKeys } = updater(this.map);
+    if (changedKeys.size === 0) return false;
+    this.map = next;
+    changedKeys.forEach((key) => {
+      const subs = this.symbolListeners.get(key);
+      if (subs) {
+        subs.forEach((cb) => {
+          try { cb(); } catch {}
+        });
+      }
+    });
+    return true;
+  }
+
+  public subscribeSymbol(symbol: string, callback: () => void): () => void {
+    const key = normalizeSymbolKey(symbol);
+    if (!this.symbolListeners.has(key)) {
+      this.symbolListeners.set(key, new Set());
+    }
+    this.symbolListeners.get(key)!.add(callback);
+    return () => {
+      const set = this.symbolListeners.get(key);
+      if (set) {
+        set.delete(callback);
+        if (set.size === 0) this.symbolListeners.delete(key);
+      }
+    };
+  }
+}
+
 interface TradeEngineContextValue {
   status: 'connected' | 'connecting' | 'disconnected';
+  latencyMs: number;
   livePrices: Map<string, LiveSymbolData>;
   cryptoPrices: TradeEngineCrypto[];
   macroData: TradeEngineMacro[];
   lastTick: TradeEngineTick | null;
   getSymbolPrice: (symbol: string) => LiveSymbolData | undefined;
   subscribeToTicks: (callback: (tick: TradeEngineTick) => void) => () => void;
+  subscribeToSymbol: (symbol: string, callback: () => void) => () => void;
 }
 
 const WS_URL = process.env.NEXT_PUBLIC_TRADE_ENGINE_WS || 'ws://138.91.105.85/ws';
@@ -142,17 +203,24 @@ function buildInitialPriceMap(): Map<string, LiveSymbolData> {
 
 const TradeEngineContext = createContext<TradeEngineContextValue>({
   status: 'connecting',
+  latencyMs: 18,
   livePrices: new Map(),
   cryptoPrices: [],
   macroData: [],
   lastTick: null,
   getSymbolPrice: () => undefined,
   subscribeToTicks: () => () => {},
+  subscribeToSymbol: () => () => {},
 });
 
 export function TradeEngineProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
-  const [livePrices, setLivePrices] = useState<Map<string, LiveSymbolData>>(buildInitialPriceMap);
+  const [latencyMs, setLatencyMs] = useState<number>(18);
+  const storeRef = useRef<SymbolPriceStore | null>(null);
+  if (!storeRef.current) {
+    storeRef.current = new SymbolPriceStore(buildInitialPriceMap());
+  }
+  const [livePrices, setLivePrices] = useState<Map<string, LiveSymbolData>>(() => storeRef.current!.getMap());
   const [cryptoPrices, setCryptoPrices] = useState<TradeEngineCrypto[]>([]);
   const [macroData, setMacroData] = useState<TradeEngineMacro[]>([
     { symbol: 'DXY', value: '104.20' },
@@ -167,22 +235,30 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   const listenersRef = useRef<Set<(tick: TradeEngineTick) => void>>(new Set());
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttemptRef = useRef<number>(0);
 
   // 1. High-frequency Real-Time Equities & Indices Polling (every 2 seconds)
   const syncLivePrices = useCallback(async () => {
     try {
+      const t0 = performance.now();
       const prices = await fetchLivePrices();
+      const rtt = Math.max(4, Math.round(performance.now() - t0));
+      setLatencyMs(rtt);
       if (!prices || prices.length === 0) return;
 
       const now = Date.now();
       setStatus('connected');
 
-      setLivePrices(prev => {
+      const changed = storeRef.current?.updateBatch((prev) => {
         const next = new Map(prev);
+        const changedKeys = new Set<string>();
         for (const p of prices) {
           if (!p.symbol || typeof p.ltp !== 'number' || p.ltp <= 0) continue;
           const key = normalizeSymbolKey(p.symbol);
           const prevEntry = next.get(key) || next.get(p.symbol.toUpperCase());
+          if (prevEntry && prevEntry.price === p.ltp && prevEntry.changePct === p.changePercent) {
+            continue;
+          }
           const tickDirection = prevEntry
             ? p.ltp > prevEntry.price ? 'up' : p.ltp < prevEntry.price ? 'down' : 'neutral'
             : 'neutral';
@@ -197,6 +273,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             lastUpdated: now,
           };
 
+          changedKeys.add(key);
           next.set(key, entry);
           next.set(p.symbol, entry);
           next.set(p.symbol.toUpperCase(), entry);
@@ -221,7 +298,6 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             next.set('BSE SENSEX', entry);
           }
 
-          // Emit synthetic tick to chart subscribers if price changed or on initial update
           if (!prevEntry || prevEntry.price !== p.ltp) {
             const tick: TradeEngineTick = {
               symbol: p.symbol,
@@ -235,8 +311,12 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             });
           }
         }
-        return next;
+        return { next, changedKeys };
       });
+
+      if (changed && storeRef.current) {
+        setLivePrices(storeRef.current.getMap());
+      }
     } catch (err) {
       console.warn('[TradeEngineProvider] syncLivePrices error:', err);
     }
@@ -257,11 +337,13 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
       // Index cryptos into livePrices map
       if (cryptos.length > 0) {
-        setLivePrices(prev => {
+        const changed = storeRef.current?.updateBatch((prev) => {
           const next = new Map(prev);
+          const changedKeys = new Set<string>();
           for (const c of cryptos) {
             const key = normalizeSymbolKey(c.symbol);
             const prevEntry = next.get(key);
+            if (prevEntry && prevEntry.price === c.current_price) continue;
             const tickDirection = prevEntry
               ? c.current_price > prevEntry.price ? 'up' : c.current_price < prevEntry.price ? 'down' : 'neutral'
               : 'neutral';
@@ -276,6 +358,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               tickDirection,
               lastUpdated: now,
             };
+            changedKeys.add(key);
             next.set(key, data);
             next.set(c.symbol.toUpperCase(), data);
             next.set(c.symbol.toLowerCase(), data);
@@ -284,19 +367,24 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             next.set(`${c.symbol.toUpperCase()}-USD`, data);
             next.set(`${c.symbol.toUpperCase()}/USD`, data);
           }
-          return next;
+          return { next, changedKeys };
         });
+        if (changed && storeRef.current) {
+          setLivePrices(storeRef.current.getMap());
+        }
       }
 
       // Index commodities, forex, and macro into livePrices map
       if (macros.length > 0) {
-        setLivePrices(prev => {
+        const changed = storeRef.current?.updateBatch((prev) => {
           const next = new Map(prev);
+          const changedKeys = new Set<string>();
           for (const m of macros) {
             const numVal = parseFloat(String(m.value).replace(/[%$,]/g, ''));
             if (!isNaN(numVal) && numVal > 0) {
               const key = normalizeSymbolKey(m.symbol);
               const prevEntry = next.get(key) || next.get(m.symbol);
+              if (prevEntry && prevEntry.price === numVal) continue;
               const tickDirection = prevEntry
                 ? numVal > prevEntry.price ? 'up' : numVal < prevEntry.price ? 'down' : 'neutral'
                 : 'neutral';
@@ -314,6 +402,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
                 lastUpdated: now,
               };
 
+              changedKeys.add(key);
               next.set(key, data);
               next.set(m.symbol, data);
               next.set(m.symbol.toUpperCase(), data);
@@ -321,67 +410,85 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               next.set(m.symbol.replace(/\s+/g, ''), data);
 
               if (m.symbol === 'XAU/USD' || m.symbol === 'GOLD') {
+                changedKeys.add('GOLD');
                 next.set('GOLD', data);
                 next.set('XAU', data);
                 next.set('XAUUSD', data);
               }
               if (m.symbol === 'XAG/USD' || m.symbol === 'SILVER') {
+                changedKeys.add('SILVER');
                 next.set('SILVER', data);
                 next.set('XAG', data);
                 next.set('XAGUSD', data);
               }
               if (m.symbol === 'BRENT' || m.symbol === 'CRUDEOIL') {
+                changedKeys.add('BRENT');
+                changedKeys.add('CRUDEOIL');
                 next.set('BRENT', data);
                 next.set('CRUDEOIL', data);
                 next.set('OIL', data);
               }
               if (m.symbol === 'WTI') {
+                changedKeys.add('WTI');
                 next.set('WTI', data);
                 next.set('CRUDE_WTI', data);
               }
               if (m.symbol === 'NATGAS') {
+                changedKeys.add('NATGAS');
                 next.set('NATGAS', data);
                 next.set('NATURALGAS', data);
               }
               if (m.symbol === 'COPPER') {
+                changedKeys.add('COPPER');
                 next.set('COPPER', data);
               }
               if (m.symbol === 'USD/INR' || m.symbol === 'USDINR') {
+                changedKeys.add('USDINR');
                 next.set('USDINR', data);
                 next.set('USD/INR', data);
               }
               if (m.symbol === 'EUR/USD' || m.symbol === 'EURUSD') {
+                changedKeys.add('EURUSD');
                 next.set('EURUSD', data);
                 next.set('EUR/USD', data);
               }
               if (m.symbol === 'GBP/USD' || m.symbol === 'GBPUSD') {
+                changedKeys.add('GBPUSD');
                 next.set('GBPUSD', data);
                 next.set('GBP/USD', data);
               }
               if (m.symbol === 'USD/JPY' || m.symbol === 'USDJPY') {
+                changedKeys.add('USDJPY');
                 next.set('USDJPY', data);
                 next.set('USD/JPY', data);
               }
               if (m.symbol === 'USD/CHF' || m.symbol === 'USDCHF') {
+                changedKeys.add('USDCHF');
                 next.set('USDCHF', data);
                 next.set('USD/CHF', data);
               }
               if (m.symbol === 'USD/CAD' || m.symbol === 'USDCAD' || m.symbol === 'UADCAD' || m.symbol === 'UAD/CAD') {
+                changedKeys.add('USDCAD');
                 next.set('USDCAD', data);
                 next.set('USD/CAD', data);
               }
               if (m.symbol === 'AUD/CAD' || m.symbol === 'AUDCAD') {
+                changedKeys.add('AUDCAD');
                 next.set('AUDCAD', data);
                 next.set('AUD/CAD', data);
               }
               if (m.symbol === 'AUD/USD' || m.symbol === 'AUDUSD') {
+                changedKeys.add('AUDUSD');
                 next.set('AUDUSD', data);
                 next.set('AUD/USD', data);
               }
             }
           }
-          return next;
+          return { next, changedKeys };
         });
+        if (changed && storeRef.current) {
+          setLivePrices(storeRef.current.getMap());
+        }
       }
     } catch (err) {
       console.warn('[TradeEngineProvider] syncCryptoAndMacro error:', err);
@@ -433,6 +540,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
         ws.onopen = () => {
           if (isDisposed) { ws.close(); return; }
           console.log('[TradeEngine WS] Connected to:', WS_URL);
+          reconnectAttemptRef.current = 0;
           setStatus('connected');
         };
 
@@ -458,7 +566,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
             const key = normalizeSymbolKey(tick.symbol);
             const now = Date.now();
-            setLivePrices(prev => {
+            const changed = storeRef.current?.updateBatch((prev) => {
               const prevEntry = prev.get(key) || prev.get(tick.symbol.toUpperCase());
               const dir = prevEntry
                 ? tick.price > prevEntry.price ? 'up' : tick.price < prevEntry.price ? 'down' : 'neutral'
@@ -470,6 +578,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
                 : prevEntry?.changePct || 0;
 
               const next = new Map(prev);
+              const changedKeys = new Set<string>([key]);
               const data: LiveSymbolData = {
                 symbol: tick.symbol,
                 price: tick.price,
@@ -483,8 +592,12 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               next.set(key, data);
               next.set(tick.symbol, data);
               next.set(tick.symbol.toUpperCase(), data);
-              return next;
+              return { next, changedKeys };
             });
+
+            if (changed && storeRef.current) {
+              setLivePrices(storeRef.current.getMap());
+            }
           } catch (e) {
             // Non-JSON heartbeat frame
           }
@@ -497,12 +610,16 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
         ws.onclose = () => {
           if (isDisposed) return;
           setStatus('disconnected');
-          reconnectTimeoutRef.current = setTimeout(connectWs, 3000);
+          const attempt = reconnectAttemptRef.current++;
+          const backoff = Math.min(15000, 2000 * Math.pow(1.5, attempt)) + Math.floor(Math.random() * 600);
+          reconnectTimeoutRef.current = setTimeout(connectWs, backoff);
         };
       } catch (err) {
         console.warn('[TradeEngine WS] Connection creation failed:', err);
         setStatus('disconnected');
-        reconnectTimeoutRef.current = setTimeout(connectWs, 4000);
+        const attempt = reconnectAttemptRef.current++;
+        const backoff = Math.min(15000, 3000 * Math.pow(1.5, attempt));
+        reconnectTimeoutRef.current = setTimeout(connectWs, backoff);
       }
     }
 
@@ -519,6 +636,9 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const getSymbolPrice = useCallback((symbol: string): LiveSymbolData | undefined => {
+    if (storeRef.current) {
+      return storeRef.current.getSymbol(symbol);
+    }
     if (!symbol) return undefined;
     const cleanKey = normalizeSymbolKey(symbol);
     const upper = symbol.toUpperCase().trim();
@@ -540,16 +660,23 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     };
   }, []);
 
+  const subscribeToSymbol = useCallback((symbol: string, callback: () => void) => {
+    if (!storeRef.current) return () => {};
+    return storeRef.current.subscribeSymbol(symbol, callback);
+  }, []);
+
   return (
     <TradeEngineContext.Provider
       value={{
         status,
+        latencyMs,
         livePrices,
         cryptoPrices,
         macroData,
         lastTick,
         getSymbolPrice,
         subscribeToTicks,
+        subscribeToSymbol,
       }}
     >
       {children}
@@ -562,11 +689,17 @@ export function useTradeEngine() {
 }
 
 export function useLiveSymbol(symbol: string) {
-  const { getSymbolPrice, status } = useTradeEngine();
-  const live = getSymbolPrice(symbol);
+  const { getSymbolPrice, subscribeToSymbol, status, latencyMs } = useTradeEngine();
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => subscribeToSymbol(symbol, onStoreChange),
+    [subscribeToSymbol, symbol]
+  );
+  const getSnapshot = useCallback(() => getSymbolPrice(symbol), [getSymbolPrice, symbol]);
+  const live = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   return {
     live,
     isLive: Boolean(live),
     engineStatus: status,
+    latencyMs,
   };
 }
