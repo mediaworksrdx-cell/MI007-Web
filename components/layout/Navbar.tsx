@@ -27,6 +27,8 @@ const TERMINAL_NAV_LINKS = [
   { href: '/terminal',          label: 'Dashboard' },
   { href: '/chart/NIFTY',       label: 'Charts' },
   { href: '/terminal/screener', label: 'Screeners' },
+  { href: '/calendar',          label: 'Calendar' },
+  { href: '/news',              label: 'News' },
 ];
 
 interface NotificationItem {
@@ -82,7 +84,9 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
     pathname.startsWith('/terminal') ||
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/chart') ||
-    pathname.startsWith('/screener');
+    pathname.startsWith('/screener') ||
+    pathname.startsWith('/calendar') ||
+    pathname.startsWith('/news');
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -193,7 +197,9 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               pathname === href ||
               (href === '/chart/NIFTY' && pathname.startsWith('/chart')) ||
               (href === '/terminal' && (pathname === '/terminal' || pathname === '/dashboard')) ||
-              (href === '/terminal/screener' && (pathname.startsWith('/terminal/screener') || pathname.startsWith('/screener')));
+              (href === '/terminal/screener' && (pathname.startsWith('/terminal/screener') || pathname.startsWith('/screener'))) ||
+              (href === '/calendar' && pathname.startsWith('/calendar')) ||
+              (href === '/news' && pathname.startsWith('/news'));
             return (
               <Link
                 key={href}
@@ -553,7 +559,9 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               pathname === href ||
               (href === '/chart/NIFTY' && pathname.startsWith('/chart')) ||
               (href === '/terminal' && (pathname === '/terminal' || pathname === '/dashboard')) ||
-              (href === '/terminal/screener' && (pathname.startsWith('/terminal/screener') || pathname.startsWith('/screener')));
+              (href === '/terminal/screener' && (pathname.startsWith('/terminal/screener') || pathname.startsWith('/screener'))) ||
+              (href === '/calendar' && pathname.startsWith('/calendar')) ||
+              (href === '/news' && pathname.startsWith('/news'));
             return (
               <Link
                 key={href}

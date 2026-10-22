@@ -1,0 +1,440 @@
+'use client';
+
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  EconomicEvent,
+  EventRegion,
+  EventImpact,
+  getBaselineEconomicEvents,
+  filterEconomicEvents,
+} from '@/lib/terminal/economicCalendarData';
+
+export function EconomicCalendarView() {
+  const [events, setEvents] = useState<EconomicEvent[]>(() => getBaselineEconomicEvents());
+  const [range, setRange] = useState<'today' | 'tomorrow' | 'week' | 'all'>('week');
+  const [region, setRegion] = useState<EventRegion>('ALL');
+  const [impact, setImpact] = useState<'ALL' | 'HIGH' | 'MEDIUM'>('ALL');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Live Next Event Countdown
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Fetch updated data from API
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      params.set('range', range);
+      params.set('region', region);
+      params.set('impact', impact);
+      if (search.trim()) params.set('q', search.trim());
+
+      const res = await fetch(`/api/terminal/economic-calendar?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.events) {
+          setEvents(data.events);
+        }
+      }
+    } catch (err) {
+      console.warn('[EconomicCalendar] API load failed, using local baseline:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [range, region, impact, search]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Computed displayed list
+  const filteredList = useMemo(() => {
+    return filterEconomicEvents(events, { range, region, impact, search });
+  }, [events, range, region, impact, search]);
+
+  // Next upcoming high-impact event
+  const nextHighImpact = useMemo(() => {
+    return events
+      .filter((e) => e.impact === 'HIGH' && e.timestamp > now)
+      .sort((a, b) => a.timestamp - b.timestamp)[0] || null;
+  }, [events, now]);
+
+  // Countdown formatter
+  const countdownStr = useMemo(() => {
+    if (!nextHighImpact) return null;
+    const diff = Math.max(0, nextHighImpact.timestamp - now);
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    return `${hours > 0 ? `${hours}h ` : ''}${minutes}m ${seconds}s`;
+  }, [nextHighImpact, now]);
+
+  // Summary counts
+  const highImpactCount = useMemo(() => filteredList.filter((e) => e.impact === 'HIGH').length, [filteredList]);
+  const beatCount = useMemo(() => filteredList.filter((e) => e.isBeat === true).length, [filteredList]);
+  const missCount = useMemo(() => filteredList.filter((e) => e.isBeat === false).length, [filteredList]);
+
+  return (
+    <div className="w-full flex flex-col gap-6">
+      {/* ── Top Countdown & Intelligence Banner ── */}
+      {nextHighImpact && countdownStr && (
+        <div className="p-4 sm:p-5 rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <span className="text-2xl sm:text-3xl shrink-0 p-2 rounded-xl bg-amber-500/20 border border-amber-500/30">
+              ⚡
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="mono text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 tracking-wider">
+                  NEXT HIGH-IMPACT RELEASE
+                </span>
+                <span className="mono text-[11px] font-bold opacity-75">
+                  {nextHighImpact.flag} {nextHighImpact.country}
+                </span>
+              </div>
+              <h3 className="text-[15px] sm:text-[17px] font-black tracking-tight mt-0.5 truncate">
+                {nextHighImpact.event}
+              </h3>
+              <p className="text-[12px] opacity-70 truncate max-w-xl">
+                {nextHighImpact.description}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 shrink-0 border-t md:border-t-0 md:border-l border-amber-500/20 pt-2 md:pt-0 md:pl-5">
+            <div>
+              <div className="text-[10px] mono font-bold uppercase tracking-wider opacity-60">
+                COUNTDOWN
+              </div>
+              <div className="mono text-[18px] sm:text-[20px] font-black text-amber-400 tabular-nums">
+                {countdownStr}
+              </div>
+            </div>
+            <div className="hidden sm:block text-right">
+              <div className="text-[10px] mono font-bold uppercase tracking-wider opacity-60">
+                FORECAST
+              </div>
+              <div className="mono text-[14px] font-black">
+                {nextHighImpact.forecast || '--'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Filter Controls Bar ── */}
+      <div className="p-4 sm:p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-md flex flex-col gap-4">
+        {/* Row 1: Date Horizons & Live Status */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Date Segmented Tabs */}
+          <div className="inline-flex items-center p-1 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-2xs gap-1">
+            {(['today', 'tomorrow', 'week', 'all'] as const).map((r) => {
+              const labels = {
+                today: 'Today',
+                tomorrow: 'Tomorrow',
+                week: 'This Week',
+                all: 'All Schedule',
+              };
+              const active = range === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRange(r)}
+                  className={`px-3 py-1.5 rounded-lg mono text-[12px] font-bold transition-all cursor-pointer ${
+                    active
+                      ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                      : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-white/5'
+                  }`}
+                >
+                  {labels[r]}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Impact Quick Toggle */}
+          <div className="flex items-center gap-2">
+            <span className="mono text-[11px] font-bold uppercase tracking-wider opacity-60 hidden md:inline">
+              Impact:
+            </span>
+            {(['ALL', 'HIGH', 'MEDIUM'] as const).map((imp) => {
+              const active = impact === imp;
+              const labels = {
+                ALL: 'All Impact',
+                HIGH: '🔴 High Only',
+                MEDIUM: '🟡 Medium+',
+              };
+              return (
+                <button
+                  key={imp}
+                  type="button"
+                  onClick={() => setImpact(imp)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] mono font-bold border transition-all cursor-pointer ${
+                    active
+                      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400 font-black'
+                      : 'border-transparent text-[var(--theme-card-text-muted)] hover:border-[var(--theme-card-border)]'
+                  }`}
+                >
+                  {labels[imp]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Row 2: Regional Toggles & Search */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-2 border-t border-[var(--theme-card-border)]/60">
+          {/* Region Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(
+              [
+                { id: 'ALL', label: 'All Regions' },
+                { id: 'INDIA', label: '🇮🇳 India (RBI)' },
+                { id: 'USA', label: '🇺🇸 USA (Fed)' },
+                { id: 'EUROPE', label: '🇪🇺 Eurozone' },
+                { id: 'UAE', label: '🇦🇪 UAE / OPEC+' },
+                { id: 'GLOBAL', label: '🌐 Global' },
+              ] as const
+            ).map((reg) => {
+              const active = region === reg.id;
+              return (
+                <button
+                  key={reg.id}
+                  type="button"
+                  onClick={() => setRegion(reg.id)}
+                  className={`px-2.5 py-1 rounded-md text-[11.5px] font-mono font-bold transition-colors cursor-pointer ${
+                    active
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                      : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-white/5'
+                  }`}
+                >
+                  {reg.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative min-w-[240px]">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter by indicator (CPI, GDP, Jobs)..."
+              className="w-full px-3 py-1.5 pl-8 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-xs mono text-[var(--theme-card-text)] placeholder-[var(--theme-card-text-muted)] focus:outline-none focus:border-emerald-500"
+            />
+            <span className="absolute left-2.5 top-2 text-xs opacity-50">🔍</span>
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1.5 text-xs opacity-60 hover:opacity-100 cursor-pointer font-bold"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Key Metrics Summary Bar ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
+          <div className="text-[11px] mono font-bold uppercase opacity-60">Total Scheduled</div>
+          <div className="text-[18px] sm:text-[22px] font-black mono text-[var(--theme-card-text)] mt-0.5">
+            {filteredList.length}
+          </div>
+        </div>
+        <div className="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/5">
+          <div className="text-[11px] mono font-bold uppercase text-rose-400 opacity-90">High Impact</div>
+          <div className="text-[18px] sm:text-[22px] font-black mono text-rose-400 mt-0.5">
+            {highImpactCount}
+          </div>
+        </div>
+        <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+          <div className="text-[11px] mono font-bold uppercase text-emerald-400 opacity-90">Beats (Positive)</div>
+          <div className="text-[18px] sm:text-[22px] font-black mono text-emerald-400 mt-0.5">
+            {beatCount}
+          </div>
+        </div>
+        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5">
+          <div className="text-[11px] mono font-bold uppercase text-amber-400 opacity-90">Misses (Negative)</div>
+          <div className="text-[18px] sm:text-[22px] font-black mono text-amber-400 mt-0.5">
+            {missCount}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Economic Events Table & Cards ── */}
+      <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center mono text-sm flex items-center justify-center gap-2.5 opacity-60">
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+            <span>Synchronizing macroeconomic telemetry...</span>
+          </div>
+        ) : filteredList.length === 0 ? (
+          <div className="p-12 text-center mono text-sm opacity-60">
+            No economic events match the selected filters.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] mono text-[11px] font-black uppercase tracking-wider text-[var(--theme-card-text-muted)]">
+                  <th className="py-3 px-4">Time (Local)</th>
+                  <th className="py-3 px-3">Region</th>
+                  <th className="py-3 px-3">Impact</th>
+                  <th className="py-3 px-4">Economic Event</th>
+                  <th className="py-3 px-3 text-right">Actual</th>
+                  <th className="py-3 px-3 text-right">Forecast</th>
+                  <th className="py-3 px-3 text-right">Previous</th>
+                  <th className="py-3 px-4 text-center">Outcome</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--theme-card-border)]/50 text-[13px]">
+                {filteredList.map((item) => {
+                  const isExpanded = expandedId === item.id;
+                  const isPast = item.actual !== null;
+
+                  return (
+                    <React.Fragment key={item.id}>
+                      <tr
+                        onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                        className={`hover:bg-white/[0.03] transition-colors cursor-pointer group ${
+                          isExpanded ? 'bg-white/[0.04]' : ''
+                        }`}
+                      >
+                        {/* Time */}
+                        <td className="py-3.5 px-4 whitespace-nowrap mono font-bold">
+                          <div className="text-[13px]">{item.timeStr}</div>
+                          <div className="text-[10px] opacity-60 font-normal">{item.dateStr}</div>
+                        </td>
+
+                        {/* Region */}
+                        <td className="py-3.5 px-3 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[11px] mono font-bold">
+                            <span>{item.flag}</span>
+                            <span>{item.countryCode}</span>
+                          </span>
+                        </td>
+
+                        {/* Impact */}
+                        <td className="py-3.5 px-3 whitespace-nowrap">
+                          {item.impact === 'HIGH' ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-500 font-mono">
+                              <span>🔴</span>
+                              <span>HIGH</span>
+                            </span>
+                          ) : item.impact === 'MEDIUM' ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-500 font-mono">
+                              <span>🟡</span>
+                              <span>MED</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 font-mono">
+                              <span>🟢</span>
+                              <span>LOW</span>
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Event Name */}
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-[13.5px] group-hover:text-emerald-400 transition-colors">
+                            {item.event}
+                          </div>
+                          {item.period && (
+                            <div className="text-[10.5px] mono opacity-60 mt-0.5">
+                              Period: {item.period}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Actual */}
+                        <td className="py-3.5 px-3 text-right mono font-black whitespace-nowrap">
+                          {item.actual ? (
+                            <span
+                              className={`px-1.5 py-0.5 rounded ${
+                                item.isBeat === true
+                                  ? 'text-emerald-400 bg-emerald-500/10'
+                                  : item.isBeat === false
+                                  ? 'text-rose-400 bg-rose-500/10'
+                                  : 'text-[var(--theme-card-text)]'
+                              }`}
+                            >
+                              {item.actual}
+                            </span>
+                          ) : (
+                            <span className="opacity-40 font-normal">Pending</span>
+                          )}
+                        </td>
+
+                        {/* Forecast */}
+                        <td className="py-3.5 px-3 text-right mono font-bold opacity-80 whitespace-nowrap">
+                          {item.forecast || '--'}
+                        </td>
+
+                        {/* Previous */}
+                        <td className="py-3.5 px-3 text-right mono opacity-60 whitespace-nowrap">
+                          {item.previous || '--'}
+                        </td>
+
+                        {/* Outcome Pill */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          {item.isBeat === true ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10.5px] font-black mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                              ▲ BEAT
+                            </span>
+                          ) : item.isBeat === false ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10.5px] font-black mono bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                              ▼ MISS
+                            </span>
+                          ) : isPast ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold mono bg-slate-500/15 text-slate-300">
+                              IN LINE
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold mono bg-white/5 text-slate-400 border border-white/10">
+                              UPCOMING
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* Expandable Context Drawer */}
+                      {isExpanded && (
+                        <tr className="bg-[var(--theme-card-surface)]/70">
+                          <td colSpan={8} className="py-3 px-6 text-xs text-[var(--theme-card-text)]">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                              <p className="leading-relaxed opacity-85 max-w-2xl">
+                                {item.description || 'Monitored by institutional macro trading desks for interest rate deviations.'}
+                              </p>
+                              <div className="flex items-center gap-2 shrink-0 text-[11px] mono">
+                                <span className="opacity-60">Segment:</span>
+                                <span className="font-bold uppercase">{item.country}</span>
+                                <span className="opacity-30">•</span>
+                                <span className="opacity-60">Status:</span>
+                                <span className="font-bold">{isPast ? 'Reported' : 'Scheduled'}</span>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

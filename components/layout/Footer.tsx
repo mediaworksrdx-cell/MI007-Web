@@ -120,6 +120,24 @@ export function Footer() {
               </li>
               <li>
                 <Link
+                  href="/calendar"
+                  className="text-[14px] sm:text-[15px] font-semibold footer-link text-white transition-colors"
+                  style={{ color: '#FFFFFF' }}
+                >
+                  Calendar
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/news"
+                  className="text-[14px] sm:text-[15px] font-semibold footer-link text-white transition-colors"
+                  style={{ color: '#FFFFFF' }}
+                >
+                  News
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/contact"
                   className="text-[14px] sm:text-[15px] font-semibold footer-link text-white transition-colors"
                   style={{ color: '#FFFFFF' }}
