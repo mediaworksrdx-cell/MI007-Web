@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -11,6 +11,11 @@ import { useAppTheme, THEMES, ThemeConfig } from '@/lib/themeContext';
 import { SettingsModal } from '@/components/ui/SettingsModal';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
+import {
+  AppNotification,
+  NotificationType,
+  BASELINE_SIGNALS,
+} from '@/lib/terminal/notificationTypes';
 
 interface NavbarProps {
   market?: MarketType;
@@ -29,50 +34,6 @@ const TERMINAL_NAV_LINKS = [
   { href: '/terminal/screener', label: 'Screeners' },
   { href: '/calendar',          label: 'Calendar' },
   { href: '/news',              label: 'News' },
-];
-
-interface NotificationItem {
-  id: string;
-  icon: string;
-  title: string;
-  desc: string;
-  time: string;
-  symbol: string;
-  market: 'INDIA' | 'USA' | 'UAE';
-  href: string;
-}
-
-const DEFAULT_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'notif-1',
-    icon: '⚡',
-    title: 'NIFTY 50 Breakout Alert',
-    desc: 'Broke above 24,580 structural resistance with 1.8x volume surge.',
-    time: '2m ago',
-    symbol: 'NIFTY 50',
-    market: 'INDIA',
-    href: '/chart/NIFTY50?market=INDIA',
-  },
-  {
-    id: 'notif-2',
-    icon: '🛢️',
-    title: 'Gold Spot Absorption',
-    desc: 'XAU/USD holding $2,653.13 support block with aggressive limit buyer absorption.',
-    time: '14m ago',
-    symbol: 'GOLD',
-    market: 'USA',
-    href: '/chart/GOLD?market=USA',
-  },
-  {
-    id: 'notif-3',
-    icon: '💱',
-    title: 'EUR/USD Interbank Spread',
-    desc: 'Interbank spread narrowed to 0.8 pips at 1.0845 on US market opening flow.',
-    time: '32m ago',
-    symbol: 'EURUSD',
-    market: 'USA',
-    href: '/chart/EURUSD?market=USA',
-  },
 ];
 
 export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange }: NavbarProps) {
@@ -94,7 +55,13 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(DEFAULT_NOTIFICATIONS);
+
+  // ── Unified Notification Centre State (Real-Time News, Calendar, Signals) ──
+  const [notifications, setNotifications] = useState<AppNotification[]>(BASELINE_SIGNALS);
+  const [notifFilter, setNotifFilter] = useState<NotificationType>('ALL');
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [desktopAlertsEnabled, setDesktopAlertsEnabled] = useState(false);
+
   const unreadCount = notifications.length;
   const [userSession, setUserSession] = useState<{ name: string; role: string; deskId: string } | null>(null);
 
@@ -102,6 +69,110 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
+
+  // Load real-time aggregated notifications from API
+  const loadNotifications = useCallback(async (silent = false) => {
+    try {
+      if (!silent) setNotifLoading(true);
+      const res = await fetch('/api/terminal/notifications');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.notifications)) {
+          let dismissed: Set<string> = new Set();
+          try {
+            const raw = localStorage.getItem('mi007_dismissed_notifications');
+            if (raw) dismissed = new Set(JSON.parse(raw));
+          } catch {}
+
+          const active = data.notifications.filter((n: AppNotification) => !dismissed.has(n.id));
+          setNotifications(active);
+        }
+      }
+    } catch (err) {
+      console.warn('[Navbar] Failed to load live notifications:', err);
+    } finally {
+      if (!silent) setNotifLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadNotifications(false);
+    // Poll every 45s for fresh alerts
+    const interval = setInterval(() => {
+      loadNotifications(true);
+    }, 45000);
+    return () => clearInterval(interval);
+  }, [loadNotifications]);
+
+  // Check desktop browser notification permission
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setDesktopAlertsEnabled(Notification.permission === 'granted');
+    }
+  }, []);
+
+  const requestDesktopPermission = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const perm = await Notification.requestPermission();
+        setDesktopAlertsEnabled(perm === 'granted');
+        if (perm === 'granted') {
+          new Notification('MI-007 Notifications Activated', {
+            body: 'You will receive real-time alerts for Breaking Market News and High-Impact Economic releases.',
+            icon: '/favicon.ico',
+          });
+        }
+      } catch (err) {
+        console.warn('Desktop notification error:', err);
+      }
+    }
+  };
+
+  const dismissNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((item) => item.id !== id));
+    try {
+      const raw = localStorage.getItem('mi007_dismissed_notifications');
+      const currentList: string[] = raw ? JSON.parse(raw) : [];
+      if (!currentList.includes(id)) {
+        currentList.push(id);
+        localStorage.setItem('mi007_dismissed_notifications', JSON.stringify(currentList));
+      }
+    } catch {}
+  };
+
+  const clearAllNotifications = () => {
+    const allIds = notifications.map((n) => n.id);
+    setNotifications([]);
+    try {
+      const raw = localStorage.getItem('mi007_dismissed_notifications');
+      const currentList: string[] = raw ? JSON.parse(raw) : [];
+      const updated = Array.from(new Set([...currentList, ...allIds]));
+      localStorage.setItem('mi007_dismissed_notifications', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const restoreDismissedAlerts = () => {
+    try {
+      localStorage.removeItem('mi007_dismissed_notifications');
+    } catch {}
+    loadNotifications(false);
+  };
+
+  // Filtered notifications
+  const filteredNotifications = useMemo(() => {
+    if (notifFilter === 'ALL') return notifications;
+    return notifications.filter((n) => n.type === notifFilter);
+  }, [notifications, notifFilter]);
+
+  // Category counts
+  const notifCounts = useMemo(() => {
+    return {
+      all: notifications.length,
+      news: notifications.filter((n) => n.type === 'NEWS').length,
+      calendar: notifications.filter((n) => n.type === 'CALENDAR').length,
+      signal: notifications.filter((n) => n.type === 'SIGNAL').length,
+    };
+  }, [notifications]);
 
   useEffect(() => {
     try {
@@ -257,30 +328,71 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
             {/* Notification Flyout Menu */}
             {notificationMenuOpen && (
-              <div className="account-settings-dropdown absolute right-0 mt-2.5 w-80 sm:w-96 rounded-2xl p-3 flex flex-col gap-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150 shadow-2xl">
+              <div className="account-settings-dropdown absolute right-0 mt-2.5 w-80 sm:w-96 rounded-2xl p-3 flex flex-col gap-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 shadow-2xl">
+                {/* Header with Title, Count, Sync & Clear */}
                 <div className="flex items-center justify-between px-2 py-1 border-b border-current/15 pb-2">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-xs font-mono font-black uppercase tracking-wider">
-                      Signals & Alerts
+                      Signals & Newsfeed
                     </span>
                     <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
-                      {unreadCount} LIVE
+                      {notifCounts.all} LIVE
                     </span>
                   </div>
-                  {unreadCount > 0 && (
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setNotifications([])}
-                      className="text-[11px] font-mono text-emerald-500 hover:underline cursor-pointer"
+                      onClick={() => loadNotifications(false)}
+                      disabled={notifLoading}
+                      className="p-1 rounded text-emerald-400 hover:bg-emerald-500/10 cursor-pointer disabled:opacity-40 transition-colors"
+                      title="Sync live alerts"
                     >
-                      Clear
+                      <span className={`inline-block text-xs ${notifLoading ? 'animate-spin' : ''}`}>🔄</span>
                     </button>
-                  )}
+                    {notifCounts.all > 0 && (
+                      <button
+                        type="button"
+                        onClick={clearAllNotifications}
+                        className="text-[11px] font-mono text-emerald-500 hover:underline cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto">
-                  {notifications.length === 0 ? (
+                {/* Filter Tabs */}
+                <div className="grid grid-cols-4 gap-1 p-0.5 rounded-lg bg-black/20 text-[11px] font-mono font-bold">
+                  {(
+                    [
+                      { id: 'ALL', label: `All (${notifCounts.all})` },
+                      { id: 'NEWS', label: `News (${notifCounts.news})` },
+                      { id: 'CALENDAR', label: `Macro (${notifCounts.calendar})` },
+                      { id: 'SIGNAL', label: `Signals (${notifCounts.signal})` },
+                    ] as const
+                  ).map((tab) => {
+                    const active = notifFilter === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setNotifFilter(tab.id)}
+                        className={`py-1 rounded-md text-[10px] sm:text-[10.5px] truncate transition-all cursor-pointer ${
+                          active
+                            ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                            : 'text-[var(--theme-card-text-muted)] hover:text-white'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Notifications List */}
+                <div className="flex flex-col gap-1.5 max-h-80 overflow-y-auto pr-0.5">
+                  {filteredNotifications.length === 0 ? (
                     <div className="py-6 px-4 text-center flex flex-col items-center justify-center gap-2">
                       <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -288,73 +400,127 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                         </svg>
                       </div>
                       <div className="text-xs font-mono font-bold">All caught up</div>
-                      <p className="text-[11px] opacity-60">No pending alerts. You will be notified when real-time breakout conditions trigger.</p>
+                      <p className="text-[11px] opacity-60">
+                        {notifFilter === 'ALL'
+                          ? 'No pending alerts. Monitoring live news wires, RBI/Fed macro releases, and order flow breaks.'
+                          : `No unread ${notifFilter.toLowerCase()} alerts right now.`}
+                      </p>
                       <button
                         type="button"
-                        onClick={() => setNotifications(DEFAULT_NOTIFICATIONS)}
+                        onClick={restoreDismissedAlerts}
                         className="mt-1 text-[11px] font-mono font-bold text-emerald-400 hover:text-emerald-300 px-2.5 py-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors cursor-pointer"
                       >
-                        Restore Sample Alerts
+                        Restore Dismissed Alerts
                       </button>
                     </div>
                   ) : (
-                    notifications.map((n) => (
-                      <Link
-                        key={n.id}
-                        href={n.href}
-                        onClick={() => setNotificationMenuOpen(false)}
-                        className="group relative p-2.5 rounded-xl border border-current/10 bg-current/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all flex items-start gap-2.5 text-left cursor-pointer"
-                      >
-                        <span className="text-base shrink-0 mt-0.5">{n.icon}</span>
-                        <div className="flex-1 min-w-0 pr-4">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-xs font-bold font-mono truncate group-hover:text-emerald-400 transition-colors">
-                              {n.title}
-                            </span>
-                            <span className="text-[10px] font-mono opacity-60 shrink-0">{n.time}</span>
-                          </div>
-                          <p className="text-[11.5px] opacity-80 leading-snug mt-0.5">{n.desc}</p>
-                          <div className="flex items-center gap-2 mt-1.5 text-[10px] font-mono font-bold text-emerald-400">
-                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/15">{n.market}</span>
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                              Open Chart →
-                            </span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setNotifications((prev) => prev.filter((item) => item.id !== n.id));
-                          }}
-                          className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center opacity-40 hover:opacity-100 hover:bg-current/10 transition-all text-xs font-mono cursor-pointer"
-                          title="Dismiss alert"
-                          aria-label="Dismiss alert"
+                    filteredNotifications.map((n) => {
+                      const typeStyles = {
+                        NEWS: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
+                        CALENDAR: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
+                        SIGNAL: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400',
+                      }[n.type];
+
+                      return (
+                        <Link
+                          key={n.id}
+                          href={n.href}
+                          onClick={() => setNotificationMenuOpen(false)}
+                          className="group relative p-2.5 rounded-xl border border-current/10 bg-current/5 hover:border-emerald-500/40 transition-all flex items-start gap-2.5 text-left cursor-pointer"
                         >
-                          ✕
-                        </button>
-                      </Link>
-                    ))
+                          <span className="text-base shrink-0 mt-0.5">{n.icon}</span>
+                          <div className="flex-1 min-w-0 pr-4">
+                            <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                              {n.isBreaking && (
+                                <span className="px-1.5 py-0.2 rounded bg-rose-500 text-white text-[9px] font-mono font-black uppercase tracking-wider animate-pulse">
+                                  BREAKING
+                                </span>
+                              )}
+                              <span className={`px-1.5 py-0.2 rounded border text-[9px] font-mono font-bold uppercase tracking-wider ${typeStyles}`}>
+                                {n.badge}
+                              </span>
+                              <span className="text-[10px] font-mono opacity-50 ml-auto shrink-0">{n.time}</span>
+                            </div>
+
+                            <div className="text-xs font-bold font-mono leading-snug line-clamp-2 group-hover:text-emerald-400 transition-colors">
+                              {n.title}
+                            </div>
+                            <p className="text-[11px] opacity-75 leading-snug mt-1 line-clamp-2">{n.desc}</p>
+
+                            <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-current/10 text-[10px] font-mono font-bold text-emerald-400">
+                              <span className="px-1.5 py-0.5 rounded bg-emerald-500/15">{n.market}</span>
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                                Open {n.type === 'CALENDAR' ? 'Calendar' : n.type === 'NEWS' ? 'News' : 'Chart'} →
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              dismissNotification(n.id);
+                            }}
+                            className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center opacity-40 hover:opacity-100 hover:bg-current/10 transition-all text-xs font-mono cursor-pointer"
+                            title="Dismiss notification"
+                            aria-label="Dismiss notification"
+                          >
+                            ✕
+                          </button>
+                        </Link>
+                      );
+                    })
                   )}
                 </div>
 
-                <div className="border-t border-current/15 pt-2 flex items-center justify-between">
-                  <Link
-                    href="/terminal/screener"
-                    onClick={() => setNotificationMenuOpen(false)}
-                    className="text-[11.5px] font-mono text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 group"
-                  >
-                    <span>View Screener Alert Engine</span>
-                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setNotificationMenuOpen(false)}
-                    className="text-[11px] font-mono opacity-60 hover:opacity-100 cursor-pointer"
-                  >
-                    Dismiss
-                  </button>
+                {/* Footer with Quick Links & Desktop Notification Toggle */}
+                <div className="border-t border-current/15 pt-2 flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-mono font-bold">
+                    <Link
+                      href="/calendar"
+                      onClick={() => setNotificationMenuOpen(false)}
+                      className="text-amber-400 hover:text-amber-300 flex items-center gap-1 group"
+                    >
+                      <span>📅 Calendar</span>
+                      <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                    </Link>
+                    <Link
+                      href="/news"
+                      onClick={() => setNotificationMenuOpen(false)}
+                      className="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 group"
+                    >
+                      <span>📰 Newsroom</span>
+                      <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                    </Link>
+                    <Link
+                      href="/terminal/screener"
+                      onClick={() => setNotificationMenuOpen(false)}
+                      className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 group"
+                    >
+                      <span>⚡ Screeners</span>
+                      <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                    </Link>
+                  </div>
+
+                  {/* Browser Desktop Notification Activation */}
+                  <div className="pt-1.5 border-t border-current/10 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={requestDesktopPermission}
+                      className="text-[10px] font-mono opacity-70 hover:opacity-100 hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <span>{desktopAlertsEnabled ? '✅' : '🔔'}</span>
+                      <span>{desktopAlertsEnabled ? 'Desktop alerts enabled' : 'Enable browser alerts'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNotificationMenuOpen(false)}
+                      className="text-[10px] font-mono opacity-50 hover:opacity-100 cursor-pointer"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
