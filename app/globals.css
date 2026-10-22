@@ -697,6 +697,57 @@ html[data-theme="quartz"] {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   2026 F&O INTENTIONAL DARK COCKPIT PRESERVATION
+   Ensures that modern derivatives cockpits, neon SVG curves, and HUD tooltips
+   maintain their true illuminated cyberpunk/obsidian neon colors in all themes.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.fno-dark-cockpit .text-emerald-400,
+.fno-dark-cockpit [class*="text-emerald-400"] {
+  color: #00F59B !important;
+}
+
+.fno-dark-cockpit .text-cyan-400,
+.fno-dark-cockpit [class*="text-cyan-400"] {
+  color: #00E5FF !important;
+}
+
+.fno-dark-cockpit .text-amber-400,
+.fno-dark-cockpit [class*="text-amber-400"] {
+  color: #FBBF24 !important;
+}
+
+.fno-dark-cockpit .text-rose-400,
+.fno-dark-cockpit [class*="text-rose-400"] {
+  color: #FF4D6D !important;
+}
+
+.fno-dark-cockpit .text-purple-400,
+.fno-dark-cockpit [class*="text-purple-400"] {
+  color: #C084FC !important;
+}
+
+.fno-dark-cockpit .text-lime-400,
+.fno-dark-cockpit [class*="text-lime-400"] {
+  color: #A3E635 !important;
+}
+
+.fno-dark-cockpit .text-slate-400,
+.fno-dark-cockpit [class*="text-slate-400"] {
+  color: #94A3B8 !important;
+}
+
+.fno-dark-cockpit .text-slate-300,
+.fno-dark-cockpit [class*="text-slate-300"] {
+  color: #CBD5E1 !important;
+}
+
+.fno-dark-cockpit .text-white,
+.fno-dark-cockpit [class*="text-white"] {
+  color: #FFFFFF !important;
+}
+
 /* Hero Stats Bar L3 Marquee Edge Fade Masks (matching each theme's card surface) */
 html[data-theme="ocean"] .hero-marquee-fade-left,
 html[data-theme="graphite"] .hero-marquee-fade-left,

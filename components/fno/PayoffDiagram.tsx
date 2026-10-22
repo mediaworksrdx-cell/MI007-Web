@@ -1,10 +1,10 @@
-// ─── Interactive Institutional Payoff Workspace (Opstra Definedge Compatible) ─
-// Features: Multi-tab (Payoff, Futures, Greeks, P&L Table), SD Markers (-2σ to +2σ),
-// Shaded Profit/Loss Areas, T+0 Line, Positional Greeks Strip & Shock Sliders.
+// ─── 2026 Bloomberg/Linear Grade Payoff Workspace ─────────────────────────────
+// High-precision SVG Payoff Diagram with Neon Glow Curves, Feathered Gradient Washes,
+// Pulsing Radar Breakevens, SD Markers (-2σ to +2σ), Floating HUD & Shock Sliders.
 'use client';
 
 import React, { useState, useRef, useMemo } from 'react';
-import { PayoffPoint, StrategyLeg, StrategyPayoff, Greeks } from '@/lib/fno/fnoTypes';
+import { PayoffPoint, StrategyLeg, StrategyPayoff } from '@/lib/fno/fnoTypes';
 
 interface PayoffDiagramProps {
   expiryPoints: PayoffPoint[];
@@ -43,8 +43,8 @@ export function PayoffDiagram({
 
   // SVG dimensions
   const width = 860;
-  const height = 360;
-  const padding = { top: 35, right: 35, bottom: 40, left: 70 };
+  const height = 370;
+  const padding = { top: 38, right: 35, bottom: 42, left: 70 };
 
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
@@ -57,11 +57,11 @@ export function PayoffDiagram({
 
   const sdMarkers = useMemo(() => {
     return [
-      { label: '-2σ', price: Math.round(spotPrice - 2 * sigma1) },
-      { label: '-1σ', price: Math.round(spotPrice - 1 * sigma1) },
-      { label: 'Spot', price: Math.round(spotPrice) },
-      { label: '+1σ', price: Math.round(spotPrice + 1 * sigma1) },
-      { label: '+2σ', price: Math.round(spotPrice + 2 * sigma1) },
+      { label: '-2σ', price: Math.round(spotPrice - 2 * sigma1), color: 'text-rose-400 bg-rose-500/10 border-rose-500/30' },
+      { label: '-1σ', price: Math.round(spotPrice - 1 * sigma1), color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
+      { label: 'Spot', price: Math.round(spotPrice), color: 'text-cyan-400 bg-cyan-500/20 border-cyan-500/40' },
+      { label: '+1σ', price: Math.round(spotPrice + 1 * sigma1), color: 'text-lime-400 bg-lime-500/10 border-lime-500/30' },
+      { label: '+2σ', price: Math.round(spotPrice + 2 * sigma1), color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
     ];
   }, [spotPrice, sigma1]);
 
@@ -114,11 +114,10 @@ export function PayoffDiagram({
     }, '');
   }, [todayPoints, minPrice, maxPrice, minPnl, maxPnl]);
 
-  // Shaded Profit (Area above zero line) and Loss (Area below zero line)
+  // Feathered Gradient Washes for Profit (Above Zero) and Loss (Below Zero)
   const { profitAreaPath, lossAreaPath } = useMemo(() => {
     if (expiryPoints.length === 0) return { profitAreaPath: '', lossAreaPath: '' };
 
-    // Profit polygon (clamped at zeroY)
     let pPath = `M ${getX(expiryPoints[0].price)} ${zeroY}`;
     expiryPoints.forEach((pt) => {
       const x = getX(pt.price);
@@ -127,7 +126,6 @@ export function PayoffDiagram({
     });
     pPath += ` L ${getX(expiryPoints[expiryPoints.length - 1].price)} ${zeroY} Z`;
 
-    // Loss polygon (clamped at zeroY)
     let lPath = `M ${getX(expiryPoints[0].price)} ${zeroY}`;
     expiryPoints.forEach((pt) => {
       const x = getX(pt.price);
@@ -157,16 +155,18 @@ export function PayoffDiagram({
 
     const expPt = expiryPoints[closestIndex];
     const todPt = todayPoints[closestIndex] ?? expPt;
+    const priceMovePct = ((expPt.price - spotPrice) / spotPrice) * 100;
 
     return {
       price: expPt.price,
+      priceMovePct,
       expiryPnl: expPt.pnl,
       todayPnl: todPt.pnl,
       x: getX(expPt.price),
       yExp: getY(expPt.pnl),
       yTod: getY(todPt.pnl),
     };
-  }, [hoverX, expiryPoints, todayPoints, minPrice, maxPrice, priceRange]);
+  }, [hoverX, expiryPoints, todayPoints, minPrice, maxPrice, priceRange, spotPrice]);
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -174,20 +174,18 @@ export function PayoffDiagram({
     setHoverX(x);
   };
 
-  // Reset shock sliders
   const handleResetShocks = () => {
     setSpotShockPct(0);
     onChangeTimeShift(0);
     onChangeIvShift(0);
   };
 
-  // P&L Table Scenario Data (-5% to +5% in 1% steps)
+  // P&L Table Scenario Data
   const pnlTableRows = useMemo(() => {
     const rows = [];
     const steps = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
     for (const pct of steps) {
       const targetPrice = Math.round(spotPrice * (1 + pct / 100.0));
-      // Closest expiry point
       let closestExpPnl = 0;
       let closestTodPnl = 0;
       let minDiff = Infinity;
@@ -210,18 +208,18 @@ export function PayoffDiagram({
   }, [spotPrice, expiryPoints, todayPoints]);
 
   return (
-    <div className="bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl overflow-hidden shadow-sm space-y-0">
+    <div className="bg-slate-950/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative isolate">
       {/* ── 1. Top Sub-Tabs Navigation Bar ── */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-[var(--theme-card-subsurface)] border-b border-[var(--theme-card-border)]">
-        {/* Workspace Tabs */}
-        <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-slate-900/80 border-b border-white/[0.08]">
+        {/* Workspace Sub-Tabs */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950/80 border border-white/10 shadow-inner">
           <button
             type="button"
             onClick={() => setActiveWorkspaceTab('PAYOFF')}
-            className={`px-3 py-1 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
               activeWorkspaceTab === 'PAYOFF'
-                ? 'bg-emerald-500 text-slate-950 shadow-xs'
-                : 'text-[var(--theme-card-subtitle)] hover:text-white hover:bg-white/5'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             📈 PAYOFF CHART
@@ -229,10 +227,10 @@ export function PayoffDiagram({
           <button
             type="button"
             onClick={() => setActiveWorkspaceTab('FUTURES')}
-            className={`px-3 py-1 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
               activeWorkspaceTab === 'FUTURES'
-                ? 'bg-emerald-500 text-slate-950 shadow-xs'
-                : 'text-[var(--theme-card-subtitle)] hover:text-white hover:bg-white/5'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             📊 FUTURES CHART
@@ -240,10 +238,10 @@ export function PayoffDiagram({
           <button
             type="button"
             onClick={() => setActiveWorkspaceTab('GREEKS')}
-            className={`px-3 py-1 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
               activeWorkspaceTab === 'GREEKS'
-                ? 'bg-emerald-500 text-slate-950 shadow-xs'
-                : 'text-[var(--theme-card-subtitle)] hover:text-white hover:bg-white/5'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             🔢 GREEKS MATRIX
@@ -251,26 +249,26 @@ export function PayoffDiagram({
           <button
             type="button"
             onClick={() => setActiveWorkspaceTab('PNL_TABLE')}
-            className={`px-3 py-1 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
               activeWorkspaceTab === 'PNL_TABLE'
-                ? 'bg-emerald-500 text-slate-950 shadow-xs'
-                : 'text-[var(--theme-card-subtitle)] hover:text-white hover:bg-white/5'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             📑 P&amp;L TABLE
           </button>
         </div>
 
-        {/* Right Toggle & Reset */}
+        {/* Right Toggle & Reset Button */}
         <div className="flex items-center gap-2 mono text-[11px]">
-          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)]">
+          <div className="flex items-center p-1 rounded-xl bg-slate-950/80 border border-white/10 shadow-inner">
             <button
               type="button"
               onClick={() => setSpotVsFuturesToggle('SPOT')}
-              className={`px-2 py-0.5 rounded text-[10px] font-black cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-[10.5px] font-black cursor-pointer transition-all ${
                 spotVsFuturesToggle === 'SPOT'
-                  ? 'bg-cyan-500 text-slate-950'
-                  : 'text-[var(--theme-card-subtitle)]'
+                  ? 'bg-cyan-500 text-slate-950 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               SPOT
@@ -278,10 +276,10 @@ export function PayoffDiagram({
             <button
               type="button"
               onClick={() => setSpotVsFuturesToggle('FUTURES')}
-              className={`px-2 py-0.5 rounded text-[10px] font-black cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-[10.5px] font-black cursor-pointer transition-all ${
                 spotVsFuturesToggle === 'FUTURES'
-                  ? 'bg-amber-400 text-slate-950'
-                  : 'text-[var(--theme-card-subtitle)]'
+                  ? 'bg-amber-400 text-slate-950 shadow-[0_0_8px_rgba(251,191,36,0.4)]'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               FUTURES
@@ -291,75 +289,69 @@ export function PayoffDiagram({
           <button
             type="button"
             onClick={handleResetShocks}
-            className="p-1 rounded text-[var(--theme-card-subtitle)] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl bg-slate-900 border border-white/10 text-slate-400 hover:text-white hover:border-emerald-500/40 transition-all cursor-pointer group"
             title="Reset Scenario Shocks"
           >
-            🔄
+            <span className="group-hover:rotate-180 transition-transform inline-block">🔄</span>
           </button>
         </div>
       </div>
 
-      {/* ── 2. Standard Deviation Markers Bar ── */}
-      <div className="px-4 py-2 border-b border-[var(--theme-card-border)]/50 bg-slate-950/20 flex flex-wrap items-center justify-between text-[11px] mono">
-        <span className="text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase tracking-wider">
-          Standard Deviation Bands (IV {iv.toFixed(1)}% · {daysToExpiry} DTE):
-        </span>
-        <div className="flex items-center gap-2 sm:gap-4 font-bold">
+      {/* ── 2. Standard Deviation Markers Bar (-2σ to +2σ) ── */}
+      <div className="px-4 py-2.5 border-b border-white/[0.06] bg-slate-950/90 flex flex-wrap items-center justify-between gap-2 text-[11px] mono">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            STANDARD DEVIATION BANDS (IV {iv.toFixed(1)}% · {daysToExpiry} DTE):
+          </span>
+        </div>
+        <div className="flex items-center gap-2 sm:gap-3 font-bold">
           {sdMarkers.map((m) => (
-            <div key={m.label} className="flex items-center gap-1">
-              <span
-                className={`text-[9.5px] px-1 py-0.2 rounded font-black ${
-                  m.label === 'Spot'
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                    : m.label.includes('-')
-                    ? 'text-rose-400'
-                    : 'text-emerald-400'
-                }`}
-              >
+            <div key={m.label} className="flex items-center gap-1.5">
+              <span className={`text-[9.5px] px-2 py-0.5 rounded-lg font-black border ${m.color}`}>
                 {m.label}
               </span>
-              <span className="text-[var(--theme-card-text)]">₹{m.price.toLocaleString('en-IN')}</span>
+              <span className="text-white">₹{m.price.toLocaleString('en-IN')}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── 3. Main Workspace Tab View ── */}
+      {/* ── 3. Workspace Main View ── */}
       <div className="p-3 sm:p-4">
         {/* VIEW 1: PAYOFF CHART */}
         {activeWorkspaceTab === 'PAYOFF' && (
           <div className="space-y-3">
-            {/* Legend strip */}
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[10.5px] mono font-bold text-[var(--theme-card-subtitle)]">
-              <div className="flex items-center gap-3">
+            {/* Chart Legend Strip */}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[10.5px] mono font-bold">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-5 rounded-full bg-emerald-400" />
+                  <span className="h-2 w-5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(0,245,155,0.6)]" />
                   <span className="text-emerald-400">Expiry Payoff (Solid)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="h-0.5 w-5 border-t-2 border-dashed border-cyan-400" />
+                  <span className="h-0.5 w-5 border-t-2 border-dashed border-cyan-400 shadow-[0_0_6px_rgba(0,229,255,0.6)]" />
                   <span className="text-cyan-400">T+{timeShiftDays} Scenario (Dashed)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-amber-400" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
                   <span className="text-amber-400">Breakeven(s)</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded bg-emerald-500/30 border border-emerald-500/50" />
-                  <span>Profit Zone</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded bg-emerald-500/30 border border-emerald-400/60" />
+                  <span className="text-slate-300">Profit Zone</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded bg-rose-500/30 border border-rose-500/50" />
-                  <span>Loss Zone</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded bg-rose-500/30 border border-rose-400/60" />
+                  <span className="text-slate-300">Loss Zone</span>
                 </div>
               </div>
             </div>
 
             {/* High-Precision SVG Diagram */}
-            <div ref={containerRef} className="relative w-full aspect-[8.6/3.6] overflow-hidden select-none bg-slate-950/40 rounded-xl border border-[var(--theme-card-border)]">
+            <div ref={containerRef} className="relative w-full aspect-[8.6/3.7] overflow-hidden select-none bg-[#050a14] rounded-2xl border border-white/10 shadow-inner">
               <svg
                 viewBox={`0 0 ${width} ${height}`}
                 className="w-full h-full cursor-crosshair"
@@ -367,44 +359,55 @@ export function PayoffDiagram({
                 onMouseLeave={() => setHoverX(null)}
               >
                 <defs>
-                  {/* Profit Fill Gradient */}
-                  <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.03" />
+                  {/* Neon Glow Filter */}
+                  <filter id="neonPayoffGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="2.5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+
+                  {/* Feathered Profit Gradient Wash */}
+                  <linearGradient id="profitGrad2026" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#00F59B" stopOpacity="0.22" />
+                    <stop offset="100%" stopColor="#00F59B" stopOpacity="0.01" />
                   </linearGradient>
-                  {/* Loss Fill Gradient */}
-                  <linearGradient id="lossGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.03" />
-                    <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.25" />
+
+                  {/* Feathered Loss Gradient Wash */}
+                  <linearGradient id="lossGrad2026" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#FF4D4D" stopOpacity="0.01" />
+                    <stop offset="100%" stopColor="#FF4D4D" stopOpacity="0.22" />
                   </linearGradient>
                 </defs>
 
-                {/* Shaded Profit & Loss Areas */}
+                {/* Shaded Feathered Profit & Loss Areas */}
                 {profitAreaPath && (
-                  <path d={profitAreaPath} fill="url(#profitGrad)" />
+                  <path d={profitAreaPath} fill="url(#profitGrad2026)" />
                 )}
                 {lossAreaPath && (
-                  <path d={lossAreaPath} fill="url(#lossGrad)" />
+                  <path d={lossAreaPath} fill="url(#lossGrad2026)" />
                 )}
 
-                {/* Zero PnL Horizontal Line */}
+                {/* Zero PnL Horizontal Hairline */}
                 <line
                   x1={padding.left}
                   y1={zeroY}
                   x2={width - padding.right}
                   y2={zeroY}
                   stroke="#475569"
-                  strokeWidth="1.5"
+                  strokeWidth="1.2"
                 />
                 <text
                   x={padding.left - 8}
                   y={zeroY + 4}
                   fill="#94a3b8"
-                  fontSize="9.5"
+                  fontSize="10"
                   fontFamily="monospace"
+                  fontWeight="bold"
                   textAnchor="end"
                 >
-                  ₹0
+                  ₹0.00
                 </text>
 
                 {/* Standard Deviation Vertical Reference Guides */}
@@ -418,7 +421,7 @@ export function PayoffDiagram({
                         y1={padding.top}
                         x2={sX}
                         y2={height - padding.bottom}
-                        stroke="#334155"
+                        stroke="#1e293b"
                         strokeDasharray="2 3"
                         strokeWidth="1"
                       />
@@ -428,14 +431,15 @@ export function PayoffDiagram({
                         fill="#64748b"
                         fontSize="9"
                         fontFamily="monospace"
+                        fontWeight="bold"
                         textAnchor="middle"
                       >
                         {m.label}
                       </text>
                       <text
                         x={sX}
-                        y={height - padding.bottom + 26}
-                        fill="#94a3b8"
+                        y={height - padding.bottom + 27}
+                        fill="#cbd5e1"
                         fontSize="8.5"
                         fontFamily="monospace"
                         textAnchor="middle"
@@ -446,7 +450,7 @@ export function PayoffDiagram({
                   );
                 })}
 
-                {/* Current Spot Vertical Line */}
+                {/* Spot Price Vertical Dashed Guide */}
                 {spotX >= padding.left && spotX <= width - padding.right && (
                   <g>
                     <line
@@ -454,25 +458,27 @@ export function PayoffDiagram({
                       y1={padding.top}
                       x2={spotX}
                       y2={height - padding.bottom}
-                      stroke="#38BDF8"
+                      stroke="#00E5FF"
                       strokeDasharray="4 4"
-                      strokeWidth="1.5"
+                      strokeWidth="1.8"
                     />
                     <rect
-                      x={spotX - 44}
-                      y={padding.top - 20}
-                      width="88"
-                      height="16"
-                      rx="4"
+                      x={spotX - 48}
+                      y={padding.top - 22}
+                      width="96"
+                      height="18"
+                      rx="6"
                       fill="#0284c7"
+                      stroke="#38bdf8"
+                      strokeWidth="1"
                     />
                     <text
                       x={spotX}
-                      y={padding.top - 8}
+                      y={padding.top - 10}
                       fill="#ffffff"
-                      fontSize="9"
+                      fontSize="9.5"
                       fontFamily="monospace"
-                      fontWeight="bold"
+                      fontWeight="black"
                       textAnchor="middle"
                     >
                       SPOT: ₹{spotPrice}
@@ -480,99 +486,115 @@ export function PayoffDiagram({
                   </g>
                 )}
 
-                {/* Expiry Curve Path */}
+                {/* Expiry Curve (Solid Neon Matrix Emerald) */}
                 {expiryPath && (
                   <path
                     d={expiryPath}
                     fill="none"
                     stroke="#00F59B"
-                    strokeWidth="2.8"
+                    strokeWidth="3"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    filter="url(#neonPayoffGlow)"
                   />
                 )}
 
-                {/* T+0 / Scenario Curve Path */}
+                {/* T+0 Scenario Curve (Dashed Electric Cyan) */}
                 {todayPath && (
                   <path
                     d={todayPath}
                     fill="none"
                     stroke="#00E5FF"
-                    strokeWidth="2"
-                    strokeDasharray="5 3"
+                    strokeWidth="2.2"
+                    strokeDasharray="6 3"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 )}
 
-                {/* Breakeven Circles on Zero Line */}
+                {/* Pulsing Radar Breakeven Pins */}
                 {breakevens.map((be) => {
                   const beX = getX(be);
                   if (beX < padding.left || beX > width - padding.right) return null;
                   return (
                     <g key={be}>
+                      {/* Outer radar ping */}
+                      <circle cx={beX} cy={zeroY} r="8" fill="none" stroke="#FBBF24" strokeWidth="1" opacity="0.4" />
+                      {/* Inner solid marker */}
                       <circle cx={beX} cy={zeroY} r="5" fill="#FBBF24" stroke="#000" strokeWidth="1.5" />
+                      <rect
+                        x={beX - 32}
+                        y={zeroY - 24}
+                        width="64"
+                        height="16"
+                        rx="4"
+                        fill="#0b1329"
+                        stroke="#FBBF24"
+                        strokeWidth="1"
+                      />
                       <text
                         x={beX}
-                        y={zeroY - 9}
+                        y={zeroY - 13}
                         fill="#FBBF24"
-                        fontSize="9.5"
+                        fontSize="9"
                         fontFamily="monospace"
-                        fontWeight="bold"
+                        fontWeight="black"
                         textAnchor="middle"
                       >
-                        BE: ₹{be}
+                        ₹{be}
                       </text>
                     </g>
                   );
                 })}
 
-                {/* Interactive Crosshair & Tooltip */}
+                {/* 2026 Floating Frosted-Glass HUD Crosshair Tooltip */}
                 {hoverData && (
                   <g>
+                    {/* Vertical Hairline */}
                     <line
                       x1={hoverData.x}
                       y1={padding.top}
                       x2={hoverData.x}
                       y2={height - padding.bottom}
                       stroke="#ffffff"
-                      strokeOpacity="0.5"
+                      strokeOpacity="0.45"
                       strokeDasharray="2 2"
                     />
-                    <circle cx={hoverData.x} cy={hoverData.yExp} r="5" fill="#00F59B" stroke="#000" strokeWidth="1.5" />
-                    <circle cx={hoverData.x} cy={hoverData.yTod} r="4.5" fill="#00E5FF" stroke="#000" strokeWidth="1.5" />
+                    <circle cx={hoverData.x} cy={hoverData.yExp} r="5.5" fill="#00F59B" stroke="#000" strokeWidth="1.5" />
+                    <circle cx={hoverData.x} cy={hoverData.yTod} r="5" fill="#00E5FF" stroke="#000" strokeWidth="1.5" />
 
-                    <g transform={`translate(${Math.min(width - 165, Math.max(padding.left + 5, hoverData.x - 75))}, ${padding.top + 5})`}>
+                    {/* HUD Tooltip Box */}
+                    <g transform={`translate(${Math.min(width - 175, Math.max(padding.left + 5, hoverData.x - 85))}, ${padding.top + 5})`}>
                       <rect
-                        width="150"
-                        height="62"
-                        rx="8"
+                        width="170"
+                        height="68"
+                        rx="10"
                         fill="#030712"
                         fillOpacity="0.95"
-                        stroke="#1e293b"
-                        strokeWidth="1"
+                        stroke="#334155"
+                        strokeWidth="1.2"
                       />
-                      <text x="10" y="18" fill="#38bdf8" fontSize="10.5" fontFamily="monospace" fontWeight="bold">
-                        Price: ₹{hoverData.price.toLocaleString('en-IN')}
+                      <text x="12" y="18" fill="#38bdf8" fontSize="11" fontFamily="monospace" fontWeight="bold">
+                        ₹{hoverData.price.toLocaleString('en-IN')} ({hoverData.priceMovePct >= 0 ? '+' : ''}{hoverData.priceMovePct.toFixed(1)}%)
                       </text>
                       <text
-                        x="10"
-                        y="36"
+                        x="12"
+                        y="38"
                         fill={hoverData.expiryPnl >= 0 ? '#00F59B' : '#ff4d4d'}
-                        fontSize="11"
+                        fontSize="12.5"
                         fontFamily="monospace"
                         fontWeight="black"
                       >
                         Exp PnL: {hoverData.expiryPnl >= 0 ? '+' : ''}₹{hoverData.expiryPnl.toLocaleString('en-IN')}
                       </text>
                       <text
-                        x="10"
-                        y="52"
+                        x="12"
+                        y="56"
                         fill={hoverData.todayPnl >= 0 ? '#00e5ff' : '#fb923c'}
-                        fontSize="10"
+                        fontSize="10.5"
                         fontFamily="monospace"
                       >
-                        T+{timeShiftDays} PnL: {hoverData.todayPnl >= 0 ? '+' : ''}₹{hoverData.todayPnl.toLocaleString('en-IN')}
+                        T+{timeShiftDays} Scenario: {hoverData.todayPnl >= 0 ? '+' : ''}₹{hoverData.todayPnl.toLocaleString('en-IN')}
                       </text>
                     </g>
                   </g>
@@ -584,94 +606,89 @@ export function PayoffDiagram({
 
         {/* VIEW 2: FUTURES CHART */}
         {activeWorkspaceTab === 'FUTURES' && (
-          <div className="p-6 bg-slate-950/40 rounded-xl border border-[var(--theme-card-border)] space-y-4 mono text-[12px]">
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)]">
+          <div className="p-6 bg-slate-900/60 rounded-2xl border border-white/10 space-y-4 mono text-[12px]">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
               <span className="font-bold text-amber-400 uppercase tracking-wider">
                 Underlying Futures &amp; Spot Positioning
               </span>
-              <span className="text-[var(--theme-card-subtitle)]">
+              <span className="text-slate-400">
                 Spot: ₹{spotPrice.toLocaleString('en-IN')}
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3 rounded-lg bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)]">
-                <span className="text-[10px] text-[var(--theme-card-subtitle)] block uppercase">Lower Boundary (-2σ)</span>
-                <span className="font-black text-rose-400 text-[14px]">₹{sdMarkers[0].price}</span>
+              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-rose-500/20">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Lower Boundary (-2σ)</span>
+                <span className="font-black text-rose-400 text-[15px]">₹{sdMarkers[0].price}</span>
               </div>
-              <div className="p-3 rounded-lg bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)]">
-                <span className="text-[10px] text-[var(--theme-card-subtitle)] block uppercase">Current Spot Axis</span>
-                <span className="font-black text-cyan-400 text-[14px]">₹{spotPrice}</span>
+              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-cyan-500/20">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Current Spot Axis</span>
+                <span className="font-black text-cyan-400 text-[15px]">₹{spotPrice}</span>
               </div>
-              <div className="p-3 rounded-lg bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)]">
-                <span className="text-[10px] text-[var(--theme-card-subtitle)] block uppercase">Upper Boundary (+2σ)</span>
-                <span className="font-black text-emerald-400 text-[14px]">₹{sdMarkers[4].price}</span>
+              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-emerald-500/20">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Upper Boundary (+2σ)</span>
+                <span className="font-black text-emerald-400 text-[15px]">₹{sdMarkers[4].price}</span>
               </div>
-            </div>
-            <div className="p-4 rounded-lg bg-cyan-500/5 border border-cyan-500/20 text-cyan-300 text-[11px] leading-relaxed">
-              💡 Breakeven price levels are situated at {breakevens.length > 0 ? breakevens.map((b) => `₹${b}`).join(' and ') : 'N/A'}.
-              Holding this position past the nearest breakeven shifts risk into the positive payoff regime.
             </div>
           </div>
         )}
 
         {/* VIEW 3: GREEKS MATRIX */}
         {activeWorkspaceTab === 'GREEKS' && (
-          <div className="overflow-x-auto rounded-xl border border-[var(--theme-card-border)]">
-            <table className="w-full mono text-[11px] text-center border-collapse">
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full mono text-[11.5px] text-center border-collapse">
               <thead>
-                <tr className="bg-[var(--theme-card-subsurface)] text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase border-b border-[var(--theme-card-border)]">
-                  <th className="py-2 px-3 text-left">Leg</th>
-                  <th className="py-2 px-2">Action</th>
-                  <th className="py-2 px-2">Strike</th>
-                  <th className="py-2 px-2">IV %</th>
-                  <th className="py-2 px-2 text-cyan-400">Delta (Δ)</th>
-                  <th className="py-2 px-2 text-purple-400">Gamma (Γ)</th>
-                  <th className="py-2 px-2 text-rose-400">Theta (θ/d)</th>
-                  <th className="py-2 px-2 text-emerald-400">Vega (ν/%)</th>
+                <tr className="bg-slate-900/90 text-[10px] font-bold text-slate-400 uppercase border-b border-white/10">
+                  <th className="py-2.5 px-3 text-left">Leg</th>
+                  <th className="py-2.5 px-2">Action</th>
+                  <th className="py-2.5 px-2">Strike</th>
+                  <th className="py-2.5 px-2">IV %</th>
+                  <th className="py-2.5 px-2 text-cyan-400">Delta (Δ)</th>
+                  <th className="py-2.5 px-2 text-purple-400">Gamma (Γ)</th>
+                  <th className="py-2.5 px-2 text-rose-400">Theta (θ/d)</th>
+                  <th className="py-2.5 px-2 text-emerald-400">Vega (ν/%)</th>
                 </tr>
               </thead>
               <tbody>
                 {activeLegs.map((leg, idx) => (
                   <tr
                     key={leg.id}
-                    className={`border-b border-[var(--theme-card-border)]/40 hover:bg-white/5 ${
+                    className={`border-b border-white/[0.04] hover:bg-white/5 ${
                       leg.disabled ? 'opacity-40' : ''
                     }`}
                   >
-                    <td className="py-2 px-3 text-left font-bold text-[var(--theme-card-text)]">
+                    <td className="py-2 px-3 text-left font-bold text-white">
                       Leg #{idx + 1} ({leg.lots}x {leg.instrument})
                     </td>
                     <td className="py-2 px-2">
-                      <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-black ${
-                        leg.action === 'BUY' ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500 text-slate-950'
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                        leg.action === 'BUY' ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500 text-white'
                       }`}>
                         {leg.action}
                       </span>
                     </td>
-                    <td className="py-2 px-2 font-black">{leg.strike}</td>
-                    <td className="py-2 px-2">{leg.iv.toFixed(1)}%</td>
-                    <td className="py-2 px-2 font-bold text-cyan-400">{leg.greeks.delta.toFixed(3)}</td>
-                    <td className="py-2 px-2 font-bold text-purple-400">{leg.greeks.gamma.toFixed(4)}</td>
-                    <td className="py-2 px-2 font-bold text-rose-400">₹{leg.greeks.theta.toFixed(1)}</td>
-                    <td className="py-2 px-2 font-bold text-emerald-400">₹{leg.greeks.vega.toFixed(1)}</td>
+                    <td className="py-2 px-2 font-black text-white">{leg.strike}</td>
+                    <td className="py-2 px-2 text-slate-300">{leg.iv.toFixed(1)}%</td>
+                    <td className="py-2 px-2 font-black text-cyan-400">{leg.greeks.delta.toFixed(3)}</td>
+                    <td className="py-2 px-2 font-black text-purple-400">{leg.greeks.gamma.toFixed(4)}</td>
+                    <td className="py-2 px-2 font-black text-rose-400">₹{leg.greeks.theta.toFixed(1)}</td>
+                    <td className="py-2 px-2 font-black text-emerald-400">₹{leg.greeks.vega.toFixed(1)}</td>
                   </tr>
                 ))}
-                {/* Total Row */}
                 {payoff && (
-                  <tr className="bg-[var(--theme-card-subsurface)] font-black border-t-2 border-[var(--theme-card-border)]">
-                    <td colSpan={4} className="py-2 px-3 text-left uppercase text-emerald-400">
+                  <tr className="bg-slate-900/90 font-black border-t-2 border-white/20">
+                    <td colSpan={4} className="py-2.5 px-3 text-left uppercase text-emerald-400">
                       Total Strategy Net Greeks
                     </td>
-                    <td className="py-2 px-2 text-cyan-400">
+                    <td className="py-2.5 px-2 text-cyan-400">
                       {payoff.netGreeks.delta >= 0 ? '+' : ''}{payoff.netGreeks.delta.toFixed(2)}
                     </td>
-                    <td className="py-2 px-2 text-purple-400">
+                    <td className="py-2.5 px-2 text-purple-400">
                       {payoff.netGreeks.gamma.toFixed(4)}
                     </td>
-                    <td className="py-2 px-2 text-rose-400">
+                    <td className="py-2.5 px-2 text-rose-400">
                       ₹{payoff.netGreeks.theta.toLocaleString('en-IN')}
                     </td>
-                    <td className="py-2 px-2 text-emerald-400">
+                    <td className="py-2.5 px-2 text-emerald-400">
                       ₹{payoff.netGreeks.vega.toLocaleString('en-IN')}
                     </td>
                   </tr>
@@ -683,15 +700,15 @@ export function PayoffDiagram({
 
         {/* VIEW 4: P&L TABLE */}
         {activeWorkspaceTab === 'PNL_TABLE' && (
-          <div className="overflow-x-auto rounded-xl border border-[var(--theme-card-border)] max-h-[320px] overflow-y-auto">
-            <table className="w-full mono text-[11px] text-center border-collapse">
-              <thead className="sticky top-0 z-10 bg-[var(--theme-card-subsurface)]">
-                <tr className="text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase border-b border-[var(--theme-card-border)]">
-                  <th className="py-2 px-3">Underlying Price</th>
-                  <th className="py-2 px-2">% Shock</th>
-                  <th className="py-2 px-3 text-emerald-400">Expiry P&amp;L</th>
-                  <th className="py-2 px-3 text-cyan-400">T+{timeShiftDays} P&amp;L</th>
-                  <th className="py-2 px-2">Status</th>
+          <div className="overflow-x-auto rounded-2xl border border-white/10 max-h-[320px] overflow-y-auto">
+            <table className="w-full mono text-[11.5px] text-center border-collapse">
+              <thead className="sticky top-0 z-10 bg-slate-900/95">
+                <tr className="text-[10px] font-bold text-slate-400 uppercase border-b border-white/10">
+                  <th className="py-2.5 px-3">Underlying Price</th>
+                  <th className="py-2.5 px-2">% Shock</th>
+                  <th className="py-2.5 px-3 text-emerald-400">Expiry P&amp;L</th>
+                  <th className="py-2.5 px-3 text-cyan-400">T+{timeShiftDays} P&amp;L</th>
+                  <th className="py-2.5 px-2">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -701,14 +718,14 @@ export function PayoffDiagram({
                   return (
                     <tr
                       key={r.pct}
-                      className={`border-b border-[var(--theme-card-border)]/40 hover:bg-white/5 ${
+                      className={`border-b border-white/[0.04] hover:bg-white/5 ${
                         r.pct === 0 ? 'bg-cyan-500/10 font-black' : ''
                       }`}
                     >
-                      <td className="py-2 px-3 font-black text-[var(--theme-card-text)]">
-                        ₹{r.price.toLocaleString('en-IN')} {r.pct === 0 ? '(Current Spot)' : ''}
+                      <td className="py-2 px-3 font-black text-white">
+                        ₹{r.price.toLocaleString('en-IN')} {r.pct === 0 ? '(Spot)' : ''}
                       </td>
-                      <td className="py-2 px-2 font-bold text-[var(--theme-card-subtitle)]">
+                      <td className="py-2 px-2 font-bold text-slate-400">
                         {r.pct >= 0 ? `+${r.pct}%` : `${r.pct}%`}
                       </td>
                       <td className={`py-2 px-3 font-black ${isExpProf ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -719,7 +736,7 @@ export function PayoffDiagram({
                       </td>
                       <td className="py-2 px-2">
                         <span className={`px-2 py-0.5 rounded text-[9.5px] font-black ${
-                          isExpProf ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+                          isExpProf ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
                         }`}>
                           {isExpProf ? 'PROFIT' : 'LOSS'}
                         </span>
@@ -733,41 +750,41 @@ export function PayoffDiagram({
         )}
       </div>
 
-      {/* ── 4. Bottom Greeks Strip (Opstra Definedge Compatible) ── */}
+      {/* ── 4. Bottom Greeks Strip ── */}
       {payoff && (
-        <div className="px-4 py-2 bg-slate-950/60 border-t border-[var(--theme-card-border)] flex flex-wrap items-center justify-between gap-3 text-[11px] mono">
+        <div className="px-4 py-2.5 bg-slate-900/95 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-3 text-[11px] mono">
           <div className="flex flex-wrap items-center gap-3 sm:gap-6 font-bold">
-            <div>
-              <span className="text-[var(--theme-card-subtitle)] mr-1">Delta:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-400">Delta (Δ):</span>
               <span className="text-cyan-400 font-black">
                 {payoff.netGreeks.delta >= 0 ? '+' : ''}{payoff.netGreeks.delta.toFixed(2)}
               </span>
             </div>
-            <div>
-              <span className="text-[var(--theme-card-subtitle)] mr-1">Theta:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-400">Theta (θ):</span>
               <span className="text-rose-400 font-black">
                 ₹{payoff.netGreeks.theta.toLocaleString('en-IN')}/day
               </span>
             </div>
-            <div>
-              <span className="text-[var(--theme-card-subtitle)] mr-1">Gamma:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-400">Gamma (Γ):</span>
               <span className="text-purple-400 font-black">
                 {payoff.netGreeks.gamma.toFixed(4)}
               </span>
             </div>
-            <div>
-              <span className="text-[var(--theme-card-subtitle)] mr-1">Vega:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-400">Vega (ν):</span>
               <span className="text-emerald-400 font-black">
                 ₹{payoff.netGreeks.vega.toLocaleString('en-IN')}
               </span>
             </div>
           </div>
 
-          <div>
-            <span className="text-[var(--theme-card-subtitle)] mr-1.5 font-bold">Total PNL:</span>
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 font-bold">Total PNL:</span>
             <span
-              className={`font-black text-[12px] ${
-                payoff.netDebitCredit >= 0 ? 'text-emerald-400' : 'text-rose-400'
+              className={`font-black text-[13px] px-2.5 py-0.5 rounded-lg ${
+                payoff.netDebitCredit >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
               }`}
             >
               {payoff.netDebitCredit >= 0 ? '+₹' : '-₹'}
@@ -777,12 +794,12 @@ export function PayoffDiagram({
         </div>
       )}
 
-      {/* ── 5. Bottom Scenario Shock Sliders (Spot % and IV %) ── */}
-      <div className="px-4 py-3 bg-[var(--theme-card-subsurface)] border-t border-[var(--theme-card-border)] grid grid-cols-1 sm:grid-cols-2 gap-4 mono text-[11px]">
+      {/* ── 5. Bottom Scenario Shock Sliders ── */}
+      <div className="px-4 py-3 bg-slate-950/90 border-t border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 gap-4 mono text-[11px]">
         {/* Spot Shock Slider */}
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-[var(--theme-card-subtitle)] font-bold">
+            <span className="text-slate-300 font-bold">
               Target Spot Shock:
             </span>
             <span className="font-black text-cyan-400">
@@ -791,7 +808,7 @@ export function PayoffDiagram({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[9.5px] text-[var(--theme-card-subtitle)]">-5%</span>
+            <span className="text-[9.5px] text-slate-500">-5%</span>
             <input
               type="range"
               min={-5}
@@ -799,16 +816,16 @@ export function PayoffDiagram({
               step={0.5}
               value={spotShockPct}
               onChange={(e) => setSpotShockPct(Number(e.target.value))}
-              className="w-full h-1.5 bg-[var(--theme-card-surface)] rounded appearance-none cursor-pointer accent-cyan-400"
+              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
             />
-            <span className="text-[9.5px] text-[var(--theme-card-subtitle)]">+5%</span>
+            <span className="text-[9.5px] text-slate-500">+5%</span>
           </div>
         </div>
 
         {/* IV Shift Slider */}
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-[var(--theme-card-subtitle)] font-bold">
+            <span className="text-slate-300 font-bold">
               Target IV Shock:
             </span>
             <span className="font-black text-fuchsia-400">
@@ -817,7 +834,7 @@ export function PayoffDiagram({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[9.5px] text-[var(--theme-card-subtitle)]">-15%</span>
+            <span className="text-[9.5px] text-slate-500">-15%</span>
             <input
               type="range"
               min={-15}
@@ -825,9 +842,9 @@ export function PayoffDiagram({
               step={1}
               value={ivShiftPct}
               onChange={(e) => onChangeIvShift(Number(e.target.value))}
-              className="w-full h-1.5 bg-[var(--theme-card-surface)] rounded appearance-none cursor-pointer accent-fuchsia-400"
+              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-400"
             />
-            <span className="text-[9.5px] text-[var(--theme-card-subtitle)]">+20%</span>
+            <span className="text-[9.5px] text-slate-500">+20%</span>
           </div>
         </div>
       </div>

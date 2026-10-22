@@ -21,7 +21,7 @@ export default function FnoTerminalPage() {
     <>
       <Navbar market={market} onMarketChange={setMarket} />
 
-      <main className="min-h-screen pt-28 sm:pt-32 relative z-20 bg-transparent pb-24">
+      <main className="min-h-screen pt-32 sm:pt-36 relative z-20 bg-transparent pb-24">
         <Suspense
           fallback={
             <div className="mx-auto max-w-[1700px] px-4 py-20 text-center mono text-emerald-400">

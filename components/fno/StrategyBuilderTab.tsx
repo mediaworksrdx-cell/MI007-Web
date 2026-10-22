@@ -180,7 +180,7 @@ export function StrategyBuilderTab({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 fno-dark-cockpit">
       {/* ── Saved Toast Notification ── */}
       {savedToast && (
         <div className="fixed bottom-6 right-6 z-50 bg-emerald-500 text-slate-950 px-4 py-2.5 rounded-xl shadow-2xl mono text-[12px] font-black flex items-center gap-2 border border-emerald-300">
@@ -197,52 +197,54 @@ export function StrategyBuilderTab({
         </div>
       )}
 
-      {/* ── 1. Top Metrics Bar (Opstra Definedge Compatible) ── */}
-      <div className="bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl p-3 sm:p-4 shadow-sm flex flex-wrap items-center justify-between gap-3 text-[11px] mono">
+      {/* ── 1. Top Metrics Bar (2026 Institutional Badges) ── */}
+      <div className="bg-slate-950/80 backdrop-blur-xl border border-white/10 rounded-2xl p-3.5 sm:p-4 shadow-2xl flex flex-wrap items-center justify-between gap-3 text-[11px] mono">
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           {/* Spot Price */}
-          <div className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-1.5">
-            <span className="text-[10px] uppercase text-[var(--theme-card-subtitle)]">Spot Price:</span>
-            <span className="font-black text-emerald-400 text-[12.5px]">
+          <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2 shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] uppercase text-slate-400 font-bold">Spot:</span>
+            <span className="font-black text-emerald-400 text-[13px]">
               ₹{spotPrice.toLocaleString('en-IN')}
             </span>
           </div>
 
           {/* Futures Price */}
-          <div className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center gap-1.5">
-            <span className="text-[10px] uppercase text-[var(--theme-card-subtitle)]">Futures Price:</span>
-            <span className="font-black text-amber-400 text-[12.5px]">
+          <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span className="text-[10px] uppercase text-slate-400 font-bold">Futures:</span>
+            <span className="font-black text-amber-400 text-[13px]">
               ₹{futuresPrice.toLocaleString('en-IN')}
             </span>
           </div>
 
           {/* Lot Size */}
-          <div className="px-2.5 py-1 rounded-lg bg-lime-500/10 border border-lime-500/30 flex items-center gap-1.5">
-            <span className="text-[10px] uppercase text-[var(--theme-card-subtitle)]">Lot Size:</span>
+          <div className="px-3 py-1.5 rounded-xl bg-lime-500/10 border border-lime-500/30 flex items-center gap-1.5 shadow-xs">
+            <span className="text-[10px] uppercase text-slate-400 font-bold">Lot Size:</span>
             <span className="font-black text-lime-400">
               {instrument.lotSize}
             </span>
           </div>
 
           {/* IV */}
-          <div className="px-2.5 py-1 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-center gap-1.5">
-            <span className="text-[10px] uppercase text-[var(--theme-card-subtitle)]">IV:</span>
+          <div className="px-3 py-1.5 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center gap-1.5 shadow-xs">
+            <span className="text-[10px] uppercase text-slate-400 font-bold">IV:</span>
             <span className="font-black text-yellow-400">
               {ivValue}%
             </span>
           </div>
 
           {/* IV Percentile */}
-          <div className="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center gap-1.5">
-            <span className="text-[10px] uppercase text-[var(--theme-card-subtitle)]">IV Percentile:</span>
+          <div className="px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center gap-1.5 shadow-xs">
+            <span className="text-[10px] uppercase text-slate-400 font-bold">IVP:</span>
             <span className="font-black text-purple-400">
               {ivPercentile}%
             </span>
           </div>
 
           {/* DTE */}
-          <div className="px-2.5 py-1 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/30 flex items-center gap-1.5">
-            <span className="text-[10px] uppercase text-[var(--theme-card-subtitle)]">DTE:</span>
+          <div className="px-3 py-1.5 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/30 flex items-center gap-1.5 shadow-xs">
+            <span className="text-[10px] uppercase text-slate-400 font-bold">DTE:</span>
             <span className="font-black text-fuchsia-400">
               {daysToExpiry} Days
             </span>
@@ -255,7 +257,7 @@ export function StrategyBuilderTab({
             type="button"
             onClick={handleSaveStrategy}
             disabled={activeLegs.length === 0}
-            className="px-3.5 py-1.5 rounded-lg mono text-[11px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition-colors cursor-pointer shadow-xs disabled:opacity-40"
+            className="px-4 py-2 rounded-xl mono text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all cursor-pointer shadow-md disabled:opacity-40"
           >
             💼 Save &amp; Track Strategy
           </button>
