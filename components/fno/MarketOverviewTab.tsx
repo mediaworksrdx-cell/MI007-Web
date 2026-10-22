@@ -178,56 +178,7 @@ export function MarketOverviewTab({
         </div>
       </div>
 
-      {/* ── 3. Quick Action Banners: Option Chain & Buildup Scanner ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Go to Option Chain */}
-        <div
-          onClick={onOpenChainTab}
-          className="group bg-gradient-to-r from-emerald-500/10 via-[var(--theme-card-surface)] to-[var(--theme-card-surface)] border border-emerald-500/30 hover:border-emerald-500 rounded-xl p-4 cursor-pointer transition-all shadow-xs"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="mono text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
-                INTERACTIVE OPTION CHAIN
-              </span>
-              <h4 className="mono text-[15px] font-black text-[var(--theme-card-text)] mt-0.5 group-hover:text-emerald-400 transition-colors">
-                Launch Advanced Chain & Greeks Matrix →
-              </h4>
-              <p className="text-[11px] text-[var(--theme-card-subtitle)] mt-1">
-                Examine dual Call/Put OI depth bars, IV smile, Black-Scholes Greeks, and 1-click strategy builder legs.
-              </p>
-            </div>
-            <span className="text-2xl text-emerald-400 font-bold group-hover:translate-x-1 transition-transform">
-              ⚡
-            </span>
-          </div>
-        </div>
-
-        {/* Go to Buildup Scanner */}
-        <div
-          onClick={onOpenBuildupTab}
-          className="group bg-gradient-to-r from-cyan-500/10 via-[var(--theme-card-surface)] to-[var(--theme-card-surface)] border border-cyan-500/30 hover:border-cyan-500 rounded-xl p-4 cursor-pointer transition-all shadow-xs"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="mono text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
-                INSTITUTIONAL POSITIONING
-              </span>
-              <h4 className="mono text-[15px] font-black text-[var(--theme-card-text)] mt-0.5 group-hover:text-cyan-400 transition-colors">
-                Open 4-Quadrant Buildup Scanner →
-              </h4>
-              <p className="text-[11px] text-[var(--theme-card-subtitle)] mt-1">
-                Scan Long Buildup, Short Buildup, Short Covering, and Long Unwinding across 50+ major F&O stocks.
-              </p>
-            </div>
-            <span className="text-2xl text-cyan-400 font-bold group-hover:translate-x-1 transition-transform">
-              📊
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 4. Sectoral Derivatives Positioning Heatmap ── */}
+      {/* ── 3. Sectoral Derivatives Positioning Heatmap ── */}
       <div className="bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl p-4 sm:p-5 shadow-sm">
         <div className="mb-3.5 pb-2.5 border-b border-[var(--theme-card-border)] flex items-center justify-between">
           <div>
