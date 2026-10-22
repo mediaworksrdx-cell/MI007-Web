@@ -1,4 +1,4 @@
-// ─── Institutional Strategy Builder & Analyzer (Opstra Definedge Layout) ──────
+// ─── Exact Opstra Definedge Strategy Builder Workspace (Image 2, 3, 4) ─────────
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -11,7 +11,6 @@ import {
   FuturesTermStructure,
   TrackedStrategy,
 } from '@/lib/fno/fnoTypes';
-import { INSTITUTIONAL_STRATEGY_PRESETS, buildLegsFromPreset } from '@/lib/fno/strategyPresets';
 import { calculateStrategyPayoff } from '@/lib/fno/payoffEngine';
 import { PayoffDiagram } from './PayoffDiagram';
 import { StrategyPresetGallery } from './StrategyPresetGallery';
@@ -58,10 +57,9 @@ export function StrategyBuilderTab({
     return Math.round(spotPrice * 1.002 * 10) / 10;
   }, [termStructure, spotPrice]);
 
-  // Implied Volatility & IV Percentile
   const ivValue = 15.87;
   const ivPercentile = 75.51;
-  const daysToExpiry = 7;
+  const daysToExpiry = 0; // Opstra shows DTE: 0 or days to expiry
 
   // Calculate Payoff
   const payoff = useMemo(() => {
@@ -73,10 +71,10 @@ export function StrategyBuilderTab({
       {
         timeShiftDays,
         ivShiftPct,
-        daysToExpiry,
+        daysToExpiry: 7,
       }
     );
-  }, [activeLegs, spotPrice, strategyName, strategyCategory, timeShiftDays, ivShiftPct, daysToExpiry]);
+  }, [activeLegs, spotPrice, strategyName, strategyCategory, timeShiftDays, ivShiftPct]);
 
   // Apply a preset from modal
   const handleApplyPreset = (newLegs: StrategyLeg[], replaceAll: boolean) => {
@@ -91,18 +89,15 @@ export function StrategyBuilderTab({
     }
   };
 
-  // Add a leg (from manual bar or option chain)
   const handleAddLeg = (newLeg: StrategyLeg) => {
     onUpdateLegs([...activeLegs, newLeg]);
   };
 
-  // Modify leg
   const handleUpdateLeg = (id: string, updates: Partial<StrategyLeg>) => {
     const updated = activeLegs.map((leg) => {
       if (leg.id !== id) return leg;
       const merged = { ...leg, ...updates };
 
-      // Re-estimate price and greeks if strike or instrument changed
       if (updates.strike !== undefined || updates.instrument !== undefined) {
         if (merged.instrument === 'FUT') {
           merged.entryPrice = spotPrice;
@@ -138,22 +133,18 @@ export function StrategyBuilderTab({
     onUpdateLegs(updated);
   };
 
-  // Remove leg
   const handleRemoveLeg = (id: string) => {
     onUpdateLegs(activeLegs.filter((l) => l.id !== id));
   };
 
-  // Toggle All Legs Enabled/Disabled
   const handleToggleAll = (enable: boolean) => {
     onUpdateLegs(activeLegs.map((l) => ({ ...l, disabled: !enable })));
   };
 
-  // Clear all
   const handleClearAll = () => {
     onUpdateLegs([]);
   };
 
-  // Save to tracked strategies
   const handleSaveStrategy = () => {
     if (activeLegs.length === 0) return;
     const tracked: TrackedStrategy = {
@@ -180,16 +171,16 @@ export function StrategyBuilderTab({
   };
 
   return (
-    <div className="space-y-4 fno-dark-cockpit">
+    <div className="space-y-3 bg-white p-2 sm:p-4 rounded-md border border-slate-200">
       {/* ── Saved Toast Notification ── */}
       {savedToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-500 text-slate-950 px-4 py-2.5 rounded-xl shadow-2xl mono text-[12px] font-black flex items-center gap-2 border border-emerald-300">
+        <div className="fixed bottom-6 right-6 z-50 bg-[#4CAF50] text-white px-4 py-2.5 rounded shadow-2xl text-[12px] font-bold flex items-center gap-2">
           <span>✓</span>
           <span>Strategy Saved to Tracked Portfolio!</span>
           {onOpenSavedTab && (
             <button
               onClick={onOpenSavedTab}
-              className="ml-2 px-2 py-0.5 rounded bg-slate-950 text-emerald-400 text-[10px] uppercase font-bold hover:bg-slate-900 cursor-pointer"
+              className="ml-2 px-2 py-0.5 rounded bg-black/20 text-white text-[10px] uppercase font-bold hover:bg-black/30 cursor-pointer"
             >
               View Tracked →
             </button>
@@ -197,79 +188,71 @@ export function StrategyBuilderTab({
         </div>
       )}
 
-      {/* ── 1. Top Metrics Bar (2026 Institutional Badges) ── */}
-      <div className="bg-slate-950/80 backdrop-blur-xl border border-white/10 rounded-2xl p-3.5 sm:p-4 shadow-2xl flex flex-wrap items-center justify-between gap-3 text-[11px] mono">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-          {/* Spot Price */}
-          <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2 shadow-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] uppercase text-slate-400 font-bold">Spot:</span>
-            <span className="font-black text-emerald-400 text-[13px]">
-              ₹{spotPrice.toLocaleString('en-IN')}
-            </span>
-          </div>
-
-          {/* Futures Price */}
-          <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 shadow-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <span className="text-[10px] uppercase text-slate-400 font-bold">Futures:</span>
-            <span className="font-black text-amber-400 text-[13px]">
-              ₹{futuresPrice.toLocaleString('en-IN')}
-            </span>
-          </div>
-
-          {/* Lot Size */}
-          <div className="px-3 py-1.5 rounded-xl bg-lime-500/10 border border-lime-500/30 flex items-center gap-1.5 shadow-xs">
-            <span className="text-[10px] uppercase text-slate-400 font-bold">Lot Size:</span>
-            <span className="font-black text-lime-400">
-              {instrument.lotSize}
-            </span>
-          </div>
-
-          {/* IV */}
-          <div className="px-3 py-1.5 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center gap-1.5 shadow-xs">
-            <span className="text-[10px] uppercase text-slate-400 font-bold">IV:</span>
-            <span className="font-black text-yellow-400">
-              {ivValue}%
-            </span>
-          </div>
-
-          {/* IV Percentile */}
-          <div className="px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center gap-1.5 shadow-xs">
-            <span className="text-[10px] uppercase text-slate-400 font-bold">IVP:</span>
-            <span className="font-black text-purple-400">
-              {ivPercentile}%
-            </span>
-          </div>
-
-          {/* DTE */}
-          <div className="px-3 py-1.5 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/30 flex items-center gap-1.5 shadow-xs">
-            <span className="text-[10px] uppercase text-slate-400 font-bold">DTE:</span>
-            <span className="font-black text-fuchsia-400">
-              {daysToExpiry} Days
-            </span>
-          </div>
+      {/* ── Top Header Line: Instrument & Pay-off Date (Exact Opstra Style) ── */}
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-100">
+        <div>
+          <span className="text-[18px] font-bold text-slate-900 tracking-tight">
+            {instrument.symbol}
+          </span>
+          <span className="text-[10px] text-slate-400 block -mt-0.5">
+            Select Index/Stock
+          </span>
         </div>
 
-        {/* Save & Track Button */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleSaveStrategy}
-            disabled={activeLegs.length === 0}
-            className="px-4 py-2 rounded-xl mono text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all cursor-pointer shadow-md disabled:opacity-40"
-          >
-            💼 Save &amp; Track Strategy
-          </button>
+        <div className="text-right">
+          <span className="text-[12px] font-semibold text-slate-700">
+            Date: <strong className="text-slate-900">{selectedExpiry}</strong>
+          </span>
+          <span className="text-[10px] text-slate-400 block -mt-0.5">
+            Select Pay-off Date
+          </span>
         </div>
       </div>
 
-      {/* ── 2. Visual Strategy Preset Gallery (Opstra Definedge Compatible) ── */}
+      {/* ── Metric Badges Row (Exact Opstra Definedge Pastel Colors) ── */}
+      <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold pb-2">
+        {/* Spot Price */}
+        <span className="bg-[#80CBC4] text-[#004D40] px-2.5 py-1 rounded">
+          Spot Price: {spotPrice.toFixed(1)}
+        </span>
+
+        {/* Futures Price */}
+        <span className="bg-[#FFE0B2] text-[#E65100] px-2.5 py-1 rounded">
+          Futures Price: {futuresPrice.toFixed(1)}
+        </span>
+
+        {/* Lot Size */}
+        <span className="bg-[#DCEDC8] text-[#33691E] px-2.5 py-1 rounded">
+          Lot Size: {instrument.lotSize}
+        </span>
+
+        {/* IV */}
+        <span className="bg-[#FFF9C4] text-[#F57F17] px-2.5 py-1 rounded">
+          IV: {ivValue}
+        </span>
+
+        {/* IV Percentile */}
+        <span className="bg-[#E1BEE7] text-[#4A148C] px-2.5 py-1 rounded">
+          IV Percentile: {ivPercentile}
+        </span>
+
+        {/* NIFTY IV Chart */}
+        <span className="bg-[#CFD8DC] text-[#37474F] px-2.5 py-1 rounded cursor-pointer hover:bg-slate-300 transition-colors">
+          {instrument.symbol} IV Chart
+        </span>
+
+        {/* DTE */}
+        <span className="bg-[#F48FB1] text-[#880E4F] px-2.5 py-1 rounded">
+          DTE: {daysToExpiry}
+        </span>
+      </div>
+
+      {/* ── 1. Strategy Presets Visual Grid (Exact Opstra Style) ── */}
       <StrategyPresetGallery
         onSelectPreset={(preset) => setSelectedPresetForModal(preset)}
       />
 
-      {/* ── 3. Manual Position Entry Bar (Opstra Definedge Compatible) ── */}
+      {/* ── 2. Manual Position Adder Bar (Exact Opstra Style) ── */}
       <ManualPositionBar
         instrument={instrument}
         spotPrice={spotPrice}
@@ -277,7 +260,7 @@ export function StrategyBuilderTab({
         onAddLeg={handleAddLeg}
       />
 
-      {/* ── 4. Collapsible Option Chain Accordion ── */}
+      {/* ── 3. Option Chain Collapsible Accordion (Exact Opstra Style) ── */}
       {chainData && (
         <CollapsibleOptionChain
           chainData={chainData}
@@ -285,10 +268,10 @@ export function StrategyBuilderTab({
         />
       )}
 
-      {/* ── 5. Two-Column Professional Layout (Image 4) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left Column (5 of 12 columns): Positions & KPI Summary */}
-        <div className="lg:col-span-5 space-y-4">
+      {/* ── 4. Two-Column Layout (Image 4: Left Positions & Metrics, Right Payoff Chart) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 pt-1">
+        {/* Left Column (5 cols): Positions & Financial Metrics */}
+        <div className="lg:col-span-5 space-y-3">
           <StrategyPositionsList
             legs={activeLegs}
             payoff={payoff}
@@ -300,7 +283,7 @@ export function StrategyBuilderTab({
           />
         </div>
 
-        {/* Right Column (7 of 12 columns): Payoff Workspace */}
+        {/* Right Column (7 cols): Payoff Diagram Workspace */}
         <div className="lg:col-span-7">
           <PayoffDiagram
             expiryPoints={payoff.expiryPoints}
@@ -315,11 +298,13 @@ export function StrategyBuilderTab({
             activeLegs={activeLegs}
             payoff={payoff}
             iv={ivValue}
+            symbol={instrument.symbol}
+            onSaveStrategy={handleSaveStrategy}
           />
         </div>
       </div>
 
-      {/* ── Modal: Preset Strike & Lots Configuration ── */}
+      {/* ── Preset Configuration Popover Modal (Image 3) ── */}
       {selectedPresetForModal && (
         <PresetConfigModal
           preset={selectedPresetForModal}

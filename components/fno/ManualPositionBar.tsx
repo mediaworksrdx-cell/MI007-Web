@@ -1,4 +1,4 @@
-// ─── 2026 Floating Command Bar for Position Entry ───────────────────────────
+// ─── Exact Opstra Definedge Manual Position Adder (Image 2) ──────────────────
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -84,173 +84,132 @@ export function ManualPositionBar({
   };
 
   return (
-    <div className="bg-slate-950/80 backdrop-blur-xl border border-white/10 rounded-2xl p-3.5 sm:p-4 shadow-2xl relative overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 relative z-10">
-        {/* 1. Segment Toggle (Options vs Futures) */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/90 border border-white/10 shadow-inner">
-          <button
-            type="button"
-            onClick={() => setSegment('OPTIONS')}
-            className={`px-3.5 py-1.5 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
-              segment === 'OPTIONS'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.35)]'
-                : 'text-slate-400 hover:text-white'
-            }`}
+    <div className="bg-white border border-slate-200 rounded-sm p-3 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        {/* Segment Dropdown */}
+        <div className="flex flex-col">
+          <select
+            value={segment}
+            onChange={(e) => setSegment(e.target.value as any)}
+            className="text-[13px] font-bold text-slate-800 border-b-2 border-slate-300 pb-0.5 bg-transparent focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
           >
-            Options
-          </button>
-          <button
-            type="button"
-            onClick={() => setSegment('FUTURES')}
-            className={`px-3.5 py-1.5 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
-              segment === 'FUTURES'
-                ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-[0_0_12px_rgba(251,191,36,0.35)]'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Futures
-          </button>
+            <option value="OPTIONS">Options</option>
+            <option value="FUTURES">Futures</option>
+          </select>
+          <span className="text-[9.5px] text-slate-400 mt-0.5">Select Segment</span>
         </div>
 
-        {/* 2. Expiry Selector with custom styling */}
-        <div className="flex items-center gap-1.5">
-          <span className="mono text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-            EXPIRY:
-          </span>
+        {/* Expiry Dropdown */}
+        <div className="flex flex-col">
           <select
             value={expiry}
             onChange={(e) => setExpiry(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-slate-900/90 border border-white/10 mono text-[11.5px] font-black text-white focus:outline-hidden focus:border-emerald-500 cursor-pointer shadow-inner"
+            className="text-[13px] font-bold text-slate-800 border-b-2 border-slate-300 pb-0.5 bg-transparent focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
           >
             {instrument.expiries.map((exp) => (
-              <option key={exp} value={exp} className="bg-slate-900 text-white">
+              <option key={exp} value={exp}>
                 {exp}
               </option>
             ))}
           </select>
+          <span className="text-[9.5px] text-slate-400 mt-0.5">Select Expiry</span>
         </div>
 
-        {/* 3. Buy / Sell Segmented Pill */}
-        <div className="flex items-center p-1 rounded-xl bg-slate-900/90 border border-white/10 shadow-inner">
-          <button
-            type="button"
-            onClick={() => setAction('BUY')}
-            className={`px-3 py-1 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
-              action === 'BUY'
-                ? 'bg-emerald-500 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.4)]'
-                : 'text-slate-400 hover:text-emerald-400'
-            }`}
-          >
-            BUY
-          </button>
-          <button
-            type="button"
-            onClick={() => setAction('SELL')}
-            className={`px-3 py-1 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
-              action === 'SELL'
-                ? 'bg-rose-500 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)]'
-                : 'text-slate-400 hover:text-rose-400'
-            }`}
-          >
-            SELL
-          </button>
+        {/* Buy / Sell Radio */}
+        <div className="flex items-center gap-3 text-[12px] font-semibold text-slate-700">
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="radio"
+              name="opstra-action"
+              checked={action === 'BUY'}
+              onChange={() => setAction('BUY')}
+              className="accent-[#4CAF50] cursor-pointer w-3.5 h-3.5"
+            />
+            <span>Buy</span>
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="radio"
+              name="opstra-action"
+              checked={action === 'SELL'}
+              onChange={() => setAction('SELL')}
+              className="accent-[#F44336] cursor-pointer w-3.5 h-3.5"
+            />
+            <span>Sell</span>
+          </label>
         </div>
 
-        {/* 4. Strike & Type (If Options) */}
-        {segment === 'OPTIONS' ? (
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5">
-              <span className="mono text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                STRIKE:
-              </span>
+        {/* Strike & Option Type (If Options) */}
+        {segment === 'OPTIONS' && (
+          <>
+            <div className="flex flex-col">
               <select
                 value={strike}
                 onChange={(e) => setStrike(Number(e.target.value))}
-                className="px-3 py-1.5 rounded-xl bg-slate-900/90 border border-white/10 mono text-[11.5px] font-black text-cyan-400 focus:outline-hidden focus:border-cyan-500 cursor-pointer shadow-inner"
+                className="text-[13px] font-bold text-slate-800 border-b-2 border-slate-300 pb-0.5 bg-transparent focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
               >
                 {availableStrikes.map((s) => (
-                  <option key={s} value={s} className="bg-slate-900 text-white">
-                    {s} {s === atmStrike ? '(ATM ★)' : ''}
+                  <option key={s} value={s}>
+                    {s} {s === atmStrike ? '(ATM)' : ''}
                   </option>
                 ))}
               </select>
+              <span className="text-[9.5px] text-slate-400 mt-0.5">Select Strike</span>
             </div>
 
-            <div className="flex items-center p-1 rounded-xl bg-slate-900/90 border border-white/10 shadow-inner">
-              <button
-                type="button"
-                onClick={() => setOptionType('CE')}
-                className={`px-2.5 py-1 rounded-lg mono text-[10.5px] font-black cursor-pointer transition-all ${
-                  optionType === 'CE'
-                    ? 'bg-cyan-500 text-slate-950 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
-                    : 'text-slate-400 hover:text-white'
-                }`}
+            <div className="flex flex-col">
+              <select
+                value={optionType}
+                onChange={(e) => setOptionType(e.target.value as any)}
+                className="text-[13px] font-bold text-slate-800 border-b-2 border-slate-300 pb-0.5 bg-transparent focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
               >
-                CE
-              </button>
-              <button
-                type="button"
-                onClick={() => setOptionType('PE')}
-                className={`px-2.5 py-1 rounded-lg mono text-[10.5px] font-black cursor-pointer transition-all ${
-                  optionType === 'PE'
-                    ? 'bg-purple-500 text-white shadow-[0_0_8px_rgba(168,85,247,0.4)]'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                PE
-              </button>
+                <option value="CE">CE</option>
+                <option value="PE">PE</option>
+              </select>
+              <span className="text-[9.5px] text-slate-400 mt-0.5">Option Type</span>
             </div>
-          </div>
-        ) : (
-          <span className="mono text-[11px] font-black text-amber-400 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
-            FUT: ₹{spotPrice.toLocaleString('en-IN')}
-          </span>
+          </>
         )}
 
-        {/* 5. Lot Stepper */}
-        <div className="flex items-center gap-1.5">
-          <span className="mono text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-            LOTS:
-          </span>
-          <div className="flex items-center rounded-xl bg-slate-900/90 border border-white/10 p-0.5 shadow-inner">
+        {/* Lot Qty Stepper */}
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] text-slate-600">Lot Qty.</span>
+          <div className="flex items-center border border-slate-300 rounded-2xs overflow-hidden">
             <button
               type="button"
               onClick={() => setLots((q) => Math.max(1, q - 1))}
-              className="w-7 h-6 flex items-center justify-center mono font-black text-[13px] text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              className="px-2.5 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 text-[13px] font-bold cursor-pointer"
             >
               -
             </button>
-            <span className="w-7 text-center mono text-[12px] font-black text-white">
+            <span className="px-3 py-0.5 text-[12px] font-bold text-slate-800 border-x border-slate-300 min-w-[28px] text-center">
               {lots}
             </span>
             <button
               type="button"
               onClick={() => setLots((q) => q + 1)}
-              className="w-7 h-6 flex items-center justify-center mono font-black text-[13px] text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              className="px-2.5 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 text-[13px] font-bold cursor-pointer"
             >
               +
             </button>
           </div>
-          <span className="mono text-[10px] text-slate-400 hidden xl:inline">
-            ({lots * instrument.lotSize} qty)
+        </div>
+
+        {/* Price display in red */}
+        <div className="text-[12px] font-semibold text-slate-700">
+          <span>{segment === 'FUTURES' ? 'Futures Price: ' : 'LTP: '}</span>
+          <span className="text-[#D32F2F] font-bold">
+            {estimatedPrice.toFixed(2)}
           </span>
         </div>
 
-        {/* 6. Estimated LTP */}
-        <div className="flex items-center gap-1 mono text-[11.5px] px-2.5 py-1 rounded-xl bg-slate-900/60 border border-white/5">
-          <span className="text-slate-400 font-bold">LTP:</span>
-          <span className="font-black text-emerald-400">
-            ₹{estimatedPrice.toFixed(2)}
-          </span>
-        </div>
-
-        {/* 7. Radiant CTA Button */}
+        {/* Dark Blue-Slate [ ADD POSITION ] Button */}
         <button
           type="button"
           onClick={handleAdd}
-          className="px-4 py-2 rounded-xl mono text-[11.5px] font-black uppercase tracking-wider bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 text-slate-950 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-95 transition-all cursor-pointer shadow-md"
+          className="bg-[#455A64] hover:bg-[#37474F] text-white font-bold text-[11px] px-5 py-2 rounded-sm transition-colors cursor-pointer uppercase tracking-wider shadow-xs"
         >
-          + ADD POSITION
+          ADD POSITION
         </button>
       </div>
     </div>

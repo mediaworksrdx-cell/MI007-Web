@@ -1,4 +1,4 @@
-// ─── 2026 Preset Configuration Popover / Modal ──────────────────────────────
+// ─── Exact Opstra Definedge Preset Config Popover Modal (Image 3) ───────────
 'use client';
 
 import React, { useState } from 'react';
@@ -35,7 +35,7 @@ export function PresetConfigModal({
     preset.legsTemplate.map((t) => t.strikeOffset)
   );
 
-  // Generate strike choices around ATM (-10 to +10 steps)
+  // Available strikes
   const strikeOptions: number[] = [];
   for (let i = -10; i <= 10; i++) {
     strikeOptions.push(atmStrike + i * strikeStep);
@@ -50,7 +50,7 @@ export function PresetConfigModal({
     });
   };
 
-  const handleConfirm = (replaceAll: boolean = true) => {
+  const handleConfirm = () => {
     const newLegs = buildLegsFromPreset(
       preset,
       spotPrice,
@@ -60,178 +60,134 @@ export function PresetConfigModal({
       offsets,
       lotQty
     );
-    onApplyStrategy(newLegs, replaceAll);
+    onApplyStrategy(newLegs, true);
     onClose();
   };
 
+  // Determine button text: if first leg is BUY -> BUY, if SELL -> SELL, or ADD STRATEGY
+  const actionButtonText = preset.legsTemplate.length === 1
+    ? preset.legsTemplate[0].action
+    : 'ADD STRATEGY';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-slate-950 border border-white/10 rounded-2xl w-full max-w-lg shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden text-white relative">
-        {/* Subtle radial glow */}
-        <div className="absolute top-0 right-0 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-2xs animate-in fade-in duration-100">
+      <div className="bg-white rounded-md border border-slate-300 shadow-2xl w-full max-w-[340px] p-4 text-slate-800 relative">
+        {/* Top-Right Red [x] Close Button (Exact Opstra Style) */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 w-4 h-4 bg-[#E53E3E] text-white text-[11px] font-bold rounded-2xs flex items-center justify-center hover:bg-red-700 cursor-pointer"
+          title="Close"
+        >
+          ✕
+        </button>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] bg-slate-900/60 relative z-10">
-          <div className="flex items-center gap-2.5">
-            <span className={`mono text-[10.5px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
-              preset.category === 'BULLISH'
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                : preset.category === 'BEARISH'
-                ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-            }`}>
-              {preset.category}
-            </span>
-            <h3 className="mono text-[15px] font-black uppercase tracking-wider text-white">
-              {preset.name}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer text-[14px] font-bold"
-            title="Close"
-          >
-            ✕
-          </button>
-        </div>
+        {/* Header: Strategy Name */}
+        <h3 className="text-[15px] font-bold text-slate-900 text-center mb-4">
+          {preset.name}
+        </h3>
 
-        {/* Content */}
-        <div className="p-5 space-y-4 relative z-10">
-          <p className="text-[12.5px] text-slate-300 leading-relaxed">
-            {preset.description}
-          </p>
+        {/* Legs rows */}
+        <div className="space-y-3 mb-4">
+          {preset.legsTemplate.map((tmpl, idx) => {
+            const currentOffset = offsets[idx] !== undefined ? offsets[idx] : tmpl.strikeOffset;
+            const currentStrike = atmStrike + currentOffset * strikeStep;
 
-          {/* Legs Configuration */}
-          <div className="space-y-2">
-            <label className="mono text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block">
-              Legs Configuration ({preset.legsTemplate.length} Legs)
-            </label>
-            <div className="space-y-2">
-              {preset.legsTemplate.map((tmpl, idx) => {
-                const currentOffset = offsets[idx] !== undefined ? offsets[idx] : tmpl.strikeOffset;
-                const currentStrike = atmStrike + currentOffset * strikeStep;
-                const isBuy = tmpl.action === 'BUY';
+            return (
+              <div key={idx} className="flex items-center justify-between gap-2">
+                <span className="text-[13px] font-semibold text-slate-700 w-6">
+                  {tmpl.lots * lotQty}x
+                </span>
 
-                return (
-                  <div
-                    key={idx}
-                    className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-900/80 border border-white/10"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span
-                        className={`px-2.5 py-1 rounded-md text-[10px] mono font-black ${
-                          isBuy
-                            ? 'bg-emerald-500 text-slate-950 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
-                            : 'bg-rose-500 text-white shadow-[0_0_8px_rgba(244,63,94,0.3)]'
-                        }`}
-                      >
-                        {tmpl.action}
-                      </span>
-                      <span className="mono text-[12px] font-black text-white">
-                        {tmpl.lots * lotQty}x
-                      </span>
-                      <span className="mono text-[12px] font-black text-cyan-400">
-                        {tmpl.instrument}
-                      </span>
-                    </div>
-
-                    {/* Strike Dropdown */}
-                    {tmpl.instrument !== 'FUT' ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10.5px] mono text-slate-400 font-bold">Strike:</span>
-                        <select
-                          value={currentStrike}
-                          onChange={(e) => handleOffsetChange(idx, Number(e.target.value))}
-                          className="px-3 py-1.5 rounded-xl bg-slate-950 border border-white/15 text-[12px] mono font-black text-white focus:outline-hidden focus:border-emerald-500 cursor-pointer shadow-inner"
-                        >
-                          {strikeOptions.map((strk) => (
-                            <option key={strk} value={strk} className="bg-slate-950 text-white">
-                              {strk} {strk === atmStrike ? '(ATM ★)' : strk > atmStrike ? `(+${strk - atmStrike})` : `(${strk - atmStrike})`}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ) : (
-                      <span className="mono text-[11px] text-amber-400 font-bold px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                        Underlying Spot/Future
-                      </span>
-                    )}
+                {tmpl.instrument !== 'FUT' ? (
+                  <div className="flex-1 flex flex-col items-center">
+                    <select
+                      value={currentStrike}
+                      onChange={(e) => handleOffsetChange(idx, Number(e.target.value))}
+                      className="w-full text-center py-1 px-2 border-b-2 border-slate-300 bg-transparent text-[13px] font-bold text-slate-800 focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
+                    >
+                      {strikeOptions.map((strk) => (
+                        <option key={strk} value={strk}>
+                          {strk}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-[9.5px] text-slate-400 mt-0.5">
+                      Select {tmpl.instrument} Strike
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                ) : (
+                  <span className="flex-1 text-center text-[12px] font-bold text-slate-600">
+                    Underlying Future
+                  </span>
+                )}
 
-          {/* Expiry & Lot Qty Controls */}
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            {/* Expiry Selector */}
-            <div>
-              <label className="mono text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                Expiry Date
-              </label>
+                <span className="text-[13px] font-bold text-slate-700 w-8 text-right">
+                  {tmpl.instrument}
+                </span>
+              </div>
+            );
+          })}
+
+          {/* Expiry Row */}
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <span className="text-[12px] text-slate-600 w-16">
+              Expiry:
+            </span>
+            <div className="flex-1 flex flex-col items-center">
               <select
                 value={expiry}
                 onChange={(e) => setExpiry(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-white/10 text-[12px] mono font-black text-white focus:outline-hidden focus:border-emerald-500 cursor-pointer shadow-inner"
+                className="w-full text-center py-1 px-2 border-b-2 border-slate-300 bg-transparent text-[13px] font-bold text-slate-800 focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
               >
                 {expiries.map((exp) => (
-                  <option key={exp} value={exp} className="bg-slate-950 text-white">
+                  <option key={exp} value={exp}>
                     {exp}
                   </option>
                 ))}
               </select>
+              <span className="text-[9.5px] text-slate-400 mt-0.5">
+                Select Expiry
+              </span>
             </div>
+            <div className="w-8" />
+          </div>
 
-            {/* Lot Stepper */}
-            <div>
-              <label className="mono text-[10.5px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                Lot Multiplier
-              </label>
-              <div className="flex items-center rounded-xl bg-slate-900/90 border border-white/10 p-1 shadow-inner">
-                <button
-                  type="button"
-                  onClick={() => setLotQty((q) => Math.max(1, q - 1))}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-[14px] font-black text-slate-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-                >
-                  -
-                </button>
-                <div className="flex-1 text-center mono text-[12.5px] font-black text-white">
-                  {lotQty} <span className="text-[10px] text-slate-400 font-normal">({lotQty * lotSize} qty)</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setLotQty((q) => q + 1)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-[14px] font-black text-slate-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-                >
-                  +
-                </button>
-              </div>
+          {/* Lot Qty Row */}
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <span className="text-[12px] text-slate-600 w-16">
+              Lot Qty:
+            </span>
+            <div className="flex items-center border border-slate-300 rounded-2xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setLotQty((q) => Math.max(1, q - 1))}
+                className="px-2.5 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 text-[13px] font-bold cursor-pointer"
+              >
+                -
+              </button>
+              <span className="px-3 py-0.5 text-[12px] font-bold text-slate-800 border-x border-slate-300 min-w-[28px] text-center">
+                {lotQty}
+              </span>
+              <button
+                type="button"
+                onClick={() => setLotQty((q) => q + 1)}
+                className="px-2.5 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 text-[13px] font-bold cursor-pointer"
+              >
+                +
+              </button>
             </div>
+            <div className="w-8" />
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-2.5 px-5 py-4 border-t border-white/[0.08] bg-slate-900/60 relative z-10">
+        {/* Action Button: Green [ BUY ] or [ ADD STRATEGY ] */}
+        <div className="flex justify-center pt-2">
           <button
             type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl mono text-[11px] font-bold text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            onClick={handleConfirm}
+            className="bg-[#4CAF50] hover:bg-[#43A047] text-white font-bold text-[12px] px-8 py-1.5 rounded-sm transition-colors cursor-pointer shadow-xs uppercase tracking-wider"
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => handleConfirm(false)}
-            className="px-4 py-2 rounded-xl mono text-[11px] font-bold bg-white/5 border border-white/15 text-white hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            + Append to Strategy
-          </button>
-          <button
-            type="button"
-            onClick={() => handleConfirm(true)}
-            className="px-5 py-2 rounded-xl mono text-[11.5px] font-black bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all cursor-pointer shadow-md"
-          >
-            ✓ Apply Preset
+            {actionButtonText}
           </button>
         </div>
       </div>

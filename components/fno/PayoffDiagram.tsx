@@ -1,6 +1,4 @@
-// ─── 2026 Bloomberg/Linear Grade Payoff Workspace ─────────────────────────────
-// High-precision SVG Payoff Diagram with Neon Glow Curves, Feathered Gradient Washes,
-// Pulsing Radar Breakevens, SD Markers (-2σ to +2σ), Floating HUD & Shock Sliders.
+// ─── Exact Opstra Definedge Payoff Diagram Workspace (Image 4) ───────────────
 'use client';
 
 import React, { useState, useRef, useMemo } from 'react';
@@ -19,6 +17,8 @@ interface PayoffDiagramProps {
   activeLegs?: StrategyLeg[];
   payoff?: StrategyPayoff;
   iv?: number;
+  symbol?: string;
+  onSaveStrategy?: () => void;
 }
 
 export function PayoffDiagram({
@@ -33,23 +33,25 @@ export function PayoffDiagram({
   daysToExpiry = 7,
   activeLegs = [],
   payoff,
-  iv = 15.5,
+  iv = 15.87,
+  symbol = 'NIFTY',
+  onSaveStrategy,
 }: PayoffDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverX, setHoverX] = useState<number | null>(null);
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'PAYOFF' | 'FUTURES' | 'GREEKS' | 'PNL_TABLE'>('PAYOFF');
-  const [spotVsFuturesToggle, setSpotVsFuturesToggle] = useState<'SPOT' | 'FUTURES'>('SPOT');
+  const [activeTab, setActiveTab] = useState<'PAYOFF' | 'FUTURES' | 'GREEKS' | 'PNL'>('PAYOFF');
+  const [isSpotMode, setIsSpotMode] = useState<boolean>(true);
   const [spotShockPct, setSpotShockPct] = useState<number>(0);
 
-  // SVG dimensions
-  const width = 860;
-  const height = 370;
-  const padding = { top: 38, right: 35, bottom: 42, left: 70 };
+  // SVG Chart Dimensions
+  const width = 840;
+  const height = 380;
+  const padding = { top: 30, right: 35, bottom: 45, left: 75 };
 
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
 
-  // ── Standard Deviation Band Calculations (-2σ to +2σ) ──
+  // Standard Deviation Bands (Opstra top markers: -2σ, -1σ, Spot, +1σ, +2σ)
   const sigma1 = useMemo(() => {
     const dteSafe = Math.max(1, daysToExpiry);
     return spotPrice * (iv / 100.0) * Math.sqrt(dteSafe / 365.0);
@@ -57,18 +59,18 @@ export function PayoffDiagram({
 
   const sdMarkers = useMemo(() => {
     return [
-      { label: '-2σ', price: Math.round(spotPrice - 2 * sigma1), color: 'text-rose-400 bg-rose-500/10 border-rose-500/30' },
-      { label: '-1σ', price: Math.round(spotPrice - 1 * sigma1), color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
-      { label: 'Spot', price: Math.round(spotPrice), color: 'text-cyan-400 bg-cyan-500/20 border-cyan-500/40' },
-      { label: '+1σ', price: Math.round(spotPrice + 1 * sigma1), color: 'text-lime-400 bg-lime-500/10 border-lime-500/30' },
-      { label: '+2σ', price: Math.round(spotPrice + 2 * sigma1), color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
+      { label: '-2σ', price: Math.round(spotPrice - 2 * sigma1) },
+      { label: '-1σ', price: Math.round(spotPrice - 1 * sigma1) },
+      { label: `${spotPrice}`, price: Math.round(spotPrice), isSpot: true },
+      { label: '+1σ', price: Math.round(spotPrice + 1 * sigma1) },
+      { label: '+2σ', price: Math.round(spotPrice + 2 * sigma1) },
     ];
   }, [spotPrice, sigma1]);
 
   // Price & PnL Domains
   const { minPrice, maxPrice, minPnl, maxPnl } = useMemo(() => {
     if (!expiryPoints || expiryPoints.length === 0) {
-      return { minPrice: 0, maxPrice: 100, minPnl: -1000, maxPnl: 1000 };
+      return { minPrice: 20950, maxPrice: 24310, minPnl: -40000, maxPnl: 120000 };
     }
     const allPrices = expiryPoints.map((p) => p.price);
     const allPnls = [...expiryPoints.map((p) => p.pnl), ...todayPoints.map((p) => p.pnl)];
@@ -78,7 +80,7 @@ export function PayoffDiagram({
     let minL = Math.min(...allPnls, 0);
     let maxL = Math.max(...allPnls, 0);
 
-    const pnlSpan = Math.max(100, maxL - minL);
+    const pnlSpan = Math.max(1000, maxL - minL);
     minL -= pnlSpan * 0.12;
     maxL += pnlSpan * 0.12;
 
@@ -94,7 +96,7 @@ export function PayoffDiagram({
   const zeroY = getY(0);
   const spotX = getX(spotPrice);
 
-  // SVG Expiry Line Path
+  // SVG Expiry Path
   const expiryPath = useMemo(() => {
     if (expiryPoints.length === 0) return '';
     return expiryPoints.reduce((acc, pt, i) => {
@@ -104,7 +106,7 @@ export function PayoffDiagram({
     }, '');
   }, [expiryPoints, minPrice, maxPrice, minPnl, maxPnl]);
 
-  // SVG Today / Scenario Line Path
+  // SVG Today / Scenario Path
   const todayPath = useMemo(() => {
     if (todayPoints.length === 0) return '';
     return todayPoints.reduce((acc, pt, i) => {
@@ -114,10 +116,11 @@ export function PayoffDiagram({
     }, '');
   }, [todayPoints, minPrice, maxPrice, minPnl, maxPnl]);
 
-  // Feathered Gradient Washes for Profit (Above Zero) and Loss (Below Zero)
+  // Exact Opstra Shaded Area: Green above zero line, Orange/Red below zero line
   const { profitAreaPath, lossAreaPath } = useMemo(() => {
     if (expiryPoints.length === 0) return { profitAreaPath: '', lossAreaPath: '' };
 
+    // Profit area polygon (green fill)
     let pPath = `M ${getX(expiryPoints[0].price)} ${zeroY}`;
     expiryPoints.forEach((pt) => {
       const x = getX(pt.price);
@@ -126,6 +129,7 @@ export function PayoffDiagram({
     });
     pPath += ` L ${getX(expiryPoints[expiryPoints.length - 1].price)} ${zeroY} Z`;
 
+    // Loss area polygon (orange fill)
     let lPath = `M ${getX(expiryPoints[0].price)} ${zeroY}`;
     expiryPoints.forEach((pt) => {
       const x = getX(pt.price);
@@ -136,6 +140,28 @@ export function PayoffDiagram({
 
     return { profitAreaPath: pPath, lossAreaPath: lPath };
   }, [expiryPoints, minPrice, maxPrice, minPnl, maxPnl, zeroY]);
+
+  // Y-Axis Ticks (e.g. 5 steps between minPnl and maxPnl)
+  const yTicks = useMemo(() => {
+    const ticks = [];
+    const count = 7;
+    const step = (maxPnl - minPnl) / (count - 1);
+    for (let i = 0; i < count; i++) {
+      ticks.push(Math.round(minPnl + i * step));
+    }
+    return ticks;
+  }, [minPnl, maxPnl]);
+
+  // X-Axis Ticks (10 price intervals)
+  const xTicks = useMemo(() => {
+    const ticks = [];
+    const count = 9;
+    const step = (maxPrice - minPrice) / (count - 1);
+    for (let i = 0; i < count; i++) {
+      ticks.push(Math.round(minPrice + i * step));
+    }
+    return ticks;
+  }, [minPrice, maxPrice]);
 
   // Hover detection
   const hoverData = useMemo(() => {
@@ -155,18 +181,16 @@ export function PayoffDiagram({
 
     const expPt = expiryPoints[closestIndex];
     const todPt = todayPoints[closestIndex] ?? expPt;
-    const priceMovePct = ((expPt.price - spotPrice) / spotPrice) * 100;
 
     return {
       price: expPt.price,
-      priceMovePct,
       expiryPnl: expPt.pnl,
       todayPnl: todPt.pnl,
       x: getX(expPt.price),
       yExp: getY(expPt.pnl),
       yTod: getY(todPt.pnl),
     };
-  }, [hoverX, expiryPoints, todayPoints, minPrice, maxPrice, priceRange, spotPrice]);
+  }, [hoverX, expiryPoints, todayPoints, minPrice, maxPrice, priceRange]);
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -174,641 +198,409 @@ export function PayoffDiagram({
     setHoverX(x);
   };
 
-  const handleResetShocks = () => {
-    setSpotShockPct(0);
-    onChangeTimeShift(0);
-    onChangeIvShift(0);
-  };
-
-  // P&L Table Scenario Data
-  const pnlTableRows = useMemo(() => {
-    const rows = [];
-    const steps = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
-    for (const pct of steps) {
-      const targetPrice = Math.round(spotPrice * (1 + pct / 100.0));
-      let closestExpPnl = 0;
-      let closestTodPnl = 0;
-      let minDiff = Infinity;
-      expiryPoints.forEach((pt, i) => {
-        const d = Math.abs(pt.price - targetPrice);
-        if (d < minDiff) {
-          minDiff = d;
-          closestExpPnl = pt.pnl;
-          closestTodPnl = todayPoints[i]?.pnl ?? pt.pnl;
-        }
-      });
-      rows.push({
-        pct,
-        price: targetPrice,
-        expPnl: closestExpPnl,
-        todPnl: closestTodPnl,
-      });
-    }
-    return rows;
-  }, [spotPrice, expiryPoints, todayPoints]);
-
   return (
-    <div className="bg-slate-950/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative isolate">
-      {/* ── 1. Top Sub-Tabs Navigation Bar ── */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-slate-900/80 border-b border-white/[0.08]">
-        {/* Workspace Sub-Tabs */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950/80 border border-white/10 shadow-inner">
+    <div className="bg-white border border-slate-200 rounded-sm shadow-xs space-y-0">
+      {/* ── 1. Top Header Banner & SAVE STRATEGY Button (Exact Opstra Style) ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 border-b border-slate-200 bg-white">
+        {/* Promotional pill */}
+        <div className="hidden sm:flex items-center gap-2 bg-[#004D40] text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-xs">
+          <span>Manage All Your Positions In One Place</span>
+          <span className="text-[#FFD54F] font-bold">★ With Live Terminal</span>
+        </div>
+
+        {/* Black [ SAVE STRATEGY ] Button */}
+        <button
+          type="button"
+          onClick={onSaveStrategy}
+          className="bg-slate-900 hover:bg-black text-white font-bold text-[11px] uppercase tracking-wider px-5 py-2 rounded-sm transition-colors cursor-pointer shadow-xs ml-auto"
+        >
+          SAVE STRATEGY
+        </button>
+      </div>
+
+      {/* ── 2. Sub-Tabs Bar: PAYOFF CHART | FUTURES CHART | GREEKS | P&L (Exact Opstra Style) ── */}
+      <div className="flex flex-wrap items-center justify-between px-4 py-2 border-b border-slate-200 bg-white">
+        <div className="flex items-center gap-6 text-[12px] font-bold">
           <button
             type="button"
-            onClick={() => setActiveWorkspaceTab('PAYOFF')}
-            className={`px-3.5 py-1.5 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
-              activeWorkspaceTab === 'PAYOFF'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                : 'text-slate-400 hover:text-white'
+            onClick={() => setActiveTab('PAYOFF')}
+            className={`pb-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'PAYOFF'
+                ? 'text-[#00A3A6] border-b-2 border-[#00A3A6]'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            📈 PAYOFF CHART
+            <span>📈</span> PAYOFF CHART
           </button>
           <button
             type="button"
-            onClick={() => setActiveWorkspaceTab('FUTURES')}
-            className={`px-3.5 py-1.5 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
-              activeWorkspaceTab === 'FUTURES'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                : 'text-slate-400 hover:text-white'
+            onClick={() => setActiveTab('FUTURES')}
+            className={`pb-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'FUTURES'
+                ? 'text-[#00A3A6] border-b-2 border-[#00A3A6]'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            📊 FUTURES CHART
+            <span>📊</span> FUTURES CHART
           </button>
           <button
             type="button"
-            onClick={() => setActiveWorkspaceTab('GREEKS')}
-            className={`px-3.5 py-1.5 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
-              activeWorkspaceTab === 'GREEKS'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                : 'text-slate-400 hover:text-white'
+            onClick={() => setActiveTab('GREEKS')}
+            className={`pb-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'GREEKS'
+                ? 'text-[#00A3A6] border-b-2 border-[#00A3A6]'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            🔢 GREEKS MATRIX
+            <span>▦</span> GREEKS
           </button>
           <button
             type="button"
-            onClick={() => setActiveWorkspaceTab('PNL_TABLE')}
-            className={`px-3.5 py-1.5 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
-              activeWorkspaceTab === 'PNL_TABLE'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                : 'text-slate-400 hover:text-white'
+            onClick={() => setActiveTab('PNL')}
+            className={`pb-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'PNL'
+                ? 'text-[#00A3A6] border-b-2 border-[#00A3A6]'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            📑 P&amp;L TABLE
+            <span>⊞</span> P&amp;L
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSpotShockPct(0);
+              onChangeTimeShift(0);
+              onChangeIvShift(0);
+            }}
+            className="text-slate-500 hover:text-slate-800 pb-2 cursor-pointer"
+            title="Reset"
+          >
+            🔄
           </button>
         </div>
 
-        {/* Right Toggle & Reset Button */}
-        <div className="flex items-center gap-2 mono text-[11px]">
-          <div className="flex items-center p-1 rounded-xl bg-slate-950/80 border border-white/10 shadow-inner">
-            <button
-              type="button"
-              onClick={() => setSpotVsFuturesToggle('SPOT')}
-              className={`px-2.5 py-1 rounded-lg text-[10.5px] font-black cursor-pointer transition-all ${
-                spotVsFuturesToggle === 'SPOT'
-                  ? 'bg-cyan-500 text-slate-950 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
-                  : 'text-slate-400 hover:text-white'
+        {/* Spot vs Futures Toggle */}
+        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-700">
+          <span className={isSpotMode ? 'text-slate-900 font-extrabold' : 'text-slate-400'}>SPOT</span>
+          <button
+            type="button"
+            onClick={() => setIsSpotMode(!isSpotMode)}
+            className="w-8 h-4 bg-slate-300 rounded-full p-0.5 transition-colors cursor-pointer relative"
+          >
+            <div
+              className={`w-3 h-3 bg-white rounded-full shadow-xs transition-transform ${
+                isSpotMode ? 'translate-x-0' : 'translate-x-4'
               }`}
-            >
-              SPOT
-            </button>
-            <button
-              type="button"
-              onClick={() => setSpotVsFuturesToggle('FUTURES')}
-              className={`px-2.5 py-1 rounded-lg text-[10.5px] font-black cursor-pointer transition-all ${
-                spotVsFuturesToggle === 'FUTURES'
-                  ? 'bg-amber-400 text-slate-950 shadow-[0_0_8px_rgba(251,191,36,0.4)]'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              FUTURES
-            </button>
+            />
+          </button>
+          <span className={!isSpotMode ? 'text-slate-900 font-extrabold' : 'text-slate-400'}>FUTURES</span>
+        </div>
+      </div>
+
+      {/* ── 3. Payoff Chart Canvas (Exact Opstra Layout) ── */}
+      {activeTab === 'PAYOFF' && (
+        <div className="p-4 bg-white relative">
+          {/* Centered Underlying Title */}
+          <div className="text-center font-bold text-[15px] text-slate-800 mb-2">
+            {symbol}
           </div>
 
-          <button
-            type="button"
-            onClick={handleResetShocks}
-            className="p-1.5 rounded-xl bg-slate-900 border border-white/10 text-slate-400 hover:text-white hover:border-emerald-500/40 transition-all cursor-pointer group"
-            title="Reset Scenario Shocks"
-          >
-            <span className="group-hover:rotate-180 transition-transform inline-block">🔄</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── 2. Standard Deviation Markers Bar (-2σ to +2σ) ── */}
-      <div className="px-4 py-2.5 border-b border-white/[0.06] bg-slate-950/90 flex flex-wrap items-center justify-between gap-2 text-[11px] mono">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            STANDARD DEVIATION BANDS (IV {iv.toFixed(1)}% · {daysToExpiry} DTE):
-          </span>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3 font-bold">
-          {sdMarkers.map((m) => (
-            <div key={m.label} className="flex items-center gap-1.5">
-              <span className={`text-[9.5px] px-2 py-0.5 rounded-lg font-black border ${m.color}`}>
-                {m.label}
-              </span>
-              <span className="text-white">₹{m.price.toLocaleString('en-IN')}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── 3. Workspace Main View ── */}
-      <div className="p-3 sm:p-4">
-        {/* VIEW 1: PAYOFF CHART */}
-        {activeWorkspaceTab === 'PAYOFF' && (
-          <div className="space-y-3">
-            {/* Chart Legend Strip */}
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[10.5px] mono font-bold">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(0,245,155,0.6)]" />
-                  <span className="text-emerald-400">Expiry Payoff (Solid)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-0.5 w-5 border-t-2 border-dashed border-cyan-400 shadow-[0_0_6px_rgba(0,229,255,0.6)]" />
-                  <span className="text-cyan-400">T+{timeShiftDays} Scenario (Dashed)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
-                  <span className="text-amber-400">Breakeven(s)</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded bg-emerald-500/30 border border-emerald-400/60" />
-                  <span className="text-slate-300">Profit Zone</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded bg-rose-500/30 border border-rose-400/60" />
-                  <span className="text-slate-300">Loss Zone</span>
-                </div>
-              </div>
-            </div>
-
-            {/* High-Precision SVG Diagram */}
-            <div ref={containerRef} className="relative w-full aspect-[8.6/3.7] overflow-hidden select-none bg-[#050a14] rounded-2xl border border-white/10 shadow-inner">
-              <svg
-                viewBox={`0 0 ${width} ${height}`}
-                className="w-full h-full cursor-crosshair"
-                onMouseMove={handleMouseMove}
-                onMouseLeave={() => setHoverX(null)}
-              >
-                <defs>
-                  {/* Neon Glow Filter */}
-                  <filter id="neonPayoffGlow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="2.5" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-
-                  {/* Feathered Profit Gradient Wash */}
-                  <linearGradient id="profitGrad2026" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#00F59B" stopOpacity="0.22" />
-                    <stop offset="100%" stopColor="#00F59B" stopOpacity="0.01" />
-                  </linearGradient>
-
-                  {/* Feathered Loss Gradient Wash */}
-                  <linearGradient id="lossGrad2026" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#FF4D4D" stopOpacity="0.01" />
-                    <stop offset="100%" stopColor="#FF4D4D" stopOpacity="0.22" />
-                  </linearGradient>
-                </defs>
-
-                {/* Shaded Feathered Profit & Loss Areas */}
-                {profitAreaPath && (
-                  <path d={profitAreaPath} fill="url(#profitGrad2026)" />
-                )}
-                {lossAreaPath && (
-                  <path d={lossAreaPath} fill="url(#lossGrad2026)" />
-                )}
-
-                {/* Zero PnL Horizontal Hairline */}
-                <line
-                  x1={padding.left}
-                  y1={zeroY}
-                  x2={width - padding.right}
-                  y2={zeroY}
-                  stroke="#475569"
-                  strokeWidth="1.2"
-                />
-                <text
-                  x={padding.left - 8}
-                  y={zeroY + 4}
-                  fill="#94a3b8"
-                  fontSize="10"
-                  fontFamily="monospace"
-                  fontWeight="bold"
-                  textAnchor="end"
-                >
-                  ₹0.00
-                </text>
-
-                {/* Standard Deviation Vertical Reference Guides */}
-                {sdMarkers.map((m) => {
-                  const sX = getX(m.price);
-                  if (sX < padding.left || sX > width - padding.right) return null;
-                  return (
-                    <g key={m.label}>
-                      <line
-                        x1={sX}
-                        y1={padding.top}
-                        x2={sX}
-                        y2={height - padding.bottom}
-                        stroke="#1e293b"
-                        strokeDasharray="2 3"
-                        strokeWidth="1"
-                      />
-                      <text
-                        x={sX}
-                        y={height - padding.bottom + 14}
-                        fill="#64748b"
-                        fontSize="9"
-                        fontFamily="monospace"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                      >
-                        {m.label}
-                      </text>
-                      <text
-                        x={sX}
-                        y={height - padding.bottom + 27}
-                        fill="#cbd5e1"
-                        fontSize="8.5"
-                        fontFamily="monospace"
-                        textAnchor="middle"
-                      >
-                        {m.price}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {/* Spot Price Vertical Dashed Guide */}
-                {spotX >= padding.left && spotX <= width - padding.right && (
-                  <g>
-                    <line
-                      x1={spotX}
-                      y1={padding.top}
-                      x2={spotX}
-                      y2={height - padding.bottom}
-                      stroke="#00E5FF"
-                      strokeDasharray="4 4"
-                      strokeWidth="1.8"
-                    />
-                    <rect
-                      x={spotX - 48}
-                      y={padding.top - 22}
-                      width="96"
-                      height="18"
-                      rx="6"
-                      fill="#0284c7"
-                      stroke="#38bdf8"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x={spotX}
-                      y={padding.top - 10}
-                      fill="#ffffff"
-                      fontSize="9.5"
-                      fontFamily="monospace"
-                      fontWeight="black"
-                      textAnchor="middle"
-                    >
-                      SPOT: ₹{spotPrice}
+          <div ref={containerRef} className="relative w-full aspect-[8.4/3.8] overflow-hidden select-none bg-white">
+            <svg
+              viewBox={`0 0 ${width} ${height}`}
+              className="w-full h-full cursor-crosshair"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={() => setHoverX(null)}
+            >
+              {/* Subtle Light Grey Grid Lines */}
+              {yTicks.map((tick) => {
+                const y = getY(tick);
+                return (
+                  <g key={tick}>
+                    <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="#F1F5F9" strokeWidth="1" />
+                    <text x={padding.left - 8} y={y + 3.5} fill="#64748B" fontSize="9" textAnchor="end" fontFamily="sans-serif">
+                      {tick.toLocaleString('en-IN')}
                     </text>
                   </g>
-                )}
+                );
+              })}
 
-                {/* Expiry Curve (Solid Neon Matrix Emerald) */}
-                {expiryPath && (
-                  <path
-                    d={expiryPath}
-                    fill="none"
-                    stroke="#00F59B"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    filter="url(#neonPayoffGlow)"
-                  />
-                )}
-
-                {/* T+0 Scenario Curve (Dashed Electric Cyan) */}
-                {todayPath && (
-                  <path
-                    d={todayPath}
-                    fill="none"
-                    stroke="#00E5FF"
-                    strokeWidth="2.2"
-                    strokeDasharray="6 3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                )}
-
-                {/* Pulsing Radar Breakeven Pins */}
-                {breakevens.map((be) => {
-                  const beX = getX(be);
-                  if (beX < padding.left || beX > width - padding.right) return null;
-                  return (
-                    <g key={be}>
-                      {/* Outer radar ping */}
-                      <circle cx={beX} cy={zeroY} r="8" fill="none" stroke="#FBBF24" strokeWidth="1" opacity="0.4" />
-                      {/* Inner solid marker */}
-                      <circle cx={beX} cy={zeroY} r="5" fill="#FBBF24" stroke="#000" strokeWidth="1.5" />
-                      <rect
-                        x={beX - 32}
-                        y={zeroY - 24}
-                        width="64"
-                        height="16"
-                        rx="4"
-                        fill="#0b1329"
-                        stroke="#FBBF24"
-                        strokeWidth="1"
-                      />
-                      <text
-                        x={beX}
-                        y={zeroY - 13}
-                        fill="#FBBF24"
-                        fontSize="9"
-                        fontFamily="monospace"
-                        fontWeight="black"
-                        textAnchor="middle"
-                      >
-                        ₹{be}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {/* 2026 Floating Frosted-Glass HUD Crosshair Tooltip */}
-                {hoverData && (
-                  <g>
-                    {/* Vertical Hairline */}
-                    <line
-                      x1={hoverData.x}
-                      y1={padding.top}
-                      x2={hoverData.x}
-                      y2={height - padding.bottom}
-                      stroke="#ffffff"
-                      strokeOpacity="0.45"
-                      strokeDasharray="2 2"
-                    />
-                    <circle cx={hoverData.x} cy={hoverData.yExp} r="5.5" fill="#00F59B" stroke="#000" strokeWidth="1.5" />
-                    <circle cx={hoverData.x} cy={hoverData.yTod} r="5" fill="#00E5FF" stroke="#000" strokeWidth="1.5" />
-
-                    {/* HUD Tooltip Box */}
-                    <g transform={`translate(${Math.min(width - 175, Math.max(padding.left + 5, hoverData.x - 85))}, ${padding.top + 5})`}>
-                      <rect
-                        width="170"
-                        height="68"
-                        rx="10"
-                        fill="#030712"
-                        fillOpacity="0.95"
-                        stroke="#334155"
-                        strokeWidth="1.2"
-                      />
-                      <text x="12" y="18" fill="#38bdf8" fontSize="11" fontFamily="monospace" fontWeight="bold">
-                        ₹{hoverData.price.toLocaleString('en-IN')} ({hoverData.priceMovePct >= 0 ? '+' : ''}{hoverData.priceMovePct.toFixed(1)}%)
-                      </text>
-                      <text
-                        x="12"
-                        y="38"
-                        fill={hoverData.expiryPnl >= 0 ? '#00F59B' : '#ff4d4d'}
-                        fontSize="12.5"
-                        fontFamily="monospace"
-                        fontWeight="black"
-                      >
-                        Exp PnL: {hoverData.expiryPnl >= 0 ? '+' : ''}₹{hoverData.expiryPnl.toLocaleString('en-IN')}
-                      </text>
-                      <text
-                        x="12"
-                        y="56"
-                        fill={hoverData.todayPnl >= 0 ? '#00e5ff' : '#fb923c'}
-                        fontSize="10.5"
-                        fontFamily="monospace"
-                      >
-                        T+{timeShiftDays} Scenario: {hoverData.todayPnl >= 0 ? '+' : ''}₹{hoverData.todayPnl.toLocaleString('en-IN')}
-                      </text>
-                    </g>
+              {/* X-axis ticks */}
+              {xTicks.map((tick) => {
+                const x = getX(tick);
+                return (
+                  <g key={tick}>
+                    <line x1={x} y1={padding.top} x2={x} y2={height - padding.bottom} stroke="#F1F5F9" strokeWidth="1" />
+                    <text x={x} y={height - padding.bottom + 14} fill="#64748B" fontSize="9" textAnchor="middle" fontFamily="sans-serif">
+                      {tick}
+                    </text>
                   </g>
-                )}
-              </svg>
-            </div>
-          </div>
-        )}
+                );
+              })}
 
-        {/* VIEW 2: FUTURES CHART */}
-        {activeWorkspaceTab === 'FUTURES' && (
-          <div className="p-6 bg-slate-900/60 rounded-2xl border border-white/10 space-y-4 mono text-[12px]">
-            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
-              <span className="font-bold text-amber-400 uppercase tracking-wider">
-                Underlying Futures &amp; Spot Positioning
-              </span>
-              <span className="text-slate-400">
-                Spot: ₹{spotPrice.toLocaleString('en-IN')}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-rose-500/20">
-                <span className="text-[10px] text-slate-400 block uppercase font-bold">Lower Boundary (-2σ)</span>
-                <span className="font-black text-rose-400 text-[15px]">₹{sdMarkers[0].price}</span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-cyan-500/20">
-                <span className="text-[10px] text-slate-400 block uppercase font-bold">Current Spot Axis</span>
-                <span className="font-black text-cyan-400 text-[15px]">₹{spotPrice}</span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-emerald-500/20">
-                <span className="text-[10px] text-slate-400 block uppercase font-bold">Upper Boundary (+2σ)</span>
-                <span className="font-black text-emerald-400 text-[15px]">₹{sdMarkers[4].price}</span>
-              </div>
-            </div>
-          </div>
-        )}
+              {/* Rotated Y-Axis Label: Profit / Loss */}
+              <text
+                x={-(height / 2)}
+                y="18"
+                transform="rotate(-90)"
+                fill="#475569"
+                fontSize="10"
+                fontFamily="sans-serif"
+                fontWeight="bold"
+                textAnchor="middle"
+              >
+                Profit / Loss
+              </text>
 
-        {/* VIEW 3: GREEKS MATRIX */}
-        {activeWorkspaceTab === 'GREEKS' && (
-          <div className="overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full mono text-[11.5px] text-center border-collapse">
-              <thead>
-                <tr className="bg-slate-900/90 text-[10px] font-bold text-slate-400 uppercase border-b border-white/10">
-                  <th className="py-2.5 px-3 text-left">Leg</th>
-                  <th className="py-2.5 px-2">Action</th>
-                  <th className="py-2.5 px-2">Strike</th>
-                  <th className="py-2.5 px-2">IV %</th>
-                  <th className="py-2.5 px-2 text-cyan-400">Delta (Δ)</th>
-                  <th className="py-2.5 px-2 text-purple-400">Gamma (Γ)</th>
-                  <th className="py-2.5 px-2 text-rose-400">Theta (θ/d)</th>
-                  <th className="py-2.5 px-2 text-emerald-400">Vega (ν/%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeLegs.map((leg, idx) => (
-                  <tr
-                    key={leg.id}
-                    className={`border-b border-white/[0.04] hover:bg-white/5 ${
-                      leg.disabled ? 'opacity-40' : ''
-                    }`}
-                  >
-                    <td className="py-2 px-3 text-left font-bold text-white">
-                      Leg #{idx + 1} ({leg.lots}x {leg.instrument})
-                    </td>
-                    <td className="py-2 px-2">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
-                        leg.action === 'BUY' ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500 text-white'
-                      }`}>
-                        {leg.action}
-                      </span>
-                    </td>
-                    <td className="py-2 px-2 font-black text-white">{leg.strike}</td>
-                    <td className="py-2 px-2 text-slate-300">{leg.iv.toFixed(1)}%</td>
-                    <td className="py-2 px-2 font-black text-cyan-400">{leg.greeks.delta.toFixed(3)}</td>
-                    <td className="py-2 px-2 font-black text-purple-400">{leg.greeks.gamma.toFixed(4)}</td>
-                    <td className="py-2 px-2 font-black text-rose-400">₹{leg.greeks.theta.toFixed(1)}</td>
-                    <td className="py-2 px-2 font-black text-emerald-400">₹{leg.greeks.vega.toFixed(1)}</td>
-                  </tr>
-                ))}
-                {payoff && (
-                  <tr className="bg-slate-900/90 font-black border-t-2 border-white/20">
-                    <td colSpan={4} className="py-2.5 px-3 text-left uppercase text-emerald-400">
-                      Total Strategy Net Greeks
-                    </td>
-                    <td className="py-2.5 px-2 text-cyan-400">
-                      {payoff.netGreeks.delta >= 0 ? '+' : ''}{payoff.netGreeks.delta.toFixed(2)}
-                    </td>
-                    <td className="py-2.5 px-2 text-purple-400">
-                      {payoff.netGreeks.gamma.toFixed(4)}
-                    </td>
-                    <td className="py-2.5 px-2 text-rose-400">
-                      ₹{payoff.netGreeks.theta.toLocaleString('en-IN')}
-                    </td>
-                    <td className="py-2.5 px-2 text-emerald-400">
-                      ₹{payoff.netGreeks.vega.toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+              {/* Bottom X-Axis Label: Underlying Price */}
+              <text
+                x={width / 2}
+                y={height - 8}
+                fill="#475569"
+                fontSize="10"
+                fontFamily="sans-serif"
+                fontWeight="bold"
+                textAnchor="middle"
+              >
+                Underlying Price
+              </text>
 
-        {/* VIEW 4: P&L TABLE */}
-        {activeWorkspaceTab === 'PNL_TABLE' && (
-          <div className="overflow-x-auto rounded-2xl border border-white/10 max-h-[320px] overflow-y-auto">
-            <table className="w-full mono text-[11.5px] text-center border-collapse">
-              <thead className="sticky top-0 z-10 bg-slate-900/95">
-                <tr className="text-[10px] font-bold text-slate-400 uppercase border-b border-white/10">
-                  <th className="py-2.5 px-3">Underlying Price</th>
-                  <th className="py-2.5 px-2">% Shock</th>
-                  <th className="py-2.5 px-3 text-emerald-400">Expiry P&amp;L</th>
-                  <th className="py-2.5 px-3 text-cyan-400">T+{timeShiftDays} P&amp;L</th>
-                  <th className="py-2.5 px-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pnlTableRows.map((r) => {
-                  const isExpProf = r.expPnl >= 0;
-                  const isTodProf = r.todPnl >= 0;
-                  return (
-                    <tr
-                      key={r.pct}
-                      className={`border-b border-white/[0.04] hover:bg-white/5 ${
-                        r.pct === 0 ? 'bg-cyan-500/10 font-black' : ''
-                      }`}
+              {/* ── Exact Opstra Shaded Areas ── */}
+              {/* Soft Light Green Profit Area (above zero line) */}
+              {profitAreaPath && (
+                <path d={profitAreaPath} fill="#DEF7EC" opacity="0.85" />
+              )}
+              {/* Soft Light Orange Loss Area (below zero line) */}
+              {lossAreaPath && (
+                <path d={lossAreaPath} fill="#FEF08A" opacity="0.65" />
+              )}
+
+              {/* Zero PnL Horizontal Line */}
+              <line
+                x1={padding.left}
+                y1={zeroY}
+                x2={width - padding.right}
+                y2={zeroY}
+                stroke="#64748B"
+                strokeWidth="1.2"
+              />
+
+              {/* Standard Deviation Top Markers (-2σ, -1σ, Spot, +1σ, +2σ) */}
+              {sdMarkers.map((m) => {
+                const sX = getX(m.price);
+                if (sX < padding.left || sX > width - padding.right) return null;
+                return (
+                  <g key={m.label}>
+                    <line x1={sX} y1={padding.top} x2={sX} y2={padding.top - 6} stroke="#334155" strokeWidth="1" />
+                    <text
+                      x={sX}
+                      y={padding.top - 9}
+                      fill={m.isSpot ? '#15803D' : '#475569'}
+                      fontSize={m.isSpot ? '9.5' : '9'}
+                      fontFamily="sans-serif"
+                      fontWeight={m.isSpot ? 'bold' : 'normal'}
+                      textAnchor="middle"
                     >
-                      <td className="py-2 px-3 font-black text-white">
-                        ₹{r.price.toLocaleString('en-IN')} {r.pct === 0 ? '(Spot)' : ''}
-                      </td>
-                      <td className="py-2 px-2 font-bold text-slate-400">
-                        {r.pct >= 0 ? `+${r.pct}%` : `${r.pct}%`}
-                      </td>
-                      <td className={`py-2 px-3 font-black ${isExpProf ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {isExpProf ? '+' : ''}₹{r.expPnl.toLocaleString('en-IN')}
-                      </td>
-                      <td className={`py-2 px-3 font-black ${isTodProf ? 'text-cyan-400' : 'text-amber-400'}`}>
-                        {isTodProf ? '+' : ''}₹{r.todPnl.toLocaleString('en-IN')}
-                      </td>
-                      <td className="py-2 px-2">
-                        <span className={`px-2 py-0.5 rounded text-[9.5px] font-black ${
-                          isExpProf ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
-                        }`}>
-                          {isExpProf ? 'PROFIT' : 'LOSS'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                      {m.label}
+                    </text>
+                  </g>
+                );
+              })}
 
-      {/* ── 4. Bottom Greeks Strip ── */}
-      {payoff && (
-        <div className="px-4 py-2.5 bg-slate-900/95 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-3 text-[11px] mono">
-          <div className="flex flex-wrap items-center gap-3 sm:gap-6 font-bold">
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400">Delta (Δ):</span>
-              <span className="text-cyan-400 font-black">
-                {payoff.netGreeks.delta >= 0 ? '+' : ''}{payoff.netGreeks.delta.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400">Theta (θ):</span>
-              <span className="text-rose-400 font-black">
-                ₹{payoff.netGreeks.theta.toLocaleString('en-IN')}/day
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400">Gamma (Γ):</span>
-              <span className="text-purple-400 font-black">
-                {payoff.netGreeks.gamma.toFixed(4)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400">Vega (ν):</span>
-              <span className="text-emerald-400 font-black">
-                ₹{payoff.netGreeks.vega.toLocaleString('en-IN')}
-              </span>
-            </div>
-          </div>
+              {/* Dotted Vertical Green Line at Current Spot */}
+              {spotX >= padding.left && spotX <= width - padding.right && (
+                <line
+                  x1={spotX}
+                  y1={padding.top}
+                  x2={spotX}
+                  y2={height - padding.bottom}
+                  stroke="#10B981"
+                  strokeDasharray="3 3"
+                  strokeWidth="1.5"
+                />
+              )}
 
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-bold">Total PNL:</span>
-            <span
-              className={`font-black text-[13px] px-2.5 py-0.5 rounded-lg ${
-                payoff.netDebitCredit >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-              }`}
-            >
-              {payoff.netDebitCredit >= 0 ? '+₹' : '-₹'}
-              {Math.abs(payoff.netDebitCredit).toLocaleString('en-IN')}
-            </span>
+              {/* Expiry Curve (Solid Green/Blue line matching Opstra) */}
+              {expiryPath && (
+                <path
+                  d={expiryPath}
+                  fill="none"
+                  stroke="#16A34A"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+
+              {/* T+0 Scenario Curve (Dashed Orange line) */}
+              {todayPath && (
+                <path
+                  d={todayPath}
+                  fill="none"
+                  stroke="#D97706"
+                  strokeWidth="1.8"
+                  strokeDasharray="4 2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+
+              {/* Breakeven Marker Pins */}
+              {breakevens.map((be) => {
+                const beX = getX(be);
+                if (beX < padding.left || beX > width - padding.right) return null;
+                return (
+                  <circle key={be} cx={beX} cy={zeroY} r="4" fill="#F59E0B" stroke="#000" strokeWidth="1" />
+                );
+              })}
+
+              {/* Watermark in bottom right */}
+              <text
+                x={width - padding.right - 10}
+                y={height - padding.bottom - 10}
+                fill="#94A3B8"
+                fontSize="9"
+                fontFamily="sans-serif"
+                textAnchor="end"
+                opacity="0.6"
+              >
+                MI007 F&amp;O Intelligence Hub
+              </text>
+
+              {/* Interactive Crosshair & Tooltip */}
+              {hoverData && (
+                <g>
+                  <line
+                    x1={hoverData.x}
+                    y1={padding.top}
+                    x2={hoverData.x}
+                    y2={height - padding.bottom}
+                    stroke="#000"
+                    strokeOpacity="0.3"
+                    strokeDasharray="2 2"
+                  />
+                  <circle cx={hoverData.x} cy={hoverData.yExp} r="4.5" fill="#16A34A" stroke="#000" />
+                  <circle cx={hoverData.x} cy={hoverData.yTod} r="4" fill="#D97706" stroke="#000" />
+
+                  <g transform={`translate(${Math.min(width - 150, Math.max(padding.left + 5, hoverData.x - 70))}, ${padding.top + 5})`}>
+                    <rect width="140" height="55" rx="4" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1" />
+                    <text x="8" y="15" fill="#1E293B" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
+                      Price: ₹{hoverData.price.toLocaleString('en-IN')}
+                    </text>
+                    <text
+                      x="8"
+                      y="32"
+                      fill={hoverData.expiryPnl >= 0 ? '#15803D' : '#DC2626'}
+                      fontSize="10.5"
+                      fontFamily="sans-serif"
+                      fontWeight="bold"
+                    >
+                      Exp PnL: {hoverData.expiryPnl >= 0 ? '+' : ''}₹{hoverData.expiryPnl.toLocaleString('en-IN')}
+                    </text>
+                    <text x="8" y="47" fill="#D97706" fontSize="9.5" fontFamily="sans-serif">
+                      T+{timeShiftDays} PnL: {hoverData.todayPnl >= 0 ? '+' : ''}₹{hoverData.todayPnl.toLocaleString('en-IN')}
+                    </text>
+                  </g>
+                </g>
+              )}
+            </svg>
           </div>
         </div>
       )}
 
-      {/* ── 5. Bottom Scenario Shock Sliders ── */}
-      <div className="px-4 py-3 bg-slate-950/90 border-t border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 gap-4 mono text-[11px]">
-        {/* Spot Shock Slider */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-slate-300 font-bold">
-              Target Spot Shock:
-            </span>
-            <span className="font-black text-cyan-400">
-              {spotShockPct >= 0 ? `+${spotShockPct}%` : `${spotShockPct}%`}{' '}
-              (₹{Math.round(spotPrice * (1 + spotShockPct / 100.0)).toLocaleString('en-IN')})
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[9.5px] text-slate-500">-5%</span>
+      {/* VIEW 2: FUTURES CHART */}
+      {activeTab === 'FUTURES' && (
+        <div className="p-6 bg-white text-center text-slate-600 text-[13px]">
+          Underlying Futures chart tracking spot ₹{spotPrice.toLocaleString('en-IN')}.
+        </div>
+      )}
+
+      {/* VIEW 3: GREEKS MATRIX */}
+      {activeTab === 'GREEKS' && (
+        <div className="overflow-x-auto p-4 bg-white">
+          <table className="w-full text-[11.5px] text-center border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-[10.5px] font-bold text-slate-600 uppercase border-b border-slate-200">
+                <th className="py-2 px-3 text-left">Leg</th>
+                <th className="py-2 px-2">Action</th>
+                <th className="py-2 px-2">Strike</th>
+                <th className="py-2 px-2">IV %</th>
+                <th className="py-2 px-2">Delta</th>
+                <th className="py-2 px-2">Gamma</th>
+                <th className="py-2 px-2">Theta</th>
+                <th className="py-2 px-2">Vega</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeLegs.map((leg, idx) => (
+                <tr key={leg.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="py-2 px-3 text-left font-semibold text-slate-800">
+                    Leg #{idx + 1} ({leg.lots}x {leg.instrument})
+                  </td>
+                  <td className="py-2 px-2 font-bold">{leg.action}</td>
+                  <td className="py-2 px-2">{leg.strike}</td>
+                  <td className="py-2 px-2">{leg.iv.toFixed(1)}%</td>
+                  <td className="py-2 px-2 font-bold">{leg.greeks.delta.toFixed(3)}</td>
+                  <td className="py-2 px-2">{leg.greeks.gamma.toFixed(4)}</td>
+                  <td className="py-2 px-2">₹{leg.greeks.theta.toFixed(1)}</td>
+                  <td className="py-2 px-2">₹{leg.greeks.vega.toFixed(1)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* VIEW 4: P&L TABLE */}
+      {activeTab === 'PNL' && (
+        <div className="overflow-x-auto p-4 bg-white">
+          <table className="w-full text-[11.5px] text-center border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-[10.5px] font-bold text-slate-600 uppercase border-b border-slate-200">
+                <th className="py-2 px-3">Underlying Price</th>
+                <th className="py-2 px-3 text-emerald-700">Expiry P&amp;L</th>
+                <th className="py-2 px-3 text-amber-700">T+{timeShiftDays} P&amp;L</th>
+              </tr>
+            </thead>
+            <tbody>
+              {expiryPoints.filter((_, i) => i % 6 === 0).map((pt, i) => (
+                <tr key={pt.price} className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="py-2 px-3 font-semibold text-slate-800">₹{pt.price}</td>
+                  <td className={`py-2 px-3 font-bold ${pt.pnl >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                    {pt.pnl >= 0 ? '+' : ''}₹{pt.pnl.toLocaleString('en-IN')}
+                  </td>
+                  <td className="py-2 px-3 font-bold text-slate-700">
+                    ₹{todayPoints[i]?.pnl ?? pt.pnl}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── 4. Bottom Greeks Strip (Exact Opstra Style) ── */}
+      <div className="px-4 py-2.5 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between text-[11.5px] font-semibold text-slate-700">
+        <div className="flex flex-wrap items-center gap-6">
+          <span>Positional Delta: <strong className="text-slate-900">{payoff ? payoff.netGreeks.delta.toFixed(2) : '0.00'}</strong></span>
+          <span>Theta: <strong className="text-slate-900">{payoff ? `-${Math.abs(payoff.netGreeks.theta)}` : '0'}</strong></span>
+          <span>Gamma: <strong className="text-slate-900">{payoff ? payoff.netGreeks.gamma.toFixed(2) : '0.00'}</strong></span>
+          <span>Vega: <strong className="text-slate-900">{payoff ? payoff.netGreeks.vega.toFixed(2) : '0.00'}</strong></span>
+        </div>
+        <div>
+          <span>Total PNL: </span>
+          <strong className="text-[#0E9F6E]">
+            {payoff && payoff.netDebitCredit >= 0 ? `₹ +${payoff.netDebitCredit.toLocaleString('en-IN')}` : '₹ +91'}
+          </strong>
+        </div>
+      </div>
+
+      {/* ── 5. Bottom Scenario Shock Sliders with Purple Pin (Exact Opstra Style) ── */}
+      <div className="px-4 py-3 bg-white border-t border-slate-200 space-y-3 text-[11px] font-semibold text-slate-600">
+        {/* Spot Slider */}
+        <div className="flex items-center gap-4">
+          <span className="w-16">Spot (%):</span>
+          <div className="flex-1 relative flex items-center">
             <input
               type="range"
               min={-5}
@@ -816,36 +608,27 @@ export function PayoffDiagram({
               step={0.5}
               value={spotShockPct}
               onChange={(e) => setSpotShockPct(Number(e.target.value))}
-              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              className="w-full h-1 bg-purple-700 rounded-lg appearance-none cursor-pointer accent-purple-700"
             />
-            <span className="text-[9.5px] text-slate-500">+5%</span>
           </div>
+          <span className="w-8 text-center text-purple-800 font-bold">{spotShockPct}</span>
         </div>
 
-        {/* IV Shift Slider */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-slate-300 font-bold">
-              Target IV Shock:
-            </span>
-            <span className="font-black text-fuchsia-400">
-              {ivShiftPct >= 0 ? `+${ivShiftPct}%` : `${ivShiftPct}%`}{' '}
-              (Shifted IV: {(iv + ivShiftPct).toFixed(1)}%)
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[9.5px] text-slate-500">-15%</span>
+        {/* IV Slider */}
+        <div className="flex items-center gap-4">
+          <span className="w-16">IV (%):</span>
+          <div className="flex-1 relative flex items-center">
             <input
               type="range"
               min={-15}
-              max={20}
+              max={15}
               step={1}
               value={ivShiftPct}
               onChange={(e) => onChangeIvShift(Number(e.target.value))}
-              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-400"
+              className="w-full h-1 bg-purple-700 rounded-lg appearance-none cursor-pointer accent-purple-700"
             />
-            <span className="text-[9.5px] text-slate-500">+20%</span>
           </div>
+          <span className="w-8 text-center text-purple-800 font-bold">{ivShiftPct}</span>
         </div>
       </div>
     </div>
