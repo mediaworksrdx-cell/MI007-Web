@@ -229,40 +229,40 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
         scrolled ? 'shadow-sm backdrop-blur-md' : 'backdrop-blur-sm'
       }`}
     >
-      <div className="mx-auto flex h-18 sm:h-20 max-w-[1600px] items-center justify-between px-4 lg:px-6">
+      <div className="mx-auto flex h-13 sm:h-14 max-w-[1600px] items-center justify-between px-4 lg:px-6">
         {/* ── Cyber Falcon Logo with Interactive 3D Pop-Up (Zero Background) ── */}
         <Link
           href="/"
-          className="flex items-center gap-3 sm:gap-4 select-none group min-w-0"
+          className="flex items-center gap-2.5 sm:gap-3.5 select-none group min-w-0"
           onMouseEnter={() => setBrandHovered(true)}
           onMouseLeave={() => setBrandHovered(false)}
         >
-          <div className="relative z-50 h-13 w-13 sm:h-15 sm:w-15 md:h-16 md:w-16 flex-shrink-0 flex items-center justify-center overflow-visible">
+          <div className="relative z-50 h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 flex items-center justify-center overflow-visible">
             <Falcon3DLogo
               src="/images/logo-falcon-transparent.png"
               alt="MARKET INTELLIGENCE MI-007"
-              width={64}
-              height={64}
+              width={40}
+              height={40}
               priority
               className="w-full h-full object-contain"
-              popoutScale={1.1}
+              popoutScale={1.12}
               isNavbar={true}
               isHoveredExternal={brandHovered}
             />
           </div>
           <div className="flex flex-col leading-tight min-w-0 justify-center">
-            <span className="navbar-brand-title font-black text-[12.5px] xs:text-[14.5px] sm:text-[17px] md:text-[18px] tracking-tight uppercase font-sans truncate sm:whitespace-nowrap">
+            <span className="navbar-brand-title font-black text-[12px] xs:text-[13.5px] sm:text-[15px] md:text-[16px] tracking-tight uppercase font-sans truncate sm:whitespace-nowrap">
               MARKET INTELLIGENCE MI-007
             </span>
             {/* Tagline Always Visible on screens >= xs */}
-            <span className="navbar-brand-subtitle text-[8.5px] xs:text-[9.5px] sm:text-[11px] tracking-[0.14em] sm:tracking-[0.18em] font-extrabold uppercase font-mono mt-0.5 truncate hidden xs:block">
+            <span className="navbar-brand-subtitle text-[7.5px] xs:text-[8.5px] sm:text-[9.5px] tracking-[0.14em] sm:tracking-[0.16em] font-extrabold uppercase font-mono mt-0.5 truncate hidden xs:block">
               Intelligence Beyond the Noise
             </span>
           </div>
         </Link>
 
         {/* ── Desktop Nav Links (High Contrast, Clear Active State) ── */}
-        <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2">
+        <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5">
           {(isTerminalOrDashboard ? TERMINAL_NAV_LINKS : PUBLIC_NAV_LINKS).map(({ href, label }) => {
             const isActive =
               pathname === href ||
@@ -275,7 +275,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               <Link
                 key={href}
                 href={href}
-                className={`px-3.5 py-1.5 rounded-lg text-[14px] font-bold transition-all duration-150 ${
+                className={`px-3 py-1 rounded-lg text-[13px] sm:text-[13.5px] font-bold transition-all duration-150 ${
                   isActive ? 'nav-link-active' : 'nav-link-inactive'
                 }`}
               >
@@ -286,14 +286,14 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
         </nav>
 
         {/* ── Top-Right Institutional Cluster: Single Terminal CTA + 1 Unified Account/Settings Icon ── */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           {/* ── Exactly 1 Single Launch Terminal Button ── */}
           {!isTerminalOrDashboard && (
             <Link
               href="/terminal"
-              className="launch-terminal-btn hidden sm:inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] font-mono font-bold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95"
+              className="launch-terminal-btn hidden sm:inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-[12px] font-mono font-bold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-amber-300">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-amber-300">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
               <span>LAUNCH TERMINAL</span>
@@ -308,19 +308,19 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                 setNotificationMenuOpen((v) => !v);
                 setAccountMenuOpen(false);
               }}
-              className={`relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
+              className={`relative flex items-center justify-center w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-lg border transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
                 notificationMenuOpen ? 'ring-2 ring-emerald-500' : 'opacity-85 hover:opacity-100 hover:border-emerald-500/40'
               }`}
               title="Market Alerts & Notifications"
               aria-label="Market Notifications"
               aria-expanded={notificationMenuOpen}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-black text-slate-950 font-mono shadow-xs animate-pulse">
+                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-black text-slate-950 font-mono shadow-xs animate-pulse">
                   {unreadCount}
                 </span>
               )}
@@ -531,7 +531,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             <button
               type="button"
               onClick={() => setAccountMenuOpen((v) => !v)}
-              className={`account-menu-btn relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl border transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
+              className={`account-menu-btn relative flex items-center justify-center w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-lg border transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
                 accountMenuOpen ? 'ring-2 ring-emerald-500' : ''
               }`}
               title={userSession ? `${userSession.name} · Settings & Themes` : 'Account, Settings & Themes'}
@@ -540,7 +540,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             >
               {/* Institutional User Profile Silhouette */}
               <svg
-                className="w-5 h-5 transition-transform duration-200"
+                className="w-4.5 h-4.5 transition-transform duration-200"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -554,7 +554,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
               {/* Status / Active Theme Pip */}
               <span
-                className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white shadow-xs ${
+                className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white shadow-xs ${
                   userSession ? 'bg-emerald-500 animate-pulse' : ''
                 }`}
                 style={!userSession ? { backgroundColor: currentThemeConfig.palette.accent } : undefined}

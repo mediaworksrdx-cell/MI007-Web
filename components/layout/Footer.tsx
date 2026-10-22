@@ -9,34 +9,34 @@ export function Footer() {
 
   return (
     <footer className="border-t footer-panel mt-auto">
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-7 sm:py-8">
-        {/* Responsive Grid: Stacks cleanly on mobile, dedicated top brand banner on tablet, 12-col layout on desktop */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8 items-start">
-          {/* Brand Column: Spans full width on tablet (sm:col-span-2) and 5 cols on lg for prominent logo branding */}
-          <div className="sm:col-span-2 lg:col-span-5 flex flex-col gap-4">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-4 sm:py-5">
+        {/* Responsive Grid: Stacks cleanly on mobile, 4 aligned columns on desktop */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-12 lg:gap-7 items-start">
+          {/* 1. Brand Column: Spans 5 cols on lg for logo branding & identity */}
+          <div className="sm:col-span-2 lg:col-span-5 flex flex-col gap-2.5">
             <Link
               href="/"
-              className="group flex items-center gap-4 sm:gap-6 flex-shrink-0 select-none min-w-0"
+              className="group flex items-center gap-3 sm:gap-4 flex-shrink-0 select-none min-w-0"
               onMouseEnter={() => setBrandHovered(true)}
               onMouseLeave={() => setBrandHovered(false)}
             >
-              {/* Massive Falcon Emblem Logo (180px–220px) with 3D Pop-Up Animation */}
+              {/* Scaled Falcon Emblem Logo (84px) with 3D Pop-Up Animation */}
               <div
                 className="relative z-10 flex-shrink-0 flex items-center justify-center overflow-visible"
                 style={{
-                  width: 'clamp(160px, 16vw, 220px)',
-                  height: 'clamp(160px, 16vw, 220px)',
-                  minWidth: '160px',
-                  minHeight: '160px',
+                  width: '84px',
+                  height: '84px',
+                  minWidth: '84px',
+                  minHeight: '84px',
                 }}
               >
                 <Falcon3DLogo
                   src="/images/logo-falcon-transparent.png"
                   alt="MARKET INTELLIGENCE MI-007"
-                  width={220}
-                  height={220}
+                  width={84}
+                  height={84}
                   priority
-                  className="w-full h-full object-contain drop-shadow-[0_8px_36px_rgba(16,185,129,0.45)]"
+                  className="w-full h-full object-contain drop-shadow-[0_4px_20px_rgba(16,185,129,0.4)]"
                   popoutScale={1.12}
                   isNavbar={false}
                   isHoveredExternal={brandHovered}
@@ -45,7 +45,7 @@ export function Footer() {
               <div className="min-w-0 flex flex-col justify-center">
                 <div className="leading-tight">
                   <span
-                    className="font-extrabold text-[18px] sm:text-[20px] md:text-[22px] lg:text-[24px] uppercase font-sans tracking-tight footer-brand-title text-white block group-hover:text-emerald-400 transition-colors"
+                    className="font-black text-[15px] sm:text-[16px] md:text-[17px] uppercase font-sans tracking-tight footer-brand-title text-white block group-hover:text-emerald-400 transition-colors"
                     style={{ color: '#FFFFFF' }}
                   >
                     MARKET INTELLIGENCE MI-007
@@ -53,14 +53,14 @@ export function Footer() {
                 </div>
 
                 <div
-                  className="text-[11px] sm:text-[12px] md:text-[13px] tracking-[0.18em] uppercase font-extrabold font-mono mt-2 footer-brand-subtitle text-slate-200"
-                  style={{ color: '#E2E8F0' }}
+                  className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-300"
+                  style={{ color: '#CBD5E1' }}
                 >
                   <span>Intelligence Beyond the Noise</span>
                 </div>
 
                 <div
-                  className="text-[10.5px] sm:text-[11.5px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1.5"
+                  className="text-[9.5px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1"
                   style={{ color: '#34D399' }}
                 >
                   <span>A Synthetix Analytics Product</span>
@@ -69,21 +69,21 @@ export function Footer() {
             </Link>
 
             {/* Market Regional Chips */}
-            <div className="flex flex-wrap items-center gap-2 mt-1">
+            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
               <span
-                className="footer-chip rounded-md px-2.5 py-1 text-[11px] font-bold font-mono tracking-wide shadow-2xs border text-white"
+                className="footer-chip rounded-md px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide shadow-2xs border text-white"
                 style={{ color: '#FFFFFF' }}
               >
                 🇺🇸 NYSE/NASDAQ
               </span>
               <span
-                className="footer-chip rounded-md px-2.5 py-1 text-[11px] font-bold font-mono tracking-wide shadow-2xs border text-white"
+                className="footer-chip rounded-md px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide shadow-2xs border text-white"
                 style={{ color: '#FFFFFF' }}
               >
                 🇮🇳 NSE/BSE (HQ)
               </span>
               <span
-                className="footer-chip rounded-md px-2.5 py-1 text-[11px] font-bold font-mono tracking-wide shadow-2xs border text-white"
+                className="footer-chip rounded-md px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide shadow-2xs border text-white"
                 style={{ color: '#FFFFFF' }}
               >
                 🇦🇪 DFM/ADX
@@ -91,19 +91,19 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Platform Column */}
-          <div className="sm:col-span-1 lg:col-span-2">
+          {/* 2. Platform Column */}
+          <div className="sm:col-span-1 lg:col-span-2 flex flex-col">
             <h4
-              className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading text-white"
+              className="text-[12.5px] font-black tracking-widest uppercase mb-2 footer-heading text-white"
               style={{ color: '#FFFFFF' }}
             >
               Platform
             </h4>
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-1.5">
               <li>
                 <Link
                   href="/"
-                  className="text-[14px] sm:text-[15px] font-semibold footer-link text-white transition-colors"
+                  className="text-[13px] sm:text-[13.5px] font-semibold footer-link text-white transition-colors"
                   style={{ color: '#FFFFFF' }}
                 >
                   Home
@@ -112,7 +112,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/about"
-                  className="text-[14px] sm:text-[15px] font-semibold footer-link text-white transition-colors"
+                  className="text-[13px] sm:text-[13.5px] font-semibold footer-link text-white transition-colors"
                   style={{ color: '#FFFFFF' }}
                 >
                   About Us
@@ -120,26 +120,8 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/calendar"
-                  className="text-[14px] sm:text-[15px] font-semibold footer-link text-white transition-colors"
-                  style={{ color: '#FFFFFF' }}
-                >
-                  Calendar
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/news"
-                  className="text-[14px] sm:text-[15px] font-semibold footer-link text-white transition-colors"
-                  style={{ color: '#FFFFFF' }}
-                >
-                  News
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/contact"
-                  className="text-[14px] sm:text-[15px] font-semibold footer-link text-white transition-colors"
+                  className="text-[13px] sm:text-[13.5px] font-semibold footer-link text-white transition-colors"
                   style={{ color: '#FFFFFF' }}
                 >
                   Contact
@@ -148,15 +130,15 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Coverage Column */}
-          <div className="sm:col-span-1 lg:col-span-3">
+          {/* 3. Coverage Column */}
+          <div className="sm:col-span-1 lg:col-span-3 flex flex-col">
             <h4
-              className="text-[14px] font-black tracking-widest uppercase mb-3 footer-heading text-white"
+              className="text-[12.5px] font-black tracking-widest uppercase mb-2 footer-heading text-white"
               style={{ color: '#FFFFFF' }}
             >
               Coverage
             </h4>
-            <ul className="flex flex-col gap-2 text-[14px] sm:text-[15px] font-semibold footer-list text-white">
+            <ul className="flex flex-col gap-1.5 text-[12.5px] sm:text-[13px] font-semibold footer-list text-white">
               <li>
                 <span style={{ color: '#F1F5F9' }}>🇺🇸 S&P 500 · NASDAQ 100 · DOW JONES</span>
               </li>
@@ -169,7 +151,7 @@ export function Footer() {
               <li className="flex items-center gap-2 flex-wrap">
                 <span style={{ color: '#F1F5F9' }}>🇪🇺 DAX · FTSE 100 · CAC 40</span>
                 <span
-                  className="footer-coming-soon text-[10px] mono font-bold px-1.5 py-0.5 rounded"
+                  className="footer-coming-soon text-[9.5px] mono font-bold px-1.5 py-0.2 rounded"
                   style={{ color: '#FBBF24' }}
                 >
                   COMING SOON
@@ -178,7 +160,7 @@ export function Footer() {
               <li className="flex items-center gap-2 flex-wrap">
                 <span style={{ color: '#F1F5F9' }}>🇦🇺 ASX 200 · SPI 200</span>
                 <span
-                  className="footer-coming-soon text-[10px] mono font-bold px-1.5 py-0.5 rounded"
+                  className="footer-coming-soon text-[9.5px] mono font-bold px-1.5 py-0.2 rounded"
                   style={{ color: '#FBBF24' }}
                 >
                   COMING SOON
@@ -187,9 +169,15 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* 4 Simple 2D Social Logos */}
-          <div className="sm:col-span-2 lg:col-span-2 flex items-start sm:justify-start lg:justify-end">
-            <div className="flex items-center gap-2 sm:gap-2.5 pt-1">
+          {/* 4. Connect / Socials Column */}
+          <div className="sm:col-span-2 lg:col-span-2 flex flex-col sm:items-start lg:items-end">
+            <h4
+              className="text-[12.5px] font-black tracking-widest uppercase mb-2 footer-heading text-white"
+              style={{ color: '#FFFFFF' }}
+            >
+              Connect
+            </h4>
+            <div className="flex items-center gap-2">
               {/* 1. LinkedIn */}
               <a
                 href="https://www.linkedin.com"
@@ -197,9 +185,9 @@ export function Footer() {
                 rel="noopener noreferrer"
                 title="LinkedIn"
                 aria-label="LinkedIn"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/[0.06] hover:bg-[#0A66C2] text-slate-300 hover:text-white border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
+                className="w-8.5 h-8.5 rounded-lg bg-white/[0.06] hover:bg-[#0A66C2] text-slate-300 hover:text-white border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
               >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 8.76a1.65 1.65 0 0 0 1.66-1.66 1.66 1.66 0 0 0-1.66-1.66 1.65 1.65 0 0 0-1.66 1.66c0 .92.74 1.66 1.66 1.66m1.4 9.74v-8.37H5.06v8.37h2.8z" />
                 </svg>
               </a>
@@ -211,9 +199,9 @@ export function Footer() {
                 rel="noopener noreferrer"
                 title="X"
                 aria-label="X"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/[0.06] hover:bg-white text-slate-300 hover:text-black border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
+                className="w-8.5 h-8.5 rounded-lg bg-white/[0.06] hover:bg-white text-slate-300 hover:text-black border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
               </a>
@@ -225,9 +213,9 @@ export function Footer() {
                 rel="noopener noreferrer"
                 title="Facebook"
                 aria-label="Facebook"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/[0.06] hover:bg-[#1877F2] text-slate-300 hover:text-white border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
+                className="w-8.5 h-8.5 rounded-lg bg-white/[0.06] hover:bg-[#1877F2] text-slate-300 hover:text-white border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
               >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z" />
                 </svg>
               </a>
@@ -239,9 +227,9 @@ export function Footer() {
                 rel="noopener noreferrer"
                 title="Instagram"
                 aria-label="Instagram"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/[0.06] hover:bg-gradient-to-tr hover:from-[#F58529] hover:via-[#DD2A7B] hover:to-[#8134AF] text-slate-300 hover:text-white border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
+                className="w-8.5 h-8.5 rounded-lg bg-white/[0.06] hover:bg-gradient-to-tr hover:from-[#F58529] hover:via-[#DD2A7B] hover:to-[#8134AF] text-slate-300 hover:text-white border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
               >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                   <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
@@ -252,12 +240,13 @@ export function Footer() {
         </div>
 
         {/* Bottom strip */}
-        <div className="h-[1px] w-full border-t border-white/20 mt-4 mb-2" />
+        <div className="h-[1px] w-full border-t border-white/15 mt-3 mb-2" />
         <div
-          className="text-[13px] font-semibold text-center sm:text-left footer-copy text-slate-300 flex items-center justify-between flex-wrap gap-2"
+          className="text-[12px] font-semibold text-center sm:text-left footer-copy text-slate-300 flex items-center justify-between flex-wrap gap-2"
           style={{ color: '#CBD5E1' }}
         >
           <span>© 2026 Synthetix Analytics. All Rights Reserved.</span>
+          <span className="text-[11px] font-mono opacity-80">MI-007 Platform v2.4</span>
         </div>
       </div>
     </footer>
