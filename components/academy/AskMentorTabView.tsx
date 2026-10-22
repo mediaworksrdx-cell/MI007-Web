@@ -15,14 +15,13 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
       id: 'welcome',
       sender: 'Aarka AI',
       message:
-        'Welcome to **Aarka AI Mentor**. I provide real-time institutional analysis across **Finance**, **Technical Analysis**, **Fundamental Valuation**, **Stock Markets**, **Forex**, **Commodities**, and **Crypto**.\n\nAsk me anything regarding trade setups, market microstructure, valuation models, option Greeks, or quantitative risk discipline.',
+        'Welcome to **Aarka AI Mentor**!\n\nI can help you understand and trade the financial markets in simple terms:\n\n• **Stock Market**: Indian stocks, NIFTY 50, Bank NIFTY & US stocks\n• **Technical Analysis**: Charts, support/resistance, price action & indicators\n• **Fundamentals**: Company results, P/E ratio, valuation & balance sheets\n• **Futures & Options**: Calls, puts, strike prices & option Greeks\n• **Forex, Commodities & Crypto**: Currencies, gold, crude oil & Bitcoin\n• **Risk Management**: Position sizing and how to protect your capital\n\nAsk me any question to get started!',
       isMentor: true,
       timestamp: 'Now',
     },
   ]);
   const [input, setInput] = useState(initialQuery ?? '');
   const [isTyping, setIsTyping] = useState(false);
-  const [statusText, setStatusText] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -34,7 +33,7 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping, statusText]);
+  }, [messages, isTyping]);
 
   const handleSend = async (textToSend?: string) => {
     const query = (textToSend ?? input).trim();
@@ -66,12 +65,11 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
     setMessages(prev => [...prev, userMsg, initialBotMsg]);
     setInput('');
     setIsTyping(true);
-    setStatusText('Connecting to Aarka AI neural engine...');
 
     let accumulatedText = '';
 
     try {
-      // Try streaming directly from Aarka AI
+      // Stream directly from Aarka AI
       const res = await fetch('/api/aarkaai/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,11 +98,8 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
 
             try {
               const parsed = JSON.parse(dataStr);
-              if (parsed.type === 'status' && parsed.status) {
-                setStatusText(parsed.status);
-              } else if (parsed.type === 'content' && typeof parsed.token === 'string') {
+              if (parsed.type === 'content' && typeof parsed.token === 'string') {
                 accumulatedText += parsed.token;
-                setStatusText(null);
                 setMessages(prev => {
                   const next = [...prev];
                   const targetIdx = next.findIndex(m => m.id === botMsgId);
@@ -116,8 +111,6 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
                   }
                   return next;
                 });
-              } else if (parsed.type === 'final') {
-                setStatusText(null);
               }
             } catch {
               // Ignore partial stream frames
@@ -132,10 +125,9 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
         return;
       }
 
-      // If streaming encountered an issue or didn't accumulate text, try standard prompt endpoint
+      // If streaming encountered an issue or didn't accumulate text, try prompt endpoint
       if (!accumulatedText.trim()) {
         try {
-          setStatusText('Requesting from Aarka AI...');
           const promptRes = await fetch('/api/aarkaai/prompt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -181,32 +173,31 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
       }
     } finally {
       setIsTyping(false);
-      setStatusText(null);
     }
   };
 
   return (
     <div className="flex flex-col h-[650px] rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] overflow-hidden">
-      {/* Mentor Header Telemetry */}
+      {/* Mentor Header */}
       <div className="p-3.5 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] flex items-center justify-between font-mono text-[11px]">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-black uppercase tracking-wider text-emerald-400">
+          <span className="font-bold uppercase tracking-wider text-emerald-400">
             AARKA AI MENTOR
           </span>
-          <span className="opacity-40">|</span>
-          <span className="text-[10px] text-emerald-400/80 font-bold">LIVE INTELLIGENCE</span>
+          <span className="opacity-30">·</span>
+          <span className="text-[10px] text-emerald-400/90 font-medium">Online</span>
         </div>
-        <div className="text-right text-[10.5px]">
-          <span className="opacity-60">Spot Telemetry: </span>
-          <span className="font-black text-emerald-400">₹{niftySpot.toLocaleString()}</span>
+        <div className="text-right text-[11px]">
+          <span className="opacity-60">NIFTY: </span>
+          <span className="font-bold text-emerald-400">₹{niftySpot.toLocaleString()}</span>
         </div>
       </div>
 
       {/* Chat Messages Body */}
       <div className="flex-1 p-4 overflow-y-auto space-y-3.5 font-sans text-sm">
         {messages.map(msg => {
-          // If empty during stream initialization and typing, hide empty bubble
+          // Hide placeholder bubble while thinking and no text received yet
           if (!msg.message && msg.isMentor && isTyping) {
             return null;
           }
@@ -235,9 +226,9 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
         })}
 
         {isTyping && (
-          <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-[var(--theme-card-bg)] border border-[var(--theme-card-border)] max-w-[340px] text-xs font-mono text-emerald-400">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
-            <span className="truncate">{statusText || 'Aarka AI analyzing telemetry...'}</span>
+          <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[var(--theme-card-bg)] border border-[var(--theme-card-border)] w-fit text-xs font-sans text-emerald-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Aarka AI is thinking...</span>
           </div>
         )}
         <div ref={scrollRef} />
@@ -253,17 +244,17 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
             if (e.key === 'Enter') handleSend();
           }}
           disabled={isTyping}
-          placeholder="Ask Aarka AI (Finance, Technicals, Fundamentals, Stocks, Forex, Commodities, Crypto)..."
+          placeholder="Ask Aarka AI a question in simple words (e.g. What is RSI?, How to trade Gold?, Explain NIFTY)..."
           className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[13px] font-sans focus:outline-emerald-500 disabled:opacity-50"
         />
 
         <button
           type="button"
           onClick={() => handleSend()}
-          disabled={isTyping}
+          disabled={isTyping || !input.trim()}
           className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-mono text-xs font-black transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
         >
-          {isTyping ? 'Analyzing...' : 'Ask Aarka Mentor →'}
+          {isTyping ? 'Thinking...' : 'Ask Aarka →'}
         </button>
       </div>
     </div>

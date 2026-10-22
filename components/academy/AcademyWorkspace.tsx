@@ -51,7 +51,7 @@ export function AcademyWorkspace() {
                 : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] opacity-75 hover:opacity-100'
             }`}
           >
-            📚 Library & Curriculum
+            📚 Learning Library
           </button>
 
           <button
