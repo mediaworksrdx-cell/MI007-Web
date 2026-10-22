@@ -105,27 +105,103 @@ export function Icon3D({ name, size = 'md', className = '' }: Icon3DProps) {
           </linearGradient>
         </defs>
 
-        {/* ── 1. GLOBAL COVERAGE / NETWORK ── */}
+        {/* ── 1. GLOBAL-MARKET COVERAGE / WORLD GLOBE ── */}
         {(name === 'globe' || name === 'network') && (
           <g>
-            <circle cx="12" cy="12" r="9" stroke="url(#2d-cyan)" strokeWidth="1.8" fill={`url(#${uid}-cyan)`} fillOpacity="0.12" />
-            <ellipse cx="12" cy="12" rx="4.2" ry="9" stroke="#0284C7" strokeWidth="1.5" />
-            <path d="M3.6 9H20.4M3.6 15H20.4" stroke="#0284C7" strokeWidth="1.5" strokeLinecap="round" />
-            <circle cx="12" cy="12" r="1.5" fill="#0284C7" />
+            {/* Outer World Sphere */}
+            <circle
+              cx="12"
+              cy="12"
+              r="9.2"
+              stroke={`url(#${uid}-cyan)`}
+              strokeWidth="1.9"
+              fill={`url(#${uid}-cyan)`}
+              fillOpacity="0.14"
+            />
+            {/* Longitude Meridian Ellipse */}
+            <ellipse
+              cx="12"
+              cy="12"
+              rx="4.4"
+              ry="9.2"
+              stroke={`url(#${uid}-cyan)`}
+              strokeWidth="1.6"
+            />
+            {/* Central Prime Meridian */}
+            <line
+              x1="12"
+              y1="2.8"
+              x2="12"
+              y2="21.2"
+              stroke="#0284C7"
+              strokeWidth="1.3"
+              strokeOpacity="0.55"
+            />
+            {/* Equator & Latitude Parallels */}
+            <line
+              x1="2.8"
+              y1="12"
+              x2="21.2"
+              y2="12"
+              stroke="#0284C7"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+            <path
+              d="M4.2 8.2C7 9.4 17 9.4 19.8 8.2"
+              stroke="#0284C7"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
+            <path
+              d="M4.2 15.8C7 14.6 17 14.6 19.8 15.8"
+              stroke="#0284C7"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
+            {/* Global Exchange Hub Nodes (US / India / UAE) */}
+            <circle cx="8" cy="8.8" r="1.4" fill="#06B6D4" />
+            <circle cx="15.8" cy="12" r="1.4" fill="#0284C7" />
+            <circle cx="12" cy="15.2" r="1.4" fill="#06B6D4" />
           </g>
         )}
 
-        {/* ── 2. AI INTELLIGENCE / ROBOT ── */}
+        {/* ── 2. AI-DRIVEN ANALYTICS / MACHINE LEARNING NEURAL CHART ── */}
         {name === 'robot' && (
           <g>
-            <rect x="4" y="8" width="16" height="12" rx="3.5" fill={`url(#${uid}-emerald)`} fillOpacity="0.15" stroke="#10B981" strokeWidth="1.8" />
-            <path d="M12 2.5V5" stroke="#10B981" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="12" cy="2.5" r="1.5" fill="#10B981" />
-            <circle cx="9" cy="13" r="1.6" fill="#10B981" />
-            <circle cx="15" cy="13" r="1.6" fill="#10B981" />
-            <path d="M9 17H15" stroke="#10B981" strokeWidth="1.8" strokeLinecap="round" />
-            <path d="M1.5 13H4" stroke="#10B981" strokeWidth="2" strokeLinecap="round" />
-            <path d="M20 13H22.5" stroke="#10B981" strokeWidth="2" strokeLinecap="round" />
+            {/* AI Neural Core / Analytics Frame */}
+            <rect
+              x="3"
+              y="3"
+              width="18"
+              height="18"
+              rx="4.5"
+              fill={`url(#${uid}-emerald)`}
+              fillOpacity="0.14"
+              stroke={`url(#${uid}-emerald)`}
+              strokeWidth="1.8"
+            />
+            {/* Ascending Analytics Bars inside AI Core */}
+            <rect x="6.5" y="13.5" width="2.2" height="4" rx="0.8" fill="#10B981" fillOpacity="0.65" />
+            <rect x="10.2" y="11" width="2.2" height="6.5" rx="0.8" fill="#10B981" fillOpacity="0.85" />
+            <rect x="13.9" y="8.5" width="2.2" height="9" rx="0.8" fill="#059669" />
+            {/* Neural Predictive Trend Trajectory */}
+            <path
+              d="M6.5 11.2L10.5 8.2L13.5 9.6L17.5 5.8"
+              stroke="#10B981"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {/* Neural Nodes */}
+            <circle cx="6.5" cy="11.2" r="1.4" fill="#10B981" />
+            <circle cx="10.5" cy="8.2" r="1.4" fill="#10B981" />
+            <circle cx="17.5" cy="5.8" r="1.6" fill="#059669" />
+            {/* AI Sparkle Star (Top Left) */}
+            <path
+              d="M7.5 4.8L8 6.1L9.3 6.6L8 7.1L7.5 8.4L7 7.1L5.7 6.6L7 6.1L7.5 4.8Z"
+              fill="#10B981"
+            />
           </g>
         )}
 
