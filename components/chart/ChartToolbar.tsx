@@ -561,7 +561,7 @@ export function ChartToolbar({
         {/* Beacon */}
         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300 shadow-xs">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>LIVE</span>
+          <span>CONNECTED</span>
         </div>
 
         {/* Price Tracker */}

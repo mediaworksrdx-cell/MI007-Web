@@ -1882,7 +1882,7 @@ export function CandlestickCanvas({
           onClick={() => setScrollOffset(0)}
           className="absolute bottom-8 right-20 rounded-full border border-slate-300 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-3 py-1 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:text-emerald-600 hover:border-emerald-500 transition-all font-mono shadow-md cursor-pointer z-20"
         >
-          »» LIVE
+          »» LATEST
         </button>
       )}
 

@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import Link from 'next/link';
 import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
 import { ChartContainer } from '@/components/chart/ChartContainer';
-import { MarketType, MARKETS } from '@/lib/types';
+import { MarketType } from '@/lib/types';
 
 interface ChartPageProps {
   params: Promise<{ symbol: string }>;
@@ -55,88 +53,38 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
     }
   }, []);
 
-  const marketBadge = isCrypto
-    ? 'GLOBAL 24/7 CRYPTO'
-    : isCommodity
-    ? 'GLOBAL COMMODITY 24/5'
-    : isForex
-    ? 'GLOBAL FOREX 24/5'
-    : `${MARKETS[market].flag} ${MARKETS[market].label}`;
+  let backHref = '/terminal';
+  let backLabel = 'Terminal';
+
+  if (isFromScreener) {
+    if (returnTab === 'technicalScreener') {
+      backHref = '/terminal/screener?tab=technicalScreener';
+      backLabel = 'Technical Strategies';
+    } else if (returnTab === 'watchlists') {
+      backHref = '/terminal/screener?tab=watchlists';
+      backLabel = 'Watchlists';
+    } else {
+      backHref = `/terminal/screener?tab=analysis&symbol=${cleanSym}`;
+      backLabel = `${cleanSym} Analysis`;
+    }
+  }
 
   return (
     <>
       <Navbar market={market} onMarketChange={setMarket} />
 
-      <main className="pt-28 h-screen flex flex-col bg-transparent relative z-10">
-        {/* ── Breadcrumb / Back nav ── */}
-        <div className="flex items-center gap-3 border-b border-[var(--theme-page-border)] bg-[var(--theme-ticker-bg)] px-4 py-2.5 flex-shrink-0 shadow-xs">
-          {isFromScreener ? (
-            <>
-              {returnTab === 'technicalScreener' ? (
-                <Link
-                  href="/terminal/screener?tab=technicalScreener"
-                  className="flex items-center gap-1.5 text-[13.5px] mono font-black text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
-                  title="Return to Technical Strategies"
-                >
-                  ← BACK TO TECHNICAL STRATEGIES
-                </Link>
-              ) : returnTab === 'watchlists' ? (
-                <Link
-                  href="/terminal/screener?tab=watchlists"
-                  className="flex items-center gap-1.5 text-[13.5px] mono font-black text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
-                  title="Return to Watchlists"
-                >
-                  ← BACK TO WATCHLISTS
-                </Link>
-              ) : (
-                <Link
-                  href={`/terminal/screener?tab=analysis&symbol=${cleanSym}`}
-                  className="flex items-center gap-1.5 text-[13.5px] mono font-black text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
-                  title={`Return to ${cleanSym} Company Analysis`}
-                >
-                  ← BACK TO {cleanSym}
-                </Link>
-              )}
-              <span className="text-[var(--theme-page-border)] font-bold">|</span>
-              <Link
-                href="/terminal/screener?tab=screener"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('mi007_return_tab', 'screener');
-                  }
-                }}
-                className="text-[12px] mono font-bold text-[var(--theme-page-text)] hover:text-emerald-400 transition-colors opacity-80 hover:opacity-100"
-                title="Return to Screeners Table"
-              >
-                SCREENER TABLE
-              </Link>
-            </>
-          ) : (
-            <Link
-              href="/terminal"
-              className="flex items-center gap-1.5 text-[14px] mono font-bold text-[var(--theme-page-text)] hover:text-emerald-500 transition-colors"
-            >
-              ← TERMINAL
-            </Link>
-          )}
-          <span className="text-[var(--theme-page-border)] font-bold">|</span>
-          <span className="mono text-[14px] font-black text-emerald-500 tracking-widest">{cleanSym}</span>
-          <span className="mono text-[13px] text-[var(--theme-page-text)] font-bold">{marketBadge}</span>
-
-          {/* Live badge */}
-          <div className="ml-auto flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="mono text-[12px] text-emerald-500 font-bold tracking-widest">LIVE CHART</span>
-          </div>
-        </div>
-
+      <main className="pt-[53px] sm:pt-[57px] h-screen flex flex-col bg-transparent relative z-10 overflow-hidden">
         {/* ── Full Chart Terminal ── */}
-        <div className="flex-1 min-h-0 p-3">
-          <ChartContainer market={market} defaultSymbol={cleanSym} />
+        <div className="flex-1 min-h-0 w-full h-full p-0">
+          <ChartContainer
+            market={market}
+            defaultSymbol={cleanSym}
+            backHref={backHref}
+            backLabel={backLabel}
+            isStandalone={true}
+          />
         </div>
       </main>
-
-      <Footer />
     </>
   );
 }

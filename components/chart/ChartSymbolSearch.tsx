@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import Link from 'next/link';
 import { MarketType } from '@/lib/types';
 import { searchZerodhaStocks } from '@/lib/screener/zerodhaStocks';
 
@@ -112,12 +113,16 @@ interface ChartSymbolSearchProps {
   selectedSymbol: string;
   market: MarketType;
   onSelectInstrument: (item: ChartInstrumentItem) => void;
+  backHref?: string;
+  backLabel?: string;
 }
 
 export function ChartSymbolSearch({
   selectedSymbol,
   market: _market,
   onSelectInstrument,
+  backHref,
+  backLabel,
 }: ChartSymbolSearchProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -298,7 +303,20 @@ export function ChartSymbolSearch({
       className="relative z-50 flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-[#070A12] backdrop-blur-md"
     >
       {/* ── Left side: Active Symbol Badge & Quick Search Trigger ── */}
-      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0">
+        {/* Return / Back Navigation Button */}
+        {backHref && (
+          <Link
+            href={backHref}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-500 hover:bg-emerald-500/10 text-slate-800 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 font-mono font-bold text-xs transition-colors shrink-0 shadow-2xs group"
+            title={`Return to ${backLabel || 'Terminal'}`}
+          >
+            <span className="text-emerald-500 group-hover:-translate-x-0.5 transition-transform font-bold">←</span>
+            <span className="hidden sm:inline font-bold">{backLabel || 'Terminal'}</span>
+            <span className="sm:hidden font-bold">Back</span>
+          </Link>
+        )}
+
         {/* Active Symbol Display */}
         <div
           onClick={() => {

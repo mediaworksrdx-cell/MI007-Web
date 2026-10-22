@@ -39,6 +39,9 @@ import { ChartSymbolSearch, type ChartInstrumentItem } from './ChartSymbolSearch
 interface ChartContainerProps {
   market: MarketType;
   defaultSymbol?: string;
+  backHref?: string;
+  backLabel?: string;
+  isStandalone?: boolean;
 }
 
 const TIMEFRAME_MS: Record<string, number> = {
@@ -137,7 +140,13 @@ function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[
   return valid;
 }
 
-export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
+export function ChartContainer({
+  market,
+  defaultSymbol,
+  backHref,
+  backLabel,
+  isStandalone = false,
+}: ChartContainerProps) {
   const instruments = INSTRUMENTS[market];
   const [selectedSymbol, setSelectedSymbol] = useState(
     defaultSymbol ?? instruments[0].symbol
@@ -1078,16 +1087,20 @@ export function ChartContainer({ market, defaultSymbol }: ChartContainerProps) {
   return (
     <div
       ref={fullscreenContainerRef}
-      className={`flex flex-col h-full bg-white overflow-hidden relative transition-all ${
+      className={`flex flex-col h-full bg-white dark:bg-[#0B0F19] overflow-hidden relative transition-all ${
         isFullscreen
           ? 'fixed inset-0 z-[9999] rounded-none border-none shadow-none w-screen h-screen'
-          : 'rounded-xl border border-slate-200 shadow-xs'
+          : isStandalone
+          ? 'w-full h-full rounded-none border-none shadow-none'
+          : 'rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs'
       }`}
     >
       {/* ── Top Instrument Search Bar ── */}
       <ChartSymbolSearch
         selectedSymbol={selectedSymbol}
         market={market}
+        backHref={backHref}
+        backLabel={backLabel}
         onSelectInstrument={(item: ChartInstrumentItem) => {
           setSelectedSymbol(item.symbol);
           if (typeof window !== 'undefined' && window.location.pathname.startsWith('/chart/')) {
