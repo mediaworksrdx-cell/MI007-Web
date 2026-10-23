@@ -129,37 +129,8 @@ export function FnoHeader({
           })}
         </div>
 
-        {/* Real-time Integrated Search Bar & Dedicated F&O Engine Indicator */}
+        {/* Real-time Integrated Search Bar */}
         <div className="flex items-center gap-2.5 relative flex-1 sm:flex-initial" ref={searchRef}>
-          {/* Engine Status Badge: Kite Connect for Indian assets, Twelve Data for US/Global */}
-          {selectedInstrument.market === 'INDIA' ? (
-            <div
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--theme-card-subsurface)] border border-emerald-500/30 cursor-default select-none shadow-xs"
-              title="Indian F&O Market Engine: Zerodha Kite Connect WebSocket & REST Feed (138.91.105.85)"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] mono font-extrabold text-emerald-400">
-                KITE CONNECT
-              </span>
-              <span className="text-[8.5px] mono px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-300 font-bold border border-emerald-500/30">
-                LIVE
-              </span>
-            </div>
-          ) : (
-            <div
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] cursor-default select-none shadow-xs"
-              title={`Isolated F&O Engine: ${fnoEngineStatus?.isVentureReady ? 'Venture Ready' : 'Active'} • Plan: ${fnoEngineStatus?.plan || 'Isolated'} • Calls Limit: ${fnoEngineStatus?.callsPerMinuteLimit || 8}/min`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              <span className="text-[10px] mono font-extrabold text-cyan-400">
-                {fnoEngineStatus?.isVentureReady ? '12DATA VENTURE READY' : '12DATA FNO'}
-              </span>
-              <span className="text-[8.5px] mono px-1 py-0.2 rounded bg-cyan-500/15 text-cyan-300 font-bold border border-cyan-500/30">
-                ISOLATED
-              </span>
-            </div>
-          )}
-
           <div className="relative w-full sm:w-72 md:w-80">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-[var(--theme-card-subtitle)] pointer-events-none">
               🔍
