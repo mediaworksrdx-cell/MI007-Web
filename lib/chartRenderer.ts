@@ -1283,6 +1283,15 @@ export function renderChart(
   ctx.beginPath(); ctx.moveTo(0, chartH); ctx.lineTo(W, chartH); ctx.stroke();
   ctx.restore();
 
+  // ── LAYER 1.5: Bottom-Right Watermark (Synthetix Analytics) ──
+  ctx.save();
+  ctx.font = `800 ${11 * dpr}px ${tvFontStack}`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillStyle = 'rgba(100, 116, 139, 0.40)';
+  ctx.fillText('Synthetix Analytics', chartW - 14 * dpr, chartH - 8 * dpr);
+  ctx.restore();
+
   // ── LAYER 2: Volume Profile (VPVR) ────────────────────────────────────
   if (options.showVolumeProfile) {
     const visCandles = candles.slice(safeStart, safeEnd);

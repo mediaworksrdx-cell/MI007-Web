@@ -1123,7 +1123,7 @@ export function ChartContainer({
 
     ctx.textAlign = 'right';
     ctx.fillStyle = '#64748B';
-    const timestampStr = `${new Date().toUTCString()} · Institutional Engine`;
+    const timestampStr = `${new Date().toUTCString()} · Synthetix Analytics`;
     ctx.fillText(timestampStr, rightX, fY + 10 * dpr);
 
     // Output Image File or Blob

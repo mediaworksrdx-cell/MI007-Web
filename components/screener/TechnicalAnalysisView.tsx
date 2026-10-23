@@ -454,6 +454,20 @@ export function TechnicalAnalysisView({
                 strokeWidth="1"
               />
             )}
+
+            {/* Bottom-Right Watermark */}
+            <text
+              x={chartWidth - 8}
+              y={chartHeight - 8}
+              fill="#64748b"
+              fontSize="10"
+              fontFamily="sans-serif"
+              fontWeight="bold"
+              textAnchor="end"
+              opacity="0.45"
+            >
+              Synthetix Analytics
+            </text>
           </svg>
         </div>
 

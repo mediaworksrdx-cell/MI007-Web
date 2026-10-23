@@ -663,7 +663,7 @@ export function PayoffDiagram({
                 textAnchor="end"
                 opacity="0.6"
               >
-                MI007 F&amp;O Intelligence Hub
+                Synthetix Analytics
               </text>
 
               {/* Interactive Crosshair & Tooltip */}
