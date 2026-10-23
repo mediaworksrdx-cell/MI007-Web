@@ -455,15 +455,15 @@ export function TechnicalAnalysisView({
               />
             )}
 
-            {/* Bottom-Right Watermark */}
+            {/* Down-Left Corner Watermark */}
             <text
-              x={chartWidth - 8}
+              x={10}
               y={chartHeight - 8}
               fill="#64748b"
               fontSize="10"
               fontFamily="sans-serif"
               fontWeight="bold"
-              textAnchor="end"
+              textAnchor="start"
               opacity="0.45"
             >
               Synthetix Analytics

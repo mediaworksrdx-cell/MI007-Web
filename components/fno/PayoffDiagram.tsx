@@ -653,14 +653,14 @@ export function PayoffDiagram({
                 </text>
               </g>
 
-              {/* Watermark in bottom right */}
+              {/* Watermark in bottom left */}
               <text
-                x={width - padding.right - 10}
+                x={padding.left + 10}
                 y={height - padding.bottom - 10}
                 fill="#94A3B8"
                 fontSize="9"
                 fontFamily="sans-serif"
-                textAnchor="end"
+                textAnchor="start"
                 opacity="0.6"
               >
                 Synthetix Analytics
