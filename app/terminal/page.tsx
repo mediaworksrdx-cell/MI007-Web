@@ -55,20 +55,20 @@ export interface ForexItem {
 }
 
 const DEFAULT_INDIA_INDICES: IndexItem[] = [
-  { symbol: 'NIFTY', name: 'NIFTY 50', base: 23146.15, changePct: 0.65 },
-  { symbol: 'BANKNIFTY', name: 'BANK NIFTY', base: 55844.00, changePct: 0.06 },
-  { symbol: 'SENSEX', name: 'SENSEX', base: 74729.27, changePct: 0.56 },
-  { symbol: 'FINNIFTY', name: 'NIFTY FINANCIAL', base: 25480.00, changePct: -0.10 },
+  { symbol: 'NIFTY', name: 'NIFTY 50', base: 22687.65, changePct: -0.88 },
+  { symbol: 'BANKNIFTY', name: 'BANK NIFTY', base: 54925.70, changePct: -1.01 },
+  { symbol: 'SENSEX', name: 'SENSEX', base: 73249.39, changePct: -1.17 },
+  { symbol: 'FINNIFTY', name: 'NIFTY FINANCIAL', base: 24657.70, changePct: -0.76 },
 ];
 
 const DEFAULT_INDIA_WATCHLIST: WatchlistItem[] = [
-  { symbol: 'RELIANCE', name: 'Reliance Industries', base: 1211.20, sector: 'Energy', changePct: -1.01 },
-  { symbol: 'TCS', name: 'Tata Consultancy', base: 2465.00, sector: 'IT', changePct: 1.59 },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank', base: 728.85, sector: 'Banking', changePct: 0.58 },
-  { symbol: 'INFY', name: 'Infosys', base: 1161.20, sector: 'IT', changePct: 2.14 },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank', base: 1383.00, sector: 'Banking', changePct: -0.46 },
-  { symbol: 'ITC', name: 'ITC Ltd', base: 485.50, sector: 'FMCG', changePct: -0.47 },
-  { symbol: 'SBIN', name: 'State Bank of India', base: 865.40, sector: 'Banking', changePct: -0.53 },
+  { symbol: 'RELIANCE', name: 'Reliance Industries', base: 1184.50, sector: 'Energy', changePct: -1.62 },
+  { symbol: 'TCS', name: 'Tata Consultancy', base: 2506.90, sector: 'IT', changePct: 0.90 },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank', base: 694.05, sector: 'Banking', changePct: -1.82 },
+  { symbol: 'INFY', name: 'Infosys', base: 1153.35, sector: 'IT', changePct: -1.35 },
+  { symbol: 'ICICIBANK', name: 'ICICI Bank', base: 1398.50, sector: 'Banking', changePct: 1.03 },
+  { symbol: 'ITC', name: 'ITC Ltd', base: 258.90, sector: 'FMCG', changePct: -1.22 },
+  { symbol: 'SBIN', name: 'State Bank of India', base: 970.00, sector: 'Banking', changePct: 0.88 },
 ];
 
 const DEFAULT_USA_INDICES: IndexItem[] = [
@@ -140,10 +140,10 @@ const DEFAULT_FOREX: ForexItem[] = [
 
 // Predefined catalog of recognized indices & cryptos for instantaneous auto-detection
 const KNOWN_INDICES: Record<string, { name: string; base: number; market: MarketType }> = {
-  NIFTY: { name: 'NIFTY 50', base: 23146.15, market: 'INDIA' },
-  BANKNIFTY: { name: 'BANK NIFTY', base: 55844.00, market: 'INDIA' },
-  SENSEX: { name: 'BSE SENSEX', base: 74729.27, market: 'INDIA' },
-  FINNIFTY: { name: 'NIFTY FINANCIAL', base: 25480.00, market: 'INDIA' },
+  NIFTY: { name: 'NIFTY 50', base: 22687.65, market: 'INDIA' },
+  BANKNIFTY: { name: 'BANK NIFTY', base: 54925.70, market: 'INDIA' },
+  SENSEX: { name: 'BSE SENSEX', base: 73249.39, market: 'INDIA' },
+  FINNIFTY: { name: 'NIFTY FINANCIAL', base: 24657.70, market: 'INDIA' },
   MIDCPNIFTY: { name: 'NIFTY MIDCAP SELECT', base: 12450.00, market: 'INDIA' },
   BANKEX: { name: 'BSE BANKEX', base: 59800.00, market: 'INDIA' },
   NIFTYNXT50: { name: 'NIFTY NEXT 50', base: 67200.00, market: 'INDIA' },

@@ -69,7 +69,25 @@ function normalizeSymbol(symbol: string): { tdSymbol: string; yahooSymbol: strin
   if (upper === 'QQQ') {
     return { tdSymbol: 'QQQ', yahooSymbol: 'QQQ' };
   }
-  return { tdSymbol: upper, yahooSymbol: upper };
+  if (upper === 'NIFTY 50' || upper === 'NIFTY') {
+    return { tdSymbol: 'NIFTY 50', yahooSymbol: '^NSEI' };
+  }
+  if (upper === 'BANKNIFTY' || upper === 'BANK NIFTY') {
+    return { tdSymbol: 'BANKNIFTY', yahooSymbol: '^NSEBANK' };
+  }
+  if (upper === 'FINNIFTY') {
+    return { tdSymbol: 'FINNIFTY', yahooSymbol: 'NIFTY_FIN_SERVICE.NS' };
+  }
+  if (upper === 'SENSEX') {
+    return { tdSymbol: 'SENSEX', yahooSymbol: '^BSESN' };
+  }
+  if (upper === 'MIDCPNIFTY') {
+    return { tdSymbol: 'MIDCPNIFTY', yahooSymbol: '^NSEMDCP50' };
+  }
+  const yahooSym = upper.includes('.NS') || upper.includes('.BO') || upper.includes('^')
+    ? upper
+    : `${upper}.NS`;
+  return { tdSymbol: upper, yahooSymbol: yahooSym };
 }
 
 /**
@@ -121,38 +139,42 @@ export async function fetchFnoSpotQuote(symbol: string): Promise<FnoSpotQuote> {
   }
 
   // 2. Seamless Yahoo Zero-Credit Fallback (does not consume Twelve Data credits)
-  try {
-    const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=1d`;
-    const res = await fetch(yUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      cache: 'no-store',
-    });
-    if (res.ok) {
-      const json = await res.json();
-      const meta = json?.chart?.result?.[0]?.meta;
-      if (meta && typeof meta.regularMarketPrice === 'number') {
-        const ltp = meta.regularMarketPrice;
-        const prev = meta.chartPreviousClose || meta.previousClose || ltp;
-        const chg = ltp - prev;
-        const pct = prev > 0 ? (chg / prev) * 100 : 0;
+  const hosts = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
+  for (const host of hosts) {
+    try {
+      const yUrl = `https://${host}/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=1d`;
+      const res = await fetch(yUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        cache: 'no-store',
+      });
+      if (res.status === 429) continue;
+      if (res.ok) {
+        const json = await res.json();
+        const meta = json?.chart?.result?.[0]?.meta;
+        if (meta && typeof meta.regularMarketPrice === 'number') {
+          const ltp = meta.regularMarketPrice;
+          const prev = meta.chartPreviousClose || meta.previousClose || ltp;
+          const chg = ltp - prev;
+          const pct = prev > 0 ? (chg / prev) * 100 : 0;
 
-        const result: FnoSpotQuote = {
-          symbol: tdSymbol,
-          price: +ltp.toFixed(2),
-          change: +chg.toFixed(2),
-          changePercent: +pct.toFixed(2),
-          high: meta.regularMarketDayHigh,
-          low: meta.regularMarketDayLow,
-          volume: meta.regularMarketVolume,
-          timestamp: Date.now(),
-          source: 'yahoo-fno-fallback',
-        };
-        setFnoCached(cacheKey, result);
-        return result;
+          const result: FnoSpotQuote = {
+            symbol: tdSymbol,
+            price: +ltp.toFixed(2),
+            change: +chg.toFixed(2),
+            changePercent: +pct.toFixed(2),
+            high: meta.regularMarketDayHigh,
+            low: meta.regularMarketDayLow,
+            volume: meta.regularMarketVolume,
+            timestamp: Date.now(),
+            source: 'yahoo-fno-fallback',
+          };
+          setFnoCached(cacheKey, result);
+          return result;
+        }
       }
+    } catch (err) {
+      // Continue to next host
     }
-  } catch (err) {
-    console.warn(`[FnoTwelveDataEngine] Yahoo fallback error for ${yahooSymbol}:`, err);
   }
 
   // 3. Fallback to catalog default

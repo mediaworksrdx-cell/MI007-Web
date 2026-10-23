@@ -63,7 +63,7 @@ console.log(`   - ATM Vega/1%IV:  ${greeksCallATM.vega} (Must be positive: ${gre
 
 // 4. Max Pain Algorithm Exact Minimization Verification
 console.log('4. MAX PAIN SETTLEMENT MINIMIZATION:');
-const chain = generateOptionChain('NIFTY 50', '29 OCT 2026', 23146.15);
+const chain = generateOptionChain('NIFTY 50', '29 OCT 2026', 22687.65);
 console.log(`   - Spot Price: ${chain.spotPrice}`);
 console.log(`   - Calculated Max Pain Strike: ${chain.maxPain}`);
 console.log(`   - Total Call OI: ${(chain.totalCallOI / 100000).toFixed(2)} Lakhs`);

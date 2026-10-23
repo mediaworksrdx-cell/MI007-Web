@@ -19,11 +19,11 @@ export interface ChartInstrumentItem {
 
 export const MASTER_CHART_INSTRUMENTS: ChartInstrumentItem[] = [
   // ─── INDICES ───
-  { symbol: 'NIFTY', name: 'NIFTY 50', category: 'INDEX', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 23146.15, sector: 'Benchmark Index' },
-  { symbol: 'BANKNIFTY', name: 'BANK NIFTY', category: 'INDEX', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 55844.00, sector: 'Banking Index' },
-  { symbol: 'SENSEX', name: 'BSE SENSEX', category: 'INDEX', market: 'INDIA', exchange: 'BSE', currency: '₹', flag: '🇮🇳', basePrice: 74729.27, sector: 'Benchmark Index' },
-  { symbol: 'FINNIFTY', name: 'NIFTY Financial Services', category: 'INDEX', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 25480.00, sector: 'Financials Index' },
-  { symbol: 'MIDCPNIFTY', name: 'NIFTY Midcap Select', category: 'INDEX', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 12480.00, sector: 'Midcap Benchmark' },
+  { symbol: 'NIFTY', name: 'NIFTY 50', category: 'INDEX', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 22687.65, sector: 'Benchmark Index' },
+  { symbol: 'BANKNIFTY', name: 'BANK NIFTY', category: 'INDEX', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 54925.70, sector: 'Banking Index' },
+  { symbol: 'SENSEX', name: 'BSE SENSEX', category: 'INDEX', market: 'INDIA', exchange: 'BSE', currency: '₹', flag: '🇮🇳', basePrice: 73249.39, sector: 'Benchmark Index' },
+  { symbol: 'FINNIFTY', name: 'NIFTY Financial Services', category: 'INDEX', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 24657.70, sector: 'Financials Index' },
+  { symbol: 'MIDCPNIFTY', name: 'NIFTY Midcap Select', category: 'INDEX', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 12808.30, sector: 'Midcap Benchmark' },
   { symbol: 'BANKEX', name: 'BSE BANKEX Index', category: 'INDEX', market: 'INDIA', exchange: 'BSE', currency: '₹', flag: '🇮🇳', basePrice: 62450.00, sector: 'Banking Benchmark' },
   { symbol: 'SPX', name: 'S&P 500 Index', category: 'INDEX', market: 'USA', exchange: 'NYSE', currency: '$', flag: '🇺🇸', basePrice: 7703.58, sector: 'US Benchmark' },
   { symbol: 'NDX', name: 'NASDAQ 100 Index', category: 'INDEX', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 29630.77, sector: 'US Tech Benchmark' },

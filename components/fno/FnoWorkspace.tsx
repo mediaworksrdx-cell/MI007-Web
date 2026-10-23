@@ -79,11 +79,39 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
     fallbackSpot: selectedInstrument.spotPrice,
   });
 
-  // Prioritize dedicated F&O engine spot, fallback to central trade engine
+  // Live spot, change and changePct resolution:
+  // For Indian instruments, Zerodha Kite Trade Engine (138.91.105.85) is the authoritative source
   const liveSpotData = getSymbolPrice(selectedInstrument.symbol);
-  const liveSpot = fnoFeed.liveSpot && fnoFeed.liveSpot > 0
-    ? fnoFeed.liveSpot
-    : (liveSpotData ? liveSpotData.price : selectedInstrument.spotPrice);
+  const isIndia = selectedInstrument.market === 'INDIA';
+
+  let liveSpot = selectedInstrument.spotPrice;
+  let liveChange = selectedInstrument.change;
+  let liveChangePct = selectedInstrument.changePct;
+
+  if (isIndia) {
+    if (liveSpotData && liveSpotData.price > 0) {
+      liveSpot = liveSpotData.price;
+      liveChange = liveSpotData.change;
+      liveChangePct = liveSpotData.changePct;
+    } else if (fnoFeed.liveSpot && fnoFeed.liveSpot > 0 && fnoFeed.spotQuote) {
+      liveSpot = fnoFeed.liveSpot;
+      liveChange = fnoFeed.spotQuote.change;
+      liveChangePct = fnoFeed.spotQuote.changePercent;
+    }
+  } else {
+    // US or Global instruments: use Twelve Data F&O engine
+    if (fnoFeed.liveSpot && fnoFeed.liveSpot > 0) {
+      liveSpot = fnoFeed.liveSpot;
+      if (fnoFeed.spotQuote) {
+        liveChange = fnoFeed.spotQuote.change;
+        liveChangePct = fnoFeed.spotQuote.changePercent;
+      }
+    } else if (liveSpotData && liveSpotData.price > 0) {
+      liveSpot = liveSpotData.price;
+      liveChange = liveSpotData.change;
+      liveChangePct = liveSpotData.changePct;
+    }
+  }
 
   // Option Chain Data (active selected expiry)
   const chainData = useMemo(() => {
@@ -109,8 +137,8 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
 
   // Futures Term Structure
   const termStructure = useMemo(() => {
-    return getFuturesTermStructure(selectedInstrument.symbol, liveSpot);
-  }, [selectedInstrument.symbol, liveSpot]);
+    return getFuturesTermStructure(selectedInstrument.symbol, liveSpot, liveChange, liveChangePct);
+  }, [selectedInstrument.symbol, liveSpot, liveChange, liveChangePct]);
 
   // Active Strategy Legs (Starts clean and empty until user adds legs or selects a preset)
   const [activeLegs, setActiveLegs] = useState<StrategyLeg[]>([]);
@@ -244,6 +272,8 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
           monthlyExpiry={monthlyExpiry}
           termStructure={termStructure}
           liveSpot={liveSpot}
+          liveChange={liveChange}
+          liveChangePct={liveChangePct}
           engineConnected={tradeEngineStatus === 'connected'}
           fnoEngineStatus={fnoFeed.engineStatus}
         />

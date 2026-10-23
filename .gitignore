@@ -42,6 +42,7 @@ next-env.d.ts
 
 # temp
 .tmp.driveupload/
+.tmp.drivedownload/
 
 # backend trade-engine (managed & deployed separately)
 /trade-engine/
