@@ -483,13 +483,9 @@ async function fetchRealUsIndices(): Promise<any[]> {
 }
 
 async function getActiveUsPrices(): Promise<any[]> {
-  const isUsOpen = isMarketOpen('USA');
-  // Stock TTL: 10-minute interval during active US trading (6.5 hrs = 39 updates * 7 stocks = 273 credits)
-  // 38-minute interval off-hours (17.5 hrs = 27 updates * 7 stocks = 189 credits)
-  // Total Twelve Data usage = ~462 credits/day (well within the 800 daily quota and 8/min rate limit)
-  const stockTtl = isUsOpen ? (10 * 60 * 1000) : (38 * 60 * 1000);
-  // Indices use Yahoo Finance (0 Twelve Data credits), so we refresh authentic spot benchmarks every 30s during market hours, 60s off-hours
-  const indexTtl = isUsOpen ? (30 * 1000) : (60 * 1000);
+  // Fixed 15-minute interval for US stocks and indices (15 * 60 * 1000 = 900,000ms)
+  const stockTtl = 15 * 60 * 1000;
+  const indexTtl = 15 * 60 * 1000;
 
   let cachedStocks = getCached('twelve-data-stocks', stockTtl);
   let cachedIndices = getCached('real-us-indices', indexTtl);
@@ -1039,11 +1035,9 @@ export async function GET(
     });
   }
 
-  // 1. Check in-memory cache for macro-data (Commodities & Forex via Yahoo Finance, 0 Twelve Data credits)
+  // 1. Check in-memory cache for macro-data (Commodities & Forex: 15-minute interval = 900,000ms)
   if (pathStr === 'macro-data') {
-    const isCommOpen = isMarketOpen('COMMODITY');
-    // Active session: 30m TTL (only 30 requests/hr across 15 symbols, ~1.5% of Yahoo limit). Weekend closed: 60m TTL.
-    const ttl = isCommOpen ? (30 * 60 * 1000) : (60 * 60 * 1000);
+    const ttl = 15 * 60 * 1000;
 
     const cachedMacro = getCached(cacheKey, ttl);
     if (cachedMacro) {
@@ -1075,9 +1069,9 @@ export async function GET(
     }
   }
 
-  // 3. Check in-memory cache and fetch crypto-prices (15s TTL)
+  // 3. Check in-memory cache and fetch crypto-prices (15-minute interval = 900,000ms)
   if (pathStr === 'crypto-prices') {
-    const cachedCrypto = getCached(cacheKey, 15 * 1000);
+    const cachedCrypto = getCached(cacheKey, 15 * 60 * 1000);
     if (cachedCrypto && Array.isArray(cachedCrypto) && cachedCrypto.length > 0) {
       return NextResponse.json(cachedCrypto, {
         status: 200,

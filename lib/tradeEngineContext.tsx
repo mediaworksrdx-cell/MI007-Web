@@ -330,7 +330,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     }
   }, []);
 
-  // 2. Background Macro & Crypto Polling (every 8 seconds)
+  // 2. Background Macro, Forex, Commodities & Crypto Polling (every 15 minutes = 900,000ms)
   const syncCryptoAndMacro = useCallback(async () => {
     try {
       const [cryptos, macros] = await Promise.all([
@@ -508,10 +508,10 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     syncLivePrices();
     syncCryptoAndMacro();
 
-    // Fast 2-second polling for live equities & indices
+    // Fast 2-second polling strictly for live Indian equities & indices (Zerodha Kite)
     const pricesInterval = setInterval(syncLivePrices, 2000);
-    // 8-second cadence for crypto and macro benchmarks
-    const macroInterval = setInterval(syncCryptoAndMacro, 8000);
+    // User-configured 15-minute polling cadence for US stocks, crypto, commodities, and forex (15 * 60 * 1000 = 900,000ms)
+    const macroInterval = setInterval(syncCryptoAndMacro, 15 * 60 * 1000);
 
     // Refresh immediately when window regain visibility
     const handleVisibility = () => {
