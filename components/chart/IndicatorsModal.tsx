@@ -31,7 +31,6 @@ const INDICATORS_LIST: IndicatorMeta[] = [
   { type: 'SUPERTREND', label: 'Supertrend', category: 'TREND', isOverlay: true, desc: 'Trend-following overlay using ATR bands for directional breakout trailing stops' },
   { type: 'ICHIMOKU', label: 'Ichimoku Cloud (Kinko Hyo)', category: 'TREND', isOverlay: true, desc: 'Comprehensive Japanese equilibrium system (Tenkan, Kijun, Senkou Spans A & B)' },
   { type: 'PARABOLIC_SAR', label: 'Parabolic SAR (Stop & Reverse)', category: 'TREND', isOverlay: true, desc: 'Trailing acceleration stop dots signaling reversal pivot targets' },
-  { type: 'PIVOT_POINTS', label: 'Pivot Points (Daily / Swing)', category: 'TREND', isOverlay: true, desc: 'Predictive mathematical support (S1, S2) and resistance (R1, R2) reference levels' },
   { type: 'DONCHIAN', label: 'Donchian Channels', category: 'TREND', isOverlay: true, desc: 'Breakout envelopes plotting highest high and lowest low over N periods' },
   { type: 'HMA', label: 'Hull Moving Average (HMA)', category: 'TREND', isOverlay: true, desc: 'Fast, smooth moving average virtually eliminating lag while preserving smoothing' },
 

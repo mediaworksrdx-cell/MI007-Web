@@ -17,6 +17,7 @@ export type DrawingToolType =
   | 'FIBONACCI_EXTENSION'
   | 'FIB_CHANNEL'
   | 'FIB_TIME_ZONE'
+  | 'PIVOT_POINTS'
   | 'GANN_BOX'
   | 'GANN_FAN'
   // Geometric Shapes

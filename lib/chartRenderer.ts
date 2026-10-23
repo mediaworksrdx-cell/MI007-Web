@@ -2296,6 +2296,57 @@ export function renderChart(
               ctx.fillText(`${ext.label}: ${formatPrice(targetP)}`, minX + 6 * dpr, ly - 3 * dpr);
             }
           }
+        } else if (item.tool === 'PIVOT_POINTS') {
+          const high = Math.max(p1.price, p2.price);
+          const low = Math.min(p1.price, p2.price);
+          const range = high - low;
+          const pivot = (high + low) / 2;
+
+          const minX = Math.min(x1, x2);
+          const maxX = Math.max(Math.max(x1, x2), chartW);
+
+          // Standard Fibonacci Pivot Levels (P, R1, R2, R3, S1, S2, S3)
+          const pivotLevels = [
+            { id: 'R3', lvl: pivot + 1.000 * range, color: '#EF4444', label: 'R3 (1.000)' },
+            { id: 'R2', lvl: pivot + 0.618 * range, color: '#F87171', label: 'R2 (0.618)' },
+            { id: 'R1', lvl: pivot + 0.382 * range, color: '#FB923C', label: 'R1 (0.382)' },
+            { id: 'P',  lvl: pivot,                 color: '#EAB308', label: 'P (Pivot)' },
+            { id: 'S1', lvl: pivot - 0.382 * range, color: '#34D399', label: 'S1 (0.382)' },
+            { id: 'S2', lvl: pivot - 0.618 * range, color: '#10B981', label: 'S2 (0.618)' },
+            { id: 'S3', lvl: pivot - 1.000 * range, color: '#059669', label: 'S3 (1.000)' },
+          ];
+
+          // Soft central equilibrium band between R1 and S1
+          const yR1 = priceToY(pivot + 0.382 * range);
+          const yS1 = priceToY(pivot - 0.382 * range);
+          ctx.save();
+          ctx.fillStyle = 'rgba(234, 179, 8, 0.07)';
+          ctx.fillRect(minX, Math.min(yR1, yS1), maxX - minX, Math.abs(yS1 - yR1));
+          ctx.restore();
+
+          for (const pl of pivotLevels) {
+            if (pl.lvl >= pMin && pl.lvl <= pMax) {
+              const ly = priceToY(pl.lvl);
+              ctx.save();
+              ctx.strokeStyle = pl.color;
+              ctx.lineWidth = pl.id === 'P' ? 1.8 * dpr : 1 * dpr;
+              ctx.setLineDash(pl.id === 'P' ? [] : [4 * dpr, 3 * dpr]);
+              ctx.beginPath();
+              ctx.moveTo(minX, ly);
+              ctx.lineTo(maxX, ly);
+              ctx.stroke();
+              ctx.restore();
+
+              // Level label badge
+              ctx.save();
+              ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+              ctx.fillStyle = pl.color;
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'bottom';
+              ctx.fillText(`${pl.label}: ${formatPrice(pl.lvl)}`, minX + 6 * dpr, ly - 3 * dpr);
+              ctx.restore();
+            }
+          }
         } else if (item.tool === 'MEASURE') {
           const deltaPrice = p2.price - p1.price;
           const pct = p1.price !== 0 ? (deltaPrice / p1.price) * 100 : 0;

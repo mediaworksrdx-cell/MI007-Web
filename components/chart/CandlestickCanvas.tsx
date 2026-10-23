@@ -117,6 +117,7 @@ export function getDefaultToolColor(tool: DrawingToolType): string {
     case 'FIBONACCI_EXTENSION': return '#B45309';
     case 'FIB_CHANNEL': return '#F59E0B';
     case 'FIB_TIME_ZONE': return '#84CC16';
+    case 'PIVOT_POINTS': return '#EAB308';
     case 'GANN_BOX': return '#14B8A6';
     case 'GANN_FAN': return '#06B6D4';
     case 'HEAD_AND_SHOULDERS': return '#EC4899';
@@ -624,6 +625,23 @@ export function CandlestickCanvas({
           for (const el of extLvls) {
             const targetP = p3.rawPrice + baseRange * el;
             const ly = chartH * (1 - (targetP - pMin) / pRange);
+            if (Math.abs(y - ly) <= 18) return d;
+          }
+        }
+      }
+
+      // 4.5 Pivot Points (Fibonacci)
+      if (d.tool === 'PIVOT_POINTS' && pts.length >= 2) {
+        const p2 = pts[1];
+        const minX = Math.min(p1.x, p2.x);
+        if (x >= minX - 18) {
+          const high = Math.max(p1.rawPrice, p2.rawPrice);
+          const low = Math.min(p1.rawPrice, p2.rawPrice);
+          const rng = high - low;
+          const p = (high + low) / 2;
+          const pivotLvls = [p + rng, p + 0.618 * rng, p + 0.382 * rng, p, p - 0.382 * rng, p - 0.618 * rng, p - rng];
+          for (const pl of pivotLvls) {
+            const ly = chartH * (1 - (pl - pMin) / pRange);
             if (Math.abs(y - ly) <= 18) return d;
           }
         }

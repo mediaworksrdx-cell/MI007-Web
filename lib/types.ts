@@ -22,7 +22,7 @@ export type IndicatorType =
 
 export const OVERLAY_TYPES: IndicatorType[] = [
   'SMA', 'EMA', 'BOLLINGER_BANDS', 'VWAP', 'SUPERTREND', 'ICHIMOKU', 'PARABOLIC_SAR',
-  'EMA_RIBBON', 'PIVOT_POINTS', 'DONCHIAN', 'HMA',
+  'EMA_RIBBON', 'DONCHIAN', 'HMA',
 ];
 
 export const PANEL_TYPES: IndicatorType[] = [
