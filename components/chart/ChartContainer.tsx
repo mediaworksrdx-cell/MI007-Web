@@ -1310,9 +1310,8 @@ export function ChartContainer({
             onPointerDown={(e) => e.stopPropagation()}
           >
             {/* Synthetix Analytics Brand Pill */}
-            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white/95 border border-slate-200 text-slate-800 font-mono text-[11px] font-black tracking-wider select-none shadow-xs pointer-events-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Synthetix Analytics</span>
+            <div className="flex items-center px-2.5 py-0.5 rounded-md bg-white/95 border border-slate-200 text-slate-800 font-mono text-[11px] font-black tracking-wider select-none shadow-xs pointer-events-none">
+              <span>SYNTHETIX ANALYTICS</span>
             </div>
 
             {indicatorConfigs.map(cfg => {

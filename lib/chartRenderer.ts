@@ -1289,7 +1289,7 @@ export function renderChart(
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillStyle = 'rgba(100, 116, 139, 0.35)';
-  ctx.fillText('Synthetix Analytics', 14 * dpr, 12 * dpr);
+  ctx.fillText('SYNTHETIX ANALYTICS', 14 * dpr, 12 * dpr);
   ctx.restore();
 
   // ── LAYER 2: Volume Profile (VPVR) ────────────────────────────────────

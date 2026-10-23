@@ -466,7 +466,7 @@ export function TechnicalAnalysisView({
               textAnchor="start"
               opacity="0.45"
             >
-              Synthetix Analytics
+              SYNTHETIX ANALYTICS
             </text>
           </svg>
         </div>

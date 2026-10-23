@@ -664,7 +664,7 @@ export function PayoffDiagram({
                 textAnchor="start"
                 opacity="0.6"
               >
-                Synthetix Analytics
+                SYNTHETIX ANALYTICS
               </text>
 
               {/* Interactive Crosshair & Tooltip */}
