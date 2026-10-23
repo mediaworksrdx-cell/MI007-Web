@@ -88,14 +88,6 @@ export function AcademyWorkspace() {
             ⚡ Training & Signals
           </button>
         </div>
-
-        {/* Active Region Pill */}
-        <div className="flex items-center gap-2 font-mono text-[11px]">
-          <span className="opacity-60 uppercase">Region:</span>
-          <span className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] font-bold text-emerald-400">
-            {activeMarketCode === 'IN' ? '🇮🇳 India (NSE/BSE)' : activeMarketCode === 'UAE' ? '🇦🇪 UAE (DFM/ADX)' : '🇺🇸 USA (NYSE/NASDAQ)'}
-          </span>
-        </div>
       </div>
 
       {/* Primary Tab Content (preserve DOM elements to prevent layout jumps and maintain chat state) */}

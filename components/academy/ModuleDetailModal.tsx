@@ -37,11 +37,11 @@ export function ModuleDetailModal({
   // 1. Simulation Engine State
   const [simPnl, setSimPnl] = useState(12450.0);
   const [simStep, setSimStep] = useState(1);
-  const [simMessage, setSimMessage] = useState('NIFTY 50 Expiry Day Gamma Squeeze Replay. Position: Bull Call Spread 23800/23950 CE.');
-  const [simSpot, setSimSpot] = useState(23824.50);
+  const [simMessage, setSimMessage] = useState('NIFTY 50 Expiry Day Gamma Squeeze Replay. Position: Bull Call Spread 22700/22850 CE.');
+  const [simSpot, setSimSpot] = useState(22687.65);
   const [simGreeks, setSimGreeks] = useState<Greeks>({ delta: 0.28, gamma: 0.014, theta: -380.0, vega: 240.0 });
   const [simHistory, setSimHistory] = useState<string[]>([
-    'Scenario mounted: Spot ₹23,824.50. Position: Bull Call Spread 23800/23950 CE.',
+    'Scenario mounted: Spot ₹22,687.65. Position: Bull Call Spread 22700/22850 CE.',
   ]);
 
   // 2. NIFTY 50 Dynamics Engine State
@@ -115,10 +115,10 @@ export function ModuleDetailModal({
     } else if (action === 'RESET') {
       setSimStep(1);
       setSimPnl(12450.0);
-      setSimSpot(23824.50);
+      setSimSpot(22687.65);
       setSimGreeks({ delta: 0.28, gamma: 0.014, theta: -380.0, vega: 240.0 });
       setSimMessage('Simulation scenario reset to tick 1.');
-      setSimHistory(['Scenario reset: Spot ₹23,824.50. Position: Bull Call Spread 23800/23950 CE.']);
+      setSimHistory(['Scenario reset: Spot ₹22,687.65. Position: Bull Call Spread 22700/22850 CE.']);
     } else {
       // Advance Tick
       const drift = Math.random() * 24 - 10;

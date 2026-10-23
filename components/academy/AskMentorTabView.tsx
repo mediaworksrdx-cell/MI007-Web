@@ -9,7 +9,7 @@ interface AskMentorTabProps {
   niftySpot?: number;
 }
 
-export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMentorTabProps) {
+export function AskMentorTabView({ initialQuery, niftySpot = 22687.65 }: AskMentorTabProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -190,10 +190,6 @@ export function AskMentorTabView({ initialQuery, niftySpot = 23824.50 }: AskMent
           </span>
           <span className="opacity-30">·</span>
           <span className="text-[10px] text-emerald-400/90 font-medium">Online</span>
-        </div>
-        <div className="text-right text-[11px]">
-          <span className="opacity-60">NIFTY: </span>
-          <span className="font-bold text-emerald-400">₹{niftySpot.toLocaleString()}</span>
         </div>
       </div>
 
