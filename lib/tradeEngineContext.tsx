@@ -9,6 +9,7 @@ import {
   fetchLivePrices,
   fetchCryptoPrices,
   fetchMacroData,
+  fetchQuote,
   normalizeSymbolKey,
 } from './tradeEngineClient';
 
@@ -120,7 +121,15 @@ const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number;
   { symbol: 'ZOMATO', price: 248.50, change: 4.20, changePct: 1.72 },
   { symbol: 'ETERNAL', price: 248.50, change: 4.20, changePct: 1.72 },
   { symbol: 'LTIM', price: 5420.00, change: 82.50, changePct: 1.55 },
-  { symbol: 'MIDCPNIFTY', price: 12808.30, change: -42.10, changePct: -0.33 },
+  { symbol: 'MIDCPNIFTY', price: 12958.45, change: 42.10, changePct: 0.33 },
+  { symbol: 'BANKEX', price: 61083.33, change: -682.67, changePct: -1.10 },
+  { symbol: 'JIOFIN', price: 203.59, change: -12.66, changePct: -5.85 },
+  { symbol: 'TATASTEEL', price: 151.80, change: 1.20, changePct: 0.80 },
+  { symbol: 'ADANIENT', price: 2515.00, change: 35.40, changePct: 1.43 },
+  { symbol: 'HAL', price: 4795.80, change: -193.20, changePct: -3.87 },
+  { symbol: 'IRFC', price: 135.40, change: -1.10, changePct: -0.81 },
+  { symbol: 'VEDL', price: 485.60, change: 6.20, changePct: 1.29 },
+  { symbol: 'BEL', price: 295.40, change: 3.80, changePct: 1.30 },
   { symbol: 'LT', price: 3638.30, change: 28.50, changePct: 0.79 },
   { symbol: 'ICICIBANK', price: 1398.50, change: 14.20, changePct: 1.03 },
   { symbol: 'BHARTIARTL', price: 1895.00, change: 12.20, changePct: 0.65 },
@@ -634,22 +643,64 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     };
   }, []);
 
+  const pendingQuoteFetches = useRef<Set<string>>(new Set());
+
   const getSymbolPrice = useCallback((symbol: string): LiveSymbolData | undefined => {
-    if (storeRef.current) {
-      return storeRef.current.getSymbol(symbol);
-    }
     if (!symbol) return undefined;
     const cleanKey = normalizeSymbolKey(symbol);
     const upper = symbol.toUpperCase().trim();
-    return (
-      livePrices.get(cleanKey) ||
-      livePrices.get(symbol) ||
-      livePrices.get(upper) ||
-      livePrices.get(`${cleanKey}.NS`) ||
-      livePrices.get(`${upper}.NS`) ||
-      livePrices.get(symbol.replace(/\s+/g, '')) ||
-      livePrices.get(symbol.replace(/\.NS$/, ''))
-    );
+
+    const existing = storeRef.current
+      ? storeRef.current.getSymbol(symbol)
+      : (
+          livePrices.get(cleanKey) ||
+          livePrices.get(symbol) ||
+          livePrices.get(upper) ||
+          livePrices.get(`${cleanKey}.NS`) ||
+          livePrices.get(`${upper}.NS`) ||
+          livePrices.get(symbol.replace(/\s+/g, '')) ||
+          livePrices.get(symbol.replace(/\.NS$/, ''))
+        );
+
+    if (existing) return existing;
+
+    // Asynchronously fetch quote for any newly added stock or index not in initial streaming set
+    if (!pendingQuoteFetches.current.has(cleanKey)) {
+      pendingQuoteFetches.current.add(cleanKey);
+      fetchQuote(cleanKey)
+        .then((q) => {
+          if (q && q.ltp > 0) {
+            const entry: LiveSymbolData = {
+              symbol: q.symbol,
+              price: q.ltp,
+              change: q.change,
+              changePct: q.changePercent,
+              timestamp: q.timestamp || Date.now(),
+              tickDirection: 'neutral',
+              lastUpdated: Date.now(),
+            };
+            storeRef.current?.updateBatch((prev) => {
+              const next = new Map(prev);
+              const changedKeys = new Set<string>();
+              changedKeys.add(cleanKey);
+              next.set(cleanKey, entry);
+              next.set(q.symbol, entry);
+              next.set(q.symbol.toUpperCase(), entry);
+              next.set(`${cleanKey}.NS`, entry);
+              return { next, changedKeys };
+            });
+            if (storeRef.current) {
+              setLivePrices(storeRef.current.getMap());
+            }
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          setTimeout(() => pendingQuoteFetches.current.delete(cleanKey), 10000);
+        });
+    }
+
+    return undefined;
   }, [livePrices]);
 
   const subscribeToTicks = useCallback((callback: (tick: TradeEngineTick) => void) => {

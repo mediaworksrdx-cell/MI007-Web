@@ -74,6 +74,27 @@ const DEFAULT_COLOR_PROGRESSIONS: Partial<Record<IndicatorType, string[]>> = {
 function getExpectedPrice(market: MarketType, symbol: string): number {
   try {
     const symClean = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
+    const INDEX_BASES: Record<string, number> = {
+      MIDCPNIFTY: 12950,
+      NIFTYMIDSELECT: 12950,
+      BANKEX: 61080,
+      BSEBANKEX: 61080,
+      NIFTY: 22880,
+      NIFTY50: 22880,
+      BANKNIFTY: 55480,
+      FINNIFTY: 24840,
+      SENSEX: 73850,
+      INDIAVIX: 14.5,
+      SPX: 7690,
+      NDX: 29529,
+      DJI: 51966,
+      VIX: 18.4,
+      QQQ: 718,
+      DFMGI: 5820,
+      ADXGI: 9340,
+    };
+    if (INDEX_BASES[symClean]) return INDEX_BASES[symClean];
+
     const zd = findZerodhaStockBySymbol(symClean);
     if (zd && zd.lastPrice && zd.lastPrice > 0) return zd.lastPrice;
 
@@ -430,7 +451,9 @@ export function ChartContainer({
 
             setCandles(cleanMerged);
             const lastC = cleanMerged[cleanMerged.length - 1];
-            setCurrentPrice(prev => (prev && prev > 0 ? prev : lastC?.close));
+            if (lastC?.close) {
+              setCurrentPrice(lastC.close);
+            }
             setIsLiveFromEngine(true);
             saveStoredCandles(selectedSymbol, timeframe, cleanMerged);
           } else if (cleanCached.length === 0) {
@@ -594,8 +617,8 @@ export function ChartContainer({
     ? rawDisplayPrice
     : expectedBenchmarkPrice;
   const displayPrice = safeDisplayPrice;
-  const displayChange = livePriceData?.change ?? quote.change;
-  const displayChangePct = livePriceData?.changePct ?? quote.changePct;
+  const displayChange = livePriceData?.change ?? (candles.length >= 2 ? +(candles[candles.length - 1].close - candles[candles.length - 2].close).toFixed(2) : quote.change);
+  const displayChangePct = livePriceData?.changePct ?? (candles.length >= 2 && candles[candles.length - 2].close > 0 ? +(((candles[candles.length - 1].close - candles[candles.length - 2].close) / candles[candles.length - 2].close) * 100).toFixed(2) : quote.changePct);
 
   // Synchronize terminal candle with live tick price for continuous edge-to-edge tracking
   const activeCandles = useMemo(() => {

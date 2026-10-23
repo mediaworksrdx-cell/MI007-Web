@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isMarketOpen } from '@/lib/marketHours';
 import { fetchLiveMarketNews } from '@/lib/terminal/marketNewsData';
 import { fetchLiveEconomicCalendar } from '@/lib/terminal/economicCalendarData';
+import { findZerodhaStockBySymbol } from '@/lib/screener/zerodhaStocks';
 import {
   fetchFnoSpotQuote,
   fetchFnoOptionChain,
@@ -541,9 +542,69 @@ async function getActiveUsPrices(): Promise<any[]> {
   return getUsLiveBenchmarks();
 }
 
+// Fast in-memory cache for live quotes fetched on-demand or returned via chart calls
+const CACHED_YAHOO_QUOTES = new Map<string, any>();
+
+function cacheYahooQuote(rawSymbol: string, meta: any) {
+  if (!meta?.regularMarketPrice || meta.regularMarketPrice <= 0) return;
+  const price = meta.regularMarketPrice;
+  const prev = meta.chartPreviousClose || price;
+  const chg = +(price - prev).toFixed(2);
+  const pct = +(((price - prev) / Math.max(0.001, prev)) * 100).toFixed(2);
+  const clean = rawSymbol.toUpperCase().replace(/[\s\/-]+/g, '').replace(/\.NS$/, '').replace(/\.BO$/, '');
+  const now = Date.now();
+  const token = 960000 + (Math.abs(clean.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0)) % 30000);
+  const item = {
+    instrumentToken: token,
+    symbol: clean,
+    ltp: +price.toFixed(2),
+    change: chg,
+    changePercent: pct,
+    timestamp: meta.regularMarketTime ? meta.regularMarketTime * 1000 : now,
+  };
+  CACHED_YAHOO_QUOTES.set(clean, item);
+  CACHED_YAHOO_QUOTES.set(rawSymbol.toUpperCase(), item);
+  if (meta.symbol) {
+    CACHED_YAHOO_QUOTES.set(meta.symbol.toUpperCase(), item);
+    CACHED_YAHOO_QUOTES.set(meta.symbol.toUpperCase().replace(/\.NS$/, ''), item);
+  }
+}
+
+async function fetchSingleYahooQuote(ticker: string, symbol: string): Promise<any | null> {
+  const hosts = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
+  for (const host of hosts) {
+    try {
+      const res = await fetch(
+        `https://${host}/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`,
+        {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'application/json',
+          },
+          cache: 'no-store',
+        }
+      );
+      if (res.status === 429) continue;
+      if (!res.ok) continue;
+
+      const json = await res.json();
+      const meta = json?.chart?.result?.[0]?.meta;
+      if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+        cacheYahooQuote(symbol, meta);
+        const clean = symbol.toUpperCase().replace(/[\s\/-]+/g, '').replace(/\.NS$/, '').replace(/\.BO$/, '');
+        return CACHED_YAHOO_QUOTES.get(clean) || null;
+      }
+    } catch {
+      // Continue to next host
+    }
+  }
+  return null;
+}
+
 function mapSymbolToYahooTicker(symbol: string): string | null {
   if (!symbol) return null;
-  const clean = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
+  const raw = symbol.trim().toUpperCase();
+  const clean = raw.replace(/[\s\/-]+/g, '');
 
   // 1. Forex
   const FOREX_MAP: Record<string, string> = {
@@ -611,29 +672,76 @@ function mapSymbolToYahooTicker(symbol: string): string | null {
     QQQ: 'QQQ',
     NIFTY: '^NSEI',
     'NIFTY 50': '^NSEI',
+    NIFTY50: '^NSEI',
     BANKNIFTY: '^NSEBANK',
     'BANK NIFTY': '^NSEBANK',
+    NIFTYBANK: '^NSEBANK',
     SENSEX: '^BSESN',
     'BSE SENSEX': '^BSESN',
     FINNIFTY: 'NIFTY_FIN_SERVICE.NS',
+    'FIN NIFTY': 'NIFTY_FIN_SERVICE.NS',
+    MIDCPNIFTY: 'NIFTY_MID_SELECT.NS',
+    NIFTYMIDSELECT: 'NIFTY_MID_SELECT.NS',
+    'NIFTY MIDCAP SELECT': 'NIFTY_MID_SELECT.NS',
+    BANKEX: 'BSE-BANK.BO',
+    'BSE BANKEX': 'BSE-BANK.BO',
+    INDIAVIX: '^INDIAVIX',
+    'INDIA VIX': '^INDIAVIX',
+    NIFTYIT: '^CNXIT',
+    'NIFTY IT': '^CNXIT',
+    NIFTYAUTO: '^CNXAUTO',
+    'NIFTY AUTO': '^CNXAUTO',
+    NIFTYPHARMA: '^CNXPHARMA',
+    'NIFTY PHARMA': '^CNXPHARMA',
+    NIFTYFMCG: '^CNXFMCG',
+    'NIFTY FMCG': '^CNXFMCG',
+    NIFTYMETAL: '^CNXMETAL',
+    'NIFTY METAL': '^CNXMETAL',
+    NIFTYREALTY: '^CNXREALTY',
+    'NIFTY REALTY': '^CNXREALTY',
+    NIFTYENERGY: '^CNXENERGY',
+    'NIFTY ENERGY': '^CNXENERGY',
+    NIFTYINFRA: '^CNXINFRA',
+    'NIFTY INFRA': '^CNXINFRA',
+    DFMGI: 'DFMGI.AE',
+    ADXGI: 'ADXGI.AE',
+    FTSEADX15: 'FADX15.AE',
+    'FTSE ADX 15': 'FADX15.AE',
+    FADX15: 'FADX15.AE',
   };
-  if (INDEX_MAP[clean] || INDEX_MAP[symbol.toUpperCase()]) {
-    return INDEX_MAP[clean] || INDEX_MAP[symbol.toUpperCase()];
+  if (INDEX_MAP[clean] || INDEX_MAP[raw]) {
+    return INDEX_MAP[clean] || INDEX_MAP[raw];
   }
 
-  // 5. US Stocks
-  const US_STOCKS = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'GOOG', 'AMD', 'NFLX', 'INTC'];
+  // 5. Explicit exchange suffixes or prefixes
+  if (raw.endsWith('.NS') || raw.endsWith('.BO') || raw.endsWith('.AE')) {
+    return raw;
+  }
+  if (raw.startsWith('NSE:')) return `${raw.slice(4)}.NS`;
+  if (raw.startsWith('BSE:')) return `${raw.slice(4)}.BO`;
+
+  // 6. US Stocks
+  const US_STOCKS = [
+    'NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'GOOG', 'AMD', 'NFLX', 'INTC',
+    'BRK.B', 'JNJ', 'JPM', 'V', 'PG', 'XOM', 'WMT', 'MA', 'HD', 'LLY', 'BAC', 'KO', 'PEP',
+    'AVGO', 'COST', 'TMO', 'CSCO', 'DIS', 'ABT', 'VZ', 'ADBE', 'NKE', 'CRM', 'CMCSA', 'PFE',
+    'UNH', 'PLTR', 'UBER', 'COIN', 'SHOP', 'SQ', 'ROKU', 'PYPL', 'SNOW'
+  ];
   if (US_STOCKS.includes(clean)) return clean;
 
-  // 6. Indian Stocks (NSE)
-  const INDIAN_STOCKS = [
-    'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'BEL', 'SBIN',
-    'TATAMOTORS', 'LT', 'BHARTIARTL', 'KOTAKBANK', 'AXISBANK', 'WIPRO',
-    'BAJFINANCE', 'MARUTI', 'HCLTECH', 'ASIANPAINT', 'SUNPHARMA', 'TITAN'
-  ];
-  if (INDIAN_STOCKS.includes(clean)) return `${clean}.NS`;
+  // 7. Zerodha Kite Catalog Lookup (3,800+ NSE/BSE equities)
+  const zd = findZerodhaStockBySymbol(clean);
+  if (zd) {
+    if (zd.exchange === 'BSE') return `${zd.symbol}.BO`;
+    return `${zd.symbol}.NS`;
+  }
 
-  if (/^[A-Z]{1,5}$/.test(clean)) return clean;
+  // 8. General Indian Stock Fallback (All NSE stocks have .NS in Yahoo Finance)
+  const cleanTicker = clean.replace(/-(EQ|BE|ST|BZ|SM)$/, '');
+  if (/^[A-Z0-9&]{1,15}$/.test(cleanTicker)) {
+    return `${cleanTicker}.NS`;
+  }
+
   return null;
 }
 
@@ -669,8 +777,14 @@ function getSymbolBaselinePrice(symbol: string): number {
     VIX: 18.44, RUT: 2721.37, QQQ: 718.36, NVDA: 217.09, AAPL: 342.94, MSFT: 533.52, TSLA: 368.06, AMZN: 262.45,
     META: 705.44, GOOGL: 344.18, AMD: 168.50, NFLX: 685.00, INTC: 28.40,
     NIFTY: 22888.95, 'NIFTY 50': 22888.95, BANKNIFTY: 55488.10, 'BANK NIFTY': 55488.10, SENSEX: 73852.90,
-    FINNIFTY: 25480.00, RELIANCE: 1211.20, TCS: 2465.00, HDFCBANK: 728.85, INFY: 1161.20, ICICIBANK: 1383.00,
-    ITC: 485.50, SBIN: 865.40, TATAMOTORS: 283.70, LT: 3749.10,
+    FINNIFTY: 25480.00, MIDCPNIFTY: 12958.00, BANKEX: 61083.00, INDIAVIX: 14.50,
+    DFMGI: 5820.00, ADXGI: 9340.00, 'FTSE ADX 15': 8920.00,
+    RELIANCE: 1211.20, TCS: 2542.00, HDFCBANK: 694.00, INFY: 1158.00, ICICIBANK: 1388.00,
+    ITC: 258.00, SBIN: 952.00, TATAMOTORS: 261.00, LT: 3606.00, BHARTIARTL: 1865.00,
+    JIOFIN: 204.00, TATASTEEL: 152.00, ADANIENT: 2520.00, ZOMATO: 262.00, HAL: 4795.00,
+    IRFC: 135.00, VEDL: 485.00, BEL: 295.00, SUZLON: 68.00, PAYTM: 740.00,
+    KOTAKBANK: 1780.00, AXISBANK: 1140.00, WIPRO: 490.00, BAJFINANCE: 6900.00,
+    MARUTI: 11800.00, HCLTECH: 1820.00, ASIANPAINT: 2450.00, SUNPHARMA: 1850.00, TITAN: 3450.00,
     GOLD: 4156.80, XAU: 4156.80, XAUUSD: 4156.80, SILVER: 57.16, XAG: 57.16, XAGUSD: 57.16,
     CRUDEOIL: 74.20, BRENT: 74.20, WTI: 70.80, NATGAS: 2.85, COPPER: 4.38, PLATINUM: 1024.50,
     EURUSD: 1.1232, GBPUSD: 1.2980, USDJPY: 152.40, USDINR: 84.08, USDCAD: 1.4092, AUDCAD: 0.9838,
@@ -678,7 +792,14 @@ function getSymbolBaselinePrice(symbol: string): number {
     BTC: 82010.0, ETH: 2403.0, SOL: 104.37, BNB: 727.0, DOGE: 0.079, SHIB: 0.0000185, XRP: 1.31,
     ADA: 0.218, AVAX: 9.60, DOT: 1.16, LINK: 12.09, MATIC: 0.126, POL: 0.126,
   };
-  return BASES[clean] || BASES[symbol.toUpperCase()] || 100.0;
+  if (BASES[clean] || BASES[symbol.toUpperCase()]) {
+    return BASES[clean] || BASES[symbol.toUpperCase()];
+  }
+
+  const zd = findZerodhaStockBySymbol(clean);
+  if (zd && zd.lastPrice && zd.lastPrice > 0) return zd.lastPrice;
+
+  return 250.0;
 }
 
 function generateFallbackCandles(symbol: string, timeframe: string, basePrice: number, count: number = 200): any[] {
@@ -738,6 +859,10 @@ async function fetchYahooHistoricalCandles(symbol: string, timeframe: string): P
       const json = await res.json();
       const result = json?.chart?.result?.[0];
       if (!result) continue;
+
+      if (result.meta) {
+        cacheYahooQuote(symbol, result.meta);
+      }
 
       const timestamps = result.timestamp;
       const quote = result.indicators?.quote?.[0];
@@ -855,6 +980,60 @@ export async function GET(
       headers: {
         'Cache-Control': 'no-store, max-age=0',
         'X-Fno-Engine': 'TradeEngine-TwelveData-Isolated',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  }
+
+  // ── Dedicated Real-Time Quote Endpoint for Any Single Stock or Index ──
+  if (pathStr === 'quote' || pathStr === 'quotes') {
+    const symbol = request.nextUrl.searchParams.get('symbol') || '';
+    if (!symbol) {
+      return NextResponse.json({ error: 'Symbol parameter required' }, { status: 400 });
+    }
+
+    const clean = symbol.toUpperCase().replace(/[\s\/-]+/g, '').replace(/\.NS$/, '').replace(/\.BO$/, '');
+    const cached = CACHED_YAHOO_QUOTES.get(clean) || CACHED_YAHOO_QUOTES.get(symbol.toUpperCase());
+    if (cached && (Date.now() - cached.timestamp < 15000)) {
+      return NextResponse.json(cached, {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, max-age=0',
+          'X-Cache': 'HIT-YAHOO',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    const ticker = mapSymbolToYahooTicker(symbol);
+    if (ticker) {
+      const fetched = await fetchSingleYahooQuote(ticker, symbol);
+      if (fetched) {
+        return NextResponse.json(fetched, {
+          status: 200,
+          headers: {
+            'Cache-Control': 'no-store, max-age=0',
+            'X-Cache': 'MISS-YAHOO',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      }
+    }
+
+    const baseline = getSymbolBaselinePrice(symbol);
+    const fallbackQuote = {
+      instrumentToken: 960000 + (Math.abs(clean.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0)) % 30000),
+      symbol: clean,
+      ltp: baseline,
+      change: 0,
+      changePercent: 0,
+      timestamp: Date.now(),
+    };
+    return NextResponse.json(fallbackQuote, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+        'X-Cache': 'FALLBACK',
         'Access-Control-Allow-Origin': '*',
       },
     });
@@ -1063,8 +1242,26 @@ export async function GET(
             });
           }
         }
+        // Check for custom symbols requested in query params (e.g. from watchlists or search)
+        const symbolsParam = request.nextUrl.searchParams.get('symbols');
+        if (symbolsParam) {
+          const reqSyms = symbolsParam.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+          const toFetch = reqSyms.filter(s => {
+            const clean = s.replace(/\.NS$/, '').replace(/\.BO$/, '');
+            const c = CACHED_YAHOO_QUOTES.get(clean);
+            return !c || (Date.now() - c.timestamp > 15000);
+          });
+          if (toFetch.length > 0) {
+            await Promise.all(toFetch.map(async (s) => {
+              const ticker = mapSymbolToYahooTicker(s);
+              if (ticker) await fetchSingleYahooQuote(ticker, s);
+            }));
+          }
+        }
+
         const usItems = await getActiveUsPrices();
-        data = [...enrichedIndian, ...usItems];
+        const extraQuotes = Array.from(CACHED_YAHOO_QUOTES.values());
+        data = [...enrichedIndian, ...usItems, ...extraQuotes];
       }
 
       // Save to server-side cache
@@ -1090,7 +1287,8 @@ export async function GET(
     if (pathStr === 'live-prices') {
       const indian = getIndianFallbackLivePrices();
       const usItems = await getActiveUsPrices();
-      return NextResponse.json([...indian, ...usItems], { status: 200 });
+      const extraQuotes = Array.from(CACHED_YAHOO_QUOTES.values());
+      return NextResponse.json([...indian, ...usItems, ...extraQuotes], { status: 200 });
     }
 
     if (pathStr === 'news') {
@@ -1121,7 +1319,8 @@ export async function GET(
     if (pathStr === 'live-prices') {
       const indian = getIndianFallbackLivePrices();
       const usItems = await getActiveUsPrices();
-      return NextResponse.json([...indian, ...usItems], { status: 200 });
+      const extraQuotes = Array.from(CACHED_YAHOO_QUOTES.values());
+      return NextResponse.json([...indian, ...usItems, ...extraQuotes], { status: 200 });
     }
 
     if (pathStr === 'news') {

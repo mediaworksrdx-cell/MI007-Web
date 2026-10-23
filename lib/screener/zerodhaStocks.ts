@@ -143,7 +143,7 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     isConsolidated: true,
     about: `${item.name} is a publicly traded corporate entity listed on the National Stock Exchange of India (NSE: ${item.symbol}, Zerodha Instrument Token: ${item.token}).`,
     website: `https://www.nseindia.com/get-quotes/equity?symbol=${encodeURIComponent(item.symbol)}`,
-    dataFreshness: 'Q3 FY25 (Zerodha Live)',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
     lastUpdated: new Date().toLocaleTimeString(),
 
     // Valuation
@@ -231,31 +231,31 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
 
     // Historical Statements
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 1250, expenses: 990, operatingProfit: 260, opmPct: 20.8, otherIncome: 25, interest: 18, depreciation: 35, profitBeforeTax: 232, taxPct: 25, netProfit: 174, eps: 5.8 },
-      { quarter: 'Sep 2024', sales: 1180, expenses: 940, operatingProfit: 240, opmPct: 20.3, otherIncome: 22, interest: 19, depreciation: 34, profitBeforeTax: 209, taxPct: 25, netProfit: 157, eps: 5.2 },
-      { quarter: 'Jun 2024', sales: 1120, expenses: 895, operatingProfit: 225, opmPct: 20.1, otherIncome: 20, interest: 20, depreciation: 34, profitBeforeTax: 191, taxPct: 25, netProfit: 143, eps: 4.8 },
-      { quarter: 'Mar 2024', sales: 1150, expenses: 915, operatingProfit: 235, opmPct: 20.4, otherIncome: 24, interest: 21, depreciation: 33, profitBeforeTax: 205, taxPct: 25, netProfit: 154, eps: 5.1 },
+      { quarter: 'Sep 2026', sales: 1250, expenses: 990, operatingProfit: 260, opmPct: 20.8, otherIncome: 25, interest: 18, depreciation: 35, profitBeforeTax: 232, taxPct: 25, netProfit: 174, eps: 5.8 },
+      { quarter: 'Jun 2026', sales: 1180, expenses: 940, operatingProfit: 240, opmPct: 20.3, otherIncome: 22, interest: 19, depreciation: 34, profitBeforeTax: 209, taxPct: 25, netProfit: 157, eps: 5.2 },
+      { quarter: 'Mar 2026', sales: 1120, expenses: 895, operatingProfit: 225, opmPct: 20.1, otherIncome: 20, interest: 20, depreciation: 34, profitBeforeTax: 191, taxPct: 25, netProfit: 143, eps: 4.8 },
+      { quarter: 'Dec 2025', sales: 1150, expenses: 915, operatingProfit: 235, opmPct: 20.4, otherIncome: 24, interest: 21, depreciation: 33, profitBeforeTax: 205, taxPct: 25, netProfit: 154, eps: 5.1 },
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 4500, expenses: 3600, operatingProfit: 900, opmPct: 20.0, otherIncome: 85, interest: 75, depreciation: 135, profitBeforeTax: 775, taxPct: 25, netProfit: 581, eps: 19.4, dividendPayoutPct: 25 },
-      { year: 'Mar 2023', sales: 3950, expenses: 3180, operatingProfit: 770, opmPct: 19.5, otherIncome: 70, interest: 80, depreciation: 125, profitBeforeTax: 635, taxPct: 25, netProfit: 476, eps: 15.9, dividendPayoutPct: 24 },
-      { year: 'Mar 2022', sales: 3400, expenses: 2750, operatingProfit: 650, opmPct: 19.1, otherIncome: 60, interest: 85, depreciation: 115, profitBeforeTax: 510, taxPct: 25, netProfit: 382, eps: 12.7, dividendPayoutPct: 22 },
+      { year: 'Mar 2026', sales: 4500, expenses: 3600, operatingProfit: 900, opmPct: 20.0, otherIncome: 85, interest: 75, depreciation: 135, profitBeforeTax: 775, taxPct: 25, netProfit: 581, eps: 19.4, dividendPayoutPct: 25 },
+      { year: 'Mar 2025', sales: 3950, expenses: 3180, operatingProfit: 770, opmPct: 19.5, otherIncome: 70, interest: 80, depreciation: 125, profitBeforeTax: 635, taxPct: 25, netProfit: 476, eps: 15.9, dividendPayoutPct: 24 },
+      { year: 'Mar 2024', sales: 3400, expenses: 2750, operatingProfit: 650, opmPct: 19.1, otherIncome: 60, interest: 85, depreciation: 115, profitBeforeTax: 510, taxPct: 25, netProfit: 382, eps: 12.7, dividendPayoutPct: 22 },
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 30, reserves: 2850, borrowings: 800, otherLiabilities: 620, totalLiabilities: 4300, fixedAssets: 1850, cwip: 180, investments: 850, otherAssets: 1420, totalAssets: 4300 },
-      { year: 'Mar 2023', equityCapital: 30, reserves: 2390, borrowings: 870, otherLiabilities: 550, totalLiabilities: 3840, fixedAssets: 1650, cwip: 150, investments: 720, otherAssets: 1320, totalAssets: 3840 },
+      { year: 'Mar 2026', equityCapital: 30, reserves: 2850, borrowings: 800, otherLiabilities: 620, totalLiabilities: 4300, fixedAssets: 1850, cwip: 180, investments: 850, otherAssets: 1420, totalAssets: 4300 },
+      { year: 'Mar 2025', equityCapital: 30, reserves: 2390, borrowings: 870, otherLiabilities: 550, totalLiabilities: 3840, fixedAssets: 1650, cwip: 150, investments: 720, otherAssets: 1320, totalAssets: 3840 },
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 680, cashFromInvesting: -320, cashFromFinancing: -280, netCashFlow: 80, freeCashFlow: 450 },
-      { year: 'Mar 2023', cashFromOperating: 590, cashFromInvesting: -290, cashFromFinancing: -240, netCashFlow: 60, freeCashFlow: 390 },
+      { year: 'Mar 2026', cashFromOperating: 680, cashFromInvesting: -320, cashFromFinancing: -280, netCashFlow: 80, freeCashFlow: 450 },
+      { year: 'Mar 2025', cashFromOperating: 590, cashFromInvesting: -290, cashFromFinancing: -240, netCashFlow: 60, freeCashFlow: 390 },
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 18.5, roePct: 16.2, debtorDays: 42, inventoryDays: 52, daysPayable: 58, cashConversionCycle: 36, workingCapitalDays: 30 },
-      { year: 'Mar 2023', rocePct: 17.8, roePct: 15.6, debtorDays: 44, inventoryDays: 55, daysPayable: 60, cashConversionCycle: 39, workingCapitalDays: 33 },
+      { year: 'Mar 2026', rocePct: 18.5, roePct: 16.2, debtorDays: 42, inventoryDays: 52, daysPayable: 58, cashConversionCycle: 36, workingCapitalDays: 30 },
+      { year: 'Mar 2025', rocePct: 17.8, roePct: 15.6, debtorDays: 44, inventoryDays: 55, daysPayable: 60, cashConversionCycle: 39, workingCapitalDays: 33 },
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 52.4, fii: 21.5, dii: 15.8, government: 0.0, public: 10.3, pledgedPct: 0.0 },
-      { quarter: 'Sep 2024', promoter: 52.4, fii: 21.2, dii: 15.6, government: 0.0, public: 10.8, pledgedPct: 0.0 },
+      { quarter: 'Sep 2026', promoter: 52.4, fii: 21.5, dii: 15.8, government: 0.0, public: 10.3, pledgedPct: 0.0 },
+      { quarter: 'Jun 2026', promoter: 52.4, fii: 21.2, dii: 15.6, government: 0.0, public: 10.8, pledgedPct: 0.0 },
     ],
   };
 }

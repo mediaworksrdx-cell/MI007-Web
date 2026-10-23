@@ -156,6 +156,20 @@ export async function fetchLivePrices(): Promise<TradeEngineLivePrice[]> {
   }
 }
 
+/** Fetch live quote for any single stock or index on-demand */
+export async function fetchQuote(symbol: string): Promise<TradeEngineLivePrice | null> {
+  if (!symbol) return null;
+  try {
+    const res = await fetch(`${getApiBaseUrl()}/quote?symbol=${encodeURIComponent(symbol)}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && typeof data.ltp === 'number') return data;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch historical & active candles for any stock, index, or crypto */
 export async function fetchCandles(
   symbol: string,

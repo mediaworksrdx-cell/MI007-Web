@@ -7,6 +7,7 @@ import { useMarket } from '@/lib/marketContext';
 import { MARKETS } from '@/lib/types';
 import { MarketRegion, CompanyFundamental, SavedScreen, CustomRatio, Watchlist, ScreeningAlert } from '@/lib/screener/types';
 import { MASTER_COMPANIES, getCompaniesByMarket, getSectors } from '@/lib/screener/data';
+import { findZerodhaStockBySymbol, generateFundamentalFromZerodha } from '@/lib/screener/zerodhaStocks';
 import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
 import {
   getSavedScreens,
@@ -398,11 +399,27 @@ export function ScreenerWorkspace() {
   // Selected Company for Analysis View
   const targetCompany = useMemo(() => {
     if (!selectedSymbol) return null;
-    return (
-      allCompaniesEnriched.find((c) => c.symbol.toUpperCase() === selectedSymbol.toUpperCase()) ||
-      null
-    );
-  }, [selectedSymbol, allCompaniesEnriched]);
+    const cleanSym = selectedSymbol.toUpperCase().trim();
+    const found = allCompaniesEnriched.find((c) => c.symbol.toUpperCase() === cleanSym);
+    if (found) return found;
+
+    // Resilient fallback for any Zerodha 3,800+ stock
+    const zd = findZerodhaStockBySymbol(cleanSym);
+    if (zd) {
+      const live = getSymbolPrice(zd.symbol);
+      const price = (live && live.price > 0) ? live.price : (zd.lastPrice || 250);
+      const generated = generateFundamentalFromZerodha(zd, price);
+      return {
+        ...generated,
+        currentPrice: price,
+        priceChangePct: live?.changePct ?? 0,
+        isLiveTick: Boolean(live),
+        lastUpdated: live ? new Date(live.lastUpdated).toLocaleTimeString() : generated.lastUpdated,
+      };
+    }
+
+    return null;
+  }, [selectedSymbol, allCompaniesEnriched, getSymbolPrice]);
 
   return (
     <div className="flex flex-col gap-6">

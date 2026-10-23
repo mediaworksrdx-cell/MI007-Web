@@ -7,7 +7,7 @@ import { Watchlist, CompanyFundamental } from '@/lib/screener/types';
 import { MASTER_COMPANIES } from '@/lib/screener/data';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { addSymbolToWatchlist } from '@/lib/screener/persistence';
-import { searchZerodhaStocks } from '@/lib/screener/zerodhaStocks';
+import { searchZerodhaStocks, findZerodhaStockBySymbol, generateFundamentalFromZerodha } from '@/lib/screener/zerodhaStocks';
 
 interface WatchlistsViewProps {
   watchlists: Watchlist[];
@@ -56,8 +56,23 @@ export function WatchlistsView({
         const found = companies.find((c) => c.symbol.toUpperCase() === clean);
         if (found) return found;
 
-        // Dynamic fallback for any Zerodha 3,800+ stock or external symbol
+        // Dynamic lookup in Zerodha 3,800+ catalog
+        const zd = findZerodhaStockBySymbol(clean);
         const live = getSymbolPrice(clean);
+        const resolvedPrice = (live && live.price > 0) ? live.price : (zd?.lastPrice && zd.lastPrice > 0 ? zd.lastPrice : 100);
+        const resolvedChangePct = (live && typeof live.changePct === 'number') ? live.changePct : 0;
+
+        if (zd) {
+          const generated = generateFundamentalFromZerodha(zd, resolvedPrice);
+          return {
+            ...generated,
+            currentPrice: resolvedPrice,
+            priceChangePct: resolvedChangePct,
+            isLiveTick: Boolean(live),
+            lastUpdated: live ? new Date(live.lastUpdated).toLocaleTimeString() : generated.lastUpdated,
+          };
+        }
+
         return {
           id: clean.toLowerCase(),
           symbol: clean,
@@ -66,8 +81,8 @@ export function WatchlistsView({
           industry: 'Diversified',
           market: activeWatchlist.market || 'INDIA',
           currencySymbol: activeWatchlist.market === 'USA' ? '$' : activeWatchlist.market === 'UAE' ? 'AED ' : '₹',
-          currentPrice: live ? live.price : 100,
-          priceChangePct: live ? live.changePct : 0,
+          currentPrice: resolvedPrice,
+          priceChangePct: resolvedChangePct,
           marketCap: 0,
           pe: 0,
           roce: 0,

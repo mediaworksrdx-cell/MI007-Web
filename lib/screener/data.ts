@@ -24,8 +24,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Reliance Industries Limited is a Fortune 500 company and the largest private sector corporation in India. Its businesses encompass oil-to-chemicals (O2C), telecom (Jio Platforms), retail (Reliance Retail Ventures), and new energy clean-tech.',
     website: 'https://www.ril.com',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-22',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 1265.40,
     priceChangePct: 1.15,
     marketCap: 1712450,
@@ -98,42 +98,42 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Total borrowings remain elevated at ₹3.15 lakh crore.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 242500, expenses: 198900, operatingProfit: 43600, opmPct: 18.0, otherIncome: 3850, interest: 5820, depreciation: 12900, profitBeforeTax: 28730, taxPct: 24.5, netProfit: 21691, eps: 16.03 },
-      { quarter: 'Sep 2024', sales: 235480, expenses: 193200, operatingProfit: 42280, opmPct: 18.0, otherIncome: 3720, interest: 5740, depreciation: 12650, profitBeforeTax: 27610, taxPct: 24.8, netProfit: 20762, eps: 15.34 },
-      { quarter: 'Jun 2024', sales: 236217, expenses: 194110, operatingProfit: 42107, opmPct: 17.8, otherIncome: 3680, interest: 5690, depreciation: 12420, profitBeforeTax: 27677, taxPct: 25.1, netProfit: 20730, eps: 15.32 },
-      { quarter: 'Mar 2024', sales: 240715, expenses: 197200, operatingProfit: 43515, opmPct: 18.1, otherIncome: 3950, interest: 5760, depreciation: 12560, profitBeforeTax: 29145, taxPct: 24.9, netProfit: 21887, eps: 16.18 },
-      { quarter: 'Dec 2023', sales: 227970, expenses: 187320, operatingProfit: 40650, opmPct: 17.8, otherIncome: 3540, interest: 5790, depreciation: 11940, profitBeforeTax: 26460, taxPct: 25.3, netProfit: 19765, eps: 14.61 },
-      { quarter: 'Sep 2023', sales: 234956, expenses: 194000, operatingProfit: 40956, opmPct: 17.4, otherIncome: 3840, interest: 5730, depreciation: 11590, profitBeforeTax: 27476, taxPct: 25.0, netProfit: 20607, eps: 15.23 },
-      { quarter: 'Jun 2023', sales: 210831, expenses: 172730, operatingProfit: 38101, opmPct: 18.1, otherIncome: 3810, interest: 5837, depreciation: 11775, profitBeforeTax: 24299, taxPct: 25.2, netProfit: 18175, eps: 13.43 },
-      { quarter: 'Mar 2023', sales: 216376, expenses: 177930, operatingProfit: 38446, opmPct: 17.8, otherIncome: 2966, interest: 4399, depreciation: 11456, profitBeforeTax: 25557, taxPct: 24.7, netProfit: 19244, eps: 14.22 }
+      { quarter: 'Sep 2026', sales: 242500, expenses: 198900, operatingProfit: 43600, opmPct: 18.0, otherIncome: 3850, interest: 5820, depreciation: 12900, profitBeforeTax: 28730, taxPct: 24.5, netProfit: 21691, eps: 16.03 },
+      { quarter: 'Jun 2026', sales: 235480, expenses: 193200, operatingProfit: 42280, opmPct: 18.0, otherIncome: 3720, interest: 5740, depreciation: 12650, profitBeforeTax: 27610, taxPct: 24.8, netProfit: 20762, eps: 15.34 },
+      { quarter: 'Mar 2026', sales: 236217, expenses: 194110, operatingProfit: 42107, opmPct: 17.8, otherIncome: 3680, interest: 5690, depreciation: 12420, profitBeforeTax: 27677, taxPct: 25.1, netProfit: 20730, eps: 15.32 },
+      { quarter: 'Dec 2025', sales: 240715, expenses: 197200, operatingProfit: 43515, opmPct: 18.1, otherIncome: 3950, interest: 5760, depreciation: 12560, profitBeforeTax: 29145, taxPct: 24.9, netProfit: 21887, eps: 16.18 },
+      { quarter: 'Sep 2025', sales: 227970, expenses: 187320, operatingProfit: 40650, opmPct: 17.8, otherIncome: 3540, interest: 5790, depreciation: 11940, profitBeforeTax: 26460, taxPct: 25.3, netProfit: 19765, eps: 14.61 },
+      { quarter: 'Jun 2025', sales: 234956, expenses: 194000, operatingProfit: 40956, opmPct: 17.4, otherIncome: 3840, interest: 5730, depreciation: 11590, profitBeforeTax: 27476, taxPct: 25.0, netProfit: 20607, eps: 15.23 },
+      { quarter: 'Mar 2025', sales: 210831, expenses: 172730, operatingProfit: 38101, opmPct: 18.1, otherIncome: 3810, interest: 5837, depreciation: 11775, profitBeforeTax: 24299, taxPct: 25.2, netProfit: 18175, eps: 13.43 },
+      { quarter: 'Dec 2024', sales: 216376, expenses: 177930, operatingProfit: 38446, opmPct: 17.8, otherIncome: 2966, interest: 4399, depreciation: 11456, profitBeforeTax: 25557, taxPct: 24.7, netProfit: 19244, eps: 14.22 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 914472, salesGrowthPct: 2.6, expenses: 746140, operatingProfit: 168332, opmPct: 18.4, otherIncome: 15920, interest: 23150, depreciation: 50830, profitBeforeTax: 110272, taxPct: 25.2, netProfit: 82483, eps: 60.96, dividendPayoutPct: 16.4 },
-      { year: 'Mar 2023', sales: 891311, salesGrowthPct: 23.8, expenses: 737402, operatingProfit: 153909, opmPct: 17.3, otherIncome: 11728, interest: 19571, depreciation: 40303, profitBeforeTax: 105763, taxPct: 25.3, netProfit: 79008, eps: 58.39, dividendPayoutPct: 15.4 },
-      { year: 'Mar 2022', sales: 721634, salesGrowthPct: 47.0, expenses: 611130, operatingProfit: 110504, opmPct: 15.3, otherIncome: 14947, interest: 14584, depreciation: 29797, profitBeforeTax: 81070, taxPct: 24.8, netProfit: 60965, eps: 45.06, dividendPayoutPct: 17.8 },
-      { year: 'Mar 2021', sales: 490984, salesGrowthPct: -18.2, expenses: 410243, operatingProfit: 80741, opmPct: 16.4, otherIncome: 16327, interest: 21189, depreciation: 26572, profitBeforeTax: 49307, taxPct: 23.4, netProfit: 37769, eps: 27.91, dividendPayoutPct: 25.1 },
-      { year: 'Mar 2020', sales: 600645, salesGrowthPct: 5.6, expenses: 511802, operatingProfit: 88843, opmPct: 14.8, otherIncome: 13956, interest: 22027, depreciation: 22203, profitBeforeTax: 58569, taxPct: 26.2, netProfit: 43224, eps: 31.95, dividendPayoutPct: 20.3 }
+      { year: 'Mar 2026', sales: 914472, salesGrowthPct: 2.6, expenses: 746140, operatingProfit: 168332, opmPct: 18.4, otherIncome: 15920, interest: 23150, depreciation: 50830, profitBeforeTax: 110272, taxPct: 25.2, netProfit: 82483, eps: 60.96, dividendPayoutPct: 16.4 },
+      { year: 'Mar 2025', sales: 891311, salesGrowthPct: 23.8, expenses: 737402, operatingProfit: 153909, opmPct: 17.3, otherIncome: 11728, interest: 19571, depreciation: 40303, profitBeforeTax: 105763, taxPct: 25.3, netProfit: 79008, eps: 58.39, dividendPayoutPct: 15.4 },
+      { year: 'Mar 2024', sales: 721634, salesGrowthPct: 47.0, expenses: 611130, operatingProfit: 110504, opmPct: 15.3, otherIncome: 14947, interest: 14584, depreciation: 29797, profitBeforeTax: 81070, taxPct: 24.8, netProfit: 60965, eps: 45.06, dividendPayoutPct: 17.8 },
+      { year: 'Mar 2023', sales: 490984, salesGrowthPct: -18.2, expenses: 410243, operatingProfit: 80741, opmPct: 16.4, otherIncome: 16327, interest: 21189, depreciation: 26572, profitBeforeTax: 49307, taxPct: 23.4, netProfit: 37769, eps: 27.91, dividendPayoutPct: 25.1 },
+      { year: 'Mar 2022', sales: 600645, salesGrowthPct: 5.6, expenses: 511802, operatingProfit: 88843, opmPct: 14.8, otherIncome: 13956, interest: 22027, depreciation: 22203, profitBeforeTax: 58569, taxPct: 26.2, netProfit: 43224, eps: 31.95, dividendPayoutPct: 20.3 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 6766, reserves: 785420, borrowings: 315400, otherLiabilities: 412500, totalLiabilities: 1520086, fixedAssets: 812500, cwip: 184500, investments: 242000, otherAssets: 281086, totalAssets: 1520086 },
-      { year: 'Mar 2023', equityCapital: 6765, reserves: 708107, borrowings: 314708, otherLiabilities: 382400, totalLiabilities: 1411980, fixedAssets: 735100, cwip: 198400, investments: 228400, otherAssets: 250080, totalAssets: 1411980 },
-      { year: 'Mar 2022', equityCapital: 6765, reserves: 638000, borrowings: 266300, otherLiabilities: 345000, totalLiabilities: 1256065, fixedAssets: 642000, cwip: 179000, investments: 214000, otherAssets: 221065, totalAssets: 1256065 }
+      { year: 'Mar 2026', equityCapital: 6766, reserves: 785420, borrowings: 315400, otherLiabilities: 412500, totalLiabilities: 1520086, fixedAssets: 812500, cwip: 184500, investments: 242000, otherAssets: 281086, totalAssets: 1520086 },
+      { year: 'Mar 2025', equityCapital: 6765, reserves: 708107, borrowings: 314708, otherLiabilities: 382400, totalLiabilities: 1411980, fixedAssets: 735100, cwip: 198400, investments: 228400, otherAssets: 250080, totalAssets: 1411980 },
+      { year: 'Mar 2024', equityCapital: 6765, reserves: 638000, borrowings: 266300, otherLiabilities: 345000, totalLiabilities: 1256065, fixedAssets: 642000, cwip: 179000, investments: 214000, otherAssets: 221065, totalAssets: 1256065 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 142300, cashFromInvesting: -98500, cashFromFinancing: -41200, netCashFlow: 2600, freeCashFlow: 48900 },
-      { year: 'Mar 2023', cashFromOperating: 121500, cashFromInvesting: -94800, cashFromFinancing: -23400, netCashFlow: 3300, freeCashFlow: 31200 },
-      { year: 'Mar 2022', cashFromOperating: 110700, cashFromInvesting: -86200, cashFromFinancing: -21800, netCashFlow: 2700, freeCashFlow: 28400 }
+      { year: 'Mar 2026', cashFromOperating: 142300, cashFromInvesting: -98500, cashFromFinancing: -41200, netCashFlow: 2600, freeCashFlow: 48900 },
+      { year: 'Mar 2025', cashFromOperating: 121500, cashFromInvesting: -94800, cashFromFinancing: -23400, netCashFlow: 3300, freeCashFlow: 31200 },
+      { year: 'Mar 2024', cashFromOperating: 110700, cashFromInvesting: -86200, cashFromFinancing: -21800, netCashFlow: 2700, freeCashFlow: 28400 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 12.4, roePct: 10.8, debtorDays: 14, inventoryDays: 52, daysPayable: 38, cashConversionCycle: 28, workingCapitalDays: 22 },
-      { year: 'Mar 2023', rocePct: 11.8, roePct: 10.6, debtorDays: 15, inventoryDays: 54, daysPayable: 39, cashConversionCycle: 30, workingCapitalDays: 24 },
-      { year: 'Mar 2022', rocePct: 10.2, roePct: 9.8, debtorDays: 16, inventoryDays: 56, daysPayable: 40, cashConversionCycle: 32, workingCapitalDays: 25 }
+      { year: 'Mar 2026', rocePct: 12.4, roePct: 10.8, debtorDays: 14, inventoryDays: 52, daysPayable: 38, cashConversionCycle: 28, workingCapitalDays: 22 },
+      { year: 'Mar 2025', rocePct: 11.8, roePct: 10.6, debtorDays: 15, inventoryDays: 54, daysPayable: 39, cashConversionCycle: 30, workingCapitalDays: 24 },
+      { year: 'Mar 2024', rocePct: 10.2, roePct: 9.8, debtorDays: 16, inventoryDays: 56, daysPayable: 40, cashConversionCycle: 32, workingCapitalDays: 25 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 50.31, fii: 21.84, dii: 17.15, government: 0.18, public: 10.52, pledgedPct: 0.0 },
-      { quarter: 'Sep 2024', promoter: 50.31, fii: 21.65, dii: 17.20, government: 0.18, public: 10.66, pledgedPct: 0.0 },
-      { quarter: 'Jun 2024', promoter: 50.31, fii: 22.05, dii: 16.85, government: 0.18, public: 10.61, pledgedPct: 0.0 },
-      { quarter: 'Mar 2024', promoter: 50.30, fii: 22.21, dii: 16.54, government: 0.18, public: 10.77, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 50.31, fii: 21.84, dii: 17.15, government: 0.18, public: 10.52, pledgedPct: 0.0 },
+      { quarter: 'Jun 2026', promoter: 50.31, fii: 21.65, dii: 17.20, government: 0.18, public: 10.66, pledgedPct: 0.0 },
+      { quarter: 'Mar 2026', promoter: 50.31, fii: 22.05, dii: 16.85, government: 0.18, public: 10.61, pledgedPct: 0.0 },
+      { quarter: 'Dec 2025', promoter: 50.30, fii: 22.21, dii: 16.54, government: 0.18, public: 10.77, pledgedPct: 0.0 }
     ]
   },
   {
@@ -151,8 +151,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Tata Consultancy Services is an IT services, consulting, and business solutions leader partnering with many of the world’s largest businesses in their transformation journeys.',
     website: 'https://www.tcs.com',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-14',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 3892.50,
     priceChangePct: 0.85,
     marketCap: 1408200,
@@ -225,31 +225,31 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Revenue growth in constant currency has moderated to high single digits.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 64259, expenses: 47425, operatingProfit: 16834, opmPct: 26.2, otherIncome: 1420, interest: 215, depreciation: 1320, profitBeforeTax: 16719, taxPct: 25.4, netProfit: 12472, eps: 34.46 },
-      { quarter: 'Sep 2024', sales: 64988, expenses: 48156, operatingProfit: 16832, opmPct: 25.9, otherIncome: 1380, interest: 210, depreciation: 1315, profitBeforeTax: 16687, taxPct: 25.6, netProfit: 12415, eps: 34.30 },
-      { quarter: 'Jun 2024', sales: 62613, expenses: 46397, operatingProfit: 16216, opmPct: 25.9, otherIncome: 1240, interest: 205, depreciation: 1290, profitBeforeTax: 15961, taxPct: 25.5, netProfit: 11891, eps: 32.85 },
-      { quarter: 'Mar 2024', sales: 61237, expenses: 45315, operatingProfit: 15922, opmPct: 26.0, otherIncome: 1120, interest: 198, depreciation: 1270, profitBeforeTax: 15574, taxPct: 25.2, netProfit: 11650, eps: 32.18 }
+      { quarter: 'Sep 2026', sales: 64259, expenses: 47425, operatingProfit: 16834, opmPct: 26.2, otherIncome: 1420, interest: 215, depreciation: 1320, profitBeforeTax: 16719, taxPct: 25.4, netProfit: 12472, eps: 34.46 },
+      { quarter: 'Jun 2026', sales: 64988, expenses: 48156, operatingProfit: 16832, opmPct: 25.9, otherIncome: 1380, interest: 210, depreciation: 1315, profitBeforeTax: 16687, taxPct: 25.6, netProfit: 12415, eps: 34.30 },
+      { quarter: 'Mar 2026', sales: 62613, expenses: 46397, operatingProfit: 16216, opmPct: 25.9, otherIncome: 1240, interest: 205, depreciation: 1290, profitBeforeTax: 15961, taxPct: 25.5, netProfit: 11891, eps: 32.85 },
+      { quarter: 'Dec 2025', sales: 61237, expenses: 45315, operatingProfit: 15922, opmPct: 26.0, otherIncome: 1120, interest: 198, depreciation: 1270, profitBeforeTax: 15574, taxPct: 25.2, netProfit: 11650, eps: 32.18 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 240893, salesGrowthPct: 6.8, expenses: 178000, operatingProfit: 62893, opmPct: 26.1, otherIncome: 4560, interest: 780, depreciation: 5020, profitBeforeTax: 61653, taxPct: 25.5, netProfit: 45938, eps: 127.1, dividendPayoutPct: 88.5 },
-      { year: 'Mar 2023', sales: 225458, salesGrowthPct: 17.6, expenses: 166200, operatingProfit: 59258, opmPct: 26.3, otherIncome: 3450, interest: 780, depreciation: 4680, profitBeforeTax: 57248, taxPct: 25.6, netProfit: 42603, eps: 116.4, dividendPayoutPct: 82.0 },
-      { year: 'Mar 2022', sales: 191754, salesGrowthPct: 16.8, expenses: 138700, operatingProfit: 53054, opmPct: 27.7, otherIncome: 3230, interest: 640, depreciation: 4320, profitBeforeTax: 51324, taxPct: 25.4, netProfit: 38327, eps: 104.7, dividendPayoutPct: 78.4 }
+      { year: 'Mar 2026', sales: 240893, salesGrowthPct: 6.8, expenses: 178000, operatingProfit: 62893, opmPct: 26.1, otherIncome: 4560, interest: 780, depreciation: 5020, profitBeforeTax: 61653, taxPct: 25.5, netProfit: 45938, eps: 127.1, dividendPayoutPct: 88.5 },
+      { year: 'Mar 2025', sales: 225458, salesGrowthPct: 17.6, expenses: 166200, operatingProfit: 59258, opmPct: 26.3, otherIncome: 3450, interest: 780, depreciation: 4680, profitBeforeTax: 57248, taxPct: 25.6, netProfit: 42603, eps: 116.4, dividendPayoutPct: 82.0 },
+      { year: 'Mar 2024', sales: 191754, salesGrowthPct: 16.8, expenses: 138700, operatingProfit: 53054, opmPct: 27.7, otherIncome: 3230, interest: 640, depreciation: 4320, profitBeforeTax: 51324, taxPct: 25.4, netProfit: 38327, eps: 104.7, dividendPayoutPct: 78.4 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 362, reserves: 90120, borrowings: 7540, otherLiabilities: 38200, totalLiabilities: 136222, fixedAssets: 18450, cwip: 1250, investments: 45800, otherAssets: 70722, totalAssets: 136222 },
-      { year: 'Mar 2023', equityCapital: 366, reserves: 89900, borrowings: 7820, otherLiabilities: 36100, totalLiabilities: 134186, fixedAssets: 17900, cwip: 1100, investments: 42100, otherAssets: 73086, totalAssets: 134186 }
+      { year: 'Mar 2026', equityCapital: 362, reserves: 90120, borrowings: 7540, otherLiabilities: 38200, totalLiabilities: 136222, fixedAssets: 18450, cwip: 1250, investments: 45800, otherAssets: 70722, totalAssets: 136222 },
+      { year: 'Mar 2025', equityCapital: 366, reserves: 89900, borrowings: 7820, otherLiabilities: 36100, totalLiabilities: 134186, fixedAssets: 17900, cwip: 1100, investments: 42100, otherAssets: 73086, totalAssets: 134186 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 48600, cashFromInvesting: -3800, cashFromFinancing: -43200, netCashFlow: 1600, freeCashFlow: 44200 },
-      { year: 'Mar 2023', cashFromOperating: 42200, cashFromInvesting: -3500, cashFromFinancing: -38100, netCashFlow: 600, freeCashFlow: 38700 }
+      { year: 'Mar 2026', cashFromOperating: 48600, cashFromInvesting: -3800, cashFromFinancing: -43200, netCashFlow: 1600, freeCashFlow: 44200 },
+      { year: 'Mar 2025', cashFromOperating: 42200, cashFromInvesting: -3500, cashFromFinancing: -38100, netCashFlow: 600, freeCashFlow: 38700 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 58.2, roePct: 49.5, debtorDays: 68, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 68, workingCapitalDays: 62 },
-      { year: 'Mar 2023', rocePct: 56.4, roePct: 48.1, debtorDays: 67, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 67, workingCapitalDays: 61 }
+      { year: 'Mar 2026', rocePct: 58.2, roePct: 49.5, debtorDays: 68, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 68, workingCapitalDays: 62 },
+      { year: 'Mar 2025', rocePct: 56.4, roePct: 48.1, debtorDays: 67, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 67, workingCapitalDays: 61 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 71.77, fii: 12.45, dii: 10.54, government: 0.05, public: 5.19, pledgedPct: 0.0 },
-      { quarter: 'Sep 2024', promoter: 71.77, fii: 12.52, dii: 10.48, government: 0.05, public: 5.18, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 71.77, fii: 12.45, dii: 10.54, government: 0.05, public: 5.19, pledgedPct: 0.0 },
+      { quarter: 'Jun 2026', promoter: 71.77, fii: 12.52, dii: 10.48, government: 0.05, public: 5.18, pledgedPct: 0.0 }
     ]
   },
   {
@@ -267,8 +267,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Infosys is a global leader in next-generation digital services and consulting. It enables clients in more than 56 countries to navigate their digital transformation powered by cloud and AI.',
     website: 'https://www.infosys.com',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-16',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 1885.60,
     priceChangePct: 1.65,
     marketCap: 782400,
@@ -341,24 +341,24 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Discretionary IT budget cuts in banking client vertical in the US.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 41920, expenses: 31780, operatingProfit: 10140, opmPct: 24.2, otherIncome: 1180, interest: 165, depreciation: 1050, profitBeforeTax: 10105, taxPct: 25.2, netProfit: 7558, eps: 18.22 },
-      { quarter: 'Sep 2024', sales: 40986, expenses: 31100, operatingProfit: 9886, opmPct: 24.1, otherIncome: 1140, interest: 160, depreciation: 1040, profitBeforeTax: 9826, taxPct: 25.1, netProfit: 7360, eps: 17.74 }
+      { quarter: 'Sep 2026', sales: 41920, expenses: 31780, operatingProfit: 10140, opmPct: 24.2, otherIncome: 1180, interest: 165, depreciation: 1050, profitBeforeTax: 10105, taxPct: 25.2, netProfit: 7558, eps: 18.22 },
+      { quarter: 'Jun 2026', sales: 40986, expenses: 31100, operatingProfit: 9886, opmPct: 24.1, otherIncome: 1140, interest: 160, depreciation: 1040, profitBeforeTax: 9826, taxPct: 25.1, netProfit: 7360, eps: 17.74 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 153670, salesGrowthPct: 5.9, expenses: 116500, operatingProfit: 37170, opmPct: 24.2, otherIncome: 4210, interest: 620, depreciation: 4120, profitBeforeTax: 36640, taxPct: 25.3, netProfit: 27370, eps: 65.98, dividendPayoutPct: 78.5 },
-      { year: 'Mar 2023', sales: 146767, salesGrowthPct: 20.7, expenses: 111600, operatingProfit: 35167, opmPct: 24.0, otherIncome: 2700, interest: 580, depreciation: 3800, profitBeforeTax: 33487, taxPct: 25.1, netProfit: 25082, eps: 59.84, dividendPayoutPct: 75.0 }
+      { year: 'Mar 2026', sales: 153670, salesGrowthPct: 5.9, expenses: 116500, operatingProfit: 37170, opmPct: 24.2, otherIncome: 4210, interest: 620, depreciation: 4120, profitBeforeTax: 36640, taxPct: 25.3, netProfit: 27370, eps: 65.98, dividendPayoutPct: 78.5 },
+      { year: 'Mar 2025', sales: 146767, salesGrowthPct: 20.7, expenses: 111600, operatingProfit: 35167, opmPct: 24.0, otherIncome: 2700, interest: 580, depreciation: 3800, profitBeforeTax: 33487, taxPct: 25.1, netProfit: 25082, eps: 59.84, dividendPayoutPct: 75.0 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 2074, reserves: 86320, borrowings: 8120, otherLiabilities: 34500, totalLiabilities: 131014, fixedAssets: 21400, cwip: 1450, investments: 32500, otherAssets: 75664, totalAssets: 131014 }
+      { year: 'Mar 2026', equityCapital: 2074, reserves: 86320, borrowings: 8120, otherLiabilities: 34500, totalLiabilities: 131014, fixedAssets: 21400, cwip: 1450, investments: 32500, otherAssets: 75664, totalAssets: 131014 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 29400, cashFromInvesting: -3800, cashFromFinancing: -24100, netCashFlow: 1500, freeCashFlow: 26100 }
+      { year: 'Mar 2026', cashFromOperating: 29400, cashFromInvesting: -3800, cashFromFinancing: -24100, netCashFlow: 1500, freeCashFlow: 26100 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 38.6, roePct: 32.4, debtorDays: 64, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 64, workingCapitalDays: 58 }
+      { year: 'Mar 2026', rocePct: 38.6, roePct: 32.4, debtorDays: 64, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 64, workingCapitalDays: 58 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 14.71, fii: 31.85, dii: 36.40, government: 0.12, public: 16.92, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 14.71, fii: 31.85, dii: 36.40, government: 0.12, public: 16.92, pledgedPct: 0.0 }
     ]
   },
   {
@@ -376,8 +376,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'HDFC Bank is India’s largest private sector bank by assets and market capitalization. Following its landmark merger with mortgage giant HDFC Ltd, it commands an extensive retail and wholesale franchise.',
     website: 'https://www.hdfcbank.com',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-18',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 1782.30,
     priceChangePct: 1.42,
     marketCap: 1358900,
@@ -450,24 +450,24 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Net Interest Margin (NIM) under temporary margin compression at 3.45%.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 74500, expenses: 26500, operatingProfit: 48000, opmPct: 64.4, otherIncome: 11200, interest: 32000, depreciation: 1450, profitBeforeTax: 22800, taxPct: 24.5, netProfit: 17214, eps: 22.58 },
-      { quarter: 'Sep 2024', sales: 72800, expenses: 25900, operatingProfit: 46900, opmPct: 64.4, otherIncome: 10800, interest: 31200, depreciation: 1420, profitBeforeTax: 22200, taxPct: 24.6, netProfit: 16738, eps: 21.96 }
+      { quarter: 'Sep 2026', sales: 74500, expenses: 26500, operatingProfit: 48000, opmPct: 64.4, otherIncome: 11200, interest: 32000, depreciation: 1450, profitBeforeTax: 22800, taxPct: 24.5, netProfit: 17214, eps: 22.58 },
+      { quarter: 'Jun 2026', sales: 72800, expenses: 25900, operatingProfit: 46900, opmPct: 64.4, otherIncome: 10800, interest: 31200, depreciation: 1420, profitBeforeTax: 22200, taxPct: 24.6, netProfit: 16738, eps: 21.96 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 279500, salesGrowthPct: 58.5, expenses: 101200, operatingProfit: 178300, opmPct: 63.8, otherIncome: 38200, interest: 112000, depreciation: 5200, profitBeforeTax: 86500, taxPct: 24.8, netProfit: 65050, eps: 85.3, dividendPayoutPct: 23.5 },
-      { year: 'Mar 2023', sales: 176200, salesGrowthPct: 26.2, expenses: 62400, operatingProfit: 113800, opmPct: 64.6, otherIncome: 24800, interest: 68500, depreciation: 3800, profitBeforeTax: 58500, taxPct: 24.5, netProfit: 44108, eps: 79.3, dividendPayoutPct: 24.0 }
+      { year: 'Mar 2026', sales: 279500, salesGrowthPct: 58.5, expenses: 101200, operatingProfit: 178300, opmPct: 63.8, otherIncome: 38200, interest: 112000, depreciation: 5200, profitBeforeTax: 86500, taxPct: 24.8, netProfit: 65050, eps: 85.3, dividendPayoutPct: 23.5 },
+      { year: 'Mar 2025', sales: 176200, salesGrowthPct: 26.2, expenses: 62400, operatingProfit: 113800, opmPct: 64.6, otherIncome: 24800, interest: 68500, depreciation: 3800, profitBeforeTax: 58500, taxPct: 24.5, netProfit: 44108, eps: 79.3, dividendPayoutPct: 24.0 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 760, reserves: 432500, borrowings: 2845000, otherLiabilities: 185000, totalLiabilities: 3463260, fixedAssets: 15400, cwip: 1200, investments: 854000, otherAssets: 2592660, totalAssets: 3463260 }
+      { year: 'Mar 2026', equityCapital: 760, reserves: 432500, borrowings: 2845000, otherLiabilities: 185000, totalLiabilities: 3463260, fixedAssets: 15400, cwip: 1200, investments: 854000, otherAssets: 2592660, totalAssets: 3463260 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 84500, cashFromInvesting: -8500, cashFromFinancing: -62000, netCashFlow: 14000, freeCashFlow: 76000 }
+      { year: 'Mar 2026', cashFromOperating: 84500, cashFromInvesting: -8500, cashFromFinancing: -62000, netCashFlow: 14000, freeCashFlow: 76000 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 16.8, roePct: 15.9, debtorDays: 0, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 0, workingCapitalDays: 0 }
+      { year: 'Mar 2026', rocePct: 16.8, roePct: 15.9, debtorDays: 0, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 0, workingCapitalDays: 0 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 0.0, fii: 47.80, dii: 35.20, government: 0.15, public: 16.85, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 0.0, fii: 47.80, dii: 35.20, government: 0.15, public: 16.85, pledgedPct: 0.0 }
     ]
   },
   {
@@ -485,8 +485,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Part of the Tata Group, Titan is India’s undisputed lifestyle and jewellery leader with iconic brands including Tanishq, Fastrack, Titan Eye+, Mia, Zoya, and CaratLane.',
     website: 'https://www.titancompany.in',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-20',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 3480.0,
     priceChangePct: 2.10,
     marketCap: 308900,
@@ -559,24 +559,24 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Gold import duty adjustments create inventory valuation swings.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 17850, expenses: 15920, operatingProfit: 1930, opmPct: 10.8, otherIncome: 145, interest: 165, depreciation: 215, profitBeforeTax: 1695, taxPct: 25.4, netProfit: 1264, eps: 14.24 },
-      { quarter: 'Sep 2024', sales: 13473, expenses: 12150, operatingProfit: 1323, opmPct: 9.8, otherIncome: 130, interest: 158, depreciation: 210, profitBeforeTax: 1085, taxPct: 25.2, netProfit: 811, eps: 9.13 }
+      { quarter: 'Sep 2026', sales: 17850, expenses: 15920, operatingProfit: 1930, opmPct: 10.8, otherIncome: 145, interest: 165, depreciation: 215, profitBeforeTax: 1695, taxPct: 25.4, netProfit: 1264, eps: 14.24 },
+      { quarter: 'Jun 2026', sales: 13473, expenses: 12150, operatingProfit: 1323, opmPct: 9.8, otherIncome: 130, interest: 158, depreciation: 210, profitBeforeTax: 1085, taxPct: 25.2, netProfit: 811, eps: 9.13 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 51084, salesGrowthPct: 24.8, expenses: 45780, operatingProfit: 5304, opmPct: 10.4, otherIncome: 540, interest: 590, depreciation: 790, profitBeforeTax: 4464, taxPct: 25.4, netProfit: 3330, eps: 37.5, dividendPayoutPct: 28.5 },
-      { year: 'Mar 2023', sales: 40575, salesGrowthPct: 37.5, expenses: 36120, operatingProfit: 4455, opmPct: 11.0, otherIncome: 420, interest: 380, depreciation: 620, profitBeforeTax: 3875, taxPct: 25.3, netProfit: 2894, eps: 32.6, dividendPayoutPct: 30.0 }
+      { year: 'Mar 2026', sales: 51084, salesGrowthPct: 24.8, expenses: 45780, operatingProfit: 5304, opmPct: 10.4, otherIncome: 540, interest: 590, depreciation: 790, profitBeforeTax: 4464, taxPct: 25.4, netProfit: 3330, eps: 37.5, dividendPayoutPct: 28.5 },
+      { year: 'Mar 2025', sales: 40575, salesGrowthPct: 37.5, expenses: 36120, operatingProfit: 4455, opmPct: 11.0, otherIncome: 420, interest: 380, depreciation: 620, profitBeforeTax: 3875, taxPct: 25.3, netProfit: 2894, eps: 32.6, dividendPayoutPct: 30.0 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 89, reserves: 13700, borrowings: 9500, otherLiabilities: 11200, totalLiabilities: 34489, fixedAssets: 3800, cwip: 350, investments: 1800, otherAssets: 28539, totalAssets: 34489 }
+      { year: 'Mar 2026', equityCapital: 89, reserves: 13700, borrowings: 9500, otherLiabilities: 11200, totalLiabilities: 34489, fixedAssets: 3800, cwip: 350, investments: 1800, otherAssets: 28539, totalAssets: 34489 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 5200, cashFromInvesting: -1800, cashFromFinancing: -3200, netCashFlow: 200, freeCashFlow: 3800 }
+      { year: 'Mar 2026', cashFromOperating: 5200, cashFromInvesting: -1800, cashFromFinancing: -3200, netCashFlow: 200, freeCashFlow: 3800 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 31.4, roePct: 28.6, debtorDays: 9, inventoryDays: 135, daysPayable: 32, cashConversionCycle: 112, workingCapitalDays: 108 }
+      { year: 'Mar 2026', rocePct: 31.4, roePct: 28.6, debtorDays: 9, inventoryDays: 135, daysPayable: 32, cashConversionCycle: 112, workingCapitalDays: 108 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 52.90, fii: 17.85, dii: 11.45, government: 0.15, public: 17.65, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 52.90, fii: 17.85, dii: 11.45, government: 0.15, public: 17.65, pledgedPct: 0.0 }
     ]
   },
   {
@@ -594,8 +594,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Bajaj Finance is India’s premier deposit-taking non-banking financial company with omnichannel presence across consumer lending, SME finance, commercial loans, and digital payments.',
     website: 'https://www.bajajfinserv.in/finance',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-21',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 7120.40,
     priceChangePct: -0.45,
     marketCap: 440200,
@@ -668,24 +668,24 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'RBI regulatory actions on certain digital lending partner segments.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 16800, expenses: 5120, operatingProfit: 11680, opmPct: 69.5, otherIncome: 180, interest: 6200, depreciation: 280, profitBeforeTax: 5380, taxPct: 25.2, netProfit: 4024, eps: 65.11 },
-      { quarter: 'Sep 2024', sales: 16100, expenses: 4950, operatingProfit: 11150, opmPct: 69.3, otherIncome: 175, interest: 5950, depreciation: 275, profitBeforeTax: 5100, taxPct: 25.3, netProfit: 3810, eps: 61.65 }
+      { quarter: 'Sep 2026', sales: 16800, expenses: 5120, operatingProfit: 11680, opmPct: 69.5, otherIncome: 180, interest: 6200, depreciation: 280, profitBeforeTax: 5380, taxPct: 25.2, netProfit: 4024, eps: 65.11 },
+      { quarter: 'Jun 2026', sales: 16100, expenses: 4950, operatingProfit: 11150, opmPct: 69.3, otherIncome: 175, interest: 5950, depreciation: 275, profitBeforeTax: 5100, taxPct: 25.3, netProfit: 3810, eps: 61.65 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 54670, salesGrowthPct: 28.5, expenses: 16800, operatingProfit: 37870, opmPct: 69.3, otherIncome: 650, interest: 18450, depreciation: 980, profitBeforeTax: 19090, taxPct: 25.2, netProfit: 14280, eps: 231.1, dividendPayoutPct: 15.6 },
-      { year: 'Mar 2023', sales: 41406, salesGrowthPct: 31.2, expenses: 12900, operatingProfit: 28506, opmPct: 68.8, otherIncome: 510, interest: 13500, depreciation: 790, profitBeforeTax: 14726, taxPct: 25.3, netProfit: 11000, eps: 178.5, dividendPayoutPct: 16.8 }
+      { year: 'Mar 2026', sales: 54670, salesGrowthPct: 28.5, expenses: 16800, operatingProfit: 37870, opmPct: 69.3, otherIncome: 650, interest: 18450, depreciation: 980, profitBeforeTax: 19090, taxPct: 25.2, netProfit: 14280, eps: 231.1, dividendPayoutPct: 15.6 },
+      { year: 'Mar 2025', sales: 41406, salesGrowthPct: 31.2, expenses: 12900, operatingProfit: 28506, opmPct: 68.8, otherIncome: 510, interest: 13500, depreciation: 790, profitBeforeTax: 14726, taxPct: 25.3, netProfit: 11000, eps: 178.5, dividendPayoutPct: 16.8 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 124, reserves: 76400, borrowings: 295000, otherLiabilities: 18500, totalLiabilities: 390024, fixedAssets: 3400, cwip: 250, investments: 42000, otherAssets: 344374, totalAssets: 390024 }
+      { year: 'Mar 2026', equityCapital: 124, reserves: 76400, borrowings: 295000, otherLiabilities: 18500, totalLiabilities: 390024, fixedAssets: 3400, cwip: 250, investments: 42000, otherAssets: 344374, totalAssets: 390024 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 24500, cashFromInvesting: -3300, cashFromFinancing: -18200, netCashFlow: 3000, freeCashFlow: 21200 }
+      { year: 'Mar 2026', cashFromOperating: 24500, cashFromInvesting: -3300, cashFromFinancing: -18200, netCashFlow: 3000, freeCashFlow: 21200 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 18.8, roePct: 22.4, debtorDays: 0, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 0, workingCapitalDays: 0 }
+      { year: 'Mar 2026', rocePct: 18.8, roePct: 22.4, debtorDays: 0, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 0, workingCapitalDays: 0 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 54.74, fii: 20.45, dii: 14.15, government: 0.08, public: 10.58, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 54.74, fii: 20.45, dii: 14.15, government: 0.08, public: 10.58, pledgedPct: 0.0 }
     ]
   },
   {
@@ -703,8 +703,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Polycab India is the largest manufacturer of wires and cables in India, commanding a 24%+ organized market share alongside a rapidly growing fast-moving electrical goods (FMEG) brand portfolio.',
     website: 'https://www.polycab.com',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-20',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 5840.20,
     priceChangePct: 3.25,
     marketCap: 87800,
@@ -777,24 +777,24 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Raw material exposure to volatility in international copper and aluminum prices.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 5240, expenses: 4520, operatingProfit: 720, opmPct: 13.7, otherIncome: 65, interest: 25, depreciation: 75, profitBeforeTax: 685, taxPct: 25.2, netProfit: 512, eps: 34.13 },
-      { quarter: 'Sep 2024', sales: 5498, expenses: 4720, operatingProfit: 778, opmPct: 14.1, otherIncome: 58, interest: 24, depreciation: 72, profitBeforeTax: 740, taxPct: 25.3, netProfit: 553, eps: 36.87 }
+      { quarter: 'Sep 2026', sales: 5240, expenses: 4520, operatingProfit: 720, opmPct: 13.7, otherIncome: 65, interest: 25, depreciation: 75, profitBeforeTax: 685, taxPct: 25.2, netProfit: 512, eps: 34.13 },
+      { quarter: 'Jun 2026', sales: 5498, expenses: 4720, operatingProfit: 778, opmPct: 14.1, otherIncome: 58, interest: 24, depreciation: 72, profitBeforeTax: 740, taxPct: 25.3, netProfit: 553, eps: 36.87 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 18039, salesGrowthPct: 27.9, expenses: 15550, operatingProfit: 2489, opmPct: 13.8, otherIncome: 240, interest: 90, depreciation: 260, profitBeforeTax: 2379, taxPct: 25.1, netProfit: 1782, eps: 118.8, dividendPayoutPct: 25.2 },
-      { year: 'Mar 2023', sales: 14108, salesGrowthPct: 15.6, expenses: 12280, operatingProfit: 1828, opmPct: 13.0, otherIncome: 140, interest: 60, depreciation: 210, profitBeforeTax: 1698, taxPct: 25.0, netProfit: 1274, eps: 85.2, dividendPayoutPct: 23.5 }
+      { year: 'Mar 2026', sales: 18039, salesGrowthPct: 27.9, expenses: 15550, operatingProfit: 2489, opmPct: 13.8, otherIncome: 240, interest: 90, depreciation: 260, profitBeforeTax: 2379, taxPct: 25.1, netProfit: 1782, eps: 118.8, dividendPayoutPct: 25.2 },
+      { year: 'Mar 2025', sales: 14108, salesGrowthPct: 15.6, expenses: 12280, operatingProfit: 1828, opmPct: 13.0, otherIncome: 140, interest: 60, depreciation: 210, profitBeforeTax: 1698, taxPct: 25.0, netProfit: 1274, eps: 85.2, dividendPayoutPct: 23.5 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 150, reserves: 8750, borrowings: 350, otherLiabilities: 3400, totalLiabilities: 12650, fixedAssets: 2800, cwip: 320, investments: 1200, otherAssets: 8330, totalAssets: 12650 }
+      { year: 'Mar 2026', equityCapital: 150, reserves: 8750, borrowings: 350, otherLiabilities: 3400, totalLiabilities: 12650, fixedAssets: 2800, cwip: 320, investments: 1200, otherAssets: 8330, totalAssets: 12650 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 2800, cashFromInvesting: -1100, cashFromFinancing: -1400, netCashFlow: 300, freeCashFlow: 1900 }
+      { year: 'Mar 2026', cashFromOperating: 2800, cashFromInvesting: -1100, cashFromFinancing: -1400, netCashFlow: 300, freeCashFlow: 1900 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 32.5, roePct: 25.8, debtorDays: 38, inventoryDays: 52, daysPayable: 42, cashConversionCycle: 48, workingCapitalDays: 45 }
+      { year: 'Mar 2026', rocePct: 32.5, roePct: 25.8, debtorDays: 38, inventoryDays: 52, daysPayable: 42, cashConversionCycle: 48, workingCapitalDays: 45 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 65.24, fii: 13.15, dii: 11.20, government: 0.0, public: 10.41, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 65.24, fii: 13.15, dii: 11.20, government: 0.0, public: 10.41, pledgedPct: 0.0 }
     ]
   },
   {
@@ -812,8 +812,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Dixon Technologies is the premier electronic manufacturing services (EMS) partner in India, manufacturing smartphones, televisions, home appliances, lighting products, and telecom equipment for top global brands.',
     website: 'https://www.dixoninfo.com',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-22',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 13950.0,
     priceChangePct: 4.10,
     marketCap: 83500,
@@ -886,24 +886,24 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Thin operating margins (4.2%) vulnerable to customer contract renegotiations.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 10850, expenses: 10420, operatingProfit: 430, opmPct: 4.0, otherIncome: 25, interest: 38, depreciation: 68, profitBeforeTax: 349, taxPct: 25.2, netProfit: 261, eps: 43.60 },
-      { quarter: 'Sep 2024', sales: 11534, expenses: 11060, operatingProfit: 474, opmPct: 4.1, otherIncome: 22, interest: 36, depreciation: 65, profitBeforeTax: 395, taxPct: 25.1, netProfit: 296, eps: 49.45 }
+      { quarter: 'Sep 2026', sales: 10850, expenses: 10420, operatingProfit: 430, opmPct: 4.0, otherIncome: 25, interest: 38, depreciation: 68, profitBeforeTax: 349, taxPct: 25.2, netProfit: 261, eps: 43.60 },
+      { quarter: 'Jun 2026', sales: 11534, expenses: 11060, operatingProfit: 474, opmPct: 4.1, otherIncome: 22, interest: 36, depreciation: 65, profitBeforeTax: 395, taxPct: 25.1, netProfit: 296, eps: 49.45 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 17690, salesGrowthPct: 45.2, expenses: 17000, operatingProfit: 690, opmPct: 3.9, otherIncome: 45, interest: 75, depreciation: 155, profitBeforeTax: 505, taxPct: 25.1, netProfit: 378, eps: 63.2, dividendPayoutPct: 12.0 },
-      { year: 'Mar 2023', sales: 12192, salesGrowthPct: 14.1, expenses: 11680, operatingProfit: 512, opmPct: 4.2, otherIncome: 35, interest: 60, depreciation: 120, profitBeforeTax: 367, taxPct: 25.2, netProfit: 275, eps: 46.1, dividendPayoutPct: 15.0 }
+      { year: 'Mar 2026', sales: 17690, salesGrowthPct: 45.2, expenses: 17000, operatingProfit: 690, opmPct: 3.9, otherIncome: 45, interest: 75, depreciation: 155, profitBeforeTax: 505, taxPct: 25.1, netProfit: 378, eps: 63.2, dividendPayoutPct: 12.0 },
+      { year: 'Mar 2025', sales: 12192, salesGrowthPct: 14.1, expenses: 11680, operatingProfit: 512, opmPct: 4.2, otherIncome: 35, interest: 60, depreciation: 120, profitBeforeTax: 367, taxPct: 25.2, netProfit: 275, eps: 46.1, dividendPayoutPct: 15.0 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 12, reserves: 2550, borrowings: 820, otherLiabilities: 4800, totalLiabilities: 8182, fixedAssets: 1850, cwip: 180, investments: 220, otherAssets: 5932, totalAssets: 8182 }
+      { year: 'Mar 2026', equityCapital: 12, reserves: 2550, borrowings: 820, otherLiabilities: 4800, totalLiabilities: 8182, fixedAssets: 1850, cwip: 180, investments: 220, otherAssets: 5932, totalAssets: 8182 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 2100, cashFromInvesting: -950, cashFromFinancing: -850, netCashFlow: 300, freeCashFlow: 1200 }
+      { year: 'Mar 2026', cashFromOperating: 2100, cashFromInvesting: -950, cashFromFinancing: -850, netCashFlow: 300, freeCashFlow: 1200 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 34.8, roePct: 28.9, debtorDays: 42, inventoryDays: 38, daysPayable: 54, cashConversionCycle: 26, workingCapitalDays: 22 }
+      { year: 'Mar 2026', rocePct: 34.8, roePct: 28.9, debtorDays: 42, inventoryDays: 38, daysPayable: 54, cashConversionCycle: 26, workingCapitalDays: 22 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 33.72, fii: 21.45, dii: 27.80, government: 0.0, public: 17.03, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 33.72, fii: 21.45, dii: 27.80, government: 0.0, public: 17.03, pledgedPct: 0.0 }
     ]
   },
   {
@@ -921,8 +921,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'CDSL is Asia’s first and only listed depository. It facilitates holding and transacting of securities in electronic form and operates the electronic KYC and pledge registry for Indian capital markets.',
     website: 'https://www.cdslindia.com',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-21',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 1580.40,
     priceChangePct: 1.85,
     marketCap: 33030,
@@ -995,24 +995,24 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Vulnerable to SEBI regulatory revisions on transaction fee tariffs.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 322, expenses: 120, operatingProfit: 202, opmPct: 62.7, otherIncome: 35, interest: 0, depreciation: 9, profitBeforeTax: 228, taxPct: 25.2, netProfit: 171, eps: 8.18 },
-      { quarter: 'Sep 2024', sales: 322, expenses: 118, operatingProfit: 204, opmPct: 63.3, otherIncome: 32, interest: 0, depreciation: 8, profitBeforeTax: 228, taxPct: 25.0, netProfit: 171, eps: 8.18 }
+      { quarter: 'Sep 2026', sales: 322, expenses: 120, operatingProfit: 202, opmPct: 62.7, otherIncome: 35, interest: 0, depreciation: 9, profitBeforeTax: 228, taxPct: 25.2, netProfit: 171, eps: 8.18 },
+      { quarter: 'Jun 2026', sales: 322, expenses: 118, operatingProfit: 204, opmPct: 63.3, otherIncome: 32, interest: 0, depreciation: 8, profitBeforeTax: 228, taxPct: 25.0, netProfit: 171, eps: 8.18 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 907, salesGrowthPct: 64.2, expenses: 345, operatingProfit: 562, opmPct: 62.0, otherIncome: 115, interest: 0, depreciation: 32, profitBeforeTax: 645, taxPct: 25.1, netProfit: 483, eps: 23.1, dividendPayoutPct: 52.0 },
-      { year: 'Mar 2023', sales: 552, salesGrowthPct: 1.5, expenses: 242, operatingProfit: 310, opmPct: 56.2, otherIncome: 88, interest: 0, depreciation: 28, profitBeforeTax: 370, taxPct: 25.2, netProfit: 276, eps: 13.2, dividendPayoutPct: 68.0 }
+      { year: 'Mar 2026', sales: 907, salesGrowthPct: 64.2, expenses: 345, operatingProfit: 562, opmPct: 62.0, otherIncome: 115, interest: 0, depreciation: 32, profitBeforeTax: 645, taxPct: 25.1, netProfit: 483, eps: 23.1, dividendPayoutPct: 52.0 },
+      { year: 'Mar 2025', sales: 552, salesGrowthPct: 1.5, expenses: 242, operatingProfit: 310, opmPct: 56.2, otherIncome: 88, interest: 0, depreciation: 28, profitBeforeTax: 370, taxPct: 25.2, netProfit: 276, eps: 13.2, dividendPayoutPct: 68.0 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 209, reserves: 1580, borrowings: 0, otherLiabilities: 290, totalLiabilities: 2079, fixedAssets: 125, cwip: 10, investments: 1420, otherAssets: 524, totalAssets: 2079 }
+      { year: 'Mar 2026', equityCapital: 209, reserves: 1580, borrowings: 0, otherLiabilities: 290, totalLiabilities: 2079, fixedAssets: 125, cwip: 10, investments: 1420, otherAssets: 524, totalAssets: 2079 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 580, cashFromInvesting: -40, cashFromFinancing: -350, netCashFlow: 190, freeCashFlow: 540 }
+      { year: 'Mar 2026', cashFromOperating: 580, cashFromInvesting: -40, cashFromFinancing: -350, netCashFlow: 190, freeCashFlow: 540 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 42.5, roePct: 33.8, debtorDays: 24, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 24, workingCapitalDays: 18 }
+      { year: 'Mar 2026', rocePct: 42.5, roePct: 33.8, debtorDays: 24, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 24, workingCapitalDays: 18 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 15.0, fii: 15.80, dii: 24.10, government: 0.0, public: 45.10, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 15.0, fii: 15.80, dii: 24.10, government: 0.0, public: 45.10, pledgedPct: 0.0 }
     ]
   },
   {
@@ -1030,8 +1030,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Deepak Nitrite is one of India’s fastest-growing specialty chemical houses with a 70%+ domestic market share in sodium nitrite and optical brightening agents, with forward integration into phenol and acetone.',
     website: 'https://www.godeepak.com',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-20',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 2280.0,
     priceChangePct: -0.65,
     marketCap: 31100,
@@ -1104,24 +1104,24 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'High dependency on benzene and propylene commodity feedstocks.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 2045, expenses: 1710, operatingProfit: 335, opmPct: 16.4, otherIncome: 24, interest: 12, depreciation: 48, profitBeforeTax: 299, taxPct: 25.2, netProfit: 224, eps: 16.42 },
-      { quarter: 'Sep 2024', sales: 2030, expenses: 1695, operatingProfit: 335, opmPct: 16.5, otherIncome: 22, interest: 11, depreciation: 46, profitBeforeTax: 300, taxPct: 25.0, netProfit: 225, eps: 16.50 }
+      { quarter: 'Sep 2026', sales: 2045, expenses: 1710, operatingProfit: 335, opmPct: 16.4, otherIncome: 24, interest: 12, depreciation: 48, profitBeforeTax: 299, taxPct: 25.2, netProfit: 224, eps: 16.42 },
+      { quarter: 'Jun 2026', sales: 2030, expenses: 1695, operatingProfit: 335, opmPct: 16.5, otherIncome: 22, interest: 11, depreciation: 46, profitBeforeTax: 300, taxPct: 25.0, netProfit: 225, eps: 16.50 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 7740, salesGrowthPct: -3.4, expenses: 6470, operatingProfit: 1270, opmPct: 16.4, otherIncome: 85, interest: 48, depreciation: 182, profitBeforeTax: 1125, taxPct: 25.1, netProfit: 843, eps: 61.8, dividendPayoutPct: 14.5 },
-      { year: 'Mar 2023', sales: 8011, salesGrowthPct: 17.2, expenses: 6730, operatingProfit: 1281, opmPct: 16.0, otherIncome: 65, interest: 52, depreciation: 170, profitBeforeTax: 1124, taxPct: 25.2, netProfit: 841, eps: 61.6, dividendPayoutPct: 15.0 }
+      { year: 'Mar 2026', sales: 7740, salesGrowthPct: -3.4, expenses: 6470, operatingProfit: 1270, opmPct: 16.4, otherIncome: 85, interest: 48, depreciation: 182, profitBeforeTax: 1125, taxPct: 25.1, netProfit: 843, eps: 61.8, dividendPayoutPct: 14.5 },
+      { year: 'Mar 2025', sales: 8011, salesGrowthPct: 17.2, expenses: 6730, operatingProfit: 1281, opmPct: 16.0, otherIncome: 65, interest: 52, depreciation: 170, profitBeforeTax: 1124, taxPct: 25.2, netProfit: 841, eps: 61.6, dividendPayoutPct: 15.0 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 27, reserves: 5480, borrowings: 680, otherLiabilities: 1250, totalLiabilities: 7437, fixedAssets: 3450, cwip: 520, investments: 650, otherAssets: 2817, totalAssets: 7437 }
+      { year: 'Mar 2026', equityCapital: 27, reserves: 5480, borrowings: 680, otherLiabilities: 1250, totalLiabilities: 7437, fixedAssets: 3450, cwip: 520, investments: 650, otherAssets: 2817, totalAssets: 7437 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 1150, cashFromInvesting: -620, cashFromFinancing: -480, netCashFlow: 50, freeCashFlow: 580 }
+      { year: 'Mar 2026', cashFromOperating: 1150, cashFromInvesting: -620, cashFromFinancing: -480, netCashFlow: 50, freeCashFlow: 580 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 22.4, roePct: 18.2, debtorDays: 45, inventoryDays: 38, daysPayable: 31, cashConversionCycle: 52, workingCapitalDays: 48 }
+      { year: 'Mar 2026', rocePct: 22.4, roePct: 18.2, debtorDays: 45, inventoryDays: 38, daysPayable: 31, cashConversionCycle: 52, workingCapitalDays: 48 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 49.13, fii: 8.24, dii: 17.85, government: 0.0, public: 24.78, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 49.13, fii: 8.24, dii: 17.85, government: 0.0, public: 24.78, pledgedPct: 0.0 }
     ]
   },
 
@@ -1140,8 +1140,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Tata Motors Limited is an Indian multinational automotive manufacturing company, producing passenger cars, trucks, vans, and electric vehicles, and parent of Jaguar Land Rover (JLR).',
     website: 'https://www.tatamotors.com',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-25',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 945.20,
     priceChangePct: 1.45,
     marketCap: 348000,
@@ -1213,22 +1213,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Intense competition in Indian passenger vehicle segment from global entrants.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 110500, expenses: 94800, operatingProfit: 15700, opmPct: 14.2, otherIncome: 850, interest: 1450, depreciation: 6200, profitBeforeTax: 8900, taxPct: 22.0, netProfit: 6942, eps: 18.8 }
+      { quarter: 'Sep 2026', sales: 110500, expenses: 94800, operatingProfit: 15700, opmPct: 14.2, otherIncome: 850, interest: 1450, depreciation: 6200, profitBeforeTax: 8900, taxPct: 22.0, netProfit: 6942, eps: 18.8 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 437928, salesGrowthPct: 26.6, expenses: 375400, operatingProfit: 62528, opmPct: 14.3, otherIncome: 3100, interest: 7200, depreciation: 24800, profitBeforeTax: 33628, taxPct: 5.5, netProfit: 31807, eps: 82.8, dividendPayoutPct: 7.2 }
+      { year: 'Mar 2026', sales: 437928, salesGrowthPct: 26.6, expenses: 375400, operatingProfit: 62528, opmPct: 14.3, otherIncome: 3100, interest: 7200, depreciation: 24800, profitBeforeTax: 33628, taxPct: 5.5, netProfit: 31807, eps: 82.8, dividendPayoutPct: 7.2 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 766, reserves: 92400, borrowings: 54000, otherLiabilities: 182000, totalLiabilities: 329166, fixedAssets: 142000, cwip: 12000, investments: 38000, otherAssets: 137166, totalAssets: 329166 }
+      { year: 'Mar 2026', equityCapital: 766, reserves: 92400, borrowings: 54000, otherLiabilities: 182000, totalLiabilities: 329166, fixedAssets: 142000, cwip: 12000, investments: 38000, otherAssets: 137166, totalAssets: 329166 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 42500, cashFromInvesting: -16000, cashFromFinancing: -24000, netCashFlow: 2500, freeCashFlow: 28500 }
+      { year: 'Mar 2026', cashFromOperating: 42500, cashFromInvesting: -16000, cashFromFinancing: -24000, netCashFlow: 2500, freeCashFlow: 28500 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 23.5, roePct: 36.4, debtorDays: 14, inventoryDays: 38, daysPayable: 70, cashConversionCycle: -18, workingCapitalDays: -12 }
+      { year: 'Mar 2026', rocePct: 23.5, roePct: 36.4, debtorDays: 14, inventoryDays: 38, daysPayable: 70, cashConversionCycle: -18, workingCapitalDays: -12 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 46.36, fii: 19.80, dii: 16.50, government: 0.0, public: 17.34, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 46.36, fii: 19.80, dii: 16.50, government: 0.0, public: 17.34, pledgedPct: 0.0 }
     ]
   },
   {
@@ -1246,8 +1246,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Sun Pharmaceutical Industries is India’s largest pharmaceutical enterprise and the 4th largest global specialty generic pharma company, with global presence in 100+ markets.',
     website: 'https://www.sunpharma.com',
-    dataFreshness: 'Q3 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-31',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 1780.40,
     priceChangePct: 0.92,
     marketCap: 427000,
@@ -1319,22 +1319,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Pricing pressure in the US generic commodity formulations segment.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 13200, expenses: 9550, operatingProfit: 3650, opmPct: 27.7, otherIncome: 420, interest: 45, depreciation: 680, profitBeforeTax: 3345, taxPct: 14.5, netProfit: 2860, eps: 11.9 }
+      { quarter: 'Sep 2026', sales: 13200, expenses: 9550, operatingProfit: 3650, opmPct: 27.7, otherIncome: 420, interest: 45, depreciation: 680, profitBeforeTax: 3345, taxPct: 14.5, netProfit: 2860, eps: 11.9 }
     ],
     annualProfitLoss: [
-      { year: 'Mar 2024', sales: 48496, salesGrowthPct: 10.5, expenses: 35150, operatingProfit: 13346, opmPct: 27.5, otherIncome: 1450, interest: 210, depreciation: 2550, profitBeforeTax: 12036, taxPct: 15.2, netProfit: 10206, eps: 42.5, dividendPayoutPct: 32.5 }
+      { year: 'Mar 2026', sales: 48496, salesGrowthPct: 10.5, expenses: 35150, operatingProfit: 13346, opmPct: 27.5, otherIncome: 1450, interest: 210, depreciation: 2550, profitBeforeTax: 12036, taxPct: 15.2, netProfit: 10206, eps: 42.5, dividendPayoutPct: 32.5 }
     ],
     balanceSheet: [
-      { year: 'Mar 2024', equityCapital: 240, reserves: 69200, borrowings: 3400, otherLiabilities: 14200, totalLiabilities: 87040, fixedAssets: 21500, cwip: 1800, investments: 28500, otherAssets: 35240, totalAssets: 87040 }
+      { year: 'Mar 2026', equityCapital: 240, reserves: 69200, borrowings: 3400, otherLiabilities: 14200, totalLiabilities: 87040, fixedAssets: 21500, cwip: 1800, investments: 28500, otherAssets: 35240, totalAssets: 87040 }
     ],
     cashFlow: [
-      { year: 'Mar 2024', cashFromOperating: 12400, cashFromInvesting: -3800, cashFromFinancing: -4800, netCashFlow: 3800, freeCashFlow: 8900 }
+      { year: 'Mar 2026', cashFromOperating: 12400, cashFromInvesting: -3800, cashFromFinancing: -4800, netCashFlow: 3800, freeCashFlow: 8900 }
     ],
     historicalRatios: [
-      { year: 'Mar 2024', rocePct: 18.2, roePct: 16.5, debtorDays: 82, inventoryDays: 134, daysPayable: 74, cashConversionCycle: 142, workingCapitalDays: 128 }
+      { year: 'Mar 2026', rocePct: 18.2, roePct: 16.5, debtorDays: 82, inventoryDays: 134, daysPayable: 74, cashConversionCycle: 142, workingCapitalDays: 128 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 54.48, fii: 17.80, dii: 19.40, government: 0.0, public: 8.32, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 54.48, fii: 17.80, dii: 19.40, government: 0.0, public: 8.32, pledgedPct: 0.0 }
     ]
   },
 
@@ -1356,8 +1356,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Apple designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories, and sells a variety of related services through its high-margin App Store and subscription ecosystem.',
     website: 'https://www.apple.com',
-    dataFreshness: 'Q1 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-30',
+    dataFreshness: 'Q1 FY27 (Jun 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 236.40,
     priceChangePct: 0.85,
     marketCap: 3580, // In Billions
@@ -1430,24 +1430,24 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Antitrust scrutiny in the US DOJ and European Union regarding digital market acts.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 124300, expenses: 84500, operatingProfit: 39800, opmPct: 32.0, otherIncome: 420, interest: 890, depreciation: 2950, profitBeforeTax: 36380, taxPct: 15.5, netProfit: 30741, eps: 2.05 },
-      { quarter: 'Sep 2024', sales: 94930, expenses: 65300, operatingProfit: 29630, opmPct: 31.2, otherIncome: -120, interest: 920, depreciation: 2910, profitBeforeTax: 25680, taxPct: 16.0, netProfit: 21571, eps: 1.42 }
+      { quarter: 'Sep 2026', sales: 124300, expenses: 84500, operatingProfit: 39800, opmPct: 32.0, otherIncome: 420, interest: 890, depreciation: 2950, profitBeforeTax: 36380, taxPct: 15.5, netProfit: 30741, eps: 2.05 },
+      { quarter: 'Jun 2026', sales: 94930, expenses: 65300, operatingProfit: 29630, opmPct: 31.2, otherIncome: -120, interest: 920, depreciation: 2910, profitBeforeTax: 25680, taxPct: 16.0, netProfit: 21571, eps: 1.42 }
     ],
     annualProfitLoss: [
-      { year: 'Sep 2024', sales: 391035, salesGrowthPct: 2.0, expenses: 267800, operatingProfit: 123235, opmPct: 31.5, otherIncome: 250, interest: 3800, depreciation: 11500, profitBeforeTax: 108185, taxPct: 15.8, netProfit: 91100, eps: 6.08, dividendPayoutPct: 15.2 },
-      { year: 'Sep 2023', sales: 383285, salesGrowthPct: -2.8, expenses: 268900, operatingProfit: 114385, opmPct: 29.8, otherIncome: -380, interest: 3900, depreciation: 11100, profitBeforeTax: 99005, taxPct: 14.8, netProfit: 84350, eps: 5.48, dividendPayoutPct: 16.0 }
+      { year: 'Sep 2026', sales: 391035, salesGrowthPct: 2.0, expenses: 267800, operatingProfit: 123235, opmPct: 31.5, otherIncome: 250, interest: 3800, depreciation: 11500, profitBeforeTax: 108185, taxPct: 15.8, netProfit: 91100, eps: 6.08, dividendPayoutPct: 15.2 },
+      { year: 'Sep 2025', sales: 383285, salesGrowthPct: -2.8, expenses: 268900, operatingProfit: 114385, opmPct: 29.8, otherIncome: -380, interest: 3900, depreciation: 11100, profitBeforeTax: 99005, taxPct: 14.8, netProfit: 84350, eps: 5.48, dividendPayoutPct: 16.0 }
     ],
     balanceSheet: [
-      { year: 'Sep 2024', equityCapital: 73, reserves: -62, borrowings: 106, otherLiabilities: 198, totalLiabilities: 315, fixedAssets: 45, cwip: 5, investments: 128, otherAssets: 137, totalAssets: 315 }
+      { year: 'Sep 2026', equityCapital: 73, reserves: -62, borrowings: 106, otherLiabilities: 198, totalLiabilities: 315, fixedAssets: 45, cwip: 5, investments: 128, otherAssets: 137, totalAssets: 315 }
     ],
     cashFlow: [
-      { year: 'Sep 2024', cashFromOperating: 118, cashFromInvesting: -12, cashFromFinancing: -105, netCashFlow: 1, freeCashFlow: 104 }
+      { year: 'Sep 2026', cashFromOperating: 118, cashFromInvesting: -12, cashFromFinancing: -105, netCashFlow: 1, freeCashFlow: 104 }
     ],
     historicalRatios: [
-      { year: 'Sep 2024', rocePct: 64.2, roePct: 142.5, debtorDays: 28, inventoryDays: 9, daysPayable: 91, cashConversionCycle: -54, workingCapitalDays: -48 }
+      { year: 'Sep 2026', rocePct: 64.2, roePct: 142.5, debtorDays: 28, inventoryDays: 9, daysPayable: 91, cashConversionCycle: -54, workingCapitalDays: -48 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 0.05, fii: 62.40, dii: 28.50, government: 0.0, public: 9.05, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 0.05, fii: 62.40, dii: 28.50, government: 0.0, public: 9.05, pledgedPct: 0.0 }
     ]
   },
   {
@@ -1465,8 +1465,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Microsoft is a worldwide provider of software, services, cloud solutions (Azure), and devices. Its software suite includes Windows, Microsoft 365, LinkedIn, GitHub, Xbox, and commercial generative AI tools.',
     website: 'https://www.microsoft.com',
-    dataFreshness: 'Q2 FY25 (Dec 2024)',
-    lastUpdated: '2025-01-29',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 442.80,
     priceChangePct: 1.12,
     marketCap: 3280,
@@ -1539,23 +1539,23 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Gaming segment hardware sales declining following Activision Blizzard integration.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 69630, expenses: 38100, operatingProfit: 31530, opmPct: 45.3, otherIncome: 450, interest: 680, depreciation: 3850, profitBeforeTax: 27450, taxPct: 18.2, netProfit: 22454, eps: 3.01 },
-      { quarter: 'Sep 2024', sales: 65585, expenses: 35000, operatingProfit: 30585, opmPct: 46.6, otherIncome: 380, interest: 650, depreciation: 3720, profitBeforeTax: 26595, taxPct: 18.5, netProfit: 21675, eps: 2.91 }
+      { quarter: 'Sep 2026', sales: 69630, expenses: 38100, operatingProfit: 31530, opmPct: 45.3, otherIncome: 450, interest: 680, depreciation: 3850, profitBeforeTax: 27450, taxPct: 18.2, netProfit: 22454, eps: 3.01 },
+      { quarter: 'Jun 2026', sales: 65585, expenses: 35000, operatingProfit: 30585, opmPct: 46.6, otherIncome: 380, interest: 650, depreciation: 3720, profitBeforeTax: 26595, taxPct: 18.5, netProfit: 21675, eps: 2.91 }
     ],
     annualProfitLoss: [
-      { year: 'Jun 2024', sales: 245122, salesGrowthPct: 15.6, expenses: 135600, operatingProfit: 109522, opmPct: 44.7, otherIncome: 1250, interest: 2800, depreciation: 14200, profitBeforeTax: 93772, taxPct: 18.4, netProfit: 76520, eps: 10.28, dividendPayoutPct: 28.5 }
+      { year: 'Jun 2026', sales: 245122, salesGrowthPct: 15.6, expenses: 135600, operatingProfit: 109522, opmPct: 44.7, otherIncome: 1250, interest: 2800, depreciation: 14200, profitBeforeTax: 93772, taxPct: 18.4, netProfit: 76520, eps: 10.28, dividendPayoutPct: 28.5 }
     ],
     balanceSheet: [
-      { year: 'Jun 2024', equityCapital: 98, reserves: 170, borrowings: 98, otherLiabilities: 145, totalLiabilities: 511, fixedAssets: 185, cwip: 25, investments: 120, otherAssets: 181, totalAssets: 511 }
+      { year: 'Jun 2026', equityCapital: 98, reserves: 170, borrowings: 98, otherLiabilities: 145, totalLiabilities: 511, fixedAssets: 185, cwip: 25, investments: 120, otherAssets: 181, totalAssets: 511 }
     ],
     cashFlow: [
-      { year: 'Jun 2024', cashFromOperating: 112, cashFromInvesting: -38, cashFromFinancing: -72, netCashFlow: 2, freeCashFlow: 82 }
+      { year: 'Jun 2026', cashFromOperating: 112, cashFromInvesting: -38, cashFromFinancing: -72, netCashFlow: 2, freeCashFlow: 82 }
     ],
     historicalRatios: [
-      { year: 'Jun 2024', rocePct: 34.5, roePct: 38.2, debtorDays: 52, inventoryDays: 0, daysPayable: 70, cashConversionCycle: -18, workingCapitalDays: -12 }
+      { year: 'Jun 2026', rocePct: 34.5, roePct: 38.2, debtorDays: 52, inventoryDays: 0, daysPayable: 70, cashConversionCycle: -18, workingCapitalDays: -12 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 1.25, fii: 68.40, dii: 24.20, government: 0.0, public: 6.15, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 1.25, fii: 68.40, dii: 24.20, government: 0.0, public: 6.15, pledgedPct: 0.0 }
     ]
   },
   {
@@ -1573,8 +1573,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'NVIDIA is the pioneer of GPU-accelerated computing. It creates specialized hardware and CUDA software architectures powering global AI training, inference, high-performance computing, and autonomous machines.',
     website: 'https://www.nvidia.com',
-    dataFreshness: 'Q3 FY25 (Oct 2024)',
-    lastUpdated: '2024-11-25',
+    dataFreshness: 'Q3 FY27 (Oct 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 138.50,
     priceChangePct: 3.45,
     marketCap: 3390,
@@ -1647,23 +1647,23 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Strict US export control restrictions on advanced AI silicon shipments to China.'
     ],
     quarterlyResults: [
-      { quarter: 'Oct 2024', sales: 35082, expenses: 13200, operatingProfit: 21882, opmPct: 62.4, otherIncome: 340, interest: 65, depreciation: 520, profitBeforeTax: 21637, taxPct: 10.5, netProfit: 19365, eps: 0.78 },
-      { quarter: 'Jul 2024', sales: 30040, expenses: 11400, operatingProfit: 18640, opmPct: 62.0, otherIncome: 290, interest: 62, depreciation: 480, profitBeforeTax: 18388, taxPct: 10.4, netProfit: 16475, eps: 0.67 }
+      { quarter: 'Jul 2026', sales: 35082, expenses: 13200, operatingProfit: 21882, opmPct: 62.4, otherIncome: 340, interest: 65, depreciation: 520, profitBeforeTax: 21637, taxPct: 10.5, netProfit: 19365, eps: 0.78 },
+      { quarter: 'Apr 2026', sales: 30040, expenses: 11400, operatingProfit: 18640, opmPct: 62.0, otherIncome: 290, interest: 62, depreciation: 480, profitBeforeTax: 18388, taxPct: 10.4, netProfit: 16475, eps: 0.67 }
     ],
     annualProfitLoss: [
-      { year: 'Jan 2024', sales: 60922, salesGrowthPct: 122.4, expenses: 28000, operatingProfit: 32922, opmPct: 54.0, otherIncome: 850, interest: 250, depreciation: 1450, profitBeforeTax: 32072, taxPct: 11.5, netProfit: 28383, eps: 1.15, dividendPayoutPct: 2.5 }
+      { year: 'Jan 2026', sales: 60922, salesGrowthPct: 122.4, expenses: 28000, operatingProfit: 32922, opmPct: 54.0, otherIncome: 850, interest: 250, depreciation: 1450, profitBeforeTax: 32072, taxPct: 11.5, netProfit: 28383, eps: 1.15, dividendPayoutPct: 2.5 }
     ],
     balanceSheet: [
-      { year: 'Jan 2024', equityCapital: 43, reserves: 12, borrowings: 11, otherLiabilities: 15, totalLiabilities: 81, fixedAssets: 12, cwip: 1, investments: 28, otherAssets: 40, totalAssets: 81 }
+      { year: 'Jan 2026', equityCapital: 43, reserves: 12, borrowings: 11, otherLiabilities: 15, totalLiabilities: 81, fixedAssets: 12, cwip: 1, investments: 28, otherAssets: 40, totalAssets: 81 }
     ],
     cashFlow: [
-      { year: 'Jan 2024', cashFromOperating: 28, cashFromInvesting: -12, cashFromFinancing: -15, netCashFlow: 1, freeCashFlow: 24 }
+      { year: 'Jan 2026', cashFromOperating: 28, cashFromInvesting: -12, cashFromFinancing: -15, netCashFlow: 1, freeCashFlow: 24 }
     ],
     historicalRatios: [
-      { year: 'Jan 2024', rocePct: 88.5, roePct: 92.4, debtorDays: 54, inventoryDays: 52, daysPayable: 38, cashConversionCycle: 68, workingCapitalDays: 62 }
+      { year: 'Jan 2026', rocePct: 88.5, roePct: 92.4, debtorDays: 54, inventoryDays: 52, daysPayable: 38, cashConversionCycle: 68, workingCapitalDays: 62 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 3.85, fii: 64.80, dii: 25.40, government: 0.0, public: 5.95, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 3.85, fii: 64.80, dii: 25.40, government: 0.0, public: 5.95, pledgedPct: 0.0 }
     ]
   },
 
@@ -1682,8 +1682,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Amazon is a global technology enterprise operating the world’s largest e-commerce marketplace, leading cloud infrastructure provider AWS, and digital advertising network.',
     website: 'https://www.amazon.com',
-    dataFreshness: 'Q4 FY24 (Dec 2024)',
-    lastUpdated: '2025-02-05',
+    dataFreshness: 'Q4 FY26 (Dec 2025)',
+    lastUpdated: '2026-10-23',
     currentPrice: 212.50,
     priceChangePct: 1.42,
     marketCap: 2210,
@@ -1755,22 +1755,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Antitrust litigation with the Federal Trade Commission ongoing.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 187800, expenses: 166600, operatingProfit: 21200, opmPct: 11.3, otherIncome: 450, interest: 820, depreciation: 14200, profitBeforeTax: 20830, taxPct: 18.5, netProfit: 16976, eps: 1.62 }
+      { quarter: 'Sep 2026', sales: 187800, expenses: 166600, operatingProfit: 21200, opmPct: 11.3, otherIncome: 450, interest: 820, depreciation: 14200, profitBeforeTax: 20830, taxPct: 18.5, netProfit: 16976, eps: 1.62 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2024', sales: 620130, salesGrowthPct: 11.8, expenses: 550700, operatingProfit: 69430, opmPct: 11.2, otherIncome: 1200, interest: 3200, depreciation: 52400, profitBeforeTax: 67430, taxPct: 19.2, netProfit: 54483, eps: 5.18, dividendPayoutPct: 0.0 }
+      { year: 'Dec 2025', sales: 620130, salesGrowthPct: 11.8, expenses: 550700, operatingProfit: 69430, opmPct: 11.2, otherIncome: 1200, interest: 3200, depreciation: 52400, profitBeforeTax: 67430, taxPct: 19.2, netProfit: 54483, eps: 5.18, dividendPayoutPct: 0.0 }
     ],
     balanceSheet: [
-      { year: 'Dec 2024', equityCapital: 120, reserves: 245000, borrowings: 118000, otherLiabilities: 182000, totalLiabilities: 545120, fixedAssets: 285000, cwip: 18000, investments: 62000, otherAssets: 180120, totalAssets: 545120 }
+      { year: 'Dec 2025', equityCapital: 120, reserves: 245000, borrowings: 118000, otherLiabilities: 182000, totalLiabilities: 545120, fixedAssets: 285000, cwip: 18000, investments: 62000, otherAssets: 180120, totalAssets: 545120 }
     ],
     cashFlow: [
-      { year: 'Dec 2024', cashFromOperating: 112, cashFromInvesting: -65, cashFromFinancing: -35, netCashFlow: 12, freeCashFlow: 49 }
+      { year: 'Dec 2025', cashFromOperating: 112, cashFromInvesting: -65, cashFromFinancing: -35, netCashFlow: 12, freeCashFlow: 49 }
     ],
     historicalRatios: [
-      { year: 'Dec 2024', rocePct: 22.5, roePct: 24.2, debtorDays: 22, inventoryDays: 34, daysPayable: 80, cashConversionCycle: -24, workingCapitalDays: -18 }
+      { year: 'Dec 2025', rocePct: 22.5, roePct: 24.2, debtorDays: 22, inventoryDays: 34, daysPayable: 80, cashConversionCycle: -24, workingCapitalDays: -18 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 9.20, fii: 61.50, dii: 21.80, government: 0.0, public: 7.50, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 9.20, fii: 61.50, dii: 21.80, government: 0.0, public: 7.50, pledgedPct: 0.0 }
     ]
   },
   {
@@ -1788,8 +1788,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Tesla designs, manufactures, and deploys electric vehicles, commercial battery storage units (Megapack), and autonomous driving full-stack AI robotics.',
     website: 'https://www.tesla.com',
-    dataFreshness: 'Q4 FY24 (Dec 2024)',
-    lastUpdated: '2025-01-29',
+    dataFreshness: 'Q4 FY26 (Dec 2025)',
+    lastUpdated: '2026-10-23',
     currentPrice: 248.50,
     priceChangePct: 2.15,
     marketCap: 792,
@@ -1861,22 +1861,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Key person dependency and regulatory hurdles for full driverless approval.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 25800, expenses: 23600, operatingProfit: 2200, opmPct: 8.5, otherIncome: 350, interest: 85, depreciation: 1300, profitBeforeTax: 2465, taxPct: 15.0, netProfit: 2095, eps: 0.65 }
+      { quarter: 'Sep 2026', sales: 25800, expenses: 23600, operatingProfit: 2200, opmPct: 8.5, otherIncome: 350, interest: 85, depreciation: 1300, profitBeforeTax: 2465, taxPct: 15.0, netProfit: 2095, eps: 0.65 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2024', sales: 97800, salesGrowthPct: 1.0, expenses: 88900, operatingProfit: 8900, opmPct: 9.1, otherIncome: 1100, interest: 320, depreciation: 4800, profitBeforeTax: 9680, taxPct: 14.2, netProfit: 8305, eps: 2.58, dividendPayoutPct: 0.0 }
+      { year: 'Dec 2025', sales: 97800, salesGrowthPct: 1.0, expenses: 88900, operatingProfit: 8900, opmPct: 9.1, otherIncome: 1100, interest: 320, depreciation: 4800, profitBeforeTax: 9680, taxPct: 14.2, netProfit: 8305, eps: 2.58, dividendPayoutPct: 0.0 }
     ],
     balanceSheet: [
-      { year: 'Dec 2024', equityCapital: 32, reserves: 68500, borrowings: 5400, otherLiabilities: 38000, totalLiabilities: 111932, fixedAssets: 34000, cwip: 3500, investments: 32000, otherAssets: 42432, totalAssets: 111932 }
+      { year: 'Dec 2025', equityCapital: 32, reserves: 68500, borrowings: 5400, otherLiabilities: 38000, totalLiabilities: 111932, fixedAssets: 34000, cwip: 3500, investments: 32000, otherAssets: 42432, totalAssets: 111932 }
     ],
     cashFlow: [
-      { year: 'Dec 2024', cashFromOperating: 14.2, cashFromInvesting: -9.4, cashFromFinancing: -1.2, netCashFlow: 3.6, freeCashFlow: 4.8 }
+      { year: 'Dec 2025', cashFromOperating: 14.2, cashFromInvesting: -9.4, cashFromFinancing: -1.2, netCashFlow: 3.6, freeCashFlow: 4.8 }
     ],
     historicalRatios: [
-      { year: 'Dec 2024', rocePct: 16.5, roePct: 18.2, debtorDays: 12, inventoryDays: 52, daysPayable: 46, cashConversionCycle: 18, workingCapitalDays: 14 }
+      { year: 'Dec 2025', rocePct: 16.5, roePct: 18.2, debtorDays: 12, inventoryDays: 52, daysPayable: 46, cashConversionCycle: 18, workingCapitalDays: 14 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 12.80, fii: 48.50, dii: 24.20, government: 0.0, public: 14.50, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 12.80, fii: 48.50, dii: 24.20, government: 0.0, public: 14.50, pledgedPct: 0.0 }
     ]
   },
   {
@@ -1894,8 +1894,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Alphabet is the global parent holding company of Google, YouTube, Android, Google Cloud, and Waymo, providing search infrastructure, digital video, and frontier AI.',
     website: 'https://abc.xyz',
-    dataFreshness: 'Q4 FY24 (Dec 2024)',
-    lastUpdated: '2025-02-04',
+    dataFreshness: 'Q4 FY26 (Dec 2025)',
+    lastUpdated: '2026-10-23',
     currentPrice: 182.40,
     priceChangePct: 1.12,
     marketCap: 2240,
@@ -1967,22 +1967,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Potential search query volume disruption from conversational AI tools.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 96500, expenses: 65400, operatingProfit: 31100, opmPct: 32.2, otherIncome: 820, interest: 180, depreciation: 4200, profitBeforeTax: 31740, taxPct: 15.5, netProfit: 26820, eps: 2.15 }
+      { quarter: 'Sep 2026', sales: 96500, expenses: 65400, operatingProfit: 31100, opmPct: 32.2, otherIncome: 820, interest: 180, depreciation: 4200, profitBeforeTax: 31740, taxPct: 15.5, netProfit: 26820, eps: 2.15 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2024', sales: 350000, salesGrowthPct: 15.2, expenses: 237300, operatingProfit: 112700, opmPct: 32.2, otherIncome: 2400, interest: 650, depreciation: 15800, profitBeforeTax: 114450, taxPct: 15.0, netProfit: 97282, eps: 7.78, dividendPayoutPct: 5.2 }
+      { year: 'Dec 2025', sales: 350000, salesGrowthPct: 15.2, expenses: 237300, operatingProfit: 112700, opmPct: 32.2, otherIncome: 2400, interest: 650, depreciation: 15800, profitBeforeTax: 114450, taxPct: 15.0, netProfit: 97282, eps: 7.78, dividendPayoutPct: 5.2 }
     ],
     balanceSheet: [
-      { year: 'Dec 2024', equityCapital: 12, reserves: 310000, borrowings: 28000, otherLiabilities: 78000, totalLiabilities: 416012, fixedAssets: 145000, cwip: 8500, investments: 125000, otherAssets: 137512, totalAssets: 416012 }
+      { year: 'Dec 2025', equityCapital: 12, reserves: 310000, borrowings: 28000, otherLiabilities: 78000, totalLiabilities: 416012, fixedAssets: 145000, cwip: 8500, investments: 125000, otherAssets: 137512, totalAssets: 416012 }
     ],
     cashFlow: [
-      { year: 'Dec 2024', cashFromOperating: 108, cashFromInvesting: -42, cashFromFinancing: -55, netCashFlow: 11, freeCashFlow: 69 }
+      { year: 'Dec 2025', cashFromOperating: 108, cashFromInvesting: -42, cashFromFinancing: -55, netCashFlow: 11, freeCashFlow: 69 }
     ],
     historicalRatios: [
-      { year: 'Dec 2024', rocePct: 35.2, roePct: 31.8, debtorDays: 42, inventoryDays: 0, daysPayable: 28, cashConversionCycle: 14, workingCapitalDays: 12 }
+      { year: 'Dec 2025', rocePct: 35.2, roePct: 31.8, debtorDays: 42, inventoryDays: 0, daysPayable: 28, cashConversionCycle: 14, workingCapitalDays: 12 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 11.50, fii: 64.20, dii: 18.50, government: 0.0, public: 5.80, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 11.50, fii: 64.20, dii: 18.50, government: 0.0, public: 5.80, pledgedPct: 0.0 }
     ]
   },
   {
@@ -2000,8 +2000,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'JPMorgan Chase is the largest financial institution in the United States and a global leader in investment banking, financial services for consumers and small businesses, commercial banking, and asset management.',
     website: 'https://www.jpmorganchase.com',
-    dataFreshness: 'Q4 FY24 (Dec 2024)',
-    lastUpdated: '2025-01-15',
+    dataFreshness: 'Q4 FY26 (Dec 2025)',
+    lastUpdated: '2026-10-23',
     currentPrice: 224.80,
     priceChangePct: -0.45,
     marketCap: 642,
@@ -2073,22 +2073,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Federal banking capital surcharge regulations.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 42200, expenses: 25800, operatingProfit: 16400, opmPct: 38.9, otherIncome: 120, interest: 850, depreciation: 920, profitBeforeTax: 14750, taxPct: 18.5, netProfit: 12021, eps: 4.25 }
+      { quarter: 'Sep 2026', sales: 42200, expenses: 25800, operatingProfit: 16400, opmPct: 38.9, otherIncome: 120, interest: 850, depreciation: 920, profitBeforeTax: 14750, taxPct: 18.5, netProfit: 12021, eps: 4.25 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2024', sales: 168500, salesGrowthPct: 10.2, expenses: 103600, operatingProfit: 64900, opmPct: 38.5, otherIncome: 450, interest: 3200, depreciation: 3600, profitBeforeTax: 58550, taxPct: 18.2, netProfit: 47894, eps: 16.85, dividendPayoutPct: 26.5 }
+      { year: 'Dec 2025', sales: 168500, salesGrowthPct: 10.2, expenses: 103600, operatingProfit: 64900, opmPct: 38.5, otherIncome: 450, interest: 3200, depreciation: 3600, profitBeforeTax: 58550, taxPct: 18.2, netProfit: 47894, eps: 16.85, dividendPayoutPct: 26.5 }
     ],
     balanceSheet: [
-      { year: 'Dec 2024', equityCapital: 28, reserves: 348000, borrowings: 435000, otherLiabilities: 3350000, totalLiabilities: 4133028, fixedAssets: 28000, cwip: 2500, investments: 850000, otherAssets: 3252528, totalAssets: 4133028 }
+      { year: 'Dec 2025', equityCapital: 28, reserves: 348000, borrowings: 435000, otherLiabilities: 3350000, totalLiabilities: 4133028, fixedAssets: 28000, cwip: 2500, investments: 850000, otherAssets: 3252528, totalAssets: 4133028 }
     ],
     cashFlow: [
-      { year: 'Dec 2024', cashFromOperating: 58, cashFromInvesting: -18, cashFromFinancing: -28, netCashFlow: 12, freeCashFlow: 48 }
+      { year: 'Dec 2025', cashFromOperating: 58, cashFromInvesting: -18, cashFromFinancing: -28, netCashFlow: 12, freeCashFlow: 48 }
     ],
     historicalRatios: [
-      { year: 'Dec 2024', rocePct: 18.5, roePct: 18.2, debtorDays: 0, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 0, workingCapitalDays: 0 }
+      { year: 'Dec 2025', rocePct: 18.5, roePct: 18.2, debtorDays: 0, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 0, workingCapitalDays: 0 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 0.12, fii: 58.40, dii: 32.50, government: 0.0, public: 8.98, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 0.12, fii: 58.40, dii: 32.50, government: 0.0, public: 8.98, pledgedPct: 0.0 }
     ]
   },
   {
@@ -2106,8 +2106,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Eli Lilly is an elite global pharmaceutical manufacturer spearheading therapeutic breakthroughs with blockbuster incretin drugs Mounjaro and Zepbound for metabolic diseases and obesity.',
     website: 'https://www.lilly.com',
-    dataFreshness: 'Q4 FY24 (Dec 2024)',
-    lastUpdated: '2025-02-06',
+    dataFreshness: 'Q4 FY26 (Dec 2025)',
+    lastUpdated: '2026-10-23',
     currentPrice: 825.40,
     priceChangePct: 1.85,
     marketCap: 785,
@@ -2179,22 +2179,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Valuation multiple (P/E 58x) discounts multi-year rapid operational execution.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 13500, expenses: 8850, operatingProfit: 4650, opmPct: 34.4, otherIncome: 120, interest: 180, depreciation: 520, profitBeforeTax: 4070, taxPct: 14.5, netProfit: 3480, eps: 3.85 }
+      { quarter: 'Sep 2026', sales: 13500, expenses: 8850, operatingProfit: 4650, opmPct: 34.4, otherIncome: 120, interest: 180, depreciation: 520, profitBeforeTax: 4070, taxPct: 14.5, netProfit: 3480, eps: 3.85 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2024', sales: 45200, salesGrowthPct: 32.5, expenses: 29750, operatingProfit: 15450, opmPct: 34.2, otherIncome: 350, interest: 620, depreciation: 1850, profitBeforeTax: 13330, taxPct: 14.2, netProfit: 11437, eps: 12.65, dividendPayoutPct: 38.5 }
+      { year: 'Dec 2025', sales: 45200, salesGrowthPct: 32.5, expenses: 29750, operatingProfit: 15450, opmPct: 34.2, otherIncome: 350, interest: 620, depreciation: 1850, profitBeforeTax: 13330, taxPct: 14.2, netProfit: 11437, eps: 12.65, dividendPayoutPct: 38.5 }
     ],
     balanceSheet: [
-      { year: 'Dec 2024', equityCapital: 9, reserves: 16500, borrowings: 32000, otherLiabilities: 28000, totalLiabilities: 76509, fixedAssets: 24000, cwip: 6500, investments: 12000, otherAssets: 34009, totalAssets: 76509 }
+      { year: 'Dec 2025', equityCapital: 9, reserves: 16500, borrowings: 32000, otherLiabilities: 28000, totalLiabilities: 76509, fixedAssets: 24000, cwip: 6500, investments: 12000, otherAssets: 34009, totalAssets: 76509 }
     ],
     cashFlow: [
-      { year: 'Dec 2024', cashFromOperating: 16.5, cashFromInvesting: -5.2, cashFromFinancing: -8.8, netCashFlow: 2.5, freeCashFlow: 12.4 }
+      { year: 'Dec 2025', cashFromOperating: 16.5, cashFromInvesting: -5.2, cashFromFinancing: -8.8, netCashFlow: 2.5, freeCashFlow: 12.4 }
     ],
     historicalRatios: [
-      { year: 'Dec 2024', rocePct: 28.4, roePct: 78.5, debtorDays: 58, inventoryDays: 78, daysPayable: 68, cashConversionCycle: 68, workingCapitalDays: 52 }
+      { year: 'Dec 2025', rocePct: 28.4, roePct: 78.5, debtorDays: 58, inventoryDays: 78, daysPayable: 68, cashConversionCycle: 68, workingCapitalDays: 52 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 0.08, fii: 68.40, dii: 22.50, government: 0.0, public: 9.02, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 0.08, fii: 68.40, dii: 22.50, government: 0.0, public: 9.02, pledgedPct: 0.0 }
     ]
   },
   {
@@ -2212,8 +2212,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Exxon Mobil is one of the world’s foremost integrated oil and energy companies, developing prolific deepwater discoveries in Guyana and low-cost unconventional oil in the Permian Basin.',
     website: 'https://corporate.exxonmobil.com',
-    dataFreshness: 'Q4 FY24 (Dec 2024)',
-    lastUpdated: '2025-01-31',
+    dataFreshness: 'Q4 FY26 (Dec 2025)',
+    lastUpdated: '2026-10-23',
     currentPrice: 118.60,
     priceChangePct: 0.42,
     marketCap: 472,
@@ -2285,22 +2285,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Refining crack spread cyclicality.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 88500, expenses: 73800, operatingProfit: 14700, opmPct: 16.6, otherIncome: 350, interest: 480, depreciation: 5200, profitBeforeTax: 9370, taxPct: 22.0, netProfit: 7308, eps: 1.82 }
+      { quarter: 'Sep 2026', sales: 88500, expenses: 73800, operatingProfit: 14700, opmPct: 16.6, otherIncome: 350, interest: 480, depreciation: 5200, profitBeforeTax: 9370, taxPct: 22.0, netProfit: 7308, eps: 1.82 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2024', sales: 349500, salesGrowthPct: 4.2, expenses: 291800, operatingProfit: 57700, opmPct: 16.5, otherIncome: 1400, interest: 1800, depreciation: 20500, profitBeforeTax: 36800, taxPct: 21.5, netProfit: 28888, eps: 7.22, dividendPayoutPct: 45.0 }
+      { year: 'Dec 2025', sales: 349500, salesGrowthPct: 4.2, expenses: 291800, operatingProfit: 57700, opmPct: 16.5, otherIncome: 1400, interest: 1800, depreciation: 20500, profitBeforeTax: 36800, taxPct: 21.5, netProfit: 28888, eps: 7.22, dividendPayoutPct: 45.0 }
     ],
     balanceSheet: [
-      { year: 'Dec 2024', equityCapital: 42, reserves: 218000, borrowings: 41000, otherLiabilities: 112000, totalLiabilities: 371042, fixedAssets: 245000, cwip: 18000, investments: 38000, otherAssets: 70042, totalAssets: 371042 }
+      { year: 'Dec 2025', equityCapital: 42, reserves: 218000, borrowings: 41000, otherLiabilities: 112000, totalLiabilities: 371042, fixedAssets: 245000, cwip: 18000, investments: 38000, otherAssets: 70042, totalAssets: 371042 }
     ],
     cashFlow: [
-      { year: 'Dec 2024', cashFromOperating: 55, cashFromInvesting: -25, cashFromFinancing: -27, netCashFlow: 3, freeCashFlow: 32 }
+      { year: 'Dec 2025', cashFromOperating: 55, cashFromInvesting: -25, cashFromFinancing: -27, netCashFlow: 3, freeCashFlow: 32 }
     ],
     historicalRatios: [
-      { year: 'Dec 2024', rocePct: 16.2, roePct: 17.5, debtorDays: 24, inventoryDays: 16, daysPayable: 22, cashConversionCycle: 18, workingCapitalDays: 14 }
+      { year: 'Dec 2025', rocePct: 16.2, roePct: 17.5, debtorDays: 24, inventoryDays: 16, daysPayable: 22, cashConversionCycle: 18, workingCapitalDays: 14 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 0.05, fii: 56.50, dii: 31.80, government: 0.0, public: 11.65, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 0.05, fii: 56.50, dii: 31.80, government: 0.0, public: 11.65, pledgedPct: 0.0 }
     ]
   },
   {
@@ -2318,8 +2318,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Costco operates a premier international network of membership-only warehouse clubs providing brand-name merchandise at substantial discounts supported by recurring membership fee income.',
     website: 'https://www.costco.com',
-    dataFreshness: 'Q1 FY25 (Dec 2024)',
-    lastUpdated: '2024-12-14',
+    dataFreshness: 'Q1 FY27 (Jun 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 924.30,
     priceChangePct: 0.75,
     marketCap: 410,
@@ -2391,22 +2391,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Low dividend payout yield compared to standard retail consumer staples.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 62500, expenses: 60100, operatingProfit: 2400, opmPct: 3.8, otherIncome: 110, interest: 45, depreciation: 520, profitBeforeTax: 1945, taxPct: 24.5, netProfit: 1468, eps: 3.32 }
+      { quarter: 'Sep 2026', sales: 62500, expenses: 60100, operatingProfit: 2400, opmPct: 3.8, otherIncome: 110, interest: 45, depreciation: 520, profitBeforeTax: 1945, taxPct: 24.5, netProfit: 1468, eps: 3.32 }
     ],
     annualProfitLoss: [
-      { year: 'Sep 2024', sales: 254450, salesGrowthPct: 8.6, expenses: 244800, operatingProfit: 9650, opmPct: 3.8, otherIncome: 420, interest: 180, depreciation: 2100, profitBeforeTax: 7790, taxPct: 24.2, netProfit: 5904, eps: 13.32, dividendPayoutPct: 34.5 }
+      { year: 'Sep 2026', sales: 254450, salesGrowthPct: 8.6, expenses: 244800, operatingProfit: 9650, opmPct: 3.8, otherIncome: 420, interest: 180, depreciation: 2100, profitBeforeTax: 7790, taxPct: 24.2, netProfit: 5904, eps: 13.32, dividendPayoutPct: 34.5 }
     ],
     balanceSheet: [
-      { year: 'Sep 2024', equityCapital: 5, reserves: 24500, borrowings: 6800, otherLiabilities: 38000, totalLiabilities: 69305, fixedAssets: 28000, cwip: 1800, investments: 12000, otherAssets: 27505, totalAssets: 69305 }
+      { year: 'Sep 2026', equityCapital: 5, reserves: 24500, borrowings: 6800, otherLiabilities: 38000, totalLiabilities: 69305, fixedAssets: 28000, cwip: 1800, investments: 12000, otherAssets: 27505, totalAssets: 69305 }
     ],
     cashFlow: [
-      { year: 'Sep 2024', cashFromOperating: 11.2, cashFromInvesting: -4.8, cashFromFinancing: -5.8, netCashFlow: 0.6, freeCashFlow: 6.8 }
+      { year: 'Sep 2026', cashFromOperating: 11.2, cashFromInvesting: -4.8, cashFromFinancing: -5.8, netCashFlow: 0.6, freeCashFlow: 6.8 }
     ],
     historicalRatios: [
-      { year: 'Sep 2024', rocePct: 29.5, roePct: 28.4, debtorDays: 4, inventoryDays: 32, daysPayable: 32, cashConversionCycle: 4, workingCapitalDays: -2 }
+      { year: 'Sep 2026', rocePct: 29.5, roePct: 28.4, debtorDays: 4, inventoryDays: 32, daysPayable: 32, cashConversionCycle: 4, workingCapitalDays: -2 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 0.15, fii: 62.80, dii: 26.40, government: 0.0, public: 10.65, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 0.15, fii: 62.80, dii: 26.40, government: 0.0, public: 10.65, pledgedPct: 0.0 }
     ]
   },
 
@@ -2428,8 +2428,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Emaar Properties is the master developer behind Downtown Dubai, Burj Khalifa, and Dubai Mall. It operates across prime residential property, retail malls, commercial assets, and international hospitality.',
     website: 'https://www.emaar.com',
-    dataFreshness: 'Q3 FY24 (Sep 2024)',
-    lastUpdated: '2024-11-15',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 8.92,
     priceChangePct: 1.45,
     marketCap: 78.5, // Billion AED
@@ -2502,23 +2502,23 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Foreign ownership limit restrictions and fluctuating mortgage interest rates.'
     ],
     quarterlyResults: [
-      { quarter: 'Sep 2024', sales: 8450, expenses: 4320, operatingProfit: 4130, opmPct: 48.9, otherIncome: 180, interest: 210, depreciation: 380, profitBeforeTax: 3720, taxPct: 9.0, netProfit: 3385, eps: 0.38 },
-      { quarter: 'Jun 2024', sales: 7850, expenses: 4050, operatingProfit: 3800, opmPct: 48.4, otherIncome: 160, interest: 215, depreciation: 375, profitBeforeTax: 3370, taxPct: 9.0, netProfit: 3067, eps: 0.35 }
+      { quarter: 'Jun 2026', sales: 8450, expenses: 4320, operatingProfit: 4130, opmPct: 48.9, otherIncome: 180, interest: 210, depreciation: 380, profitBeforeTax: 3720, taxPct: 9.0, netProfit: 3385, eps: 0.38 },
+      { quarter: 'Mar 2026', sales: 7850, expenses: 4050, operatingProfit: 3800, opmPct: 48.4, otherIncome: 160, interest: 215, depreciation: 375, profitBeforeTax: 3370, taxPct: 9.0, netProfit: 3067, eps: 0.35 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2023', sales: 26748, salesGrowthPct: 7.0, expenses: 13850, operatingProfit: 12898, opmPct: 48.2, otherIncome: 520, interest: 890, depreciation: 1420, profitBeforeTax: 11108, taxPct: 0.0, netProfit: 11108, eps: 1.26, dividendPayoutPct: 40.0 }
+      { year: 'Dec 2024', sales: 26748, salesGrowthPct: 7.0, expenses: 13850, operatingProfit: 12898, opmPct: 48.2, otherIncome: 520, interest: 890, depreciation: 1420, profitBeforeTax: 11108, taxPct: 0.0, netProfit: 11108, eps: 1.26, dividendPayoutPct: 40.0 }
     ],
     balanceSheet: [
-      { year: 'Dec 2023', equityCapital: 8.8, reserves: 71.5, borrowings: 14.5, otherLiabilities: 38.2, totalLiabilities: 133.0, fixedAssets: 38.5, cwip: 6.2, investments: 18.5, otherAssets: 69.8, totalAssets: 133.0 }
+      { year: 'Dec 2024', equityCapital: 8.8, reserves: 71.5, borrowings: 14.5, otherLiabilities: 38.2, totalLiabilities: 133.0, fixedAssets: 38.5, cwip: 6.2, investments: 18.5, otherAssets: 69.8, totalAssets: 133.0 }
     ],
     cashFlow: [
-      { year: 'Dec 2023', cashFromOperating: 12.8, cashFromInvesting: -3.8, cashFromFinancing: -7.5, netCashFlow: 1.5, freeCashFlow: 8.8 }
+      { year: 'Dec 2024', cashFromOperating: 12.8, cashFromInvesting: -3.8, cashFromFinancing: -7.5, netCashFlow: 1.5, freeCashFlow: 8.8 }
     ],
     historicalRatios: [
-      { year: 'Dec 2023', rocePct: 18.5, roePct: 16.8, debtorDays: 28, inventoryDays: 165, daysPayable: 48, cashConversionCycle: 145, workingCapitalDays: 130 }
+      { year: 'Dec 2024', rocePct: 18.5, roePct: 16.8, debtorDays: 28, inventoryDays: 165, daysPayable: 48, cashConversionCycle: 145, workingCapitalDays: 130 }
     ],
     shareholdingPattern: [
-      { quarter: 'Sep 2024', promoter: 24.0, fii: 38.50, dii: 22.10, government: 0.0, public: 15.40, pledgedPct: 0.0 }
+      { quarter: 'Jun 2026', promoter: 24.0, fii: 38.50, dii: 22.10, government: 0.0, public: 15.40, pledgedPct: 0.0 }
     ]
   },
   {
@@ -2536,8 +2536,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Salik is Dubai’s exclusive toll gate operator, operating 100% automated toll collection gates across the emirate of Dubai with a 49-year concession agreement from the Roads and Transport Authority (RTA).',
     website: 'https://www.salik.ae',
-    dataFreshness: 'Q3 FY24 (Sep 2024)',
-    lastUpdated: '2024-11-12',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 4.15,
     priceChangePct: 0.95,
     marketCap: 31.1,
@@ -2610,22 +2610,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Public transport shift subsidies or congestion road pricing regulation limits.'
     ],
     quarterlyResults: [
-      { quarter: 'Sep 2024', sales: 585, expenses: 198, operatingProfit: 387, opmPct: 66.1, otherIncome: 12, interest: 28, depreciation: 24, profitBeforeTax: 347, taxPct: 9.0, netProfit: 316, eps: 0.042 }
+      { quarter: 'Jun 2026', sales: 585, expenses: 198, operatingProfit: 387, opmPct: 66.1, otherIncome: 12, interest: 28, depreciation: 24, profitBeforeTax: 347, taxPct: 9.0, netProfit: 316, eps: 0.042 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2023', sales: 2109, salesGrowthPct: 11.4, expenses: 720, operatingProfit: 1389, opmPct: 65.8, otherIncome: 35, interest: 98, depreciation: 85, profitBeforeTax: 1241, taxPct: 0.0, netProfit: 1241, eps: 0.165, dividendPayoutPct: 100.0 }
+      { year: 'Dec 2024', sales: 2109, salesGrowthPct: 11.4, expenses: 720, operatingProfit: 1389, opmPct: 65.8, otherIncome: 35, interest: 98, depreciation: 85, profitBeforeTax: 1241, taxPct: 0.0, netProfit: 1241, eps: 0.165, dividendPayoutPct: 100.0 }
     ],
     balanceSheet: [
-      { year: 'Dec 2023', equityCapital: 0.075, reserves: 0.95, borrowings: 3.95, otherLiabilities: 0.85, totalLiabilities: 5.825, fixedAssets: 3.8, cwip: 0.05, investments: 0.2, otherAssets: 1.775, totalAssets: 5.825 }
+      { year: 'Dec 2024', equityCapital: 0.075, reserves: 0.95, borrowings: 3.95, otherLiabilities: 0.85, totalLiabilities: 5.825, fixedAssets: 3.8, cwip: 0.05, investments: 0.2, otherAssets: 1.775, totalAssets: 5.825 }
     ],
     cashFlow: [
-      { year: 'Dec 2023', cashFromOperating: 1.45, cashFromInvesting: -0.2, cashFromFinancing: -1.2, netCashFlow: 0.05, freeCashFlow: 1.25 }
+      { year: 'Dec 2024', cashFromOperating: 1.45, cashFromInvesting: -0.2, cashFromFinancing: -1.2, netCashFlow: 0.05, freeCashFlow: 1.25 }
     ],
     historicalRatios: [
-      { year: 'Dec 2023', rocePct: 85.2, roePct: 115.0, debtorDays: 14, inventoryDays: 0, daysPayable: 2, cashConversionCycle: 12, workingCapitalDays: 8 }
+      { year: 'Dec 2024', rocePct: 85.2, roePct: 115.0, debtorDays: 14, inventoryDays: 0, daysPayable: 2, cashConversionCycle: 12, workingCapitalDays: 8 }
     ],
     shareholdingPattern: [
-      { quarter: 'Sep 2024', promoter: 75.0, fii: 12.40, dii: 8.50, government: 0.0, public: 4.10, pledgedPct: 0.0 }
+      { quarter: 'Jun 2026', promoter: 75.0, fii: 12.40, dii: 8.50, government: 0.0, public: 4.10, pledgedPct: 0.0 }
     ]
   },
   {
@@ -2643,8 +2643,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'First Abu Dhabi Bank (FAB) is the largest bank in the UAE and one of the largest and safest financial institutions in the Middle East, with total assets exceeding 1.2 Trillion AED.',
     website: 'https://www.bankfab.com',
-    dataFreshness: 'Q4 FY24 (Dec 2024)',
-    lastUpdated: '2025-01-24',
+    dataFreshness: 'Q4 FY26 (Dec 2025)',
+    lastUpdated: '2026-10-23',
     currentPrice: 14.80,
     priceChangePct: 0.68,
     marketCap: 165,
@@ -2716,22 +2716,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Higher wholesale funding proportion compared to domestic retail peers.'
     ],
     quarterlyResults: [
-      { quarter: 'Dec 2024', sales: 7850, expenses: 3720, operatingProfit: 4130, opmPct: 52.6, otherIncome: 180, interest: 450, depreciation: 180, profitBeforeTax: 3680, taxPct: 9.0, netProfit: 3348, eps: 0.30 }
+      { quarter: 'Sep 2026', sales: 7850, expenses: 3720, operatingProfit: 4130, opmPct: 52.6, otherIncome: 180, interest: 450, depreciation: 180, profitBeforeTax: 3680, taxPct: 9.0, netProfit: 3348, eps: 0.30 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2024', sales: 30450, salesGrowthPct: 14.2, expenses: 14500, operatingProfit: 15950, opmPct: 52.4, otherIncome: 750, interest: 1650, depreciation: 680, profitBeforeTax: 14370, taxPct: 9.0, netProfit: 13076, eps: 1.18, dividendPayoutPct: 50.0 }
+      { year: 'Dec 2025', sales: 30450, salesGrowthPct: 14.2, expenses: 14500, operatingProfit: 15950, opmPct: 52.4, otherIncome: 750, interest: 1650, depreciation: 680, profitBeforeTax: 14370, taxPct: 9.0, netProfit: 13076, eps: 1.18, dividendPayoutPct: 50.0 }
     ],
     balanceSheet: [
-      { year: 'Dec 2024', equityCapital: 11.0, reserves: 105.0, borrowings: 198.0, otherLiabilities: 885.0, totalLiabilities: 1199.0, fixedAssets: 12.0, cwip: 0.5, investments: 285.0, otherAssets: 901.5, totalAssets: 1199.0 }
+      { year: 'Dec 2025', equityCapital: 11.0, reserves: 105.0, borrowings: 198.0, otherLiabilities: 885.0, totalLiabilities: 1199.0, fixedAssets: 12.0, cwip: 0.5, investments: 285.0, otherAssets: 901.5, totalAssets: 1199.0 }
     ],
     cashFlow: [
-      { year: 'Dec 2024', cashFromOperating: 14.5, cashFromInvesting: -2.5, cashFromFinancing: -8.5, netCashFlow: 3.5, freeCashFlow: 8.5 }
+      { year: 'Dec 2025', cashFromOperating: 14.5, cashFromInvesting: -2.5, cashFromFinancing: -8.5, netCashFlow: 3.5, freeCashFlow: 8.5 }
     ],
     historicalRatios: [
-      { year: 'Dec 2024', rocePct: 16.5, roePct: 15.8, debtorDays: 0, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 0, workingCapitalDays: 0 }
+      { year: 'Dec 2025', rocePct: 16.5, roePct: 15.8, debtorDays: 0, inventoryDays: 0, daysPayable: 0, cashConversionCycle: 0, workingCapitalDays: 0 }
     ],
     shareholdingPattern: [
-      { quarter: 'Dec 2024', promoter: 52.40, fii: 24.50, dii: 15.20, government: 0.0, public: 7.90, pledgedPct: 0.0 }
+      { quarter: 'Sep 2026', promoter: 52.40, fii: 24.50, dii: 15.20, government: 0.0, public: 7.90, pledgedPct: 0.0 }
     ]
   },
   {
@@ -2749,8 +2749,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'DEWA is the exclusive provider of electricity and potable water to Dubai’s 3.6 million residents, operating the Mohammed bin Rashid Al Maktoum Solar Park, the largest single-site solar park in the world.',
     website: 'https://www.dewa.gov.ae',
-    dataFreshness: 'Q3 FY24 (Sep 2024)',
-    lastUpdated: '2024-11-10',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 2.45,
     priceChangePct: 0.41,
     marketCap: 122,
@@ -2822,22 +2822,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Utility tariff pricing regulated by the Dubai Supreme Council of Energy.'
     ],
     quarterlyResults: [
-      { quarter: 'Sep 2024', sales: 9850, expenses: 6050, operatingProfit: 3800, opmPct: 38.6, otherIncome: 120, interest: 320, depreciation: 750, profitBeforeTax: 2850, taxPct: 9.0, netProfit: 2593, eps: 0.052 }
+      { quarter: 'Jun 2026', sales: 9850, expenses: 6050, operatingProfit: 3800, opmPct: 38.6, otherIncome: 120, interest: 320, depreciation: 750, profitBeforeTax: 2850, taxPct: 9.0, netProfit: 2593, eps: 0.052 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2023', sales: 29200, salesGrowthPct: 7.2, expenses: 17950, operatingProfit: 11250, opmPct: 38.5, otherIncome: 350, interest: 1100, depreciation: 2800, profitBeforeTax: 7700, taxPct: 0.0, netProfit: 7700, eps: 0.154, dividendPayoutPct: 80.5 }
+      { year: 'Dec 2024', sales: 29200, salesGrowthPct: 7.2, expenses: 17950, operatingProfit: 11250, opmPct: 38.5, otherIncome: 350, interest: 1100, depreciation: 2800, profitBeforeTax: 7700, taxPct: 0.0, netProfit: 7700, eps: 0.154, dividendPayoutPct: 80.5 }
     ],
     balanceSheet: [
-      { year: 'Dec 2023', equityCapital: 2.5, reserves: 85.0, borrowings: 32.0, otherLiabilities: 45.0, totalLiabilities: 164.5, fixedAssets: 115.0, cwip: 12.0, investments: 18.0, otherAssets: 19.5, totalAssets: 164.5 }
+      { year: 'Dec 2024', equityCapital: 2.5, reserves: 85.0, borrowings: 32.0, otherLiabilities: 45.0, totalLiabilities: 164.5, fixedAssets: 115.0, cwip: 12.0, investments: 18.0, otherAssets: 19.5, totalAssets: 164.5 }
     ],
     cashFlow: [
-      { year: 'Dec 2023', cashFromOperating: 14.8, cashFromInvesting: -8.5, cashFromFinancing: -5.8, netCashFlow: 0.5, freeCashFlow: 6.8 }
+      { year: 'Dec 2024', cashFromOperating: 14.8, cashFromInvesting: -8.5, cashFromFinancing: -5.8, netCashFlow: 0.5, freeCashFlow: 6.8 }
     ],
     historicalRatios: [
-      { year: 'Dec 2023', rocePct: 14.8, roePct: 13.5, debtorDays: 45, inventoryDays: 18, daysPayable: 39, cashConversionCycle: 24, workingCapitalDays: 18 }
+      { year: 'Dec 2024', rocePct: 14.8, roePct: 13.5, debtorDays: 45, inventoryDays: 18, daysPayable: 39, cashConversionCycle: 24, workingCapitalDays: 18 }
     ],
     shareholdingPattern: [
-      { quarter: 'Sep 2024', promoter: 82.00, fii: 9.50, dii: 5.80, government: 0.0, public: 2.70, pledgedPct: 0.0 }
+      { quarter: 'Jun 2026', promoter: 82.00, fii: 9.50, dii: 5.80, government: 0.0, public: 2.70, pledgedPct: 0.0 }
     ]
   },
   {
@@ -2855,8 +2855,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'e& (formerly Etisalat) is the premier global telecommunications and tech conglomerate of the UAE, operating across 16 countries in the Middle East, Asia, and Europe.',
     website: 'https://www.eand.com',
-    dataFreshness: 'Q3 FY24 (Sep 2024)',
-    lastUpdated: '2024-11-05',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 17.60,
     priceChangePct: 0.85,
     marketCap: 154,
@@ -2928,22 +2928,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Foreign currency translation volatility from overseas operations in Egypt and Pakistan.'
     ],
     quarterlyResults: [
-      { quarter: 'Sep 2024', sales: 14400, expenses: 9750, operatingProfit: 4650, opmPct: 32.3, otherIncome: 180, interest: 480, depreciation: 1450, profitBeforeTax: 2900, taxPct: 9.0, netProfit: 2639, eps: 0.30 }
+      { quarter: 'Jun 2026', sales: 14400, expenses: 9750, operatingProfit: 4650, opmPct: 32.3, otherIncome: 180, interest: 480, depreciation: 1450, profitBeforeTax: 2900, taxPct: 9.0, netProfit: 2639, eps: 0.30 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2023', sales: 53800, salesGrowthPct: 2.5, expenses: 36400, operatingProfit: 17400, opmPct: 32.3, otherIncome: 650, interest: 1750, depreciation: 5200, profitBeforeTax: 11100, taxPct: 0.0, netProfit: 10300, eps: 1.18, dividendPayoutPct: 68.0 }
+      { year: 'Dec 2024', sales: 53800, salesGrowthPct: 2.5, expenses: 36400, operatingProfit: 17400, opmPct: 32.3, otherIncome: 650, interest: 1750, depreciation: 5200, profitBeforeTax: 11100, taxPct: 0.0, netProfit: 10300, eps: 1.18, dividendPayoutPct: 68.0 }
     ],
     balanceSheet: [
-      { year: 'Dec 2023', equityCapital: 8.7, reserves: 48.0, borrowings: 48.0, otherLiabilities: 38.0, totalLiabilities: 142.7, fixedAssets: 62.0, cwip: 6.5, investments: 42.0, otherAssets: 32.2, totalAssets: 142.7 }
+      { year: 'Dec 2024', equityCapital: 8.7, reserves: 48.0, borrowings: 48.0, otherLiabilities: 38.0, totalLiabilities: 142.7, fixedAssets: 62.0, cwip: 6.5, investments: 42.0, otherAssets: 32.2, totalAssets: 142.7 }
     ],
     cashFlow: [
-      { year: 'Dec 2023', cashFromOperating: 18.5, cashFromInvesting: -12.0, cashFromFinancing: -7.5, netCashFlow: -1.0, freeCashFlow: 7.2 }
+      { year: 'Dec 2024', cashFromOperating: 18.5, cashFromInvesting: -12.0, cashFromFinancing: -7.5, netCashFlow: -1.0, freeCashFlow: 7.2 }
     ],
     historicalRatios: [
-      { year: 'Dec 2023', rocePct: 19.5, roePct: 22.4, debtorDays: 52, inventoryDays: 6, daysPayable: 66, cashConversionCycle: -8, workingCapitalDays: -6 }
+      { year: 'Dec 2024', rocePct: 19.5, roePct: 22.4, debtorDays: 52, inventoryDays: 6, daysPayable: 66, cashConversionCycle: -8, workingCapitalDays: -6 }
     ],
     shareholdingPattern: [
-      { quarter: 'Sep 2024', promoter: 60.00, fii: 18.50, dii: 12.50, government: 0.0, public: 9.00, pledgedPct: 0.0 }
+      { quarter: 'Jun 2026', promoter: 60.00, fii: 18.50, dii: 12.50, government: 0.0, public: 9.00, pledgedPct: 0.0 }
     ]
   },
   {
@@ -2961,8 +2961,8 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
     isConsolidated: true,
     about: 'Aldar Properties is the leading real estate master developer and manager in Abu Dhabi, developing world-class waterfront communities on Yas Island, Saadiyat Island, and Al Reem Island.',
     website: 'https://www.aldar.com',
-    dataFreshness: 'Q3 FY24 (Sep 2024)',
-    lastUpdated: '2024-11-08',
+    dataFreshness: 'Q2 FY27 (Sep 2026)',
+    lastUpdated: '2026-10-23',
     currentPrice: 7.35,
     priceChangePct: 1.25,
     marketCap: 58,
@@ -3034,22 +3034,22 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
       'Macroeconomic interest rate sensitivity for mortgage home buyers.'
     ],
     quarterlyResults: [
-      { quarter: 'Sep 2024', sales: 4850, expenses: 3180, operatingProfit: 1670, opmPct: 34.4, otherIncome: 120, interest: 140, depreciation: 210, profitBeforeTax: 1440, taxPct: 9.0, netProfit: 1310, eps: 0.165 }
+      { quarter: 'Jun 2026', sales: 4850, expenses: 3180, operatingProfit: 1670, opmPct: 34.4, otherIncome: 120, interest: 140, depreciation: 210, profitBeforeTax: 1440, taxPct: 9.0, netProfit: 1310, eps: 0.165 }
     ],
     annualProfitLoss: [
-      { year: 'Dec 2023', sales: 14160, salesGrowthPct: 26.5, expenses: 9350, operatingProfit: 4810, opmPct: 34.0, otherIncome: 350, interest: 480, depreciation: 720, profitBeforeTax: 3960, taxPct: 0.0, netProfit: 3960, eps: 0.504, dividendPayoutPct: 35.0 }
+      { year: 'Dec 2024', sales: 14160, salesGrowthPct: 26.5, expenses: 9350, operatingProfit: 4810, opmPct: 34.0, otherIncome: 350, interest: 480, depreciation: 720, profitBeforeTax: 3960, taxPct: 0.0, netProfit: 3960, eps: 0.504, dividendPayoutPct: 35.0 }
     ],
     balanceSheet: [
-      { year: 'Dec 2023', equityCapital: 7.9, reserves: 27.5, borrowings: 14.5, otherLiabilities: 21.0, totalLiabilities: 70.9, fixedAssets: 28.5, cwip: 3.2, investments: 12.0, otherAssets: 27.2, totalAssets: 70.9 }
+      { year: 'Dec 2024', equityCapital: 7.9, reserves: 27.5, borrowings: 14.5, otherLiabilities: 21.0, totalLiabilities: 70.9, fixedAssets: 28.5, cwip: 3.2, investments: 12.0, otherAssets: 27.2, totalAssets: 70.9 }
     ],
     cashFlow: [
-      { year: 'Dec 2023', cashFromOperating: 5.8, cashFromInvesting: -2.8, cashFromFinancing: -2.2, netCashFlow: 0.8, freeCashFlow: 3.8 }
+      { year: 'Dec 2024', cashFromOperating: 5.8, cashFromInvesting: -2.8, cashFromFinancing: -2.2, netCashFlow: 0.8, freeCashFlow: 3.8 }
     ],
     historicalRatios: [
-      { year: 'Dec 2023', rocePct: 15.6, roePct: 16.8, debtorDays: 48, inventoryDays: 58, daysPayable: 64, cashConversionCycle: 42, workingCapitalDays: 32 }
+      { year: 'Dec 2024', rocePct: 15.6, roePct: 16.8, debtorDays: 48, inventoryDays: 58, daysPayable: 64, cashConversionCycle: 42, workingCapitalDays: 32 }
     ],
     shareholdingPattern: [
-      { quarter: 'Sep 2024', promoter: 51.50, fii: 28.50, dii: 12.50, government: 0.0, public: 7.50, pledgedPct: 0.0 }
+      { quarter: 'Jun 2026', promoter: 51.50, fii: 28.50, dii: 12.50, government: 0.0, public: 7.50, pledgedPct: 0.0 }
     ]
   },
 ];

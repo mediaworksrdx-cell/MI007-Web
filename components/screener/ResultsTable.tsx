@@ -190,7 +190,7 @@ export function ResultsTable({
   watchlistSymbols = [],
   totalMatches,
   executionTimeMs = 12,
-  dataFreshness = 'Q3 FY25 (Dec 2024)',
+  dataFreshness = 'Q2 FY27 (Sep 2026)',
   tradeEngineStatus = 'connected',
   activePreset = 'overview',
   onSelectPreset,

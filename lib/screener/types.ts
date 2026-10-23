@@ -30,12 +30,12 @@ export interface MetricDefinition {
 
 // ── Financial Statement Row ──────────────────────────────────────────────────
 export interface FinancialPeriodData {
-  period: string; // e.g. "Mar 2024", "Dec 2023", "FY24"
+  period: string; // e.g. "Mar 2026", "Sep 2026", "FY26"
   [metricKey: string]: number | string | null;
 }
 
 export interface QuarterlyResult {
-  quarter: string; // e.g. "Dec 2024"
+  quarter: string; // e.g. "Sep 2026"
   sales: number;
   expenses: number;
   operatingProfit: number;
@@ -126,7 +126,7 @@ export interface CompanyFundamental {
   isConsolidated: boolean;
   about: string;
   website: string;
-  dataFreshness: string; // e.g. "Q3 FY25 (Dec 2024)"
+  dataFreshness: string; // e.g. "Q2 FY27 (Sep 2026)"
   lastUpdated: string;
 
   // Valuation
