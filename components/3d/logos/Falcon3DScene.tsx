@@ -117,19 +117,19 @@ export default function Falcon3DScene({
       <pointLight
         ref={keyLightRef}
         position={[1.5, 2.0, 3.0]}
-        intensity={2.8}
-        distance={12}
+        intensity={3.4}
+        distance={14}
         color="#FFFFFF"
       />
 
-      {/* Subtle Ambient / Fill Light for True Logo Color Fidelity */}
-      <ambientLight intensity={1.5} />
+      {/* Ambient / Fill Light for True Logo Color Fidelity & Radiance */}
+      <ambientLight intensity={1.9} />
 
       {/* Subtle Accent Rim Light */}
       <pointLight
         position={[-2.5, -1.5, -2]}
-        intensity={1.6}
-        distance={8}
+        intensity={2.0}
+        distance={10}
         color={accentColor}
       />
 
@@ -141,8 +141,8 @@ export default function Falcon3DScene({
             map={texture}
             transparent={true}
             alphaTest={0.005}
-            roughness={0.25}
-            metalness={0.15}
+            roughness={0.18}
+            metalness={0.10}
             color="#FFFFFF"
             side={THREE.DoubleSide}
           />

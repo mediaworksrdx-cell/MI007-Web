@@ -95,7 +95,7 @@ export function Falcon3DLogo({
         transformStyle: 'preserve-3d',
       }}
     >
-      {/* ── Base 2D Logo Image (Transparent Falcon, zero background) ── */}
+      {/* ── Base 2D Logo Image (Transparent Falcon, zero background, enhanced brightness & crisp clarity) ── */}
       <div
         className={`w-full h-full flex items-center justify-center transition-all duration-300 pointer-events-none bg-transparent ${
           isHovered ? 'opacity-0 scale-102' : 'opacity-100 scale-100'
@@ -112,6 +112,9 @@ export function Falcon3DLogo({
           height={height}
           priority={priority}
           className={className}
+          style={{
+            filter: 'brightness(1.22) contrast(1.10) saturate(1.12)',
+          }}
         />
       </div>
 

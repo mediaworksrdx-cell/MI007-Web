@@ -31,7 +31,7 @@ export default function Falcon3DCanvasWrapper({
         premultipliedAlpha: false,
         powerPreference: 'high-performance',
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 1.25,
+        toneMappingExposure: 1.45,
       }}
       style={{
         background: 'transparent',
@@ -40,9 +40,9 @@ export default function Falcon3DCanvasWrapper({
         pointerEvents: 'none',
       }}
     >
-      <ambientLight intensity={1.4} />
-      <directionalLight position={[4, 6, 5]} intensity={2.2} />
-      <directionalLight position={[-4, -3, 3]} intensity={1.4} color={accentColor} />
+      <ambientLight intensity={1.8} />
+      <directionalLight position={[4, 6, 5]} intensity={2.6} />
+      <directionalLight position={[-4, -3, 3]} intensity={1.8} color={accentColor} />
 
       <Suspense fallback={null}>
         <Falcon3DScene

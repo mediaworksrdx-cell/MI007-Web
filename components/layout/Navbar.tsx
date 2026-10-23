@@ -233,7 +233,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
         scrolled ? 'shadow-sm backdrop-blur-md' : 'backdrop-blur-sm'
       }`}
     >
-      <div className="mx-auto flex h-13 sm:h-14 max-w-[1600px] items-center justify-between px-4 lg:px-6">
+      <div className="mx-auto flex h-14 sm:h-[60px] max-w-[1600px] items-center justify-between px-4 lg:px-6">
         {/* ── Cyber Falcon Logo with Interactive 3D Pop-Up (Zero Background) ── */}
         <Link
           href="/"
@@ -241,12 +241,12 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
           onMouseEnter={() => setBrandHovered(true)}
           onMouseLeave={() => setBrandHovered(false)}
         >
-          <div className="relative z-50 h-[39px] w-[39px] sm:h-[43px] sm:w-[43px] flex-shrink-0 flex items-center justify-center overflow-visible">
+          <div className="relative z-50 h-[46px] w-[46px] sm:h-[50px] sm:w-[50px] flex-shrink-0 flex items-center justify-center overflow-visible">
             <Falcon3DLogo
               src="/images/logo-falcon-transparent.png"
               alt="MARKET INTELLIGENCE MI-007"
-              width={43}
-              height={43}
+              width={50}
+              height={50}
               priority
               className="w-full h-full object-contain"
               popoutScale={1.12}
