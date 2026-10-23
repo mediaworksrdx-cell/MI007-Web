@@ -23,7 +23,7 @@ export interface NewsItem {
 // Known tickers list for automated headline detection
 const KNOWN_TICKERS = [
   'NIFTY', 'BANKNIFTY', 'FINNIFTY', 'SENSEX', 'RELIANCE', 'TCS', 'HDFCBANK', 'INFY',
-  'ICICIBANK', 'ITC', 'SBIN', 'BHARTIARTL', 'TATAMOTORS', 'ZOMATO', 'LTIM', 'LT',
+  'ICICIBANK', 'KOTAKBANK', 'SBIN', 'BHARTIARTL', 'TATAMOTORS', 'ZOMATO', 'LTIM', 'LT',
   'TITAN', 'BAJFINANCE', 'DIXON', 'POLYCAB', 'SUZLON', 'PAYTM', 'SWIGGY', 'HAL', 'BEL',
   'NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'AMD', 'NFLX', 'INTC',
   'GOLD', 'SILVER', 'CRUDEOIL', 'BRENT', 'WTI', 'NATGAS', 'COPPER',

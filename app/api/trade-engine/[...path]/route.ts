@@ -627,7 +627,7 @@ function mapSymbolToYahooTicker(symbol: string): string | null {
 
   // 6. Indian Stocks (NSE)
   const INDIAN_STOCKS = [
-    'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'ITC', 'SBIN',
+    'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'BEL', 'SBIN',
     'TATAMOTORS', 'LT', 'BHARTIARTL', 'KOTAKBANK', 'AXISBANK', 'WIPRO',
     'BAJFINANCE', 'MARUTI', 'HCLTECH', 'ASIANPAINT', 'SUNPHARMA', 'TITAN'
   ];

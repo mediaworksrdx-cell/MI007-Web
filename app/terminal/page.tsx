@@ -67,7 +67,7 @@ const DEFAULT_INDIA_WATCHLIST: WatchlistItem[] = [
   { symbol: 'HDFCBANK', name: 'HDFC Bank', base: 694.05, sector: 'Banking', changePct: -1.82 },
   { symbol: 'INFY', name: 'Infosys', base: 1153.35, sector: 'IT', changePct: -1.35 },
   { symbol: 'ICICIBANK', name: 'ICICI Bank', base: 1398.50, sector: 'Banking', changePct: 1.03 },
-  { symbol: 'ITC', name: 'ITC Ltd', base: 258.90, sector: 'FMCG', changePct: -1.22 },
+  { symbol: 'TATAMOTORS', name: 'Tata Motors', base: 270.00, sector: 'Automotive', changePct: -1.75 },
   { symbol: 'SBIN', name: 'State Bank of India', base: 970.00, sector: 'Banking', changePct: 0.88 },
 ];
 

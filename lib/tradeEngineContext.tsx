@@ -115,7 +115,6 @@ const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number;
   { symbol: 'DIXON', price: 13950.00, change: 549.00, changePct: 4.10 },
   { symbol: 'CDSL', price: 1580.40, change: 28.70, changePct: 1.85 },
   { symbol: 'DEEPAKNTR', price: 2280.00, change: -14.90, changePct: -0.65 },
-  { symbol: 'ITC', price: 258.90, change: -3.20, changePct: -1.22 },
   { symbol: 'SBIN', price: 970.00, change: 8.50, changePct: 0.88 },
   { symbol: 'TATAMOTORS', price: 270.00, change: -4.80, changePct: -1.75 },
   { symbol: 'ZOMATO', price: 248.50, change: 4.20, changePct: 1.72 },

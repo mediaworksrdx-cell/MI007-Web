@@ -97,7 +97,7 @@ export const MASTER_CHART_INSTRUMENTS: ChartInstrumentItem[] = [
   { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd.', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 728.85, sector: 'Banking & Financials' },
   { symbol: 'INFY', name: 'Infosys Limited', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 1161.20, sector: 'IT Services' },
   { symbol: 'ICICIBANK', name: 'ICICI Bank Ltd.', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 1383.00, sector: 'Banking' },
-  { symbol: 'ITC', name: 'ITC Limited', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 485.50, sector: 'FMCG & Conglomerate' },
+  { symbol: 'KOTAKBANK', name: 'Kotak Mahindra Bank Ltd.', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 1780.20, sector: 'Banking & Financials' },
   { symbol: 'SBIN', name: 'State Bank of India', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 865.40, sector: 'Public Banking' },
   { symbol: 'BHARTIARTL', name: 'Bharti Airtel Ltd.', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 1882.80, sector: 'Telecom' },
   { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd.', category: 'STOCK', market: 'INDIA', exchange: 'NSE', currency: '₹', flag: '🇮🇳', basePrice: 283.70, sector: 'Automotive & EV' },
