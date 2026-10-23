@@ -201,7 +201,7 @@ export function QueryEditor({
                 : 'border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:border-emerald-500'
             }`}
           >
-            <span>{metricHelperOpen ? '✕ Close Helper' : '🔍 Browse 40+ Metrics'}</span>
+            <span>{metricHelperOpen ? '✕ Close Helper' : '🔍 Browse 60+ Financial Metrics'}</span>
           </button>
         </div>
 

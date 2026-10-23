@@ -284,6 +284,8 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     capex: Math.round(cfo * 0.35),
     workingCapitalDays: Math.round(25 + pseudoRnd(seed, 18) * 20),
     debtReduction3Y: 10.0,
+    piotroskiScore: Math.min(9, Math.max(5, Math.round(6 + pseudoRnd(seed, 24) * 3))),
+    altmanZScore: +(2.6 + pseudoRnd(seed, 25) * 4.2).toFixed(2),
 
     // Ownership
     promoterHolding: +(45 + pseudoRnd(seed, 19) * 25).toFixed(1),
