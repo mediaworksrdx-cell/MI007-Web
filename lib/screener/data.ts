@@ -3,7 +3,11 @@
 // Complete multi-year historical statements, quarterly results, ratios & shareholding
 
 import { CompanyFundamental } from './types';
-import { findZerodhaStockBySymbol, generateFundamentalFromZerodha } from './zerodhaStocks';
+import {
+  findZerodhaStockBySymbol,
+  generateFundamentalFromZerodha,
+  getZerodhaCatalog,
+} from './zerodhaStocks';
 
 export const MASTER_COMPANIES: CompanyFundamental[] = [
   // ══════════════════════════════════════════════════════════════════════════════
@@ -3054,21 +3058,68 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
   },
 ];
 
+let cachedIndiaUniverse: CompanyFundamental[] | null = null;
+
+/** Build or retrieve cached comprehensive universe of Indian equities (3,800+ Zerodha Kite stocks) */
+export function buildIndiaUniverse(): CompanyFundamental[] {
+  if (cachedIndiaUniverse) return cachedIndiaUniverse;
+
+  const curatedIndia = MASTER_COMPANIES.filter((c) => c.market === 'INDIA');
+  const curatedSymbolSet = new Set(curatedIndia.map((c) => c.symbol.toUpperCase()));
+
+  const zerodhaList = getZerodhaCatalog();
+  const additional: CompanyFundamental[] = [];
+
+  for (const item of zerodhaList) {
+    const sym = item.symbol.toUpperCase();
+    if (curatedSymbolSet.has(sym)) continue;
+    // Exclude indices and volatility gauges from equity screener
+    if (item.sector && (item.sector.includes('Index') || item.sector.includes('Volatility'))) continue;
+
+    additional.push(generateFundamentalFromZerodha(item));
+  }
+
+  cachedIndiaUniverse = [...curatedIndia, ...additional];
+  return cachedIndiaUniverse;
+}
+
 /** Fetch all companies for a given market region */
 export function getCompaniesByMarket(market: 'INDIA' | 'USA' | 'UAE'): CompanyFundamental[] {
+  if (market === 'INDIA') {
+    return buildIndiaUniverse();
+  }
   return MASTER_COMPANIES.filter((c) => c.market === market);
+}
+
+/** Fetch all companies across all markets (India, USA, UAE) */
+export function getAllCompanies(): CompanyFundamental[] {
+  return [
+    ...getCompaniesByMarket('INDIA'),
+    ...getCompaniesByMarket('USA'),
+    ...getCompaniesByMarket('UAE'),
+  ];
 }
 
 /** Find company by symbol */
 export function getCompanyBySymbol(symbol: string): CompanyFundamental | undefined {
   if (!symbol) return undefined;
   const clean = symbol.trim().toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
+
+  // 1. Check cached universe first if initialized
+  if (cachedIndiaUniverse) {
+    const fromUniv = cachedIndiaUniverse.find(
+      (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
+    );
+    if (fromUniv) return fromUniv;
+  }
+
+  // 2. Check curated master companies (curated India, USA, UAE)
   const existing = MASTER_COMPANIES.find(
     (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
   );
   if (existing) return existing;
 
-  // Resolve dynamically from full Zerodha Kite catalog (3,800+ stocks)
+  // 3. Resolve dynamically from full Zerodha Kite catalog (3,800+ stocks)
   const zerodhaStock = findZerodhaStockBySymbol(clean);
   if (zerodhaStock) {
     return generateFundamentalFromZerodha(zerodhaStock);

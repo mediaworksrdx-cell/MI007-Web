@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental } from '@/lib/screener/types';
 import { getMetricDefinition, formatMetricValue, getMetricValue } from '@/lib/screener/metrics';
@@ -197,7 +197,12 @@ export function ResultsTable({
 }: ResultsTableProps) {
   const [tableSearch, setTableSearch] = useState('');
   const [page, setPage] = useState(1);
-  const pageSize = 20;
+  const [pageSize, setPageSize] = useState(25);
+
+  // Reset to page 1 on search or universe length changes
+  useEffect(() => {
+    setPage(1);
+  }, [tableSearch, companies.length]);
 
   // Local search filter within table
   const displayedCompanies = companies.filter((c) => {
@@ -212,7 +217,8 @@ export function ResultsTable({
   });
 
   const totalPages = Math.ceil(displayedCompanies.length / pageSize) || 1;
-  const paginatedRows = displayedCompanies.slice((page - 1) * pageSize, page * pageSize);
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const paginatedRows = displayedCompanies.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   // CSV Export
   const exportCSV = () => {
@@ -601,30 +607,68 @@ export function ResultsTable({
       </div>
 
       {/* Pagination & Status Footer */}
-      <div className="flex flex-wrap items-center justify-between px-4 py-3 bg-[var(--theme-card-surface)] text-[12px] mono gap-2">
-        <div className="text-[var(--theme-card-text-muted)]">
-          Page <span className="text-[var(--theme-card-text)] font-bold">{page}</span> of{' '}
-          <span className="text-[var(--theme-card-text)] font-bold">{totalPages}</span> ·{' '}
-          {displayedCompanies.length} Total Rows
+      <div className="flex flex-wrap items-center justify-between px-4 py-3 bg-[var(--theme-card-surface)] text-[12px] mono gap-3 border-t border-[var(--theme-card-border)]">
+        <div className="flex items-center gap-4 text-[var(--theme-card-text-muted)]">
+          <div>
+            Showing <span className="text-[var(--theme-card-text)] font-bold">{displayedCompanies.length === 0 ? 0 : (safePage - 1) * pageSize + 1}</span>–
+            <span className="text-[var(--theme-card-text)] font-bold">{Math.min(safePage * pageSize, displayedCompanies.length)}</span> of{' '}
+            <span className="text-[var(--theme-card-text)] font-bold">{displayedCompanies.length.toLocaleString()}</span> Stocks
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-[var(--theme-card-text-muted)]">Rows:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
+              className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] text-[11px] cursor-pointer focus:outline-none"
+            >
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
         </div>
 
         {totalPages > 1 && (
           <div className="flex items-center gap-1.5">
             <button
               type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-40 hover:border-emerald-500 transition-colors cursor-pointer"
+              disabled={safePage <= 1}
+              onClick={() => setPage(1)}
+              title="First Page"
+              className="px-2 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-30 hover:border-emerald-500 transition-colors cursor-pointer text-[11px]"
             >
-              Previous
+              « First
             </button>
             <button
               type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-40 hover:border-emerald-500 transition-colors cursor-pointer"
+              disabled={safePage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-30 hover:border-emerald-500 transition-colors cursor-pointer text-[11px]"
             >
-              Next
+              ‹ Previous
+            </button>
+            <span className="px-2 text-[var(--theme-card-text)] font-semibold text-[11px]">
+              Page {safePage} of {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-30 hover:border-emerald-500 transition-colors cursor-pointer text-[11px]"
+            >
+              Next ›
+            </button>
+            <button
+              type="button"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage(totalPages)}
+              title="Last Page"
+              className="px-2 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-30 hover:border-emerald-500 transition-colors cursor-pointer text-[11px]"
+            >
+              Last »
             </button>
           </div>
         )}

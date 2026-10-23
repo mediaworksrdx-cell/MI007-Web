@@ -6,7 +6,13 @@ import { useSearchParams } from 'next/navigation';
 import { useMarket } from '@/lib/marketContext';
 import { MARKETS } from '@/lib/types';
 import { MarketRegion, CompanyFundamental, SavedScreen, CustomRatio, Watchlist, ScreeningAlert } from '@/lib/screener/types';
-import { MASTER_COMPANIES, getCompaniesByMarket, getSectors } from '@/lib/screener/data';
+import {
+  MASTER_COMPANIES,
+  getCompaniesByMarket,
+  getAllCompanies,
+  getCompanyBySymbol,
+  getSectors,
+} from '@/lib/screener/data';
 import { findZerodhaStockBySymbol, generateFundamentalFromZerodha } from '@/lib/screener/zerodhaStocks';
 import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
 import {
@@ -117,7 +123,7 @@ export function ScreenerWorkspace() {
     if (symbolParam) {
       const clean = symbolParam.toUpperCase();
       setSelectedSymbol(clean);
-      const comp = MASTER_COMPANIES.find((c) => c.symbol.toUpperCase() === clean);
+      const comp = getCompanyBySymbol(clean);
       if (comp && comp.market) {
         setMarket(comp.market);
         prevMarketRef.current = comp.market;
@@ -147,7 +153,7 @@ export function ScreenerWorkspace() {
           const clean = returnSymbol.toUpperCase();
           setSelectedSymbol(clean);
           sessionStorage.removeItem('mi007_return_symbol');
-          const comp = MASTER_COMPANIES.find((c) => c.symbol.toUpperCase() === clean);
+          const comp = getCompanyBySymbol(clean);
           if (comp && comp.market) {
             setMarket(comp.market);
             prevMarketRef.current = comp.market;
@@ -262,7 +268,7 @@ export function ScreenerWorkspace() {
 
   // Master list of all companies enriched with live Zerodha Kite ticks
   const allCompaniesEnriched = useMemo(() => {
-    return MASTER_COMPANIES.map((comp) => {
+    return getAllCompanies().map((comp) => {
       const live = getSymbolPrice(comp.symbol);
       if (!live || !live.price) return comp;
 
@@ -373,12 +379,12 @@ export function ScreenerWorkspace() {
     if (Array.isArray(symbols)) {
       setPeerSymbols(symbols);
     } else {
-      const comp = MASTER_COMPANIES.find((c) => c.symbol === symbols);
+      const comp = getCompanyBySymbol(symbols);
       if (comp) {
-        const sectorPeers = MASTER_COMPANIES.filter(
+        const sectorPeers = getCompaniesByMarket(comp.market).filter(
           (c) => c.sector === comp.sector && c.symbol !== symbols
         ).map((c) => c.symbol);
-        setPeerSymbols([symbols, ...(sectorPeers.slice(0, 2))]);
+        setPeerSymbols([symbols, ...(sectorPeers.slice(0, 4))]);
       } else {
         setPeerSymbols([symbols]);
       }
