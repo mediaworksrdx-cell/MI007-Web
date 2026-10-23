@@ -85,7 +85,6 @@ export function FnoHeader({
 
   const currentFuture = termStructure.contracts[0];
   const basis = currentFuture ? Math.round((currentFuture.ltp - displaySpot) * 100) / 100 : 0;
-  const isContango = basis >= 0;
 
   const curr = selectedInstrument.market === 'USA' ? '$' : selectedInstrument.market === 'UAE' ? 'AED ' : '₹';
   const loc = selectedInstrument.market === 'INDIA' ? 'en-IN' : 'en-US';
@@ -306,11 +305,8 @@ export function FnoHeader({
             {curr}{currentFuture?.ltp.toLocaleString(loc, { minimumFractionDigits: 2 })}
           </div>
           <div className="text-[10px] mono font-bold flex items-center gap-1.5 mt-0.5">
-            <span className={isContango ? 'text-emerald-400' : 'text-rose-400'}>
+            <span className={basis >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
               Basis: {basis >= 0 ? '+' : ''}{basis}
-            </span>
-            <span className="text-[9px] px-1 py-0.2 rounded bg-[var(--theme-card-subsurface)] text-[var(--theme-card-subtitle)]">
-              {isContango ? 'Contango' : 'Backwardation'}
             </span>
           </div>
         </div>

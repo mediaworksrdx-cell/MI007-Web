@@ -72,7 +72,7 @@ export function MarketOverviewTab({
               </span>
             </h3>
             <p className="text-[11px] text-[var(--theme-card-subtitle)] mt-0.5">
-              Cost of carry, contango / backwardation spread across near, next, and far-month futures expiries.
+              Cost of carry and basis spread across near, next, and far-month futures expiries.
             </p>
           </div>
           <div className="mono text-[11px] text-[var(--theme-card-subtitle)]">
@@ -97,7 +97,6 @@ export function MarketOverviewTab({
             </thead>
             <tbody className="divide-y divide-[var(--theme-card-border)]/50">
               {termStructure.contracts.map((contract, idx) => {
-                const isContango = contract.basis >= 0;
                 const isPositive = contract.change >= 0;
                 return (
                   <tr key={contract.expiry} className="hover:bg-emerald-500/5 transition-colors">
@@ -114,11 +113,8 @@ export function MarketOverviewTab({
                       {isPositive ? '+' : ''}{contract.changePct.toFixed(2)}%
                     </td>
                     <td className="py-3 px-3 font-bold">
-                      <span className={isContango ? 'text-emerald-400' : 'text-rose-400'}>
+                      <span className={contract.basis >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
                         {contract.basis >= 0 ? '+' : ''}{contract.basis.toFixed(2)}
-                      </span>
-                      <span className="text-[9.5px] text-[var(--theme-card-subtitle)] ml-1">
-                        ({isContango ? 'Contango' : 'Backwardation'})
                       </span>
                     </td>
                     <td className="py-3 px-3 text-[var(--theme-card-subtitle)] font-medium">
