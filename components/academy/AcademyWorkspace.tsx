@@ -3,24 +3,18 @@
 import React, { useState } from 'react';
 import {
   TrainingModule,
-  AiTradeSignal,
-  ScannerSignalInfo,
   ACADEMY_MODULES_BY_MARKET,
   MarketCode,
 } from '@/lib/academy/academyData';
 import { useMarket } from '@/lib/marketContext';
 import { CurriculumTabView } from './CurriculumTabView';
 import { AskMentorTabView } from './AskMentorTabView';
-import { LiveTrainingTabView } from './LiveTrainingTabView';
 import { ModuleDetailModal } from './ModuleDetailModal';
-import { LiveSignalDetailModal } from './LiveSignalDetailModal';
 
 export function AcademyWorkspace() {
   const { market } = useMarket();
-  const [selectedTab, setSelectedTab] = useState<'LIBRARY' | 'MENTOR' | 'TRAINING'>('LIBRARY');
+  const [selectedTab, setSelectedTab] = useState<'LIBRARY' | 'MENTOR'>('LIBRARY');
   const [selectedModule, setSelectedModule] = useState<TrainingModule | null>(null);
-  const [selectedFnoSignal, setSelectedFnoSignal] = useState<AiTradeSignal | null>(null);
-  const [selectedScannerSignal, setSelectedScannerSignal] = useState<ScannerSignalInfo | null>(null);
   const [mentorQuery, setMentorQuery] = useState<string | undefined>(undefined);
 
   // Map market context to MarketCode
@@ -33,8 +27,6 @@ export function AcademyWorkspace() {
     setMentorQuery(query);
     setSelectedTab('MENTOR');
     setSelectedModule(null);
-    setSelectedFnoSignal(null);
-    setSelectedScannerSignal(null);
   };
 
   return (
@@ -72,21 +64,6 @@ export function AcademyWorkspace() {
             <span>🧠 Ask Aarka Mentor</span>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              setSelectedTab('TRAINING');
-            }}
-            className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
-              selectedTab === 'TRAINING'
-                ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] opacity-75 hover:opacity-100'
-            }`}
-          >
-            ⚡ Training & Signals
-          </button>
         </div>
       </div>
 
@@ -103,31 +80,11 @@ export function AcademyWorkspace() {
         <AskMentorTabView initialQuery={mentorQuery} />
       </div>
 
-      <div className={selectedTab === 'TRAINING' ? 'block' : 'hidden'}>
-        <LiveTrainingTabView
-          onOpenSignal={sig => setSelectedFnoSignal(sig)}
-          onOpenScannerSignal={sig => setSelectedScannerSignal(sig)}
-        />
-      </div>
-
       {/* Module Detail Overlay Modal */}
       {selectedModule && (
         <ModuleDetailModal
           module={selectedModule}
           onClose={() => setSelectedModule(null)}
-          onAskMentor={handleAskMentor}
-        />
-      )}
-
-      {/* Live Signal Detail Overlay Modal */}
-      {(selectedFnoSignal || selectedScannerSignal) && (
-        <LiveSignalDetailModal
-          fnoSignal={selectedFnoSignal}
-          scannerSignal={selectedScannerSignal}
-          onClose={() => {
-            setSelectedFnoSignal(null);
-            setSelectedScannerSignal(null);
-          }}
           onAskMentor={handleAskMentor}
         />
       )}
