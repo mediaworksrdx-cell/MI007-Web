@@ -98,7 +98,7 @@ const rel = SUPPORTED_FNO_INSTRUMENTS.find(i => i.symbol === 'RELIANCE');
 const spx = SUPPORTED_FNO_INSTRUMENTS.find(i => i.symbol === 'SPX');
 const nvda = SUPPORTED_FNO_INSTRUMENTS.find(i => i.symbol === 'NVDA');
 
-console.log(`   - NIFTY 50:  Lot ${nifty?.lotSize}, Step ${nifty?.strikeStep} (NSE Official: Lot 75, Step 50) -> ${nifty?.lotSize === 75 && nifty?.strikeStep === 50 ? 'MATCH' : 'MISMATCH'}`);
+console.log(`   - NIFTY 50:  Lot ${nifty?.lotSize}, Step ${nifty?.strikeStep} (NSE Official: Lot 65, Step 50) -> ${nifty?.lotSize === 65 && nifty?.strikeStep === 50 ? 'MATCH' : 'MISMATCH'}`);
 console.log(`   - BANKNIFTY: Lot ${bnf?.lotSize}, Step ${bnf?.strikeStep} (NSE Official: Lot 30, Step 100) -> ${bnf?.lotSize === 30 && bnf?.strikeStep === 100 ? 'MATCH' : 'MISMATCH'}`);
 console.log(`   - RELIANCE:  Lot ${rel?.lotSize}, Step ${rel?.strikeStep} (NSE Official: Lot 250, Step 20) -> ${rel?.lotSize === 250 && rel?.strikeStep === 20 ? 'MATCH' : 'MISMATCH'}`);
 console.log(`   - SPX (US):  Lot ${spx?.lotSize}, Step ${spx?.strikeStep} (CBOE Official: Lot 100, Step 25) -> ${spx?.lotSize === 100 && spx?.strikeStep === 25 ? 'MATCH' : 'MISMATCH'}`);

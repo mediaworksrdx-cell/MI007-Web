@@ -27,7 +27,7 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     name: 'NIFTY 50 Index',
     exchange: 'NSE',
     market: 'INDIA',
-    lotSize: 75,
+    lotSize: 65,
     tickSize: 0.05,
     strikeStep: 50,
     spotPrice: 22687.65,
