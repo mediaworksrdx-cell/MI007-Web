@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "npx tsx scripts/verify-institutional-audit.ts",
-    "test:unit": "npx tsx scripts/test-screener.mjs"
+    "test:unit": "npx tsx scripts/test-screener.mjs",
+    "test:strategies": "npx tsx scripts/test-all-screener-strategies.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
