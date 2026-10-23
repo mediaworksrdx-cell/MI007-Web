@@ -1283,18 +1283,13 @@ export function renderChart(
   ctx.beginPath(); ctx.moveTo(0, chartH); ctx.lineTo(W, chartH); ctx.stroke();
   ctx.restore();
 
-  // ── LAYER 1.5: Down-Left Corner Above Volume (Synthetix Analytics) ──
+  // ── LAYER 1.5: Top-Left Corner (Synthetix Analytics) ──
   ctx.save();
-  const volHeightRatio = (options.showVolume && !options.showVolumePanel) ? 0.13 : 0;
-  const volH = chartH * volHeightRatio;
-  const watermarkY = chartH - volH - 6 * dpr;
-  const watermarkX = 14 * dpr;
-
   ctx.font = `800 ${11 * dpr}px ${tvFontStack}`;
   ctx.textAlign = 'left';
-  ctx.textBaseline = 'bottom';
-  ctx.fillStyle = 'rgba(100, 116, 139, 0.40)';
-  ctx.fillText('Synthetix Analytics', watermarkX, watermarkY);
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(100, 116, 139, 0.35)';
+  ctx.fillText('Synthetix Analytics', 14 * dpr, 12 * dpr);
   ctx.restore();
 
   // ── LAYER 2: Volume Profile (VPVR) ────────────────────────────────────

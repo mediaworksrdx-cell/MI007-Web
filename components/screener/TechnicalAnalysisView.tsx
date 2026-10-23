@@ -455,10 +455,10 @@ export function TechnicalAnalysisView({
               />
             )}
 
-            {/* Down-Left Corner Watermark */}
+            {/* Top-Left Corner Watermark */}
             <text
-              x={10}
-              y={chartHeight - 8}
+              x={12}
+              y={18}
               fill="#64748b"
               fontSize="10"
               fontFamily="sans-serif"

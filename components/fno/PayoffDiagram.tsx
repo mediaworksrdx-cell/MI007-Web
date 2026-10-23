@@ -653,13 +653,14 @@ export function PayoffDiagram({
                 </text>
               </g>
 
-              {/* Watermark in bottom left */}
+              {/* Watermark in top left */}
               <text
-                x={padding.left + 10}
-                y={height - padding.bottom - 10}
+                x={padding.left + 12}
+                y={padding.top + 16}
                 fill="#94A3B8"
-                fontSize="9"
+                fontSize="9.5"
                 fontFamily="sans-serif"
+                fontWeight="bold"
                 textAnchor="start"
                 opacity="0.6"
               >

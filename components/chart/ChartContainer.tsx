@@ -1304,13 +1304,18 @@ export function ChartContainer({
             className="h-full"
           />
 
-          {/* Top-Left Active Indicator Legend overlay (positioned above canvas and crosshairs) */}
-          {indicatorConfigs.length > 0 && (
-            <div
-              className="absolute top-2 left-3 z-40 flex flex-wrap items-center gap-1.5 pointer-events-auto max-w-[calc(100%-90px)]"
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              {indicatorConfigs.map(cfg => {
+          {/* Top-Left Inside Chart: Synthetix Analytics Brand & Active Indicator Legend */}
+          <div
+            className="absolute top-2 left-3 z-40 flex flex-wrap items-center gap-1.5 pointer-events-auto max-w-[calc(100%-90px)]"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            {/* Synthetix Analytics Brand Pill */}
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white/95 border border-slate-200 text-slate-800 font-mono text-[11px] font-black tracking-wider select-none shadow-xs pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Synthetix Analytics</span>
+            </div>
+
+            {indicatorConfigs.map(cfg => {
                 const instanceId = cfg.id || cfg.type;
                 const isVis = cfg.enabled !== false;
                 return (
@@ -1379,7 +1384,6 @@ export function ChartContainer({
                 );
               })}
             </div>
-          )}
         </div>
       </div>
 
