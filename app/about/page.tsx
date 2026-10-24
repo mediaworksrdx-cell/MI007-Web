@@ -170,8 +170,8 @@ export default function AboutPage() {
             <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black tracking-tight mb-4 page-heading flex flex-col items-center justify-center gap-1">
               <span>Welcome to</span>
               <span className="whitespace-nowrap font-caveat font-bold flex items-center justify-center gap-2 text-[17px] xs:text-[20px] sm:text-2xl md:text-3xl">
-                <span className="text-[var(--theme-page-text)] font-caveat">MARKET INTELLIGENCE</span>
-                <span className="text-emerald-500 font-caveat">MI-007</span>
+                <span className="brand-title-dark font-caveat">MARKET INTELLIGENCE</span>
+                <span className="brand-accent-green font-caveat">MI-007</span>
               </span>
             </h1>
 

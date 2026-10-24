@@ -1365,8 +1365,8 @@ export default function TerminalPage() {
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-[15px] xs:text-[17px] sm:text-[20px] md:text-[22px] font-caveat font-bold inst-card-text tracking-wide uppercase whitespace-nowrap flex items-center gap-1.5 sm:gap-2">
-                    <span>MARKET INTELLIGENCE</span>
-                    <span className="text-emerald-500 font-caveat">MI-007</span>
+                    <span className="brand-title-dark font-caveat">MARKET INTELLIGENCE</span>
+                    <span className="brand-accent-green font-caveat">MI-007</span>
                   </h1>
                   <p className="text-[12px] sm:text-[14px] inst-card-text-muted font-medium mt-0.5 truncate">
                     Intelligence Beyond the Noise

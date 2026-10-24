@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/Caveat.woff') format('woff');
+}
+
 @theme {
   --color-bg-midnight: var(--color-bg-midnight);
   --color-surface-card: var(--color-surface-card);
@@ -367,15 +375,28 @@ section p.page-subtitle,
 }
 
 .font-caveat {
-  font-family: var(--font-caveat), "Caveat", cursive, sans-serif !important;
+  font-family: 'Caveat', cursive, sans-serif !important;
+}
+
+.brand-title-dark {
+  color: var(--theme-page-text) !important;
+}
+
+.brand-accent-green {
+  color: #059669 !important;
+}
+
+html[data-theme="ocean"] .brand-accent-green,
+html[data-theme="graphite"] .brand-accent-green,
+html[data-theme="metallic"] .brand-accent-green,
+html[data-theme="obsidian"] .brand-accent-green,
+html[data-theme="capital"] .brand-accent-green,
+html[data-theme="violet"] .brand-accent-green {
+  color: #10B981 !important;
 }
 
 .hero-title-gradient {
-  font-family: var(--font-caveat), "Caveat", cursive, sans-serif !important;
-  color: var(--theme-page-text) !important;
-  background-image: none !important;
-  -webkit-background-clip: unset !important;
-  background-clip: unset !important;
+  font-family: 'Caveat', cursive, sans-serif !important;
   letter-spacing: 0.02em;
 }
 
@@ -785,8 +806,7 @@ html[data-theme="cyberpunk"] .navbar-brand-badge {
 }
 
 .navbar-brand-title {
-  font-family: var(--font-caveat), "Caveat", cursive, sans-serif !important;
-  color: var(--theme-page-text) !important;
+  font-family: 'Caveat', cursive, sans-serif !important;
   letter-spacing: 0.02em;
 }
 
@@ -886,8 +906,7 @@ footer .footer-brand-title,
 html footer .footer-brand-title,
 html[data-theme] footer .footer-brand-title,
 html[data-theme] footer span.footer-brand-title {
-  font-family: var(--font-caveat), "Caveat", cursive, sans-serif !important;
-  color: #FFFFFF !important;
+  font-family: 'Caveat', cursive, sans-serif !important;
   letter-spacing: 0.02em;
 }
 

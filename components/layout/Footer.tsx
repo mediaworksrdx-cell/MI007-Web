@@ -48,8 +48,8 @@ export function Footer() {
                     className="text-[15px] sm:text-[16px] md:text-[17px] font-bold uppercase font-caveat tracking-wide footer-brand-title text-white whitespace-nowrap flex items-center gap-1.5 group-hover:text-emerald-400 transition-colors"
                     style={{ color: '#FFFFFF' }}
                   >
-                    <span>MARKET INTELLIGENCE</span>
-                    <span className="text-emerald-400 font-caveat">MI-007</span>
+                    <span className="text-white font-caveat">MARKET INTELLIGENCE</span>
+                    <span className="brand-accent-green font-caveat">MI-007</span>
                   </span>
                 </div>
 
