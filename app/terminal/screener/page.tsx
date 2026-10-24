@@ -44,6 +44,7 @@ export default function ScreenerTerminalPage() {
                     width={55}
                     height={55}
                     className="w-full h-full object-contain"
+                    disable3d
                   />
                 </div>
                 <div className="min-w-0">

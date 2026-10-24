@@ -91,6 +91,7 @@ interface TradeEngineContextValue {
   macroData: TradeEngineMacro[];
   lastTick: TradeEngineTick | null;
   getSymbolPrice: (symbol: string) => LiveSymbolData | undefined;
+  requestQuoteFetch: (symbol: string) => void;
   subscribeToTicks: (callback: (tick: TradeEngineTick) => void) => () => void;
   subscribeToSymbol: (symbol: string, callback: () => void) => () => void;
 }
@@ -217,6 +218,7 @@ const TradeEngineContext = createContext<TradeEngineContextValue>({
   macroData: [],
   lastTick: null,
   getSymbolPrice: () => undefined,
+  requestQuoteFetch: () => {},
   subscribeToTicks: () => () => {},
   subscribeToSymbol: () => () => {},
 });
@@ -680,46 +682,45 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
   const getSymbolPrice = useCallback((symbol: string): LiveSymbolData | undefined => {
     if (!symbol) return undefined;
+    return storeRef.current?.getSymbol(symbol);
+  }, []);
+
+  const requestQuoteFetch = useCallback((symbol: string) => {
+    if (!symbol) return;
     const cleanKey = normalizeSymbolKey(symbol);
+    if (storeRef.current?.getSymbol(symbol)) return;
+    if (pendingQuoteFetches.current.has(cleanKey)) return;
 
-    const existing = storeRef.current?.getSymbol(symbol);
-    if (existing) return existing;
-
-    // Asynchronously fetch quote for any newly added stock or index not in initial streaming set
-    if (!pendingQuoteFetches.current.has(cleanKey)) {
-      pendingQuoteFetches.current.add(cleanKey);
-      fetchQuote(cleanKey)
-        .then((q) => {
-          if (q && q.ltp > 0) {
-            const entry: LiveSymbolData = {
-              symbol: q.symbol,
-              price: q.ltp,
-              change: q.change,
-              changePct: q.changePercent,
-              timestamp: q.timestamp || Date.now(),
-              tickDirection: 'neutral',
-              lastUpdated: Date.now(),
-            };
-            storeRef.current?.updateBatch((prev) => {
-              const next = new Map(prev);
-              const changedKeys = new Set<string>();
-              changedKeys.add(cleanKey);
-              next.set(cleanKey, entry);
-              next.set(q.symbol, entry);
-              next.set(q.symbol.toUpperCase(), entry);
-              next.set(`${cleanKey}.NS`, entry);
-              return { next, changedKeys };
-            });
-            scheduleLivePricesUpdate();
-          }
-        })
-        .catch(() => {})
-        .finally(() => {
-          setTimeout(() => pendingQuoteFetches.current.delete(cleanKey), 10000);
-        });
-    }
-
-    return undefined;
+    pendingQuoteFetches.current.add(cleanKey);
+    fetchQuote(cleanKey)
+      .then((q) => {
+        if (q && q.ltp > 0) {
+          const entry: LiveSymbolData = {
+            symbol: q.symbol,
+            price: q.ltp,
+            change: q.change,
+            changePct: q.changePercent,
+            timestamp: q.timestamp || Date.now(),
+            tickDirection: 'neutral',
+            lastUpdated: Date.now(),
+          };
+          storeRef.current?.updateBatch((prev) => {
+            const next = new Map(prev);
+            const changedKeys = new Set<string>();
+            changedKeys.add(cleanKey);
+            next.set(cleanKey, entry);
+            next.set(q.symbol, entry);
+            next.set(q.symbol.toUpperCase(), entry);
+            next.set(`${cleanKey}.NS`, entry);
+            return { next, changedKeys };
+          });
+          scheduleLivePricesUpdate();
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setTimeout(() => pendingQuoteFetches.current.delete(cleanKey), 10000);
+      });
   }, [scheduleLivePricesUpdate]);
 
   const subscribeToTicks = useCallback((callback: (tick: TradeEngineTick) => void) => {
@@ -743,6 +744,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
       macroData,
       lastTick,
       getSymbolPrice,
+      requestQuoteFetch,
       subscribeToTicks,
       subscribeToSymbol,
     }),
@@ -754,6 +756,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
       macroData,
       lastTick,
       getSymbolPrice,
+      requestQuoteFetch,
       subscribeToTicks,
       subscribeToSymbol,
     ]
@@ -771,13 +774,20 @@ export function useTradeEngine() {
 }
 
 export function useLiveSymbol(symbol: string) {
-  const { getSymbolPrice, subscribeToSymbol, status, latencyMs } = useTradeEngine();
+  const { getSymbolPrice, subscribeToSymbol, requestQuoteFetch, status, latencyMs } = useTradeEngine();
   const subscribe = useCallback(
     (onStoreChange: () => void) => subscribeToSymbol(symbol, onStoreChange),
     [subscribeToSymbol, symbol]
   );
   const getSnapshot = useCallback(() => getSymbolPrice(symbol), [getSymbolPrice, symbol]);
   const live = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+  useEffect(() => {
+    if (symbol && !live) {
+      requestQuoteFetch(symbol);
+    }
+  }, [symbol, live, requestQuoteFetch]);
+
   return {
     live,
     isLive: Boolean(live),

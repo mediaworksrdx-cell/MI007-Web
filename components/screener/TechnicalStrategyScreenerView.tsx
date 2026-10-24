@@ -3,7 +3,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental, MarketRegion } from '@/lib/screener/types';
 import {
@@ -34,19 +34,64 @@ export function TechnicalStrategyScreenerView({
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
 
+  // Interactive Pagination state (prevents DOM overload and main thread freeze)
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
   const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
 
-  // Evaluate all strategies across all companies in current market
+  // Reset to page 1 whenever any filter or search query changes
+  useEffect(() => {
+    setPage(1);
+  }, [selectedStrategyId, directionFilter, categoryFilter, searchQuery]);
+
+  // High-performance institutional scanning universe:
+  // Evaluates top liquid equities (e.g. curated large-caps & mid-caps) plus any stock matched by the search query.
+  const targetUniverse = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    // Base institutional liquid universe
+    let baseList = companies;
+    if (companies.length > 80) {
+      const sortedByCap = [...companies].sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0));
+      baseList = sortedByCap.slice(0, 80);
+    }
+
+    if (!q) return baseList;
+
+    // Dynamically include any company in the full catalog matching user's search
+    const matchingFromCatalog = companies
+      .filter((c) => c.symbol.toLowerCase().includes(q) || c.name.toLowerCase().includes(q))
+      .slice(0, 30);
+
+    const map = new Map<string, CompanyFundamental>();
+    baseList.forEach((c) => map.set(c.symbol.toUpperCase(), c));
+    matchingFromCatalog.forEach((c) => map.set(c.symbol.toUpperCase(), c));
+    return Array.from(map.values());
+  }, [companies, searchQuery]);
+
+  // Memoized evaluation cache: skips re-generating candles and indicator math if price is identical
+  const evalCacheRef = useRef<Map<string, StrategySignalResult[]>>(new Map());
+
+  // Evaluate all 10 quantitative models across the target universe
   const scanResults = useMemo(() => {
     const list: StrategySignalResult[] = [];
-    companies.forEach((comp) => {
+    const cache = evalCacheRef.current;
+
+    targetUniverse.forEach((comp) => {
       const live = getSymbolPrice(comp.symbol);
       const price = live?.price ?? comp.currentPrice;
-      const results = evaluateAllStrategiesForStock(comp.symbol, comp.name, comp.market, price);
+      const cacheKey = `${comp.symbol}:${price}`;
+
+      let results = cache.get(cacheKey);
+      if (!results) {
+        results = evaluateAllStrategiesForStock(comp.symbol, comp.name, comp.market, price);
+        cache.set(cacheKey, results);
+      }
       list.push(...results);
     });
     return list;
-  }, [companies, getSymbolPrice]);
+  }, [targetUniverse, getSymbolPrice]);
 
   // Categories
   const categories = useMemo(() => {
@@ -81,6 +126,13 @@ export function TechnicalStrategyScreenerView({
       return true;
     });
   }, [scanResults, selectedStrategyId, categoryFilter, directionFilter, searchQuery]);
+
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredResults.length / pageSize) || 1;
+  const safePage = Math.min(page, totalPages);
+  const paginatedResults = useMemo(() => {
+    return filteredResults.slice((safePage - 1) * pageSize, safePage * pageSize);
+  }, [filteredResults, safePage, pageSize]);
 
   const activeStrategy = STRATEGY_DEFINITIONS.find((s) => s.id === selectedStrategyId);
 
@@ -317,7 +369,7 @@ export function TechnicalStrategyScreenerView({
                   </td>
                 </tr>
               ) : (
-                filteredResults.map((res, i) => {
+                paginatedResults.map((res, i) => {
                   const isBull = res.direction === 'bullish';
                   const isBear = res.direction === 'bearish';
                   return (
@@ -425,6 +477,56 @@ export function TechnicalStrategyScreenerView({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* ── Pagination Toolbar ── */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
+          <div className="flex items-center gap-2 text-[11.5px] mono text-[var(--theme-card-text-muted)]">
+            <span>
+              Showing <span className="font-black text-[var(--theme-card-text)]">{filteredResults.length === 0 ? 0 : (safePage - 1) * pageSize + 1}</span>–
+              <span className="font-black text-[var(--theme-card-text)]">{Math.min(safePage * pageSize, filteredResults.length)}</span> of{' '}
+              <span className="font-black text-emerald-400">{filteredResults.length}</span> Active Signals
+            </span>
+            <span className="text-slate-400">·</span>
+            <div className="flex items-center gap-1.5">
+              <span>Per page:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] mono font-bold text-[11px] focus:outline-none focus:border-emerald-500"
+              >
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 mono text-[11.5px]">
+            <button
+              type="button"
+              disabled={safePage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-40 disabled:cursor-not-allowed hover:border-emerald-500 font-bold transition-colors cursor-pointer"
+            >
+              ← Prev
+            </button>
+            <span className="px-2.5 py-1 font-black text-[var(--theme-card-text)]">
+              Page {safePage} of {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] disabled:opacity-40 disabled:cursor-not-allowed hover:border-emerald-500 font-bold transition-colors cursor-pointer"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       </div>
     </div>
