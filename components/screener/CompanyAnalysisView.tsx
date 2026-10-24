@@ -10,8 +10,8 @@ import { CompanyFundamental } from '@/lib/screener/types';
 import { formatMetricValue } from '@/lib/screener/metrics';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { calculatePiotroskiScore, calculateAltmanZScore, generateSWOTAnalysis } from '@/lib/screener/scorecards';
-import { TechnicalAnalysisView } from './TechnicalAnalysisView';
-import { MASTER_COMPANIES } from '@/lib/screener/data';
+import { ChartContainer } from '@/components/chart/ChartContainer';
+import { MarketType } from '@/lib/types';
 
 interface CompanyAnalysisViewProps {
   company: CompanyFundamental;
@@ -1098,16 +1098,17 @@ export function CompanyAnalysisView({
           </div>
         )}
 
-        {/* Tab 7: Technical Candlestick Chart & Moving Averages */}
+        {/* Tab 7: Interactive Technical Candlestick Chart */}
         {activeTab === 'technicals' && (
-          <div className="p-2 sm:p-4">
-            <TechnicalAnalysisView
-              company={company}
-              allCompanies={MASTER_COMPANIES.filter((c) => c.market === company.market)}
-              onSelectCompany={(sym) => onSelectCompany ? onSelectCompany(sym) : null}
-              onBackToScreener={onBackToScreener}
-              onOpenBacktest={onOpenBacktest}
-            />
+          <div className="p-2 sm:p-4 animate-in fade-in duration-150">
+            <div className="w-full rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xl overflow-hidden min-h-[750px] h-[calc(100vh-14rem)] flex flex-col">
+              <ChartContainer
+                key={`${company.symbol}-${company.market}`}
+                market={company.market as MarketType}
+                defaultSymbol={company.symbol}
+                isStandalone={false}
+              />
+            </div>
           </div>
         )}
       </div>
