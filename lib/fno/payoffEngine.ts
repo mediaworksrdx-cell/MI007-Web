@@ -2,12 +2,13 @@
 // Multi-leg options payoff simulation at Expiry, T+0, and under IV/time shocks.
 
 import { StrategyLeg, StrategyPayoff, PayoffPoint, Greeks, StrategyCategory } from './fnoTypes';
-import { calculateBSPrice, cdfNormal } from './blackScholes';
+import { calculateBSPrice, calculateBSGreeks, cdfNormal } from './blackScholes';
 
 export interface PayoffSimulationOptions {
   timeShiftDays?: number; // Days forward from today (0 = today, up to daysToExpiry)
   ivShiftPct?: number; // IV shock in % (e.g. +2 = +2% IV expansion, -3 = -3% crush)
   daysToExpiry?: number;
+  baseSpotPrice?: number; // Unshocked spot price used to anchor chart X-axis domain
 }
 
 /**
@@ -49,14 +50,16 @@ export function calculateStrategyPayoff(
   const remainingDays = Math.max(0.01, daysToExpiry - timeShiftDays);
   const timeYearsScenario = remainingDays / 365.0;
 
-  // Determine calculation price range: min/max strikes with 8% padding
+  // Anchor chart X-axis range to baseSpotPrice (unshocked spot) and strikes with 12% padding
+  // so moving the Spot (%) slider (-10% to +10%) moves the spot cursor along a stationary chart
+  const anchorSpot = options.baseSpotPrice && options.baseSpotPrice > 0 ? options.baseSpotPrice : spotPrice;
   const strikes = activeLegs.filter((l) => l.instrument !== 'FUT').map((l) => l.strike);
-  const minStrike = strikes.length > 0 ? Math.min(...strikes, spotPrice) : spotPrice;
-  const maxStrike = strikes.length > 0 ? Math.max(...strikes, spotPrice) : spotPrice;
+  const minStrike = strikes.length > 0 ? Math.min(...strikes, anchorSpot) : anchorSpot;
+  const maxStrike = strikes.length > 0 ? Math.max(...strikes, anchorSpot) : anchorSpot;
 
-  const rangePadding = spotPrice * 0.10; // 10% range around spot/strikes
-  const priceStart = Math.max(1, Math.min(minStrike, spotPrice) - rangePadding);
-  const priceEnd = Math.max(maxStrike, spotPrice) + rangePadding;
+  const rangePadding = anchorSpot * 0.12; // 12% range around base spot/strikes (covers ±10% spot slider)
+  const priceStart = Math.max(1, Math.min(minStrike, anchorSpot) - rangePadding);
+  const priceEnd = Math.max(maxStrike, anchorSpot) + rangePadding;
   const steps = 60;
   const priceStep = (priceEnd - priceStart) / steps;
 
@@ -89,6 +92,9 @@ export function calculateStrategyPayoff(
     if (s >= priceStart && s <= priceEnd) {
       priceSet.add(Math.round(s * 10) / 10);
     }
+  }
+  if (spotPrice >= priceStart && spotPrice <= priceEnd) {
+    priceSet.add(Math.round(spotPrice * 10) / 10);
   }
   const testPrices = Array.from(priceSet).sort((a, b) => a - b);
 
@@ -180,7 +186,7 @@ export function calculateStrategyPayoff(
   const maxProfit = hasUnlimitedProfit ? 'UNLIMITED' : maxPnlVal;
   const maxLoss = hasUnlimitedLoss ? 'UNLIMITED' : minPnlVal;
 
-  // Aggregate Portfolio Greeks
+  // Aggregate Portfolio Greeks dynamically evaluated at simulated spot, shifted IV, and remaining DTE
   let netDelta = 0;
   let netGamma = 0;
   let netTheta = 0;
@@ -189,11 +195,22 @@ export function calculateStrategyPayoff(
 
   for (const leg of activeLegs) {
     const mult = (leg.action === 'BUY' ? 1 : -1) * leg.lots * leg.lotSize;
-    netDelta += leg.greeks.delta * mult;
-    netGamma += leg.greeks.gamma * mult;
-    netTheta += leg.greeks.theta * mult;
-    netVega += leg.greeks.vega * mult;
-    netRho += (leg.greeks.rho ?? 0) * mult;
+    if (leg.instrument === 'FUT') {
+      netDelta += 1.0 * mult;
+    } else {
+      const shiftedVol = Math.max(0.05, (leg.iv + ivShiftPct) / 100.0);
+      const liveGreeks = calculateBSGreeks(leg.instrument, {
+        spot: spotPrice,
+        strike: leg.strike,
+        timeYears: timeYearsScenario,
+        volatility: shiftedVol,
+      });
+      netDelta += liveGreeks.delta * mult;
+      netGamma += liveGreeks.gamma * mult;
+      netTheta += liveGreeks.theta * mult;
+      netVega += liveGreeks.vega * mult;
+      netRho += (liveGreeks.rho ?? 0) * mult;
+    }
   }
 
   // Risk-Reward Ratio

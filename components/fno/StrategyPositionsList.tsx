@@ -31,11 +31,13 @@ export function StrategyPositionsList({
   const hasLegs = activeLegs.length > 0;
 
   // Live real unrealized PnL from legs' current prices vs entry prices
-  const currentPnl = activeLegs.reduce((sum, leg) => {
-    const cur = leg.currentPrice ?? leg.entryPrice;
-    const mult = leg.action === 'BUY' ? 1 : -1;
-    return sum + (cur - leg.entryPrice) * leg.lots * leg.lotSize * mult;
-  }, 0);
+  const currentPnl = Math.round(
+    activeLegs.reduce((sum, leg) => {
+      const cur = leg.currentPrice ?? leg.entryPrice;
+      const mult = leg.action === 'BUY' ? 1 : -1;
+      return sum + (cur - leg.entryPrice) * leg.lots * leg.lotSize * mult;
+    }, 0)
+  );
 
   const capitalBase = payoff.capitalRequired > 0
     ? payoff.capitalRequired
@@ -136,6 +138,9 @@ export function StrategyPositionsList({
                     {/* Leg Description */}
                     <span className="text-[12px] font-semibold text-slate-800 truncate">
                       {leg.lots}x {leg.expiry} {leg.instrument === 'FUT' ? 'FUT' : `${leg.strike}${leg.instrument}`} - {curr}{leg.entryPrice.toFixed(1)}
+                      {Math.abs(leg.currentPrice - leg.entryPrice) >= 0.05 && (
+                        <span className="text-slate-500 font-normal"> → {curr}{leg.currentPrice.toFixed(1)}</span>
+                      )}
                     </span>
 
                     {/* Small PnL indicator */}

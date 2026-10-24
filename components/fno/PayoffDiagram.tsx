@@ -145,28 +145,37 @@ export function PayoffDiagram({
 
   const scenarioPnl = useMemo(() => {
     if (!activeLegs || activeLegs.length === 0) return 0;
-    if (activeSpotShock === 0 && ivShiftPct === 0 && timeShiftDays === 0) {
-      return activeLegs.filter((l) => !l.disabled).reduce((sum, leg) => {
+    const enabledLegs = activeLegs.filter((l) => !l.disabled);
+    if (enabledLegs.length === 0) return 0;
+    return Math.round(
+      enabledLegs.reduce((sum, leg) => {
         const cur = leg.currentPrice ?? leg.entryPrice;
         const mult = leg.action === 'BUY' ? 1 : -1;
         return sum + (cur - leg.entryPrice) * leg.lots * leg.lotSize * mult;
-      }, 0);
-    }
-    // Dynamic simulated PnL under slider shocks evaluated at simulated spot
-    if (todayPoints && todayPoints.length > 0) {
-      let closestPt = todayPoints[0];
-      let minDiff = Math.abs(todayPoints[0].price - spotPrice);
-      for (const pt of todayPoints) {
-        const diff = Math.abs(pt.price - spotPrice);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestPt = pt;
-        }
+      }, 0)
+    );
+  }, [activeLegs]);
+
+  // Evaluate exact Expiry & T+n points at current simulated spotPrice for live slider tracking dots
+  const simulatedSpotMarker = useMemo(() => {
+    if (!expiryPoints || expiryPoints.length === 0) return null;
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    expiryPoints.forEach((pt, idx) => {
+      const diff = Math.abs(pt.price - spotPrice);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
       }
-      return closestPt.pnl;
-    }
-    return 0;
-  }, [activeLegs, activeSpotShock, ivShiftPct, timeShiftDays, todayPoints, spotPrice]);
+    });
+    const expPt = expiryPoints[closestIdx];
+    const todPt = todayPoints[closestIdx] ?? expPt;
+    return {
+      price: spotPrice,
+      expiryPnl: expPt.pnl,
+      todayPnl: todPt.pnl,
+    };
+  }, [expiryPoints, todayPoints, spotPrice]);
 
   // SVG Chart Dimensions
   const width = 840;
@@ -638,6 +647,69 @@ export function PayoffDiagram({
                 );
               })}
 
+              {/* Original Spot Reference Line when Spot (%) Slider is Shifted */}
+              {activeSpotShock !== 0 && originalSpotPrice && (() => {
+                const origX = getX(originalSpotPrice);
+                if (origX < padding.left || origX > width - padding.right) return null;
+                return (
+                  <g>
+                    <line
+                      x1={origX}
+                      y1={padding.top}
+                      x2={origX}
+                      y2={height - padding.bottom}
+                      stroke="#94A3B8"
+                      strokeDasharray="2 2"
+                      strokeWidth="1"
+                    />
+                    <text
+                      x={origX}
+                      y={height - padding.bottom - 6}
+                      fill="#64748B"
+                      fontSize="8.5"
+                      fontFamily="sans-serif"
+                      fontWeight="bold"
+                      textAnchor="middle"
+                    >
+                      Spot: {originalSpotPrice.toFixed(1)}
+                    </text>
+                  </g>
+                );
+              })()}
+
+              {/* Live Simulated Spot Tracking Dots & Callout Badge on Expiry and T+n Curves */}
+              {simulatedSpotMarker && activeLegs.length > 0 && (() => {
+                const simX = getX(simulatedSpotMarker.price);
+                if (simX < padding.left || simX > width - padding.right) return null;
+                const yExp = getY(simulatedSpotMarker.expiryPnl);
+                const yTod = getY(simulatedSpotMarker.todayPnl);
+                return (
+                  <g>
+                    <circle cx={simX} cy={yExp} r="4.5" fill="#0000FF" stroke="#FFFFFF" strokeWidth="1.5" />
+                    <circle cx={simX} cy={yTod} r="5" fill="#16A34A" stroke="#FFFFFF" strokeWidth="1.5" />
+                    {hoverData === null && (activeSpotShock !== 0 || ivShiftPct !== 0 || timeShiftDays !== 0) && (
+                      <g
+                        transform={`translate(${Math.min(
+                          width - 155,
+                          Math.max(padding.left + 6, simX + 8)
+                        )}, ${Math.max(padding.top + 8, Math.min(height - padding.bottom - 56, yTod - 26))})`}
+                      >
+                        <rect width="145" height="50" rx="4" fill="#0F172A" fillOpacity="0.92" stroke="#16A34A" strokeWidth="1" />
+                        <text x="8" y="14" fill="#F8FAFC" fontSize="9.5" fontFamily="sans-serif" fontWeight="bold">
+                          Sim Spot: {curr}{simulatedSpotMarker.price.toLocaleString(loc, { maximumFractionDigits: 1 })} ({activeSpotShock >= 0 ? `+${activeSpotShock}%` : `${activeSpotShock}%`})
+                        </text>
+                        <text x="8" y="29" fill="#4ADE80" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
+                          T+{timeShiftDays} P&amp;L: {simulatedSpotMarker.todayPnl >= 0 ? '+' : ''}{curr}{simulatedSpotMarker.todayPnl.toLocaleString(loc)}
+                        </text>
+                        <text x="8" y="43" fill="#93C5FD" fontSize="9.5" fontFamily="sans-serif" fontWeight="bold">
+                          Exp P&amp;L: {simulatedSpotMarker.expiryPnl >= 0 ? '+' : ''}{curr}{simulatedSpotMarker.expiryPnl.toLocaleString(loc)}
+                        </text>
+                      </g>
+                    )}
+                  </g>
+                );
+              })()}
+
               {/* Opstra Curve Legend */}
               <g transform={`translate(${padding.left + 8}, ${padding.top + 16})`}>
                 <rect x="0" y="0" width="165" height="38" rx="3" fill="#FFFFFF" fillOpacity="0.9" stroke="#E2E8F0" strokeWidth="1" />
@@ -798,8 +870,8 @@ export function PayoffDiagram({
       <div className="px-4 py-2.5 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between text-[11.5px] font-semibold text-slate-700">
         <div className="flex flex-wrap items-center gap-6">
           <span>Positional Delta: <strong className="text-slate-900">{payoff ? payoff.netGreeks.delta.toFixed(2) : '0.00'}</strong></span>
-          <span>Theta: <strong className="text-slate-900">{payoff ? `-${Math.abs(payoff.netGreeks.theta)}` : '0'}</strong></span>
-          <span>Gamma: <strong className="text-slate-900">{payoff ? payoff.netGreeks.gamma.toFixed(2) : '0.00'}</strong></span>
+          <span>Theta: <strong className="text-slate-900">{payoff ? `${payoff.netGreeks.theta}` : '0'}</strong></span>
+          <span>Gamma: <strong className="text-slate-900">{payoff ? payoff.netGreeks.gamma.toFixed(4) : '0.0000'}</strong></span>
           <span>Vega: <strong className="text-slate-900">{payoff ? payoff.netGreeks.vega.toFixed(2) : '0.00'}</strong></span>
         </div>
         <div>

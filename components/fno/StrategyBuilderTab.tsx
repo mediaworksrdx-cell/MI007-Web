@@ -76,11 +76,54 @@ export function StrategyBuilderTab({
 
   // Dynamic simulated spot price under slider scenario shock
   const simulatedSpot = spotPrice * (1 + spotShockPct / 100);
+  const isScenarioActive = spotShockPct !== 0 || ivShiftPct !== 0 || timeShiftDays !== 0;
 
-  // Calculate Payoff with active simulation parameters
+  // Dynamically revalue legs under Spot (%), IV (%), and Next n Days sliders
+  const simulatedLegs = useMemo<StrategyLeg[]>(() => {
+    const remainingDays = Math.max(0.01, daysToExpiry - timeShiftDays);
+    const timeYearsScenario = remainingDays / 365.0;
+
+    return activeLegs.map((leg) => {
+      if (leg.instrument === 'FUT') {
+        return {
+          ...leg,
+          currentPrice: isScenarioActive ? Math.round(simulatedSpot * 100) / 100 : (leg.currentPrice ?? leg.entryPrice),
+          greeks: { delta: 1.0, gamma: 0, theta: 0, vega: 0, rho: 0 },
+        };
+      }
+      const shiftedIvPct = Math.max(5.0, leg.iv + ivShiftPct);
+      const shiftedVol = shiftedIvPct / 100.0;
+      const scenarioPrice = isScenarioActive
+        ? Math.max(
+            0.05,
+            Math.round(
+              calculateBSPrice(leg.instrument, {
+                spot: simulatedSpot,
+                strike: leg.strike,
+                timeYears: timeYearsScenario,
+                volatility: shiftedVol,
+              }) * 100
+            ) / 100
+          )
+        : (leg.currentPrice ?? leg.entryPrice);
+      const scenarioGreeks = calculateBSGreeks(leg.instrument, {
+        spot: simulatedSpot,
+        strike: leg.strike,
+        timeYears: timeYearsScenario,
+        volatility: shiftedVol,
+      });
+      return {
+        ...leg,
+        currentPrice: scenarioPrice,
+        greeks: scenarioGreeks,
+      };
+    });
+  }, [activeLegs, simulatedSpot, isScenarioActive, daysToExpiry, timeShiftDays, ivShiftPct]);
+
+  // Calculate Payoff with active simulation parameters (X-axis anchored to original spotPrice)
   const payoff = useMemo(() => {
     return calculateStrategyPayoff(
-      activeLegs,
+      simulatedLegs,
       simulatedSpot,
       strategyName,
       strategyCategory,
@@ -88,9 +131,10 @@ export function StrategyBuilderTab({
         timeShiftDays,
         ivShiftPct,
         daysToExpiry,
+        baseSpotPrice: spotPrice,
       }
     );
-  }, [activeLegs, simulatedSpot, strategyName, strategyCategory, timeShiftDays, ivShiftPct, daysToExpiry]);
+  }, [simulatedLegs, simulatedSpot, spotPrice, strategyName, strategyCategory, timeShiftDays, ivShiftPct, daysToExpiry]);
 
   // Apply a preset from modal
   const handleApplyPreset = (newLegs: StrategyLeg[], replaceAll: boolean) => {
@@ -230,6 +274,11 @@ export function StrategyBuilderTab({
         {/* Spot Price */}
         <span className="bg-[#80CBC4] text-[#004D40] px-2.5 py-1 rounded">
           Spot Price: {spotPrice.toFixed(1)}
+          {spotShockPct !== 0 && (
+            <span className="ml-1 font-extrabold underline">
+              → {simulatedSpot.toFixed(1)} ({spotShockPct > 0 ? `+${spotShockPct}%` : `${spotShockPct}%`})
+            </span>
+          )}
         </span>
 
         {/* Futures Price */}
@@ -289,7 +338,7 @@ export function StrategyBuilderTab({
         {/* Left Column (5 cols): Positions & Financial Metrics */}
         <div className="lg:col-span-5 space-y-3">
           <StrategyPositionsList
-            legs={activeLegs}
+            legs={simulatedLegs}
             payoff={payoff}
             instrument={instrument}
             onUpdateLeg={handleUpdateLeg}
@@ -314,7 +363,7 @@ export function StrategyBuilderTab({
             spotShockPct={spotShockPct}
             onChangeSpotShock={setSpotShockPct}
             daysToExpiry={daysToExpiry}
-            activeLegs={activeLegs}
+            activeLegs={simulatedLegs}
             payoff={payoff}
             iv={ivValue}
             symbol={instrument.symbol}
