@@ -160,9 +160,9 @@ export function CompanySearchModal({
         </div>
 
         {syncMessage && (
-          <div className="px-4 py-1.5 bg-emerald-500/15 border-b border-emerald-500/30 mono text-[11px] text-emerald-300 font-bold flex items-center justify-between">
+          <div className="px-4 py-1.5 bg-emerald-500/15 border-b border-emerald-500/30 mono text-[11px] text-emerald-700 dark:text-emerald-300 font-bold flex items-center justify-between">
             <span>{syncMessage}</span>
-            <button onClick={() => setSyncMessage(null)} className="text-emerald-400 hover:text-white">✕</button>
+            <button onClick={() => setSyncMessage(null)} className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-950 dark:hover:text-white">✕</button>
           </div>
         )}
 

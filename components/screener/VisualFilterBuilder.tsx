@@ -178,7 +178,7 @@ export function VisualFilterBuilder({
           <button
             type="button"
             onClick={onClearFilters}
-            className="mono text-[12px] font-bold text-[var(--theme-card-text-muted)] hover:text-white transition-colors"
+            className="mono text-[12px] font-bold text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] transition-colors"
           >
             Clear All
           </button>

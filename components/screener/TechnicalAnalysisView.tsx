@@ -168,7 +168,7 @@ export function TechnicalAnalysisView({
         </div>
         <div>
           <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase">Volume</span>
-          <span className="font-bold text-slate-300">
+          <span className="font-bold text-[var(--theme-card-text)]">
             {company.market === 'INDIA'
               ? `${(activeCandle.volume / 100000).toFixed(1)}L`
               : `${(activeCandle.volume / 1000000).toFixed(1)}M`}
@@ -200,7 +200,7 @@ export function TechnicalAnalysisView({
                 className={`px-3 py-1 rounded-lg mono text-[11px] font-bold transition-all cursor-pointer ${
                   timeframe === tf.id
                     ? 'bg-emerald-500 text-slate-950 font-black'
-                    : 'text-[var(--theme-card-text-muted)] hover:text-white'
+                    : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
                 }`}
               >
                 {tf.label}
@@ -572,7 +572,7 @@ export function TechnicalAnalysisView({
                         ? 'bg-emerald-500 text-slate-950'
                         : isBear
                         ? 'bg-rose-500 text-white'
-                        : 'bg-slate-800 text-slate-400'
+                        : 'border border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                     }`}
                   >
                     {isBull ? '▲ BULLISH' : isBear ? '▼ BEARISH' : 'NEUTRAL'}

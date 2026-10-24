@@ -195,10 +195,10 @@ export function BacktestingView({
             <select
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-white mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
+              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             >
               {companies.map((c) => (
-                <option key={c.symbol} value={c.symbol}>
+                <option key={c.symbol} value={c.symbol} className="bg-[var(--theme-card-surface)] text-[var(--theme-card-text)]">
                   {c.symbol} ({c.name})
                 </option>
               ))}
@@ -213,10 +213,10 @@ export function BacktestingView({
             <select
               value={strategyId}
               onChange={(e) => setStrategyId(e.target.value as StrategyId)}
-              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-white mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
+              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             >
               {STRATEGY_DEFINITIONS.map((s) => (
-                <option key={s.id} value={s.id}>
+                <option key={s.id} value={s.id} className="bg-[var(--theme-card-surface)] text-[var(--theme-card-text)]">
                   {s.name}
                 </option>
               ))}
@@ -234,7 +234,7 @@ export function BacktestingView({
               placeholder="100000"
               onChange={(e) => setInitialCapital(e.target.value === '' ? ('' as any) : Number(e.target.value))}
               step={10000}
-              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-white mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
+              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             />
           </div>
 
@@ -249,7 +249,7 @@ export function BacktestingView({
               placeholder="10"
               onChange={(e) => setTakeProfitPct(e.target.value === '' ? ('' as any) : Number(e.target.value))}
               step={1}
-              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-white mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
+              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             />
           </div>
 
@@ -264,7 +264,7 @@ export function BacktestingView({
               placeholder="5"
               onChange={(e) => setStopLossPct(e.target.value === '' ? ('' as any) : Number(e.target.value))}
               step={1}
-              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-white mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
+              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             />
           </div>
 
@@ -279,7 +279,7 @@ export function BacktestingView({
               placeholder="30"
               onChange={(e) => setMaxHoldingDays(e.target.value === '' ? ('' as any) : Number(e.target.value))}
               step={5}
-              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-white mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
+              className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             />
           </div>
         </div>
@@ -294,7 +294,7 @@ export function BacktestingView({
           <div className="mono text-[20px] font-black text-emerald-400 mt-1">
             {backtestResult.totalReturnPct >= 0 ? '+' : ''}{backtestResult.totalReturnPct}%
           </div>
-          <span className="text-[10px] mono text-slate-400 block mt-0.5">
+          <span className="text-[10px] mono text-[var(--theme-card-text-muted)] block mt-0.5">
             Final Equity: {activeCompany.currencySymbol}{backtestResult.finalEquity.toLocaleString()}
           </span>
         </div>
@@ -303,7 +303,7 @@ export function BacktestingView({
           <span className="mono text-[10.5px] font-bold text-[var(--theme-card-text-muted)] uppercase block">
             Buy & Hold Return
           </span>
-          <div className="mono text-[20px] font-black text-slate-200 mt-1">
+          <div className="mono text-[20px] font-black text-[var(--theme-card-text)] mt-1">
             {backtestResult.benchmarkReturnPct >= 0 ? '+' : ''}{backtestResult.benchmarkReturnPct}%
           </div>
           <span className="text-[10px] mono text-emerald-400 font-bold block mt-0.5">
@@ -318,7 +318,7 @@ export function BacktestingView({
           <div className="mono text-[20px] font-black text-emerald-400 mt-1">
             {backtestResult.winRate}%
           </div>
-          <span className="text-[10px] mono text-slate-400 block mt-0.5">
+          <span className="text-[10px] mono text-[var(--theme-card-text-muted)] block mt-0.5">
             {backtestResult.winningTrades} Wins / {backtestResult.losingTrades} Losses
           </span>
         </div>
@@ -327,10 +327,10 @@ export function BacktestingView({
           <span className="mono text-[10.5px] font-bold text-[var(--theme-card-text-muted)] uppercase block">
             Profit Factor
           </span>
-          <div className="mono text-[20px] font-black text-white mt-1">
+          <div className="mono text-[20px] font-black text-[var(--theme-card-text)] mt-1">
             {backtestResult.profitFactor.toFixed(2)}
           </div>
-          <span className="text-[10px] mono text-slate-400 block mt-0.5">
+          <span className="text-[10px] mono text-[var(--theme-card-text-muted)] block mt-0.5">
             Gross Profit / Gross Loss
           </span>
         </div>
@@ -342,7 +342,7 @@ export function BacktestingView({
           <div className="mono text-[20px] font-black text-rose-400 mt-1">
             -{backtestResult.maxDrawdownPct}%
           </div>
-          <span className="text-[10px] mono text-slate-400 block mt-0.5">
+          <span className="text-[10px] mono text-[var(--theme-card-text-muted)] block mt-0.5">
             Peak to trough variance
           </span>
         </div>
@@ -351,10 +351,10 @@ export function BacktestingView({
           <span className="mono text-[10.5px] font-bold text-[var(--theme-card-text-muted)] uppercase block">
             Risk / Reward
           </span>
-          <div className="mono text-[20px] font-black text-white mt-1">
+          <div className="mono text-[20px] font-black text-[var(--theme-card-text)] mt-1">
             {backtestResult.riskRewardRatio.toFixed(2)}
           </div>
-          <span className="text-[10px] mono text-slate-400 block mt-0.5">
+          <span className="text-[10px] mono text-[var(--theme-card-text-muted)] block mt-0.5">
             Avg Win +{backtestResult.avgWinPct}% / Loss -{backtestResult.avgLossPct}%
           </span>
         </div>
@@ -372,7 +372,7 @@ export function BacktestingView({
                 <span className="w-2.5 h-0.5 bg-emerald-400 inline-block" />
                 <span>Strategy Portfolio</span>
               </span>
-              <span className="flex items-center gap-1.5 text-slate-400 font-bold">
+              <span className="flex items-center gap-1.5 text-[var(--theme-card-text-muted)] font-bold">
                 <span className="w-2.5 h-0.5 bg-slate-400 inline-block" />
                 <span>Buy & Hold Benchmark</span>
               </span>
@@ -383,7 +383,7 @@ export function BacktestingView({
           </span>
         </div>
 
-        <div className="relative w-full rounded-xl bg-slate-950/80 border border-slate-800 p-2">
+        <div className="relative w-full rounded-xl bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] p-2">
           <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-[220px] overflow-visible select-none">
             {/* Horizontal Grid lines */}
             {[0.25, 0.5, 0.75].map((pct, idx) => {
@@ -391,7 +391,7 @@ export function BacktestingView({
               const val = maxVal - valRange * pct;
               return (
                 <g key={idx}>
-                  <line x1="0" y1={y} x2={chartWidth} y2={y} stroke="#334155" strokeDasharray="3 3" strokeOpacity="0.4" />
+                  <line x1="0" y1={y} x2={chartWidth} y2={y} stroke="#64748b" strokeDasharray="3 3" strokeOpacity="0.3" />
                   <text x={chartWidth - 5} y={y - 3} fill="#64748b" fontSize="9" textAnchor="end" className="mono">
                     {activeCompany.currencySymbol}{Math.round(val).toLocaleString()}
                   </text>
@@ -462,19 +462,19 @@ export function BacktestingView({
                   const isProfit = trade.pnl > 0;
                   return (
                     <tr key={trade.tradeId} className="hover:bg-emerald-500/5 transition-colors">
-                      <td className="py-2 px-3 text-slate-500 font-bold">{trade.tradeId}</td>
-                      <td className="py-2 px-3 text-slate-300">{trade.entryDate}</td>
-                      <td className="py-2 px-3 text-right text-white font-bold">{activeCompany.currencySymbol}{trade.entryPrice.toFixed(2)}</td>
-                      <td className="py-2 px-3 text-slate-300">{trade.exitDate}</td>
-                      <td className="py-2 px-3 text-right text-white font-bold">{activeCompany.currencySymbol}{trade.exitPrice.toFixed(2)}</td>
-                      <td className="py-2 px-3 text-right text-slate-300">{trade.shares}</td>
+                      <td className="py-2 px-3 text-[var(--theme-card-text-muted)] font-bold">{trade.tradeId}</td>
+                      <td className="py-2 px-3 text-[var(--theme-card-text)]">{trade.entryDate}</td>
+                      <td className="py-2 px-3 text-right text-[var(--theme-card-text)] font-bold">{activeCompany.currencySymbol}{trade.entryPrice.toFixed(2)}</td>
+                      <td className="py-2 px-3 text-[var(--theme-card-text)]">{trade.exitDate}</td>
+                      <td className="py-2 px-3 text-right text-[var(--theme-card-text)] font-bold">{activeCompany.currencySymbol}{trade.exitPrice.toFixed(2)}</td>
+                      <td className="py-2 px-3 text-right text-[var(--theme-card-text)]">{trade.shares}</td>
                       <td className={`py-2 px-3 text-right font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {trade.pnl >= 0 ? '+' : ''}{activeCompany.currencySymbol}{trade.pnl.toLocaleString()}
                       </td>
                       <td className={`py-2 px-3 text-right font-bold ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {trade.returnPct >= 0 ? '+' : ''}{trade.returnPct}%
                       </td>
-                      <td className="py-2 px-3 text-right text-slate-400">{trade.holdingDays}d</td>
+                      <td className="py-2 px-3 text-right text-[var(--theme-card-text-muted)]">{trade.holdingDays}d</td>
                       <td className="py-2 px-3 text-center">
                         <span
                           className={`px-2 py-0.5 rounded text-[10.5px] font-black ${
@@ -482,7 +482,7 @@ export function BacktestingView({
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                               : trade.exitReason === 'Stop Loss'
                               ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                              : 'bg-slate-800 text-slate-300 border border-slate-700'
+                              : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                           }`}
                         >
                           {trade.exitReason}

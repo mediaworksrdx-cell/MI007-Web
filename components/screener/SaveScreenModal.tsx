@@ -69,7 +69,7 @@ export function SaveScreenModal({
           </span>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-500/10 transition-colors"
           >
             ✕
           </button>
@@ -138,7 +138,7 @@ export function SaveScreenModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl mono text-[13px] font-bold text-[var(--theme-card-text-muted)] hover:text-white transition-colors"
+              className="px-4 py-2 rounded-xl mono text-[13px] font-bold text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] transition-colors"
             >
               Cancel
             </button>

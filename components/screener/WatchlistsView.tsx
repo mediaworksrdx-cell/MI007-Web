@@ -353,7 +353,7 @@ export function WatchlistsView({
                         {comp.currencySymbol}{price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                       {inWl ? (
-                        <span className="px-2.5 py-1 rounded-lg mono text-[11px] font-bold text-slate-400 bg-slate-500/10 border border-slate-500/20">
+                        <span className="px-2.5 py-1 rounded-lg mono text-[11px] font-bold text-[var(--theme-card-text-muted)] bg-slate-500/10 border border-slate-500/20">
                           ✓ In Watchlist
                         </span>
                       ) : (
@@ -401,7 +401,7 @@ export function WatchlistsView({
                         </span>
                       )}
                       {inWl ? (
-                        <span className="px-2.5 py-1 rounded-lg mono text-[11px] font-bold text-slate-400 bg-slate-500/10 border border-slate-500/20">
+                        <span className="px-2.5 py-1 rounded-lg mono text-[11px] font-bold text-[var(--theme-card-text-muted)] bg-slate-500/10 border border-slate-500/20">
                           ✓ In Watchlist
                         </span>
                       ) : (
@@ -478,7 +478,7 @@ export function WatchlistsView({
               {watchlistCompanies.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="py-12 text-center text-[var(--theme-card-text-muted)]">
-                    <p className="mono text-[14px] font-bold text-slate-400 mb-1">
+                    <p className="mono text-[14px] font-bold text-[var(--theme-card-text-muted)] mb-1">
                       This watchlist is empty
                     </p>
                     <p className="text-[12px] opacity-70">

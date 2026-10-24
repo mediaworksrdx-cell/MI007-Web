@@ -316,7 +316,7 @@ export function CustomQueryBuilderView({
             <button
               type="button"
               onClick={() => setSaveFeedback(null)}
-              className="px-2 py-1 text-slate-400 hover:text-[var(--theme-card-text)] transition-colors cursor-pointer"
+              className="px-2 py-1 text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] transition-colors cursor-pointer"
               title="Dismiss"
             >
               ✕
@@ -705,7 +705,7 @@ export function CustomQueryBuilderView({
               <button
                 type="button"
                 onClick={() => setIsSaveModalOpen(false)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[var(--theme-card-text)] hover:bg-white/10 transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-500/10 transition-colors cursor-pointer"
               >
                 ✕
               </button>

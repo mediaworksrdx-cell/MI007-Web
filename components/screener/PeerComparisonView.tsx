@@ -133,15 +133,15 @@ export function PeerComparisonView({
         {selectedCompanies.map((c) => (
           <div
             key={c.symbol}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 mono text-[13px] font-bold shadow-xs"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 mono text-[13px] font-bold shadow-xs"
           >
             <span>{c.symbol}</span>
-            <span className="text-slate-400 font-normal">({c.sector})</span>
+            <span className="text-emerald-800/70 dark:text-slate-400 font-normal">({c.sector})</span>
             {selectedCompanies.length > 1 && (
               <button
                 type="button"
                 onClick={() => removeCompany(c.symbol)}
-                className="text-slate-400 hover:text-rose-400 font-bold ml-1"
+                className="text-emerald-700 dark:text-slate-400 hover:text-rose-400 font-bold ml-1"
                 title="Remove company"
               >
                 ✕
@@ -159,7 +159,7 @@ export function PeerComparisonView({
                 key={sp.symbol}
                 type="button"
                 onClick={() => addCompany(sp.symbol)}
-                className="mono text-[11px] px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-slate-300 hover:border-emerald-500 transition-colors"
+                className="mono text-[11px] px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] hover:border-emerald-500 transition-colors"
               >
                 + {sp.symbol}
               </button>

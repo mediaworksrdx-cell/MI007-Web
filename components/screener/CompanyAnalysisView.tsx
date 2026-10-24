@@ -508,8 +508,8 @@ export function CompanyAnalysisView({
               Current P/E vs 5Y Median
             </span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="mono text-[18px] font-black text-white">{company.pe ? `${company.pe.toFixed(1)}x` : '—'}</span>
-              <span className="text-[11px] mono text-slate-400">vs {medianPe5Y}x</span>
+              <span className="mono text-[18px] font-black text-[var(--theme-card-text)]">{company.pe ? `${company.pe.toFixed(1)}x` : '—'}</span>
+              <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">vs {medianPe5Y}x</span>
             </div>
             <span className={`text-[10.5px] mono font-bold block mt-1 ${peDiscountPremiumPct <= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
               {peDiscountPremiumPct <= 0 ? `Trading at ${Math.abs(peDiscountPremiumPct)}% discount` : `Trading at ${peDiscountPremiumPct}% premium`}
@@ -521,8 +521,8 @@ export function CompanyAnalysisView({
               Price to Book (P/B)
             </span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="mono text-[18px] font-black text-white">{company.pb ? `${company.pb.toFixed(2)}x` : '—'}</span>
-              <span className="text-[11px] mono text-slate-400">Book Val: {company.currencySymbol}{(currentPrice / (company.pb || 1)).toFixed(0)}</span>
+              <span className="mono text-[18px] font-black text-[var(--theme-card-text)]">{company.pb ? `${company.pb.toFixed(2)}x` : '—'}</span>
+              <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">Book Val: {company.currencySymbol}{(currentPrice / (company.pb || 1)).toFixed(0)}</span>
             </div>
             <span className="text-[10.5px] mono text-emerald-400 font-bold block mt-1">
               Tangible Assets Backing
@@ -534,10 +534,10 @@ export function CompanyAnalysisView({
               EV / EBITDA
             </span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="mono text-[18px] font-black text-white">{company.evToEbitda ? `${company.evToEbitda.toFixed(1)}x` : '—'}</span>
-              <span className="text-[11px] mono text-slate-400">Benchmark: &lt;15x</span>
+              <span className="mono text-[18px] font-black text-[var(--theme-card-text)]">{company.evToEbitda ? `${company.evToEbitda.toFixed(1)}x` : '—'}</span>
+              <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">Benchmark: &lt;15x</span>
             </div>
-            <span className="text-[10.5px] mono text-slate-300 font-bold block mt-1">
+            <span className="text-[10.5px] mono text-[var(--theme-card-text-muted)] font-bold block mt-1">
               Debt-adjusted cash multiple
             </span>
           </div>
@@ -548,7 +548,7 @@ export function CompanyAnalysisView({
             </span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="mono text-[18px] font-black text-emerald-400">{company.fcfYield ? `${company.fcfYield.toFixed(2)}%` : '—'}</span>
-              <span className="text-[11px] mono text-slate-400">FCF: {company.currencySymbol}{company.freeCashFlow || 0} {scaleUnit}</span>
+              <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">FCF: {company.currencySymbol}{company.freeCashFlow || 0} {scaleUnit}</span>
             </div>
             <span className="text-[10.5px] mono text-emerald-400 font-bold block mt-1">
               Operating cash compounding

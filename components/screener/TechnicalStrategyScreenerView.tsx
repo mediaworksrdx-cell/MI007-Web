@@ -308,7 +308,7 @@ export function TechnicalStrategyScreenerView({
               {filteredResults.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-[var(--theme-card-text-muted)]">
-                    <span className="block mono text-[14px] font-bold text-slate-400 mb-1">
+                    <span className="block mono text-[14px] font-bold text-[var(--theme-card-text-muted)] mb-1">
                       No technical signals match current parameters
                     </span>
                     <span className="text-[12px] opacity-70">

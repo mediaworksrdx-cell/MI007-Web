@@ -111,7 +111,7 @@ export function ScreeningAlertsView({
                   className={`mono text-[11px] font-bold px-2.5 py-0.5 rounded-full border transition-all ${
                     alert.enabled
                       ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                      : 'border-slate-600 bg-slate-800 text-slate-400'
+                      : 'border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                   }`}
                 >
                   {alert.enabled ? '● ACTIVE' : '○ PAUSED'}

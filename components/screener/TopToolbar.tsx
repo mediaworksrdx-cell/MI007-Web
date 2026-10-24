@@ -86,7 +86,7 @@ export function TopToolbar({
                 {market === 'INDIA' ? 'Search 3,800+ Stocks...' : 'Search Companies...'}
               </span>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-slate-400 shrink-0 font-mono font-semibold">
+            <span className="text-[10px] px-2 py-0.5 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] shrink-0 font-mono font-semibold">
               /
             </span>
           </button>
