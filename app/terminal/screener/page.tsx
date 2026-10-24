@@ -48,7 +48,7 @@ export default function ScreenerTerminalPage() {
                   />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-[17px] sm:text-[23px] font-marker inst-card-text tracking-wide uppercase whitespace-nowrap flex items-center gap-2">
+                  <h1 className="text-[13px] xs:text-[15px] sm:text-[18px] md:text-[20px] font-marker inst-card-text tracking-wide uppercase whitespace-nowrap flex items-center gap-1.5 sm:gap-2">
                     <span>MARKET INTELLIGENCE</span>
                     <span className="text-emerald-500 font-marker">MI-007</span>
                   </h1>
