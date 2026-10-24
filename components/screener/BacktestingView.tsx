@@ -77,6 +77,7 @@ export function BacktestingView({
   const [savedPortfolios, setSavedPortfolios] = useState<SavedPortfolio[]>([]);
   const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+  const [portfolioViewTab, setPortfolioViewTab] = useState<'trades' | 'holdings'>('trades');
 
   // Manual exit overrides on individual simulated positions
   const [manuallyExitedTradeIds, setManuallyExitedTradeIds] = useState<number[]>([]);
@@ -126,11 +127,11 @@ export function BacktestingView({
     });
   }, [backtestResult.trades, manuallyExitedTradeIds]);
 
-  // Save current simulated portfolio
-  const handleSavePortfolio = () => {
+  // Add current simulated stock & strategy to portfolio
+  const handleAddToPortfolio = () => {
     const newPortfolio: SavedPortfolio = {
       id: `pf_${Date.now()}_${activeCompany.symbol}`,
-      name: `${activeCompany.symbol} ${activeStrategy?.name || strategyId} Portfolio`,
+      name: `${activeCompany.symbol} ${activeStrategy?.name || strategyId}`,
       symbol: activeCompany.symbol,
       companyName: activeCompany.name,
       market: activeCompany.market,
@@ -146,12 +147,18 @@ export function BacktestingView({
       trades: displayedTrades,
     };
 
-    const updated = [newPortfolio, ...savedPortfolios.filter((p) => p.id !== newPortfolio.id)];
+    const updated = [newPortfolio, ...savedPortfolios.filter((p) => !(p.symbol === activeCompany.symbol && p.strategyId === strategyId))];
     setSavedPortfolios(updated);
     persistSavedPortfolios(updated);
+    setPortfolioViewTab('holdings');
 
-    setSaveFeedback(`Portfolio for ${activeCompany.symbol} (${activeStrategy?.name || strategyId}) saved successfully to My Portfolios!`);
+    setSaveFeedback(`✓ Added ${activeCompany.symbol} (${activeStrategy?.name || strategyId}) to Portfolio! Initial Capital: ${activeCompany.currencySymbol}${Number(initialCapital).toLocaleString()}`);
     setTimeout(() => setSaveFeedback(null), 4000);
+  };
+
+  // Save current simulated portfolio
+  const handleSavePortfolio = () => {
+    handleAddToPortfolio();
   };
 
   // Load a saved portfolio into active parameters
@@ -259,8 +266,19 @@ export function BacktestingView({
           </div>
         </div>
 
-        {/* Header Action Buttons: View Chart, Save Portfolio, Saved Portfolios, Export CSV, Exit */}
+        {/* Header Action Buttons: Add to Portfolio, View Chart, Save Portfolio, Saved Portfolios, Export CSV, Exit */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Add to Portfolio Button */}
+          <button
+            type="button"
+            onClick={handleAddToPortfolio}
+            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[12px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            title="Add current stock strategy simulation to Portfolio"
+          >
+            <span className="font-black text-sm">+</span>
+            <span>ADD TO PORTFOLIO</span>
+          </button>
+
           {/* View Chart Link */}
           <Link
             href={`/chart/${activeCompany.symbol}?market=${activeCompany.market}&from=screener`}
@@ -281,7 +299,7 @@ export function BacktestingView({
           <button
             type="button"
             onClick={handleSavePortfolio}
-            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[12px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 mono text-[12px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
             title="Save current simulation as a tracked portfolio"
           >
             <span>💾 SAVE PORTFOLIO</span>
@@ -339,13 +357,27 @@ export function BacktestingView({
 
       {/* ── Simulation Parameters Panel ── */}
       <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md">
-        <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)] mb-4">
-          <span className="mono text-[13px] font-black inst-card-text uppercase tracking-wide">
-            Strategy Simulation Parameters
-          </span>
-          <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">
-            Pegged to live ticks and multi-year OHLCV candle series
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--theme-card-border)] mb-4">
+          <div>
+            <span className="mono text-[13px] font-black inst-card-text uppercase tracking-wide">
+              Strategy Simulation Parameters
+            </span>
+            <span className="text-[11px] mono text-[var(--theme-card-text-muted)] block mt-0.5">
+              Pegged to live ticks and multi-year OHLCV candle series
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleAddToPortfolio}
+              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black mono text-[12.5px] shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+              title={`Add ${activeCompany.symbol} (${activeStrategy?.name || strategyId}) to Portfolio`}
+            >
+              <span className="font-black text-sm">+</span>
+              <span>ADD TO PORTFOLIO</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -443,6 +475,39 @@ export function BacktestingView({
               step={5}
               className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             />
+          </div>
+        </div>
+
+        {/* Action Toolbar directly below parameter inputs */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3.5 mt-4 border-t border-[var(--theme-card-border)]/60">
+          <div className="flex items-center gap-2 text-[12px] mono text-[var(--theme-card-text-muted)]">
+            <span>Configured for:</span>
+            <span className="font-black text-emerald-400">{activeCompany.symbol}</span>
+            <span className="text-[11px]">({activeCompany.name})</span>
+            <span>·</span>
+            <span className="font-bold text-[var(--theme-card-text)]">{activeStrategy?.name || strategyId}</span>
+            <span>·</span>
+            <span>Capital: {activeCompany.currencySymbol}{Number(initialCapital).toLocaleString()}</span>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              type="button"
+              onClick={handleAddToPortfolio}
+              className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black mono text-[13px] shadow-sm transition-all cursor-pointer flex items-center gap-2 group"
+              title={`Add ${activeCompany.symbol} (${activeStrategy?.name || strategyId}) to Portfolio`}
+            >
+              <span className="text-base group-hover:scale-125 transition-transform font-black">+</span>
+              <span>ADD TO PORTFOLIO</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleSavePortfolio}
+              className="px-4 py-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 font-black mono text-[12.5px] transition-all cursor-pointer flex items-center gap-1.5"
+              title="Save this portfolio configuration"
+            >
+              <span>💾 SAVE PORTFOLIO</span>
+            </button>
           </div>
         </div>
       </div>
@@ -563,31 +628,65 @@ export function BacktestingView({
 
       {/* ── Detailed PORTFOLIO Table (Changed from Walk-Forward Trade Log) ── */}
       <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md overflow-hidden flex flex-col">
-        {/* Portfolio Card Header with Save Portfolio, Export CSV, and Exit Options */}
+        {/* Portfolio Card Header with Tabs, Add to Portfolio, Save, Export CSV, and Exit Options */}
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3 flex-wrap">
             <span className="mono text-[15px] sm:text-[16px] font-black inst-card-text uppercase tracking-wide">
               PORTFOLIO
             </span>
-            <span className="mono text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-              {displayedTrades.length} Holdings & Closed Positions
-            </span>
+
+            {/* View Switcher Tabs */}
+            <div className="flex items-center p-0.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)]">
+              <button
+                type="button"
+                onClick={() => setPortfolioViewTab('trades')}
+                className={`px-3 py-1 rounded-lg mono text-[11px] font-bold transition-all cursor-pointer ${
+                  portfolioViewTab === 'trades'
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                    : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
+                }`}
+              >
+                Simulation Trades ({displayedTrades.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setPortfolioViewTab('holdings')}
+                className={`px-3 py-1 rounded-lg mono text-[11px] font-bold transition-all cursor-pointer ${
+                  portfolioViewTab === 'holdings'
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                    : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
+                }`}
+              >
+                Added Holdings ({savedPortfolios.length})
+              </button>
+            </div>
           </div>
 
-          {/* Action Toolbar on Portfolio Section (Image 2) */}
+          {/* Action Toolbar on Portfolio Section */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Add to Portfolio Button */}
+            <button
+              type="button"
+              onClick={handleAddToPortfolio}
+              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              title={`Add ${activeCompany.symbol} (${activeStrategy?.name || strategyId}) to Portfolio`}
+            >
+              <span className="font-black text-sm">+</span>
+              <span>ADD TO PORTFOLIO</span>
+            </button>
+
             {/* Save Portfolio Option */}
             <button
               type="button"
               onClick={handleSavePortfolio}
-              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 mono text-[11.5px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
               title="Save this portfolio simulation"
             >
               <span>💾 SAVE PORTFOLIO</span>
             </button>
 
-            {/* Exit All Positions Option */}
-            {displayedTrades.length > 0 && (
+            {/* Exit All Positions Option (Only in trades view) */}
+            {portfolioViewTab === 'trades' && displayedTrades.length > 0 && (
               <button
                 type="button"
                 onClick={handleExitAllPositions}
@@ -601,14 +700,33 @@ export function BacktestingView({
             {/* Export CSV Option */}
             <button
               type="button"
-              onClick={() => exportPortfolioCSV()}
+              onClick={() => {
+                if (portfolioViewTab === 'trades') {
+                  exportPortfolioCSV();
+                } else {
+                  const headers = 'Symbol,Name,Strategy,Initial Capital,Final Equity,Return %,Win Rate %,Trades,Saved At\n';
+                  const rows = savedPortfolios
+                    .map(
+                      (p) =>
+                        `"${p.symbol}","${p.companyName}","${p.strategyName}",${p.initialCapital},${p.finalEquity},${p.totalReturnPct},${p.winRate},${p.totalTrades},"${p.savedAt}"`
+                    )
+                    .join('\n');
+                  const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `MI007_Portfolio_Holdings_${new Date().toISOString().slice(0, 10)}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }
+              }}
               className="px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 mono text-[11.5px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1"
               title="Export portfolio to CSV"
             >
               <span>Export CSV ↓</span>
             </button>
 
-            {/* Exit Option right in Portfolio Card (Image 2) */}
+            {/* Exit Option right in Portfolio Card */}
             <button
               type="button"
               onClick={onBackToScreener}
@@ -620,108 +738,226 @@ export function BacktestingView({
           </div>
         </div>
 
-        {/* Portfolio Table */}
-        <div className="overflow-x-auto overflow-y-auto max-h-[460px]">
-          <table className="w-full border-collapse text-left mono text-[12.5px]">
-            <thead className="sticky top-0 z-10 bg-[var(--theme-card-surface)] border-b border-[var(--theme-card-border)] shadow-xs">
-              <tr className="text-[11px] text-[var(--theme-card-text-muted)] font-black uppercase tracking-wider">
-                <th className="py-2.5 px-3">#</th>
-                <th className="py-2.5 px-3">Entry Date</th>
-                <th className="py-2.5 px-3 text-right">Entry Price</th>
-                <th className="py-2.5 px-3">Exit Date</th>
-                <th className="py-2.5 px-3 text-right">Exit Price</th>
-                <th className="py-2.5 px-3 text-right">Shares</th>
-                <th className="py-2.5 px-3 text-right">PnL ({activeCompany.currencySymbol})</th>
-                <th className="py-2.5 px-3 text-right">Return %</th>
-                <th className="py-2.5 px-3 text-right">Hold Days</th>
-                <th className="py-2.5 px-3 text-center">Exit Trigger</th>
-                <th className="py-2.5 px-3 text-center">Exit Option</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--theme-card-border)]/40 tabular-nums">
-              {displayedTrades.length === 0 ? (
-                <tr>
-                  <td colSpan={11} className="py-10 text-center text-[var(--theme-card-text-muted)]">
-                    No closed positions generated under selected parameters.
-                  </td>
+        {/* Portfolio Table - Conditional Switch between Holdings and Trades */}
+        {portfolioViewTab === 'holdings' ? (
+          <div className="overflow-x-auto overflow-y-auto max-h-[460px]">
+            <table className="w-full border-collapse text-left mono text-[12.5px]">
+              <thead className="sticky top-0 z-10 bg-[var(--theme-card-surface)] border-b border-[var(--theme-card-border)] shadow-xs">
+                <tr className="text-[11px] text-[var(--theme-card-text-muted)] font-black uppercase tracking-wider">
+                  <th className="py-2.5 px-3">Symbol</th>
+                  <th className="py-2.5 px-3">Strategy</th>
+                  <th className="py-2.5 px-3 text-right">Initial Capital</th>
+                  <th className="py-2.5 px-3 text-right">Final Equity</th>
+                  <th className="py-2.5 px-3 text-right">Total Return</th>
+                  <th className="py-2.5 px-3 text-right">Win Rate</th>
+                  <th className="py-2.5 px-3 text-right">Trades</th>
+                  <th className="py-2.5 px-3">Added Date</th>
+                  <th className="py-2.5 px-3 text-center">Actions</th>
                 </tr>
-              ) : (
-                displayedTrades.map((trade) => {
-                  const isProfit = trade.pnl > 0;
-                  const isManuallyExited = manuallyExitedTradeIds.includes(trade.tradeId);
-
-                  return (
-                    <tr key={trade.tradeId} className="hover:bg-emerald-500/5 transition-colors">
-                      <td className="py-2.5 px-3 text-[var(--theme-card-text-muted)] font-bold">{trade.tradeId}</td>
-                      <td className="py-2.5 px-3 text-[var(--theme-card-text)]">{trade.entryDate}</td>
-                      <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-bold">
-                        {activeCompany.currencySymbol}{trade.entryPrice.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-3 text-[var(--theme-card-text)]">{trade.exitDate}</td>
-                      <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-bold">
-                        {activeCompany.currencySymbol}{trade.exitPrice.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)]">{trade.shares}</td>
-                      <td className={`py-2.5 px-3 text-right font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {trade.pnl >= 0 ? '+' : ''}{activeCompany.currencySymbol}{trade.pnl.toLocaleString()}
-                      </td>
-                      <td className={`py-2.5 px-3 text-right font-bold ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {trade.returnPct >= 0 ? '+' : ''}{trade.returnPct}%
-                      </td>
-                      <td className="py-2.5 px-3 text-right text-[var(--theme-card-text-muted)]">{trade.holdingDays}d</td>
-                      <td className="py-2.5 px-3 text-center">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10.5px] font-black ${
-                            trade.exitReason === 'Take Profit'
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                              : trade.exitReason === 'Stop Loss'
-                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                              : isManuallyExited
-                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                              : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          {trade.exitReason}
-                        </span>
-                      </td>
-
-                      {/* Exit Option Action Column */}
-                      <td className="py-2.5 px-3 text-center">
-                        {isManuallyExited ? (
-                          <span className="mono text-[10.5px] text-amber-500 font-bold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
-                            Exited ✓
+              </thead>
+              <tbody className="divide-y divide-[var(--theme-card-border)]/40 tabular-nums">
+                {savedPortfolios.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-12 text-center text-[var(--theme-card-text-muted)] mono">
+                      <p className="font-bold text-[13px] mb-1">No stocks added to portfolio yet</p>
+                      <p className="text-[11.5px] opacity-75">
+                        Configure your parameters above and click &quot;+ ADD TO PORTFOLIO&quot; to track your stock strategies here.
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  savedPortfolios.map((pf) => {
+                    const isProfit = pf.totalReturnPct >= 0;
+                    return (
+                      <tr key={pf.id} className="hover:bg-emerald-500/5 transition-colors">
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-emerald-400">{pf.symbol}</span>
+                            <span className="text-[11px] text-[var(--theme-card-text-muted)] font-normal hidden sm:inline">
+                              {pf.companyName}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="px-2 py-0.5 rounded text-[10.5px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            {pf.strategyName}
                           </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleManualExitTrade(trade.tradeId)}
-                            className="px-2.5 py-0.5 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white mono text-[10.5px] font-bold transition-all cursor-pointer"
-                            title={`Exit position #${trade.tradeId}`}
+                        </td>
+                        <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-bold">
+                          {pf.currencySymbol}{Number(pf.initialCapital).toLocaleString()}
+                        </td>
+                        <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-bold">
+                          {pf.currencySymbol}{Number(pf.finalEquity).toLocaleString()}
+                        </td>
+                        <td className={`py-2.5 px-3 text-right font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {pf.totalReturnPct >= 0 ? '+' : ''}{pf.totalReturnPct}%
+                        </td>
+                        <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-bold">
+                          {pf.winRate}%
+                        </td>
+                        <td className="py-2.5 px-3 text-right text-[var(--theme-card-text-muted)]">
+                          {pf.totalTrades}
+                        </td>
+                        <td className="py-2.5 px-3 text-[var(--theme-card-text-muted)] text-[11px]">
+                          {new Date(pf.savedAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-2.5 px-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleLoadPortfolio(pf)}
+                              className="px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[10.5px] font-black transition-colors cursor-pointer"
+                              title="Load this portfolio configuration into simulator"
+                            >
+                              ⚡ LOAD
+                            </button>
+                            <Link
+                              href={`/chart/${pf.symbol}?market=${pf.market}&from=screener`}
+                              className="px-2 py-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 mono text-[10.5px] font-bold transition-colors cursor-pointer"
+                              title={`View ${pf.symbol} interactive chart`}
+                            >
+                              📈 CHART
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeletePortfolio(pf.id, e)}
+                              className="px-2 py-1 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white mono text-[10.5px] font-bold transition-colors cursor-pointer"
+                              title="Remove from portfolio"
+                            >
+                              ✕ REMOVE
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="overflow-x-auto overflow-y-auto max-h-[460px]">
+            <table className="w-full border-collapse text-left mono text-[12.5px]">
+              <thead className="sticky top-0 z-10 bg-[var(--theme-card-surface)] border-b border-[var(--theme-card-border)] shadow-xs">
+                <tr className="text-[11px] text-[var(--theme-card-text-muted)] font-black uppercase tracking-wider">
+                  <th className="py-2.5 px-3">#</th>
+                  <th className="py-2.5 px-3">Entry Date</th>
+                  <th className="py-2.5 px-3 text-right">Entry Price</th>
+                  <th className="py-2.5 px-3">Exit Date</th>
+                  <th className="py-2.5 px-3 text-right">Exit Price</th>
+                  <th className="py-2.5 px-3 text-right">Shares</th>
+                  <th className="py-2.5 px-3 text-right">PnL ({activeCompany.currencySymbol})</th>
+                  <th className="py-2.5 px-3 text-right">Return %</th>
+                  <th className="py-2.5 px-3 text-right">Hold Days</th>
+                  <th className="py-2.5 px-3 text-center">Exit Trigger</th>
+                  <th className="py-2.5 px-3 text-center">Exit Option</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--theme-card-border)]/40 tabular-nums">
+                {displayedTrades.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="py-10 text-center text-[var(--theme-card-text-muted)]">
+                      No closed positions generated under selected parameters.
+                    </td>
+                  </tr>
+                ) : (
+                  displayedTrades.map((trade) => {
+                    const isProfit = trade.pnl > 0;
+                    const isManuallyExited = manuallyExitedTradeIds.includes(trade.tradeId);
+
+                    return (
+                      <tr key={trade.tradeId} className="hover:bg-emerald-500/5 transition-colors">
+                        <td className="py-2.5 px-3 text-[var(--theme-card-text-muted)] font-bold">{trade.tradeId}</td>
+                        <td className="py-2.5 px-3 text-[var(--theme-card-text)]">{trade.entryDate}</td>
+                        <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-bold">
+                          {activeCompany.currencySymbol}{trade.entryPrice.toFixed(2)}
+                        </td>
+                        <td className="py-2.5 px-3 text-[var(--theme-card-text)]">{trade.exitDate}</td>
+                        <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-bold">
+                          {activeCompany.currencySymbol}{trade.exitPrice.toFixed(2)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)]">{trade.shares}</td>
+                        <td className={`py-2.5 px-3 text-right font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {trade.pnl >= 0 ? '+' : ''}{activeCompany.currencySymbol}{trade.pnl.toLocaleString()}
+                        </td>
+                        <td className={`py-2.5 px-3 text-right font-bold ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {trade.returnPct >= 0 ? '+' : ''}{trade.returnPct}%
+                        </td>
+                        <td className="py-2.5 px-3 text-right text-[var(--theme-card-text-muted)]">{trade.holdingDays}d</td>
+                        <td className="py-2.5 px-3 text-center">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10.5px] font-black ${
+                              trade.exitReason === 'Take Profit'
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                : trade.exitReason === 'Stop Loss'
+                                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                                : isManuallyExited
+                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                                : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                            }`}
                           >
-                            Exit Trade
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                            {trade.exitReason}
+                          </span>
+                        </td>
+
+                        {/* Exit Option Action Column */}
+                        <td className="py-2.5 px-3 text-center">
+                          {isManuallyExited ? (
+                            <span className="mono text-[10.5px] text-amber-500 font-bold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
+                              Exited ✓
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleManualExitTrade(trade.tradeId)}
+                              className="px-2.5 py-0.5 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white mono text-[10.5px] font-bold transition-all cursor-pointer"
+                              title={`Exit position #${trade.tradeId}`}
+                            >
+                              Exit Trade
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Portfolio Table Footer & Quick Exit */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 px-5 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
           <div className="flex items-center gap-4 text-[12px] mono font-bold text-[var(--theme-card-text-muted)]">
-            <span>Total Portfolio Positions: {displayedTrades.length}</span>
-            <span>Final Equity: {activeCompany.currencySymbol}{backtestResult.finalEquity.toLocaleString()}</span>
+            {portfolioViewTab === 'holdings' ? (
+              <>
+                <span>Added Portfolio Holdings: {savedPortfolios.length}</span>
+                <span>
+                  Total Capital:{' '}
+                  {activeCompany.currencySymbol}
+                  {savedPortfolios.reduce((acc, p) => acc + (p.initialCapital || 0), 0).toLocaleString()}
+                </span>
+              </>
+            ) : (
+              <>
+                <span>Total Portfolio Positions: {displayedTrades.length}</span>
+                <span>Final Equity: {activeCompany.currencySymbol}{backtestResult.finalEquity.toLocaleString()}</span>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handleSavePortfolio}
+              onClick={handleAddToPortfolio}
               className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            >
+              <span>+ ADD TO PORTFOLIO</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleSavePortfolio}
+              className="px-3.5 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
             >
               <span>💾 SAVE PORTFOLIO</span>
             </button>
