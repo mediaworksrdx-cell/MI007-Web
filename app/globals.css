@@ -38,41 +38,41 @@ html[data-theme="ocean"],
 html[data-theme="graphite"],
 html[data-theme="metallic"],
 html[data-theme="obsidian"] {
-  --color-bg-midnight: #071322;
-  --color-surface-card: #0E233D;
-  --color-surface-variant: #142F50;
-  --color-border-navy: #1B3B60;
-  --color-mint-green: #00F59B;
-  --color-crimson-red: #FF4D4D;
-  --color-accent-cyan: #00E5FF;
-  --color-cyber-gold: #38BDF8;
-  --color-chart-bg: #0E233D;
-  --color-text-primary: #F0FDF4;
-  --color-text-secondary: #7DD3FC;
-  --color-text-muted: #38BDF8;
-  --color-bull-green: #00F59B;
-  --color-bear-red: #FF4D4D;
-  --color-glass-white: rgba(14, 35, 61, 0.95);
+  --color-bg-midnight: #080E1A;
+  --color-surface-card: #0F172A;
+  --color-surface-variant: #1E293B;
+  --color-border-navy: #1E293B;
+  --color-mint-green: #10B981;
+  --color-crimson-red: #EF4444;
+  --color-accent-cyan: #3B82F6;
+  --color-cyber-gold: #60A5FA;
+  --color-chart-bg: #0F172A;
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
+  --color-bull-green: #10B981;
+  --color-bear-red: #EF4444;
+  --color-glass-white: rgba(15, 23, 42, 0.96);
 
-  --theme-page-bg: #071322;
-  --theme-page-text: #F0FDF4;
-  --theme-page-subtitle: #7DD3FC;
-  --theme-page-border: #1B3B60;
-  --theme-navbar-bg: rgba(7, 19, 34, 0.96);
-  --theme-ticker-bg: #0A1B30;
-  --theme-ticker-text: #F0FDF4;
-  --theme-ticker-border: #1B3B60;
+  --theme-page-bg: #080E1A;
+  --theme-page-text: #F8FAFC;
+  --theme-page-subtitle: #94A3B8;
+  --theme-page-border: #1E293B;
+  --theme-navbar-bg: rgba(8, 14, 26, 0.97);
+  --theme-ticker-bg: #0B1324;
+  --theme-ticker-text: #F8FAFC;
+  --theme-ticker-border: #1E293B;
 
-  --theme-card-bg: #0E233D;
-  --theme-card-surface: #142F50;
-  --theme-card-border: #1E4670;
-  --theme-card-text: #F0FDF4;
-  --theme-card-text-muted: #7DD3FC;
+  --theme-card-bg: #0F172A;
+  --theme-card-surface: #162033;
+  --theme-card-border: #233047;
+  --theme-card-text: #F8FAFC;
+  --theme-card-text-muted: #94A3B8;
 
-  --theme-footer-bg: #040B15;
-  --theme-footer-text: #F0FDF4;
-  --theme-footer-border: #142F50;
-  --theme-switcher-bg: #0E233D;
+  --theme-footer-bg: #050912;
+  --theme-footer-text: #F8FAFC;
+  --theme-footer-border: #1E293B;
+  --theme-switcher-bg: #0F172A;
 }
 
 html[data-theme="violet"],
@@ -80,81 +80,81 @@ html[data-theme="capital"],
 html[data-theme="azure"],
 html[data-theme="techno"],
 html[data-theme="cyberpunk"] {
-  --color-bg-midnight: #0F081D;
-  --color-surface-card: #1A0F30;
-  --color-surface-variant: #251644;
-  --color-border-navy: #3B1F6A;
-  --color-mint-green: #22E555;
-  --color-crimson-red: #FF4D6D;
-  --color-accent-cyan: #22E555;
-  --color-cyber-gold: #A855F7;
-  --color-chart-bg: #1A0F30;
-  --color-text-primary: #FAF5FF;
-  --color-text-secondary: #C084FC;
-  --color-text-muted: #9333EA;
-  --color-bull-green: #22E555;
-  --color-bear-red: #FF4D6D;
-  --color-glass-white: rgba(26, 15, 48, 0.95);
+  --color-bg-midnight: #090B10;
+  --color-surface-card: #11151F;
+  --color-surface-variant: #181E2C;
+  --color-border-navy: #22293A;
+  --color-mint-green: #10B981;
+  --color-crimson-red: #F43F5E;
+  --color-accent-cyan: #10B981;
+  --color-cyber-gold: #6366F1;
+  --color-chart-bg: #11151F;
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
+  --color-bull-green: #10B981;
+  --color-bear-red: #F43F5E;
+  --color-glass-white: rgba(17, 21, 31, 0.96);
 
-  --theme-page-bg: #0F081D;
-  --theme-page-text: #FAF5FF;
-  --theme-page-subtitle: #C084FC;
-  --theme-page-border: #3B1F6A;
-  --theme-navbar-bg: rgba(15, 8, 29, 0.96);
-  --theme-ticker-bg: #140C25;
-  --theme-ticker-text: #FAF5FF;
-  --theme-ticker-border: #3B1F6A;
+  --theme-page-bg: #090B10;
+  --theme-page-text: #F8FAFC;
+  --theme-page-subtitle: #94A3B8;
+  --theme-page-border: #22293A;
+  --theme-navbar-bg: rgba(9, 11, 16, 0.97);
+  --theme-ticker-bg: #0D1017;
+  --theme-ticker-text: #F8FAFC;
+  --theme-ticker-border: #22293A;
 
-  --theme-card-bg: #1A0F30;
-  --theme-card-surface: #251644;
-  --theme-card-border: #4C2882;
-  --theme-card-text: #FAF5FF;
-  --theme-card-text-muted: #C084FC;
+  --theme-card-bg: #11151F;
+  --theme-card-surface: #171C29;
+  --theme-card-border: #262E42;
+  --theme-card-text: #F8FAFC;
+  --theme-card-text-muted: #94A3B8;
 
-  --theme-footer-bg: #08040F;
-  --theme-footer-text: #FAF5FF;
-  --theme-footer-border: #251644;
-  --theme-switcher-bg: #1A0F30;
+  --theme-footer-bg: #06070B;
+  --theme-footer-text: #F8FAFC;
+  --theme-footer-border: #1E2433;
+  --theme-switcher-bg: #11151F;
 }
 
 html[data-theme="cream"],
 html[data-theme="ivory"],
 html[data-theme="champagne"],
 html[data-theme="falcon"] {
-  --color-bg-midnight: #F9F7F2;
+  --color-bg-midnight: #F8F7F4;
   --color-surface-card: #FFFFFF;
-  --color-surface-variant: #F2EEE4;
-  --color-border-navy: #E5E0D8;
-  --color-mint-green: #107C41;
+  --color-surface-variant: #F1EFEA;
+  --color-border-navy: #E2E8F0;
+  --color-mint-green: #059669;
   --color-crimson-red: #DC2626;
-  --color-accent-cyan: #107C41;
-  --color-cyber-gold: #15803D;
+  --color-accent-cyan: #059669;
+  --color-cyber-gold: #047857;
   --color-chart-bg: #FFFFFF;
   --color-text-primary: #0F172A;
-  --color-text-secondary: #52525B;
-  --color-text-muted: #71717A;
-  --color-bull-green: #107C41;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748B;
+  --color-bull-green: #059669;
   --color-bear-red: #DC2626;
-  --color-glass-white: rgba(255, 255, 255, 0.95);
+  --color-glass-white: rgba(255, 255, 255, 0.96);
 
-  --theme-page-bg: #F9F7F2;
+  --theme-page-bg: #F8F7F4;
   --theme-page-text: #0F172A;
-  --theme-page-subtitle: #52525B;
-  --theme-page-border: #E5E0D8;
-  --theme-navbar-bg: rgba(249, 247, 242, 0.96);
-  --theme-ticker-bg: #F3EFE6;
+  --theme-page-subtitle: #475569;
+  --theme-page-border: #E2E8F0;
+  --theme-navbar-bg: rgba(248, 247, 244, 0.97);
+  --theme-ticker-bg: #F1EFEA;
   --theme-ticker-text: #0F172A;
-  --theme-ticker-border: #E5E0D8;
+  --theme-ticker-border: #E2E8F0;
 
   --theme-card-bg: #FFFFFF;
-  --theme-card-surface: #F8F6F0;
-  --theme-card-border: #E5E0D8;
+  --theme-card-surface: #F8FAFC;
+  --theme-card-border: #E2E8F0;
   --theme-card-text: #0F172A;
-  --theme-card-text-muted: #52525B;
+  --theme-card-text-muted: #475569;
 
-  --theme-footer-bg: #111D16;
+  --theme-footer-bg: #0F172A;
   --theme-footer-text: #F8FAFC;
-  --theme-footer-border: #1E3327;
+  --theme-footer-border: #1E293B;
   --theme-switcher-bg: #FFFFFF;
 }
 
@@ -162,40 +162,40 @@ html[data-theme="sky"],
 html[data-theme="arctic"],
 html[data-theme="lightblue"],
 html[data-theme="quartz"] {
-  --color-bg-midnight: #E8F3FA;
+  --color-bg-midnight: #F1F5F9;
   --color-surface-card: #FFFFFF;
-  --color-surface-variant: #DDF0FA;
-  --color-border-navy: #BAE6FD;
-  --color-mint-green: #22C55E;
-  --color-crimson-red: #EF4444;
-  --color-accent-cyan: #00B4D8;
+  --color-surface-variant: #F8FAFC;
+  --color-border-navy: #CBD5E1;
+  --color-mint-green: #059669;
+  --color-crimson-red: #DC2626;
+  --color-accent-cyan: #2563EB;
   --color-cyber-gold: #0284C7;
   --color-chart-bg: #FFFFFF;
   --color-text-primary: #0F172A;
-  --color-text-secondary: #475569;
+  --color-text-secondary: #334155;
   --color-text-muted: #64748B;
-  --color-bull-green: #22C55E;
-  --color-bear-red: #EF4444;
-  --color-glass-white: rgba(255, 255, 255, 0.95);
+  --color-bull-green: #059669;
+  --color-bear-red: #DC2626;
+  --color-glass-white: rgba(255, 255, 255, 0.96);
 
-  --theme-page-bg: #E8F3FA;
+  --theme-page-bg: #F1F5F9;
   --theme-page-text: #0F172A;
   --theme-page-subtitle: #475569;
-  --theme-page-border: #BAE6FD;
-  --theme-navbar-bg: rgba(232, 243, 250, 0.96);
-  --theme-ticker-bg: #DCECF7;
+  --theme-page-border: #CBD5E1;
+  --theme-navbar-bg: rgba(241, 245, 249, 0.97);
+  --theme-ticker-bg: #E2E8F0;
   --theme-ticker-text: #0F172A;
-  --theme-ticker-border: #BAE6FD;
+  --theme-ticker-border: #CBD5E1;
 
   --theme-card-bg: #FFFFFF;
-  --theme-card-surface: #F0F7FC;
-  --theme-card-border: #BAE6FD;
+  --theme-card-surface: #F8FAFC;
+  --theme-card-border: #CBD5E1;
   --theme-card-text: #0F172A;
   --theme-card-text-muted: #475569;
 
-  --theme-footer-bg: #0C1B2A;
+  --theme-footer-bg: #0F172A;
   --theme-footer-text: #F8FAFC;
-  --theme-footer-border: #18334E;
+  --theme-footer-border: #1E293B;
   --theme-switcher-bg: #FFFFFF;
 }
 
@@ -672,18 +672,19 @@ html[data-theme="quartz"] {
     color: #334155 !important;
   }
 
-  /* Prevent Inadvertent White Text on White Cards (excluding footer and dark surfaces) */
-  button.text-white:not(.bg-rose-500):not(.bg-emerald-600):not(.bg-emerald-500):not(.bg-slate-900):not(.bg-black):not(.launch-terminal-btn):not(footer *):not(.footer-panel *),
-  button .text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *):not(footer *):not(.footer-panel *),
-  td.text-white:not(footer *):not(.footer-panel *),
-  tr.text-white:not(footer *):not(.footer-panel *),
-  p.text-white:not(footer *):not(.footer-panel *),
-  h1.text-white:not(footer *):not(.footer-panel *),
-  h2.text-white:not(footer *):not(.footer-panel *),
-  h3.text-white:not(footer *):not(.footer-panel *),
-  h4.text-white:not(footer *):not(.footer-panel *),
-  span.text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *):not(footer *):not(.footer-panel *),
-  div.text-white:not(.bg-rose-500 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-slate-900 *):not(.bg-black *):not(footer *):not(.footer-panel *) {
+  /* Prevent Inadvertent White Text on White Cards (excluding dark badges, buttons, slider pins, and footer) */
+  .terminal-page-panel h1.text-white,
+  .terminal-page-panel h2.text-white,
+  .terminal-page-panel h3.text-white,
+  .terminal-page-panel h4.text-white,
+  .terminal-page-panel p.text-white,
+  .terminal-page-panel td.text-white,
+  .terminal-page-panel tr.text-white,
+  .inst-card h1.text-white,
+  .inst-card h2.text-white,
+  .inst-card h3.text-white,
+  .inst-card h4.text-white,
+  .inst-card p.text-white {
     color: #0F172A !important;
   }
 
@@ -1076,10 +1077,23 @@ button, a, input, select, textarea {
   background: #059669;
 }
 
-/* ── Monospace financial numbers ─────────────────────────────────────────── */
+/* ── Monospace & Tabular Financial Numbers ───────────────────────────────── */
 .mono {
   font-family: "JetBrains Mono", "Roboto Mono", Menlo, monospace;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+table,
+td,
+th,
+input[type="number"],
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+h1, h2, h3, h4 {
+  letter-spacing: -0.015em;
 }
 
 /* ── Glass morphism ─────────────────────────────────────────────────────── */

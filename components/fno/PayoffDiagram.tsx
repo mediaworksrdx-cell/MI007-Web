@@ -76,8 +76,8 @@ function OpstraSlider({
           style={{ left: `${pct}%` }}
         >
           <div
-            className="text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[20px] text-center shadow-md leading-none"
-            style={{ backgroundColor: color }}
+            className="slider-pin-badge font-mono tabular-nums text-[9.5px] font-bold px-1.5 py-0.5 rounded-full min-w-[22px] text-center shadow-sm leading-none"
+            style={{ backgroundColor: color, color: '#FFFFFF' }}
           >
             {value > 0 && label.includes('(%)') ? `+${value}` : value}
           </div>
@@ -600,25 +600,25 @@ export function PayoffDiagram({
                 );
               })}
 
-              {/* Expiry Curve (Solid Royal Blue line matching Opstra) */}
+              {/* Expiry Curve (Crisp Institutional Royal Blue) */}
               {expiryPath && (
                 <path
                   d={expiryPath}
                   fill="none"
-                  stroke="#0000FF"
-                  strokeWidth="2.5"
+                  stroke="#2563EB"
+                  strokeWidth="2.4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               )}
 
-              {/* T+n Scenario Curve (Dashed Green line matching Opstra) */}
+              {/* T+n Scenario Curve (Institutional Emerald) */}
               {todayPath && (
                 <path
                   d={todayPath}
                   fill="none"
-                  stroke="#16A34A"
-                  strokeWidth="2.2"
+                  stroke="#059669"
+                  strokeWidth="2.1"
                   strokeDasharray="4 3"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -712,15 +712,15 @@ export function PayoffDiagram({
 
               {/* Opstra Curve Legend */}
               <g transform={`translate(${padding.left + 8}, ${padding.top + 16})`}>
-                <rect x="0" y="0" width="165" height="38" rx="3" fill="#FFFFFF" fillOpacity="0.9" stroke="#E2E8F0" strokeWidth="1" />
+                <rect x="0" y="0" width="165" height="38" rx="3" fill="#FFFFFF" fillOpacity="0.94" stroke="#E2E8F0" strokeWidth="1" />
                 {/* Expiry line */}
-                <line x1="8" y1="12" x2="28" y2="12" stroke="#0000FF" strokeWidth="2.5" />
-                <text x="34" y="15" fill="#1E293B" fontSize="9.5" fontFamily="sans-serif" fontWeight="600">
+                <line x1="8" y1="12" x2="28" y2="12" stroke="#2563EB" strokeWidth="2.4" />
+                <text x="34" y="15" fill="#0F172A" fontSize="9.5" fontFamily="sans-serif" fontWeight="600">
                   Expiry P&amp;L
                 </text>
                 {/* Today line */}
-                <line x1="8" y1="26" x2="28" y2="26" stroke="#16A34A" strokeWidth="2.2" strokeDasharray="4 2" />
-                <text x="34" y="29" fill="#1E293B" fontSize="9.5" fontFamily="sans-serif" fontWeight="600">
+                <line x1="8" y1="26" x2="28" y2="26" stroke="#059669" strokeWidth="2.1" strokeDasharray="4 2" />
+                <text x="34" y="29" fill="#0F172A" fontSize="9.5" fontFamily="sans-serif" fontWeight="600">
                   Today (T+{timeShiftDays}) P&amp;L
                 </text>
               </g>
@@ -882,7 +882,7 @@ export function PayoffDiagram({
         </div>
       </div>
 
-      {/* ── 5. Bottom Scenario Shock Sliders (Exact Opstra Definedge Style) ── */}
+      {/* ── 5. Bottom Scenario Shock Sliders (Clean Institutional Slate & Royal Blue) ── */}
       <div className="px-4 py-3 bg-white border-t border-slate-200 space-y-2.5">
         {/* Spot (%) Slider */}
         <OpstraSlider
@@ -892,7 +892,7 @@ export function PayoffDiagram({
           max={10}
           step={0.5}
           onChange={handleSpotShockChange}
-          color="#800040"
+          color="#1E293B"
           infoTooltip="Simulate underlying price movement by percentage shock"
           ticksCount={21}
         />
@@ -905,7 +905,7 @@ export function PayoffDiagram({
           max={20}
           step={1}
           onChange={onChangeIvShift}
-          color="#800040"
+          color="#2563EB"
           infoTooltip="Simulate implied volatility shift across all legs"
           ticksCount={21}
         />
@@ -918,7 +918,7 @@ export function PayoffDiagram({
           max={Math.max(1, daysToExpiry)}
           step={1}
           onChange={onChangeTimeShift}
-          color="#718096"
+          color="#475569"
           infoTooltip="Simulate forward time decay towards contract expiration"
           ticksCount={Math.min(15, Math.max(1, daysToExpiry) + 1)}
         />

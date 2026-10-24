@@ -32,15 +32,16 @@ export function StrategyPresetGallery({
   return (
     <div className="bg-white border border-slate-200 rounded-sm p-3 shadow-xs">
       <div className="flex flex-col sm:flex-row items-start gap-3">
-        {/* Left Stacked 3 Category Buttons (Exact Opstra Design) */}
+        {/* Left Stacked 3 Category Buttons (Pro Institutional Palette) */}
         <div className="flex sm:flex-col gap-1.5 w-full sm:w-36 shrink-0">
           <button
             type="button"
             onClick={() => setActiveCategory('BULLISH')}
+            style={activeCategory === 'BULLISH' ? { color: '#FFFFFF' } : undefined}
             className={`w-full py-1.5 px-3 rounded text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
               activeCategory === 'BULLISH'
-                ? 'bg-[#4CAF50] text-white shadow-xs'
-                : 'bg-white border border-[#4CAF50] text-[#4CAF50] hover:bg-emerald-50'
+                ? 'bg-[#059669] text-white shadow-xs'
+                : 'bg-white border border-slate-300 text-slate-700 hover:border-[#059669] hover:text-[#059669]'
             }`}
           >
             BULLISH
@@ -48,10 +49,11 @@ export function StrategyPresetGallery({
           <button
             type="button"
             onClick={() => setActiveCategory('BEARISH')}
+            style={activeCategory === 'BEARISH' ? { color: '#FFFFFF' } : undefined}
             className={`w-full py-1.5 px-3 rounded text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
               activeCategory === 'BEARISH'
-                ? 'bg-[#F44336] text-white shadow-xs'
-                : 'bg-white border border-[#F44336] text-[#F44336] hover:bg-rose-50'
+                ? 'bg-[#DC2626] text-white shadow-xs'
+                : 'bg-white border border-slate-300 text-slate-700 hover:border-[#DC2626] hover:text-[#DC2626]'
             }`}
           >
             BEARISH
@@ -59,10 +61,11 @@ export function StrategyPresetGallery({
           <button
             type="button"
             onClick={() => setActiveCategory('NON_DIRECTIONAL')}
+            style={activeCategory === 'NON_DIRECTIONAL' ? { color: '#FFFFFF' } : undefined}
             className={`w-full py-1.5 px-3 rounded text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
               activeCategory === 'NON_DIRECTIONAL'
-                ? 'bg-[#455A64] text-white shadow-xs'
-                : 'bg-white border border-[#9E9E9E] text-[#616161] hover:bg-slate-50'
+                ? 'bg-[#1E293B] text-white shadow-xs'
+                : 'bg-white border border-slate-300 text-slate-700 hover:border-slate-500 hover:text-slate-900'
             }`}
           >
             NON-DIRECTIONAL

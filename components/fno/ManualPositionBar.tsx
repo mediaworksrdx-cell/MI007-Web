@@ -195,19 +195,20 @@ export function ManualPositionBar({
           </div>
         </div>
 
-        {/* Price display in red */}
+        {/* Price display */}
         <div className="text-[12px] font-semibold text-slate-700">
-          <span>{segment === 'FUTURES' ? 'Futures Price: ' : 'LTP: '}</span>
-          <span className="text-[#D32F2F] font-bold">
+          <span>{segment === 'FUTURES' ? 'Futures Price: ' : 'Est. LTP: '}</span>
+          <span className="text-slate-900 font-mono font-bold tabular-nums">
             {estimatedPrice.toFixed(2)}
           </span>
         </div>
 
-        {/* Dark Blue-Slate [ ADD POSITION ] Button */}
+        {/* Dark Institutional Slate [ ADD POSITION ] Button */}
         <button
           type="button"
           onClick={handleAdd}
-          className="bg-[#455A64] hover:bg-[#37474F] text-white font-bold text-[11px] px-5 py-2 rounded-sm transition-colors cursor-pointer uppercase tracking-wider shadow-xs"
+          style={{ color: '#FFFFFF' }}
+          className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] px-5 py-2 rounded-sm transition-colors cursor-pointer uppercase tracking-wider shadow-xs"
         >
           ADD POSITION
         </button>

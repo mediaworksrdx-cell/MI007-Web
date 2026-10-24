@@ -269,47 +269,44 @@ export function StrategyBuilderTab({
         </div>
       </div>
 
-      {/* ── Metric Badges Row (Exact Opstra Definedge Pastel Colors) ── */}
-      <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold pb-2">
-        {/* Spot Price */}
-        <span className="bg-[#80CBC4] text-[#004D40] px-2.5 py-1 rounded">
-          Spot Price: {spotPrice.toFixed(1)}
+      {/* ── Metric Badges Row (Clean Pro-Level Institutional Slate & Monospace Tabular Strip) ── */}
+      <div className="flex flex-wrap items-center gap-2 text-[11.5px] pb-2">
+        <div className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1 rounded">
+          <span className="font-semibold">Spot:</span>
+          <span className="font-mono font-bold text-slate-900 tabular-nums">
+            {spotPrice.toFixed(1)}
+          </span>
           {spotShockPct !== 0 && (
-            <span className="ml-1 font-extrabold underline">
+            <span className="font-mono font-bold text-blue-700 tabular-nums">
               → {simulatedSpot.toFixed(1)} ({spotShockPct > 0 ? `+${spotShockPct}%` : `${spotShockPct}%`})
             </span>
           )}
-        </span>
+        </div>
 
-        {/* Futures Price */}
-        <span className="bg-[#FFE0B2] text-[#E65100] px-2.5 py-1 rounded">
-          Futures Price: {futuresPrice.toFixed(1)}
-        </span>
+        <div className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1 rounded">
+          <span className="font-semibold">Futures:</span>
+          <span className="font-mono font-bold text-slate-900 tabular-nums">{futuresPrice.toFixed(1)}</span>
+        </div>
 
-        {/* Lot Size */}
-        <span className="bg-[#DCEDC8] text-[#33691E] px-2.5 py-1 rounded">
-          Lot Size: {instrument.lotSize}
-        </span>
+        <div className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1 rounded">
+          <span className="font-semibold">Lot Size:</span>
+          <span className="font-mono font-bold text-slate-900 tabular-nums">{instrument.lotSize}</span>
+        </div>
 
-        {/* IV */}
-        <span className="bg-[#FFF9C4] text-[#F57F17] px-2.5 py-1 rounded">
-          IV: {ivValue}
-        </span>
+        <div className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1 rounded">
+          <span className="font-semibold">ATM IV:</span>
+          <span className="font-mono font-bold text-slate-900 tabular-nums">{ivValue}%</span>
+        </div>
 
-        {/* IV Percentile */}
-        <span className="bg-[#E1BEE7] text-[#4A148C] px-2.5 py-1 rounded">
-          IV Percentile: {ivPercentile}
-        </span>
+        <div className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1 rounded">
+          <span className="font-semibold">IVP:</span>
+          <span className="font-mono font-bold text-slate-900 tabular-nums">{ivPercentile}</span>
+        </div>
 
-        {/* NIFTY IV Chart */}
-        <span className="bg-[#CFD8DC] text-[#37474F] px-2.5 py-1 rounded cursor-pointer hover:bg-slate-300 transition-colors">
-          {instrument.symbol} IV Chart
-        </span>
-
-        {/* DTE */}
-        <span className="bg-[#F48FB1] text-[#880E4F] px-2.5 py-1 rounded">
-          DTE: {daysToExpiry}
-        </span>
+        <div className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1 rounded">
+          <span className="font-semibold">DTE:</span>
+          <span className="font-mono font-bold text-slate-900 tabular-nums">{daysToExpiry}d</span>
+        </div>
       </div>
 
       {/* ── 1. Strategy Presets Visual Grid (Exact Opstra Style) ── */}
