@@ -45,10 +45,11 @@ export function Footer() {
               <div className="min-w-0 flex flex-col justify-center">
                 <div className="leading-tight">
                   <span
-                    className="font-black text-[15px] sm:text-[16px] md:text-[17px] uppercase font-sans tracking-tight footer-brand-title text-white block group-hover:text-emerald-400 transition-colors"
+                    className="text-[15px] sm:text-[16px] md:text-[17px] uppercase font-marker tracking-wide footer-brand-title text-white block group-hover:text-emerald-400 transition-colors"
                     style={{ color: '#FFFFFF' }}
                   >
-                    MARKET INTELLIGENCE MI-007
+                    <span>MARKET INTELLIGENCE</span>{' '}
+                    <span className="text-emerald-400 font-marker">MI-007</span>
                   </span>
                 </div>
 

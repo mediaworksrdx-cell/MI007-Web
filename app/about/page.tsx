@@ -169,8 +169,9 @@ export default function AboutPage() {
             
             <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4 page-heading flex flex-col items-center justify-center gap-1">
               <span>Welcome to</span>
-              <span className="whitespace-nowrap font-extrabold text-emerald-600">
-                MARKET INTELLIGENCE MI-007
+              <span className="whitespace-nowrap font-marker text-emerald-600 flex items-center justify-center gap-2">
+                <span className="text-[var(--theme-page-text)] font-marker">MARKET INTELLIGENCE</span>
+                <span className="text-emerald-500 font-marker">MI-007</span>
               </span>
             </h1>
 

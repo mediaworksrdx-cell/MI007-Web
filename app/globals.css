@@ -19,6 +19,7 @@
 
   --font-sans: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", "Roboto Mono", Menlo, monospace;
+  --font-marker: "Permanent Marker", cursive, sans-serif;
 
   --animate-ticker: ticker 36s linear infinite;
   --animate-pulse-green: pulse-green 2.5s ease-in-out infinite;
@@ -360,11 +361,17 @@ section p.page-subtitle,
   color: var(--theme-page-subtitle) !important;
 }
 
+.font-marker {
+  font-family: var(--font-marker), "Permanent Marker", cursive, sans-serif !important;
+}
+
 .hero-title-gradient {
+  font-family: var(--font-marker), "Permanent Marker", cursive, sans-serif !important;
   background-image: linear-gradient(to right, var(--theme-page-text), var(--theme-page-subtitle), #059669);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  letter-spacing: 0.02em;
 }
 
 .hero-secondary-btn {
@@ -773,7 +780,9 @@ html[data-theme="cyberpunk"] .navbar-brand-badge {
 }
 
 .navbar-brand-title {
+  font-family: var(--font-marker), "Permanent Marker", cursive, sans-serif !important;
   color: var(--theme-page-text) !important;
+  letter-spacing: 0.02em;
 }
 
 .navbar-brand-subtitle {
@@ -872,7 +881,9 @@ footer .footer-brand-title,
 html footer .footer-brand-title,
 html[data-theme] footer .footer-brand-title,
 html[data-theme] footer span.footer-brand-title {
+  font-family: var(--font-marker), "Permanent Marker", cursive, sans-serif !important;
   color: #FFFFFF !important;
+  letter-spacing: 0.02em;
 }
 
 .footer-brand-subtitle,

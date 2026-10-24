@@ -255,8 +255,9 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             />
           </div>
           <div className="flex flex-col leading-tight min-w-0 justify-center">
-            <span className="navbar-brand-title font-black text-[12px] xs:text-[13.5px] sm:text-[15px] md:text-[16px] tracking-tight uppercase font-sans truncate sm:whitespace-nowrap">
-              MARKET INTELLIGENCE MI-007
+            <span className="navbar-brand-title text-[12.5px] xs:text-[14px] sm:text-[15.5px] md:text-[16.5px] tracking-wide uppercase font-marker truncate sm:whitespace-nowrap flex items-center gap-1.5">
+              <span>MARKET INTELLIGENCE</span>
+              <span className="text-emerald-500 font-marker">MI-007</span>
             </span>
             {/* Tagline Always Visible on screens >= xs */}
             <span className="navbar-brand-subtitle text-[7.5px] xs:text-[8.5px] sm:text-[9.5px] tracking-[0.14em] sm:tracking-[0.16em] font-extrabold uppercase font-mono mt-0.5 truncate hidden xs:block">

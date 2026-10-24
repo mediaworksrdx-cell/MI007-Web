@@ -43,6 +43,8 @@ next-env.d.ts
 # temp
 .tmp.driveupload/
 .tmp.drivedownload/
+/fonts_cache/
+/fonts_cache_handwriting/
 
 # backend trade-engine (managed & deployed separately)
 /trade-engine/
