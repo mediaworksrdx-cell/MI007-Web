@@ -984,19 +984,19 @@ export function findFnoInstrument(symbol: string): FnoInstrument {
   const exact = SUPPORTED_FNO_INSTRUMENTS.find((i) => i.symbol.toUpperCase() === norm);
   if (exact) return exact;
 
-  // 2. Partial match in curated instruments
-  const partial = SUPPORTED_FNO_INSTRUMENTS.find(
-    (i) =>
-      i.name.toUpperCase().includes(norm) ||
-      norm.includes(i.symbol.toUpperCase())
-  );
-  if (partial) return partial;
-
-  // 3. Zerodha catalog lookup
+  // 2. Direct Zerodha catalog lookup (prevents partial match collision where LTIM/LTTS matched LT)
   const zItem = findZerodhaStockBySymbol(norm);
   if (zItem) {
     return convertZerodhaToFnoInstrument(zItem);
   }
+
+  // 3. Partial match in curated instruments
+  const partial = SUPPORTED_FNO_INSTRUMENTS.find(
+    (i) =>
+      i.name.toUpperCase().includes(norm) ||
+      (i.symbol.length >= 4 && norm.includes(i.symbol.toUpperCase()))
+  );
+  if (partial) return partial;
 
   return SUPPORTED_FNO_INSTRUMENTS[0]; // fallback to NIFTY 50
 }
@@ -1085,8 +1085,16 @@ export function generateOptionChain(
   const step = inst.strikeStep;
   const atmStrike = Math.round(spot / step) * step;
 
-  // Approximate days to expiry based on selected expiry
-  const daysToExpiry = expiry.includes('OCT') ? 7 : expiry.includes('NOV') ? 28 : 63;
+  // Parse actual expiry date string (e.g. '29 OCT 2026', '05 NOV 2026', '12 NOV 2026')
+  const parsedExpiry = Date.parse(expiry);
+  let daysToExpiry = expiry.includes('OCT') ? 7 : expiry.includes('NOV') ? 28 : 63;
+  if (!Number.isNaN(parsedExpiry)) {
+    const refNow = new Date('2026-10-22T09:15:00+05:30').getTime();
+    const diffDays = Math.round((parsedExpiry - refNow) / (1000 * 60 * 60 * 24));
+    if (diffDays > 0 && diffDays <= 365) {
+      daysToExpiry = diffDays;
+    }
+  }
   const timeYears = Math.max(0.002, daysToExpiry / 365.0);
 
   // Generate 27 strikes around ATM (-13 to +13 steps)
@@ -1450,19 +1458,6 @@ const INDIA_BUILDUP: BuildupRecord[] = [
     lotSize: 750,
   },
   {
-    symbol: 'TATAMOTORS',
-    name: 'Tata Motors Ltd',
-    spotPrice: 270.00,
-    priceChangePct: -1.75,
-    openInterest: 38200000,
-    oiChangePct: 4.10,
-    volume: 18400000,
-    buildupType: 'SHORT_BUILDUP',
-    sentiment: 'Bearish Bias',
-    sector: 'Automobile',
-    lotSize: 1425,
-  },
-  {
     symbol: 'HDFCBANK',
     name: 'HDFC Bank Ltd',
     spotPrice: 728.85,
@@ -1564,8 +1559,8 @@ const USA_BUILDUP: BuildupRecord[] = [
     openInterest: 11450000,
     oiChangePct: 3.10,
     volume: 4890000,
-    buildupType: 'LONG_BUILDUP',
-    sentiment: 'Strong Bullish',
+    buildupType: 'SHORT_BUILDUP',
+    sentiment: 'Strong Bearish',
     sector: 'US Broad Market',
     lotSize: 100,
   },

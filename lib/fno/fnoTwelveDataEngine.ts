@@ -24,6 +24,10 @@ function getFnoCached<T>(key: string, ttlMs: number): T | null {
 }
 
 function setFnoCached<T>(key: string, data: T): void {
+  if (fnoCache.size >= 300 && !fnoCache.has(key)) {
+    const firstKey = fnoCache.keys().next().value;
+    if (firstKey !== undefined) fnoCache.delete(firstKey);
+  }
   fnoCache.set(key, { data, timestamp: Date.now() });
 }
 
@@ -102,22 +106,25 @@ export async function fetchFnoSpotQuote(symbol: string): Promise<FnoSpotQuote> {
 
   const { tdSymbol, yahooSymbol } = normalizeSymbol(symbol);
 
-  // 1. Try Dedicated Twelve Data F&O Pipeline if API key exists
-  if (config.twelveDataApiKey) {
-    try {
-      const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(tdSymbol)}&apikey=${config.twelveDataApiKey}`;
-      const res = await fetch(url, {
+  // 1. Query Trade Engine Twelve Data endpoint (/us/quote is live on Trade Engine; fallback to /fno/quote)
+  const tradeEngineUrl = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
+  try {
+    const res = await fetch(
+      `${tradeEngineUrl}/us/quote?symbol=${encodeURIComponent(tdSymbol)}`,
+      {
         headers: { 'Accept': 'application/json' },
         cache: 'no-store',
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.close && !json.code && json.status !== 'error') {
-          const ltp = parseFloat(json.close);
-          const prev = parseFloat(json.previous_close || json.close);
-          const chg = parseFloat(json.change || (ltp - prev).toFixed(2));
-          const pct = parseFloat(json.percent_change || (((ltp - prev) / Math.max(0.01, prev)) * 100).toFixed(2));
-
+        signal: AbortSignal.timeout(4500),
+      }
+    );
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.close && !json.code && json.status !== 'error') {
+        const ltp = parseFloat(json.close);
+        const prev = parseFloat(json.previous_close || json.close);
+        const chg = parseFloat(json.change || (ltp - prev).toFixed(2));
+        const pct = parseFloat(json.percent_change || (((ltp - prev) / Math.max(0.01, prev)) * 100).toFixed(2));
+        if (ltp > 0) {
           const result: FnoSpotQuote = {
             symbol: tdSymbol,
             price: +ltp.toFixed(2),
@@ -133,9 +140,9 @@ export async function fetchFnoSpotQuote(symbol: string): Promise<FnoSpotQuote> {
           return result;
         }
       }
-    } catch (err) {
-      console.warn(`[FnoTwelveDataEngine] Notice fetching ${tdSymbol}:`, err);
     }
+  } catch (err) {
+    console.warn(`[FnoTwelveDataEngine] Notice fetching ${tdSymbol} from Trade Engine:`, err);
   }
 
   // 2. Seamless Yahoo Zero-Credit Fallback (does not consume Twelve Data credits)
@@ -214,7 +221,9 @@ export async function fetchFnoOptionChain(
 
   // Generate quantitative institutional derivatives model anchored to real live spot
   const chain = generateOptionChain(symbol, selectedExpiry, spot);
-  setFnoCached(cacheKey, chain);
+  if (!overrideSpot) {
+    setFnoCached(cacheKey, chain);
+  }
   return chain;
 }
 
@@ -223,20 +232,14 @@ export async function fetchFnoOptionChain(
  */
 export function getFnoEngineStatus(): FnoEngineStatus {
   const config = getFnoConfig();
-  const dedicatedKey = process.env.TWELVE_DATA_FNO_API_KEY?.trim() || '';
-  const keyToUse = config.twelveDataApiKey;
-
-  const preview = keyToUse
-    ? `${keyToUse.slice(0, 4)}...${keyToUse.slice(-4)}`
-    : 'Not Configured';
 
   return {
     engine: 'TwelveDataFnoEngine',
     isIsolated: true,
     plan: config.plan,
     isVentureReady: config.isVentureReady,
-    hasDedicatedKey: Boolean(dedicatedKey),
-    activeKeyPreview: preview,
+    hasDedicatedKey: true,
+    activeKeyPreview: 'Managed in TradeEngine',
     callsPerMinuteLimit: config.callsPerMinuteLimit,
     cachedEntriesCount: fnoCache.size,
     status: 'ONLINE',

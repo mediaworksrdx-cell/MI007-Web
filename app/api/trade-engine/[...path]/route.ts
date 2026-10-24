@@ -223,6 +223,7 @@ interface CacheEntry {
   data: any;
   timestamp: number;
 }
+const MAX_SERVER_CACHE_ENTRIES = 500;
 const serverCache: Record<string, CacheEntry> = {};
 
 function getCached(key: string, ttlMs: number): any | null {
@@ -234,6 +235,10 @@ function getCached(key: string, ttlMs: number): any | null {
 }
 
 function setCached(key: string, data: any) {
+  const keys = Object.keys(serverCache);
+  if (keys.length >= MAX_SERVER_CACHE_ENTRIES && !(key in serverCache)) {
+    delete serverCache[keys[0]];
+  }
   serverCache[key] = { data, timestamp: Date.now() };
 }
 
@@ -313,10 +318,12 @@ async function fetchYahooMacroData(): Promise<{ value: any[]; Count: number } | 
   return null;
 }
 
-const DEFAULT_TWELVE_DATA_KEY = process.env.TWELVE_DATA_API_KEY || process.env.NEXT_PUBLIC_TWELVE_DATA_API_KEY || '3925d32210e845e087ea7b75b1b7720b';
+let isRefreshingTradeEngineUs = false;
 
-async function fetchTwelveDataUsPrices(apiKey: string): Promise<any[]> {
-  // Query only the 7 US Strategic Watchlist stocks (7 symbols = 7 credits, strictly <= 8 credits/min limit)
+async function refreshTradeEngineUsPricesInBackground(): Promise<void> {
+  if (isRefreshingTradeEngineUs) return;
+  isRefreshingTradeEngineUs = true;
+
   const stockSymbols = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'META', 'AMZN', 'GOOGL'];
   const tokenMap: Record<string, number> = {
     NVDA: 900010,
@@ -329,43 +336,43 @@ async function fetchTwelveDataUsPrices(apiKey: string): Promise<any[]> {
   };
 
   try {
-    const symbolsParam = stockSymbols.join(',');
-    const res = await fetch(
-      `https://api.twelvedata.com/quote?symbol=${symbolsParam}&apikey=${apiKey}`,
-      { cache: 'no-store' }
-    );
-    if (!res.ok) return [];
-    const raw = await res.json();
-    if (!raw || typeof raw !== 'object' || raw.status === 'error') {
-      if (raw?.message) {
-        console.warn('[TwelveDataUsPrices] API notice:', raw.message);
+    for (const sym of stockSymbols) {
+      try {
+        const res = await fetch(
+          `${TRADE_ENGINE_URL}/us/quote?symbol=${encodeURIComponent(sym)}`,
+          { cache: 'no-store', signal: AbortSignal.timeout(12000) }
+        );
+        if (res.ok) {
+          const quote = await res.json();
+          if (quote && typeof quote === 'object' && quote.close) {
+            const ltp = parseFloat(quote.close);
+            const prevClose = parseFloat(quote.previous_close || quote.close);
+            const chg = parseFloat(quote.change || (ltp - prevClose).toFixed(2));
+            const pct = parseFloat(
+              quote.percent_change || (((ltp - prevClose) / Math.max(0.01, prevClose)) * 100).toFixed(2)
+            );
+            const updatedItem = {
+              instrumentToken: tokenMap[sym] || 900050,
+              symbol: sym,
+              ltp: +ltp.toFixed(2),
+              change: +chg.toFixed(2),
+              changePercent: +pct.toFixed(2),
+              timestamp: Date.now(),
+            };
+            const existing: any[] = getCached('twelve-data-stocks', 15 * 60 * 1000) || [];
+            const merged = [
+              ...existing.filter((item) => item.symbol !== sym),
+              updatedItem,
+            ];
+            setCached('twelve-data-stocks', merged);
+          }
+        }
+      } catch {
+        // Continue to next symbol
       }
-      return [];
     }
-
-    const now = Date.now();
-    const items: any[] = [];
-
-    for (const [sym, quote] of Object.entries(raw as Record<string, any>)) {
-      if (!quote || typeof quote !== 'object' || !quote.close) continue;
-      const ltp = parseFloat(quote.close);
-      const prevClose = parseFloat(quote.previous_close || quote.close);
-      const chg = parseFloat(quote.change || (ltp - prevClose).toFixed(2));
-      const pct = parseFloat(quote.percent_change || (((ltp - prevClose) / Math.max(0.01, prevClose)) * 100).toFixed(2));
-
-      items.push({
-        instrumentToken: tokenMap[sym.toUpperCase()] || 900050,
-        symbol: sym.toUpperCase(),
-        ltp: +ltp.toFixed(2),
-        change: +chg.toFixed(2),
-        changePercent: +pct.toFixed(2),
-        timestamp: now,
-      });
-    }
-    return items;
-  } catch (err) {
-    console.warn('[TwelveDataUsPrices] Error fetching Twelve Data quotes:', err);
-    return [];
+  } finally {
+    isRefreshingTradeEngineUs = false;
   }
 }
 
@@ -494,19 +501,14 @@ async function getActiveUsPrices(): Promise<any[]> {
     return [...cachedIndices, ...cachedStocks];
   }
 
-  const apiKey = DEFAULT_TWELVE_DATA_KEY;
-
-  // 1. Fetch 7 US stocks from Twelve Data (7 symbols = 7 credits, strictly <= 8/min limit)
-  if (!cachedStocks && apiKey) {
-    const fetched = await fetchTwelveDataUsPrices(apiKey);
-    if (fetched.length > 0) {
-      setCached('twelve-data-stocks', fetched);
-      cachedStocks = fetched;
-    }
+  // 1. Trigger non-blocking background refresh from Trade Engine Twelve Data (/us/quote)
+  // and immediately seed any missing symbols from Yahoo so /live-prices never blocks on the 8s rate-limit spacing
+  if (!cachedStocks || cachedStocks.length < 7) {
+    void refreshTradeEngineUsPricesInBackground();
   }
 
-  // Fallback for stocks if Twelve Data is temporarily unreachable or exhausted
-  if (!cachedStocks) {
+  // Fallback / initial seed for stocks while Trade Engine's 8s-paced Twelve Data queue populates
+  if (!cachedStocks || cachedStocks.length === 0) {
     cachedStocks = await fetchYahooFallbackUsPrices();
     if (cachedStocks && cachedStocks.length > 0) {
       setCached('twelve-data-stocks', cachedStocks);
@@ -539,7 +541,16 @@ async function getActiveUsPrices(): Promise<any[]> {
 }
 
 // Fast in-memory cache for live quotes fetched on-demand or returned via chart calls
+const MAX_YAHOO_QUOTE_CACHE_ENTRIES = 500;
 const CACHED_YAHOO_QUOTES = new Map<string, any>();
+
+function setBoundedYahooQuote(key: string, item: any) {
+  if (CACHED_YAHOO_QUOTES.size >= MAX_YAHOO_QUOTE_CACHE_ENTRIES && !CACHED_YAHOO_QUOTES.has(key)) {
+    const firstKey = CACHED_YAHOO_QUOTES.keys().next().value;
+    if (firstKey !== undefined) CACHED_YAHOO_QUOTES.delete(firstKey);
+  }
+  CACHED_YAHOO_QUOTES.set(key, item);
+}
 
 function cacheYahooQuote(rawSymbol: string, meta: any) {
   if (!meta?.regularMarketPrice || meta.regularMarketPrice <= 0) return;
@@ -558,11 +569,11 @@ function cacheYahooQuote(rawSymbol: string, meta: any) {
     changePercent: pct,
     timestamp: meta.regularMarketTime ? meta.regularMarketTime * 1000 : now,
   };
-  CACHED_YAHOO_QUOTES.set(clean, item);
-  CACHED_YAHOO_QUOTES.set(rawSymbol.toUpperCase(), item);
+  setBoundedYahooQuote(clean, item);
+  setBoundedYahooQuote(rawSymbol.toUpperCase(), item);
   if (meta.symbol) {
-    CACHED_YAHOO_QUOTES.set(meta.symbol.toUpperCase(), item);
-    CACHED_YAHOO_QUOTES.set(meta.symbol.toUpperCase().replace(/\.NS$/, ''), item);
+    setBoundedYahooQuote(meta.symbol.toUpperCase(), item);
+    setBoundedYahooQuote(meta.symbol.toUpperCase().replace(/\.NS$/, ''), item);
   }
 }
 
@@ -930,12 +941,35 @@ async function fetchYahooHistoricalCandles(symbol: string, timeframe: string): P
   return null;
 }
 
+const ALLOWED_GET_PATHS = new Set([
+  'live-prices',
+  'crypto-prices',
+  'macro-data',
+  'candles',
+  'quote',
+  'quotes',
+  'fno/quote',
+  'fno/spot',
+  'fno/chain',
+  'fno/status',
+  'news',
+  'economic-calendar',
+  'notifications',
+  'search',
+  'us/quote',
+  'us/eod',
+  'health',
+]);
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await context.params;
   const pathStr = path.join('/');
+  if (!ALLOWED_GET_PATHS.has(pathStr) || pathStr.includes('..')) {
+    return NextResponse.json({ error: 'Endpoint not allowed' }, { status: 403 });
+  }
   const search = request.nextUrl.search;
   const cacheKey = `${pathStr}${search}`;
 
@@ -1239,7 +1273,11 @@ export async function GET(
         // Check for custom symbols requested in query params (e.g. from watchlists or search)
         const symbolsParam = request.nextUrl.searchParams.get('symbols');
         if (symbolsParam) {
-          const reqSyms = symbolsParam.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+          const reqSyms = symbolsParam
+            .split(',')
+            .map(s => s.trim().toUpperCase())
+            .filter(Boolean)
+            .slice(0, 20);
           const toFetch = reqSyms.filter(s => {
             const clean = s.replace(/\.NS$/, '').replace(/\.BO$/, '');
             const c = CACHED_YAHOO_QUOTES.get(clean);
@@ -1335,16 +1373,32 @@ export async function GET(
   }
 }
 
+const ALLOWED_POST_PATHS = new Set(['subscribe']);
+
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await context.params;
   const pathStr = path.join('/');
+  if (!ALLOWED_POST_PATHS.has(pathStr) || pathStr.includes('..')) {
+    return NextResponse.json({ error: 'POST endpoint not allowed' }, { status: 403 });
+  }
   const targetUrl = `${TRADE_ENGINE_URL}/${pathStr}`;
 
   try {
-    const body = await request.text();
+    const rawBody = await request.text();
+    if (rawBody.length > 2048) {
+      return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+    }
+    const parsed = JSON.parse(rawBody);
+    if (!parsed || typeof parsed.instrumentToken !== 'number' || typeof parsed.symbol !== 'string' || !/^[A-Z0-9.\s&-]{1,24}$/i.test(parsed.symbol)) {
+      return NextResponse.json({ error: 'Invalid subscription payload' }, { status: 400 });
+    }
+    const body = JSON.stringify({
+      instrumentToken: parsed.instrumentToken,
+      symbol: parsed.symbol.trim().toUpperCase(),
+    });
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 

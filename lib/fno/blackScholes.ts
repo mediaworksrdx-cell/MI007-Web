@@ -135,7 +135,7 @@ export function calculateBSGreeks(
 
   return {
     delta: Math.round(delta * 1000) / 1000,
-    gamma: Math.round(gamma * 10000) / 10000,
+    gamma: Math.round(gamma * 1000000) / 1000000,
     theta: Math.round(theta * 100) / 100,
     vega: Math.round(vega * 100) / 100,
     rho: Math.round(rho * 100) / 100,

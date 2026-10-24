@@ -53,7 +53,7 @@ export function ManualPositionBar({
 
   const handleAdd = () => {
     const instrumentType: InstrumentType = segment === 'FUTURES' ? 'FUT' : optionType;
-    let greeks = { delta: 1.0, gamma: 0, theta: 0, vega: 0, rho: 0 };
+    let greeks: StrategyLeg['greeks'] = { delta: 1.0, gamma: 0, theta: 0, vega: 0, rho: 0 };
 
     if (segment === 'OPTIONS') {
       const timeYears = 7 / 365.0;

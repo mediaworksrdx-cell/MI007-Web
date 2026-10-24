@@ -417,6 +417,11 @@ export function evaluateAllStrategiesForStock(
   // 9. Historical High Breakout (50-Day / 52-Week High)
   const recentHigh50 = Math.max(...data.slice(Math.max(0, n - 51), n - 1).map(c => c.high));
   const isBreakout = currentPrice >= recentHigh50 * 0.985;
+  const volSlice20 = data.slice(Math.max(0, n - 21), n - 1);
+  const avgVol20 = volSlice20.length > 0
+    ? volSlice20.reduce((sum, c) => sum + (c.volume || 0), 0) / volSlice20.length
+    : (last.volume || 1);
+  const volSurgePct = avgVol20 > 0 ? Math.round(((last.volume || avgVol20) / avgVol20) * 100) : 100;
   results.push({
     symbol,
     companyName,
@@ -431,37 +436,81 @@ export function evaluateAllStrategiesForStock(
     keyMetrics: {
       '50-Day Resistance': `${currency}${recentHigh50.toFixed(1)}`,
       'Distance to Peak': `${(((currentPrice - recentHigh50) / recentHigh50) * 100).toFixed(1)}%`,
-      'Volume Surge': '142% vs 20D MA',
+      'Volume Surge': `${volSurgePct}% vs 20D MA`,
     },
     status: 'Confirmed',
     explanation: isBreakout
-      ? `Price (${currency}${currentPrice}) is challenging or breaking above its 50-day structural ceiling (${currency}${recentHigh50.toFixed(1)}) on expanding volume.`
+      ? `Price (${currency}${currentPrice}) is challenging or breaking above its 50-day structural ceiling (${currency}${recentHigh50.toFixed(1)}) on expanding volume (${volSurgePct}% vs 20D MA).`
       : `Price is trading ${(Math.abs(((currentPrice - recentHigh50) / recentHigh50) * 100)).toFixed(1)}% below its 50-day high.`,
     historicalWinRate: 70.8,
   });
 
-  // 10. ADX Trend Strength
-  const adxVal = 32.4; // deterministic strong trend score
-  const isStrongTrend = adxVal >= 25 && isBullAlignment;
+  // 10. ADX Trend Strength (14-Period Wilder Smoothing)
+  const adxPeriod = 14;
+  let trSum = 0;
+  let plusDmSum = 0;
+  let minusDmSum = 0;
+  const dxValues: number[] = [];
+  let lastPlusDi = 25.0;
+  let lastMinusDi = 15.0;
+
+  const startIdx = Math.max(1, n - 60);
+  for (let i = startIdx; i < n; i++) {
+    const cur = data[i];
+    const prv = data[i - 1];
+    const upMove = cur.high - prv.high;
+    const downMove = prv.low - cur.low;
+    const pDm = upMove > downMove && upMove > 0 ? upMove : 0;
+    const mDm = downMove > upMove && downMove > 0 ? downMove : 0;
+    const tr = Math.max(
+      cur.high - cur.low,
+      Math.abs(cur.high - prv.close),
+      Math.abs(cur.low - prv.close)
+    );
+    if (i - startIdx < adxPeriod) {
+      trSum += tr;
+      plusDmSum += pDm;
+      minusDmSum += mDm;
+    } else {
+      trSum = trSum - trSum / adxPeriod + tr;
+      plusDmSum = plusDmSum - plusDmSum / adxPeriod + pDm;
+      minusDmSum = minusDmSum - minusDmSum / adxPeriod + mDm;
+      const safeTr = Math.max(0.0001, trSum);
+      lastPlusDi = (plusDmSum / safeTr) * 100;
+      lastMinusDi = (minusDmSum / safeTr) * 100;
+      const diSum = Math.max(0.0001, lastPlusDi + lastMinusDi);
+      dxValues.push((Math.abs(lastPlusDi - lastMinusDi) / diSum) * 100);
+    }
+  }
+  const rawAdx = dxValues.length > 0
+    ? dxValues.slice(-adxPeriod).reduce((s, v) => s + v, 0) / Math.min(adxPeriod, dxValues.length)
+    : 25.0;
+  const adxVal = Number(rawAdx.toFixed(1));
+  const plusDiVal = Number(lastPlusDi.toFixed(1));
+  const minusDiVal = Number(lastMinusDi.toFixed(1));
+  const isStrongTrend = adxVal >= 20 && (plusDiVal > minusDiVal || isBullAlignment);
+  const adxDirection = plusDiVal >= minusDiVal ? 'bullish' : 'bearish';
   results.push({
     symbol,
     companyName,
     market,
     strategyId: 'adx_trend',
-    strategyName: 'ADX Trend Conviction (32.4)',
-    direction: isBullAlignment ? 'bullish' : 'bearish',
+    strategyName: `ADX Trend Conviction (${adxVal.toFixed(1)})`,
+    direction: adxDirection,
     signalTriggered: isStrongTrend,
     signalDate: dateStr,
     currentPrice,
     triggerPrice: currentPrice,
     keyMetrics: {
-      'ADX (14)': '32.4',
-      '+DI': '28.6',
-      '-DI': '12.4',
-      'Classification': 'High-Conviction Institutional Trend',
+      'ADX (14)': adxVal.toFixed(1),
+      '+DI': plusDiVal.toFixed(1),
+      '-DI': minusDiVal.toFixed(1),
+      'Classification': adxVal >= 25 ? 'High-Conviction Institutional Trend' : 'Developing Directional Trend',
     },
     status: 'Confirmed',
-    explanation: 'ADX score of 32.4 exceeds the 25 threshold with +DI over -DI, confirming high-conviction trend continuation.',
+    explanation: isStrongTrend
+      ? `ADX score of ${adxVal.toFixed(1)} with +DI (${plusDiVal.toFixed(1)}) over -DI (${minusDiVal.toFixed(1)}) confirms directional trend continuation.`
+      : `ADX at ${adxVal.toFixed(1)} (+DI ${plusDiVal.toFixed(1)} / -DI ${minusDiVal.toFixed(1)}) indicates range-bound or consolidating price action.`,
     historicalWinRate: 69.5,
   });
 

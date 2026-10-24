@@ -239,8 +239,11 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom strip */}
+        {/* Regulatory & Risk Disclosure */}
         <div className="h-[1px] w-full border-t border-white/15 mt-3 mb-2" />
+        <p className="text-[10.5px] leading-relaxed text-slate-400 mb-2">
+          <strong className="text-slate-300">Regulatory &amp; Derivatives Risk Disclosure:</strong> Market Intelligence MI-007 is an analytical and educational market intelligence platform and is not a SEBI-registered investment adviser or research analyst. Per SEBI study disclosures, 9 out of 10 individual traders in equity Futures and Options Segment incurred net losses. Nothing on this platform constitutes personalized investment, legal, or tax advice.
+        </p>
         <div
           className="text-[12px] font-semibold text-center sm:text-left footer-copy text-slate-300 flex items-center justify-between flex-wrap gap-2"
           style={{ color: '#CBD5E1' }}

@@ -184,6 +184,8 @@ export interface CompanyFundamental {
   capex: number | null;
   workingCapitalDays: number | null;
   debtReduction3Y: number | null;
+  piotroskiScore?: number | null;
+  altmanZScore?: number | null;
 
   // Ownership & Governance
   promoterHolding: number | null;

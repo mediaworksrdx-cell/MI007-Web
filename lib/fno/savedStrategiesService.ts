@@ -27,7 +27,7 @@ const DEFAULT_SEEDED_STRATEGIES: TrackedStrategy[] = [
         entryPrice: 58.40,
         currentPrice: 52.10,
         iv: 13.8,
-        greeks: { delta: -0.22, gamma: -0.0008, theta: 8.5, vega: -11.2 },
+        greeks: { delta: 0.22, gamma: 0.0008, theta: -8.5, vega: 11.2 },
       },
       {
         id: 'l2',
@@ -53,7 +53,7 @@ const DEFAULT_SEEDED_STRATEGIES: TrackedStrategy[] = [
         entryPrice: 64.20,
         currentPrice: 59.80,
         iv: 14.9,
-        greeks: { delta: 0.24, gamma: -0.0009, theta: 9.1, vega: -12.4 },
+        greeks: { delta: -0.24, gamma: 0.0009, theta: -9.1, vega: 12.4 },
       },
       {
         id: 'l4',
@@ -73,8 +73,8 @@ const DEFAULT_SEEDED_STRATEGIES: TrackedStrategy[] = [
     currentPnl: 240,
     probabilityOfProfit: 71.5,
     maxProfit: 4810,
-    maxLoss: -5700,
-    breakevens: [22876, 23374],
+    maxLoss: -4940,
+    breakevens: [22426, 22924],
   },
   {
     id: 'strat-seed-2',
@@ -110,7 +110,7 @@ const DEFAULT_SEEDED_STRATEGIES: TrackedStrategy[] = [
         entryPrice: 195.00,
         currentPrice: 202.00,
         iv: 14.8,
-        greeks: { delta: -0.32, gamma: -0.0005, theta: 16.2, vega: -15.4 },
+        greeks: { delta: 0.32, gamma: 0.0005, theta: -16.2, vega: 15.4 },
       },
     ],
     entryNetCost: -5550, // Net debit paid
@@ -118,7 +118,7 @@ const DEFAULT_SEEDED_STRATEGIES: TrackedStrategy[] = [
     probabilityOfProfit: 58.2,
     maxProfit: 6450,
     maxLoss: -5550,
-    breakevens: [55985],
+    breakevens: [55085],
   },
 ];
 
@@ -126,12 +126,12 @@ export function getTrackedStrategies(): TrackedStrategy[] {
   if (typeof window === 'undefined') return DEFAULT_SEEDED_STRATEGIES;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
+    if (raw === null) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SEEDED_STRATEGIES));
       return DEFAULT_SEEDED_STRATEGIES;
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_SEEDED_STRATEGIES;
+    return Array.isArray(parsed) ? parsed : DEFAULT_SEEDED_STRATEGIES;
   } catch {
     return DEFAULT_SEEDED_STRATEGIES;
   }

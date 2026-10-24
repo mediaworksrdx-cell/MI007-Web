@@ -30,10 +30,10 @@ During earlier updates (Commit `451745c`), the terminal index tiles for US bench
 ## 2. Root Cause Analysis: Twelve Data Plan & ETF Mappings
 
 ### Direct API Testing of Twelve Data Index Symbols
-A live diagnostic was performed against Twelve Data's REST API using API Key `3925d32210e845e087ea7b75b1b7720b`:
+A live diagnostic was performed against Twelve Data's REST API using the Trade Engine's configured API key:
 
 ```bash
-GET https://api.twelvedata.com/quote?symbol=SPX,NDX,DJI,VIX&apikey=3925d322...
+GET https://api.twelvedata.com/quote?symbol=SPX,NDX,DJI,VIX&apikey=<REDACTED>
 ```
 
 **Diagnostic Response:**

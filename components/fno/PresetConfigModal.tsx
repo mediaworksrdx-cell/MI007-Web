@@ -26,14 +26,15 @@ export function PresetConfigModal({
   onClose,
   onApplyStrategy,
 }: PresetConfigModalProps) {
-  if (!preset) return null;
-
-  const atmStrike = Math.round(spotPrice / strikeStep) * strikeStep;
   const [expiry, setExpiry] = useState<string>(selectedExpiry || expiries[0] || '27OCT2026');
   const [lotQty, setLotQty] = useState<number>(1);
   const [offsets, setOffsets] = useState<number[]>(
-    preset.legsTemplate.map((t) => t.strikeOffset)
+    preset ? preset.legsTemplate.map((t) => t.strikeOffset) : []
   );
+
+  if (!preset) return null;
+
+  const atmStrike = Math.round(spotPrice / strikeStep) * strikeStep;
 
   // Available strikes
   const strikeOptions: number[] = [];

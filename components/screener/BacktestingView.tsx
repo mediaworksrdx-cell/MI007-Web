@@ -116,12 +116,12 @@ export function BacktestingView({
   const activeStrategy = STRATEGY_DEFINITIONS.find((s) => s.id === strategyId);
 
   // Adjusted trades with any manual user exits applied
-  const displayedTrades = useMemo(() => {
+  const displayedTrades = useMemo<BacktestTrade[]>(() => {
     return backtestResult.trades.map((t) => {
       if (manuallyExitedTradeIds.includes(t.tradeId)) {
         return {
           ...t,
-          exitReason: 'Manual Exit (User Closed)',
+          exitReason: 'Manual Exit (User Closed)' as const,
         };
       }
       return t;

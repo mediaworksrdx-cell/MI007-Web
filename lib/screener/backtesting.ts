@@ -5,6 +5,7 @@
 import { Candle } from '../types';
 import { StrategyId, generateCandlesForSymbol } from './technicalStrategies';
 import { calculateSMA, calculateEMA, calculateRSI, calculateMACD, calculateBollinger } from '../indicators';
+import { MASTER_COMPANIES } from './data';
 
 export interface BacktestConfig {
   symbol: string;
@@ -29,7 +30,7 @@ export interface BacktestTrade {
   returnPct: number;
   pnl: number;
   holdingDays: number;
-  exitReason: 'Take Profit' | 'Stop Loss' | 'Signal Reversal' | 'Max Holding Period' | 'End of Period';
+  exitReason: 'Take Profit' | 'Stop Loss' | 'Signal Reversal' | 'Max Holding Period' | 'End of Period' | 'Manual Exit (User Closed)';
 }
 
 export interface BacktestEquityPoint {
@@ -70,9 +71,15 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     positionSizePct = 100,
   } = config;
 
+  const matchedCompany = MASTER_COMPANIES.find(
+    (c) => c.symbol.toUpperCase() === symbol.trim().toUpperCase()
+  );
+  const fallbackBasePrice = matchedCompany?.currentPrice || 2500;
+  const fallbackBeta = matchedCompany?.beta || 1.2;
+
   const candles = config.candles && config.candles.length >= 100
     ? config.candles
-    : generateCandlesForSymbol(symbol, 2500, 1.2, 260);
+    : generateCandlesForSymbol(symbol, fallbackBasePrice, fallbackBeta, 260);
 
   const n = candles.length;
   if (n < 60) {

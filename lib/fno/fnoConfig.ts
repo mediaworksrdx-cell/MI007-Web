@@ -20,21 +20,16 @@ export interface FnoConfig {
 }
 
 export function getFnoConfig(): FnoConfig {
-  // Check dedicated F&O key first; fallback to general Twelve Data key if not yet set
-  const dedicatedKey = process.env.TWELVE_DATA_FNO_API_KEY?.trim() || '';
-  const fallbackKey = process.env.TWELVE_DATA_API_KEY?.trim() || process.env.NEXT_PUBLIC_TWELVE_DATA_API_KEY?.trim() || '';
-  const apiKey = dedicatedKey || fallbackKey;
-
-  const planEnv = (process.env.TWELVE_DATA_FNO_PLAN?.trim().toLowerCase() || 'basic') as 'venture' | 'pro' | 'basic' | 'free';
-  const isVenture = planEnv === 'venture' || (Boolean(dedicatedKey) && planEnv !== 'free' && planEnv !== 'basic');
+  // Twelve Data API keys are managed in the Trade Engine backend (config.properties).
+  // Web layer only proxies to Trade Engine and never stores or exposes raw Twelve Data keys.
+  const planEnv = (process.env.TWELVE_DATA_FNO_PLAN?.trim().toLowerCase() || 'venture') as 'venture' | 'pro' | 'basic' | 'free';
+  const isVenture = planEnv === 'venture';
 
   return {
-    twelveDataApiKey: apiKey,
+    twelveDataApiKey: '',
     plan: isVenture ? 'venture' : planEnv,
-    isVentureReady: isVenture || Boolean(dedicatedKey),
-    // Venture accounts allow 600 - 1200+ RPM; free/basic is kept to a strict conservative budget
+    isVentureReady: isVenture,
     callsPerMinuteLimit: isVenture ? 600 : 8,
-    // Venture tier gets ultra-low 1.5s caching; basic gets 30s-60s
     spotCacheTtlMs: isVenture ? 1500 : 30000,
     chainCacheTtlMs: isVenture ? 3000 : 60000,
     isIsolated: true,

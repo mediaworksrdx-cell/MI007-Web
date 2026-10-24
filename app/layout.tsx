@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               try {
                 var saved = localStorage.getItem('mi007_active_theme');
                 var theme = 'arctic';
-                if (saved === 'arctic' || saved === 'ivory' || saved === 'graphite' || saved === 'capital') {
+                if (saved === 'arctic' || saved === 'ivory' || saved === 'graphite' || saved === 'capital' || saved === 'ocean' || saved === 'violet' || saved === 'cream' || saved === 'sky') {
                   theme = saved;
                 } else if (saved === 'azure') {
                   theme = 'capital';

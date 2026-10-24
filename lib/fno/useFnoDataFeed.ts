@@ -72,7 +72,7 @@ export function useFnoDataFeed({
       }
       if (res.ok) {
         const data: FnoSpotQuote = await res.json();
-        if (data && typeof data.price === 'number' && data.price > 0) {
+        if (activeSymbolRef.current === sym && data && typeof data.price === 'number' && data.price > 0) {
           setLiveSpot(data.price);
           setSpotQuote(data);
           setLastUpdated(Date.now());

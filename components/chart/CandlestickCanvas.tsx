@@ -21,7 +21,7 @@ interface CandlestickCanvasProps {
   fnoLevels?: FnoOverlayLevels;
   strategyOverlay?: StrategyPayoffOverlay;
   indicators: IndicatorConfig[];
-  indicatorResults: Map<IndicatorType, unknown>;
+  indicatorResults: Map<string, unknown>;
   currentPriceOverride?: number;
   timeframe: string;
   className?: string;

@@ -211,7 +211,7 @@ for (const tmpl of PREDEFINED_SCREENS) {
   const marketUniverse = getCompaniesByMarket(tmpl.market || 'INDIA');
   assert(marketUniverse.length > 0, `Market universe for "${tmpl.market || 'INDIA'}" contains companies (${marketUniverse.length})`);
 
-  const matched = marketUniverse.filter((company) => evaluateNode(parsed.ast, company));
+  const matched = marketUniverse.filter((company) => evaluateNode(parsed.ast!, company));
   assert(matched.length >= 1, `Screen "${tmpl.name}" matches active companies in ${tmpl.market}: ${matched.length} matches [e.g. ${matched.slice(0, 3).map((m) => m.symbol).join(', ')}]`);
 
   // 2.3 Required display columns
@@ -229,9 +229,9 @@ console.log('\n─── [SUITE 2.2] High-Conviction Fundamental Strategy Verifi
   const polycab = MASTER_COMPANIES.find((c) => c.symbol === 'POLYCAB')!;
   const reliance = MASTER_COMPANIES.find((c) => c.symbol === 'RELIANCE')!;
 
-  assert(evaluateNode(parsed.ast, tcs) === true, 'Quality Compounders: TCS matches (ROCE 58.2%, ROE 49.5%, D/E 0.08, Profit Growth 3Y 15.2%)');
-  assert(evaluateNode(parsed.ast, polycab) === true, 'Quality Compounders: POLYCAB matches (ROCE 28.5%, ROE 22.8%, D/E 0.04, Profit Growth 3Y 26.5%)');
-  assert(evaluateNode(parsed.ast, reliance) === false, 'Quality Compounders: Reliance correctly excluded due to leverage (D/E 0.42, ROCE 12.4%)');
+  assert(evaluateNode(parsed.ast!, tcs) === true, 'Quality Compounders: TCS matches (ROCE 58.2%, ROE 49.5%, D/E 0.08, Profit Growth 3Y 15.2%)');
+  assert(evaluateNode(parsed.ast!, polycab) === true, 'Quality Compounders: POLYCAB matches (ROCE 28.5%, ROE 22.8%, D/E 0.04, Profit Growth 3Y 26.5%)');
+  assert(evaluateNode(parsed.ast!, reliance) === false, 'Quality Compounders: Reliance correctly excluded due to leverage (D/E 0.42, ROCE 12.4%)');
 }
 
 // Strategy Test: Capital Efficiency Champions (ROCE > 25, ROIC > 20, D/E < 0.3)
@@ -242,9 +242,9 @@ console.log('\n─── [SUITE 2.2] High-Conviction Fundamental Strategy Verifi
   const infy = MASTER_COMPANIES.find((c) => c.symbol === 'INFY')!;
   const polycab = MASTER_COMPANIES.find((c) => c.symbol === 'POLYCAB')!;
 
-  assert(evaluateNode(parsed.ast, tcs) === true, 'Capital Efficiency Champions: TCS matches (ROCE 58.2%, ROIC 52.4%, D/E 0.08)');
-  assert(evaluateNode(parsed.ast, infy) === true, 'Capital Efficiency Champions: INFY matches (ROCE 38.6%, ROIC 34.2%, D/E 0.09)');
-  assert(evaluateNode(parsed.ast, polycab) === true, 'Capital Efficiency Champions: POLYCAB matches (ROCE 28.5%, ROIC 24.8%, D/E 0.04)');
+  assert(evaluateNode(parsed.ast!, tcs) === true, 'Capital Efficiency Champions: TCS matches (ROCE 58.2%, ROIC 52.4%, D/E 0.08)');
+  assert(evaluateNode(parsed.ast!, infy) === true, 'Capital Efficiency Champions: INFY matches (ROCE 38.6%, ROIC 34.2%, D/E 0.09)');
+  assert(evaluateNode(parsed.ast!, polycab) === true, 'Capital Efficiency Champions: POLYCAB matches (ROCE 28.5%, ROIC 24.8%, D/E 0.04)');
 }
 
 // Strategy Test: US AI & Semiconductors
@@ -252,7 +252,7 @@ console.log('\n─── [SUITE 2.2] High-Conviction Fundamental Strategy Verifi
   const aiScreen = PREDEFINED_SCREENS.find((s) => s.id === 'us-ai-semiconductors')!;
   const parsed = parseQuery(aiScreen.query);
   const nvda = MASTER_COMPANIES.find((c) => c.symbol === 'NVDA')!;
-  assert(evaluateNode(parsed.ast, nvda) === true, 'US AI Semiconductors: NVDA matches (OPM 62.5%, ROCE 68.4%, Sales Growth 1Y 122%)');
+  assert(evaluateNode(parsed.ast!, nvda) === true, 'US AI Semiconductors: NVDA matches (OPM 62.5%, ROCE 68.4%, Sales Growth 1Y 122%)');
 }
 
 // Strategy Test: US Megacap Tech Titans
@@ -261,8 +261,8 @@ console.log('\n─── [SUITE 2.2] High-Conviction Fundamental Strategy Verifi
   const parsed = parseQuery(techTitans.query);
   const aapl = MASTER_COMPANIES.find((c) => c.symbol === 'AAPL')!;
   const msft = MASTER_COMPANIES.find((c) => c.symbol === 'MSFT')!;
-  assert(evaluateNode(parsed.ast, aapl) === true, 'US Megacap Tech Titans: AAPL matches ($3.58T Cap, OPM 31.8%, FCF $104B)');
-  assert(evaluateNode(parsed.ast, msft) === true, 'US Megacap Tech Titans: MSFT matches ($3.25T Cap, OPM 44.6%, FCF $74B)');
+  assert(evaluateNode(parsed.ast!, aapl) === true, 'US Megacap Tech Titans: AAPL matches ($3.58T Cap, OPM 31.8%, FCF $104B)');
+  assert(evaluateNode(parsed.ast!, msft) === true, 'US Megacap Tech Titans: MSFT matches ($3.25T Cap, OPM 44.6%, FCF $74B)');
 }
 
 

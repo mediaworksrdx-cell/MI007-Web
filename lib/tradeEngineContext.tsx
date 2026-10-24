@@ -242,6 +242,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     { symbol: 'VIX', value: '18.56' },
   ]);
   const [lastTick, setLastTick] = useState<TradeEngineTick | null>(null);
+  const lastTickRef = useRef<TradeEngineTick | null>(null);
 
   const listenersRef = useRef<Set<(tick: TradeEngineTick) => void>>(new Set());
   const wsRef = useRef<WebSocket | null>(null);
@@ -257,6 +258,9 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
       if (storeRef.current) {
         setLivePrices(storeRef.current.getMap());
       }
+      if (lastTickRef.current) {
+        setLastTick(lastTickRef.current);
+      }
       return;
     }
     if (!throttleLivePricesTimeoutRef.current) {
@@ -265,6 +269,9 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
         lastLivePricesUpdateRef.current = Date.now();
         if (storeRef.current) {
           setLivePrices(storeRef.current.getMap());
+        }
+        if (lastTickRef.current) {
+          setLastTick(lastTickRef.current);
         }
       }, 2000);
     }
@@ -353,7 +360,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
       });
 
       if (mostRecentTick) {
-        setLastTick(mostRecentTick);
+        lastTickRef.current = mostRecentTick;
       }
 
       if (changed && storeRef.current) {
@@ -600,7 +607,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
             if (!tick.symbol || tick.price <= 0) return;
 
-            setLastTick(tick);
+            lastTickRef.current = tick;
 
             listenersRef.current.forEach(listener => {
               try { listener(tick); } catch (e) { console.error(e); }

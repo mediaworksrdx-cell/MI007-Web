@@ -301,8 +301,10 @@ export function formatIndicatorBadgeLabel(cfg: IndicatorConfig): string {
       return `MFI (${cfg.period})`;
     case 'CMF':
       return `CMF (${cfg.period})`;
-    default:
-      return `${INDICATOR_DEFAULTS[cfg.type]?.label || cfg.type}${cfg.period > 0 ? ` (${cfg.period})` : ''}`;
+    default: {
+      const fallbackCfg = cfg as IndicatorConfig;
+      return `${INDICATOR_DEFAULTS[fallbackCfg.type]?.label || fallbackCfg.type}${fallbackCfg.period > 0 ? ` (${fallbackCfg.period})` : ''}`;
+    }
   }
 }
 

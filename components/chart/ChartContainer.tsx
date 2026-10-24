@@ -221,14 +221,16 @@ export function ChartContainer({
       if (savedV2) {
         const parsed = JSON.parse(savedV2);
         if (Array.isArray(parsed)) {
-          return parsed.map((item, idx) => {
-            const def = INDICATOR_DEFAULTS[item.type];
+          return parsed.map((item: Partial<IndicatorConfig> & { type: IndicatorType }, idx: number): IndicatorConfig => {
+            const def = INDICATOR_DEFAULTS[item.type as IndicatorType] || INDICATOR_DEFAULTS.SMA;
             const validPeriod = (def && def.period > 0 && (!item.period || item.period <= 0))
               ? def.period
               : (item.period ?? def?.period ?? 14);
             return {
+              ...def,
               ...item,
               id: item.id || `${item.type.toLowerCase()}-${Date.now()}-${idx}`,
+              type: item.type,
               period: validPeriod,
               step: item.step ?? def?.step ?? 0.02,
               maxAf: item.maxAf ?? def?.maxAf ?? 0.20,

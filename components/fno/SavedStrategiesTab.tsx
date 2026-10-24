@@ -62,7 +62,7 @@ export function SavedStrategiesTab({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {strategies.map((strat) => {
               const isProfit = strat.currentPnl >= 0;
-              const inst = findFnoInstrument(strat.symbol);
+              const inst = findFnoInstrument(strat.underlyingSymbol);
               const curr = inst.market === 'USA' ? '$' : inst.market === 'UAE' ? 'AED ' : '₹';
               const loc = inst.market === 'INDIA' ? 'en-IN' : 'en-US';
               return (
