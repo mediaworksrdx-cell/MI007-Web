@@ -1,4 +1,5 @@
 // ─── Advanced Institutional Option Chain Workspace ─────────────────────────
+// Modeled after NSE Institutional Option Chain specification
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -24,8 +25,25 @@ interface OptionChainTabProps {
   onOpenBuilderTab?: () => void;
 }
 
-type ViewMode = 'ALL' | 'OI_VOL' | 'GREEKS' | 'PRICING';
+type ViewMode = 'ALL' | 'OI_VOL' | 'GREEKS';
 type StrikeRange = 'ALL' | '20' | '10' | 'NEAR_ATM';
+
+function formatNumber(num: number): string {
+  if (!num || num === 0) return '-';
+  return num.toLocaleString();
+}
+
+function formatChange(chg: number): string {
+  if (chg === undefined || chg === null || chg === 0) return '-';
+  const prefix = chg > 0 ? '+' : '';
+  return `${prefix}${chg.toFixed(2)}`;
+}
+
+function formatOiChange(chg: number): string {
+  if (chg === undefined || chg === null || chg === 0) return '-';
+  const prefix = chg > 0 ? '+' : '';
+  return `${prefix}${chg.toLocaleString()}`;
+}
 
 export function OptionChainTab({
   chainData,
@@ -98,6 +116,7 @@ export function OptionChainTab({
           <span>{toastMessage}</span>
           {onOpenBuilderTab && (
             <button
+              type="button"
               onClick={onOpenBuilderTab}
               className="ml-2 px-2 py-0.5 rounded bg-slate-950 text-emerald-400 text-[10px] uppercase font-bold hover:bg-slate-900 cursor-pointer"
             >
@@ -116,14 +135,14 @@ export function OptionChainTab({
           </span>
           {(
             [
-              { id: 'ALL', label: '📊 All Columns' },
+              { id: 'ALL', label: '📊 Standard Chain' },
               { id: 'OI_VOL', label: '📈 OI & Volume' },
               { id: 'GREEKS', label: '🧮 Greeks Matrix' },
-              { id: 'PRICING', label: '🏷️ LTP & Spreads' },
             ] as const
           ).map((m) => (
             <button
               key={m.id}
+              type="button"
               onClick={() => setViewMode(m.id)}
               className={`px-3 py-1.5 rounded-lg text-[11px] mono font-bold transition-all cursor-pointer ${
                 viewMode === m.id
@@ -150,6 +169,7 @@ export function OptionChainTab({
             ).map((r) => (
               <button
                 key={r.id}
+                type="button"
                 onClick={() => {
                   setStrikeRange(r.id);
                   setSearchStrike('');
@@ -176,82 +196,69 @@ export function OptionChainTab({
         </div>
       </div>
 
-      {/* ── Option Chain Table ── */}
+      {/* ── Option Chain Table (Reference: NSE Institutional Layout) ── */}
       <div className="bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl overflow-hidden shadow-sm">
-        {/* Table Master Header */}
-        <div className="grid grid-cols-2 text-center mono font-extrabold text-[12px] py-2 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-subsurface)]">
-          <div className="text-rose-400 border-r border-[var(--theme-card-border)] flex items-center justify-center gap-2">
-            <span>CALL OPTIONS (CE)</span>
-            <span className="text-[10px] text-[var(--theme-card-subtitle)] font-normal">
-              Resistance & Call Writing
+        {/* Table Master Header (Deep Purple / Indigo) */}
+        <div className="grid grid-cols-[1fr_auto_1fr] text-center mono font-extrabold text-[12px] bg-[#2a2254] dark:bg-[#1c1638] text-white border-b border-indigo-900/60">
+          <div className="py-2 px-3 flex items-center justify-center gap-2 border-r border-indigo-900/60">
+            <span className="tracking-widest font-black uppercase text-[12.5px] text-white">CALLS</span>
+            <span className="text-[10px] text-indigo-200/70 font-normal hidden md:inline">
+              (Resistance & Call Writing)
             </span>
           </div>
-          <div className="text-emerald-400 flex items-center justify-center gap-2">
-            <span>PUT OPTIONS (PE)</span>
-            <span className="text-[10px] text-[var(--theme-card-subtitle)] font-normal">
-              Support & Put Writing
+          <div className="py-2 px-6 font-black tracking-widest text-[12.5px] text-amber-300 border-x border-indigo-900/60 bg-[#221a46] dark:bg-[#15102c] min-w-[90px]">
+            STRIKE
+          </div>
+          <div className="py-2 px-3 flex items-center justify-center gap-2 border-l border-indigo-900/60">
+            <span className="tracking-widest font-black uppercase text-[12.5px] text-white">PUTS</span>
+            <span className="text-[10px] text-indigo-200/70 font-normal hidden md:inline">
+              (Support & Put Writing)
             </span>
           </div>
         </div>
 
         {/* Dense Table Body */}
-        <div className="overflow-x-auto max-h-[650px] overflow-y-auto no-scrollbar">
+        <div className="overflow-x-auto max-h-[660px] overflow-y-auto no-scrollbar">
           <table className="w-full text-center mono text-[11px] border-collapse">
-            <thead className="sticky top-0 z-20 bg-[var(--theme-card-surface)] border-b border-[var(--theme-card-border)] shadow-xs">
-              <tr className="text-[9.5px] text-[var(--theme-card-subtitle)] uppercase tracking-wider">
+            <thead className="sticky top-0 z-20 bg-[#31275f] dark:bg-[#231c46] text-white border-b border-indigo-900/60 shadow-xs">
+              <tr className="text-[9.5px] uppercase tracking-wider text-indigo-100 font-extrabold">
                 {/* ── Call Columns ── */}
-                <th className="py-2 px-1 text-center font-bold">Action</th>
-                {(viewMode === 'ALL' || viewMode === 'OI_VOL') && (
+                <th className="py-2.5 px-1 text-center font-bold w-10">Action</th>
+                <th className="py-2.5 px-2 text-right font-bold min-w-[70px]">OI</th>
+                <th className="py-2.5 px-2 text-right font-bold min-w-[75px]">Chng in OI</th>
+                <th className="py-2.5 px-2 text-right font-bold min-w-[70px]">Volume</th>
+                <th className="py-2.5 px-1.5 text-right font-bold min-w-[50px]">IV</th>
+                {viewMode === 'GREEKS' && (
                   <>
-                    <th className="py-2 px-1 text-left font-bold min-w-[90px]">Call OI</th>
-                    <th className="py-2 px-1 text-center font-bold">OI Chg</th>
-                    <th className="py-2 px-1 text-center font-bold">Volume</th>
+                    <th className="py-2.5 px-1.5 text-right font-bold text-cyan-300">Delta</th>
+                    <th className="py-2.5 px-1.5 text-right font-bold text-fuchsia-300">Theta</th>
                   </>
                 )}
-                {(viewMode === 'ALL' || viewMode === 'GREEKS') && (
-                  <>
-                    <th className="py-2 px-1 text-center font-bold text-cyan-400">Delta</th>
-                    <th className="py-2 px-1 text-center font-bold text-fuchsia-400">Theta</th>
-                    <th className="py-2 px-1 text-center font-bold">IV %</th>
-                  </>
-                )}
-                {(viewMode === 'ALL' || viewMode === 'PRICING') && (
-                  <>
-                    <th className="py-2 px-1 text-center font-bold">Bid / Ask</th>
-                  </>
-                )}
-                <th className="py-2 px-1 text-right font-black pr-2 text-rose-400">Call LTP</th>
+                <th className="py-2.5 px-2 text-right font-black min-w-[70px]">LTP</th>
+                <th className="py-2.5 px-2 text-right font-black pr-2.5 min-w-[65px]">Chng</th>
 
                 {/* ── Central Strike ── */}
-                <th className="py-2 px-2 text-center font-black bg-[var(--theme-card-subsurface)] border-x border-[var(--theme-card-border)] min-w-[75px] text-[var(--theme-card-text)]">
+                <th className="py-2.5 px-3 text-center font-black bg-[#221a46] dark:bg-[#15102c] border-x border-indigo-900/80 min-w-[90px] text-amber-300">
                   STRIKE
                 </th>
 
                 {/* ── Put Columns ── */}
-                <th className="py-2 px-1 text-left font-black pl-2 text-emerald-400">Put LTP</th>
-                {(viewMode === 'ALL' || viewMode === 'PRICING') && (
+                <th className="py-2.5 px-2 text-left font-black pl-2.5 min-w-[65px]">Chng</th>
+                <th className="py-2.5 px-2 text-left font-black min-w-[70px]">LTP</th>
+                {viewMode === 'GREEKS' && (
                   <>
-                    <th className="py-2 px-1 text-center font-bold">Bid / Ask</th>
+                    <th className="py-2.5 px-1.5 text-left font-bold text-fuchsia-300">Theta</th>
+                    <th className="py-2.5 px-1.5 text-left font-bold text-cyan-300">Delta</th>
                   </>
                 )}
-                {(viewMode === 'ALL' || viewMode === 'GREEKS') && (
-                  <>
-                    <th className="py-2 px-1 text-center font-bold">IV %</th>
-                    <th className="py-2 px-1 text-center font-bold text-fuchsia-400">Theta</th>
-                    <th className="py-2 px-1 text-center font-bold text-cyan-400">Delta</th>
-                  </>
-                )}
-                {(viewMode === 'ALL' || viewMode === 'OI_VOL') && (
-                  <>
-                    <th className="py-2 px-1 text-center font-bold">Volume</th>
-                    <th className="py-2 px-1 text-center font-bold">OI Chg</th>
-                    <th className="py-2 px-1 text-right font-bold min-w-[90px]">Put OI</th>
-                  </>
-                )}
-                <th className="py-2 px-1 text-center font-bold">Action</th>
+                <th className="py-2.5 px-1.5 text-left font-bold min-w-[50px]">IV</th>
+                <th className="py-2.5 px-2 text-left font-bold min-w-[70px]">Volume</th>
+                <th className="py-2.5 px-2 text-left font-bold min-w-[75px]">Chng in OI</th>
+                <th className="py-2.5 px-2 text-left font-bold min-w-[70px]">OI</th>
+                <th className="py-2.5 px-1 text-center font-bold w-10">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--theme-card-border)]/40">
+            <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/60 tabular-nums">
               {visibleRows.map((row) => {
                 const callOIBarWidth = Math.min(100, Math.round((row.call.openInterest / maxOI) * 100));
                 const putOIBarWidth = Math.min(100, Math.round((row.put.openInterest / maxOI) * 100));
@@ -259,28 +266,40 @@ export function OptionChainTab({
                 const isITMPut = row.put.isITM;
                 const isATM = row.isATM;
 
+                // Color classes matching reference image:
+                // ITM = warm light cream/ivory tint (#fffbee in light mode, #272115 in dark mode)
+                // OTM = clean crisp white / card background
+                const callBgClass = isITMCall
+                  ? 'bg-[#fffbee] dark:bg-[#272115]'
+                  : 'bg-white dark:bg-[#0f172a]';
+                const putBgClass = isITMPut
+                  ? 'bg-[#fffbee] dark:bg-[#272115]'
+                  : 'bg-white dark:bg-[#0f172a]';
+
                 return (
                   <tr
                     key={row.strike}
                     className={`transition-colors group ${
                       isATM
-                        ? 'bg-amber-500/10 font-bold border-y border-amber-500/40'
-                        : 'hover:bg-emerald-500/5'
+                        ? 'border-y-2 border-amber-500 font-bold'
+                        : 'hover:brightness-95 dark:hover:brightness-110'
                     }`}
                   >
                     {/* ── Call Action Buttons ── */}
-                    <td className="py-1.5 px-1 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                    <td className={`py-1.5 px-1 text-center whitespace-nowrap ${callBgClass}`}>
+                      <div className="flex items-center justify-center gap-1 opacity-75 group-hover:opacity-100 transition-opacity">
                         <button
+                          type="button"
                           onClick={() => handleQuickAdd('BUY', 'CE', row.call)}
-                          className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500 hover:text-slate-950 transition-colors cursor-pointer"
+                          className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500 hover:text-slate-950 transition-colors cursor-pointer"
                           title="Buy Call"
                         >
                           B
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleQuickAdd('SELL', 'CE', row.call)}
-                          className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-500/20 text-rose-400 border border-rose-500/40 hover:bg-rose-500 hover:text-slate-950 transition-colors cursor-pointer"
+                          className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/40 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
                           title="Sell Call"
                         >
                           S
@@ -289,162 +308,168 @@ export function OptionChainTab({
                     </td>
 
                     {/* ── Call OI & Depth Bar ── */}
-                    {(viewMode === 'ALL' || viewMode === 'OI_VOL') && (
-                      <>
-                        <td
-                          className={`py-1.5 px-1 text-left relative ${
-                            isITMCall ? 'bg-rose-500/5' : ''
-                          }`}
-                        >
-                          <div className="relative z-10 flex items-center justify-between text-[10.5px]">
-                            <span className="font-bold text-[var(--theme-card-text)]">
-                              {(row.call.openInterest / 1000).toFixed(0)}k
-                            </span>
-                          </div>
-                          <div
-                            className="absolute inset-y-1 left-0 bg-rose-500/20 rounded-r pointer-events-none transition-all"
-                            style={{ width: `${callOIBarWidth}%` }}
-                          />
-                        </td>
-                        <td
-                          className={`py-1.5 px-1 text-center font-bold text-[10px] ${
-                            row.call.changeInOI >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                          }`}
-                        >
-                          {row.call.changeInOI >= 0 ? '+' : ''}
-                          {(row.call.changeInOI / 1000).toFixed(0)}k
-                        </td>
-                        <td className="py-1.5 px-1 text-center text-[var(--theme-card-subtitle)] text-[10px]">
-                          {(row.call.volume / 1000).toFixed(0)}k
-                        </td>
-                      </>
-                    )}
+                    <td className={`py-1.5 px-2 text-right relative font-bold text-slate-800 dark:text-slate-200 ${callBgClass}`}>
+                      <div className="relative z-10">
+                        {formatNumber(row.call.openInterest)}
+                      </div>
+                      <div
+                        className="absolute inset-y-1 right-0 bg-rose-500/10 rounded-l pointer-events-none"
+                        style={{ width: `${callOIBarWidth}%` }}
+                      />
+                    </td>
 
-                    {/* ── Call Greeks ── */}
-                    {(viewMode === 'ALL' || viewMode === 'GREEKS') && (
-                      <>
-                        <td className="py-1.5 px-1 text-center text-cyan-400 font-semibold text-[10.5px]">
-                          {row.call.greeks.delta.toFixed(2)}
-                        </td>
-                        <td className="py-1.5 px-1 text-center text-fuchsia-400 text-[10px]">
-                          {row.call.greeks.theta.toFixed(1)}
-                        </td>
-                        <td className="py-1.5 px-1 text-center text-[var(--theme-card-subtitle)] text-[10px]">
-                          {row.call.impliedVolatility.toFixed(1)}%
-                        </td>
-                      </>
-                    )}
-
-                    {/* ── Call Bid/Ask ── */}
-                    {(viewMode === 'ALL' || viewMode === 'PRICING') && (
-                      <td className="py-1.5 px-1 text-center text-[9.5px] text-[var(--theme-card-subtitle)]">
-                        {row.call.bid.toFixed(1)} / {row.call.ask.toFixed(1)}
-                      </td>
-                    )}
-
-                    {/* ── Call LTP ── */}
+                    {/* ── Call Change in OI ── */}
                     <td
-                      className={`py-1.5 px-1 text-right pr-2 font-black text-[11px] ${
-                        isITMCall ? 'bg-rose-500/10 text-rose-300' : 'text-[var(--theme-card-text)]'
+                      className={`py-1.5 px-2 text-right font-bold text-[10.5px] ${callBgClass} ${
+                        row.call.changeInOI > 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : row.call.changeInOI < 0
+                          ? 'text-rose-600 dark:text-rose-400'
+                          : 'text-slate-400'
                       }`}
                     >
-                      {curr}{row.call.ltp.toFixed(2)}
+                      {formatOiChange(row.call.changeInOI)}
+                    </td>
+
+                    {/* ── Call Volume ── */}
+                    <td className={`py-1.5 px-2 text-right text-slate-600 dark:text-slate-300 text-[10.5px] ${callBgClass}`}>
+                      {formatNumber(row.call.volume)}
+                    </td>
+
+                    {/* ── Call IV ── */}
+                    <td className={`py-1.5 px-1.5 text-right text-slate-700 dark:text-slate-300 text-[10.5px] ${callBgClass}`}>
+                      {row.call.impliedVolatility.toFixed(2)}
+                    </td>
+
+                    {/* ── Call Greeks (Optional) ── */}
+                    {viewMode === 'GREEKS' && (
+                      <>
+                        <td className={`py-1.5 px-1.5 text-right text-cyan-600 dark:text-cyan-300 font-semibold text-[10.5px] ${callBgClass}`}>
+                          {row.call.greeks.delta.toFixed(2)}
+                        </td>
+                        <td className={`py-1.5 px-1.5 text-right text-fuchsia-600 dark:text-fuchsia-300 text-[10px] ${callBgClass}`}>
+                          {row.call.greeks.theta.toFixed(1)}
+                        </td>
+                      </>
+                    )}
+
+                    {/* ── Call LTP (Bold Blue like reference) ── */}
+                    <td className={`py-1.5 px-2 text-right font-black text-[12px] text-[#1e40af] dark:text-sky-300 ${callBgClass}`}>
+                      {row.call.ltp.toFixed(2)}
+                    </td>
+
+                    {/* ── Call Net Change ── */}
+                    <td
+                      className={`py-1.5 px-2 pr-2.5 text-right font-bold text-[11px] ${callBgClass} ${
+                        row.call.change > 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : row.call.change < 0
+                          ? 'text-rose-600 dark:text-rose-400'
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      {formatChange(row.call.change)}
                     </td>
 
                     {/* ── Central Strike ── */}
                     <td
-                      className={`py-1.5 px-2 text-center font-black border-x border-[var(--theme-card-border)] text-[11.5px] ${
+                      className={`py-1.5 px-3 text-center font-extrabold border-x border-slate-300 dark:border-slate-700 text-[12px] ${
                         isATM
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                          : 'bg-[var(--theme-card-subsurface)] text-[var(--theme-card-text)]'
+                          ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200'
+                          : 'bg-[#f4f6fa] dark:bg-[#161c2d] text-[#1d4ed8] dark:text-sky-300'
                       }`}
                     >
-                      <div className="flex items-center justify-center gap-1">
-                        <span>{curr}{row.strike}</span>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span className="cursor-pointer hover:underline">
+                          {row.strike.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
                         {isATM && (
-                          <span className="text-[8px] px-1 py-0.2 bg-amber-500 text-slate-950 rounded font-black">
+                          <span className="text-[8px] px-1 py-0.2 bg-amber-500 text-slate-950 rounded font-black tracking-wider uppercase">
                             ATM
                           </span>
                         )}
                       </div>
                     </td>
 
-                    {/* ── Put LTP ── */}
+                    {/* ── Put Net Change ── */}
                     <td
-                      className={`py-1.5 px-1 text-left pl-2 font-black text-[11px] ${
-                        isITMPut ? 'bg-emerald-500/10 text-emerald-300' : 'text-[var(--theme-card-text)]'
+                      className={`py-1.5 px-2 pl-2.5 text-left font-bold text-[11px] ${putBgClass} ${
+                        row.put.change > 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : row.put.change < 0
+                          ? 'text-rose-600 dark:text-rose-400'
+                          : 'text-slate-400'
                       }`}
                     >
-                      {curr}{row.put.ltp.toFixed(2)}
+                      {formatChange(row.put.change)}
                     </td>
 
-                    {/* ── Put Bid/Ask ── */}
-                    {(viewMode === 'ALL' || viewMode === 'PRICING') && (
-                      <td className="py-1.5 px-1 text-center text-[9.5px] text-[var(--theme-card-subtitle)]">
-                        {row.put.bid.toFixed(1)} / {row.put.ask.toFixed(1)}
-                      </td>
-                    )}
+                    {/* ── Put LTP (Bold Blue like reference) ── */}
+                    <td className={`py-1.5 px-2 text-left font-black text-[12px] text-[#1e40af] dark:text-sky-300 ${putBgClass}`}>
+                      {row.put.ltp.toFixed(2)}
+                    </td>
 
-                    {/* ── Put Greeks ── */}
-                    {(viewMode === 'ALL' || viewMode === 'GREEKS') && (
+                    {/* ── Put Greeks (Optional) ── */}
+                    {viewMode === 'GREEKS' && (
                       <>
-                        <td className="py-1.5 px-1 text-center text-[var(--theme-card-subtitle)] text-[10px]">
-                          {row.put.impliedVolatility.toFixed(1)}%
-                        </td>
-                        <td className="py-1.5 px-1 text-center text-fuchsia-400 text-[10px]">
+                        <td className={`py-1.5 px-1.5 text-left text-fuchsia-600 dark:text-fuchsia-300 text-[10px] ${putBgClass}`}>
                           {row.put.greeks.theta.toFixed(1)}
                         </td>
-                        <td className="py-1.5 px-1 text-center text-cyan-400 font-semibold text-[10.5px]">
+                        <td className={`py-1.5 px-1.5 text-left text-cyan-600 dark:text-cyan-300 font-semibold text-[10.5px] ${putBgClass}`}>
                           {row.put.greeks.delta.toFixed(2)}
                         </td>
                       </>
                     )}
 
+                    {/* ── Put IV ── */}
+                    <td className={`py-1.5 px-1.5 text-left text-slate-700 dark:text-slate-300 text-[10.5px] ${putBgClass}`}>
+                      {row.put.impliedVolatility.toFixed(2)}
+                    </td>
+
+                    {/* ── Put Volume ── */}
+                    <td className={`py-1.5 px-2 text-left text-slate-600 dark:text-slate-300 text-[10.5px] ${putBgClass}`}>
+                      {formatNumber(row.put.volume)}
+                    </td>
+
+                    {/* ── Put Change in OI ── */}
+                    <td
+                      className={`py-1.5 px-2 text-left font-bold text-[10.5px] ${putBgClass} ${
+                        row.put.changeInOI > 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : row.put.changeInOI < 0
+                          ? 'text-rose-600 dark:text-rose-400'
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      {formatOiChange(row.put.changeInOI)}
+                    </td>
+
                     {/* ── Put OI & Depth Bar ── */}
-                    {(viewMode === 'ALL' || viewMode === 'OI_VOL') && (
-                      <>
-                        <td className="py-1.5 px-1 text-center text-[var(--theme-card-subtitle)] text-[10px]">
-                          {(row.put.volume / 1000).toFixed(0)}k
-                        </td>
-                        <td
-                          className={`py-1.5 px-1 text-center font-bold text-[10px] ${
-                            row.put.changeInOI >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                          }`}
-                        >
-                          {row.put.changeInOI >= 0 ? '+' : ''}
-                          {(row.put.changeInOI / 1000).toFixed(0)}k
-                        </td>
-                        <td
-                          className={`py-1.5 px-1 text-right relative ${
-                            isITMPut ? 'bg-emerald-500/5' : ''
-                          }`}
-                        >
-                          <div className="relative z-10 flex items-center justify-end text-[10.5px]">
-                            <span className="font-bold text-[var(--theme-card-text)]">
-                              {(row.put.openInterest / 1000).toFixed(0)}k
-                            </span>
-                          </div>
-                          <div
-                            className="absolute inset-y-1 right-0 bg-emerald-500/20 rounded-l pointer-events-none transition-all"
-                            style={{ width: `${putOIBarWidth}%` }}
-                          />
-                        </td>
-                      </>
-                    )}
+                    <td className={`py-1.5 px-2 text-left relative font-bold text-slate-800 dark:text-slate-200 ${putBgClass}`}>
+                      <div className="relative z-10">
+                        {formatNumber(row.put.openInterest)}
+                      </div>
+                      <div
+                        className="absolute inset-y-1 left-0 bg-emerald-500/10 rounded-r pointer-events-none"
+                        style={{ width: `${putOIBarWidth}%` }}
+                      />
+                    </td>
 
                     {/* ── Put Action Buttons ── */}
-                    <td className="py-1.5 px-1 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                    <td className={`py-1.5 px-1 text-center whitespace-nowrap ${putBgClass}`}>
+                      <div className="flex items-center justify-center gap-1 opacity-75 group-hover:opacity-100 transition-opacity">
                         <button
+                          type="button"
                           onClick={() => handleQuickAdd('BUY', 'PE', row.put)}
-                          className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500 hover:text-slate-950 transition-colors cursor-pointer"
+                          className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500 hover:text-slate-950 transition-colors cursor-pointer"
                           title="Buy Put"
                         >
                           B
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleQuickAdd('SELL', 'PE', row.put)}
-                          className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-500/20 text-rose-400 border border-rose-500/40 hover:bg-rose-500 hover:text-slate-950 transition-colors cursor-pointer"
+                          className="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/40 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
                           title="Sell Put"
                         >
                           S
@@ -459,23 +484,24 @@ export function OptionChainTab({
         </div>
 
         {/* Option Chain Legend & Info Footer */}
-        <div className="p-3 bg-[var(--theme-card-subsurface)] border-t border-[var(--theme-card-border)] flex flex-wrap items-center justify-between gap-3 text-[10.5px] mono text-[var(--theme-card-subtitle)]">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded bg-rose-500/20 border border-rose-500/50" />
-              ITM Calls / Call OI
+        <div className="p-3 bg-[var(--theme-card-subsurface)] border-t border-[var(--theme-card-border)] flex flex-wrap items-center justify-between gap-3 text-[11px] mono text-[var(--theme-card-subtitle)]">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="h-3 w-3 rounded bg-[#fffbee] dark:bg-[#272115] border border-amber-300 dark:border-amber-700" />
+              ITM (In-The-Money Contracts)
             </span>
-            <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded bg-emerald-500/20 border border-emerald-500/50" />
-              ITM Puts / Put OI
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="h-3 w-3 rounded bg-white dark:bg-[#0f172a] border border-slate-300 dark:border-slate-700" />
+              OTM (Out-of-The-Money Contracts)
             </span>
-            <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded bg-amber-500/40 border border-amber-500" />
-              ATM (At-The-Money)
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="h-3 w-3 rounded bg-amber-400 border border-amber-600" />
+              ATM (At-The-Money Strike)
             </span>
           </div>
           <div>
-            Click <span className="font-bold text-emerald-400">B</span> to Buy or <span className="font-bold text-rose-400">S</span> to Sell and inject directly into Strategy Builder.
+            Click <span className="font-black text-emerald-600 dark:text-emerald-400">B</span> (Buy) or{' '}
+            <span className="font-black text-rose-600 dark:text-rose-400">S</span> (Sell) to inject directly into Strategy Builder.
           </div>
         </div>
       </div>
