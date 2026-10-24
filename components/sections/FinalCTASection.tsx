@@ -39,9 +39,9 @@ export default function FinalCTASection() {
 
         <h2 className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-tight mb-2 sm:mb-3 final-cta-title flex flex-col items-center justify-center gap-1">
           <span>Step Into</span>
-          <span className="whitespace-nowrap font-caveat font-bold inline-flex items-center justify-center gap-1.5 sm:gap-2 text-[17px] xs:text-[20px] sm:text-2xl md:text-3xl text-[var(--theme-page-text)]">
-            <span>MARKET INTELLIGENCE</span>
-            <span>MI-007</span>
+          <span className="whitespace-nowrap font-caveat font-bold inline-flex items-center justify-center gap-1.5 sm:gap-2 text-[17px] xs:text-[20px] sm:text-2xl md:text-3xl">
+            <span className="text-[var(--theme-page-text)] font-caveat">MARKET INTELLIGENCE</span>
+            <span className="text-emerald-400 font-caveat">MI-007</span>
           </span>
         </h2>
 

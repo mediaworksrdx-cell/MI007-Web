@@ -49,7 +49,7 @@ export function Footer() {
                     style={{ color: '#FFFFFF' }}
                   >
                     <span>MARKET INTELLIGENCE</span>
-                    <span>MI-007</span>
+                    <span className="text-emerald-400 font-caveat">MI-007</span>
                   </span>
                 </div>
 
