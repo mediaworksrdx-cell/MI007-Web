@@ -78,6 +78,7 @@ export function BacktestingView({
   const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
   const [portfolioViewTab, setPortfolioViewTab] = useState<'trades' | 'holdings'>('trades');
+  const [justSaved, setJustSaved] = useState(false);
 
   // Manual exit overrides on individual simulated positions
   const [manuallyExitedTradeIds, setManuallyExitedTradeIds] = useState<number[]>([]);
@@ -151,14 +152,17 @@ export function BacktestingView({
     setSavedPortfolios(updated);
     persistSavedPortfolios(updated);
     setPortfolioViewTab('holdings');
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 2500);
 
-    setSaveFeedback(`✓ Added ${activeCompany.symbol} (${activeStrategy?.name || strategyId}) to Portfolio! Initial Capital: ${activeCompany.currencySymbol}${Number(initialCapital).toLocaleString()}`);
-    setTimeout(() => setSaveFeedback(null), 4000);
+    setSaveFeedback(`✓ Saved & Added ${activeCompany.symbol} (${activeStrategy?.name || strategyId}) to Portfolio! Capital: ${activeCompany.currencySymbol}${Number(initialCapital).toLocaleString()}`);
+    setTimeout(() => setSaveFeedback(null), 5000);
   };
 
-  // Save current simulated portfolio
+  // Save current simulated portfolio and open Saved Portfolios Manager
   const handleSavePortfolio = () => {
     handleAddToPortfolio();
+    setIsSavedModalOpen(true);
   };
 
   // Load a saved portfolio into active parameters
@@ -272,11 +276,15 @@ export function BacktestingView({
           <button
             type="button"
             onClick={handleAddToPortfolio}
-            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[12px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            className={`px-3.5 py-2 rounded-xl font-black mono text-[12px] transition-all shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+              justSaved
+                ? 'bg-emerald-400 text-slate-950 ring-2 ring-emerald-300'
+                : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+            }`}
             title="Add current stock strategy simulation to Portfolio"
           >
-            <span className="font-black text-sm">+</span>
-            <span>ADD TO PORTFOLIO</span>
+            <span className="font-black text-sm">{justSaved ? '✓' : '+'}</span>
+            <span>{justSaved ? 'ADDED!' : 'ADD TO PORTFOLIO'}</span>
           </button>
 
           {/* View Chart Link */}
@@ -299,17 +307,21 @@ export function BacktestingView({
           <button
             type="button"
             onClick={handleSavePortfolio}
-            className="px-3.5 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 mono text-[12px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-            title="Save current simulation as a tracked portfolio"
+            className={`px-3.5 py-2 rounded-xl font-bold mono text-[12px] transition-all shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+              justSaved
+                ? 'bg-emerald-500 text-slate-950 border border-emerald-400 font-black'
+                : 'border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950'
+            }`}
+            title="Save current simulation and open portfolio manager"
           >
-            <span>💾 SAVE PORTFOLIO</span>
+            <span>{justSaved ? '✓ SAVED!' : '💾 SAVE PORTFOLIO'}</span>
           </button>
 
           {/* Saved Portfolios Modal Trigger */}
           <button
             type="button"
             onClick={() => setIsSavedModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 mono text-[12px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 mono text-[12px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95"
             title="View saved portfolios"
           >
             <span>📁 SAVED ({savedPortfolios.length})</span>
@@ -319,7 +331,7 @@ export function BacktestingView({
           <button
             type="button"
             onClick={() => exportPortfolioCSV()}
-            className="px-3.5 py-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 mono text-[12px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 mono text-[12px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95"
             title="Export portfolio trades to CSV"
           >
             <span>Export CSV</span>
@@ -330,7 +342,7 @@ export function BacktestingView({
           <button
             type="button"
             onClick={onBackToScreener}
-            className="px-3.5 py-2 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white mono text-[12px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1"
+            className="px-3.5 py-2 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white mono text-[12px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1 active:scale-95"
             title="Exit to Screener"
           >
             <span>✕ EXIT</span>
@@ -338,20 +350,32 @@ export function BacktestingView({
         </div>
       </div>
 
-      {/* ── Toast Feedback Notification ── */}
+      {/* ── Fixed Floating Toast Feedback Notification (Always visible at any scroll depth) ── */}
       {saveFeedback && (
-        <div className="p-3.5 px-4 rounded-xl border border-emerald-500/40 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 mono text-[12.5px] font-bold flex items-center justify-between shadow-xs animate-in fade-in duration-200">
-          <div className="flex items-center gap-2">
-            <span className="text-emerald-500 text-base">✓</span>
-            <span>{saveFeedback}</span>
+        <div className="fixed bottom-6 right-6 z-50 max-w-lg p-4 rounded-2xl border-2 border-emerald-500/60 bg-slate-950/95 dark:bg-slate-950/95 text-white shadow-2xl backdrop-blur-md mono text-[12.5px] flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-5 duration-200">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-7 h-7 rounded-full bg-emerald-500 text-slate-950 font-black flex items-center justify-center text-sm shrink-0 shadow-sm">
+              ✓
+            </span>
+            <span className="font-bold text-emerald-300 truncate">{saveFeedback}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => setSaveFeedback(null)}
-            className="text-emerald-700 dark:text-emerald-300 hover:text-emerald-950 dark:hover:text-white font-black px-2 cursor-pointer"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsSavedModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black cursor-pointer shadow-xs transition-transform active:scale-95"
+            >
+              📁 VIEW SAVED
+            </button>
+            <button
+              type="button"
+              onClick={() => setSaveFeedback(null)}
+              className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 font-black text-sm flex items-center justify-center cursor-pointer transition-colors"
+              title="Dismiss notification"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 
@@ -371,11 +395,15 @@ export function BacktestingView({
             <button
               type="button"
               onClick={handleAddToPortfolio}
-              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black mono text-[12.5px] shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+              className={`px-4 py-2 rounded-xl font-black mono text-[12.5px] shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                justSaved
+                  ? 'bg-emerald-400 text-slate-950 ring-2 ring-emerald-300'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+              }`}
               title={`Add ${activeCompany.symbol} (${activeStrategy?.name || strategyId}) to Portfolio`}
             >
-              <span className="font-black text-sm">+</span>
-              <span>ADD TO PORTFOLIO</span>
+              <span className="font-black text-sm">{justSaved ? '✓' : '+'}</span>
+              <span>{justSaved ? 'ADDED!' : 'ADD TO PORTFOLIO'}</span>
             </button>
           </div>
         </div>
@@ -494,19 +522,29 @@ export function BacktestingView({
             <button
               type="button"
               onClick={handleAddToPortfolio}
-              className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black mono text-[13px] shadow-sm transition-all cursor-pointer flex items-center gap-2 group"
+              className={`px-5 py-2.5 rounded-xl font-black mono text-[13px] shadow-sm transition-all cursor-pointer flex items-center gap-2 group active:scale-95 ${
+                justSaved
+                  ? 'bg-emerald-400 text-slate-950 ring-2 ring-emerald-300'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+              }`}
               title={`Add ${activeCompany.symbol} (${activeStrategy?.name || strategyId}) to Portfolio`}
             >
-              <span className="text-base group-hover:scale-125 transition-transform font-black">+</span>
-              <span>ADD TO PORTFOLIO</span>
+              <span className="text-base group-hover:scale-125 transition-transform font-black">
+                {justSaved ? '✓' : '+'}
+              </span>
+              <span>{justSaved ? 'ADDED TO PORTFOLIO!' : 'ADD TO PORTFOLIO'}</span>
             </button>
             <button
               type="button"
               onClick={handleSavePortfolio}
-              className="px-4 py-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 font-black mono text-[12.5px] transition-all cursor-pointer flex items-center gap-1.5"
-              title="Save this portfolio configuration"
+              className={`px-4 py-2.5 rounded-xl font-black mono text-[12.5px] transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                justSaved
+                  ? 'bg-emerald-500 text-slate-950 border border-emerald-400'
+                  : 'border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950'
+              }`}
+              title="Save this portfolio simulation and open manager"
             >
-              <span>💾 SAVE PORTFOLIO</span>
+              <span>{justSaved ? '✓ SAVED!' : '💾 SAVE PORTFOLIO'}</span>
             </button>
           </div>
         </div>
@@ -636,28 +674,30 @@ export function BacktestingView({
             </span>
 
             {/* View Switcher Tabs */}
-            <div className="flex items-center p-0.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)]">
+            <div className="flex items-center gap-1.5 p-1 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
               <button
                 type="button"
                 onClick={() => setPortfolioViewTab('trades')}
-                className={`px-3 py-1 rounded-lg mono text-[11px] font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg mono text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
                   portfolioViewTab === 'trades'
-                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                    : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm border border-emerald-400'
+                    : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-emerald-500/10 border border-transparent'
                 }`}
               >
-                Simulation Trades ({displayedTrades.length})
+                <span>📊</span>
+                <span>Simulation Trades ({displayedTrades.length})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setPortfolioViewTab('holdings')}
-                className={`px-3 py-1 rounded-lg mono text-[11px] font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg mono text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
                   portfolioViewTab === 'holdings'
-                    ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                    : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm border border-emerald-400'
+                    : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-emerald-500/10 border border-transparent'
                 }`}
               >
-                Added Holdings ({savedPortfolios.length})
+                <span>💼</span>
+                <span>Added Holdings ({savedPortfolios.length})</span>
               </button>
             </div>
           </div>
@@ -668,21 +708,39 @@ export function BacktestingView({
             <button
               type="button"
               onClick={handleAddToPortfolio}
-              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              className={`px-3 py-1.5 rounded-xl font-black mono text-[11.5px] transition-all shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                justSaved
+                  ? 'bg-emerald-400 text-slate-950 ring-2 ring-emerald-300'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+              }`}
               title={`Add ${activeCompany.symbol} (${activeStrategy?.name || strategyId}) to Portfolio`}
             >
-              <span className="font-black text-sm">+</span>
-              <span>ADD TO PORTFOLIO</span>
+              <span className="font-black text-sm">{justSaved ? '✓' : '+'}</span>
+              <span>{justSaved ? 'ADDED!' : 'ADD TO PORTFOLIO'}</span>
             </button>
 
             {/* Save Portfolio Option */}
             <button
               type="button"
               onClick={handleSavePortfolio}
-              className="px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 mono text-[11.5px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-              title="Save this portfolio simulation"
+              className={`px-3 py-1.5 rounded-xl font-bold mono text-[11.5px] transition-all shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                justSaved
+                  ? 'bg-emerald-500 text-slate-950 border border-emerald-400 font-black'
+                  : 'border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950'
+              }`}
+              title="Save this portfolio simulation and open manager"
             >
-              <span>💾 SAVE PORTFOLIO</span>
+              <span>{justSaved ? '✓ SAVED!' : '💾 SAVE PORTFOLIO'}</span>
+            </button>
+
+            {/* View Saved Portfolios Modal Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsSavedModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 mono text-[11.5px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+              title="View all saved portfolios"
+            >
+              <span>📁 SAVED ({savedPortfolios.length})</span>
             </button>
 
             {/* Exit All Positions Option (Only in trades view) */}
@@ -946,25 +1004,41 @@ export function BacktestingView({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               onClick={handleAddToPortfolio}
-              className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              className={`px-3.5 py-1.5 rounded-xl font-black mono text-[11.5px] transition-all shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                justSaved
+                  ? 'bg-emerald-400 text-slate-950 ring-2 ring-emerald-300'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+              }`}
             >
-              <span>+ ADD TO PORTFOLIO</span>
+              <span className="font-black text-sm">{justSaved ? '✓' : '+'}</span>
+              <span>{justSaved ? 'ADDED!' : 'ADD TO PORTFOLIO'}</span>
             </button>
             <button
               type="button"
               onClick={handleSavePortfolio}
-              className="px-3.5 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              className={`px-3.5 py-1.5 rounded-xl font-black mono text-[11.5px] transition-all shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                justSaved
+                  ? 'bg-emerald-500 text-slate-950 border border-emerald-400'
+                  : 'border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950'
+              }`}
             >
-              <span>💾 SAVE PORTFOLIO</span>
+              <span>{justSaved ? '✓ SAVED!' : '💾 SAVE PORTFOLIO'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsSavedModalOpen(true)}
+              className="px-3.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 mono text-[11.5px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+            >
+              <span>📁 SAVED ({savedPortfolios.length})</span>
             </button>
             <button
               type="button"
               onClick={onBackToScreener}
-              className="px-3.5 py-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1"
+              className="px-3.5 py-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1 active:scale-95"
             >
               <span>← EXIT TO SCREENER</span>
             </button>
@@ -1032,7 +1106,7 @@ export function BacktestingView({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 self-stretch sm:self-auto shrink-0">
+                    <div className="flex items-center gap-2 self-stretch sm:self-auto shrink-0 flex-wrap">
                       <button
                         type="button"
                         onClick={() => handleLoadPortfolio(pf)}
@@ -1041,6 +1115,13 @@ export function BacktestingView({
                       >
                         ⚡ LOAD
                       </button>
+                      <Link
+                        href={`/chart/${pf.symbol}?market=${pf.market}&from=screener`}
+                        className="px-2.5 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 mono text-[11px] font-bold transition-colors cursor-pointer"
+                        title={`View ${pf.symbol} interactive chart`}
+                      >
+                        📈 CHART
+                      </Link>
                       <button
                         type="button"
                         onClick={() => exportPortfolioCSV(pf.trades, `MI007_Portfolio_${pf.symbol}_${pf.strategyId}.csv`)}
