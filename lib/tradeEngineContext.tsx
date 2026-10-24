@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useSyncExternalStore } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import {
   TradeEngineLivePrice,
   TradeEngineCrypto,
@@ -224,6 +224,7 @@ const TradeEngineContext = createContext<TradeEngineContextValue>({
 export function TradeEngineProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
   const [latencyMs, setLatencyMs] = useState<number>(18);
+  const latencyMsRef = useRef<number>(18);
   const storeRef = useRef<SymbolPriceStore | null>(null);
   if (!storeRef.current) {
     storeRef.current = new SymbolPriceStore(buildInitialPriceMap());
@@ -244,6 +245,28 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptRef = useRef<number>(0);
+  const throttleLivePricesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastLivePricesUpdateRef = useRef<number>(0);
+
+  const scheduleLivePricesUpdate = useCallback(() => {
+    const now = Date.now();
+    if (now - lastLivePricesUpdateRef.current >= 2000) {
+      lastLivePricesUpdateRef.current = now;
+      if (storeRef.current) {
+        setLivePrices(storeRef.current.getMap());
+      }
+      return;
+    }
+    if (!throttleLivePricesTimeoutRef.current) {
+      throttleLivePricesTimeoutRef.current = setTimeout(() => {
+        throttleLivePricesTimeoutRef.current = null;
+        lastLivePricesUpdateRef.current = Date.now();
+        if (storeRef.current) {
+          setLivePrices(storeRef.current.getMap());
+        }
+      }, 2000);
+    }
+  }, []);
 
   // 1. High-frequency Real-Time Equities & Indices Polling (every 2 seconds)
   const syncLivePrices = useCallback(async () => {
@@ -251,11 +274,16 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
       const t0 = performance.now();
       const prices = await fetchLivePrices();
       const rtt = Math.max(4, Math.round(performance.now() - t0));
-      setLatencyMs(rtt);
+      if (Math.abs(rtt - latencyMsRef.current) > 35) {
+        latencyMsRef.current = rtt;
+        setLatencyMs(rtt);
+      }
       if (!prices || prices.length === 0) return;
 
       const now = Date.now();
       setStatus('connected');
+
+      let mostRecentTick: TradeEngineTick | null = null;
 
       const changed = storeRef.current?.updateBatch((prev) => {
         const next = new Map(prev);
@@ -313,7 +341,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               volume: 0,
               timestamp: p.timestamp || now,
             };
-            setLastTick(tick);
+            mostRecentTick = tick;
             listenersRef.current.forEach(listener => {
               try { listener(tick); } catch (e) { console.error(e); }
             });
@@ -322,13 +350,17 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
         return { next, changedKeys };
       });
 
+      if (mostRecentTick) {
+        setLastTick(mostRecentTick);
+      }
+
       if (changed && storeRef.current) {
-        setLivePrices(storeRef.current.getMap());
+        scheduleLivePricesUpdate();
       }
     } catch (err) {
       console.warn('[TradeEngineProvider] syncLivePrices error:', err);
     }
-  }, []);
+  }, [scheduleLivePricesUpdate]);
 
   // 2. Background Macro, Forex, Commodities & Crypto Polling (every 15 minutes = 900,000ms)
   const syncCryptoAndMacro = useCallback(async () => {
@@ -377,8 +409,8 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
           }
           return { next, changedKeys };
         });
-        if (changed && storeRef.current) {
-          setLivePrices(storeRef.current.getMap());
+        if (changed) {
+          scheduleLivePricesUpdate();
         }
       }
 
@@ -494,14 +526,14 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
           }
           return { next, changedKeys };
         });
-        if (changed && storeRef.current) {
-          setLivePrices(storeRef.current.getMap());
+        if (changed) {
+          scheduleLivePricesUpdate();
         }
       }
     } catch (err) {
       console.warn('[TradeEngineProvider] syncCryptoAndMacro error:', err);
     }
-  }, []);
+  }, [scheduleLivePricesUpdate]);
 
   useEffect(() => {
     // Initial immediate pull
@@ -603,8 +635,8 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               return { next, changedKeys };
             });
 
-            if (changed && storeRef.current) {
-              setLivePrices(storeRef.current.getMap());
+            if (changed) {
+              scheduleLivePricesUpdate();
             }
           } catch (e) {
             // Non-JSON heartbeat frame
@@ -636,32 +668,21 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     return () => {
       isDisposed = true;
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      if (throttleLivePricesTimeoutRef.current) clearTimeout(throttleLivePricesTimeoutRef.current);
       if (wsRef.current) {
         wsRef.current.onclose = null;
         wsRef.current.close();
       }
     };
-  }, []);
+  }, [scheduleLivePricesUpdate]);
 
   const pendingQuoteFetches = useRef<Set<string>>(new Set());
 
   const getSymbolPrice = useCallback((symbol: string): LiveSymbolData | undefined => {
     if (!symbol) return undefined;
     const cleanKey = normalizeSymbolKey(symbol);
-    const upper = symbol.toUpperCase().trim();
 
-    const existing = storeRef.current
-      ? storeRef.current.getSymbol(symbol)
-      : (
-          livePrices.get(cleanKey) ||
-          livePrices.get(symbol) ||
-          livePrices.get(upper) ||
-          livePrices.get(`${cleanKey}.NS`) ||
-          livePrices.get(`${upper}.NS`) ||
-          livePrices.get(symbol.replace(/\s+/g, '')) ||
-          livePrices.get(symbol.replace(/\.NS$/, ''))
-        );
-
+    const existing = storeRef.current?.getSymbol(symbol);
     if (existing) return existing;
 
     // Asynchronously fetch quote for any newly added stock or index not in initial streaming set
@@ -689,9 +710,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               next.set(`${cleanKey}.NS`, entry);
               return { next, changedKeys };
             });
-            if (storeRef.current) {
-              setLivePrices(storeRef.current.getMap());
-            }
+            scheduleLivePricesUpdate();
           }
         })
         .catch(() => {})
@@ -701,7 +720,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     }
 
     return undefined;
-  }, [livePrices]);
+  }, [scheduleLivePricesUpdate]);
 
   const subscribeToTicks = useCallback((callback: (tick: TradeEngineTick) => void) => {
     listenersRef.current.add(callback);
@@ -715,20 +734,33 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     return storeRef.current.subscribeSymbol(symbol, callback);
   }, []);
 
+  const contextValue = useMemo<TradeEngineContextValue>(
+    () => ({
+      status,
+      latencyMs,
+      livePrices,
+      cryptoPrices,
+      macroData,
+      lastTick,
+      getSymbolPrice,
+      subscribeToTicks,
+      subscribeToSymbol,
+    }),
+    [
+      status,
+      latencyMs,
+      livePrices,
+      cryptoPrices,
+      macroData,
+      lastTick,
+      getSymbolPrice,
+      subscribeToTicks,
+      subscribeToSymbol,
+    ]
+  );
+
   return (
-    <TradeEngineContext.Provider
-      value={{
-        status,
-        latencyMs,
-        livePrices,
-        cryptoPrices,
-        macroData,
-        lastTick,
-        getSymbolPrice,
-        subscribeToTicks,
-        subscribeToSymbol,
-      }}
-    >
+    <TradeEngineContext.Provider value={contextValue}>
       {children}
     </TradeEngineContext.Provider>
   );

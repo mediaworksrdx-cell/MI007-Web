@@ -23,6 +23,7 @@ export interface Falcon3DLogoProps {
   isHoveredExternal?: boolean;
   onHoverChange?: (hovered: boolean) => void;
   isNavbar?: boolean;
+  disable3d?: boolean;
 }
 
 export function Falcon3DLogo({
@@ -37,20 +38,17 @@ export function Falcon3DLogo({
   isHoveredExternal,
   onHoverChange,
   isNavbar = false,
+  disable3d = false,
 }: Falcon3DLogoProps) {
   const [internalHovered, setInternalHovered] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useAppTheme();
 
   // Combine external or internal hover state
   const isHovered = isHoveredExternal !== undefined ? isHoveredExternal : internalHovered;
-
-  // Mount on client side immediately so 3D Canvas is warm and ready
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const shouldRender3D = !disable3d && (isHovered || hasInteracted);
 
   // Theme-coordinated rim glow
   const accentColor =
@@ -72,6 +70,7 @@ export function Falcon3DLogo({
   }, []);
 
   const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    setHasInteracted(true);
     setInternalHovered(true);
     onHoverChange?.(true);
     handleMouseMove(e);
@@ -98,7 +97,7 @@ export function Falcon3DLogo({
       {/* ── Base 2D Logo Image (Transparent Falcon, zero background, enhanced brightness & crisp clarity) ── */}
       <div
         className={`w-full h-full flex items-center justify-center transition-all duration-300 pointer-events-none bg-transparent ${
-          isHovered ? 'opacity-0 scale-102' : 'opacity-100 scale-100'
+          !disable3d && isHovered ? 'opacity-0 scale-102' : 'opacity-100 scale-100'
         }`}
         style={{
           transformOrigin: 'center center',
@@ -118,8 +117,8 @@ export function Falcon3DLogo({
         />
       </div>
 
-      {/* ── True 3D Volumetric Pop-Up Model (Composed 100% into placeholder) ── */}
-      {isMounted && (
+      {/* ── True 3D Volumetric Pop-Up Model (Composed 100% into placeholder, deferred until hover) ── */}
+      {shouldRender3D && (
         <div
           className={`absolute inset-0 pointer-events-none transition-all duration-300 z-50 flex items-center justify-center bg-transparent ${
             isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'

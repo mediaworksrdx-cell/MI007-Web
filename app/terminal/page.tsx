@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 import { Navbar } from '@/components/layout/Navbar';
@@ -11,7 +12,18 @@ import { useMarket } from '@/lib/marketContext';
 import { useTradeEngine, useLiveSymbol } from '@/lib/tradeEngineContext';
 import { isSymbolMarketOpen } from '@/lib/marketHours';
 import { searchZerodhaStocks, findZerodhaStockBySymbol } from '@/lib/screener/zerodhaStocks';
-import { ChartContainer } from '@/components/chart/ChartContainer';
+
+const DynamicChartContainer = dynamic(
+  () => import('@/components/chart/ChartContainer').then((mod) => mod.ChartContainer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full min-h-[500px] flex items-center justify-center mono text-sm text-[var(--theme-card-text-muted)]">
+        Loading Interactive Chart Module...
+      </div>
+    ),
+  }
+);
 
 // ─── Default Master Catalogs ──────────────────────────────────────────────────
 export interface IndexItem {
@@ -299,7 +311,7 @@ function Sparkline({ symbol, up, changePct }: { symbol?: string; up?: boolean; c
 }
 
 // ─── Index Tile with Delete Support & Dynamic Flash ───────────────────────────
-function IndexTile({
+const IndexTile = React.memo(function IndexTile({
   symbol,
   name,
   base,
@@ -326,21 +338,27 @@ function IndexTile({
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
+  const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      setFlash(null);
+      if (flash) setFlash(null);
       prevPriceRef.current = price;
       return;
     }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
-      setFlash(dir);
       prevPriceRef.current = price;
-      const t = setTimeout(() => setFlash(null), 850);
-      return () => clearTimeout(t);
+      setFlash(dir);
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = setTimeout(() => {
+        setFlash(null);
+      }, 850);
     }
-  }, [price, isOpen]);
+    return () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    };
+  }, [price, isOpen, flash]);
 
   return (
     <div className="relative group">
@@ -398,10 +416,10 @@ function IndexTile({
       )}
     </div>
   );
-}
+});
 
 // ─── Watchlist Row with Delete Support & Dynamic Flash ───────────────────────
-function WatchlistRow({
+const WatchlistRow = React.memo(function WatchlistRow({
   symbol,
   name,
   base,
@@ -430,21 +448,27 @@ function WatchlistRow({
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
+  const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      setFlash(null);
+      if (flash) setFlash(null);
       prevPriceRef.current = price;
       return;
     }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
-      setFlash(dir);
       prevPriceRef.current = price;
-      const t = setTimeout(() => setFlash(null), 850);
-      return () => clearTimeout(t);
+      setFlash(dir);
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = setTimeout(() => {
+        setFlash(null);
+      }, 850);
     }
-  }, [price, isOpen]);
+    return () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    };
+  }, [price, isOpen, flash]);
 
   return (
     <div className="relative group">
@@ -509,10 +533,10 @@ function WatchlistRow({
       )}
     </div>
   );
-}
+});
 
 // ─── Crypto Tile with Live Pulse & Flash ─────────────────────────────────────
-function CryptoTile({
+const CryptoTile = React.memo(function CryptoTile({
   item,
   isEditing,
   onDelete,
@@ -528,15 +552,21 @@ function CryptoTile({
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
+  const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
-      setFlash(dir);
       prevPriceRef.current = price;
-      const t = setTimeout(() => setFlash(null), 850);
-      return () => clearTimeout(t);
+      setFlash(dir);
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = setTimeout(() => {
+        setFlash(null);
+      }, 850);
     }
+    return () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    };
   }, [price]);
 
   return (
@@ -593,10 +623,10 @@ function CryptoTile({
       )}
     </div>
   );
-}
+});
 
 // ─── Commodity Tile with Live Pulse & Flash ───────────────────────────────────
-function CommodityTile({
+const CommodityTile = React.memo(function CommodityTile({
   item,
   isEditing,
   onDelete,
@@ -613,21 +643,27 @@ function CommodityTile({
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
+  const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      setFlash(null);
+      if (flash) setFlash(null);
       prevPriceRef.current = price;
       return;
     }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
-      setFlash(dir);
       prevPriceRef.current = price;
-      const t = setTimeout(() => setFlash(null), 850);
-      return () => clearTimeout(t);
+      setFlash(dir);
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = setTimeout(() => {
+        setFlash(null);
+      }, 850);
     }
-  }, [price, isOpen]);
+    return () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    };
+  }, [price, isOpen, flash]);
 
   return (
     <div className="relative group">
@@ -693,10 +729,10 @@ function CommodityTile({
       )}
     </div>
   );
-}
+});
 
 // ─── Forex Tile with Live Pulse & Flash ───────────────────────────────────────
-function ForexTile({
+const ForexTile = React.memo(function ForexTile({
   item,
   isEditing,
   onDelete,
@@ -713,21 +749,27 @@ function ForexTile({
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
+  const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      setFlash(null);
+      if (flash) setFlash(null);
       prevPriceRef.current = price;
       return;
     }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
-      setFlash(dir);
       prevPriceRef.current = price;
-      const t = setTimeout(() => setFlash(null), 850);
-      return () => clearTimeout(t);
+      setFlash(dir);
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = setTimeout(() => {
+        setFlash(null);
+      }, 850);
     }
-  }, [price, isOpen]);
+    return () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    };
+  }, [price, isOpen, flash]);
 
   return (
     <div className="relative group">
@@ -790,7 +832,7 @@ function ForexTile({
       )}
     </div>
   );
-}
+});
 
 // ─── Section Header with Interactive Edit Button ───────────────────────────────
 function SectionHeader({
@@ -1318,6 +1360,7 @@ export default function TerminalPage() {
                     width={55}
                     height={55}
                     className="w-full h-full object-contain"
+                    disable3d
                   />
                 </div>
                 <div className="min-w-0">
@@ -1577,7 +1620,7 @@ export default function TerminalPage() {
             {/* ── Charts Module (Shown on CHARTS tab) ── */}
             {activeTab === 'charts' && (
               <div className="w-full rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xl overflow-hidden min-h-[780px] h-[calc(100vh-13rem)] flex flex-col mb-8 animate-in fade-in duration-150">
-                <ChartContainer market={market} defaultSymbol={defaultChartSym} />
+                <DynamicChartContainer market={market} defaultSymbol={defaultChartSym} />
               </div>
             )}
 
