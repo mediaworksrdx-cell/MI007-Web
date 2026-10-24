@@ -84,14 +84,14 @@ export function ManualPositionBar({
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-sm p-3 shadow-xs">
+    <div className="bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] rounded-xl p-3 shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-4">
         {/* Segment Dropdown */}
         <div className="flex flex-col">
           <select
             value={segment}
             onChange={(e) => setSegment(e.target.value as any)}
-            className="text-[13px] font-bold text-slate-800 border-b-2 border-slate-300 pb-0.5 bg-transparent focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
+            className="text-[13px] font-bold text-[var(--theme-card-text)] border-b-2 border-[var(--theme-card-border)] pb-0.5 bg-[var(--theme-card-bg)] focus:outline-hidden focus:border-blue-500 cursor-pointer"
           >
             <option value="OPTIONS">Options</option>
             <option value="FUTURES">Futures</option>
@@ -104,7 +104,7 @@ export function ManualPositionBar({
           <select
             value={expiry}
             onChange={(e) => setExpiry(e.target.value)}
-            className="text-[13px] font-bold text-slate-800 border-b-2 border-slate-300 pb-0.5 bg-transparent focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
+            className="text-[13px] font-bold text-[var(--theme-card-text)] border-b-2 border-[var(--theme-card-border)] pb-0.5 bg-[var(--theme-card-bg)] focus:outline-hidden focus:border-blue-500 cursor-pointer"
           >
             {instrument.expiries.map((exp) => (
               <option key={exp} value={exp}>
@@ -116,14 +116,14 @@ export function ManualPositionBar({
         </div>
 
         {/* Buy / Sell Radio */}
-        <div className="flex items-center gap-3 text-[12px] font-semibold text-slate-700">
+        <div className="flex items-center gap-3 text-[12px] font-semibold text-[var(--theme-card-text)]">
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input
               type="radio"
               name="opstra-action"
               checked={action === 'BUY'}
               onChange={() => setAction('BUY')}
-              className="accent-[#4CAF50] cursor-pointer w-3.5 h-3.5"
+              className="accent-emerald-500 cursor-pointer w-3.5 h-3.5"
             />
             <span>Buy</span>
           </label>
@@ -133,7 +133,7 @@ export function ManualPositionBar({
               name="opstra-action"
               checked={action === 'SELL'}
               onChange={() => setAction('SELL')}
-              className="accent-[#F44336] cursor-pointer w-3.5 h-3.5"
+              className="accent-rose-500 cursor-pointer w-3.5 h-3.5"
             />
             <span>Sell</span>
           </label>
@@ -146,7 +146,7 @@ export function ManualPositionBar({
               <select
                 value={strike}
                 onChange={(e) => setStrike(Number(e.target.value))}
-                className="text-[13px] font-bold text-slate-800 border-b-2 border-slate-300 pb-0.5 bg-transparent focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
+                className="text-[13px] font-bold text-[var(--theme-card-text)] border-b-2 border-[var(--theme-card-border)] pb-0.5 bg-[var(--theme-card-bg)] focus:outline-hidden focus:border-blue-500 cursor-pointer"
               >
                 {availableStrikes.map((s) => (
                   <option key={s} value={s}>
@@ -161,7 +161,7 @@ export function ManualPositionBar({
               <select
                 value={optionType}
                 onChange={(e) => setOptionType(e.target.value as any)}
-                className="text-[13px] font-bold text-slate-800 border-b-2 border-slate-300 pb-0.5 bg-transparent focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
+                className="text-[13px] font-bold text-[var(--theme-card-text)] border-b-2 border-[var(--theme-card-border)] pb-0.5 bg-[var(--theme-card-bg)] focus:outline-hidden focus:border-blue-500 cursor-pointer"
               >
                 <option value="CE">CE</option>
                 <option value="PE">PE</option>
@@ -173,22 +173,22 @@ export function ManualPositionBar({
 
         {/* Lot Qty Stepper */}
         <div className="flex items-center gap-2">
-          <span className="text-[12px] text-slate-600">Lot Qty.</span>
-          <div className="flex items-center border border-slate-300 rounded-2xs overflow-hidden">
+          <span className="text-[12px] text-slate-400">Lot Qty.</span>
+          <div className="flex items-center border border-[var(--theme-card-border)] rounded-lg overflow-hidden bg-[var(--theme-card-surface)]">
             <button
               type="button"
               onClick={() => setLots((q) => Math.max(1, q - 1))}
-              className="px-2.5 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 text-[13px] font-bold cursor-pointer"
+              className="px-2.5 py-0.5 text-slate-400 hover:text-[var(--theme-card-text)] text-[13px] font-bold cursor-pointer"
             >
               -
             </button>
-            <span className="px-3 py-0.5 text-[12px] font-bold text-slate-800 border-x border-slate-300 min-w-[28px] text-center">
+            <span className="px-3 py-0.5 text-[12px] font-bold text-[var(--theme-card-text)] border-x border-[var(--theme-card-border)] min-w-[28px] text-center font-mono">
               {lots}
             </span>
             <button
               type="button"
               onClick={() => setLots((q) => q + 1)}
-              className="px-2.5 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 text-[13px] font-bold cursor-pointer"
+              className="px-2.5 py-0.5 text-slate-400 hover:text-[var(--theme-card-text)] text-[13px] font-bold cursor-pointer"
             >
               +
             </button>
@@ -196,19 +196,19 @@ export function ManualPositionBar({
         </div>
 
         {/* Price display */}
-        <div className="text-[12px] font-semibold text-slate-700">
+        <div className="text-[12px] font-semibold text-slate-400">
           <span>{segment === 'FUTURES' ? 'Futures Price: ' : 'Est. LTP: '}</span>
-          <span className="text-slate-900 font-mono font-bold tabular-nums">
+          <span className="text-[var(--theme-card-text)] font-mono font-bold tabular-nums">
             {estimatedPrice.toFixed(2)}
           </span>
         </div>
 
-        {/* Dark Institutional Slate [ ADD POSITION ] Button */}
+        {/* Institutional Blue [ ADD POSITION ] Button */}
         <button
           type="button"
           onClick={handleAdd}
           style={{ color: '#FFFFFF' }}
-          className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] px-5 py-2 rounded-sm transition-colors cursor-pointer uppercase tracking-wider shadow-xs"
+          className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] px-5 py-2 rounded-lg transition-colors cursor-pointer uppercase tracking-wider shadow-xs"
         >
           ADD POSITION
         </button>

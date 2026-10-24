@@ -12,8 +12,8 @@ export function Footer() {
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-4 sm:py-5">
         {/* Responsive Grid: Stacks cleanly on mobile, 4 aligned columns on desktop */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-12 lg:gap-7 items-start">
-          {/* 1. Brand Column: Spans 5 cols on lg for logo branding & identity */}
-          <div className="sm:col-span-2 lg:col-span-5 flex flex-col gap-2.5">
+          {/* 1. Brand Column: Spans 4 cols on lg for logo branding & identity */}
+          <div className="sm:col-span-2 lg:col-span-4 flex flex-col gap-2.5">
             <Link
               href="/"
               className="group flex items-center gap-3 sm:gap-4 flex-shrink-0 select-none min-w-0"
@@ -130,8 +130,38 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* 3. Coverage Column */}
-          <div className="sm:col-span-1 lg:col-span-3 flex flex-col">
+          {/* 3. Our Products Column */}
+          <div className="sm:col-span-1 lg:col-span-2 flex flex-col">
+            <h4
+              className="text-[12.5px] font-black tracking-widest uppercase mb-2 footer-heading text-white"
+              style={{ color: '#FFFFFF' }}
+            >
+              Our Products
+            </h4>
+            <ul className="flex flex-col gap-1.5">
+              <li>
+                <Link
+                  href="/terminal"
+                  className="text-[13px] sm:text-[13.5px] font-semibold footer-link text-white transition-colors"
+                  style={{ color: '#FFFFFF' }}
+                >
+                  Fingen IQ
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/academy"
+                  className="text-[13px] sm:text-[13.5px] font-semibold footer-link text-white transition-colors"
+                  style={{ color: '#FFFFFF' }}
+                >
+                  Aarka AI
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* 4. Coverage Column */}
+          <div className="sm:col-span-1 lg:col-span-2 flex flex-col">
             <h4
               className="text-[12.5px] font-black tracking-widest uppercase mb-2 footer-heading text-white"
               style={{ color: '#FFFFFF' }}

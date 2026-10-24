@@ -2,13 +2,170 @@
 // Multi-leg options payoff simulation at Expiry, T+0, and under IV/time shocks.
 
 import { StrategyLeg, StrategyPayoff, PayoffPoint, Greeks, StrategyCategory } from './fnoTypes';
-import { calculateBSPrice, calculateBSGreeks, cdfNormal } from './blackScholes';
+import { calculateBSPrice, calculateBSGreeksUnrounded, cdfNormal } from './blackScholes';
+import { parseExpiryDaysToExpiry } from './fnoDataService';
+import {
+  VolSurfaceConfig,
+  evaluateShockedLegVolatility,
+} from './volatilitySurface';
 
 export interface PayoffSimulationOptions {
   timeShiftDays?: number; // Days forward from today (0 = today, up to daysToExpiry)
   ivShiftPct?: number; // IV shock in % (e.g. +2 = +2% IV expansion, -3 = -3% crush)
   daysToExpiry?: number;
   baseSpotPrice?: number; // Unshocked spot price used to anchor chart X-axis domain
+  volSurfaceConfig?: Partial<VolSurfaceConfig>;
+}
+
+/**
+ * Helper to resolve per-leg initial DTE and front-month DTE across multi-expiry legs.
+ */
+export function resolveLegExpiries(
+  legs: StrategyLeg[],
+  overrideFrontDte?: number
+): { frontDte: number; legExtraDays: number[] } {
+  if (!legs || legs.length === 0) {
+    return { frontDte: overrideFrontDte ?? 7, legExtraDays: [] };
+  }
+  const parsedDtes = legs.map((l) => parseExpiryDaysToExpiry(l.expiry || '29 OCT 2026'));
+  const minParsedDte = Math.min(...parsedDtes);
+  const frontDte = overrideFrontDte ?? minParsedDte;
+  const legExtraDays = parsedDtes.map((d) => Math.max(0, d - minParsedDte));
+  return { frontDte, legExtraDays };
+}
+
+/**
+ * Evaluates exact portfolio P&L and contract-adjusted 1st & 2nd order Greeks
+ * at any given (candidateSpot, timeShiftDays, ivShiftPct) state.
+ */
+export function evaluatePortfolioAtScenario(params: {
+  legs: StrategyLeg[];
+  candidateSpot: number;
+  referenceSpot: number;
+  timeShiftDays: number;
+  ivShiftPct: number;
+  frontDaysToExpiry: number;
+  volSurfaceConfig?: Partial<VolSurfaceConfig>;
+}): {
+  pnl: number;
+  expiryPnl: number;
+  netGreeks: Required<Greeks>;
+} {
+  const {
+    legs,
+    candidateSpot,
+    referenceSpot,
+    timeShiftDays,
+    ivShiftPct,
+    frontDaysToExpiry,
+    volSurfaceConfig,
+  } = params;
+  const activeLegs = (legs || []).filter((l) => !l.disabled);
+  const { legExtraDays } = resolveLegExpiries(activeLegs, frontDaysToExpiry);
+  const baseRemainingFrontDays = Math.max(0.01, frontDaysToExpiry - timeShiftDays);
+
+  let pnlToday = 0;
+  let pnlExpiry = 0;
+
+  let netDelta = 0;
+  let netGamma = 0;
+  let netTheta = 0;
+  let netVega = 0;
+  let netRho = 0;
+  let netVanna = 0;
+  let netCharm = 0;
+  let netVomma = 0;
+
+  for (let idx = 0; idx < activeLegs.length; idx++) {
+    const leg = activeLegs[idx];
+    const extraDays = legExtraDays[idx] ?? 0;
+    const multiplier = leg.action === 'BUY' ? 1 : -1;
+    const contractQty = leg.lots * leg.lotSize;
+    const signedQty = multiplier * contractQty;
+
+    const legRemainingScenarioDays = Math.max(0.01, baseRemainingFrontDays + extraDays);
+    const legScenarioYears = legRemainingScenarioDays / 365.0;
+
+    if (leg.instrument === 'FUT') {
+      const legProfit = (candidateSpot - leg.entryPrice) * signedQty;
+      pnlExpiry += legProfit;
+      pnlToday += legProfit;
+      netDelta += 1.0 * signedQty;
+      continue;
+    }
+
+    const baseIvDec = Math.max(0.05, (leg.iv || 14.5) / 100.0);
+    const shockedVol = evaluateShockedLegVolatility({
+      strike: leg.strike,
+      instrument: leg.instrument,
+      baselineIvDecimal: baseIvDec,
+      referenceSpot,
+      simulatedSpot: candidateSpot,
+      legDaysToExpiry: frontDaysToExpiry + extraDays,
+      frontDaysToExpiry,
+      config: {
+        ...volSurfaceConfig,
+        parallelIvShockPct: ivShiftPct,
+      },
+    });
+
+    // 1. Front-month expiration value (intrinsic for front-month legs; BS remaining value for back-month legs)
+    let valueAtFrontExpiry = 0;
+    if (extraDays <= 0.05) {
+      valueAtFrontExpiry =
+        leg.instrument === 'CE'
+          ? Math.max(0, candidateSpot - leg.strike)
+          : Math.max(0, leg.strike - candidateSpot);
+    } else {
+      valueAtFrontExpiry = calculateBSPrice(leg.instrument, {
+        spot: candidateSpot,
+        strike: leg.strike,
+        timeYears: extraDays / 365.0,
+        volatility: shockedVol,
+      });
+    }
+    pnlExpiry += (valueAtFrontExpiry - leg.entryPrice) * signedQty;
+
+    // 2. Scenario T+n value & Greeks
+    const theoreticalValueToday = calculateBSPrice(leg.instrument, {
+      spot: candidateSpot,
+      strike: leg.strike,
+      timeYears: legScenarioYears,
+      volatility: shockedVol,
+    });
+    pnlToday += (theoreticalValueToday - leg.entryPrice) * signedQty;
+
+    const g = calculateBSGreeksUnrounded(leg.instrument, {
+      spot: candidateSpot,
+      strike: leg.strike,
+      timeYears: legScenarioYears,
+      volatility: shockedVol,
+    });
+
+    netDelta += g.delta * signedQty;
+    netGamma += g.gamma * signedQty;
+    netTheta += g.theta * signedQty;
+    netVega += g.vega * signedQty;
+    netRho += g.rho * signedQty;
+    netVanna += g.vanna * signedQty;
+    netCharm += g.charm * signedQty;
+    netVomma += g.vomma * signedQty;
+  }
+
+  return {
+    pnl: pnlToday,
+    expiryPnl: pnlExpiry,
+    netGreeks: {
+      delta: netDelta,
+      gamma: netGamma,
+      theta: netTheta,
+      vega: netVega,
+      rho: netRho,
+      vanna: netVanna,
+      charm: netCharm,
+      vomma: netVomma,
+    },
+  };
 }
 
 /**
@@ -34,7 +191,7 @@ export function calculateStrategyPayoff(
       probabilityOfProfit: 50,
       netDebitCredit: 0,
       riskRewardRatio: '1 : 1',
-      netGreeks: { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0 },
+      netGreeks: { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0, vanna: 0, charm: 0, vomma: 0 },
       capitalRequired: 0,
       marginRequired: 0,
       expiryPoints: [],
@@ -45,10 +202,6 @@ export function calculateStrategyPayoff(
   const daysToExpiry = options.daysToExpiry ?? 7;
   const timeShiftDays = options.timeShiftDays ?? 0;
   const ivShiftPct = options.ivShiftPct ?? 0;
-
-  // Remaining time in years for today / scenario line
-  const remainingDays = Math.max(0.01, daysToExpiry - timeShiftDays);
-  const timeYearsScenario = remainingDays / 365.0;
 
   // Anchor chart X-axis range to baseSpotPrice (unshocked spot) and strikes with 12% padding
   // so moving the Spot (%) slider (-10% to +10%) moves the spot cursor along a stationary chart
@@ -99,52 +252,24 @@ export function calculateStrategyPayoff(
   const testPrices = Array.from(priceSet).sort((a, b) => a - b);
 
   for (const testPrice of testPrices) {
-    let pnlExpiry = 0;
-    let pnlToday = 0;
-
-    for (const leg of activeLegs) {
-      const multiplier = leg.action === 'BUY' ? 1 : -1;
-      const contractQty = leg.lots * leg.lotSize;
-
-      // 1. Expiry PnL
-      let intrinsicAtExpiry = 0;
-      if (leg.instrument === 'CE') {
-        intrinsicAtExpiry = Math.max(0, testPrice - leg.strike);
-      } else if (leg.instrument === 'PE') {
-        intrinsicAtExpiry = Math.max(0, leg.strike - testPrice);
-      } else if (leg.instrument === 'FUT') {
-        intrinsicAtExpiry = testPrice;
-      }
-
-      const legProfitExpiry = (intrinsicAtExpiry - leg.entryPrice) * contractQty * multiplier;
-      pnlExpiry += legProfitExpiry;
-
-      // 2. Today / Scenario PnL (Black-Scholes revaluation)
-      let theoreticalValueToday = 0;
-      if (leg.instrument === 'FUT') {
-        theoreticalValueToday = testPrice;
-      } else {
-        const shiftedVol = Math.max(0.05, (leg.iv + ivShiftPct) / 100.0);
-        theoreticalValueToday = calculateBSPrice(leg.instrument, {
-          spot: testPrice,
-          strike: leg.strike,
-          timeYears: timeYearsScenario,
-          volatility: shiftedVol,
-        });
-      }
-
-      const legProfitToday = (theoreticalValueToday - leg.entryPrice) * contractQty * multiplier;
-      pnlToday += legProfitToday;
-    }
+    const evalPt = evaluatePortfolioAtScenario({
+      legs: activeLegs,
+      candidateSpot: testPrice,
+      referenceSpot: anchorSpot,
+      timeShiftDays,
+      ivShiftPct,
+      frontDaysToExpiry: daysToExpiry,
+      volSurfaceConfig: options.volSurfaceConfig,
+    });
 
     expiryPoints.push({
       price: testPrice,
-      pnl: Math.round(pnlExpiry),
+      pnl: Math.round(evalPt.expiryPnl),
     });
 
     todayPoints.push({
       price: testPrice,
-      pnl: Math.round(pnlToday),
+      pnl: Math.round(evalPt.pnl),
     });
   }
 
@@ -186,32 +311,17 @@ export function calculateStrategyPayoff(
   const maxProfit = hasUnlimitedProfit ? 'UNLIMITED' : maxPnlVal;
   const maxLoss = hasUnlimitedLoss ? 'UNLIMITED' : minPnlVal;
 
-  // Aggregate Portfolio Greeks dynamically evaluated at simulated spot, shifted IV, and remaining DTE
-  let netDelta = 0;
-  let netGamma = 0;
-  let netTheta = 0;
-  let netVega = 0;
-  let netRho = 0;
-
-  for (const leg of activeLegs) {
-    const mult = (leg.action === 'BUY' ? 1 : -1) * leg.lots * leg.lotSize;
-    if (leg.instrument === 'FUT') {
-      netDelta += 1.0 * mult;
-    } else {
-      const shiftedVol = Math.max(0.05, (leg.iv + ivShiftPct) / 100.0);
-      const liveGreeks = calculateBSGreeks(leg.instrument, {
-        spot: spotPrice,
-        strike: leg.strike,
-        timeYears: timeYearsScenario,
-        volatility: shiftedVol,
-      });
-      netDelta += liveGreeks.delta * mult;
-      netGamma += liveGreeks.gamma * mult;
-      netTheta += liveGreeks.theta * mult;
-      netVega += liveGreeks.vega * mult;
-      netRho += (liveGreeks.rho ?? 0) * mult;
-    }
-  }
+  // Aggregate Portfolio Greeks (1st & 2nd order) dynamically evaluated at simulated spot, shifted IV, and remaining DTE
+  const currentScenarioEval = evaluatePortfolioAtScenario({
+    legs: activeLegs,
+    candidateSpot: spotPrice,
+    referenceSpot: anchorSpot,
+    timeShiftDays,
+    ivShiftPct,
+    frontDaysToExpiry: daysToExpiry,
+    volSurfaceConfig: options.volSurfaceConfig,
+  });
+  const rawGreeks = currentScenarioEval.netGreeks;
 
   // Risk-Reward Ratio
   let riskRewardRatio = '1 : 1.5';
@@ -258,11 +368,14 @@ export function calculateStrategyPayoff(
     netDebitCredit: Math.round(netCashFlow),
     riskRewardRatio,
     netGreeks: {
-      delta: Math.round(netDelta * 10) / 10,
-      gamma: Math.round(netGamma * 1000000) / 1000000,
-      theta: Math.round(netTheta),
-      vega: Math.round(netVega),
-      rho: Math.round(netRho),
+      delta: Math.round(rawGreeks.delta * 10) / 10,
+      gamma: Math.round(rawGreeks.gamma * 1000000) / 1000000,
+      theta: Math.round(rawGreeks.theta),
+      vega: Math.round(rawGreeks.vega),
+      rho: Math.round(rawGreeks.rho),
+      vanna: Math.round(rawGreeks.vanna * 100) / 100,
+      charm: Math.round(rawGreeks.charm * 100) / 100,
+      vomma: Math.round(rawGreeks.vomma * 100) / 100,
     },
     capitalRequired: Math.round(capitalRequired),
     marginRequired: Math.round(marginRequired),

@@ -56,17 +56,17 @@ export function StrategyPositionsList({
   return (
     <div className="space-y-4">
       {/* ── 1. Strategy Positions Container ── */}
-      <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-xs">
+      <div className="bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] rounded-xl p-4 shadow-xs">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-          <h4 className="text-[14px] font-bold text-slate-800">
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)]">
+          <h4 className="text-[14px] font-bold text-[var(--theme-card-text)]">
             Strategy Positions
           </h4>
           <button
             type="button"
             onClick={onClearAll}
             disabled={legs.length === 0}
-            className="px-3 py-1 rounded-sm text-[11px] font-semibold text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-40"
+            className="px-3 py-1 rounded-lg text-[11px] font-semibold text-[var(--theme-card-text)] bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] hover:border-blue-500/50 transition-colors cursor-pointer disabled:opacity-40"
           >
             RESET
           </button>
@@ -74,15 +74,15 @@ export function StrategyPositionsList({
 
         {/* Select All Row */}
         {legs.length > 0 && (
-          <div className="flex items-center justify-between py-2 border-b border-slate-100 text-[12px]">
+          <div className="flex items-center justify-between py-2 border-b border-[var(--theme-card-border)]/60 text-[12px]">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={allEnabled}
                 onChange={(e) => onToggleAll(e.target.checked)}
-                className="w-4 h-4 accent-[#00A3A6] rounded-xs cursor-pointer"
+                className="w-4 h-4 accent-blue-600 rounded-xs cursor-pointer"
               />
-              <span className="font-semibold text-slate-700">
+              <span className="font-semibold text-[var(--theme-card-text)]">
                 Select All
               </span>
             </label>
@@ -94,7 +94,7 @@ export function StrategyPositionsList({
 
         {/* Legs List */}
         {legs.length === 0 ? (
-          <div className="text-center py-8 text-[12px] text-slate-500">
+          <div className="text-center py-8 text-[12px] text-slate-400">
             No active positions in the builder.
           </div>
         ) : (
@@ -102,16 +102,15 @@ export function StrategyPositionsList({
             {legs.map((leg) => {
               const isBuy = leg.action === 'BUY';
               const isEnabled = !leg.disabled;
-              // Synthetic PnL display e.g. (-221) or (+312)
               const legPnl = (leg.currentPrice - leg.entryPrice) * leg.lots * leg.lotSize * (isBuy ? 1 : -1);
 
               return (
                 <div
                   key={leg.id}
-                  className={`flex items-center justify-between py-1.5 px-2 rounded-sm border transition-all ${
+                  className={`flex items-center justify-between py-1.5 px-2 rounded-lg border transition-all ${
                     isEnabled
-                      ? 'bg-white border-slate-200'
-                      : 'bg-slate-50 border-slate-200 opacity-40'
+                      ? 'bg-[var(--theme-card-surface)] border-[var(--theme-card-border)]'
+                      : 'bg-[var(--theme-card-surface)]/40 border-[var(--theme-card-border)]/40 opacity-40'
                   }`}
                 >
                   {/* Left: Checkbox & Badge & Title */}
@@ -120,33 +119,33 @@ export function StrategyPositionsList({
                       type="checkbox"
                       checked={isEnabled}
                       onChange={(e) => onUpdateLeg(leg.id, { disabled: !e.target.checked })}
-                      className="w-4 h-4 accent-[#00A3A6] rounded-xs cursor-pointer"
+                      className="w-4 h-4 accent-blue-600 rounded-xs cursor-pointer"
                       title="Toggle leg inclusion"
                     />
 
                     {/* Action Pill: S (Red) / B (Green) */}
                     <span
-                      className={`w-4 h-4 rounded-2xs flex items-center justify-center text-[10px] font-bold ${
+                      className={`w-4 h-4 rounded-xs flex items-center justify-center text-[10px] font-bold ${
                         isBuy
-                          ? 'bg-[#DEF7EC] text-[#03543F]'
-                          : 'bg-[#FDE8E8] text-[#9B1C1C]'
+                          ? 'bg-emerald-500/20 text-emerald-500'
+                          : 'bg-rose-500/20 text-rose-500'
                       }`}
                     >
                       {isBuy ? 'B' : 'S'}
                     </span>
 
                     {/* Leg Description */}
-                    <span className="text-[12px] font-semibold text-slate-800 truncate">
+                    <span className="text-[12px] font-semibold text-[var(--theme-card-text)] truncate font-mono tabular-nums">
                       {leg.lots}x {leg.expiry} {leg.instrument === 'FUT' ? 'FUT' : `${leg.strike}${leg.instrument}`} - {curr}{leg.entryPrice.toFixed(1)}
                       {Math.abs(leg.currentPrice - leg.entryPrice) >= 0.05 && (
-                        <span className="text-slate-500 font-normal"> → {curr}{leg.currentPrice.toFixed(1)}</span>
+                        <span className="text-slate-400 font-normal"> → {curr}{leg.currentPrice.toFixed(1)}</span>
                       )}
                     </span>
 
                     {/* Small PnL indicator */}
                     <span
-                      className={`text-[11px] font-bold ${
-                        legPnl >= 0 ? 'text-[#0E9F6E]' : 'text-[#E02424]'
+                      className={`text-[11px] font-bold font-mono tabular-nums ${
+                        legPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'
                       }`}
                     >
                       ({legPnl >= 0 ? `+${Math.round(legPnl)}` : Math.round(legPnl)})
@@ -156,21 +155,21 @@ export function StrategyPositionsList({
                   {/* Right: Action Icons (Edit, Flip, Delete) */}
                   <div className="flex items-center gap-2 shrink-0">
                     {/* Lots Stepper */}
-                    <div className="flex items-center border border-slate-200 rounded-2xs text-[10px]">
+                    <div className="flex items-center border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] rounded-md text-[10px]">
                       <button
                         type="button"
                         onClick={() => onUpdateLeg(leg.id, { lots: Math.max(1, leg.lots - 1) })}
-                        className="px-1.5 py-0.5 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                        className="px-1.5 py-0.5 text-slate-400 hover:text-[var(--theme-card-text)] cursor-pointer"
                       >
                         -
                       </button>
-                      <span className="px-1.5 font-bold text-slate-800">
+                      <span className="px-1.5 font-bold font-mono text-[var(--theme-card-text)]">
                         {leg.lots}
                       </span>
                       <button
                         type="button"
                         onClick={() => onUpdateLeg(leg.id, { lots: leg.lots + 1 })}
-                        className="px-1.5 py-0.5 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                        className="px-1.5 py-0.5 text-slate-400 hover:text-[var(--theme-card-text)] cursor-pointer"
                       >
                         +
                       </button>
@@ -184,7 +183,7 @@ export function StrategyPositionsList({
                           action: isBuy ? 'SELL' : 'BUY',
                         })
                       }
-                      className="text-slate-500 hover:text-slate-800 cursor-pointer text-[12px]"
+                      className="text-slate-400 hover:text-blue-500 cursor-pointer text-[12px]"
                       title="Flip Buy/Sell"
                     >
                       🔁
@@ -194,7 +193,7 @@ export function StrategyPositionsList({
                     <button
                       type="button"
                       onClick={() => onRemoveLeg(leg.id)}
-                      className="text-slate-400 hover:text-red-600 cursor-pointer text-[12px]"
+                      className="text-slate-400 hover:text-rose-500 cursor-pointer text-[12px]"
                       title="Delete Position"
                     >
                       🗑️
@@ -207,21 +206,21 @@ export function StrategyPositionsList({
         )}
       </div>
 
-      {/* ── 2. Financial Metrics Table (Exact Opstra Layout) ── */}
-      <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-xs">
-        <div className="space-y-2 text-[12.5px]">
+      {/* ── 2. Financial Metrics & Second-Order Greeks Table ── */}
+      <div className="bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] rounded-xl p-4 shadow-xs">
+        <div className="space-y-2 text-[12.5px] font-mono tabular-nums">
           {/* Prob. of Profit */}
-          <div className="flex items-center justify-between py-1 border-b border-slate-100">
-            <span className="text-slate-700">Prob. of Profit</span>
-            <span className="font-bold text-slate-900">
+          <div className="flex items-center justify-between py-1 border-b border-[var(--theme-card-border)]/60">
+            <span className="font-sans text-slate-400">Prob. of Profit</span>
+            <span className="font-bold text-[var(--theme-card-text)]">
               {hasLegs ? `${payoff.probabilityOfProfit.toFixed(2)}%` : '-'}
             </span>
           </div>
 
           {/* Max. Profit */}
-          <div className="flex items-center justify-between py-1 border-b border-slate-100">
-            <span className="text-slate-700">Max. Profit</span>
-            <span className="font-bold text-slate-900">
+          <div className="flex items-center justify-between py-1 border-b border-[var(--theme-card-border)]/60">
+            <span className="font-sans text-slate-400">Max. Profit</span>
+            <span className="font-bold text-emerald-500">
               {!hasLegs
                 ? '-'
                 : typeof payoff.maxProfit === 'number'
@@ -231,9 +230,9 @@ export function StrategyPositionsList({
           </div>
 
           {/* Max. Loss */}
-          <div className="flex items-center justify-between py-1 border-b border-slate-100">
-            <span className="text-slate-700">Max. Loss</span>
-            <span className="font-bold text-slate-900">
+          <div className="flex items-center justify-between py-1 border-b border-[var(--theme-card-border)]/60">
+            <span className="font-sans text-slate-400">Max. Loss</span>
+            <span className="font-bold text-rose-500">
               {!hasLegs
                 ? '-'
                 : typeof payoff.maxLoss === 'number'
@@ -243,9 +242,9 @@ export function StrategyPositionsList({
           </div>
 
           {/* Max. RR Ratio */}
-          <div className="flex items-center justify-between py-1 border-b border-slate-100">
-            <span className="text-slate-700">Max. RR Ratio</span>
-            <span className="font-bold text-slate-900">
+          <div className="flex items-center justify-between py-1 border-b border-[var(--theme-card-border)]/60">
+            <span className="font-sans text-slate-400">Max. RR Ratio</span>
+            <span className="font-bold text-[var(--theme-card-text)]">
               {!hasLegs
                 ? '-'
                 : payoff.riskRewardRatio.includes('Unlimited')
@@ -255,9 +254,9 @@ export function StrategyPositionsList({
           </div>
 
           {/* Breakevens */}
-          <div className="flex items-center justify-between py-1 border-b border-slate-100">
-            <span className="text-slate-700">Breakevens</span>
-            <span className="font-bold text-slate-900">
+          <div className="flex items-center justify-between py-1 border-b border-[var(--theme-card-border)]/60">
+            <span className="font-sans text-slate-400">Breakevens</span>
+            <span className="font-bold text-[var(--theme-card-text)]">
               {hasLegs && payoff.breakevens.length > 0
                 ? payoff.breakevens.map((b) => `${curr}${b.toLocaleString(loc, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}`).join(', ')
                 : 'None'}
@@ -265,11 +264,11 @@ export function StrategyPositionsList({
           </div>
 
           {/* Total PNL */}
-          <div className="flex items-center justify-between py-1 border-b border-slate-100">
-            <span className="text-slate-700">Total PNL</span>
+          <div className="flex items-center justify-between py-1 border-b border-[var(--theme-card-border)]/60">
+            <span className="font-sans text-slate-400">Total PNL</span>
             <span
               className={`font-bold ${
-                currentPnl >= 0 ? 'text-[#0E9F6E]' : 'text-[#E02424]'
+                currentPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'
               }`}
             >
               {hasLegs
@@ -279,20 +278,32 @@ export function StrategyPositionsList({
           </div>
 
           {/* Net Credit / Debit */}
-          <div className="flex items-center justify-between py-1 border-b border-slate-100">
-            <span className="text-slate-700">
+          <div className="flex items-center justify-between py-1 border-b border-[var(--theme-card-border)]/60">
+            <span className="font-sans text-slate-400">
               {payoff.netDebitCredit >= 0 ? 'Net Credit' : 'Net Debit'}
             </span>
-            <span className="font-bold text-slate-900">
+            <span className="font-bold text-[var(--theme-card-text)]">
               {curr}{Math.abs(payoff.netDebitCredit).toLocaleString(loc)}
             </span>
           </div>
 
           {/* Estimated Margin/Premium */}
-          <div className="flex items-center justify-between py-1">
-            <span className="text-slate-700">Estimated Margin/Premium</span>
-            <span className="font-bold text-slate-900">
+          <div className="flex items-center justify-between py-1 border-b border-[var(--theme-card-border)]/60">
+            <span className="font-sans text-slate-400">Estimated Margin/Premium</span>
+            <span className="font-bold text-[var(--theme-card-text)]">
               {curr}{requiredCapital.toLocaleString(loc)}
+            </span>
+          </div>
+
+          {/* 2nd-Order Greeks Summary Row */}
+          <div className="flex items-center justify-between py-1">
+            <span className="font-sans text-indigo-400 text-[11px] font-semibold">
+              2nd-Order (Vanna / Charm / Vomma)
+            </span>
+            <span className="font-bold text-indigo-400 text-[11.5px]">
+              {hasLegs
+                ? `${(payoff.netGreeks.vanna ?? 0).toFixed(2)} / ${(payoff.netGreeks.charm ?? 0).toFixed(2)} / ${(payoff.netGreeks.vomma ?? 0).toFixed(2)}`
+                : '0.00 / 0.00 / 0.00'}
             </span>
           </div>
         </div>

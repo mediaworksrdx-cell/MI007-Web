@@ -59,7 +59,8 @@ export function PresetConfigModal({
       expiry,
       lotSize,
       offsets,
-      lotQty
+      lotQty,
+      expiries
     );
     onApplyStrategy(newLegs, true);
     onClose();
@@ -71,19 +72,19 @@ export function PresetConfigModal({
     : 'ADD STRATEGY';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-2xs animate-in fade-in duration-100">
-      <div className="bg-white rounded-md border border-slate-300 shadow-2xl w-full max-w-[340px] p-4 text-slate-800 relative">
-        {/* Top-Right Red [x] Close Button (Exact Opstra Style) */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-2xs animate-in fade-in duration-100">
+      <div className="bg-[var(--theme-card-bg)] rounded-xl border border-[var(--theme-card-border)] shadow-2xl w-full max-w-[340px] p-4 text-[var(--theme-card-text)] relative">
+        {/* Top-Right Red [x] Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 w-4 h-4 bg-[#E53E3E] text-white text-[11px] font-bold rounded-2xs flex items-center justify-center hover:bg-red-700 cursor-pointer"
+          className="absolute top-3 right-3 w-5 h-5 bg-rose-600 text-white text-[11px] font-bold rounded flex items-center justify-center hover:bg-rose-500 cursor-pointer"
           title="Close"
         >
           ✕
         </button>
 
         {/* Header: Strategy Name */}
-        <h3 className="text-[15px] font-bold text-slate-900 text-center mb-4">
+        <h3 className="text-[15px] font-bold text-[var(--theme-card-text)] text-center mb-4">
           {preset.name}
         </h3>
 
@@ -95,7 +96,7 @@ export function PresetConfigModal({
 
             return (
               <div key={idx} className="flex items-center justify-between gap-2">
-                <span className="text-[13px] font-semibold text-slate-700 w-6">
+                <span className="text-[13px] font-semibold text-slate-400 w-6 font-mono">
                   {tmpl.lots * lotQty}x
                 </span>
 
@@ -104,7 +105,7 @@ export function PresetConfigModal({
                     <select
                       value={currentStrike}
                       onChange={(e) => handleOffsetChange(idx, Number(e.target.value))}
-                      className="w-full text-center py-1 px-2 border-b-2 border-slate-300 bg-transparent text-[13px] font-bold text-slate-800 focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
+                      className="w-full text-center py-1 px-2 border-b-2 border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[13px] font-bold text-[var(--theme-card-text)] focus:outline-hidden focus:border-blue-500 cursor-pointer font-mono"
                     >
                       {strikeOptions.map((strk) => (
                         <option key={strk} value={strk}>
@@ -117,12 +118,12 @@ export function PresetConfigModal({
                     </span>
                   </div>
                 ) : (
-                  <span className="flex-1 text-center text-[12px] font-bold text-slate-600">
+                  <span className="flex-1 text-center text-[12px] font-bold text-slate-400">
                     Underlying Future
                   </span>
                 )}
 
-                <span className="text-[13px] font-bold text-slate-700 w-8 text-right">
+                <span className="text-[13px] font-bold text-[var(--theme-card-text)] w-8 text-right">
                   {tmpl.instrument}
                 </span>
               </div>
@@ -131,14 +132,14 @@ export function PresetConfigModal({
 
           {/* Expiry Row */}
           <div className="flex items-center justify-between gap-2 pt-1">
-            <span className="text-[12px] text-slate-600 w-16">
+            <span className="text-[12px] text-slate-400 w-16">
               Expiry:
             </span>
             <div className="flex-1 flex flex-col items-center">
               <select
                 value={expiry}
                 onChange={(e) => setExpiry(e.target.value)}
-                className="w-full text-center py-1 px-2 border-b-2 border-slate-300 bg-transparent text-[13px] font-bold text-slate-800 focus:outline-hidden focus:border-[#4CAF50] cursor-pointer"
+                className="w-full text-center py-1 px-2 border-b-2 border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[13px] font-bold text-[var(--theme-card-text)] focus:outline-hidden focus:border-blue-500 cursor-pointer"
               >
                 {expiries.map((exp) => (
                   <option key={exp} value={exp}>
@@ -155,24 +156,24 @@ export function PresetConfigModal({
 
           {/* Lot Qty Row */}
           <div className="flex items-center justify-between gap-2 pt-1">
-            <span className="text-[12px] text-slate-600 w-16">
+            <span className="text-[12px] text-slate-400 w-16">
               Lot Qty:
             </span>
-            <div className="flex items-center border border-slate-300 rounded-2xs overflow-hidden">
+            <div className="flex items-center border border-[var(--theme-card-border)] rounded-lg overflow-hidden bg-[var(--theme-card-surface)]">
               <button
                 type="button"
                 onClick={() => setLotQty((q) => Math.max(1, q - 1))}
-                className="px-2.5 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 text-[13px] font-bold cursor-pointer"
+                className="px-2.5 py-0.5 text-slate-400 hover:text-[var(--theme-card-text)] text-[13px] font-bold cursor-pointer"
               >
                 -
               </button>
-              <span className="px-3 py-0.5 text-[12px] font-bold text-slate-800 border-x border-slate-300 min-w-[28px] text-center">
+              <span className="px-3 py-0.5 text-[12px] font-bold text-[var(--theme-card-text)] border-x border-[var(--theme-card-border)] min-w-[28px] text-center font-mono">
                 {lotQty}
               </span>
               <button
                 type="button"
                 onClick={() => setLotQty((q) => q + 1)}
-                className="px-2.5 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 text-[13px] font-bold cursor-pointer"
+                className="px-2.5 py-0.5 text-slate-400 hover:text-[var(--theme-card-text)] text-[13px] font-bold cursor-pointer"
               >
                 +
               </button>
@@ -181,12 +182,12 @@ export function PresetConfigModal({
           </div>
         </div>
 
-        {/* Action Button: Green [ BUY ] or [ ADD STRATEGY ] */}
+        {/* Action Button */}
         <div className="flex justify-center pt-2">
           <button
             type="button"
             onClick={handleConfirm}
-            className="bg-[#4CAF50] hover:bg-[#43A047] text-white font-bold text-[12px] px-8 py-1.5 rounded-sm transition-colors cursor-pointer shadow-xs uppercase tracking-wider"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[12px] px-8 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs uppercase tracking-wider"
           >
             {actionButtonText}
           </button>

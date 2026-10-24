@@ -30,7 +30,7 @@ export function StrategyPresetGallery({
   }, [activeCategory]);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-sm p-3 shadow-xs">
+    <div className="bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] rounded-xl p-3 shadow-xs">
       <div className="flex flex-col sm:flex-row items-start gap-3">
         {/* Left Stacked 3 Category Buttons (Pro Institutional Palette) */}
         <div className="flex sm:flex-col gap-1.5 w-full sm:w-36 shrink-0">
@@ -38,10 +38,10 @@ export function StrategyPresetGallery({
             type="button"
             onClick={() => setActiveCategory('BULLISH')}
             style={activeCategory === 'BULLISH' ? { color: '#FFFFFF' } : undefined}
-            className={`w-full py-1.5 px-3 rounded text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+            className={`w-full py-1.5 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
               activeCategory === 'BULLISH'
                 ? 'bg-[#059669] text-white shadow-xs'
-                : 'bg-white border border-slate-300 text-slate-700 hover:border-[#059669] hover:text-[#059669]'
+                : 'bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] text-[var(--theme-card-text)] hover:border-[#059669] hover:text-[#059669]'
             }`}
           >
             BULLISH
@@ -50,10 +50,10 @@ export function StrategyPresetGallery({
             type="button"
             onClick={() => setActiveCategory('BEARISH')}
             style={activeCategory === 'BEARISH' ? { color: '#FFFFFF' } : undefined}
-            className={`w-full py-1.5 px-3 rounded text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+            className={`w-full py-1.5 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
               activeCategory === 'BEARISH'
                 ? 'bg-[#DC2626] text-white shadow-xs'
-                : 'bg-white border border-slate-300 text-slate-700 hover:border-[#DC2626] hover:text-[#DC2626]'
+                : 'bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] text-[var(--theme-card-text)] hover:border-[#DC2626] hover:text-[#DC2626]'
             }`}
           >
             BEARISH
@@ -62,17 +62,17 @@ export function StrategyPresetGallery({
             type="button"
             onClick={() => setActiveCategory('NON_DIRECTIONAL')}
             style={activeCategory === 'NON_DIRECTIONAL' ? { color: '#FFFFFF' } : undefined}
-            className={`w-full py-1.5 px-3 rounded text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+            className={`w-full py-1.5 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
               activeCategory === 'NON_DIRECTIONAL'
-                ? 'bg-[#1E293B] text-white shadow-xs'
-                : 'bg-white border border-slate-300 text-slate-700 hover:border-slate-500 hover:text-slate-900'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] text-[var(--theme-card-text)] hover:border-blue-500 hover:text-blue-500'
             }`}
           >
             NON-DIRECTIONAL
           </button>
         </div>
 
-        {/* Right Cards: Horizontal Row of White Mini Payoff Thumbnails */}
+        {/* Right Cards: Horizontal Row of Mini Payoff Thumbnails */}
         <div className="flex-1 flex flex-wrap gap-2 overflow-x-auto pb-1">
           {presetsForCategory.map((preset) => {
             const isSelected = preset.id === selectedPresetId;
@@ -83,24 +83,24 @@ export function StrategyPresetGallery({
                 key={preset.id}
                 type="button"
                 onClick={() => onSelectPreset(preset)}
-                className={`w-[88px] sm:w-[94px] h-[82px] flex flex-col items-center justify-between p-1.5 rounded-sm border transition-all cursor-pointer select-none bg-white ${
+                className={`w-[88px] sm:w-[94px] h-[82px] flex flex-col items-center justify-between p-1.5 rounded-lg border transition-all cursor-pointer select-none bg-[var(--theme-card-surface)] ${
                   isSelected
-                    ? 'border-[#4CAF50] ring-1 ring-[#4CAF50] shadow-xs'
-                    : 'border-slate-200 hover:border-slate-400 hover:shadow-xs'
+                    ? 'border-blue-500 ring-1 ring-blue-500 shadow-xs'
+                    : 'border-[var(--theme-card-border)] hover:border-blue-500/50 hover:shadow-xs'
                 }`}
                 title={preset.name}
               >
                 {/* Mini Payoff Chart Box */}
-                <div className="w-full h-[46px] border border-slate-200 rounded-2xs bg-white relative overflow-hidden flex items-center justify-center">
+                <div className="w-full h-[46px] border border-[var(--theme-card-border)] rounded bg-[var(--theme-card-bg)] relative overflow-hidden flex items-center justify-center">
                   <svg viewBox="0 0 60 40" className="w-full h-full">
                     {/* Zero axis line */}
-                    <line x1="2" y1="20" x2="58" y2="20" stroke="#CBD5E1" strokeWidth="0.8" strokeDasharray="2 1" />
+                    <line x1="2" y1="20" x2="58" y2="20" stroke="#64748B" strokeWidth="0.8" strokeDasharray="2 1" opacity="0.5" />
 
                     {/* Payoff Curve line */}
                     <path
                       d={svgPath}
                       fill="none"
-                      stroke={activeCategory === 'BEARISH' ? '#E53E3E' : '#2E7D32'}
+                      stroke={activeCategory === 'BEARISH' ? '#F43F5E' : '#10B981'}
                       strokeWidth="1.8"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -109,7 +109,7 @@ export function StrategyPresetGallery({
                 </div>
 
                 {/* Strategy Name */}
-                <span className="text-[10px] text-slate-700 font-semibold text-center leading-tight line-clamp-2 w-full">
+                <span className="text-[10px] text-[var(--theme-card-text)] font-semibold text-center leading-tight line-clamp-2 w-full">
                   {preset.name}
                 </span>
               </button>

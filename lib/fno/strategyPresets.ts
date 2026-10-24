@@ -6,6 +6,7 @@ import {
   StrategyLeg,
 } from './fnoTypes';
 import { calculateBSPrice, calculateBSGreeks } from './blackScholes';
+import { parseExpiryDaysToExpiry } from './fnoDataService';
 
 export const INSTITUTIONAL_STRATEGY_PRESETS: OptionStrategyPreset[] = [
   // ─────────────────────────────────────────────────────────────────────────────
@@ -309,8 +310,8 @@ export const INSTITUTIONAL_STRATEGY_PRESETS: OptionStrategyPreset[] = [
     outlook: 'Neutral consolidation with expectations of rising IV.',
     payoffSvgPath: 'M 6 30 L 22 24 L 30 12 L 38 24 L 54 30',
     legsTemplate: [
-      { action: 'SELL', instrument: 'CE', strikeOffset: 0, lots: 1 },
-      { action: 'BUY', instrument: 'CE', strikeOffset: 0, lots: 1 },
+      { action: 'SELL', instrument: 'CE', strikeOffset: 0, lots: 1, expiryIndexOffset: 0 },
+      { action: 'BUY', instrument: 'CE', strikeOffset: 0, lots: 1, expiryIndexOffset: 1 },
     ],
   },
   {
@@ -363,11 +364,15 @@ export function buildLegsFromPreset(
   expiry: string,
   lotSize: number,
   overrideOffsets?: number[],
-  overrideLots?: number
+  overrideLots?: number,
+  availableExpiries?: string[]
 ): StrategyLeg[] {
   const atmStrike = Math.round((spotPrice / strikeStep)) * strikeStep;
-  const timeYears = 7 / 365.0; // 7 days baseline
   const baseIV = 0.145;
+  const defaultExpiries = availableExpiries && availableExpiries.length > 0
+    ? availableExpiries
+    : ['29 OCT 2026', '05 NOV 2026', '26 NOV 2026', '31 DEC 2026'];
+  const baseExpiryIdx = Math.max(0, defaultExpiries.indexOf(expiry));
 
   return preset.legsTemplate.map((tmpl, index) => {
     const offset = overrideOffsets && overrideOffsets[index] !== undefined
@@ -375,28 +380,48 @@ export function buildLegsFromPreset(
       : tmpl.strikeOffset;
     const strike = Math.round((atmStrike + offset * strikeStep) * 100) / 100;
     const lots = overrideLots !== undefined ? overrideLots : tmpl.lots;
+
+    const expiryOffset = tmpl.expiryIndexOffset ?? 0;
+    const legExpiry = expiryOffset > 0
+      ? (defaultExpiries[Math.min(defaultExpiries.length - 1, baseExpiryIdx + expiryOffset)] || '26 NOV 2026')
+      : expiry;
+    const legDte = parseExpiryDaysToExpiry(legExpiry);
+    const timeYears = Math.max(0.002, legDte / 365.0);
+
     let entryPrice = 100.0;
-    let greeks = { delta: 0.5, gamma: 0.001, theta: -10, vega: 12 };
+    let legIvDecimal = baseIV;
+    let greeks = { delta: 0.5, gamma: 0.001, theta: -10, vega: 12, vanna: 0, charm: 0, vomma: 0 };
 
     if (tmpl.instrument === 'FUT') {
       entryPrice = spotPrice;
-      greeks = { delta: 1.0, gamma: 0, theta: 0, vega: 0 };
+      greeks = { delta: 1.0, gamma: 0, theta: 0, vega: 0, vanna: 0, charm: 0, vomma: 0 };
     } else {
       const moneyness = (strike - spotPrice) / spotPrice;
-      const iv = Math.max(0.08, baseIV + (tmpl.instrument === 'PE' ? -moneyness * 0.12 : moneyness * 0.05));
+      const skew = -moneyness * 0.12;
+      const smile = moneyness * moneyness * 0.45;
+      legIvDecimal = Math.max(
+        0.08,
+        baseIV + (tmpl.instrument === 'CE' ? skew * 0.5 : -skew * 1.2) + smile
+      );
       entryPrice = Math.max(0.05, Math.round(calculateBSPrice(tmpl.instrument, {
         spot: spotPrice,
         strike,
         timeYears,
-        volatility: iv,
+        volatility: legIvDecimal,
       }) * 20) / 20);
 
-      greeks = calculateBSGreeks(tmpl.instrument, {
+      const calcGreeks = calculateBSGreeks(tmpl.instrument, {
         spot: spotPrice,
         strike,
         timeYears,
-        volatility: iv,
+        volatility: legIvDecimal,
       });
+      greeks = {
+        ...calcGreeks,
+        vanna: calcGreeks.vanna ?? 0,
+        charm: calcGreeks.charm ?? 0,
+        vomma: calcGreeks.vomma ?? 0,
+      };
     }
 
     return {
@@ -404,12 +429,12 @@ export function buildLegsFromPreset(
       action: tmpl.action,
       instrument: tmpl.instrument,
       strike,
-      expiry,
+      expiry: legExpiry,
       lots,
       lotSize,
       entryPrice,
       currentPrice: entryPrice,
-      iv: Math.round(baseIV * 1000) / 10,
+      iv: Math.round(legIvDecimal * 1000) / 10,
       greeks,
       disabled: false,
     };

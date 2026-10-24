@@ -44,42 +44,42 @@ export function CollapsibleOptionChain({
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-sm overflow-hidden shadow-xs">
-      {/* Centered Accordion Button (Exact Opstra Style) */}
+    <div className="bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] rounded-xl overflow-hidden shadow-xs">
+      {/* Centered Accordion Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full py-2.5 px-4 flex items-center justify-center relative hover:bg-slate-50 transition-colors cursor-pointer select-none"
+        className="w-full py-2.5 px-4 flex items-center justify-center relative hover:bg-[var(--theme-card-surface)] transition-colors cursor-pointer select-none"
       >
-        <span className="text-[13px] font-bold text-slate-800">
-          Option Chain
+        <span className="text-[13px] font-bold text-[var(--theme-card-text)]">
+          Option Chain ({chainData.expiry})
         </span>
-        <span className="absolute right-4 text-slate-500 text-[12px]">
+        <span className="absolute right-4 text-slate-400 text-[12px]">
           {isOpen ? '▲' : '▼'}
         </span>
       </button>
 
       {/* Expanded Table */}
       {isOpen && (
-        <div className="max-h-[380px] overflow-y-auto overflow-x-auto p-2 border-t border-slate-200 bg-white">
-          <table className="w-full text-[11px] text-center border-collapse">
+        <div className="max-h-[380px] overflow-y-auto overflow-x-auto p-2 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-bg)]">
+          <table className="w-full text-[11px] text-center border-collapse font-mono tabular-nums">
             <thead>
-              <tr className="bg-slate-50 text-[10.5px] font-bold text-slate-600 uppercase border-b border-slate-200 sticky top-0 z-10">
-                <th colSpan={4} className="py-1.5 text-emerald-700 border-r border-slate-200">
+              <tr className="bg-[var(--theme-card-surface)] text-[10.5px] font-sans font-bold text-slate-400 uppercase border-b border-[var(--theme-card-border)] sticky top-0 z-10">
+                <th colSpan={4} className="py-1.5 text-emerald-500 border-r border-[var(--theme-card-border)]">
                   CALLS (CE)
                 </th>
-                <th className="py-1.5 text-slate-800 px-3 bg-slate-100">STRIKE</th>
-                <th colSpan={4} className="py-1.5 text-rose-700 border-l border-slate-200">
+                <th className="py-1.5 text-[var(--theme-card-text)] px-3 bg-[var(--theme-card-surface)]">STRIKE</th>
+                <th colSpan={4} className="py-1.5 text-rose-500 border-l border-[var(--theme-card-border)]">
                   PUTS (PE)
                 </th>
               </tr>
-              <tr className="bg-white text-[10px] text-slate-500 border-b border-slate-200">
+              <tr className="bg-[var(--theme-card-bg)] text-[10px] font-sans text-slate-400 border-b border-[var(--theme-card-border)]">
                 <th className="py-1 px-1.5">Action</th>
                 <th className="py-1 px-1.5">LTP</th>
                 <th className="py-1 px-1.5">OI</th>
-                <th className="py-1 px-1.5 border-r border-slate-200">IV %</th>
-                <th className="py-1 px-3 font-bold text-slate-800 bg-slate-100">Strike</th>
-                <th className="py-1 px-1.5 border-l border-slate-200">IV %</th>
+                <th className="py-1 px-1.5 border-r border-[var(--theme-card-border)]">IV %</th>
+                <th className="py-1 px-3 font-bold text-[var(--theme-card-text)] bg-[var(--theme-card-surface)]">Strike</th>
+                <th className="py-1 px-1.5 border-l border-[var(--theme-card-border)]">IV %</th>
                 <th className="py-1 px-1.5">OI</th>
                 <th className="py-1 px-1.5">LTP</th>
                 <th className="py-1 px-1.5">Action</th>
@@ -91,8 +91,8 @@ export function CollapsibleOptionChain({
                 return (
                   <tr
                     key={row.strike}
-                    className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${
-                      isATM ? 'bg-amber-50 font-bold' : ''
+                    className={`border-b border-[var(--theme-card-border)]/50 hover:bg-[var(--theme-card-surface)] transition-colors ${
+                      isATM ? 'bg-amber-500/10 font-bold' : ''
                     }`}
                   >
                     {/* Call Actions */}
@@ -101,7 +101,7 @@ export function CollapsibleOptionChain({
                         <button
                           type="button"
                           onClick={() => handleAddContract('BUY', 'CE', row.strike, row.call.ltp, row.call.impliedVolatility, row.call.greeks)}
-                          className="px-1.5 py-0.5 rounded-2xs text-[9.5px] font-bold bg-[#DEF7EC] text-[#03543F] hover:bg-emerald-200 transition-colors cursor-pointer"
+                          className="px-1.5 py-0.5 rounded text-[9.5px] font-sans font-bold bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors cursor-pointer"
                           title="Add Buy Call"
                         >
                           +B
@@ -109,40 +109,40 @@ export function CollapsibleOptionChain({
                         <button
                           type="button"
                           onClick={() => handleAddContract('SELL', 'CE', row.strike, row.call.ltp, row.call.impliedVolatility, row.call.greeks)}
-                          className="px-1.5 py-0.5 rounded-2xs text-[9.5px] font-bold bg-[#FDE8E8] text-[#9B1C1C] hover:bg-rose-200 transition-colors cursor-pointer"
+                          className="px-1.5 py-0.5 rounded text-[9.5px] font-sans font-bold bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 transition-colors cursor-pointer"
                           title="Add Sell Call"
                         >
                           +S
                         </button>
                       </div>
                     </td>
-                    <td className="py-1 px-1.5 font-bold text-emerald-700">
+                    <td className="py-1 px-1.5 font-bold text-emerald-500">
                       {curr}{row.call.ltp.toFixed(1)}
                     </td>
-                    <td className="py-1 px-1.5 text-slate-500">
+                    <td className="py-1 px-1.5 text-slate-400">
                       {(row.call.openInterest / 1000).toFixed(0)}k
                     </td>
-                    <td className="py-1 px-1.5 text-slate-500 border-r border-slate-200">
+                    <td className="py-1 px-1.5 text-slate-400 border-r border-[var(--theme-card-border)]">
                       {row.call.impliedVolatility.toFixed(1)}%
                     </td>
 
                     {/* Central Strike */}
                     <td
                       className={`py-1 px-3 font-bold text-center ${
-                        isATM ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-800'
+                        isATM ? 'bg-amber-500/20 text-amber-500' : 'bg-[var(--theme-card-surface)] text-[var(--theme-card-text)]'
                       }`}
                     >
                       {row.strike} {isATM ? '★' : ''}
                     </td>
 
                     {/* Put Side */}
-                    <td className="py-1 px-1.5 text-slate-500 border-l border-slate-200">
+                    <td className="py-1 px-1.5 text-slate-400 border-l border-[var(--theme-card-border)]">
                       {row.put.impliedVolatility.toFixed(1)}%
                     </td>
-                    <td className="py-1 px-1.5 text-slate-500">
+                    <td className="py-1 px-1.5 text-slate-400">
                       {(row.put.openInterest / 1000).toFixed(0)}k
                     </td>
-                    <td className="py-1 px-1.5 font-bold text-rose-700">
+                    <td className="py-1 px-1.5 font-bold text-rose-500">
                       {curr}{row.put.ltp.toFixed(1)}
                     </td>
                     {/* Put Actions */}
@@ -151,7 +151,7 @@ export function CollapsibleOptionChain({
                         <button
                           type="button"
                           onClick={() => handleAddContract('BUY', 'PE', row.strike, row.put.ltp, row.put.impliedVolatility, row.put.greeks)}
-                          className="px-1.5 py-0.5 rounded-2xs text-[9.5px] font-bold bg-[#DEF7EC] text-[#03543F] hover:bg-emerald-200 transition-colors cursor-pointer"
+                          className="px-1.5 py-0.5 rounded text-[9.5px] font-sans font-bold bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors cursor-pointer"
                           title="Add Buy Put"
                         >
                           +B
@@ -159,7 +159,7 @@ export function CollapsibleOptionChain({
                         <button
                           type="button"
                           onClick={() => handleAddContract('SELL', 'PE', row.strike, row.put.ltp, row.put.impliedVolatility, row.put.greeks)}
-                          className="px-1.5 py-0.5 rounded-2xs text-[9.5px] font-bold bg-[#FDE8E8] text-[#9B1C1C] hover:bg-rose-200 transition-colors cursor-pointer"
+                          className="px-1.5 py-0.5 rounded text-[9.5px] font-sans font-bold bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 transition-colors cursor-pointer"
                           title="Add Sell Put"
                         >
                           +S

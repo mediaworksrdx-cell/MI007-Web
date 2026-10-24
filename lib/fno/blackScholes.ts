@@ -76,18 +76,29 @@ export function calculateBSPrice(
 }
 
 /**
- * Calculates complete first-order and second-order analytical Greeks.
+ * Calculates full double-precision first-order and second-order analytical Greeks
+ * under Generalized Black-Scholes-Merton (continuous dividend yield q, risk-free rate r).
+ *
+ * Units & Sign Conventions:
+ * - delta: dV / dS (per 1.0 spot change)
+ * - gamma: d^2V / dS^2 (per 1.0 spot change)
+ * - theta: -(dV / dT) / 365 (option value change per 1 calendar day passage of time)
+ * - vega:  (dV / dSigma) / 100 (option value change per +1% [+0.01] IV change)
+ * - rho:   (dV / dr) / 100 (option value change per +1% [+0.01] interest rate change)
+ * - vanna: (dDelta / dSigma) / 100 (Delta change per +1% [+0.01] IV change)
+ * - charm: -(dDelta / dT) / 365 (Delta change per 1 calendar day passage of time)
+ * - vomma: (dVega / dSigma) / 100 (Vega change per +1% [+0.01] IV change; Volga)
  */
-export function calculateBSGreeks(
+export function calculateBSGreeksUnrounded(
   type: OptionType,
   params: BSParams
-): Greeks {
+): Required<Greeks> {
   const { spot: S, strike: K, timeYears: T, volatility: sigma } = params;
   const r = params.rate ?? 0.068;
   const q = params.dividendYield ?? 0.0;
 
   if (S <= 0 || K <= 0) {
-    return { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0 };
+    return { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0, vanna: 0, charm: 0, vomma: 0 };
   }
 
   if (T <= 0.0001 || sigma <= 0.0001) {
@@ -98,6 +109,9 @@ export function calculateBSGreeks(
       theta: 0,
       vega: 0,
       rho: 0,
+      vanna: 0,
+      charm: 0,
+      vomma: 0,
     };
   }
 
@@ -109,13 +123,14 @@ export function calculateBSGreeks(
   const dfK = Math.exp(-r * T);
   const pdfD1 = pdfNormal(d1);
 
+  // 1st-Order Greeks
   // Delta
   const delta = type === 'CE' ? dfS * cdfNormal(d1) : -dfS * cdfNormal(-d1);
 
   // Gamma (Identical for Call and Put)
   const gamma = (dfS * pdfD1) / (S * sigma * sqrtT);
 
-  // Theta (Per calendar day)
+  // Theta (Per calendar day: -dV/dT / 365)
   const term1 = (-S * dfS * pdfD1 * sigma) / (2 * sqrtT);
   let thetaAnnual: number;
   if (type === 'CE') {
@@ -123,7 +138,7 @@ export function calculateBSGreeks(
   } else {
     thetaAnnual = term1 + r * K * dfK * cdfNormal(-d2) - q * S * dfS * cdfNormal(-d1);
   }
-  const theta = thetaAnnual / 365.0; // Scaled to 1 calendar day decay
+  const theta = thetaAnnual / 365.0;
 
   // Vega (Per 1% change in implied volatility)
   const vega = (S * dfS * sqrtT * pdfD1) / 100.0;
@@ -133,12 +148,52 @@ export function calculateBSGreeks(
     ? (K * T * dfK * cdfNormal(d2)) / 100.0
     : (-K * T * dfK * cdfNormal(-d2)) / 100.0;
 
+  // 2nd-Order Greeks
+  // Vanna: dDelta / dSigma per 1% (+0.01) change in IV
+  // Analytical: dDelta/dSigma = -e^(-qT) * pdf(d1) * (d2 / sigma)
+  const vanna = (-dfS * pdfD1 * d2) / (100.0 * sigma);
+
+  // Charm: -dDelta / dT per 1 calendar day passage of time
+  // d(d1)/dT = (2*(r - q)*T - d2 * sigma * sqrtT) / (2 * T * sigma * sqrtT)
+  const dd1_dT = (2 * (r - q) * T - d2 * sigma * sqrtT) / (2 * T * sigma * sqrtT);
+  const charmAnnual = type === 'CE'
+    ? q * dfS * cdfNormal(d1) - dfS * pdfD1 * dd1_dT
+    : -q * dfS * cdfNormal(-d1) - dfS * pdfD1 * dd1_dT;
+  const charm = charmAnnual / 365.0;
+
+  // Vomma (Volga): dVega / dSigma per 1% (+0.01) change in IV
+  const vomma = (vega * d1 * d2) / (100.0 * sigma);
+
   return {
-    delta: Math.round(delta * 1000) / 1000,
-    gamma: Math.round(gamma * 1000000) / 1000000,
-    theta: Math.round(theta * 100) / 100,
-    vega: Math.round(vega * 100) / 100,
-    rho: Math.round(rho * 100) / 100,
+    delta,
+    gamma,
+    theta,
+    vega,
+    rho,
+    vanna,
+    charm,
+    vomma,
+  };
+}
+
+/**
+ * Calculates complete first-order and second-order analytical Greeks (rounded for contract/UI consumption).
+ */
+export function calculateBSGreeks(
+  type: OptionType,
+  params: BSParams
+): Greeks {
+  const raw = calculateBSGreeksUnrounded(type, params);
+
+  return {
+    delta: Math.round(raw.delta * 1000) / 1000,
+    gamma: Math.round(raw.gamma * 1000000) / 1000000,
+    theta: Math.round(raw.theta * 100) / 100,
+    vega: Math.round(raw.vega * 100) / 100,
+    rho: Math.round(raw.rho * 100) / 100,
+    vanna: Math.round(raw.vanna * 10000) / 10000,
+    charm: Math.round(raw.charm * 10000) / 10000,
+    vomma: Math.round(raw.vomma * 10000) / 10000,
   };
 }
 

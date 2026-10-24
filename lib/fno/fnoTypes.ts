@@ -25,6 +25,24 @@ export interface Greeks {
   theta: number;
   vega: number;
   rho?: number;
+  /** Second-order Greek: dDelta / dVol (scaled per 1% IV change) */
+  vanna?: number;
+  /** Second-order Greek: -dDelta / dTime (scaled per 1 calendar day decay) */
+  charm?: number;
+  /** Second-order Greek: dVega / dVol (Volga, scaled per 1% IV change) */
+  vomma?: number;
+}
+
+export interface DataProvenance {
+  spotSource: 'LIVE_OBSERVED' | 'CACHED_REFERENCE';
+  chainSource: 'EXCHANGE_OBSERVED' | 'MODEL_SYNTHESIZED_BSM';
+  ivSurfaceSource: 'PARAMETRIC_SKEW_MODEL' | 'IMPLIED_FROM_LTP';
+  oiSource: 'EXCHANGE_REPORTED' | 'PARAMETRIC_PROFILE';
+  pricingModel: 'BLACK_SCHOLES_MERTON_EUROPEAN';
+  riskFreeRate: number;
+  dividendYield: number;
+  calculationTimestamp: string;
+  disclaimer: string;
 }
 
 export interface FnoInstrument {
@@ -89,6 +107,8 @@ export interface OptionChainData {
   highestCallOIStrike: number;
   highestPutOIStrike: number;
   timestamp: string;
+  daysToExpiry?: number;
+  provenance?: DataProvenance;
 }
 
 export interface FutureContract {
@@ -172,7 +192,18 @@ export interface OptionStrategyPreset {
     instrument: InstrumentType;
     strikeOffset: number; // relative to ATM in strike steps (e.g. 0 = ATM, +1 = 1 strike OTM, -1 = 1 strike ITM)
     lots: number;
+    /** Optional expiry index offset (0 = selected/near expiry, 1 = next expiry for Calendar/Diagonal spreads) */
+    expiryIndexOffset?: number;
   }>;
+}
+
+export interface StrategySnapshot {
+  id: string;
+  label: string;
+  timestamp: string;
+  spotPrice: number;
+  legs: StrategyLeg[];
+  payoff: StrategyPayoff;
 }
 
 export interface TrackedStrategy {

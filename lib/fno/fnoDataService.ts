@@ -1072,20 +1072,10 @@ export function getWeeklyAndMonthlyExpiries(expiries: string[]): { weeklyExpiry:
 }
 
 /**
- * Generates an institutional-grade option chain around spot price.
+ * Deterministic helper to resolve calendar days to expiry from an expiry date string
+ * (e.g. '29 OCT 2026', '05 NOV 2026', '12 NOV 2026', '26 NOV 2026', '31 DEC 2026').
  */
-export function generateOptionChain(
-  symbol: string,
-  selectedExpiry?: string,
-  liveSpot?: number
-): OptionChainData {
-  const inst = findFnoInstrument(symbol);
-  const spot = liveSpot && liveSpot > 0 ? liveSpot : inst.spotPrice;
-  const expiry = selectedExpiry || inst.currentExpiry;
-  const step = inst.strikeStep;
-  const atmStrike = Math.round(spot / step) * step;
-
-  // Parse actual expiry date string (e.g. '29 OCT 2026', '05 NOV 2026', '12 NOV 2026')
+export function parseExpiryDaysToExpiry(expiry: string): number {
   const parsedExpiry = Date.parse(expiry);
   let daysToExpiry = expiry.includes('OCT') ? 7 : expiry.includes('NOV') ? 28 : 63;
   if (!Number.isNaN(parsedExpiry)) {
@@ -1095,6 +1085,25 @@ export function generateOptionChain(
       daysToExpiry = diffDays;
     }
   }
+  return daysToExpiry;
+}
+
+/**
+ * Generates an institutional-grade option chain around spot price.
+ */
+export function generateOptionChain(
+  symbol: string,
+  selectedExpiry?: string,
+  liveSpot?: number
+): OptionChainData {
+  const inst = findFnoInstrument(symbol);
+  const hasLiveSpot = Boolean(liveSpot && liveSpot > 0);
+  const spot = hasLiveSpot ? (liveSpot as number) : inst.spotPrice;
+  const expiry = selectedExpiry || inst.currentExpiry;
+  const step = inst.strikeStep;
+  const atmStrike = Math.round(spot / step) * step;
+
+  const daysToExpiry = parseExpiryDaysToExpiry(expiry);
   const timeYears = Math.max(0.002, daysToExpiry / 365.0);
 
   // Generate 27 strikes around ATM (-13 to +13 steps)
@@ -1273,6 +1282,8 @@ export function generateOptionChain(
     }
   }
 
+  const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+
   return {
     underlyingSymbol: inst.symbol,
     spotPrice: spot,
@@ -1288,7 +1299,20 @@ export function generateOptionChain(
     maxPain: maxPainStrike,
     highestCallOIStrike: highestCallStrike,
     highestPutOIStrike: highestPutStrike,
-    timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
+    timestamp,
+    daysToExpiry,
+    provenance: {
+      spotSource: hasLiveSpot ? 'LIVE_OBSERVED' : 'CACHED_REFERENCE',
+      chainSource: 'MODEL_SYNTHESIZED_BSM',
+      ivSurfaceSource: 'PARAMETRIC_SKEW_MODEL',
+      oiSource: 'PARAMETRIC_PROFILE',
+      pricingModel: 'BLACK_SCHOLES_MERTON_EUROPEAN',
+      riskFreeRate: 0.068,
+      dividendYield: 0.0,
+      calculationTimestamp: timestamp,
+      disclaimer:
+        'Option strikes, IV skew, and OI profiles are model-synthesized around the underlying reference price via Black-Scholes-Merton. Dealer GEX is assumption-dependent and does not represent verified exchange dealer inventory.',
+    },
   };
 }
 
