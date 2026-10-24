@@ -1,13 +1,54 @@
-// ─── MI007 Quantitative Strategy Backtesting Laboratory ─────────────────────
-// Walk-forward strategy simulation engine with performance KPIs,
-// equity curve visualization, and complete trade execution audit log.
+// ─── MI007 Quantitative Strategy Backtesting Laboratory & Portfolio ─────────
+// Strategy simulation engine with performance KPIs, interactive chart launcher,
+// saved portfolio persistence, and portfolio trade execution management.
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import { CompanyFundamental } from '@/lib/screener/types';
 import { STRATEGY_DEFINITIONS, StrategyId, generateCandlesForSymbol } from '@/lib/screener/technicalStrategies';
 import { runBacktest, BacktestResult, BacktestTrade } from '@/lib/screener/backtesting';
+
+export interface SavedPortfolio {
+  id: string;
+  name: string;
+  symbol: string;
+  companyName: string;
+  market: string;
+  strategyId: StrategyId;
+  strategyName: string;
+  savedAt: string;
+  initialCapital: number;
+  finalEquity: number;
+  totalReturnPct: number;
+  winRate: number;
+  totalTrades: number;
+  currencySymbol: string;
+  trades: BacktestTrade[];
+}
+
+const PORTFOLIO_STORAGE_KEY = 'mi007_saved_portfolios';
+
+function loadSavedPortfolios(): SavedPortfolio[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.error('Failed to load saved portfolios', e);
+    return [];
+  }
+}
+
+function persistSavedPortfolios(list: SavedPortfolio[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.error('Failed to persist saved portfolios', e);
+  }
+}
 
 interface BacktestingViewProps {
   companies: CompanyFundamental[];
@@ -31,6 +72,19 @@ export function BacktestingView({
   const [stopLossPct, setStopLossPct] = useState(5);
   const [maxHoldingDays, setMaxHoldingDays] = useState(30);
   const [positionSizePct, setPositionSizePct] = useState(100);
+
+  // Saved Portfolios State & Modal
+  const [savedPortfolios, setSavedPortfolios] = useState<SavedPortfolio[]>([]);
+  const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+
+  // Manual exit overrides on individual simulated positions
+  const [manuallyExitedTradeIds, setManuallyExitedTradeIds] = useState<number[]>([]);
+
+  // Load saved portfolios on mount
+  useEffect(() => {
+    setSavedPortfolios(loadSavedPortfolios());
+  }, []);
 
   // Active Company Object
   const activeCompany = useMemo(() => {
@@ -59,43 +113,83 @@ export function BacktestingView({
 
   const activeStrategy = STRATEGY_DEFINITIONS.find((s) => s.id === strategyId);
 
-  // Equity Curve Chart Dimensions
-  const curve = backtestResult.equityCurve;
-  const chartHeight = 220;
-  const chartWidth = 750;
+  // Adjusted trades with any manual user exits applied
+  const displayedTrades = useMemo(() => {
+    return backtestResult.trades.map((t) => {
+      if (manuallyExitedTradeIds.includes(t.tradeId)) {
+        return {
+          ...t,
+          exitReason: 'Manual Exit (User Closed)',
+        };
+      }
+      return t;
+    });
+  }, [backtestResult.trades, manuallyExitedTradeIds]);
 
-  const minVal = Math.min(
-    initialCapital * 0.9,
-    ...curve.map((p) => Math.min(p.portfolioValue, p.benchmarkValue))
-  );
-  const maxVal = Math.max(
-    initialCapital * 1.1,
-    ...curve.map((p) => Math.max(p.portfolioValue, p.benchmarkValue))
-  );
-  const valRange = maxVal - minVal || 1;
+  // Save current simulated portfolio
+  const handleSavePortfolio = () => {
+    const newPortfolio: SavedPortfolio = {
+      id: `pf_${Date.now()}_${activeCompany.symbol}`,
+      name: `${activeCompany.symbol} ${activeStrategy?.name || strategyId} Portfolio`,
+      symbol: activeCompany.symbol,
+      companyName: activeCompany.name,
+      market: activeCompany.market,
+      strategyId,
+      strategyName: activeStrategy?.name || strategyId,
+      savedAt: new Date().toISOString(),
+      initialCapital,
+      finalEquity: backtestResult.finalEquity,
+      totalReturnPct: backtestResult.totalReturnPct,
+      winRate: backtestResult.winRate,
+      totalTrades: displayedTrades.length,
+      currencySymbol: activeCompany.currencySymbol,
+      trades: displayedTrades,
+    };
 
-  const getY = (val: number) => {
-    return chartHeight - ((val - minVal) / valRange) * chartHeight;
+    const updated = [newPortfolio, ...savedPortfolios.filter((p) => p.id !== newPortfolio.id)];
+    setSavedPortfolios(updated);
+    persistSavedPortfolios(updated);
+
+    setSaveFeedback(`Portfolio for ${activeCompany.symbol} (${activeStrategy?.name || strategyId}) saved successfully to My Portfolios!`);
+    setTimeout(() => setSaveFeedback(null), 4000);
   };
 
-  const polylinePortfolio = curve
-    .map((p, i) => {
-      const x = (i / (curve.length - 1)) * chartWidth;
-      const y = getY(p.portfolioValue);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
+  // Load a saved portfolio into active parameters
+  const handleLoadPortfolio = (pf: SavedPortfolio) => {
+    setSymbol(pf.symbol);
+    setStrategyId(pf.strategyId);
+    setInitialCapital(pf.initialCapital);
+    setIsSavedModalOpen(false);
+    setSaveFeedback(`Loaded portfolio: ${pf.name}`);
+    setTimeout(() => setSaveFeedback(null), 3000);
+  };
 
-  const polylineBenchmark = curve
-    .map((p, i) => {
-      const x = (i / (curve.length - 1)) * chartWidth;
-      const y = getY(p.benchmarkValue);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
+  // Delete a saved portfolio
+  const handleDeletePortfolio = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = savedPortfolios.filter((p) => p.id !== id);
+    setSavedPortfolios(updated);
+    persistSavedPortfolios(updated);
+  };
 
-  // Export Trade Log to CSV
-  const exportTradeLogCSV = () => {
+  // Manual exit position
+  const handleManualExitTrade = (tradeId: number) => {
+    if (manuallyExitedTradeIds.includes(tradeId)) return;
+    setManuallyExitedTradeIds((prev) => [...prev, tradeId]);
+    setSaveFeedback(`Position #${tradeId} manually closed.`);
+    setTimeout(() => setSaveFeedback(null), 3000);
+  };
+
+  // Exit all positions in portfolio
+  const handleExitAllPositions = () => {
+    const allIds = backtestResult.trades.map((t) => t.tradeId);
+    setManuallyExitedTradeIds(allIds);
+    setSaveFeedback(`All ${allIds.length} positions in portfolio closed.`);
+    setTimeout(() => setSaveFeedback(null), 3000);
+  };
+
+  // Export Portfolio to CSV
+  const exportPortfolioCSV = (tradesToExport = displayedTrades, customName?: string) => {
     const headers = [
       'Trade ID',
       'Symbol',
@@ -110,7 +204,7 @@ export function BacktestingView({
       'Holding Days',
       'Exit Reason',
     ];
-    const rows = backtestResult.trades.map((t) => [
+    const rows = tradesToExport.map((t) => [
       t.tradeId,
       t.symbol,
       t.strategyId,
@@ -129,7 +223,7 @@ export function BacktestingView({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `MI007_Backtest_${symbol}_${strategyId}.csv`);
+    link.setAttribute('download', customName || `MI007_Portfolio_${symbol}_${strategyId}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -144,36 +238,104 @@ export function BacktestingView({
             type="button"
             onClick={onBackToScreener}
             className="px-3.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 transition-colors flex items-center gap-1.5 mono text-[12px] font-black shadow-xs cursor-pointer group"
-            title="Return to Screeners Table"
+            title="Exit back to Screener"
           >
             <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
-            <span>BACK TO SCREENER</span>
+            <span>EXIT TO SCREENER</span>
           </button>
 
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="mono text-[18px] sm:text-[22px] font-black inst-card-text uppercase tracking-wide">
-                Quantitative Strategy Backtesting Engine
+                Quantitative Strategy Portfolio & Engine
               </h1>
               <span className="mono text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-                Walk-Forward Simulation
+                Portfolio Simulation
               </span>
             </div>
             <p className="text-[12.5px] text-[var(--theme-card-text-muted)] font-medium mt-0.5">
-              Simulate quantitative execution rules, compute Sharpe/Sortino proxies, max drawdowns, and trade logs.
+              Simulate quantitative execution rules, track holdings, analyze risk/reward, and save strategy portfolios.
             </p>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={exportTradeLogCSV}
-          className="px-3.5 py-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 mono text-[12px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-        >
-          <span>Export Trade Log (CSV)</span>
-          <span>↓</span>
-        </button>
+        {/* Header Action Buttons: View Chart, Save Portfolio, Saved Portfolios, Export CSV, Exit */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* View Chart Link */}
+          <Link
+            href={`/chart/${activeCompany.symbol}?market=${activeCompany.market}&from=screener`}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('mi007_return_tab', 'backtesting');
+                sessionStorage.setItem('mi007_return_symbol', activeCompany.symbol);
+              }
+            }}
+            className="px-3.5 py-2 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 font-black mono text-[12px] flex items-center gap-1.5 transition-all shadow-xs cursor-pointer group"
+            title={`View Interactive Chart for ${activeCompany.symbol}`}
+          >
+            <span>📈 VIEW CHART</span>
+            <span className="group-hover:translate-x-0.5 transition-transform">↗</span>
+          </Link>
+
+          {/* Save Portfolio Button */}
+          <button
+            type="button"
+            onClick={handleSavePortfolio}
+            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[12px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            title="Save current simulation as a tracked portfolio"
+          >
+            <span>💾 SAVE PORTFOLIO</span>
+          </button>
+
+          {/* Saved Portfolios Modal Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsSavedModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 mono text-[12px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            title="View saved portfolios"
+          >
+            <span>📁 SAVED ({savedPortfolios.length})</span>
+          </button>
+
+          {/* Export Portfolio CSV */}
+          <button
+            type="button"
+            onClick={() => exportPortfolioCSV()}
+            className="px-3.5 py-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 mono text-[12px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            title="Export portfolio trades to CSV"
+          >
+            <span>Export CSV</span>
+            <span>↓</span>
+          </button>
+
+          {/* Explicit Exit Button */}
+          <button
+            type="button"
+            onClick={onBackToScreener}
+            className="px-3.5 py-2 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white mono text-[12px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1"
+            title="Exit to Screener"
+          >
+            <span>✕ EXIT</span>
+          </button>
+        </div>
       </div>
+
+      {/* ── Toast Feedback Notification ── */}
+      {saveFeedback && (
+        <div className="p-3.5 px-4 rounded-xl border border-emerald-500/40 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 mono text-[12.5px] font-bold flex items-center justify-between shadow-xs animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <span className="text-emerald-500 text-base">✓</span>
+            <span>{saveFeedback}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSaveFeedback(null)}
+            className="text-emerald-700 dark:text-emerald-300 hover:text-emerald-950 dark:hover:text-white font-black px-2 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* ── Simulation Parameters Panel ── */}
       <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md">
@@ -360,81 +522,106 @@ export function BacktestingView({
         </div>
       </div>
 
-      {/* ── Equity Curve Chart ── */}
-      <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md flex flex-col gap-3">
-        <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)]">
-          <div className="flex items-center gap-3">
-            <span className="mono text-[14px] font-black inst-card-text uppercase tracking-wide">
-              Portfolio Equity Curve vs Benchmark
-            </span>
-            <div className="flex items-center gap-3 mono text-[11px]">
-              <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
-                <span className="w-2.5 h-0.5 bg-emerald-400 inline-block" />
-                <span>Strategy Portfolio</span>
+      {/* ── Interactive Technical Chart Banner (Replaces SVG Chart) ── */}
+      <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3.5">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl shrink-0">
+            📈
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="mono text-[15px] sm:text-[17px] font-black inst-card-text uppercase tracking-wide">
+                Interactive Chart for {activeCompany.symbol} ({activeCompany.name})
               </span>
-              <span className="flex items-center gap-1.5 text-[var(--theme-card-text-muted)] font-bold">
-                <span className="w-2.5 h-0.5 bg-slate-400 inline-block" />
-                <span>Buy & Hold Benchmark</span>
+              <span className="mono text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+                Live Technical Canvas
               </span>
             </div>
+            <p className="text-[12px] text-[var(--theme-card-text-muted)] mt-1 max-w-2xl leading-relaxed">
+              Open our full-featured interactive TradingView/Canvas candlestick chart with multi-timeframe candles, technical overlays (RSI, MACD, Bollinger Bands, EMAs), drawing tools, and real-time tick streaming.
+            </p>
           </div>
-          <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">
-            Total Trades Executed: {backtestResult.totalTrades}
-          </span>
         </div>
 
-        <div className="relative w-full rounded-xl bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] p-2">
-          <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-[220px] overflow-visible select-none">
-            {/* Horizontal Grid lines */}
-            {[0.25, 0.5, 0.75].map((pct, idx) => {
-              const y = chartHeight * pct;
-              const val = maxVal - valRange * pct;
-              return (
-                <g key={idx}>
-                  <line x1="0" y1={y} x2={chartWidth} y2={y} stroke="#64748b" strokeDasharray="3 3" strokeOpacity="0.3" />
-                  <text x={chartWidth - 5} y={y - 3} fill="#64748b" fontSize="9" textAnchor="end" className="mono">
-                    {activeCompany.currencySymbol}{Math.round(val).toLocaleString()}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* Benchmark Polyline */}
-            <polyline
-              fill="none"
-              stroke="#64748b"
-              strokeWidth="1.5"
-              strokeDasharray="3 3"
-              points={polylineBenchmark}
-            />
-
-            {/* Strategy Polyline */}
-            <polyline
-              fill="none"
-              stroke="#10b981"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              points={polylinePortfolio}
-            />
-          </svg>
+        <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0">
+          <Link
+            href={`/chart/${activeCompany.symbol}?market=${activeCompany.market}&from=screener`}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('mi007_return_tab', 'backtesting');
+                sessionStorage.setItem('mi007_return_symbol', activeCompany.symbol);
+              }
+            }}
+            className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black mono text-[13px] flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer group"
+            title={`Open full interactive chart for ${activeCompany.symbol}`}
+          >
+            <span>VIEW {activeCompany.symbol} CHART</span>
+            <span className="group-hover:translate-x-0.5 transition-transform">↗</span>
+          </Link>
         </div>
       </div>
 
-      {/* ── Detailed Walk-Forward Trade Log Table ── */}
+      {/* ── Detailed PORTFOLIO Table (Changed from Walk-Forward Trade Log) ── */}
       <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
-          <div className="flex items-center gap-2">
-            <span className="mono text-[14px] font-black inst-card-text uppercase tracking-wide">
-              Walk-Forward Trade Log
+        {/* Portfolio Card Header with Save Portfolio, Export CSV, and Exit Options */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
+          <div className="flex items-center gap-2.5">
+            <span className="mono text-[15px] sm:text-[16px] font-black inst-card-text uppercase tracking-wide">
+              PORTFOLIO
             </span>
-            <span className="mono text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-              {backtestResult.trades.length} Executed Trades
+            <span className="mono text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+              {displayedTrades.length} Holdings & Closed Positions
             </span>
+          </div>
+
+          {/* Action Toolbar on Portfolio Section (Image 2) */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Save Portfolio Option */}
+            <button
+              type="button"
+              onClick={handleSavePortfolio}
+              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              title="Save this portfolio simulation"
+            >
+              <span>💾 SAVE PORTFOLIO</span>
+            </button>
+
+            {/* Exit All Positions Option */}
+            {displayedTrades.length > 0 && (
+              <button
+                type="button"
+                onClick={handleExitAllPositions}
+                className="px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500 hover:text-slate-950 mono text-[11.5px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1"
+                title="Manually exit all open positions"
+              >
+                <span>⚡ EXIT ALL POSITIONS</span>
+              </button>
+            )}
+
+            {/* Export CSV Option */}
+            <button
+              type="button"
+              onClick={() => exportPortfolioCSV()}
+              className="px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 mono text-[11.5px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1"
+              title="Export portfolio to CSV"
+            >
+              <span>Export CSV ↓</span>
+            </button>
+
+            {/* Exit Option right in Portfolio Card (Image 2) */}
+            <button
+              type="button"
+              onClick={onBackToScreener}
+              className="px-3 py-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1"
+              title="Exit portfolio and return to screener"
+            >
+              <span>✕ EXIT</span>
+            </button>
           </div>
         </div>
 
-        <div className="overflow-x-auto overflow-y-auto max-h-[400px]">
+        {/* Portfolio Table */}
+        <div className="overflow-x-auto overflow-y-auto max-h-[460px]">
           <table className="w-full border-collapse text-left mono text-[12.5px]">
             <thead className="sticky top-0 z-10 bg-[var(--theme-card-surface)] border-b border-[var(--theme-card-border)] shadow-xs">
               <tr className="text-[11px] text-[var(--theme-card-text-muted)] font-black uppercase tracking-wider">
@@ -448,45 +635,72 @@ export function BacktestingView({
                 <th className="py-2.5 px-3 text-right">Return %</th>
                 <th className="py-2.5 px-3 text-right">Hold Days</th>
                 <th className="py-2.5 px-3 text-center">Exit Trigger</th>
+                <th className="py-2.5 px-3 text-center">Exit Option</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--theme-card-border)]/40 tabular-nums">
-              {backtestResult.trades.length === 0 ? (
+              {displayedTrades.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-[var(--theme-card-text-muted)]">
-                    No closed trades generated under selected parameters.
+                  <td colSpan={11} className="py-10 text-center text-[var(--theme-card-text-muted)]">
+                    No closed positions generated under selected parameters.
                   </td>
                 </tr>
               ) : (
-                backtestResult.trades.map((trade) => {
+                displayedTrades.map((trade) => {
                   const isProfit = trade.pnl > 0;
+                  const isManuallyExited = manuallyExitedTradeIds.includes(trade.tradeId);
+
                   return (
                     <tr key={trade.tradeId} className="hover:bg-emerald-500/5 transition-colors">
-                      <td className="py-2 px-3 text-[var(--theme-card-text-muted)] font-bold">{trade.tradeId}</td>
-                      <td className="py-2 px-3 text-[var(--theme-card-text)]">{trade.entryDate}</td>
-                      <td className="py-2 px-3 text-right text-[var(--theme-card-text)] font-bold">{activeCompany.currencySymbol}{trade.entryPrice.toFixed(2)}</td>
-                      <td className="py-2 px-3 text-[var(--theme-card-text)]">{trade.exitDate}</td>
-                      <td className="py-2 px-3 text-right text-[var(--theme-card-text)] font-bold">{activeCompany.currencySymbol}{trade.exitPrice.toFixed(2)}</td>
-                      <td className="py-2 px-3 text-right text-[var(--theme-card-text)]">{trade.shares}</td>
-                      <td className={`py-2 px-3 text-right font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <td className="py-2.5 px-3 text-[var(--theme-card-text-muted)] font-bold">{trade.tradeId}</td>
+                      <td className="py-2.5 px-3 text-[var(--theme-card-text)]">{trade.entryDate}</td>
+                      <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-bold">
+                        {activeCompany.currencySymbol}{trade.entryPrice.toFixed(2)}
+                      </td>
+                      <td className="py-2.5 px-3 text-[var(--theme-card-text)]">{trade.exitDate}</td>
+                      <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-bold">
+                        {activeCompany.currencySymbol}{trade.exitPrice.toFixed(2)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)]">{trade.shares}</td>
+                      <td className={`py-2.5 px-3 text-right font-black ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {trade.pnl >= 0 ? '+' : ''}{activeCompany.currencySymbol}{trade.pnl.toLocaleString()}
                       </td>
-                      <td className={`py-2 px-3 text-right font-bold ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      <td className={`py-2.5 px-3 text-right font-bold ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {trade.returnPct >= 0 ? '+' : ''}{trade.returnPct}%
                       </td>
-                      <td className="py-2 px-3 text-right text-[var(--theme-card-text-muted)]">{trade.holdingDays}d</td>
-                      <td className="py-2 px-3 text-center">
+                      <td className="py-2.5 px-3 text-right text-[var(--theme-card-text-muted)]">{trade.holdingDays}d</td>
+                      <td className="py-2.5 px-3 text-center">
                         <span
                           className={`px-2 py-0.5 rounded text-[10.5px] font-black ${
                             trade.exitReason === 'Take Profit'
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                               : trade.exitReason === 'Stop Loss'
                               ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                              : isManuallyExited
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
                               : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                           }`}
                         >
                           {trade.exitReason}
                         </span>
+                      </td>
+
+                      {/* Exit Option Action Column */}
+                      <td className="py-2.5 px-3 text-center">
+                        {isManuallyExited ? (
+                          <span className="mono text-[10.5px] text-amber-500 font-bold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
+                            Exited ✓
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleManualExitTrade(trade.tradeId)}
+                            className="px-2.5 py-0.5 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white mono text-[10.5px] font-bold transition-all cursor-pointer"
+                            title={`Exit position #${trade.tradeId}`}
+                          >
+                            Exit Trade
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -495,7 +709,140 @@ export function BacktestingView({
             </tbody>
           </table>
         </div>
+
+        {/* Portfolio Table Footer & Quick Exit */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 px-5 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
+          <div className="flex items-center gap-4 text-[12px] mono font-bold text-[var(--theme-card-text-muted)]">
+            <span>Total Portfolio Positions: {displayedTrades.length}</span>
+            <span>Final Equity: {activeCompany.currencySymbol}{backtestResult.finalEquity.toLocaleString()}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSavePortfolio}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            >
+              <span>💾 SAVE PORTFOLIO</span>
+            </button>
+            <button
+              type="button"
+              onClick={onBackToScreener}
+              className="px-3.5 py-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white mono text-[11.5px] font-black transition-all shadow-xs cursor-pointer flex items-center gap-1"
+            >
+              <span>← EXIT TO SCREENER</span>
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* ── Saved Portfolios Modal ── */}
+      {isSavedModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="relative w-full max-w-2xl rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
+              <div className="flex items-center gap-2.5">
+                <span className="mono text-[16px] font-black inst-card-text uppercase tracking-wide">
+                  Saved Portfolios ({savedPortfolios.length})
+                </span>
+                <span className="mono text-[10.5px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+                  LocalStorage Tracked
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSavedModalOpen(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-500/10 transition-colors cursor-pointer"
+                title="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal List */}
+            <div className="p-5 overflow-y-auto flex flex-col gap-3">
+              {savedPortfolios.length === 0 ? (
+                <div className="py-12 text-center text-[var(--theme-card-text-muted)] mono text-[13px]">
+                  <p className="font-bold mb-1">No saved portfolios found</p>
+                  <p className="text-[11.5px] opacity-70">
+                    Click &quot;💾 SAVE PORTFOLIO&quot; on any backtest simulation to store and track your strategies here.
+                  </p>
+                </div>
+              ) : (
+                savedPortfolios.map((pf) => (
+                  <div
+                    key={pf.id}
+                    className="p-4 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] hover:border-emerald-500/50 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="mono text-[14px] font-black text-emerald-400">{pf.symbol}</span>
+                        <span className="text-[12px] text-[var(--theme-card-text-muted)] font-medium">({pf.companyName})</span>
+                        <span className="mono text-[10.5px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/30">
+                          {pf.strategyName}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 mono text-[11px] text-[var(--theme-card-text-muted)]">
+                        <span>Capital: {pf.currencySymbol}{pf.initialCapital.toLocaleString()}</span>
+                        <span>Final: {pf.currencySymbol}{pf.finalEquity.toLocaleString()}</span>
+                        <span className={pf.totalReturnPct >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                          Return: {pf.totalReturnPct >= 0 ? '+' : ''}{pf.totalReturnPct}%
+                        </span>
+                        <span>Win Rate: {pf.winRate}%</span>
+                      </div>
+                      <span className="text-[10px] mono text-[var(--theme-card-text-muted)] block mt-1 opacity-70">
+                        Saved on {new Date(pf.savedAt).toLocaleDateString()} at {new Date(pf.savedAt).toLocaleTimeString()}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-stretch sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleLoadPortfolio(pf)}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 mono text-[11px] font-black transition-colors cursor-pointer"
+                        title="Load this portfolio into simulation parameters"
+                      >
+                        ⚡ LOAD
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => exportPortfolioCSV(pf.trades, `MI007_Portfolio_${pf.symbol}_${pf.strategyId}.csv`)}
+                        className="px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] hover:text-emerald-400 mono text-[11px] font-bold transition-colors cursor-pointer"
+                        title="Export CSV"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeletePortfolio(pf.id, e)}
+                        className="px-2.5 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white mono text-[11px] font-bold transition-colors cursor-pointer"
+                        title="Delete saved portfolio"
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
+              <span className="mono text-[11px] text-[var(--theme-card-text-muted)]">
+                {savedPortfolios.length} Total Portfolios Stored
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsSavedModalOpen(false)}
+                className="px-4 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] hover:text-emerald-400 mono text-[12px] font-bold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
