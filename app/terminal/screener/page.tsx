@@ -48,9 +48,9 @@ export default function ScreenerTerminalPage() {
                   />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-[13px] xs:text-[15px] sm:text-[18px] md:text-[20px] font-marker inst-card-text tracking-wide uppercase whitespace-nowrap flex items-center gap-1.5 sm:gap-2">
+                  <h1 className="text-[15px] xs:text-[17px] sm:text-[20px] md:text-[22px] font-caveat font-bold inst-card-text tracking-wide uppercase whitespace-nowrap flex items-center gap-1.5 sm:gap-2">
                     <span>MARKET INTELLIGENCE</span>
-                    <span className="text-emerald-500 font-marker">MI-007</span>
+                    <span>MI-007</span>
                   </h1>
                   <p className="text-[12px] sm:text-[14px] inst-card-text-muted font-medium mt-0.5 truncate">
                     Intelligence Beyond the Noise · Equity Screeners

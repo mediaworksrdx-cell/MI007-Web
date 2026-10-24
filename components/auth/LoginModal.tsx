@@ -123,7 +123,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
             />
           </div>
           <div className="flex items-center gap-1.5 mb-1">
-            <span className="mono text-[10.5px] uppercase font-bold tracking-widest text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 font-marker">
+            <span className="mono text-[11px] uppercase font-bold tracking-widest text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 font-caveat">
               MARKET INTELLIGENCE MI-007 SECURE ACCESS
             </span>
           </div>

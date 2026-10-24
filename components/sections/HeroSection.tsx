@@ -306,11 +306,11 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.35 }}
-          className="text-[15px] xs:text-[18px] sm:text-2xl md:text-3xl lg:text-4xl xl:text-[42px] tracking-tight leading-tight page-heading"
+          className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-[44px] font-bold tracking-tight leading-tight page-heading"
         >
-          <span className="hero-title-gradient whitespace-nowrap inline-flex items-center justify-center gap-1.5 sm:gap-3 font-marker">
+          <span className="hero-title-gradient whitespace-nowrap inline-flex items-center justify-center gap-2 sm:gap-3.5 font-caveat font-bold text-[var(--theme-page-text)]">
             <span>MARKET INTELLIGENCE</span>
-            <span className="text-emerald-500 font-marker">MI-007</span>
+            <span>MI-007</span>
           </span>
         </motion.h1>
 
