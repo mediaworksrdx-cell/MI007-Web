@@ -1250,22 +1250,28 @@ export function renderChart(
     }
 
     // 4. Order Blocks & Breakers (Demand, Supply, Breakers)
-    const blocksToRender = [
+    const rawBlocks = [
       ...(smcCfg.showBullishOb || smcCfg.showBearishOb ? smcData.orderBlocks : []),
       ...(smcCfg.showBreakers || smcCfg.showBullishBreakers || smcCfg.showBearishBreakers ? smcData.breakers : []),
     ];
-    for (const ob of blocksToRender) {
+    const maxVisibleZones = Math.min(smcCfg.maxVisibleZones || 8, 12);
+    const candidateBlocks = rawBlocks.filter((ob) => {
       if (ob.isBreaker) {
-        if (!smcCfg.showBreakers) continue;
-        if (ob.isBullish && (!smcCfg.showBullishBreakers || !isBullishMaster)) continue;
-        if (!ob.isBullish && (!smcCfg.showBearishBreakers || !isBearishMaster)) continue;
+        if (!smcCfg.showBreakers) return false;
+        if (ob.isBullish && (!smcCfg.showBullishBreakers || !isBullishMaster)) return false;
+        if (!ob.isBullish && (!smcCfg.showBearishBreakers || !isBearishMaster)) return false;
       } else {
-        if (ob.isBullish && (!smcCfg.showBullishOb || !isBullishMaster)) continue;
-        if (!ob.isBullish && (!smcCfg.showBearishOb || !isBearishMaster)) continue;
+        if (ob.isBullish && (!smcCfg.showBullishOb || !isBullishMaster)) return false;
+        if (!ob.isBullish && (!smcCfg.showBearishOb || !isBearishMaster)) return false;
       }
-      if (ob.isMitigated && !smcCfg.showMitigatedOb) continue;
-      if (ob.endIndex < startIdx || ob.startIndex > endIdx) continue;
+      if (ob.isMitigated && !smcCfg.showMitigatedOb) return false;
+      if (ob.endIndex < startIdx || ob.startIndex > endIdx) return false;
+      return true;
+    });
 
+    // Render only the most recent candidate blocks to preserve institutional chart clarity
+    const blocksToRender = candidateBlocks.slice(-maxVisibleZones);
+    for (const ob of blocksToRender) {
       const ls = Math.max(0, ob.startIndex - startIdx);
       const le = Math.min(visCnt, ob.endIndex - startIdx);
       const lx = ls * candleW;
@@ -1304,17 +1310,23 @@ export function renderChart(
     }
 
     // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG)
-    for (const fvg of smcData.fvgs) {
+    const candidateFvgs = smcData.fvgs.filter((fvg) => {
       if (fvg.isInverse) {
-        if (fvg.isBullish && (!smcCfg.showBullishIfvg || !isBullishMaster)) continue;
-        if (!fvg.isBullish && (!smcCfg.showBearishIfvg || !isBearishMaster)) continue;
+        if (fvg.isBullish && (!smcCfg.showBullishIfvg || !isBullishMaster)) return false;
+        if (!fvg.isBullish && (!smcCfg.showBearishIfvg || !isBearishMaster)) return false;
       } else {
-        if (fvg.isBullish && (!smcCfg.showBullishFvg || !isBullishMaster)) continue;
-        if (!fvg.isBullish && (!smcCfg.showBearishFvg || !isBearishMaster)) continue;
+        if (fvg.isBullish && (!smcCfg.showBullishFvg || !isBullishMaster)) return false;
+        if (!fvg.isBullish && (!smcCfg.showBearishFvg || !isBearishMaster)) return false;
       }
-      if (fvg.isMitigated && !smcCfg.showMitigatedFvg) continue;
-      if (fvg.endIndex < startIdx || fvg.startIndex > endIdx) continue;
+      if (fvg.isMitigated && !smcCfg.showMitigatedFvg) return false;
+      if (fvg.isInvalidated && !smcCfg.showMitigatedFvg) return false;
+      if (fvg.endIndex < startIdx || fvg.startIndex > endIdx) return false;
+      return true;
+    });
 
+    // Render only the most recent candidate FVGs/IFVGs to eliminate visual noise
+    const fvgsToRender = candidateFvgs.slice(-maxVisibleZones);
+    for (const fvg of fvgsToRender) {
       const ls = Math.max(0, fvg.startIndex - startIdx);
       const le = Math.min(visCnt, fvg.endIndex - startIdx);
       const lx = ls * candleW;

@@ -61,8 +61,8 @@ assert(DEFAULT_SMC_CONFIG.showBullishBreakers === true, 'showBullishBreakers def
 assert(DEFAULT_SMC_CONFIG.showBearishBreakers === true, 'showBearishBreakers default is true');
 assert(DEFAULT_SMC_CONFIG.showBullishFvg === true, 'showBullishFvg default is true');
 assert(DEFAULT_SMC_CONFIG.showBearishFvg === true, 'showBearishFvg default is true');
-assert(DEFAULT_SMC_CONFIG.showBullishIfvg === true, 'showBullishIfvg default is true');
-assert(DEFAULT_SMC_CONFIG.showBearishIfvg === true, 'showBearishIfvg default is true');
+assert(DEFAULT_SMC_CONFIG.showBullishIfvg === false, 'showBullishIfvg default is false (opt-in noise control)');
+assert(DEFAULT_SMC_CONFIG.showBearishIfvg === false, 'showBearishIfvg default is false (opt-in noise control)');
 assert(DEFAULT_SMC_CONFIG.showBullishConfluence === true, 'showBullishConfluence default is true');
 assert(DEFAULT_SMC_CONFIG.showBearishConfluence === true, 'showBearishConfluence default is true');
 assert(DEFAULT_SMC_CONFIG.showFvgMidpoint === true, 'showFvgMidpoint (50% CE) default is true');

@@ -344,8 +344,8 @@ export const DEFAULT_SMC_CONFIG: SmcConfig = {
   // FVGs & IFVGs
   showBullishFvg: true,
   showBearishFvg: true,
-  showBullishIfvg: true,
-  showBearishIfvg: true,
+  showBullishIfvg: false,           // Default false: Secondary advanced structure to eliminate chart clutter
+  showBearishIfvg: false,           // Default false: Secondary advanced structure to eliminate chart clutter
   showFvgMidpoint: true,
   showMitigatedFvg: false,
 
@@ -362,7 +362,7 @@ export const DEFAULT_SMC_CONFIG: SmcConfig = {
   showPdhPdl: true,
   showPwhPwl: false,
 
-  maxVisibleZones: 15,
+  maxVisibleZones: 8,
   filters: {
     requireDisplacement: false,
     displacementAtrMultiple: 1.25,
@@ -374,6 +374,7 @@ export const DEFAULT_SMC_CONFIG: SmcConfig = {
 };
 
 const SMC_STORAGE_KEY = 'mi007_smc_config';
+const SMC_CONFIG_VERSION = 2; // Version 2: Sanitized IFVG default noise
 
 export function getStoredSmcConfig(): SmcConfig {
   if (typeof window === 'undefined') return { ...DEFAULT_SMC_CONFIG };
@@ -381,7 +382,15 @@ export function getStoredSmcConfig(): SmcConfig {
     const raw = localStorage.getItem(SMC_STORAGE_KEY);
     if (!raw) return { ...DEFAULT_SMC_CONFIG };
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT_SMC_CONFIG, ...parsed };
+    const isV2 = parsed._version === SMC_CONFIG_VERSION;
+    return {
+      ...DEFAULT_SMC_CONFIG,
+      ...parsed,
+      // Suppress legacy unconstrained IFVG clutter on first upgrade to v2
+      showBullishIfvg: isV2 ? !!parsed.showBullishIfvg : false,
+      showBearishIfvg: isV2 ? !!parsed.showBearishIfvg : false,
+      maxVisibleZones: parsed.maxVisibleZones || 8,
+    };
   } catch {
     return { ...DEFAULT_SMC_CONFIG };
   }
@@ -390,7 +399,7 @@ export function getStoredSmcConfig(): SmcConfig {
 export function saveStoredSmcConfig(cfg: SmcConfig): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(SMC_STORAGE_KEY, JSON.stringify(cfg));
+    localStorage.setItem(SMC_STORAGE_KEY, JSON.stringify({ ...cfg, _version: SMC_CONFIG_VERSION }));
   } catch (err) {
     console.error('Failed to save SMC config:', err);
   }
@@ -890,16 +899,30 @@ export function evaluateFvgState(
   }
 }
 
-export function detectFairValueGaps(candles: Candle[]): SmcFvg[] {
+export function detectFairValueGaps(candles: Candle[], minGapThreshold?: number): SmcFvg[] {
   const fvgs: SmcFvg[] = [];
   if (candles.length < 3) return fvgs;
+
+  // Adaptive threshold: ignore micro-pip noise on high-nominal instruments (e.g. BTC)
+  let minGap = minGapThreshold || 0;
+  if (!minGapThreshold && candles.length > 5) {
+    const lastPrice = candles[candles.length - 1].close || 100;
+    let recentRange = 0;
+    const sampleSize = Math.min(20, candles.length);
+    for (let s = candles.length - sampleSize; s < candles.length; s++) {
+      recentRange += Math.abs(candles[s].high - candles[s].low);
+    }
+    const avgBarRange = recentRange / sampleSize;
+    // Gap must be at least 10% of average candle height or 0.01% of price
+    minGap = Math.max(avgBarRange * 0.1, lastPrice * 0.0001);
+  }
 
   for (let i = 2; i < candles.length; i++) {
     const c1 = candles[i - 2];
     const c3 = candles[i];
 
     // Bullish FVG (+FVG): Candle 3 low > Candle 1 high
-    if (c3.low > c1.high) {
+    if (c3.low - c1.high > minGap) {
       const topPrice = c3.low;
       const bottomPrice = c1.high;
       const cePrice = (topPrice + bottomPrice) / 2;
@@ -934,8 +957,9 @@ export function detectFairValueGaps(candles: Candle[]): SmcFvg[] {
           fvg.mitigationIndex = k;
           fvg.endIndex = k;
           fvg.mitigationPercent = 100;
+
           // Spawn Inverse FVG (Bearish Resistance Flip from failed bullish gap)
-          fvgs.push({
+          const ifvg: SmcFvg = {
             id: `ifvg-bear-${i - 1}`,
             startIndex: k,
             endIndex: candles.length - 1,
@@ -949,7 +973,30 @@ export function detectFairValueGaps(candles: Candle[]): SmcFvg[] {
             isInvalidated: false,
             isInverse: true,
             formationTime: cur.openTime,
-          });
+          };
+
+          // Full subsequent lifecycle tracking for spawned IFVG
+          for (let m = k + 1; m < candles.length; m++) {
+            const sub = candles[m];
+            if (sub.close > topPrice) {
+              ifvg.isInvalidated = true;
+              ifvg.isMitigated = true;
+              ifvg.mitigationIndex = m;
+              ifvg.endIndex = m;
+              ifvg.mitigationPercent = 100;
+              ifvg.state = 'INVALIDATED';
+              break;
+            }
+            if (sub.high >= bottomPrice) {
+              ifvg.isMitigated = true;
+              ifvg.mitigationIndex = m;
+              ifvg.endIndex = m;
+              ifvg.mitigationPercent = 100;
+              ifvg.state = 'MITIGATED';
+              break;
+            }
+          }
+          fvgs.push(ifvg);
           break;
         } else if (state === 'MITIGATED') {
           fvg.isMitigated = true;
@@ -967,7 +1014,7 @@ export function detectFairValueGaps(candles: Candle[]): SmcFvg[] {
     }
 
     // Bearish FVG (-FVG): Candle 3 high < Candle 1 low
-    if (c3.high < c1.low) {
+    if (c1.low - c3.high > minGap) {
       const topPrice = c1.low;
       const bottomPrice = c3.high;
       const cePrice = (topPrice + bottomPrice) / 2;
@@ -1002,8 +1049,9 @@ export function detectFairValueGaps(candles: Candle[]): SmcFvg[] {
           fvg.mitigationIndex = k;
           fvg.endIndex = k;
           fvg.mitigationPercent = 100;
+
           // Spawn Inverse FVG (Bullish Support Flip from failed bearish gap)
-          fvgs.push({
+          const ifvg: SmcFvg = {
             id: `ifvg-bull-${i - 1}`,
             startIndex: k,
             endIndex: candles.length - 1,
@@ -1017,7 +1065,30 @@ export function detectFairValueGaps(candles: Candle[]): SmcFvg[] {
             isInvalidated: false,
             isInverse: true,
             formationTime: cur.openTime,
-          });
+          };
+
+          // Full subsequent lifecycle tracking for spawned IFVG
+          for (let m = k + 1; m < candles.length; m++) {
+            const sub = candles[m];
+            if (sub.close < bottomPrice) {
+              ifvg.isInvalidated = true;
+              ifvg.isMitigated = true;
+              ifvg.mitigationIndex = m;
+              ifvg.endIndex = m;
+              ifvg.mitigationPercent = 100;
+              ifvg.state = 'INVALIDATED';
+              break;
+            }
+            if (sub.low <= topPrice) {
+              ifvg.isMitigated = true;
+              ifvg.mitigationIndex = m;
+              ifvg.endIndex = m;
+              ifvg.mitigationPercent = 100;
+              ifvg.state = 'MITIGATED';
+              break;
+            }
+          }
+          fvgs.push(ifvg);
           break;
         } else if (state === 'MITIGATED') {
           fvg.isMitigated = true;
