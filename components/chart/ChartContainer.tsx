@@ -28,6 +28,7 @@ import {
   getActiveTemplateId,
   setActiveTemplateId,
 } from '@/lib/chartTemplates';
+import { SmcConfig, DEFAULT_SMC_CONFIG, getStoredSmcConfig, saveStoredSmcConfig } from '@/lib/smcEngine';
 import { ChartToolbar } from './ChartToolbar';
 import { CandlestickCanvas } from './CandlestickCanvas';
 import { OHLCVHeader } from './OHLCVHeader';
@@ -212,7 +213,42 @@ export function ChartContainer({
   // Default clean view: Volume on, but all indicators and overlays off initially
   const [showVolume, setShowVolume] = useState(true);
   const [showVolumePanel, setShowVolumePanel] = useState(false);
-  const [showSmcOverlay, setShowSmcOverlay] = useState(false);
+  const [smcConfig, setSmcConfig] = useState<SmcConfig>(() => {
+    return getStoredSmcConfig();
+  });
+  const showSmcOverlay = smcConfig.enabled;
+  const setShowSmcOverlay = useCallback((valOrFn: boolean | ((prev: boolean) => boolean)) => {
+    setSmcConfig(prev => {
+      const nextEnabled = typeof valOrFn === 'function' ? valOrFn(prev.enabled) : valOrFn;
+      const updated = { ...prev, enabled: nextEnabled };
+      saveStoredSmcConfig(updated);
+      return updated;
+    });
+  }, []);
+
+  const handleSmcConfigChange = useCallback((newCfg: SmcConfig) => {
+    setSmcConfig(newCfg);
+    saveStoredSmcConfig(newCfg);
+  }, []);
+
+  // Detect URL parameter for initial SMC mode activation (e.g. from SMC scanner)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get('smc') === '1' || sp.get('smc') === 'true') {
+        setSmcConfig(prev => {
+          const next = { ...prev, enabled: true };
+          saveStoredSmcConfig(next);
+          return next;
+        });
+      }
+      const tfParam = sp.get('tf') as Timeframe;
+      if (tfParam && ['1m', '5m', '15m', '30m', '1H', '4H', '1D', '1W', '1M'].includes(tfParam)) {
+        setTimeframe(tfParam);
+      }
+    }
+  }, []);
+
   const [showVolumeProfile, setShowVolumeProfile] = useState(false);
   const [indicatorConfigs, setIndicatorConfigs] = useState<IndicatorConfig[]>(() => {
     if (typeof window === 'undefined') return [];
@@ -923,6 +959,7 @@ export function ChartContainer({
     setTimeframe(tpl.timeframe);
     setChartType(tpl.chartType);
     setShowSmcOverlay(tpl.showSmcOverlay);
+    if (tpl.smcConfig) setSmcConfig(tpl.smcConfig);
     setShowVolumeProfile(tpl.showVolumeProfile);
     setShowVolume(tpl.showVolume);
 
@@ -977,6 +1014,7 @@ export function ChartContainer({
       activeIndicators,
       indicatorConfigs,
       showSmcOverlay,
+      smcConfig,
       showVolumeProfile,
       showVolume,
       updatedAt: Date.now(),
@@ -987,7 +1025,7 @@ export function ChartContainer({
     setActiveTemplateId(slotId);
     setSaveStatus('saved');
     setTimeout(() => setSaveStatus('idle'), 2000);
-  }, [timeframe, chartType, activeIndicators, indicatorConfigs, showSmcOverlay, showVolumeProfile, showVolume, templates]);
+  }, [timeframe, chartType, activeIndicators, indicatorConfigs, showSmcOverlay, smcConfig, showVolumeProfile, showVolume, templates]);
 
   const handleSaveChartLayout = useCallback(() => {
     const slotId = activeTemplateId || 'tpl_1';
@@ -1215,6 +1253,8 @@ export function ChartContainer({
         showVolume={showVolume}
         showVolumePanel={showVolumePanel}
         showSmcOverlay={showSmcOverlay}
+        smcConfig={smcConfig}
+        onSmcConfigChange={handleSmcConfigChange}
         showVolumeProfile={showVolumeProfile}
         activeIndicators={activeIndicators}
         indicators={indicatorConfigs}
@@ -1297,6 +1337,7 @@ export function ChartContainer({
             showVolume={showVolume}
             showVolumePanel={showVolumePanel}
             showSmcOverlay={showSmcOverlay}
+            smcConfig={smcConfig}
             showVolumeProfile={showVolumeProfile}
             showFnoOverlay={false}
             fnoLevels={undefined}

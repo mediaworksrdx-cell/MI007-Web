@@ -13,6 +13,7 @@ export interface ChartTemplate {
   customConfigs?: Partial<Record<IndicatorType, Partial<IndicatorConfig>>>;
   showVolume: boolean;
   showSmcOverlay: boolean;
+  smcConfig?: import('./smcEngine').SmcConfig;
   showVolumeProfile: boolean;
   updatedAt: number;
 }

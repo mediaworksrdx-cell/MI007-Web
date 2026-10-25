@@ -43,13 +43,14 @@ export function TopToolbar({
 
   const TABS = [
     { id: 'screener', label: '1. Screeners' },
-    { id: 'technicalScreener', label: '2. Technical Strategies' },
-    { id: 'queryBuilder', label: '3. Query Builder' },
-    { id: 'discover', label: '4. Discover Screens' },
-    { id: 'watchlists', label: '5. Watchlists' },
-    { id: 'analysis', label: '6. Company Analysis' },
-    { id: 'peers', label: '7. Peer Matrix' },
-    { id: 'alerts', label: '8. Alerts' },
+    { id: 'smcScanner', label: '2. SMC Scanner' },
+    { id: 'technicalScreener', label: '3. Technical Strategies' },
+    { id: 'queryBuilder', label: '4. Query Builder' },
+    { id: 'discover', label: '5. Discover Screens' },
+    { id: 'watchlists', label: '6. Watchlists' },
+    { id: 'analysis', label: '7. Company Analysis' },
+    { id: 'peers', label: '8. Peer Matrix' },
+    { id: 'alerts', label: '9. Alerts' },
   ];
 
   return (

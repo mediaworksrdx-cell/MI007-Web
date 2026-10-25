@@ -105,46 +105,22 @@ export interface VolumeProfileData {
   maxBucketVolume: number;
 }
 
-export interface SmcFvg {
-  startIndex: number;
-  endIndex: number;
-  topPrice: number;
-  bottomPrice: number;
-  isBullish: boolean;
-  isMitigated: boolean;
-}
-
-export interface SmcLiquiditySweep {
-  candleIndex: number;
-  price: number;
-  isHighSweep: boolean;
-  label: string;
-}
-
-export interface SmcOrderBlock {
-  startIndex: number;
-  endIndex: number;
-  topPrice: number;
-  bottomPrice: number;
-  isBullish: boolean;
-  isMitigated: boolean;
-  volumeRatio?: number;
-}
-
-export interface SmcStructureBreak {
-  candleIndex: number;
-  price: number;
-  isBullish: boolean;
-  type: string; // 'BOS ↑' | 'BOS ↓' | 'CHoCH ↑' | 'CHoCH ↓'
-}
-
-export interface SmcAnalysis {
-  fvgs: SmcFvg[];
-  sweeps: SmcLiquiditySweep[];
-  orderBlocks: SmcOrderBlock[];
-  structureBreaks: SmcStructureBreak[];
-  equilibriumPrice: number;
-}
+export type {
+  SmcSwingType,
+  SmcSwingPoint,
+  SmcBreakType,
+  SmcStructureBreak,
+  SmcLiquidityLevel,
+  SmcLiquiditySweep,
+  SmcOrderBlock,
+  SmcFvg,
+  SmcDealingRange,
+  SmcSessionLevels,
+  SmcSetupType,
+  SmcConfirmedSetup,
+  SmcAnalysis,
+  SmcConfig,
+} from './smcEngine';
 
 export interface FnoOverlayLevels {
   callWall?: number;
@@ -173,6 +149,7 @@ export interface ChartOptions {
   showVolume: boolean;
   showVolumePanel: boolean;
   showSmcOverlay: boolean;
+  smcConfig?: import('./smcEngine').SmcConfig;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;

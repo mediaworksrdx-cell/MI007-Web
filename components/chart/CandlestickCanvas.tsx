@@ -4,11 +4,14 @@ import { useRef, useEffect, useCallback, useState, useLayoutEffect, useMemo } fr
 import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels, StrategyPayoffOverlay, MagnetReticle, ScaleState } from '@/lib/types';
 import { isOverlay, CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN } from '@/lib/types';
 import type { DrawingItem, DrawingToolType, DrawingPoint } from '@/lib/drawingTypes';
-import { renderChart, renderOverlay, resolveDrawingPointIndex, computeChartPriceBounds } from '@/lib/chartRenderer';
+import { renderChart, renderOverlay, resolveDrawingPointIndex, computeChartPriceBounds, formatPrice } from '@/lib/chartRenderer';
 import { DrawingQuickBar } from './DrawingQuickBar';
 import { DrawingSettingsModal } from './DrawingSettingsModal';
 import { DrawingContextMenu } from './DrawingContextMenu';
 import type { CursorMode } from './DrawingToolbar';
+import type { SmcConfig } from '@/lib/smcEngine';
+import { calculateSMC } from '@/lib/smcEngine';
+import { SmcInspectorModal, type SmcInspectorData } from './SmcInspectorModal';
 
 interface CandlestickCanvasProps {
   candles: Candle[];
@@ -16,6 +19,7 @@ interface CandlestickCanvasProps {
   showVolume: boolean;
   showVolumePanel: boolean;
   showSmcOverlay: boolean;
+  smcConfig?: SmcConfig;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;
@@ -144,7 +148,7 @@ const VISIBLE_CANDLES_BASE = 60;
 
 export function CandlestickCanvas({
   candles, chartType, showVolume, showVolumePanel,
-  showSmcOverlay, showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
+  showSmcOverlay, smcConfig, showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
   currentPriceOverride, timeframe, className = '',
   activeDrawingTool = 'NONE',
@@ -179,6 +183,7 @@ export function CandlestickCanvas({
   const [drawingInProgress, setDrawingInProgress] = useState<DrawingItem | null>(null);
   const [quickBarPos, setQuickBarPos] = useState<{ x: number; y: number } | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [inspectedSmc, setInspectedSmc] = useState<SmcInspectorData | null>(null);
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [contextMenuDrawing, setContextMenuDrawing] = useState<DrawingItem | null>(null);
   const [dpr, setDpr] = useState(1);
@@ -738,6 +743,8 @@ export function CandlestickCanvas({
   showVolumePanelRef.current = showVolumePanel;
   const showSmcOverlayRef = useRef(showSmcOverlay);
   showSmcOverlayRef.current = showSmcOverlay;
+  const smcConfigRef = useRef(smcConfig);
+  smcConfigRef.current = smcConfig;
   const showVolumeProfileRef = useRef(showVolumeProfile);
   showVolumeProfileRef.current = showVolumeProfile;
   const indicatorsRef = useRef(indicators);
@@ -790,7 +797,8 @@ export function CandlestickCanvas({
         chartType: chartTypeRef.current,
         showVolume: showVolumeRef.current,
         showVolumePanel: showVolumePanelRef.current,
-        showSmcOverlay: showSmcOverlayRef.current,
+        showSmcOverlay: smcConfigRef.current ? smcConfigRef.current.enabled : showSmcOverlayRef.current,
+        smcConfig: smcConfigRef.current,
         showVolumeProfile: showVolumeProfileRef.current,
         indicators: indicatorsRef.current,
         indicatorResults: indicatorResultsRef.current,
@@ -840,7 +848,9 @@ export function CandlestickCanvas({
         cleanCandles,
         {
           chartType, showVolume, showVolumePanel,
-          showSmcOverlay, showVolumeProfile,
+          showSmcOverlay: smcConfig ? smcConfig.enabled : showSmcOverlay,
+          smcConfig,
+          showVolumeProfile,
           showFnoOverlay, fnoLevels,
           strategyOverlay,
           indicators, indicatorResults,
@@ -863,7 +873,7 @@ export function CandlestickCanvas({
         chartRafIdRef.current = null;
       }
     };
-  }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, showVolumeProfile,
+  }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, smcConfig, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, isAllDrawingsHidden, startIdx, endIdx, priceScaleRatio, priceOffset, size, dpr, clockTick]);
@@ -1215,6 +1225,138 @@ export function CandlestickCanvas({
     }
   }, [activeDrawingTool, visibleCount, cleanCandles, drawings, drawingInProgress, getPointFromEvent, onUpdateDrawing, size.h, size.w, startIdx, endIdx, priceOffset, priceScaleRatio, showVolumePanel, indicators, isMagnetActive, isShiftHeld, requestOverlayRender]);
 
+  const findSmcAtCoords = useCallback((x: number, y: number): SmcInspectorData | null => {
+    const isSmcActive = smcConfig ? smcConfig.enabled : showSmcOverlay;
+    if (!isSmcActive || cleanCandles.length < 5) return null;
+
+    const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
+    const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
+    const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
+    const chartH = size.h - panelH - CHART_BOTTOM_MARGIN;
+    const chartW = size.w - CHART_RIGHT_MARGIN;
+    const visCnt = visibleCount;
+    if (visCnt <= 0) return null;
+    const candleW = chartW / visCnt;
+
+    const { pMin, pRange } = computeChartPriceBounds(
+      cleanCandles,
+      startIdx,
+      endIdx,
+      currentPriceOverride,
+      priceOffset,
+      priceScaleRatio
+    );
+    const priceToY = (p: number) => chartH - ((p - pMin) / pRange * chartH);
+
+    const smc = calculateSMC(cleanCandles, smcConfig);
+
+    // 1. Order Blocks & Breakers
+    for (const ob of smc.orderBlocks) {
+      if (ob.endIndex < startIdx || ob.startIndex > endIdx) continue;
+      const lx = Math.max(0, ob.startIndex - startIdx) * candleW;
+      const rx = Math.min(visCnt, ob.endIndex - startIdx) * candleW + candleW;
+      const yT = priceToY(ob.topPrice);
+      const yB = priceToY(ob.bottomPrice);
+      const topY = Math.min(yT, yB);
+      const botY = Math.max(yT, yB);
+      if (x >= lx && x <= rx && y >= topY - 3 && y <= botY + 3) {
+        const d = cleanCandles[ob.startIndex];
+        const timeStr = d ? new Date(d.openTime).toLocaleString() : 'Recent';
+        return {
+          title: ob.isBreaker
+            ? (ob.isBullish ? 'Bullish Breaker Block' : 'Bearish Breaker Block')
+            : (ob.isBullish ? 'Bullish Demand Order Block' : 'Bearish Supply Order Block'),
+          type: ob.isBreaker ? 'Breaker Block (Flipped)' : 'Institutional Order Block',
+          timeframe,
+          formationTime: timeStr,
+          priceBoundaries: `${formatPrice(ob.bottomPrice)} – ${formatPrice(ob.topPrice)}`,
+          detectionRule: ob.isBullish
+            ? `Bearish candle before violent impulse breaking swing high (${ob.volumeRatio.toFixed(1)}x Vol MA)`
+            : `Bullish candle before violent impulse breaking swing low (${ob.volumeRatio.toFixed(1)}x Vol MA)`,
+          currentStatus: ob.isBreaker
+            ? 'Violated Demand -> Flipped Resistance'
+            : ob.isMitigated
+            ? 'Mitigated (Tested by Price)'
+            : 'Active (Unmitigated Liquidity)',
+          invalidation: ob.isBullish
+            ? `Candle close below ${formatPrice(ob.bottomPrice)} invalidates demand structure`
+            : `Candle close above ${formatPrice(ob.topPrice)} invalidates supply structure`,
+          target: ob.isBullish ? formatPrice(smc.dealingRange.highPrice) : formatPrice(smc.dealingRange.lowPrice),
+          riskReward: '2.5 - 3.5 R:R',
+        };
+      }
+    }
+
+    // 2. Fair Value Gaps
+    for (const fvg of smc.fvgs) {
+      if (fvg.endIndex < startIdx || fvg.startIndex > endIdx) continue;
+      const lx = Math.max(0, fvg.startIndex - startIdx) * candleW;
+      const rx = Math.min(visCnt, fvg.endIndex - startIdx) * candleW + candleW;
+      const yT = priceToY(fvg.topPrice);
+      const yB = priceToY(fvg.bottomPrice);
+      const topY = Math.min(yT, yB);
+      const botY = Math.max(yT, yB);
+      if (x >= lx && x <= rx && y >= topY - 3 && y <= botY + 3) {
+        const d = cleanCandles[fvg.startIndex];
+        const timeStr = d ? new Date(d.openTime).toLocaleString() : 'Recent';
+        return {
+          title: fvg.isBullish ? 'Bullish Fair Value Gap (+FVG)' : 'Bearish Fair Value Gap (-FVG)',
+          type: 'Imbalance (Inefficiency)',
+          timeframe,
+          formationTime: timeStr,
+          priceBoundaries: `${formatPrice(fvg.bottomPrice)} – ${formatPrice(fvg.topPrice)} (CE: ${formatPrice(fvg.cePrice)})`,
+          detectionRule: '3-candle liquidity gap displacement leaving unfilled order flow',
+          currentStatus: fvg.isMitigated
+            ? 'Fully Filled (Mitigated)'
+            : fvg.mitigationPercent > 0
+            ? `Partially Tapped (${fvg.mitigationPercent}%)`
+            : 'Active Unfilled Imbalance',
+          invalidation: `Price trading completely through ${formatPrice(fvg.isBullish ? fvg.bottomPrice : fvg.topPrice)} fully mitigates gap`,
+          target: formatPrice(fvg.cePrice),
+          riskReward: '50% Consequent Encroachment',
+        };
+      }
+    }
+
+    // 3. Structure Breaks (BOS / CHoCH)
+    for (const sb of smc.structureBreaks) {
+      const lineY = priceToY(sb.price);
+      if (Math.abs(y - lineY) <= 8 && x < chartW) {
+        return {
+          title: sb.breakType === 'CHoCH' ? 'Change of Character (CHoCH / MSS)' : 'Break of Structure (BOS)',
+          type: 'Market Structure Break',
+          timeframe,
+          formationTime: new Date(sb.time).toLocaleString(),
+          priceBoundaries: `Break Trigger Level: ${formatPrice(sb.price)}`,
+          detectionRule: sb.breakType === 'CHoCH'
+            ? 'Reversal structural shift breaking previous swing pivot against prevailing trend'
+            : 'Continuation structural break in alignment with prevailing trend direction',
+          currentStatus: 'Confirmed by Candle Close',
+          invalidation: `Opposite structural shift below recent swing invalidates bias`,
+        };
+      }
+    }
+
+    // 4. Equilibrium Midline (50%)
+    if (smc.equilibriumPrice > 0) {
+      const eqY = priceToY(smc.equilibriumPrice);
+      if (Math.abs(y - eqY) <= 8 && x < chartW) {
+        return {
+          title: 'Equilibrium Midline (50% Range)',
+          type: 'Dealing Range Fair Value',
+          timeframe,
+          formationTime: 'Active Range',
+          priceBoundaries: `50% EQ: ${formatPrice(smc.equilibriumPrice)}`,
+          detectionRule: 'Midpoint of active dealing swing range separating Premium and Discount zones',
+          currentStatus: 'Active Dealing Boundary',
+          invalidation: 'Shift to a new major swing high or low expands dealing range',
+        };
+      }
+    }
+
+    return null;
+  }, [smcConfig, showSmcOverlay, cleanCandles, indicators, showVolumePanel, size.h, size.w, visibleCount, startIdx, endIdx, currentPriceOverride, priceOffset, priceScaleRatio, timeframe]);
+
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLElement>) => {
     // Flush any pending scale or pan animations
     if (panRafIdRef.current !== null) {
@@ -1277,6 +1419,19 @@ export function CandlestickCanvas({
       isDraggingRef.current = false;
       setIsDragging(false);
       try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+    }
+
+    // Check if user clicked on canvas to inspect an SMC overlay
+    const clickDist = Math.hypot(e.clientX - pointerDownPosRef.current.x, e.clientY - pointerDownPosRef.current.y);
+    if (clickDist < 5 && (!activeDrawingTool || activeDrawingTool === 'NONE')) {
+      const canvas = overlayCanvasRef.current || canvasRef.current;
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        const hit = findSmcAtCoords(clickX, clickY);
+        setInspectedSmc(hit);
+      }
     }
 
     // Handle completed drawings
@@ -1347,7 +1502,7 @@ export function CandlestickCanvas({
         }
       }
     }
-  }, [activeDrawingTool, drawingInProgress, getPointFromEvent, isDrawingModeLocked, onAddDrawing, onDrawingToolChange]);
+  }, [activeDrawingTool, drawingInProgress, getPointFromEvent, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, findSmcAtCoords]);
 
   const handlePointerLeave = useCallback((e?: React.PointerEvent<HTMLElement>) => {
     // If pointer moves onto a child element within container (e.g. zoom controls dock), do not clear crosshair
@@ -2105,6 +2260,13 @@ export function CandlestickCanvas({
             </div>
           </div>
         </div>
+      )}
+      {/* ── Layer 6: Smart Money Concepts (SMC) Overlay Inspector ── */}
+      {inspectedSmc && (
+        <SmcInspectorModal
+          data={inspectedSmc}
+          onClose={() => setInspectedSmc(null)}
+        />
       )}
     </div>
   );

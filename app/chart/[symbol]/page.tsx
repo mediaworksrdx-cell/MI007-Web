@@ -57,7 +57,10 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
   let backLabel = 'BACK TO TERMINAL';
 
   if (isFromScreener) {
-    if (returnTab === 'technicalScreener') {
+    if (returnTab === 'smcScanner') {
+      backHref = '/terminal/screener?tab=smcScanner';
+      backLabel = 'BACK TO SMC SCANNER';
+    } else if (returnTab === 'technicalScreener') {
       backHref = '/terminal/screener?tab=technicalScreener';
       backLabel = 'BACK TO STRATEGIES';
     } else if (returnTab === 'watchlists') {

@@ -48,6 +48,7 @@ import { WatchlistsView } from './WatchlistsView';
 import { PeerComparisonView } from './PeerComparisonView';
 import { ScreeningAlertsView } from './ScreeningAlertsView';
 import { TechnicalStrategyScreenerView } from './TechnicalStrategyScreenerView';
+import { SmcScannerView } from './SmcScannerView';
 import { BacktestingView } from './BacktestingView';
 import { SaveScreenModal } from './SaveScreenModal';
 import { CustomRatioModal } from './CustomRatioModal';
@@ -68,6 +69,7 @@ export function ScreenerWorkspace() {
   const [market, setMarket] = useState<MarketRegion>((globalMarket as MarketRegion) || 'INDIA');
   const [activeTab, setActiveTab] = useState<
     | 'screener'
+    | 'smcScanner'
     | 'technicalScreener'
     | 'backtesting'
     | 'queryBuilder'
@@ -77,7 +79,7 @@ export function ScreenerWorkspace() {
     | 'peers'
     | 'alerts'
   >(
-    urlTab && ['screener', 'technicalScreener', 'backtesting', 'queryBuilder', 'discover', 'watchlists', 'analysis', 'peers', 'alerts'].includes(urlTab)
+    urlTab && ['screener', 'smcScanner', 'technicalScreener', 'backtesting', 'queryBuilder', 'discover', 'watchlists', 'analysis', 'peers', 'alerts'].includes(urlTab)
       ? (urlTab as any)
       : urlTab === 'saved'
       ? 'discover'
@@ -490,7 +492,17 @@ export function ScreenerWorkspace() {
         </div>
       )}
 
-      {/* ── 2. Technical Strategy Screener Workspace ── */}
+      {/* ── 2. Smart Money Concepts (SMC) Institutional Scanner ── */}
+      {activeTab === 'smcScanner' && (
+        <SmcScannerView
+          companies={marketCompanies}
+          market={market}
+          onSelectCompany={handleOpenCompanyAnalysis}
+          onBackToScreener={() => setActiveTab('screener')}
+        />
+      )}
+
+      {/* ── 3. Technical Strategy Screener Workspace ── */}
       {activeTab === 'technicalScreener' && (
         <TechnicalStrategyScreenerView
           companies={marketCompanies}
