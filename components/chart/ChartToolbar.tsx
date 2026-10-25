@@ -80,20 +80,50 @@ function SmcToggleRow({
   checked,
   onChange,
   badge,
+  badgeColor,
+  accent = 'amber',
 }: {
   label: string;
   sublabel?: string;
   checked: boolean;
   onChange: (val: boolean) => void;
   badge?: string;
+  badgeColor?: string;
+  accent?: 'amber' | 'emerald' | 'rose' | 'teal' | 'indigo' | 'purple' | 'blue';
 }) {
+  const getToggleColor = () => {
+    if (!checked) return 'bg-slate-300 dark:bg-slate-700';
+    switch (accent) {
+      case 'emerald':
+        return 'bg-emerald-500';
+      case 'rose':
+        return 'bg-rose-500';
+      case 'teal':
+        return 'bg-teal-500';
+      case 'blue':
+        return 'bg-blue-500';
+      case 'purple':
+        return 'bg-purple-500';
+      case 'indigo':
+        return 'bg-indigo-500';
+      case 'amber':
+      default:
+        return 'bg-amber-500';
+    }
+  };
+
   return (
     <div className="flex items-center justify-between py-1 px-1.5 rounded-lg hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
       <div className="min-w-0 pr-2">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-semibold text-[11.5px] text-slate-800 dark:text-slate-200">{label}</span>
           {badge && (
-            <span className="text-[9px] font-mono font-bold px-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
+            <span
+              className={`text-[9px] font-mono font-bold px-1 rounded border ${
+                badgeColor ||
+                'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700'
+              }`}
+            >
               {badge}
             </span>
           )}
@@ -103,9 +133,7 @@ function SmcToggleRow({
       <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`w-7 h-4 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-          checked ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'
-        }`}
+        className={`w-7 h-4 rounded-full transition-colors relative cursor-pointer shrink-0 ${getToggleColor()}`}
       >
         <span
           className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
@@ -176,22 +204,104 @@ export function ChartToolbar({
     }
   };
 
-  const handleSetPreset = (preset: 'all' | 'structure' | 'zones' | 'reset') => {
+  const handleSetPreset = (preset: 'all' | 'bullish' | 'bearish' | 'structure' | 'zones' | 'reset') => {
     if (preset === 'all') {
       handleUpdateSmc({
         enabled: true,
+        showBullishSetups: true,
+        showBearishSetups: true,
         showBos: true,
         showChoch: true,
+        showBullishStructure: true,
+        showBearishStructure: true,
         showSwings: true,
         showSweeps: true,
+        showSslSweeps: true,
+        showBslSweeps: true,
         showEqualHighLow: true,
         showLiquidityLevels: true,
         showBullishOb: true,
         showBearishOb: true,
         showBreakers: true,
+        showBullishBreakers: true,
+        showBearishBreakers: true,
+        showMitigatedOb: false,
         showBullishFvg: true,
         showBearishFvg: true,
+        showBullishIfvg: true,
+        showBearishIfvg: true,
         showFvgMidpoint: true,
+        showMitigatedFvg: false,
+        showBullishConfluence: true,
+        showBearishConfluence: true,
+        showPremiumDiscount: true,
+        showEquilibrium: true,
+        showOte: true,
+        showPdhPdl: true,
+      });
+    } else if (preset === 'bullish') {
+      handleUpdateSmc({
+        enabled: true,
+        showBullishSetups: true,
+        showBearishSetups: false,
+        showBos: true,
+        showChoch: true,
+        showBullishStructure: true,
+        showBearishStructure: false,
+        showSwings: true,
+        showSweeps: true,
+        showSslSweeps: true,
+        showBslSweeps: false,
+        showEqualHighLow: true,
+        showLiquidityLevels: true,
+        showBullishOb: true,
+        showBearishOb: false,
+        showBreakers: true,
+        showBullishBreakers: true,
+        showBearishBreakers: false,
+        showMitigatedOb: false,
+        showBullishFvg: true,
+        showBearishFvg: false,
+        showBullishIfvg: true,
+        showBearishIfvg: false,
+        showFvgMidpoint: true,
+        showMitigatedFvg: false,
+        showBullishConfluence: true,
+        showBearishConfluence: false,
+        showPremiumDiscount: true,
+        showEquilibrium: true,
+        showOte: true,
+        showPdhPdl: true,
+      });
+    } else if (preset === 'bearish') {
+      handleUpdateSmc({
+        enabled: true,
+        showBullishSetups: false,
+        showBearishSetups: true,
+        showBos: true,
+        showChoch: true,
+        showBullishStructure: false,
+        showBearishStructure: true,
+        showSwings: true,
+        showSweeps: true,
+        showSslSweeps: false,
+        showBslSweeps: true,
+        showEqualHighLow: true,
+        showLiquidityLevels: true,
+        showBullishOb: false,
+        showBearishOb: true,
+        showBreakers: true,
+        showBullishBreakers: false,
+        showBearishBreakers: true,
+        showMitigatedOb: false,
+        showBullishFvg: false,
+        showBearishFvg: true,
+        showBullishIfvg: false,
+        showBearishIfvg: true,
+        showFvgMidpoint: true,
+        showMitigatedFvg: false,
+        showBullishConfluence: false,
+        showBearishConfluence: true,
         showPremiumDiscount: true,
         showEquilibrium: true,
         showOte: true,
@@ -202,15 +312,23 @@ export function ChartToolbar({
         enabled: true,
         showBos: true,
         showChoch: true,
+        showBullishStructure: true,
+        showBearishStructure: true,
         showSwings: true,
         showSweeps: true,
+        showSslSweeps: true,
+        showBslSweeps: true,
         showEqualHighLow: true,
         showLiquidityLevels: true,
         showBullishOb: false,
         showBearishOb: false,
         showBreakers: false,
+        showBullishBreakers: false,
+        showBearishBreakers: false,
         showBullishFvg: false,
         showBearishFvg: false,
+        showBullishIfvg: false,
+        showBearishIfvg: false,
         showFvgMidpoint: false,
         showPremiumDiscount: true,
         showEquilibrium: true,
@@ -220,15 +338,23 @@ export function ChartToolbar({
         enabled: true,
         showBos: false,
         showChoch: false,
+        showBullishStructure: false,
+        showBearishStructure: false,
         showSwings: false,
         showSweeps: false,
+        showSslSweeps: false,
+        showBslSweeps: false,
         showEqualHighLow: false,
         showLiquidityLevels: false,
         showBullishOb: true,
         showBearishOb: true,
         showBreakers: true,
+        showBullishBreakers: true,
+        showBearishBreakers: true,
         showBullishFvg: true,
         showBearishFvg: true,
+        showBullishIfvg: true,
+        showBearishIfvg: true,
         showFvgMidpoint: true,
         showPremiumDiscount: true,
         showEquilibrium: true,
@@ -603,7 +729,7 @@ export function ChartToolbar({
 
           {openMenu === 'SMC' && (
             <div
-              className="absolute top-full left-0 mt-1 w-84 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[520px] flex flex-col animate-in fade-in duration-75 overflow-hidden"
+              className="absolute top-full left-0 mt-1 w-96 sm:w-[420px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[580px] flex flex-col animate-in fade-in duration-75 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -659,6 +785,20 @@ export function ChartToolbar({
                 </button>
                 <button
                   type="button"
+                  onClick={() => handleSetPreset('bullish')}
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 cursor-pointer transition-colors"
+                >
+                  ▲ Bullish
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetPreset('bearish')}
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 cursor-pointer transition-colors"
+                >
+                  ▼ Bearish
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleSetPreset('structure')}
                   className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
                 >
@@ -682,10 +822,104 @@ export function ChartToolbar({
 
               {/* Toggles Container */}
               <div className={`flex-1 overflow-y-auto px-3 py-2 space-y-3.5 text-xs ${!activeSmcConfig.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                {/* ── SMC Setup Direction (Master Controls) ── */}
+                <div className="p-2.5 rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-slate-100/60 dark:bg-slate-900/60 space-y-2">
+                  <div className="flex items-center justify-between px-0.5">
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <span>🎯</span>
+                      <span>SMC Setup Direction (Master Controls)</span>
+                    </div>
+                    <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500">Filters all signals & zones</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Bullish Setup Master Card */}
+                    <div className={`p-2 rounded-lg border transition-all ${
+                      activeSmcConfig.showBullishSetups !== false
+                        ? 'bg-emerald-500/8 border-emerald-500/40 dark:bg-emerald-950/25 dark:border-emerald-500/35'
+                        : 'bg-slate-100/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800 opacity-60'
+                    }`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+                          <span className="font-bold text-[11px] text-emerald-700 dark:text-emerald-400">Bullish Setup</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateSmc({ showBullishSetups: activeSmcConfig.showBullishSetups === false ? true : false })}
+                          className={`w-7 h-4 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                            activeSmcConfig.showBullishSetups !== false ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+                          }`}
+                          title="Toggle all Bullish / Long setups"
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
+                              activeSmcConfig.showBullishSetups !== false ? 'translate-x-3' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <div className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight mb-1.5">
+                        Demand zones & long-side signals
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">+BOS</span>
+                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">SSL Sweep</span>
+                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Demand OB</span>
+                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">+FVG</span>
+                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">+IFVG</span>
+                      </div>
+                    </div>
+
+                    {/* Bearish Setup Master Card */}
+                    <div className={`p-2 rounded-lg border transition-all ${
+                      activeSmcConfig.showBearishSetups !== false
+                        ? 'bg-rose-500/8 border-rose-500/40 dark:bg-rose-950/25 dark:border-rose-500/35'
+                        : 'bg-slate-100/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800 opacity-60'
+                    }`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 inline-block shadow-[0_0_6px_rgba(244,63,94,0.5)]" />
+                          <span className="font-bold text-[11px] text-rose-700 dark:text-rose-400">Bearish Setup</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateSmc({ showBearishSetups: activeSmcConfig.showBearishSetups === false ? true : false })}
+                          className={`w-7 h-4 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                            activeSmcConfig.showBearishSetups !== false ? 'bg-rose-500' : 'bg-slate-300 dark:bg-slate-700'
+                          }`}
+                          title="Toggle all Bearish / Short setups"
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
+                              activeSmcConfig.showBearishSetups !== false ? 'translate-x-3' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <div className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight mb-1.5">
+                        Supply zones & short-side signals
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">-BOS</span>
+                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">BSL Sweep</span>
+                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">Supply OB</span>
+                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">-FVG</span>
+                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">-IFVG</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-[9px] text-slate-400 dark:text-slate-500 px-0.5">
+                    <span className="font-bold text-amber-500">Note:</span>
+                    <span>Equilibrium (50% EQ) renders as neutral context independent of direction filters.</span>
+                  </div>
+                </div>
+
                 {/* 1. Market Structure */}
                 <div>
                   <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1 px-1">
-                    Market Structure
+                    Market Structure (Directional)
                   </div>
                   <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
                     <SmcToggleRow
@@ -694,6 +928,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showBos}
                       onChange={(v) => handleUpdateSmc({ showBos: v })}
                       badge="BOS ↑↓"
+                      accent="amber"
                     />
                     <SmcToggleRow
                       label="CHoCH / MSS"
@@ -701,6 +936,25 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showChoch}
                       onChange={(v) => handleUpdateSmc({ showChoch: v })}
                       badge="CHoCH"
+                      accent="amber"
+                    />
+                    <SmcToggleRow
+                      label="Bullish BOS & CHoCH / MSS"
+                      sublabel="Demand-side break of structure & character shifts"
+                      checked={activeSmcConfig.showBullishStructure}
+                      onChange={(v) => handleUpdateSmc({ showBullishStructure: v })}
+                      badge="+BOS / +CHoCH"
+                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                      accent="emerald"
+                    />
+                    <SmcToggleRow
+                      label="Bearish BOS & CHoCH / MSS"
+                      sublabel="Supply-side break of structure & character shifts"
+                      checked={activeSmcConfig.showBearishStructure}
+                      onChange={(v) => handleUpdateSmc({ showBearishStructure: v })}
+                      badge="-BOS / -CHoCH"
+                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                      accent="rose"
                     />
                     <SmcToggleRow
                       label="Swing Points"
@@ -708,6 +962,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showSwings}
                       onChange={(v) => handleUpdateSmc({ showSwings: v })}
                       badge="HH/HL/LH/LL"
+                      accent="amber"
                     />
                   </div>
                 </div>
@@ -724,6 +979,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showLiquidityLevels}
                       onChange={(v) => handleUpdateSmc({ showLiquidityLevels: v })}
                       badge="$$$"
+                      accent="amber"
                     />
                     <SmcToggleRow
                       label="Equal Highs & Lows"
@@ -731,72 +987,138 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showEqualHighLow}
                       onChange={(v) => handleUpdateSmc({ showEqualHighLow: v })}
                       badge="EQH/EQL"
+                      accent="amber"
                     />
                     <SmcToggleRow
-                      label="Liquidity Sweeps"
-                      sublabel="Institutional stop hunts & rejections"
+                      label="Liquidity Sweeps (Master)"
+                      sublabel="Stop hunt & wick rejection sweeps"
                       checked={activeSmcConfig.showSweeps}
                       onChange={(v) => handleUpdateSmc({ showSweeps: v })}
                       badge="Sweeps"
+                      accent="amber"
+                    />
+                    <SmcToggleRow
+                      label="Bullish Sweeps (SSL Sweeps)"
+                      sublabel="Sell-side liquidity sweep & rapid bullish reclaim"
+                      checked={activeSmcConfig.showSslSweeps}
+                      onChange={(v) => handleUpdateSmc({ showSslSweeps: v })}
+                      badge="SSL Sweep"
+                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                      accent="emerald"
+                    />
+                    <SmcToggleRow
+                      label="Bearish Sweeps (BSL Sweeps)"
+                      sublabel="Buy-side liquidity sweep & rapid bearish rejection"
+                      checked={activeSmcConfig.showBslSweeps}
+                      onChange={(v) => handleUpdateSmc({ showBslSweeps: v })}
+                      badge="BSL Sweep"
+                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                      accent="rose"
                     />
                   </div>
                 </div>
 
-                {/* 3. Order Blocks */}
+                {/* 3. Order Blocks & Breakers */}
                 <div>
                   <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1 px-1">
-                    Institutional Order Blocks
+                    Institutional Order Blocks & Breakers
                   </div>
                   <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
                     <SmcToggleRow
                       label="Bullish Demand OB"
-                      sublabel="Institutional buying footprint"
+                      sublabel="Institutional buying footprint before rally"
                       checked={activeSmcConfig.showBullishOb}
                       onChange={(v) => handleUpdateSmc({ showBullishOb: v })}
                       badge="Demand"
+                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Bearish Supply OB"
-                      sublabel="Institutional selling footprint"
+                      sublabel="Institutional selling footprint before drop"
                       checked={activeSmcConfig.showBearishOb}
                       onChange={(v) => handleUpdateSmc({ showBearishOb: v })}
                       badge="Supply"
+                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                      accent="rose"
                     />
                     <SmcToggleRow
-                      label="Breaker Blocks"
-                      sublabel="Violated OBs flipping polarity"
+                      label="Breaker Blocks (Master)"
+                      sublabel="Violated order blocks flipped into opposite role"
                       checked={activeSmcConfig.showBreakers}
                       onChange={(v) => handleUpdateSmc({ showBreakers: v })}
-                      badge="Breaker"
+                      badge="Breakers"
+                      accent="purple"
+                    />
+                    <SmcToggleRow
+                      label="Bullish Breakers (+BRK Support)"
+                      sublabel="Failed supply OB converting into support"
+                      checked={activeSmcConfig.showBullishBreakers}
+                      onChange={(v) => handleUpdateSmc({ showBullishBreakers: v })}
+                      badge="+BRK"
+                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                      accent="emerald"
+                    />
+                    <SmcToggleRow
+                      label="Bearish Breakers (-BRK Resistance)"
+                      sublabel="Failed demand OB converting into resistance"
+                      checked={activeSmcConfig.showBearishBreakers}
+                      onChange={(v) => handleUpdateSmc({ showBearishBreakers: v })}
+                      badge="-BRK"
+                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                      accent="rose"
                     />
                     <SmcToggleRow
                       label="Show Mitigated Blocks"
                       sublabel="Display already tested order blocks"
                       checked={activeSmcConfig.showMitigatedOb}
                       onChange={(v) => handleUpdateSmc({ showMitigatedOb: v })}
+                      accent="amber"
                     />
                   </div>
                 </div>
 
-                {/* 4. Fair Value Gaps */}
+                {/* 4. Fair Value Gaps & IFVG */}
                 <div>
                   <div className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider mb-1 px-1">
-                    Fair Value Gaps (FVG)
+                    Fair Value Gaps (FVG) & Inverse FVGs (IFVG)
                   </div>
                   <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
                     <SmcToggleRow
-                      label="Bullish Imbalance"
-                      sublabel="3-candle displacement gap"
+                      label="Bullish Imbalance (+FVG)"
+                      sublabel="3-candle displacement buy imbalance"
                       checked={activeSmcConfig.showBullishFvg}
                       onChange={(v) => handleUpdateSmc({ showBullishFvg: v })}
                       badge="+FVG"
+                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                      accent="emerald"
                     />
                     <SmcToggleRow
-                      label="Bearish Imbalance"
-                      sublabel="3-candle displacement gap"
+                      label="Bearish Imbalance (-FVG)"
+                      sublabel="3-candle displacement sell imbalance"
                       checked={activeSmcConfig.showBearishFvg}
                       onChange={(v) => handleUpdateSmc({ showBearishFvg: v })}
                       badge="-FVG"
+                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                      accent="rose"
+                    />
+                    <SmcToggleRow
+                      label="Bullish Inverse FVG (+IFVG Support)"
+                      sublabel="Violated bearish FVG flipped to bullish support"
+                      checked={activeSmcConfig.showBullishIfvg}
+                      onChange={(v) => handleUpdateSmc({ showBullishIfvg: v })}
+                      badge="+IFVG"
+                      badgeColor="bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20"
+                      accent="teal"
+                    />
+                    <SmcToggleRow
+                      label="Bearish Inverse FVG (-IFVG Resistance)"
+                      sublabel="Violated bullish FVG flipped to bearish resistance"
+                      checked={activeSmcConfig.showBearishIfvg}
+                      onChange={(v) => handleUpdateSmc({ showBearishIfvg: v })}
+                      badge="-IFVG"
+                      badgeColor="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
+                      accent="purple"
                     />
                     <SmcToggleRow
                       label="Consequent Encroachment (CE)"
@@ -804,17 +1126,46 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showFvgMidpoint}
                       onChange={(v) => handleUpdateSmc({ showFvgMidpoint: v })}
                       badge="50% CE"
+                      accent="amber"
                     />
                     <SmcToggleRow
                       label="Show Mitigated FVGs"
                       sublabel="Display fully filled imbalances"
                       checked={activeSmcConfig.showMitigatedFvg}
                       onChange={(v) => handleUpdateSmc({ showMitigatedFvg: v })}
+                      accent="amber"
                     />
                   </div>
                 </div>
 
-                {/* 5. Dealing Range */}
+                {/* 5. Confluence & Reversal Setups */}
+                <div>
+                  <div className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-1 px-1">
+                    Confluence & Reversal Setups
+                  </div>
+                  <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
+                    <SmcToggleRow
+                      label="Bullish Confluence Setups"
+                      sublabel="SSL sweep + FVG + Demand OB confluence signals"
+                      checked={activeSmcConfig.showBullishConfluence}
+                      onChange={(v) => handleUpdateSmc({ showBullishConfluence: v })}
+                      badge="Bullish"
+                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                      accent="emerald"
+                    />
+                    <SmcToggleRow
+                      label="Bearish Confluence Setups"
+                      sublabel="BSL sweep + FVG + Supply OB confluence signals"
+                      checked={activeSmcConfig.showBearishConfluence}
+                      onChange={(v) => handleUpdateSmc({ showBearishConfluence: v })}
+                      badge="Bearish"
+                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                      accent="rose"
+                    />
+                  </div>
+                </div>
+
+                {/* 6. Dealing Range */}
                 <div>
                   <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1 px-1">
                     Premium & Discount Zones
@@ -825,13 +1176,16 @@ export function ChartToolbar({
                       sublabel="Subtle background tint for Buy/Sell regions"
                       checked={activeSmcConfig.showPremiumDiscount}
                       onChange={(v) => handleUpdateSmc({ showPremiumDiscount: v })}
+                      accent="indigo"
                     />
                     <SmcToggleRow
                       label="Equilibrium (EQ)"
-                      sublabel="50% fair-value midline"
+                      sublabel="50% fair-value midline (Neutral context)"
                       checked={activeSmcConfig.showEquilibrium}
                       onChange={(v) => handleUpdateSmc({ showEquilibrium: v })}
                       badge="50% EQ"
+                      badgeColor="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                      accent="amber"
                     />
                     <SmcToggleRow
                       label="Optimal Trade Entry (OTE)"
@@ -839,11 +1193,13 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showOte}
                       onChange={(v) => handleUpdateSmc({ showOte: v })}
                       badge="OTE"
+                      badgeColor="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30"
+                      accent="blue"
                     />
                   </div>
                 </div>
 
-                {/* 6. Key Session Levels */}
+                {/* 7. Key Session Levels */}
                 <div>
                   <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 px-1">
                     Key Historical Levels
@@ -855,6 +1211,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showPdhPdl}
                       onChange={(v) => handleUpdateSmc({ showPdhPdl: v })}
                       badge="PDH/PDL"
+                      accent="amber"
                     />
                     <SmcToggleRow
                       label="Previous Week High/Low"
@@ -862,6 +1219,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showPwhPwl}
                       onChange={(v) => handleUpdateSmc({ showPwhPwl: v })}
                       badge="PWH/PWL"
+                      accent="amber"
                     />
                   </div>
                 </div>

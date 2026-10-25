@@ -1157,6 +1157,8 @@ export function renderChart(
   const smcCfg = options.smcConfig || (options.showSmcOverlay ? DEFAULT_SMC_CONFIG : null);
   if (smcCfg && smcCfg.enabled) {
     const smcData = calculateSMC(candles, smcCfg);
+    const isBullishMaster = smcCfg.showBullishSetups !== false;
+    const isBearishMaster = smcCfg.showBearishSetups !== false;
 
     // 1. Premium & Discount Zones (Dealing Range)
     if (smcCfg.showPremiumDiscount && smcData.dealingRange.highPrice > smcData.dealingRange.lowPrice) {
@@ -1166,8 +1168,8 @@ export function renderChart(
       const yEq = Math.max(0, Math.min(chartH, priceToY(dr.equilibriumPrice)));
 
       ctx.save();
-      // Premium Zone (>50% to High) - Subtle Red/Rose Tint
-      if (yEq > yHigh) {
+      // Premium Zone (>50% to High) - Short-side context
+      if (isBearishMaster && yEq > yHigh) {
         ctx.fillStyle = 'rgba(244, 63, 94, 0.04)';
         ctx.fillRect(0, yHigh, chartW, yEq - yHigh);
         ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
@@ -1176,8 +1178,8 @@ export function renderChart(
         ctx.fillText('PREMIUM (Sell Zone)', chartW - 8 * dpr, yHigh + 10 * dpr);
       }
 
-      // Discount Zone (<50% to Low) - Subtle Emerald/Green Tint
-      if (yLow > yEq) {
+      // Discount Zone (<50% to Low) - Long-side context
+      if (isBullishMaster && yLow > yEq) {
         ctx.fillStyle = 'rgba(16, 185, 129, 0.04)';
         ctx.fillRect(0, yEq, chartW, yLow - yEq);
         ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
@@ -1187,7 +1189,7 @@ export function renderChart(
       }
 
       // OTE (Optimal Trade Entry 61.8% to 78.6%)
-      if (smcCfg.showOte && dr.oteRange[0] > 0 && dr.oteRange[1] > 0) {
+      if (smcCfg.showOte && (isBullishMaster || isBearishMaster) && dr.oteRange[0] > 0 && dr.oteRange[1] > 0) {
         const yOte1 = priceToY(dr.oteRange[0]);
         const yOte2 = priceToY(dr.oteRange[1]);
         const oteTop = Math.min(yOte1, yOte2);
@@ -1205,7 +1207,7 @@ export function renderChart(
       ctx.restore();
     }
 
-    // 2. Equilibrium Midline (EQ 50% — Golden Dash)
+    // 2. Equilibrium Midline (EQ 50% — Golden Dash) — Strictly neutral context
     if (smcCfg.showEquilibrium && smcData.equilibriumPrice > 0 && smcData.equilibriumPrice >= pMin && smcData.equilibriumPrice <= pMax) {
       const eqY = priceToY(smcData.equilibriumPrice);
       ctx.save();
@@ -1230,6 +1232,8 @@ export function renderChart(
       ctx.save();
       for (const sw of smcData.swings) {
         if (sw.index < startIdx || sw.index >= endIdx) continue;
+        if (sw.isHigh && !isBearishMaster) continue;
+        if (!sw.isHigh && !isBullishMaster) continue;
         const li = sw.index - startIdx;
         const x = li * candleW + candleW / 2;
         const y = priceToY(sw.price);
@@ -1248,12 +1252,17 @@ export function renderChart(
     // 4. Order Blocks & Breakers (Demand, Supply, Breakers)
     const blocksToRender = [
       ...(smcCfg.showBullishOb || smcCfg.showBearishOb ? smcData.orderBlocks : []),
-      ...(smcCfg.showBreakers ? smcData.breakers : []),
+      ...(smcCfg.showBreakers || smcCfg.showBullishBreakers || smcCfg.showBearishBreakers ? smcData.breakers : []),
     ];
     for (const ob of blocksToRender) {
-      if (ob.isBreaker && !smcCfg.showBreakers) continue;
-      if (!ob.isBreaker && ob.isBullish && !smcCfg.showBullishOb) continue;
-      if (!ob.isBreaker && !ob.isBullish && !smcCfg.showBearishOb) continue;
+      if (ob.isBreaker) {
+        if (!smcCfg.showBreakers) continue;
+        if (ob.isBullish && (!smcCfg.showBullishBreakers || !isBullishMaster)) continue;
+        if (!ob.isBullish && (!smcCfg.showBearishBreakers || !isBearishMaster)) continue;
+      } else {
+        if (ob.isBullish && (!smcCfg.showBullishOb || !isBullishMaster)) continue;
+        if (!ob.isBullish && (!smcCfg.showBearishOb || !isBearishMaster)) continue;
+      }
       if (ob.isMitigated && !smcCfg.showMitigatedOb) continue;
       if (ob.endIndex < startIdx || ob.startIndex > endIdx) continue;
 
@@ -1272,9 +1281,9 @@ export function renderChart(
       let obBorder = ob.isBullish ? 'rgba(2, 132, 199, 0.55)' : 'rgba(234, 88, 12, 0.55)';
 
       if (ob.isBreaker) {
-        obColor = '#8B5CF6';
-        obBg = 'rgba(139, 92, 246, 0.16)';
-        obBorder = 'rgba(139, 92, 246, 0.55)';
+        obColor = ob.isBullish ? '#10B981' : '#8B5CF6';
+        obBg = ob.isBullish ? 'rgba(16, 185, 129, 0.16)' : 'rgba(139, 92, 246, 0.16)';
+        obBorder = ob.isBullish ? 'rgba(16, 185, 129, 0.65)' : 'rgba(139, 92, 246, 0.65)';
       }
 
       ctx.save();
@@ -1294,10 +1303,15 @@ export function renderChart(
       ctx.restore();
     }
 
-    // 5. Fair Value Gaps (FVGs)
+    // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG)
     for (const fvg of smcData.fvgs) {
-      if (fvg.isBullish && !smcCfg.showBullishFvg) continue;
-      if (!fvg.isBullish && !smcCfg.showBearishFvg) continue;
+      if (fvg.isInverse) {
+        if (fvg.isBullish && (!smcCfg.showBullishIfvg || !isBullishMaster)) continue;
+        if (!fvg.isBullish && (!smcCfg.showBearishIfvg || !isBearishMaster)) continue;
+      } else {
+        if (fvg.isBullish && (!smcCfg.showBullishFvg || !isBullishMaster)) continue;
+        if (!fvg.isBullish && (!smcCfg.showBearishFvg || !isBearishMaster)) continue;
+      }
       if (fvg.isMitigated && !smcCfg.showMitigatedFvg) continue;
       if (fvg.endIndex < startIdx || fvg.startIndex > endIdx) continue;
 
@@ -1310,16 +1324,24 @@ export function renderChart(
       const yB = priceToY(fvg.bottomPrice);
       const bTop = Math.min(yT, yB);
       const bH = Math.max(Math.abs(yT - yB), 2 * dpr);
-      const base = fvg.isBullish ? [0, 230, 118] : [255, 82, 82];
-      const fa = fvg.isMitigated ? 0.05 : 0.18;
-      const ba = fvg.isMitigated ? 0.15 : 0.45;
+      const base = fvg.isBullish
+        ? (fvg.isInverse ? [6, 182, 212] : [0, 230, 118])
+        : (fvg.isInverse ? [168, 85, 247] : [255, 82, 82]);
+      const fa = fvg.isMitigated ? 0.05 : (fvg.isInverse ? 0.14 : 0.18);
+      const ba = fvg.isMitigated ? 0.15 : (fvg.isInverse ? 0.65 : 0.45);
 
       ctx.save();
       ctx.fillStyle = `rgba(${base},${fa})`;
       ctx.fillRect(lx, bTop, bw, bH);
+      if (fvg.isInverse) {
+        ctx.setLineDash([4 * dpr, 3 * dpr]);
+      }
       ctx.strokeStyle = `rgba(${base},${ba})`;
-      ctx.lineWidth = 0.8 * dpr;
+      ctx.lineWidth = (fvg.isInverse ? 1.1 : 0.8) * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
+      if (fvg.isInverse) {
+        ctx.setLineDash([]);
+      }
 
       // Consequent Encroachment (50% Midline)
       if (smcCfg.showFvgMidpoint && fvg.cePrice) {
@@ -1336,10 +1358,13 @@ export function renderChart(
 
       if (!fvg.isMitigated && bw > 20 * dpr) {
         ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = `rgba(${base},0.85)`;
+        ctx.fillStyle = `rgba(${base},0.9)`;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
-        ctx.fillText(fvg.isBullish ? '+FVG' : '-FVG', lx + 2 * dpr, bTop + 1 * dpr);
+        const tag = fvg.isInverse
+          ? (fvg.isBullish ? '+IFVG (Support)' : '-IFVG (Resistance)')
+          : (fvg.isBullish ? '+FVG' : '-FVG');
+        ctx.fillText(tag, lx + 2 * dpr, bTop + 1 * dpr);
       }
       ctx.restore();
     }
@@ -1350,6 +1375,8 @@ export function renderChart(
       const isChoch = sb.breakType === 'CHoCH' || sb.breakType === 'MSS';
       if (isBos && !smcCfg.showBos) continue;
       if (isChoch && !smcCfg.showChoch) continue;
+      if (sb.isBullish && (!smcCfg.showBullishStructure || !isBullishMaster)) continue;
+      if (!sb.isBullish && (!smcCfg.showBearishStructure || !isBearishMaster)) continue;
       if (sb.candleIndex >= startIdx && sb.candleIndex < endIdx && sb.price >= pMin && sb.price <= pMax) {
         const y = priceToY(sb.price);
         const color = sb.isBullish ? BULL : BEAR;
@@ -1388,9 +1415,11 @@ export function renderChart(
     // 7. Liquidity Levels (BSL, SSL, EQH, EQL)
     if (smcCfg.showLiquidityLevels && smcData.liquidityLevels) {
       for (const lvl of smcData.liquidityLevels) {
+        const isHighSide = lvl.type === 'BSL' || lvl.type === 'EQH';
+        if (isHighSide && !isBearishMaster) continue;
+        if (!isHighSide && !isBullishMaster) continue;
         if (lvl.price >= pMin && lvl.price <= pMax) {
           const y = priceToY(lvl.price);
-          const isHighSide = lvl.type === 'BSL' || lvl.type === 'EQH';
           const color = isHighSide ? 'rgba(244, 63, 94, 0.6)' : 'rgba(16, 185, 129, 0.6)';
 
           ctx.save();
@@ -1413,9 +1442,11 @@ export function renderChart(
       }
     }
 
-    // 8. Liquidity Sweeps
+    // 8. Liquidity Sweeps (SSL & BSL)
     if (smcCfg.showSweeps) {
       for (const sw of smcData.sweeps) {
+        if (sw.isHighSweep && (!smcCfg.showBslSweeps || !isBearishMaster)) continue;
+        if (!sw.isHighSweep && (!smcCfg.showSslSweeps || !isBullishMaster)) continue;
         if (sw.candleIndex >= startIdx && sw.candleIndex < endIdx) {
           const li = sw.candleIndex - startIdx;
           const x = li * candleW + candleW / 2;

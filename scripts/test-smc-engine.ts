@@ -44,14 +44,27 @@ console.log('============================================================\n');
 // ── Test 1: Configuration & Default Integrity ──
 console.log('--- Test 1: Configuration & Default Integrity ---');
 assert(DEFAULT_SMC_CONFIG.enabled === true, 'SMC master toggle defaults to enabled');
+assert(DEFAULT_SMC_CONFIG.showBullishSetups === true, 'showBullishSetups default is true');
+assert(DEFAULT_SMC_CONFIG.showBearishSetups === true, 'showBearishSetups default is true');
 assert(DEFAULT_SMC_CONFIG.showBos === true, 'showBos default is true');
 assert(DEFAULT_SMC_CONFIG.showChoch === true, 'showChoch default is true');
+assert(DEFAULT_SMC_CONFIG.showBullishStructure === true, 'showBullishStructure default is true');
+assert(DEFAULT_SMC_CONFIG.showBearishStructure === true, 'showBearishStructure default is true');
 assert(DEFAULT_SMC_CONFIG.showSwings === true, 'showSwings default is true');
 assert(DEFAULT_SMC_CONFIG.showSweeps === true, 'showSweeps default is true');
+assert(DEFAULT_SMC_CONFIG.showSslSweeps === true, 'showSslSweeps default is true');
+assert(DEFAULT_SMC_CONFIG.showBslSweeps === true, 'showBslSweeps default is true');
 assert(DEFAULT_SMC_CONFIG.showBullishOb === true, 'showBullishOb default is true');
 assert(DEFAULT_SMC_CONFIG.showBearishOb === true, 'showBearishOb default is true');
 assert(DEFAULT_SMC_CONFIG.showBreakers === true, 'showBreakers default is true');
+assert(DEFAULT_SMC_CONFIG.showBullishBreakers === true, 'showBullishBreakers default is true');
+assert(DEFAULT_SMC_CONFIG.showBearishBreakers === true, 'showBearishBreakers default is true');
 assert(DEFAULT_SMC_CONFIG.showBullishFvg === true, 'showBullishFvg default is true');
+assert(DEFAULT_SMC_CONFIG.showBearishFvg === true, 'showBearishFvg default is true');
+assert(DEFAULT_SMC_CONFIG.showBullishIfvg === true, 'showBullishIfvg default is true');
+assert(DEFAULT_SMC_CONFIG.showBearishIfvg === true, 'showBearishIfvg default is true');
+assert(DEFAULT_SMC_CONFIG.showBullishConfluence === true, 'showBullishConfluence default is true');
+assert(DEFAULT_SMC_CONFIG.showBearishConfluence === true, 'showBearishConfluence default is true');
 assert(DEFAULT_SMC_CONFIG.showFvgMidpoint === true, 'showFvgMidpoint (50% CE) default is true');
 assert(DEFAULT_SMC_CONFIG.showPremiumDiscount === true, 'showPremiumDiscount default is true');
 assert(DEFAULT_SMC_CONFIG.showEquilibrium === true, 'showEquilibrium (50% EQ) default is true');
@@ -216,6 +229,39 @@ console.log('\n--- Test 7: Master calculateSMC Output & Scanner Setups ---');
   assert(Array.isArray(analysis.fvgs), 'Fair value gaps array returned');
   assert(analysis.dealingRange.equilibriumPrice > 0, 'Equilibrium price is valid positive number');
   assert(Array.isArray(analysis.confirmedSetups), 'Confirmed setups array returned for scanner consumption');
+}
+
+// ── Test 8: Directional Setup Master Controls & Inverted FVG (IFVG) ──
+console.log('\n--- Test 8: Directional Setup Master Controls & Inverted FVG (IFVG) ---');
+{
+  const t0 = 1700000000000;
+  const minute = 60000;
+  // C1, C2, C3 form a Bullish FVG [105, 112]
+  // C4, C5 price moves down and closes below 105 (violates bullish FVG -> creates Inverse Bearish FVG)
+  const fvgSeries: Candle[] = [
+    makeCandle(t0, 100, 105, 99, 104),              // C1: High 105
+    makeCandle(t0 + minute, 104, 120, 104, 119),     // C2: Displacement up
+    makeCandle(t0 + minute * 2, 119, 122, 112, 120), // C3: Low 112 (Bullish gap [105, 112])
+    makeCandle(t0 + minute * 3, 120, 121, 103, 104), // C4: Close 104 < 105 (Invalidation body close)
+    makeCandle(t0 + minute * 4, 104, 106, 101, 102), // C5: Confirmation
+  ];
+
+  const detectedFvgs = detectFairValueGaps(fvgSeries);
+  const originalFvg = detectedFvgs.find((f) => !f.isInverse);
+  const inverseFvg = detectedFvgs.find((f) => f.isInverse);
+
+  assert(originalFvg !== undefined && originalFvg.isInvalidated, 'Original Bullish FVG marked as invalidated on structural close below lower boundary');
+  assert(inverseFvg !== undefined, 'Inverse FVG (IFVG) successfully created upon gap invalidation');
+  assert(inverseFvg?.isBullish === false, 'Inverse FVG correctly flipped polarity to Bearish Resistance');
+  assert(inverseFvg?.topPrice === 112 && inverseFvg?.bottomPrice === 105, 'Inverse FVG preserved original boundary coordinates [105, 112]');
+
+  // Test calculateSMC directional filtering
+  const allDisabled = calculateSMC(fvgSeries, {
+    ...DEFAULT_SMC_CONFIG,
+    showBullishSetups: false,
+    showBearishSetups: false,
+  });
+  assert(allDisabled.allSetups.length === 0, 'calculateSMC filters out all setups when both directional masters are false');
 }
 
 console.log('\n============================================================');

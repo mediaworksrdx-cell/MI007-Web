@@ -98,6 +98,7 @@ export interface SmcFvg {
   mitigationPercent: number; // 0 to 100%
   state: SmcFvgState;
   isInvalidated: boolean;
+  isInverse?: boolean;
   residualTop?: number;
   residualBottom?: number;
   formationTime: number;
@@ -256,32 +257,55 @@ export interface SmcFilterOptions {
 
 export interface SmcConfig {
   enabled: boolean;
-  // Market Structure
+
+  // ── SMC Setup Direction (Master Controls) ──
+  showBullishSetups: boolean;       // Master toggle: Long-side signals & demand-side patterns
+  showBearishSetups: boolean;       // Master toggle: Short-side signals & supply-side patterns
+
+  // ── Market Structure (Directionally Configurable) ──
   showBos: boolean;
   showChoch: boolean;
+  showBullishStructure: boolean;    // Bullish BOS, CHoCH, MSS
+  showBearishStructure: boolean;    // Bearish BOS, CHoCH, MSS
   showSwings: boolean;
-  // Liquidity
+
+  // ── Liquidity Pools & Sweeps ──
   showSweeps: boolean;
+  showSslSweeps: boolean;           // Bullish Sell-Side Liquidity (SSL) sweep
+  showBslSweeps: boolean;           // Bearish Buy-Side Liquidity (BSL) sweep
   showEqualHighLow: boolean;
   showLiquidityLevels: boolean;
-  // Order Blocks
-  showBullishOb: boolean;
-  showBearishOb: boolean;
-  showBreakers: boolean;
+
+  // ── Institutional Order Blocks & Breakers ──
+  showBullishOb: boolean;           // Bullish Demand OB
+  showBearishOb: boolean;           // Bearish Supply OB
+  showBreakers: boolean;            // Master Breaker Blocks toggle
+  showBullishBreakers: boolean;     // Bullish demand breaker block
+  showBearishBreakers: boolean;     // Bearish supply breaker block
   showMitigatedOb: boolean;
-  // Fair Value Gaps
-  showBullishFvg: boolean;
-  showBearishFvg: boolean;
-  showFvgMidpoint: boolean;
+
+  // ── Fair Value Gaps (FVG) & Inverse FVGs (IFVG) ──
+  showBullishFvg: boolean;          // Bullish FVG
+  showBearishFvg: boolean;          // Bearish FVG
+  showBullishIfvg: boolean;         // Bullish Inverse FVG (support flip)
+  showBearishIfvg: boolean;         // Bearish Inverse FVG (resistance flip)
+  showFvgMidpoint: boolean;         // 50% CE Midline
   showMitigatedFvg: boolean;
-  // Premium / Discount
-  showPremiumDiscount: boolean;
-  showEquilibrium: boolean;
-  showOte: boolean;
-  // Session & Key Levels
+
+  // ── Confluence & Reversal Setups ──
+  showBullishConfluence: boolean;   // Bullish confluence and reversal setups
+  showBearishConfluence: boolean;   // Bearish confluence and reversal setups
+
+  // ── Premium / Discount Context ──
+  showPremiumDiscount: boolean;     // Dealing Range background zones
+  showEquilibrium: boolean;         // 50% EQ midline (strictly neutral context)
+  showOte: boolean;                 // Optimal Trade Entry (61.8% - 78.6%)
+
+  // ── Session & Key Levels ──
   showPdhPdl: boolean;
   showPwhPwl: boolean;
-  // Display limits & filters
+
+  // ── Display limits & filters ──
   maxVisibleZones?: number;
   swingLength?: number;
   filters?: SmcFilterOptions;
@@ -290,25 +314,54 @@ export interface SmcConfig {
 export const DEFAULT_SMC_CONFIG: SmcConfig = {
   enabled: true,
   swingLength: 3,
+
+  // Master Direction Controls
+  showBullishSetups: true,
+  showBearishSetups: true,
+
+  // Market Structure
   showBos: true,
   showChoch: true,
+  showBullishStructure: true,
+  showBearishStructure: true,
   showSwings: true,
+
+  // Liquidity
   showSweeps: true,
+  showSslSweeps: true,
+  showBslSweeps: true,
   showEqualHighLow: true,
   showLiquidityLevels: true,
+
+  // Order Blocks & Breakers
   showBullishOb: true,
   showBearishOb: true,
   showBreakers: true,
+  showBullishBreakers: true,
+  showBearishBreakers: true,
   showMitigatedOb: false,
+
+  // FVGs & IFVGs
   showBullishFvg: true,
   showBearishFvg: true,
+  showBullishIfvg: true,
+  showBearishIfvg: true,
   showFvgMidpoint: true,
   showMitigatedFvg: false,
+
+  // Confluence Setups
+  showBullishConfluence: true,
+  showBearishConfluence: true,
+
+  // Premium / Discount Context
   showPremiumDiscount: true,
   showEquilibrium: true,
   showOte: true,
+
+  // Session Levels
   showPdhPdl: true,
   showPwhPwl: false,
+
   maxVisibleZones: 15,
   filters: {
     requireDisplacement: false,
@@ -881,6 +934,22 @@ export function detectFairValueGaps(candles: Candle[]): SmcFvg[] {
           fvg.mitigationIndex = k;
           fvg.endIndex = k;
           fvg.mitigationPercent = 100;
+          // Spawn Inverse FVG (Bearish Resistance Flip from failed bullish gap)
+          fvgs.push({
+            id: `ifvg-bear-${i - 1}`,
+            startIndex: k,
+            endIndex: candles.length - 1,
+            topPrice,
+            bottomPrice,
+            cePrice,
+            isBullish: false,
+            isMitigated: false,
+            mitigationPercent: 0,
+            state: 'FRESH',
+            isInvalidated: false,
+            isInverse: true,
+            formationTime: cur.openTime,
+          });
           break;
         } else if (state === 'MITIGATED') {
           fvg.isMitigated = true;
@@ -933,6 +1002,22 @@ export function detectFairValueGaps(candles: Candle[]): SmcFvg[] {
           fvg.mitigationIndex = k;
           fvg.endIndex = k;
           fvg.mitigationPercent = 100;
+          // Spawn Inverse FVG (Bullish Support Flip from failed bearish gap)
+          fvgs.push({
+            id: `ifvg-bull-${i - 1}`,
+            startIndex: k,
+            endIndex: candles.length - 1,
+            topPrice,
+            bottomPrice,
+            cePrice,
+            isBullish: true,
+            isMitigated: false,
+            mitigationPercent: 0,
+            state: 'FRESH',
+            isInvalidated: false,
+            isInverse: true,
+            formationTime: cur.openTime,
+          });
           break;
         } else if (state === 'MITIGATED') {
           fvg.isMitigated = true;
@@ -1716,7 +1801,17 @@ export function calculateSMC(
     opt
   );
 
-  const confirmedSetups = allSetups.filter((s) => s.status === 'CONFIRMED' || s.status === 'RETESTING');
+  // Directional filtering across all enabled SMC strategies
+  const isBullAllowed = config?.showBullishSetups !== false;
+  const isBearAllowed = config?.showBearishSetups !== false;
+
+  const filteredSetups = allSetups.filter((s) => {
+    if (s.direction === 'BULLISH' && !isBullAllowed) return false;
+    if (s.direction === 'BEARISH' && !isBearAllowed) return false;
+    return true;
+  });
+
+  const confirmedSetups = filteredSetups.filter((s) => s.status === 'CONFIRMED' || s.status === 'RETESTING');
 
   const result: SmcAnalysis = {
     swings,
@@ -1729,7 +1824,7 @@ export function calculateSMC(
     dealingRange,
     sessionLevels,
     confirmedSetups,
-    allSetups,
+    allSetups: filteredSetups,
     equilibriumPrice: dealingRange.equilibriumPrice,
     datasetFingerprint: fingerprint,
   };
