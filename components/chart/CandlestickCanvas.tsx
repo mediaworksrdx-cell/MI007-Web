@@ -630,7 +630,7 @@ export function CandlestickCanvas({
         }
       }
 
-      // 4.5 Pivot Points (Fibonacci)
+      // 4.5 Pivot Points (P, R1-R3, S1-S3)
       if (d.tool === 'PIVOT_POINTS' && pts.length >= 2) {
         const p2 = pts[1];
         const minX = Math.min(p1.x, p2.x);
@@ -639,7 +639,7 @@ export function CandlestickCanvas({
           const low = Math.min(p1.rawPrice, p2.rawPrice);
           const rng = high - low;
           const p = (high + low) / 2;
-          const pivotLvls = [p + rng, p + 0.618 * rng, p + 0.382 * rng, p, p - 0.382 * rng, p - 0.618 * rng, p - rng];
+          const pivotLvls = [high + rng, p + rng, high, p, low, p - rng, low - rng];
           for (const pl of pivotLvls) {
             const ly = chartH * (1 - (pl - pMin) / pRange);
             if (Math.abs(y - ly) <= 18) return d;

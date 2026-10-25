@@ -68,7 +68,7 @@ const TOOL_GROUPS: ToolGroup[] = [
       { id: 'FIBONACCI', label: 'Fib Retracement', desc: '0.236, 0.382, 0.5, 0.618 golden pocket', icon: '≡' },
       { id: 'FIBONACCI_EXTENSION', label: 'Fib Extension', desc: '3 points: 1.0, 1.618, 2.618 targets', icon: '⤢' },
       { id: 'FIB_CHANNEL', label: 'Fib Channel', desc: '3 points: Fibonacci channel rails', icon: '⫸' },
-      { id: 'PIVOT_POINTS', label: 'Pivot Points (Fibonacci)', desc: '2 points: anchor High/Low to plot Pivot (P), R1-R3, S1-S3 levels', icon: '☩' },
+      { id: 'PIVOT_POINTS', label: 'Pivot Points', desc: '2 points: anchor High/Low to plot Pivot (P), R1-R3, S1-S3 levels', icon: '☩' },
       { id: 'GANN_BOX', label: 'Gann Box', desc: '4x4 square grid with diagonal rays', icon: '⊞' },
       { id: 'GANN_FAN', label: 'Gann Fan', desc: '1x8 to 8x1 geometric Gann angles', icon: '◬' },
     ],

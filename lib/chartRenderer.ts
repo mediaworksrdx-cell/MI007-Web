@@ -709,15 +709,25 @@ export function calculateEmaRibbon(candles: Candle[], p1 = 20, p2 = 50, p3 = 100
   };
 }
 
-// Pivot Points (Standard Daily / Swing Pivots)
+// Pivot Points (Standard Daily / Swing Pivots: P, R1-R3, S1-S3)
 export function calculatePivotPoints(candles: Candle[], lookback = 15) {
   const sz = candles.length;
-  const result: { pivot: (number|null)[]; r1: (number|null)[]; r2: (number|null)[]; s1: (number|null)[]; s2: (number|null)[] } = {
+  const result: {
+    pivot: (number|null)[];
+    r1: (number|null)[];
+    r2: (number|null)[];
+    r3: (number|null)[];
+    s1: (number|null)[];
+    s2: (number|null)[];
+    s3: (number|null)[];
+  } = {
     pivot: Array(sz).fill(null),
     r1: Array(sz).fill(null),
     r2: Array(sz).fill(null),
+    r3: Array(sz).fill(null),
     s1: Array(sz).fill(null),
     s2: Array(sz).fill(null),
+    s3: Array(sz).fill(null),
   };
   if (sz === 0) return result;
 
@@ -731,11 +741,14 @@ export function calculatePivotPoints(candles: Candle[], lookback = 15) {
     }
     const cc = candles[i].close;
     const p = (hh + ll + cc) / 3;
+    const rng = hh - ll;
     result.pivot[i] = p;
     result.r1[i] = 2 * p - ll;
     result.s1[i] = 2 * p - hh;
-    result.r2[i] = p + (hh - ll);
-    result.s2[i] = p - (hh - ll);
+    result.r2[i] = p + rng;
+    result.s2[i] = p - rng;
+    result.r3[i] = hh + 2 * (p - ll);
+    result.s3[i] = ll - 2 * (hh - p);
   }
   return result;
 }
@@ -2305,20 +2318,20 @@ export function renderChart(
           const minX = Math.min(x1, x2);
           const maxX = Math.max(Math.max(x1, x2), chartW);
 
-          // Standard Fibonacci Pivot Levels (P, R1, R2, R3, S1, S2, S3)
+          // Standard Pivot Levels (P, R1, R2, R3, S1, S2, S3)
           const pivotLevels = [
-            { id: 'R3', lvl: pivot + 1.000 * range, color: '#EF4444', label: 'R3 (1.000)' },
-            { id: 'R2', lvl: pivot + 0.618 * range, color: '#F87171', label: 'R2 (0.618)' },
-            { id: 'R1', lvl: pivot + 0.382 * range, color: '#FB923C', label: 'R1 (0.382)' },
-            { id: 'P',  lvl: pivot,                 color: '#EAB308', label: 'P (Pivot)' },
-            { id: 'S1', lvl: pivot - 0.382 * range, color: '#34D399', label: 'S1 (0.382)' },
-            { id: 'S2', lvl: pivot - 0.618 * range, color: '#10B981', label: 'S2 (0.618)' },
-            { id: 'S3', lvl: pivot - 1.000 * range, color: '#059669', label: 'S3 (1.000)' },
+            { id: 'R3', lvl: high + range,  color: '#DC2626', label: 'R3' },
+            { id: 'R2', lvl: pivot + range, color: '#EF4444', label: 'R2' },
+            { id: 'R1', lvl: high,          color: '#FB923C', label: 'R1' },
+            { id: 'P',  lvl: pivot,         color: '#EAB308', label: 'P (Pivot)' },
+            { id: 'S1', lvl: low,           color: '#34D399', label: 'S1' },
+            { id: 'S2', lvl: pivot - range, color: '#10B981', label: 'S2' },
+            { id: 'S3', lvl: low - range,   color: '#059669', label: 'S3' },
           ];
 
           // Soft central equilibrium band between R1 and S1
-          const yR1 = priceToY(pivot + 0.382 * range);
-          const yS1 = priceToY(pivot - 0.382 * range);
+          const yR1 = priceToY(high);
+          const yS1 = priceToY(low);
           ctx.save();
           ctx.fillStyle = 'rgba(234, 179, 8, 0.07)';
           ctx.fillRect(minX, Math.min(yR1, yS1), maxX - minX, Math.abs(yS1 - yR1));
@@ -2900,12 +2913,22 @@ export function renderChart(
         break;
       }
       case 'PIVOT_POINTS': {
-        const pvt = result as { pivot: (number|null)[]; r1: (number|null)[]; r2: (number|null)[]; s1: (number|null)[]; s2: (number|null)[] };
+        const pvt = result as {
+          pivot: (number|null)[];
+          r1: (number|null)[];
+          r2: (number|null)[];
+          r3: (number|null)[];
+          s1: (number|null)[];
+          s2: (number|null)[];
+          s3: (number|null)[];
+        };
         drawLine(pvt.pivot, '#EAB308', 1.4);
-        drawLine(pvt.r1, '#EF4444', 1.2);
-        drawLine(pvt.r2, '#DC2626', 1.2);
-        drawLine(pvt.s1, '#10B981', 1.2);
-        drawLine(pvt.s2, '#059669', 1.2);
+        drawLine(pvt.r1, '#FB923C', 1.2);
+        drawLine(pvt.r2, '#EF4444', 1.2);
+        drawLine(pvt.r3, '#B91C1C', 1.2);
+        drawLine(pvt.s1, '#34D399', 1.2);
+        drawLine(pvt.s2, '#10B981', 1.2);
+        drawLine(pvt.s3, '#059669', 1.2);
         break;
       }
       case 'DONCHIAN': {
@@ -2946,7 +2969,7 @@ export function renderChart(
         const don = result as { upper: (number|null)[]; middle: (number|null)[]; lower: (number|null)[] };
         lastVal = don.middle[Math.min(endIdx - 1, don.middle.length - 1)];
       } else if (cfg.type === 'PIVOT_POINTS') {
-        const pvt = result as { pivot: (number|null)[]; r1: (number|null)[]; r2: (number|null)[]; s1: (number|null)[]; s2: (number|null)[] };
+        const pvt = result as { pivot: (number|null)[]; r1: (number|null)[]; r2: (number|null)[]; r3: (number|null)[]; s1: (number|null)[]; s2: (number|null)[]; s3: (number|null)[] };
         lastVal = pvt.pivot[Math.min(endIdx - 1, pvt.pivot.length - 1)];
       } else if (cfg.type === 'EMA_RIBBON') {
         const rib = result as { ema20: (number|null)[]; ema50: (number|null)[]; ema100: (number|null)[]; ema200: (number|null)[] };
