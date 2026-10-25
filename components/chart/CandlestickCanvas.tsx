@@ -28,6 +28,8 @@ interface CandlestickCanvasProps {
   indicatorResults: Map<string, unknown>;
   currentPriceOverride?: number;
   timeframe: string;
+  targetCandleTime?: number;
+  targetSetupId?: string;
   className?: string;
   activeDrawingTool?: DrawingToolType;
   cursorMode?: CursorMode;
@@ -150,7 +152,7 @@ export function CandlestickCanvas({
   candles, chartType, showVolume, showVolumePanel,
   showSmcOverlay, smcConfig, showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
-  currentPriceOverride, timeframe, className = '',
+  currentPriceOverride, timeframe, targetCandleTime, targetSetupId, className = '',
   activeDrawingTool = 'NONE',
   cursorMode = 'crosshair',
   drawings = [],
@@ -437,6 +439,74 @@ export function CandlestickCanvas({
   const effectiveScroll = Math.max(minScrollOffset, Math.min(maxScrollOffset, scrollOffset));
   const endIdx = Math.round(cleanCandles.length + RIGHT_BUFFER_BARS - effectiveScroll);
   const startIdx = endIdx - visibleCount;
+
+  // ── SMC Screener Deep-Link: Canonical Timestamp Alignment & Viewport Centering ──
+  const [targetBeaconIndex, setTargetBeaconIndex] = useState<number | null>(null);
+  const [isSurrogateBeacon, setIsSurrogateBeacon] = useState(false);
+  const [alignmentWarning, setAlignmentWarning] = useState<{
+    requestedTime: number;
+    nearestTime: number;
+    offsetMinutes: number;
+  } | null>(null);
+
+  const lastNavigatedTargetRef = useRef<string | null>(null);
+  const targetBeaconIndexRef = useRef<number | null>(null);
+  targetBeaconIndexRef.current = targetBeaconIndex;
+  const isSurrogateBeaconRef = useRef(false);
+  isSurrogateBeaconRef.current = isSurrogateBeacon;
+  const targetSetupIdRef = useRef<string | undefined>(targetSetupId);
+  targetSetupIdRef.current = targetSetupId;
+
+  // Auto-scroll and target beacon placement for SMC scanner deep-linking
+  useEffect(() => {
+    if (!targetCandleTime || cleanCandles.length === 0) {
+      setTargetBeaconIndex(null);
+      setIsSurrogateBeacon(false);
+      setAlignmentWarning(null);
+      return;
+    }
+
+    const navKey = `${targetCandleTime}_${targetSetupId || ''}`;
+    const exactIdx = cleanCandles.findIndex(c => c.openTime === targetCandleTime);
+    const half = Math.ceil(visibleCount / 2);
+
+    if (exactIdx !== -1) {
+      setTargetBeaconIndex(exactIdx);
+      setIsSurrogateBeacon(false);
+      setAlignmentWarning(null);
+
+      if (lastNavigatedTargetRef.current !== navKey) {
+        lastNavigatedTargetRef.current = navKey;
+        const targetScroll = cleanCandles.length + RIGHT_BUFFER_BARS - exactIdx - half;
+        setScrollOffset(Math.max(minScrollOffset, Math.min(maxScrollOffset, targetScroll)));
+      }
+    } else {
+      let nearestIdx = 0;
+      let minDiff = Math.abs(cleanCandles[0].openTime - targetCandleTime);
+      for (let i = 1; i < cleanCandles.length; i++) {
+        const diff = Math.abs(cleanCandles[i].openTime - targetCandleTime);
+        if (diff < minDiff) {
+          minDiff = diff;
+          nearestIdx = i;
+        }
+      }
+
+      setTargetBeaconIndex(nearestIdx);
+      setIsSurrogateBeacon(true);
+      const offsetMin = Math.round(minDiff / 60000);
+      setAlignmentWarning({
+        requestedTime: targetCandleTime,
+        nearestTime: cleanCandles[nearestIdx].openTime,
+        offsetMinutes: offsetMin,
+      });
+
+      if (lastNavigatedTargetRef.current !== navKey) {
+        lastNavigatedTargetRef.current = navKey;
+        const targetScroll = cleanCandles.length + RIGHT_BUFFER_BARS - nearestIdx - half;
+        setScrollOffset(Math.max(minScrollOffset, Math.min(maxScrollOffset, targetScroll)));
+      }
+    }
+  }, [targetCandleTime, targetSetupId, cleanCandles, visibleCount, maxScrollOffset, minScrollOffset]);
 
   // Helper to map mouse coordinate to price and candle with Smart Magnet & Axis Scale support
   const getPointFromEvent = useCallback((clientX: number, clientY: number, snapMagnet = true) => {
@@ -815,6 +885,144 @@ export function CandlestickCanvas({
       dprRef.current,
       magnetReticleRef.current
     );
+
+    // Draw SMC Setup Target Beacon or Surrogate Caution Beacon if active
+    const targetIdx = targetBeaconIndexRef.current;
+    if (targetIdx !== null && targetIdx >= startIdxRef.current && targetIdx < endIdxRef.current) {
+      const visCnt = endIdxRef.current - startIdxRef.current;
+      if (visCnt > 0) {
+        const dpr = dprRef.current;
+        const W = sizeRef.current.w * dpr;
+        const H = sizeRef.current.h * dpr;
+        const RM = CHART_RIGHT_MARGIN * dpr;
+        const BM = CHART_BOTTOM_MARGIN * dpr;
+
+        const panelInds = indicatorsRef.current.filter(i => !isOverlay(i.type) && i.enabled);
+        const totalPanels = panelInds.length + (showVolumePanelRef.current ? 1 : 0);
+        const panelH = totalPanels === 0 ? 0 : Math.min(H * 0.38, totalPanels * 95 * dpr);
+        const chartH = H - panelH - BM;
+        const chartW = W - RM;
+
+        const candleW = chartW / visCnt;
+        const candleX = (targetIdx - startIdxRef.current) * candleW + candleW / 2;
+
+        const candle = cleanCandlesRef.current[targetIdx];
+        if (candle) {
+          const { pMin, pRange } = computeChartPriceBounds(
+            cleanCandlesRef.current,
+            startIdxRef.current,
+            endIdxRef.current,
+            currentPriceOverrideRef.current,
+            priceOffsetRef.current,
+            priceScaleRatioRef.current
+          );
+          const yHigh = chartH * (1 - (candle.high - pMin) / pRange);
+          const beaconY = Math.max(30 * dpr, yHigh - 26 * dpr);
+
+          ctx.save();
+          if (!isSurrogateBeaconRef.current) {
+            // Confirmed Cyan Beacon (#06B6D4) with pulsing glow
+            const pulse = (Math.sin(Date.now() / 250) + 1) / 2;
+            const glowRadius = (8 + pulse * 4) * dpr;
+
+            // Outer pulsing halo
+            ctx.beginPath();
+            ctx.arc(candleX, beaconY, glowRadius + 3 * dpr, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(6, 182, 212, ${0.15 + pulse * 0.15})`;
+            ctx.fill();
+
+            // Inner core
+            ctx.beginPath();
+            ctx.arc(candleX, beaconY, 5 * dpr, 0, Math.PI * 2);
+            ctx.fillStyle = '#06B6D4';
+            ctx.fill();
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 1.5 * dpr;
+            ctx.stroke();
+
+            // Pointer chevron
+            ctx.beginPath();
+            ctx.moveTo(candleX, beaconY + 6 * dpr);
+            ctx.lineTo(candleX - 4 * dpr, beaconY + 12 * dpr);
+            ctx.lineTo(candleX + 4 * dpr, beaconY + 12 * dpr);
+            ctx.closePath();
+            ctx.fillStyle = '#06B6D4';
+            ctx.fill();
+
+            // Badge Label
+            const label = targetSetupIdRef.current ? `SMC: ${targetSetupIdRef.current}` : 'SMC SETUP';
+            ctx.font = `bold ${Math.round(9 * dpr)}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+            const textMetrics = ctx.measureText(label);
+            const badgeW = textMetrics.width + 10 * dpr;
+            const badgeH = 16 * dpr;
+            const badgeX = candleX - badgeW / 2;
+            const badgeY = beaconY - glowRadius - badgeH - 2 * dpr;
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+            ctx.strokeStyle = '#06B6D4';
+            ctx.lineWidth = 1 * dpr;
+            ctx.beginPath();
+            if (typeof ctx.roundRect === 'function') {
+              ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4 * dpr);
+            } else {
+              ctx.rect(badgeX, badgeY, badgeW, badgeH);
+            }
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#22D3EE';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, candleX, badgeY + badgeH / 2);
+          } else {
+            // Amber Caution Beacon (#F59E0B) for surrogate bar
+            ctx.beginPath();
+            ctx.arc(candleX, beaconY, 5 * dpr, 0, Math.PI * 2);
+            ctx.fillStyle = '#F59E0B';
+            ctx.fill();
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 1.5 * dpr;
+            ctx.stroke();
+
+            // Pointer chevron
+            ctx.beginPath();
+            ctx.moveTo(candleX, beaconY + 6 * dpr);
+            ctx.lineTo(candleX - 4 * dpr, beaconY + 12 * dpr);
+            ctx.lineTo(candleX + 4 * dpr, beaconY + 12 * dpr);
+            ctx.closePath();
+            ctx.fillStyle = '#F59E0B';
+            ctx.fill();
+
+            // Surrogate Caution Badge
+            const label = 'FALLBACK SURROGATE';
+            ctx.font = `bold ${Math.round(9 * dpr)}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+            const textMetrics = ctx.measureText(label);
+            const badgeW = textMetrics.width + 10 * dpr;
+            const badgeH = 16 * dpr;
+            const badgeX = candleX - badgeW / 2;
+            const badgeY = beaconY - 10 * dpr - badgeH;
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+            ctx.strokeStyle = '#F59E0B';
+            ctx.lineWidth = 1 * dpr;
+            ctx.beginPath();
+            if (typeof ctx.roundRect === 'function') {
+              ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4 * dpr);
+            } else {
+              ctx.rect(badgeX, badgeY, badgeW, badgeH);
+            }
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#FBBF24';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, candleX, badgeY + badgeH / 2);
+          }
+          ctx.restore();
+        }
+      }
+    }
   }, []);
 
   const requestOverlayRender = useCallback(() => {
@@ -824,6 +1032,21 @@ export function CandlestickCanvas({
       renderOverlayNow();
     });
   }, [renderOverlayNow]);
+
+  // 15-second pulsing animation loop for target beacon
+  useEffect(() => {
+    if (targetBeaconIndex === null) return;
+    let animId: number;
+    const startTime = Date.now();
+    const loop = () => {
+      requestOverlayRender();
+      if (Date.now() - startTime < 15000) {
+        animId = requestAnimationFrame(loop);
+      }
+    };
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, [targetBeaconIndex, requestOverlayRender]);
 
   // Keep overlay canvas synchronized whenever React props or states change
   useEffect(() => {
@@ -2089,6 +2312,27 @@ export function CandlestickCanvas({
         ref={overlayCanvasRef}
         className="chart-overlay absolute inset-0 block w-full h-full pointer-events-none select-none z-30"
       />
+
+      {/* SMC Historical Bar Alignment Warning Banner */}
+      {alignmentWarning && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 max-w-[90%] sm:max-w-xl flex items-center justify-between gap-3 px-3.5 py-1.5 rounded-lg bg-amber-500/95 dark:bg-amber-600/95 border border-amber-300 dark:border-amber-400 text-slate-950 shadow-xl backdrop-blur-md animate-in fade-in duration-200">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm select-none">⚠️</span>
+            <div className="text-[11px] font-mono leading-tight">
+              <span className="font-bold">Missing Exact Historical Bar:</span>{' '}
+              Formation candle ({new Date(alignmentWarning.requestedTime).toLocaleString()}) is outside loaded history. Displaying nearest available candle (offset: {alignmentWarning.offsetMinutes}m).
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAlignmentWarning(null)}
+            className="flex-shrink-0 px-2 py-0.5 rounded bg-black/20 hover:bg-black/30 text-slate-950 font-mono text-[10px] font-bold transition-colors cursor-pointer"
+            title="Dismiss notification"
+          >
+            DISMISS
+          </button>
+        </div>
+      )}
 
       {Math.abs(scrollOffset) > 5 && (
         <button

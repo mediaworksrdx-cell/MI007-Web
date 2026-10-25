@@ -256,7 +256,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     if (now - lastLivePricesUpdateRef.current >= 2000) {
       lastLivePricesUpdateRef.current = now;
       if (storeRef.current) {
-        setLivePrices(storeRef.current.getMap());
+        setLivePrices(new Map(storeRef.current.getMap()));
       }
       if (lastTickRef.current) {
         setLastTick(lastTickRef.current);
@@ -268,7 +268,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
         throttleLivePricesTimeoutRef.current = null;
         lastLivePricesUpdateRef.current = Date.now();
         if (storeRef.current) {
-          setLivePrices(storeRef.current.getMap());
+          setLivePrices(new Map(storeRef.current.getMap()));
         }
         if (lastTickRef.current) {
           setLastTick(lastTickRef.current);
@@ -371,194 +371,228 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     }
   }, [scheduleLivePricesUpdate]);
 
-  // 2. Background Macro, Forex, Commodities & Crypto Polling (every 15 minutes = 900,000ms)
-  const syncCryptoAndMacro = useCallback(async () => {
+  // 2. High-Frequency Crypto Polling (every 5 seconds)
+  const syncCryptoPrices = useCallback(async () => {
     try {
-      const [cryptos, macros] = await Promise.all([
-        fetchCryptoPrices(),
-        fetchMacroData(),
-      ]);
+      const cryptos = await fetchCryptoPrices();
+      if (!cryptos || cryptos.length === 0) return;
 
-      if (macros.length > 0) setMacroData(macros);
-      if (cryptos.length > 0) setCryptoPrices(cryptos);
-
+      setCryptoPrices(cryptos);
       const now = Date.now();
+      let mostRecentTick: TradeEngineTick | null = null;
 
       // Index cryptos into livePrices map
-      if (cryptos.length > 0) {
-        const changed = storeRef.current?.updateBatch((prev) => {
-          const next = new Map(prev);
-          const changedKeys = new Set<string>();
-          for (const c of cryptos) {
-            const key = normalizeSymbolKey(c.symbol);
-            const prevEntry = next.get(key);
-            if (prevEntry && prevEntry.price === c.current_price) continue;
-            const tickDirection = prevEntry
-              ? c.current_price > prevEntry.price ? 'up' : c.current_price < prevEntry.price ? 'down' : 'neutral'
-              : 'neutral';
+      const changed = storeRef.current?.updateBatch((prev) => {
+        const next = new Map(prev);
+        const changedKeys = new Set<string>();
+        for (const c of cryptos) {
+          if (!c.symbol || typeof c.current_price !== 'number' || c.current_price <= 0) continue;
+          const key = normalizeSymbolKey(c.symbol);
+          const prevEntry = next.get(key);
+          const isPriceDifferent = !prevEntry || prevEntry.price !== c.current_price;
+          const tickDirection = prevEntry
+            ? c.current_price > prevEntry.price ? 'up' : c.current_price < prevEntry.price ? 'down' : prevEntry.tickDirection
+            : 'neutral';
 
-            const chgPct = Number.isFinite(c.price_change_percentage_24h) ? Number(c.price_change_percentage_24h) : 0;
-            const data: LiveSymbolData = {
+          const chgPct = Number.isFinite(c.price_change_percentage_24h) ? Number(c.price_change_percentage_24h) : 0;
+          const data: LiveSymbolData = {
+            symbol: c.symbol.toUpperCase(),
+            price: c.current_price,
+            change: (c.current_price * chgPct) / 100,
+            changePct: chgPct,
+            timestamp: now,
+            tickDirection,
+            lastUpdated: now,
+          };
+
+          if (isPriceDifferent || !prevEntry) {
+            changedKeys.add(key);
+            changedKeys.add(c.symbol.toUpperCase());
+            changedKeys.add(`${c.symbol.toUpperCase()}USDT`);
+            changedKeys.add(`${c.symbol.toUpperCase()}-USD`);
+
+            const tick: TradeEngineTick = {
               symbol: c.symbol.toUpperCase(),
               price: c.current_price,
-              change: (c.current_price * chgPct) / 100,
+              volume: 0,
+              timestamp: now,
+            };
+            mostRecentTick = tick;
+            listenersRef.current.forEach((listener) => {
+              try { listener(tick); } catch (e) { console.error(e); }
+            });
+          }
+
+          next.set(key, data);
+          next.set(c.symbol.toUpperCase(), data);
+          next.set(c.symbol.toLowerCase(), data);
+          next.set(c.id.toLowerCase(), data);
+          next.set(`${c.symbol.toUpperCase()}USDT`, data);
+          next.set(`${c.symbol.toUpperCase()}-USD`, data);
+          next.set(`${c.symbol.toUpperCase()}/USD`, data);
+        }
+        return { next, changedKeys };
+      });
+
+      if (mostRecentTick) {
+        lastTickRef.current = mostRecentTick;
+      }
+
+      if (changed) {
+        scheduleLivePricesUpdate();
+      }
+    } catch (err) {
+      console.warn('[TradeEngineProvider] syncCryptoPrices error:', err);
+    }
+  }, [scheduleLivePricesUpdate]);
+
+  // 3. Background Macro, Forex & Commodities Polling (every 60 seconds)
+  const syncMacroData = useCallback(async () => {
+    try {
+      const macros = await fetchMacroData();
+      if (!macros || macros.length === 0) return;
+
+      setMacroData(macros);
+      const now = Date.now();
+
+      // Index commodities, forex, and macro into livePrices map
+      const changed = storeRef.current?.updateBatch((prev) => {
+        const next = new Map(prev);
+        const changedKeys = new Set<string>();
+        for (const m of macros) {
+          const numVal = parseFloat(String(m.value).replace(/[%$,]/g, ''));
+          if (!isNaN(numVal) && numVal > 0) {
+            const key = normalizeSymbolKey(m.symbol);
+            const prevEntry = next.get(key) || next.get(m.symbol);
+            if (prevEntry && prevEntry.price === numVal) continue;
+            const tickDirection = prevEntry
+              ? numVal > prevEntry.price ? 'up' : numVal < prevEntry.price ? 'down' : 'neutral'
+              : 'neutral';
+
+            const chg = typeof (m as any).change === 'number' ? (m as any).change : (prevEntry?.change || 0);
+            const chgPct = typeof (m as any).changePercent === 'number' ? (m as any).changePercent : (prevEntry?.changePct || 0);
+
+            const data: LiveSymbolData = {
+              symbol: m.symbol,
+              price: numVal,
+              change: chg,
               changePct: chgPct,
               timestamp: now,
               tickDirection,
               lastUpdated: now,
             };
+
             changedKeys.add(key);
             next.set(key, data);
-            next.set(c.symbol.toUpperCase(), data);
-            next.set(c.symbol.toLowerCase(), data);
-            next.set(c.id.toLowerCase(), data);
-            next.set(`${c.symbol.toUpperCase()}USDT`, data);
-            next.set(`${c.symbol.toUpperCase()}-USD`, data);
-            next.set(`${c.symbol.toUpperCase()}/USD`, data);
-          }
-          return { next, changedKeys };
-        });
-        if (changed) {
-          scheduleLivePricesUpdate();
-        }
-      }
+            next.set(m.symbol, data);
+            next.set(m.symbol.toUpperCase(), data);
+            next.set(m.symbol.replace('/', ''), data);
+            next.set(m.symbol.replace(/\s+/g, ''), data);
 
-      // Index commodities, forex, and macro into livePrices map
-      if (macros.length > 0) {
-        const changed = storeRef.current?.updateBatch((prev) => {
-          const next = new Map(prev);
-          const changedKeys = new Set<string>();
-          for (const m of macros) {
-            const numVal = parseFloat(String(m.value).replace(/[%$,]/g, ''));
-            if (!isNaN(numVal) && numVal > 0) {
-              const key = normalizeSymbolKey(m.symbol);
-              const prevEntry = next.get(key) || next.get(m.symbol);
-              if (prevEntry && prevEntry.price === numVal) continue;
-              const tickDirection = prevEntry
-                ? numVal > prevEntry.price ? 'up' : numVal < prevEntry.price ? 'down' : 'neutral'
-                : 'neutral';
-
-              const chg = typeof (m as any).change === 'number' ? (m as any).change : (prevEntry?.change || 0);
-              const chgPct = typeof (m as any).changePercent === 'number' ? (m as any).changePercent : (prevEntry?.changePct || 0);
-
-              const data: LiveSymbolData = {
-                symbol: m.symbol,
-                price: numVal,
-                change: chg,
-                changePct: chgPct,
-                timestamp: now,
-                tickDirection,
-                lastUpdated: now,
-              };
-
-              changedKeys.add(key);
-              next.set(key, data);
-              next.set(m.symbol, data);
-              next.set(m.symbol.toUpperCase(), data);
-              next.set(m.symbol.replace('/', ''), data);
-              next.set(m.symbol.replace(/\s+/g, ''), data);
-
-              if (m.symbol === 'XAU/USD' || m.symbol === 'GOLD') {
-                changedKeys.add('GOLD');
-                next.set('GOLD', data);
-                next.set('XAU', data);
-                next.set('XAUUSD', data);
-              }
-              if (m.symbol === 'XAG/USD' || m.symbol === 'SILVER') {
-                changedKeys.add('SILVER');
-                next.set('SILVER', data);
-                next.set('XAG', data);
-                next.set('XAGUSD', data);
-              }
-              if (m.symbol === 'BRENT' || m.symbol === 'CRUDEOIL') {
-                changedKeys.add('BRENT');
-                changedKeys.add('CRUDEOIL');
-                next.set('BRENT', data);
-                next.set('CRUDEOIL', data);
-                next.set('OIL', data);
-              }
-              if (m.symbol === 'WTI') {
-                changedKeys.add('WTI');
-                next.set('WTI', data);
-                next.set('CRUDE_WTI', data);
-              }
-              if (m.symbol === 'NATGAS') {
-                changedKeys.add('NATGAS');
-                next.set('NATGAS', data);
-                next.set('NATURALGAS', data);
-              }
-              if (m.symbol === 'COPPER') {
-                changedKeys.add('COPPER');
-                next.set('COPPER', data);
-              }
-              if (m.symbol === 'USD/INR' || m.symbol === 'USDINR') {
-                changedKeys.add('USDINR');
-                next.set('USDINR', data);
-                next.set('USD/INR', data);
-              }
-              if (m.symbol === 'EUR/USD' || m.symbol === 'EURUSD') {
-                changedKeys.add('EURUSD');
-                next.set('EURUSD', data);
-                next.set('EUR/USD', data);
-              }
-              if (m.symbol === 'GBP/USD' || m.symbol === 'GBPUSD') {
-                changedKeys.add('GBPUSD');
-                next.set('GBPUSD', data);
-                next.set('GBP/USD', data);
-              }
-              if (m.symbol === 'USD/JPY' || m.symbol === 'USDJPY') {
-                changedKeys.add('USDJPY');
-                next.set('USDJPY', data);
-                next.set('USD/JPY', data);
-              }
-              if (m.symbol === 'USD/CHF' || m.symbol === 'USDCHF') {
-                changedKeys.add('USDCHF');
-                next.set('USDCHF', data);
-                next.set('USD/CHF', data);
-              }
-              if (m.symbol === 'USD/CAD' || m.symbol === 'USDCAD' || m.symbol === 'UADCAD' || m.symbol === 'UAD/CAD') {
-                changedKeys.add('USDCAD');
-                next.set('USDCAD', data);
-                next.set('USD/CAD', data);
-              }
-              if (m.symbol === 'AUD/CAD' || m.symbol === 'AUDCAD') {
-                changedKeys.add('AUDCAD');
-                next.set('AUDCAD', data);
-                next.set('AUD/CAD', data);
-              }
-              if (m.symbol === 'AUD/USD' || m.symbol === 'AUDUSD') {
-                changedKeys.add('AUDUSD');
-                next.set('AUDUSD', data);
-                next.set('AUD/USD', data);
-              }
+            if (m.symbol === 'XAU/USD' || m.symbol === 'GOLD') {
+              changedKeys.add('GOLD');
+              next.set('GOLD', data);
+              next.set('XAU', data);
+              next.set('XAUUSD', data);
+            }
+            if (m.symbol === 'XAG/USD' || m.symbol === 'SILVER') {
+              changedKeys.add('SILVER');
+              next.set('SILVER', data);
+              next.set('XAG', data);
+              next.set('XAGUSD', data);
+            }
+            if (m.symbol === 'BRENT' || m.symbol === 'CRUDEOIL') {
+              changedKeys.add('BRENT');
+              changedKeys.add('CRUDEOIL');
+              next.set('BRENT', data);
+              next.set('CRUDEOIL', data);
+              next.set('OIL', data);
+            }
+            if (m.symbol === 'WTI') {
+              changedKeys.add('WTI');
+              next.set('WTI', data);
+              next.set('CRUDE_WTI', data);
+            }
+            if (m.symbol === 'NATGAS') {
+              changedKeys.add('NATGAS');
+              next.set('NATGAS', data);
+              next.set('NATURALGAS', data);
+            }
+            if (m.symbol === 'COPPER') {
+              changedKeys.add('COPPER');
+              next.set('COPPER', data);
+            }
+            if (m.symbol === 'USD/INR' || m.symbol === 'USDINR') {
+              changedKeys.add('USDINR');
+              next.set('USDINR', data);
+              next.set('USD/INR', data);
+            }
+            if (m.symbol === 'EUR/USD' || m.symbol === 'EURUSD') {
+              changedKeys.add('EURUSD');
+              next.set('EURUSD', data);
+              next.set('EUR/USD', data);
+            }
+            if (m.symbol === 'GBP/USD' || m.symbol === 'GBPUSD') {
+              changedKeys.add('GBPUSD');
+              next.set('GBPUSD', data);
+              next.set('GBP/USD', data);
+            }
+            if (m.symbol === 'USD/JPY' || m.symbol === 'USDJPY') {
+              changedKeys.add('USDJPY');
+              next.set('USDJPY', data);
+              next.set('USD/JPY', data);
+            }
+            if (m.symbol === 'USD/CHF' || m.symbol === 'USDCHF') {
+              changedKeys.add('USDCHF');
+              next.set('USDCHF', data);
+              next.set('USD/CHF', data);
+            }
+            if (m.symbol === 'USD/CAD' || m.symbol === 'USDCAD' || m.symbol === 'UADCAD' || m.symbol === 'UAD/CAD') {
+              changedKeys.add('USDCAD');
+              next.set('USDCAD', data);
+              next.set('USD/CAD', data);
+            }
+            if (m.symbol === 'AUD/CAD' || m.symbol === 'AUDCAD') {
+              changedKeys.add('AUDCAD');
+              next.set('AUDCAD', data);
+              next.set('AUD/CAD', data);
+            }
+            if (m.symbol === 'AUD/USD' || m.symbol === 'AUDUSD') {
+              changedKeys.add('AUDUSD');
+              next.set('AUDUSD', data);
+              next.set('AUD/USD', data);
             }
           }
-          return { next, changedKeys };
-        });
-        if (changed) {
-          scheduleLivePricesUpdate();
         }
+        return { next, changedKeys };
+      });
+      if (changed) {
+        scheduleLivePricesUpdate();
       }
     } catch (err) {
-      console.warn('[TradeEngineProvider] syncCryptoAndMacro error:', err);
+      console.warn('[TradeEngineProvider] syncMacroData error:', err);
     }
   }, [scheduleLivePricesUpdate]);
 
   useEffect(() => {
     // Initial immediate pull
     syncLivePrices();
-    syncCryptoAndMacro();
+    syncCryptoPrices();
+    syncMacroData();
 
     // Fast 2-second polling strictly for live Indian equities & indices (Zerodha Kite)
     const pricesInterval = setInterval(syncLivePrices, 2000);
-    // User-configured 15-minute polling cadence for US stocks, crypto, commodities, and forex (15 * 60 * 1000 = 900,000ms)
-    const macroInterval = setInterval(syncCryptoAndMacro, 15 * 60 * 1000);
+    // 5-second polling strictly for live Crypto prices (CoinGecko / Trade Engine / Yahoo failover)
+    const cryptoInterval = setInterval(syncCryptoPrices, 5000);
+    // 60-second polling cadence for macro, commodities, and forex
+    const macroInterval = setInterval(syncMacroData, 60 * 1000);
 
     // Refresh immediately when window regain visibility
     const handleVisibility = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         syncLivePrices();
-        syncCryptoAndMacro();
+        syncCryptoPrices();
+        syncMacroData();
       }
     };
     if (typeof document !== 'undefined') {
@@ -567,16 +601,111 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
     return () => {
       clearInterval(pricesInterval);
+      clearInterval(cryptoInterval);
       clearInterval(macroInterval);
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVisibility);
       }
     };
-  }, [syncLivePrices, syncCryptoAndMacro]);
+  }, [syncLivePrices, syncCryptoPrices, syncMacroData]);
 
-  // 3. WebSocket Real-time Tick Stream from Trade Engine Server
+  // 3. WebSocket Real-time Tick Streams (Trade Engine + Coinbase Crypto)
   useEffect(() => {
     let isDisposed = false;
+    let cryptoWs: WebSocket | null = null;
+    let cryptoReconnectTimer: NodeJS.Timeout | null = null;
+
+    function connectCryptoWs() {
+      if (isDisposed) return;
+      if (typeof window === 'undefined') return;
+
+      try {
+        const cWs = new WebSocket('wss://ws-feed.exchange.coinbase.com');
+        cryptoWs = cWs;
+
+        cWs.onopen = () => {
+          if (isDisposed) { cWs.close(); return; }
+          cWs.send(JSON.stringify({
+            type: 'subscribe',
+            product_ids: [
+              'BTC-USD', 'ETH-USD', 'SOL-USD', 'DOGE-USD', 'SHIB-USD',
+              'XRP-USD', 'ADA-USD', 'AVAX-USD', 'DOT-USD', 'LINK-USD'
+            ],
+            channels: ['ticker'],
+          }));
+        };
+
+        cWs.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type !== 'ticker' || !msg.product_id || !msg.price) return;
+
+            const sym = msg.product_id.replace('-USD', '').toUpperCase();
+            const price = parseFloat(msg.price);
+            if (isNaN(price) || price <= 0) return;
+
+            const open24h = parseFloat(msg.open_24h || 0);
+            const change = open24h > 0 ? +(price - open24h).toFixed(2) : 0;
+            const changePct = open24h > 0 ? +(((price - open24h) / open24h) * 100).toFixed(2) : 0;
+            const now = Date.now();
+
+            const tick: TradeEngineTick = {
+              symbol: sym,
+              price,
+              volume: parseFloat(msg.last_size || 0) || 0,
+              timestamp: now,
+            };
+
+            lastTickRef.current = tick;
+            listenersRef.current.forEach((listener) => {
+              try { listener(tick); } catch (e) { console.error(e); }
+            });
+
+            const key = normalizeSymbolKey(sym);
+            const changed = storeRef.current?.updateBatch((prev) => {
+              const prevEntry = prev.get(key) || prev.get(sym);
+              const dir = prevEntry
+                ? price > prevEntry.price ? 'up' : price < prevEntry.price ? 'down' : prevEntry.tickDirection
+                : 'neutral';
+
+              const next = new Map(prev);
+              const changedKeys = new Set<string>([key, sym, `${sym}USDT`, `${sym}-USD`]);
+              const data: LiveSymbolData = {
+                symbol: sym,
+                price,
+                change,
+                changePct,
+                volume: tick.volume,
+                timestamp: now,
+                tickDirection: dir,
+                lastUpdated: now,
+              };
+              next.set(key, data);
+              next.set(sym, data);
+              next.set(sym.toLowerCase(), data);
+              next.set(`${sym}USDT`, data);
+              next.set(`${sym}-USD`, data);
+              return { next, changedKeys };
+            });
+
+            if (changed) {
+              scheduleLivePricesUpdate();
+            }
+          } catch {}
+        };
+
+        cWs.onerror = () => {};
+
+        cWs.onclose = () => {
+          if (isDisposed) return;
+          cryptoReconnectTimer = setTimeout(connectCryptoWs, 5000);
+        };
+      } catch {
+        if (!isDisposed) {
+          cryptoReconnectTimer = setTimeout(connectCryptoWs, 5000);
+        }
+      }
+    }
 
     function connectWs() {
       if (isDisposed) return;
@@ -673,14 +802,20 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     }
 
     connectWs();
+    connectCryptoWs();
 
     return () => {
       isDisposed = true;
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      if (cryptoReconnectTimer) clearTimeout(cryptoReconnectTimer);
       if (throttleLivePricesTimeoutRef.current) clearTimeout(throttleLivePricesTimeoutRef.current);
       if (wsRef.current) {
         wsRef.current.onclose = null;
         wsRef.current.close();
+      }
+      if (cryptoWs) {
+        cryptoWs.onclose = null;
+        cryptoWs.close();
       }
     };
   }, [scheduleLivePricesUpdate]);

@@ -17,7 +17,7 @@ import {
 import { getMockCandles, getMockQuote } from '@/lib/mockData';
 import { findZerodhaStockBySymbol } from '@/lib/screener/zerodhaStocks';
 import { fetchCandles, areSymbolsEqual } from '@/lib/tradeEngineClient';
-import { useTradeEngine } from '@/lib/tradeEngineContext';
+import { useTradeEngine, useLiveSymbol } from '@/lib/tradeEngineContext';
 import { loadStoredCandles, saveStoredCandles, mergeCandleArrays, purgeStoredCandles } from '@/lib/candleStorage';
 import {
   ChartTemplate,
@@ -231,6 +231,9 @@ export function ChartContainer({
     saveStoredSmcConfig(newCfg);
   }, []);
 
+  const [targetCandleTime, setTargetCandleTime] = useState<number | undefined>();
+  const [targetSetupId, setTargetSetupId] = useState<string | undefined>();
+
   // Detect URL parameter for initial SMC mode activation (e.g. from SMC scanner)
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -245,6 +248,17 @@ export function ChartContainer({
       const tfParam = sp.get('tf') as Timeframe;
       if (tfParam && ['1m', '5m', '15m', '30m', '1H', '4H', '1D', '1W', '1M'].includes(tfParam)) {
         setTimeframe(tfParam);
+      }
+      const timeParam = sp.get('time');
+      if (timeParam) {
+        const parsedTime = Number(timeParam);
+        if (!Number.isNaN(parsedTime) && parsedTime > 0) {
+          setTargetCandleTime(parsedTime);
+        }
+      }
+      const setupIdParam = sp.get('setupId');
+      if (setupIdParam) {
+        setTargetSetupId(setupIdParam);
       }
     }
   }, []);
@@ -371,6 +385,7 @@ export function ChartContainer({
   }, [handleToggleFullscreen]);
 
   const { status, getSymbolPrice, subscribeToTicks } = useTradeEngine();
+  const { live: liveSymbolData } = useLiveSymbol(selectedSymbol);
 
   // Sync with defaultSymbol whenever URL/prop changes
   useEffect(() => {
@@ -524,7 +539,7 @@ export function ChartContainer({
 
   // Sync current price immediately from Trade Engine if available (with scale dislocation protection)
   useEffect(() => {
-    const live = getSymbolPrice(selectedSymbol);
+    const live = liveSymbolData || getSymbolPrice(selectedSymbol);
     if (live && live.price > 0) {
       if (candles.length > 0) {
         const lastC = candles[candles.length - 1];
@@ -536,7 +551,7 @@ export function ChartContainer({
       setCurrentPrice(live.price);
       setIsLiveFromEngine(true);
     }
-  }, [selectedSymbol, getSymbolPrice, candles]);
+  }, [selectedSymbol, liveSymbolData, getSymbolPrice, candles]);
 
   // Listen to live WebSocket ticks from the Trade Engine with robust session-aware candle formation
   useEffect(() => {
@@ -1346,6 +1361,8 @@ export function ChartContainer({
             indicatorResults={indicatorResults}
             currentPriceOverride={displayPrice}
             timeframe={timeframe}
+            targetCandleTime={targetCandleTime}
+            targetSetupId={targetSetupId}
             activeDrawingTool={activeDrawingTool}
             cursorMode={cursorMode}
             drawings={drawings}

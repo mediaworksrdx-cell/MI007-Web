@@ -11,6 +11,7 @@ export interface Candle {
   close: number;
   volume: number;
   time?: string;
+  isClosed?: boolean;
 }
 
 export type ChartType = 'CANDLESTICK' | 'LINE' | 'AREA' | 'HEIKIN_ASHI' | 'HOLLOW_CANDLE';

@@ -8,9 +8,12 @@ import Link from 'next/link';
 import { CompanyFundamental, MarketRegion } from '@/lib/screener/types';
 import {
   STRATEGY_DEFINITIONS,
+  SMC_STRATEGY_DEFINITIONS,
+  COMBINED_STRATEGY_DEFINITIONS,
   StrategyId,
   StrategySignalResult,
   evaluateAllStrategiesForStock,
+  evaluateCombinedStrategiesForStock,
 } from '@/lib/screener/technicalStrategies';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
 
@@ -85,7 +88,7 @@ export function TechnicalStrategyScreenerView({
 
       let results = cache.get(cacheKey);
       if (!results) {
-        results = evaluateAllStrategiesForStock(comp.symbol, comp.name, comp.market, price);
+        results = evaluateCombinedStrategiesForStock(comp.symbol, comp.name, comp.market, price);
         cache.set(cacheKey, results);
       }
       list.push(...results);
@@ -93,9 +96,9 @@ export function TechnicalStrategyScreenerView({
     return list;
   }, [targetUniverse, getSymbolPrice]);
 
-  // Categories
+  // Categories (including 'Smart Money Concepts')
   const categories = useMemo(() => {
-    return Array.from(new Set(STRATEGY_DEFINITIONS.map((s) => s.category)));
+    return Array.from(new Set(COMBINED_STRATEGY_DEFINITIONS.map((s) => s.category)));
   }, []);
 
   // Filtered Results
@@ -107,7 +110,7 @@ export function TechnicalStrategyScreenerView({
       }
       // Category filter
       if (categoryFilter !== 'ALL') {
-        const strat = STRATEGY_DEFINITIONS.find((s) => s.id === res.strategyId);
+        const strat = COMBINED_STRATEGY_DEFINITIONS.find((s) => s.id === res.strategyId);
         if (strat?.category !== categoryFilter) return false;
       }
       // Direction filter
@@ -134,7 +137,12 @@ export function TechnicalStrategyScreenerView({
     return filteredResults.slice((safePage - 1) * pageSize, safePage * pageSize);
   }, [filteredResults, safePage, pageSize]);
 
-  const activeStrategy = STRATEGY_DEFINITIONS.find((s) => s.id === selectedStrategyId);
+  const activeStrategy = COMBINED_STRATEGY_DEFINITIONS.find((s) => s.id === selectedStrategyId);
+
+  const visibleStrategies = useMemo(() => {
+    if (categoryFilter === 'ALL') return COMBINED_STRATEGY_DEFINITIONS;
+    return COMBINED_STRATEGY_DEFINITIONS.filter((s) => s.category === categoryFilter);
+  }, [categoryFilter]);
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-200">
@@ -157,7 +165,7 @@ export function TechnicalStrategyScreenerView({
                 Technical Strategy Intelligence Scanner
               </h1>
               <span className="mono text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-                10 Quantitative Models
+                26 Quantitative Models (10 Classic + 16 SMC)
               </span>
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 mono text-[10.5px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -165,7 +173,7 @@ export function TechnicalStrategyScreenerView({
               </div>
             </div>
             <p className="text-[12.5px] text-[var(--theme-card-text-muted)] font-medium mt-0.5">
-              Automated multi-timeframe pattern detection, moving average hierarchies, and momentum breakouts.
+              Automated multi-timeframe pattern detection, moving average hierarchies, and Smart Money Concepts.
             </p>
           </div>
         </div>
@@ -187,7 +195,7 @@ export function TechnicalStrategyScreenerView({
       {/* ── Strategy Selector Cards Carousel / Grid ── */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between text-[11px] mono font-bold text-[var(--theme-card-text-muted)] uppercase tracking-wider px-1">
-          <span>Select Strategy ({STRATEGY_DEFINITIONS.length} Built-In Models):</span>
+          <span>Select Strategy ({visibleStrategies.length} Built-In Models):</span>
           {selectedStrategyId !== 'ALL' && (
             <button
               type="button"
@@ -210,14 +218,14 @@ export function TechnicalStrategyScreenerView({
             }`}
           >
             <div className="mono text-[12px] font-black text-[var(--theme-card-text)] truncate">
-              All 10 Strategies
+              All {categoryFilter === 'ALL' ? '26' : categoryFilter} Strategies
             </div>
             <div className="text-[10px] mono text-[var(--theme-card-text-muted)] mt-1">
-              {scanResults.length} Signals Detected
+              {filteredResults.length} Signals Detected
             </div>
           </button>
 
-          {STRATEGY_DEFINITIONS.map((s) => {
+          {visibleStrategies.map((s) => {
             const isSelected = selectedStrategyId === s.id;
             const matchesCount = scanResults.filter((r) => r.strategyId === s.id && r.signalTriggered).length;
             return (
@@ -458,7 +466,7 @@ export function TechnicalStrategyScreenerView({
                             </button>
                           )}
                           <Link
-                            href={`/chart/${res.symbol}?market=${res.market}&from=screener`}
+                            href={`/chart/${res.symbol}?market=${res.market}&tf=1D${res.strategyId.startsWith('smc_') ? `&smc=1&setupId=${res.strategyId}` : ''}&from=screener`}
                             onClick={() => {
                               if (typeof window !== 'undefined') {
                                 sessionStorage.setItem('mi007_return_tab', 'technicalScreener');

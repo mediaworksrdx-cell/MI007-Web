@@ -52,7 +52,7 @@ const SETUP_TYPE_LABELS: Record<SmcSetupType, { label: string; badgeClass: strin
     badgeClass: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/40',
   },
   FVG_TAP: {
-    label: 'FVG Imbalance Tap',
+    label: 'FVG 50% CE Retrace',
     badgeClass: 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-500/40',
   },
   LIQUIDITY_SWEEP: {
@@ -62,6 +62,46 @@ const SETUP_TYPE_LABELS: Record<SmcSetupType, { label: string; badgeClass: strin
   BREAKER_RETEST: {
     label: 'Breaker Retest',
     badgeClass: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/40',
+  },
+  EQH_EQL_SWEEP: {
+    label: 'Equal High/Low Sweep',
+    badgeClass: 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-500/40',
+  },
+  PREMIUM_DISCOUNT_OTE: {
+    label: 'Dealing Range OTE',
+    badgeClass: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40',
+  },
+  MTF_CONFLUENCE: {
+    label: 'Multi-Timeframe SMC',
+    badgeClass: 'bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-500/40',
+  },
+  SESSION_LIQUIDITY: {
+    label: 'Session Sweep (PDH/PDL)',
+    badgeClass: 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-500/40',
+  },
+  THREE_STAGE_REVERSAL: {
+    label: '3-Stage Confluence',
+    badgeClass: 'bg-fuchsia-100 dark:bg-fuchsia-500/20 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-300 dark:border-fuchsia-500/40',
+  },
+  BOS_FVG_RETEST: {
+    label: 'BOS + FVG Retest',
+    badgeClass: 'bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-500/40',
+  },
+  OB_FVG_CONFLUENCE: {
+    label: 'OB + FVG Confluence',
+    badgeClass: 'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-500/40',
+  },
+  INDUCEMENT_SWEEP: {
+    label: 'Inducement Sweep',
+    badgeClass: 'bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300 border-pink-300 dark:border-pink-500/40',
+  },
+  POWER_OF_THREE_AMD: {
+    label: 'Power of Three (AMD)',
+    badgeClass: 'bg-lime-100 dark:bg-lime-500/20 text-lime-700 dark:text-lime-300 border-lime-300 dark:border-lime-500/40',
+  },
+  INVERSE_FVG: {
+    label: 'Inverse FVG (IFVG)',
+    badgeClass: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/40',
   },
 };
 
@@ -133,8 +173,12 @@ export function SmcScannerView({
         );
 
         if (candles && candles.length >= 20) {
-          const analysis: SmcAnalysis = calculateSMC(candles);
-          for (const setup of analysis.confirmedSetups) {
+          const analysis: SmcAnalysis = calculateSMC(candles, undefined, comp.symbol, timeframe);
+          const setupsList = analysis.allSetups && analysis.allSetups.length > 0
+            ? analysis.allSetups
+            : analysis.confirmedSetups;
+
+          for (const setup of setupsList) {
             items.push({
               symbol: comp.symbol,
               name: comp.name,
@@ -472,7 +516,7 @@ export function SmcScannerView({
                       {/* Action Button -> Direct Chart Launch with SMC Auto-enabled */}
                       <td className="py-3 px-4 text-center">
                         <Link
-                          href={`/chart/${item.symbol}?market=${item.market}&tf=${timeframe}&smc=1&from=screener`}
+                          href={`/chart/${item.symbol}?market=${item.market}&tf=${timeframe}&smc=1&setupId=${item.setup.id}&time=${item.setup.time}&from=screener`}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all shadow-xs cursor-pointer active:scale-95"
                           title={`Open ${item.symbol} Candlestick Chart with SMC Overlays Enabled`}
                         >

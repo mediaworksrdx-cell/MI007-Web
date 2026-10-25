@@ -43,6 +43,47 @@ const YAHOO_CRYPTO_MAP = [
   { id: 'matic-network', symbol: 'matic', name: 'Polygon', y: 'POL-USD', base: 0.126 },
 ];
 
+async function fetchCoinbaseCrypto(): Promise<any[] | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=USD', {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+      signal: controller.signal,
+      cache: 'no-store',
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const rates = json.data?.rates;
+    if (!rates || typeof rates !== 'object') return null;
+
+    return YAHOO_CRYPTO_MAP.map(c => {
+      const symUpper = c.symbol.toUpperCase();
+      const r = rates[symUpper] || (c.symbol === 'matic' ? rates['POL'] || rates['MATIC'] : null);
+      const parsedRate = r ? parseFloat(r) : 0;
+      const price = parsedRate > 0 ? +(1 / parsedRate).toFixed(c.symbol === 'shib' ? 8 : 2) : c.base;
+      const prevPrice = c.base;
+      const chgPct = prevPrice > 0 ? +(((price - prevPrice) / prevPrice) * 100).toFixed(2) : 0;
+
+      return {
+        id: c.id,
+        symbol: c.symbol,
+        name: c.name,
+        current_price: price,
+        price_change_percentage_24h: chgPct,
+        market_cap: 0,
+      };
+    });
+  } catch (err) {
+    console.warn('[Coinbase] Error fetching real-time crypto prices:', err);
+    return null;
+  }
+}
+
 async function fetchCoinGeckoCrypto(): Promise<any[] | null> {
   try {
     const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${COINGECKO_CRYPTO_IDS.join(',')}&order=market_cap_desc&sparkline=false`;
@@ -1103,9 +1144,9 @@ export async function GET(
     }
   }
 
-  // 3. Check in-memory cache and fetch crypto-prices (15-minute interval = 900,000ms)
+  // 3. Check in-memory cache and fetch crypto-prices (5-second polling interval = 5,000ms)
   if (pathStr === 'crypto-prices') {
-    const cachedCrypto = getCached(cacheKey, 15 * 60 * 1000);
+    const cachedCrypto = getCached(cacheKey, 4500);
     if (cachedCrypto && Array.isArray(cachedCrypto) && cachedCrypto.length > 0) {
       return NextResponse.json(cachedCrypto, {
         status: 200,
@@ -1113,7 +1154,17 @@ export async function GET(
       });
     }
 
-    // A. Priority 1: Remote Trade Engine (User's CoinGecko service)
+    // A. Priority 1: High-Speed Coinbase Public Feed
+    const cbData = await fetchCoinbaseCrypto();
+    if (cbData && Array.isArray(cbData) && cbData.length > 0) {
+      setCached(cacheKey, cbData);
+      return NextResponse.json(cbData, {
+        status: 200,
+        headers: { 'X-Cache': 'MISS-COINBASE', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
+    // B. Priority 2: Remote Trade Engine (User's CoinGecko service)
     try {
       const remoteRes = await fetch(`${TRADE_ENGINE_URL}/crypto-prices${search}`, {
         headers: { 'Accept': 'application/json' },
@@ -1133,7 +1184,7 @@ export async function GET(
       console.warn('[TradeEngineProxy] Remote engine crypto-prices unavailable:', err);
     }
 
-    // B. Priority 2: Direct CoinGecko Public Markets API (All 12 assets)
+    // C. Priority 3: Direct CoinGecko Public Markets API (All 12 assets)
     const cgData = await fetchCoinGeckoCrypto();
     if (cgData && Array.isArray(cgData) && cgData.length > 0) {
       setCached(cacheKey, cgData);
@@ -1143,13 +1194,22 @@ export async function GET(
       });
     }
 
-    // C. Priority 3: Yahoo Finance Multi-Crypto Failover
+    // D. Priority 4: Yahoo Finance Multi-Crypto Failover
     const yData = await fetchYahooCryptoFallback();
     if (yData && Array.isArray(yData) && yData.length > 0) {
       setCached(cacheKey, yData);
       return NextResponse.json(yData, {
         status: 200,
         headers: { 'X-Cache': 'MISS-YAHOO', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
+    // E. Priority 5: Stale cache fallback to guarantee uninterrupted 5s delivery
+    const staleData = serverCache[cacheKey]?.data;
+    if (staleData && Array.isArray(staleData) && staleData.length > 0) {
+      return NextResponse.json(staleData, {
+        status: 200,
+        headers: { 'X-Cache': 'STALE-FALLBACK', 'Access-Control-Allow-Origin': '*' },
       });
     }
   }
