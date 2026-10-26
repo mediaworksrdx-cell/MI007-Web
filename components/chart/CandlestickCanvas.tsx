@@ -491,8 +491,11 @@ export function CandlestickCanvas({
         }
       }
 
-      setTargetBeaconIndex(nearestIdx);
-      setIsSurrogateBeacon(true);
+      // Exact anchor candle is not present in loaded dataset.
+      // Do NOT place a misleading setup marker on a surrogate candle.
+      // Retain viewport positioning near the timestamp, and display the authoritative alignment warning.
+      setTargetBeaconIndex(null);
+      setIsSurrogateBeacon(false);
       const offsetMin = Math.round(minDiff / 60000);
       setAlignmentWarning({
         requestedTime: targetCandleTime,

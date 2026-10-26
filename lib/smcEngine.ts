@@ -1401,13 +1401,37 @@ export function detectAll16SmcSetups(
     statusOverride?: 'CONFIRMED' | 'RETESTING' | 'PENDING' | 'DETECTED' | 'FORMING' | 'ENTRY_ZONE_REACHED' | 'TARGET_HIT' | 'EXITED' | 'INVALIDATED' | 'EXPIRED'
   ): SmcConfirmedSetup => {
     const isBull = direction === 'BULLISH';
+
+    // 1. Numerical Sanity Check: All price boundaries must be finite, non-zero, and positive numbers
+    if (
+      !Number.isFinite(entryPrice) || entryPrice <= 0 ||
+      !Number.isFinite(stopLoss) || stopLoss <= 0 ||
+      !Number.isFinite(targetPrice) || targetPrice <= 0
+    ) {
+      statusOverride = 'INVALIDATED';
+    }
+
+    // 2. Strict Directional Risk Ordering Validation
+    // LONG: stopLoss MUST be strictly below entryPrice
+    // SHORT: stopLoss MUST be strictly above entryPrice
     const rawRisk = isBull ? (entryPrice - stopLoss) : (stopLoss - entryPrice);
+    if (rawRisk <= 0) {
+      statusOverride = 'INVALIDATED';
+    }
     const risk = rawRisk > 0 ? rawRisk : Math.max(Math.abs(entryPrice - stopLoss), entryPrice * 0.005);
+
+    // 3. Strict Directional Target (TP1) Ordering Validation
+    // LONG: targetPrice MUST be strictly above entryPrice
+    // SHORT: targetPrice MUST be strictly below entryPrice
     const guaranteedTarget = isBull
       ? (targetPrice > entryPrice + risk * 1.5 ? targetPrice : entryPrice + risk * 2.5)
       : (targetPrice < entryPrice - risk * 1.5 ? targetPrice : entryPrice - risk * 2.5);
     const reward = Math.abs(guaranteedTarget - entryPrice);
     const rr = Number((reward / risk).toFixed(1));
+
+    // 4. Strict Directional TP2 Ordering Validation
+    // LONG: TP1 must be nearer than TP2 (entry < TP1 < TP2)
+    // SHORT: TP1 must be nearer than TP2 (entry > TP1 > TP2)
     const targetPrice2 = isBull
       ? Number((entryPrice + reward * 1.5).toFixed(2))
       : Number((entryPrice - reward * 1.5).toFixed(2));
@@ -1676,7 +1700,7 @@ export function detectAll16SmcSetups(
             entry,
             sl,
             tp,
-            `Price tapped institutional Discount OTE zone (62%-79% retracement [₹${dOteMin.toFixed(2)} - ₹${dOteMax.toFixed(2)}]), targeting range high.`
+            `Price tapped institutional Discount OTE zone (62%-79% retracement [${dOteMin.toFixed(2)} - ${dOteMax.toFixed(2)}]), targeting range high.`
           );
           // Standard ICT -0.27 Extension for TP2
           st.targetPrice2 = Number((dealingRange.highPrice + (dealingRange.highPrice - dealingRange.lowPrice) * 0.27).toFixed(2));
@@ -1704,7 +1728,7 @@ export function detectAll16SmcSetups(
             entry,
             sl,
             tp,
-            `Price tapped institutional Premium OTE zone (62%-79% retracement [₹${pOteMin.toFixed(2)} - ₹${pOteMax.toFixed(2)}]), targeting range low.`
+            `Price tapped institutional Premium OTE zone (62%-79% retracement [${pOteMin.toFixed(2)} - ${pOteMax.toFixed(2)}]), targeting range low.`
           );
           // Standard ICT -0.27 Extension for TP2
           st.targetPrice2 = Number((dealingRange.lowPrice - (dealingRange.highPrice - dealingRange.lowPrice) * 0.27).toFixed(2));
@@ -1731,7 +1755,7 @@ export function detectAll16SmcSetups(
         (matchingOb.topPrice + matchingOb.bottomPrice) / 2,
         isBull ? matchingOb.bottomPrice * 0.997 : matchingOb.topPrice * 1.003,
         isBull ? dealingRange.highPrice : dealingRange.lowPrice,
-        `HTF structural bias aligns with intermediate OB at ₹${((matchingOb.topPrice + matchingOb.bottomPrice) / 2).toFixed(2)}.`
+        `HTF structural bias aligns with intermediate OB at ${((matchingOb.topPrice + matchingOb.bottomPrice) / 2).toFixed(2)}.`
       ));
     }
   }
@@ -1746,10 +1770,10 @@ export function detectAll16SmcSetups(
         'BEARISH',
         candles.length - 1,
         lastCandle.openTime,
-        lastPrice,
+        lastCandle.close,
         lastCandle.high * 1.003,
         sessionLevels.pdl,
-        `PDH at ₹${sessionLevels.pdh.toFixed(2)} swept with rejection back into range.`
+        `PDH at ${sessionLevels.pdh.toFixed(2)} swept with rejection back into range.`
       ));
     } else if (lastCandle.low < sessionLevels.pdl && lastCandle.close > sessionLevels.pdl) {
       setups.push(makeSetup(
@@ -1759,10 +1783,10 @@ export function detectAll16SmcSetups(
         'BULLISH',
         candles.length - 1,
         lastCandle.openTime,
-        lastPrice,
+        lastCandle.close,
         lastCandle.low * 0.997,
         sessionLevels.pdh,
-        `PDL at ₹${sessionLevels.pdl.toFixed(2)} swept with rejection back into range.`
+        `PDL at ${sessionLevels.pdl.toFixed(2)} swept with rejection back into range.`
       ));
     }
   }
@@ -1807,7 +1831,7 @@ export function detectAll16SmcSetups(
         nearbyFvg.cePrice,
         isBull ? nearbyFvg.bottomPrice * 0.998 : nearbyFvg.topPrice * 1.002,
         isBull ? dealingRange.highPrice : dealingRange.lowPrice,
-        `Impulse BOS accompanied by active FVG [₹${nearbyFvg.bottomPrice.toFixed(2)} - ₹${nearbyFvg.topPrice.toFixed(2)}].`
+        `Impulse BOS accompanied by active FVG [${nearbyFvg.bottomPrice.toFixed(2)} - ${nearbyFvg.topPrice.toFixed(2)}].`
       ));
     }
   }
@@ -1829,7 +1853,7 @@ export function detectAll16SmcSetups(
         (ob.topPrice + overlappingFvg.cePrice) / 2,
         isBull ? ob.bottomPrice * 0.997 : ob.topPrice * 1.003,
         isBull ? dealingRange.highPrice : dealingRange.lowPrice,
-        `Strong confluence: Order Block overlaps with Fair Value Gap at ₹${overlappingFvg.cePrice.toFixed(2)}.`
+        `Strong confluence: Order Block overlaps with Fair Value Gap at ${overlappingFvg.cePrice.toFixed(2)}.`
       ));
       break;
     }
@@ -1852,7 +1876,7 @@ export function detectAll16SmcSetups(
         (ob.topPrice + ob.bottomPrice) / 2,
         isBull ? ob.bottomPrice * 0.997 : ob.topPrice * 1.003,
         isBull ? dealingRange.highPrice : dealingRange.lowPrice,
-        `Internal trap swing cleared at ₹${lastSwing.price.toFixed(2)} prior to institutional order block tap.`
+        `Internal trap swing cleared at ${lastSwing.price.toFixed(2)} prior to institutional order block tap.`
       ));
     }
   }
