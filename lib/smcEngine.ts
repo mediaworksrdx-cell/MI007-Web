@@ -110,7 +110,9 @@ export interface SmcDealingRange {
   equilibriumPrice: number;
   premiumRange: [number, number]; // [50%, 100%]
   discountRange: [number, number]; // [0%, 50%]
-  oteRange: [number, number]; // [61.8%, 78.6%]
+  oteRange: [number, number]; // [61.8%, 78.6%] - preserved for backwards compatibility
+  discountOteRange: [number, number]; // [21.4%, 38.2%] - 61.8% to 78.6% deep retracement down into discount
+  premiumOteRange: [number, number]; // [61.8%, 78.6%] - 61.8% to 78.6% retracement up into premium
 }
 
 export interface SmcSessionLevels {
@@ -1166,6 +1168,8 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
       premiumRange: [0, 0],
       discountRange: [0, 0],
       oteRange: [0, 0],
+      discountOteRange: [0, 0],
+      premiumOteRange: [0, 0],
     };
   }
 
@@ -1200,6 +1204,14 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
     Number((lowPrice + range * 0.618).toFixed(4)),
     Number((lowPrice + range * 0.786).toFixed(4)),
   ];
+  const discountOteRange: [number, number] = [
+    Number((lowPrice + range * 0.214).toFixed(4)),
+    Number((lowPrice + range * 0.382).toFixed(4)),
+  ];
+  const premiumOteRange: [number, number] = [
+    Number((lowPrice + range * 0.618).toFixed(4)),
+    Number((lowPrice + range * 0.786).toFixed(4)),
+  ];
 
   return {
     highPrice,
@@ -1208,6 +1220,8 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
     premiumRange,
     discountRange,
     oteRange,
+    discountOteRange,
+    premiumOteRange,
   };
 }
 
@@ -1364,6 +1378,8 @@ export function detectAll16SmcSetups(
     premiumRange: [lastPrice, lastPrice * 1.05],
     discountRange: [lastPrice * 0.95, lastPrice],
     oteRange: [lastPrice * 0.96, lastPrice * 0.98],
+    discountOteRange: [lastPrice * 0.96, lastPrice * 0.98],
+    premiumOteRange: [lastPrice * 1.02, lastPrice * 1.04],
   };
   sessionLevels = sessionLevels || {};
 
@@ -1610,36 +1626,62 @@ export function detectAll16SmcSetups(
 
   // ── Strategy 8: Premium & Discount Dealing Ranges (OTE)
   if (dealingRange.highPrice > dealingRange.lowPrice) {
-    const p = lastPrice;
-    const isDiscount = p < dealingRange.equilibriumPrice;
-    const oteLow = dealingRange.oteRange[0];
-    const oteHigh = dealingRange.oteRange[1];
-    if (isDiscount && oteLow > 0) {
-      setups.push(makeSetup(
-        `setup_dr_ote_bull`,
-        'Discount Dealing Range OTE Long',
-        'PREMIUM_DISCOUNT_OTE',
-        'BULLISH',
-        candles.length - 1,
-        lastCandle.openTime,
-        (oteLow + oteHigh) / 2,
-        dealingRange.lowPrice * 0.995,
-        dealingRange.highPrice,
-        `Price in Discount territory (< 50% EQ ₹${dealingRange.equilibriumPrice.toFixed(2)}), OTE 61.8-78.6% zone.`
-      ));
-    } else if (!isDiscount && oteHigh > 0) {
-      setups.push(makeSetup(
-        `setup_dr_ote_bear`,
-        'Premium Dealing Range OTE Short',
-        'PREMIUM_DISCOUNT_OTE',
-        'BEARISH',
-        candles.length - 1,
-        lastCandle.openTime,
-        (oteLow + oteHigh) / 2,
-        dealingRange.highPrice * 1.005,
-        dealingRange.lowPrice,
-        `Price in Premium territory (> 50% EQ ₹${dealingRange.equilibriumPrice.toFixed(2)}), OTE 61.8-78.6% zone.`
-      ));
+    const dOteMin = dealingRange.discountOteRange ? dealingRange.discountOteRange[0] : dealingRange.lowPrice + (dealingRange.highPrice - dealingRange.lowPrice) * 0.214;
+    const dOteMax = dealingRange.discountOteRange ? dealingRange.discountOteRange[1] : dealingRange.lowPrice + (dealingRange.highPrice - dealingRange.lowPrice) * 0.382;
+    const pOteMin = dealingRange.premiumOteRange ? dealingRange.premiumOteRange[0] : dealingRange.lowPrice + (dealingRange.highPrice - dealingRange.lowPrice) * 0.618;
+    const pOteMax = dealingRange.premiumOteRange ? dealingRange.premiumOteRange[1] : dealingRange.lowPrice + (dealingRange.highPrice - dealingRange.lowPrice) * 0.786;
+
+    // Scan recent candles (up to 12 bars back) for confirmed OTE entries
+    const lookback = Math.min(candles.length, 12);
+
+    // Bullish: Price tapped Discount OTE zone (deep discount retracement)
+    for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
+      const c = candles[i];
+      if (c.low <= dOteMax && c.high >= dOteMin && c.close >= dealingRange.lowPrice) {
+        const entry = Math.max(dOteMin, Math.min(dOteMax, c.close));
+        const sl = dealingRange.lowPrice * 0.998;
+        const tp = dealingRange.highPrice;
+        if (entry > sl && tp > entry) {
+          setups.push(makeSetup(
+            `setup_dr_ote_bull_${i}`,
+            'Discount Dealing Range OTE Long',
+            'PREMIUM_DISCOUNT_OTE',
+            'BULLISH',
+            i,
+            c.openTime,
+            entry,
+            sl,
+            tp,
+            `Price tapped institutional Discount OTE zone (61.8%-78.6% retracement [₹${dOteMin.toFixed(2)} - ₹${dOteMax.toFixed(2)}]), targeting range high.`
+          ));
+          break; // Retain most recent confirmed tap
+        }
+      }
+    }
+
+    // Bearish: Price tapped Premium OTE zone (high premium retracement)
+    for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
+      const c = candles[i];
+      if (c.high >= pOteMin && c.low <= pOteMax && c.close <= dealingRange.highPrice) {
+        const entry = Math.min(pOteMax, Math.max(pOteMin, c.close));
+        const sl = dealingRange.highPrice * 1.002;
+        const tp = dealingRange.lowPrice;
+        if (entry < sl && tp < entry) {
+          setups.push(makeSetup(
+            `setup_dr_ote_bear_${i}`,
+            'Premium Dealing Range OTE Short',
+            'PREMIUM_DISCOUNT_OTE',
+            'BEARISH',
+            i,
+            c.openTime,
+            entry,
+            sl,
+            tp,
+            `Price tapped institutional Premium OTE zone (61.8%-78.6% retracement [₹${pOteMin.toFixed(2)} - ₹${pOteMax.toFixed(2)}]), targeting range low.`
+          ));
+          break; // Retain most recent confirmed tap
+        }
+      }
     }
   }
 
@@ -1924,6 +1966,8 @@ export function calculateSMC(
         premiumRange: [p, p * 1.05],
         discountRange: [p * 0.95, p],
         oteRange: [p * 0.96, p * 0.98],
+        discountOteRange: [p * 0.96, p * 0.98],
+        premiumOteRange: [p * 1.02, p * 1.04],
       },
       sessionLevels: {},
       confirmedSetups: [],

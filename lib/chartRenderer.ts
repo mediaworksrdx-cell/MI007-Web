@@ -1189,20 +1189,43 @@ export function renderChart(
       }
 
       // OTE (Optimal Trade Entry 61.8% to 78.6%)
-      if (smcCfg.showOte && (isBullishMaster || isBearishMaster) && dr.oteRange[0] > 0 && dr.oteRange[1] > 0) {
-        const yOte1 = priceToY(dr.oteRange[0]);
-        const yOte2 = priceToY(dr.oteRange[1]);
-        const oteTop = Math.min(yOte1, yOte2);
-        const oteH = Math.max(Math.abs(yOte1 - yOte2), 2 * dpr);
-        ctx.fillStyle = 'rgba(217, 119, 6, 0.12)';
-        ctx.fillRect(0, oteTop, chartW, oteH);
-        ctx.strokeStyle = 'rgba(217, 119, 6, 0.60)';
-        ctx.lineWidth = 1.2 * dpr;
-        ctx.strokeRect(0, oteTop, chartW, oteH);
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = '#B45309';
-        ctx.textAlign = 'left';
-        ctx.fillText('OTE (61.8% - 78.6%)', 10 * dpr, oteTop + oteH / 2 + 3 * dpr);
+      if (smcCfg.showOte && (isBullishMaster || isBearishMaster)) {
+        // Bullish Discount OTE: rendered in Discount zone (Long retracement)
+        if (isBullishMaster && dr.discountOteRange && dr.discountOteRange[0] > 0) {
+          const yOte1 = priceToY(dr.discountOteRange[0]);
+          const yOte2 = priceToY(dr.discountOteRange[1]);
+          const oteTop = Math.min(yOte1, yOte2);
+          const oteH = Math.max(Math.abs(yOte1 - yOte2), 2 * dpr);
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+          ctx.fillRect(0, oteTop, chartW, oteH);
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.60)';
+          ctx.lineWidth = 1.2 * dpr;
+          ctx.strokeRect(0, oteTop, chartW, oteH);
+          ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+          ctx.fillStyle = '#059669';
+          ctx.textAlign = 'left';
+          ctx.fillText('OTE Discount (61.8% - 78.6% Long Retrace)', 10 * dpr, oteTop + oteH / 2 + 3 * dpr);
+        }
+
+        // Bearish Premium OTE: rendered in Premium zone (Short retracement)
+        if (isBearishMaster && (dr.premiumOteRange || dr.oteRange)) {
+          const premOte = dr.premiumOteRange || dr.oteRange;
+          if (premOte[0] > 0 && premOte[1] > 0) {
+            const yOte1 = priceToY(premOte[0]);
+            const yOte2 = priceToY(premOte[1]);
+            const oteTop = Math.min(yOte1, yOte2);
+            const oteH = Math.max(Math.abs(yOte1 - yOte2), 2 * dpr);
+            ctx.fillStyle = 'rgba(244, 63, 94, 0.12)';
+            ctx.fillRect(0, oteTop, chartW, oteH);
+            ctx.strokeStyle = 'rgba(244, 63, 94, 0.60)';
+            ctx.lineWidth = 1.2 * dpr;
+            ctx.strokeRect(0, oteTop, chartW, oteH);
+            ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+            ctx.fillStyle = '#E11D48';
+            ctx.textAlign = 'left';
+            ctx.fillText('OTE Premium (61.8% - 78.6% Short Retrace)', 10 * dpr, oteTop + oteH / 2 + 3 * dpr);
+          }
+        }
       }
       ctx.restore();
     }
