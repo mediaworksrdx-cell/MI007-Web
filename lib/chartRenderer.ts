@@ -9,7 +9,7 @@ import {
   MACDResult, BollingerResult, SupertrendResult, StochasticResult,
   IchimokuResult, AdxResult, CvdResult,
   VolumeProfileBucket, VolumeProfileData,
-  SmcFvg, SmcLiquiditySweep, SmcOrderBlock, SmcStructureBreak, SmcAnalysis,
+  SmcFvg, SmcLiquiditySweep, SmcOrderBlock, SmcStructureBreak, SmcAnalysis, SmcConfirmedSetup,
   FnoOverlayLevels, StrategyPayoffOverlay,
   ChartOptions, ViewState, Crosshair, MagnetReticle, ScaleState,
   INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay, formatIndicatorBadgeLabel,
@@ -22,7 +22,7 @@ export type {
   MACDResult, BollingerResult, SupertrendResult, StochasticResult,
   IchimokuResult, AdxResult, CvdResult,
   VolumeProfileBucket, VolumeProfileData,
-  SmcFvg, SmcLiquiditySweep, SmcOrderBlock, SmcStructureBreak, SmcAnalysis,
+  SmcFvg, SmcLiquiditySweep, SmcOrderBlock, SmcStructureBreak, SmcAnalysis, SmcConfirmedSetup,
   FnoOverlayLevels, StrategyPayoffOverlay,
   ChartOptions, ViewState, Crosshair, MagnetReticle, ScaleState,
 };
