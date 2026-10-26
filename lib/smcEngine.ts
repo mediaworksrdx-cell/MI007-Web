@@ -313,7 +313,7 @@ export interface SmcConfig {
 
 export const DEFAULT_SMC_CONFIG: SmcConfig = {
   enabled: true,
-  swingLength: 3,
+  swingLength: 5,                   // Institutional pivot standard (5-bar lookback for clean structure)
 
   // Master Direction Controls
   showBullishSetups: true,
@@ -362,7 +362,7 @@ export const DEFAULT_SMC_CONFIG: SmcConfig = {
   showPdhPdl: true,
   showPwhPwl: false,
 
-  maxVisibleZones: 8,
+  maxVisibleZones: 6,               // Production grade: max 6 active proximity zones
   filters: {
     requireDisplacement: false,
     displacementAtrMultiple: 1.25,
@@ -453,11 +453,8 @@ export function detectSwingPoints(
   lookback = 3,
   intervalMs = 60000
 ): SmcSwingPoint[] {
-  const swings: SmcSwingPoint[] = [];
-  if (candles.length < lookback * 2 + 1) return swings;
-
-  let lastSwingHigh: SmcSwingPoint | null = null;
-  let lastSwingLow: SmcSwingPoint | null = null;
+  const rawSwings: SmcSwingPoint[] = [];
+  if (candles.length < lookback * 2 + 1) return rawSwings;
 
   for (let i = lookback; i < candles.length - lookback; i++) {
     const cur = candles[i];
@@ -474,35 +471,60 @@ export function detectSwingPoints(
     const confirmationTime = candles[confIdx].openTime;
 
     if (isHigh) {
-      const type: SmcSwingType =
-        !lastSwingHigh || cur.high >= lastSwingHigh.price ? 'HH' : 'LH';
-      const pt: SmcSwingPoint = {
+      rawSwings.push({
         index: i,
         time: cur.openTime,
         price: cur.high,
-        type,
+        type: 'HH',
         isHigh: true,
         formationTime: cur.openTime,
         confirmationTime,
-      };
-      swings.push(pt);
-      lastSwingHigh = pt;
+      });
     }
 
     if (isLow) {
-      const type: SmcSwingType =
-        !lastSwingLow || cur.low <= lastSwingLow.price ? 'LL' : 'HL';
-      const pt: SmcSwingPoint = {
+      rawSwings.push({
         index: i,
         time: cur.openTime,
         price: cur.low,
-        type,
+        type: 'LL',
         isHigh: false,
         formationTime: cur.openTime,
         confirmationTime,
-      };
-      swings.push(pt);
-      lastSwingLow = pt;
+      });
+    }
+  }
+
+  // Filter raw swings to enforce true structural alternation (Peak -> Trough -> Peak -> Trough)
+  const swings: SmcSwingPoint[] = [];
+  for (const sw of rawSwings) {
+    if (swings.length === 0) {
+      swings.push(sw);
+      continue;
+    }
+    const prev = swings[swings.length - 1];
+    if (prev.isHigh === sw.isHigh) {
+      // Consecutive swings in same direction: keep the more extreme peak or trough
+      if (sw.isHigh && sw.price >= prev.price) {
+        swings[swings.length - 1] = sw;
+      } else if (!sw.isHigh && sw.price <= prev.price) {
+        swings[swings.length - 1] = sw;
+      }
+    } else {
+      swings.push(sw);
+    }
+  }
+
+  // Assign accurate institutional labels (HH / LH, HL / LL)
+  let prevHigh: SmcSwingPoint | null = null;
+  let prevLow: SmcSwingPoint | null = null;
+  for (const sw of swings) {
+    if (sw.isHigh) {
+      sw.type = !prevHigh || sw.price >= prevHigh.price ? 'HH' : 'LH';
+      prevHigh = sw;
+    } else {
+      sw.type = !prevLow || sw.price <= prevLow.price ? 'LL' : 'HL';
+      prevLow = sw;
     }
   }
 
@@ -787,6 +809,15 @@ export function detectOrderBlocksAndBreakers(
 
     // Bullish OB (Demand): Bearish candle followed by high volume impulse candle breaking high
     if (candle.close < candle.open && next.close > candle.high && isHighVol) {
+      if (orderBlocks.length > 0) {
+        const lastOb = orderBlocks[orderBlocks.length - 1];
+        if (lastOb.isBullish && Math.abs(lastOb.startIndex - i) <= 1) {
+          lastOb.bottomPrice = Math.min(lastOb.bottomPrice, candle.low);
+          lastOb.topPrice = Math.max(lastOb.topPrice, candle.high);
+          continue;
+        }
+      }
+
       const ob: SmcOrderBlock = {
         id: `ob-bull-${i}`,
         startIndex: i,
@@ -823,6 +854,15 @@ export function detectOrderBlocksAndBreakers(
 
     // Bearish OB (Supply): Bullish candle followed by high volume breakdown candle breaking low
     if (candle.close > candle.open && next.close < candle.low && isHighVol) {
+      if (orderBlocks.length > 0) {
+        const lastOb = orderBlocks[orderBlocks.length - 1];
+        if (!lastOb.isBullish && Math.abs(lastOb.startIndex - i) <= 1) {
+          lastOb.bottomPrice = Math.min(lastOb.bottomPrice, candle.low);
+          lastOb.topPrice = Math.max(lastOb.topPrice, candle.high);
+          continue;
+        }
+      }
+
       const ob: SmcOrderBlock = {
         id: `ob-bear-${i}`,
         startIndex: i,
@@ -919,10 +959,15 @@ export function detectFairValueGaps(candles: Candle[], minGapThreshold?: number)
 
   for (let i = 2; i < candles.length; i++) {
     const c1 = candles[i - 2];
+    const c2 = candles[i - 1];
     const c3 = candles[i];
 
-    // Bullish FVG (+FVG): Candle 3 low > Candle 1 high
-    if (c3.low - c1.high > minGap) {
+    const c2Range = c2.high - c2.low;
+    const c2BullBody = c2.close - c2.open;
+    const isBullDisplacement = c2BullBody > 0 && (c2Range === 0 || c2BullBody >= c2Range * 0.35);
+
+    // Bullish FVG (+FVG): Candle 3 low > Candle 1 high with green displacement
+    if (c3.low - c1.high > minGap && isBullDisplacement) {
       const topPrice = c3.low;
       const bottomPrice = c1.high;
       const cePrice = (topPrice + bottomPrice) / 2;
@@ -1013,8 +1058,11 @@ export function detectFairValueGaps(candles: Candle[], minGapThreshold?: number)
       fvgs.push(fvg);
     }
 
-    // Bearish FVG (-FVG): Candle 3 high < Candle 1 low
-    if (c1.low - c3.high > minGap) {
+    const c2BearBody = c2.open - c2.close;
+    const isBearDisplacement = c2BearBody > 0 && (c2Range === 0 || c2BearBody >= c2Range * 0.35);
+
+    // Bearish FVG (-FVG): Candle 3 high < Candle 1 low with red displacement
+    if (c1.low - c3.high > minGap && isBearDisplacement) {
       const topPrice = c1.low;
       const bottomPrice = c3.high;
       const cePrice = (topPrice + bottomPrice) / 2;
