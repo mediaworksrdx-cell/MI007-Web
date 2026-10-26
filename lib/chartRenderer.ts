@@ -1774,10 +1774,10 @@ export function renderChart(
           }
         }
 
-        // 5. Compact Price Badges on the right of the bracket
+        // 5. Distinct Non-Overlapping Price Badges
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
 
-        // TP1 Badge
+        // TP1 Badge (Right edge of bracket)
         const tpText = `TP1: ${formatPrice(st.targetPrice)}`;
         const tpTm = ctx.measureText(tpText);
         ctx.fillStyle = 'rgba(16, 185, 129, 0.90)';
@@ -1787,22 +1787,26 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(tpText, x + boxW - 4 * dpr, yTP);
 
-        // SL Badge
+        // SL Badge (Right edge of bracket)
+        // Collision prevention: If SL is too close to Entry (< 18px), nudge SL badge away
         const slText = `SL: ${formatPrice(st.stopLoss)}`;
         const slTm = ctx.measureText(slText);
+        const slDist = Math.abs(ySL - yEntry);
+        const slOffset = slDist < 18 * dpr ? (isBull ? 8 * dpr : -8 * dpr) : 0;
+        const finalSlY = ySL + slOffset;
         ctx.fillStyle = 'rgba(244, 63, 94, 0.90)';
-        ctx.fillRect(x + boxW - slTm.width - 8 * dpr, ySL - 7 * dpr, slTm.width + 8 * dpr, 14 * dpr);
+        ctx.fillRect(x + boxW - slTm.width - 8 * dpr, finalSlY - 7 * dpr, slTm.width + 8 * dpr, 14 * dpr);
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        ctx.fillText(slText, x + boxW - 4 * dpr, ySL);
+        ctx.fillText(slText, x + boxW - 4 * dpr, finalSlY);
 
-        // Entry Badge — offset above entry line for bulls, below for bears, to avoid current-price overlap
+        // Entry Badge (Anchored strictly to the LEFT side of the bracket, away from right-side price axis)
         const entryText = `Entry: ${formatPrice(st.entryPrice)}`;
         const entryTm = ctx.measureText(entryText);
         const entryBadgeH = 14 * dpr;
-        const entryBadgeY = isBull ? yEntry - entryBadgeH - 2 * dpr : yEntry + 2 * dpr;
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        const entryBadgeY = isBull ? yEntry - entryBadgeH - 3 * dpr : yEntry + 3 * dpr;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
         ctx.fillRect(x + 4 * dpr, entryBadgeY, entryTm.width + 8 * dpr, entryBadgeH);
         ctx.strokeStyle = isBull ? '#059669' : '#DC2626';
         ctx.lineWidth = 1 * dpr;
