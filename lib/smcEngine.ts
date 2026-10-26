@@ -1190,6 +1190,18 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
     }
   }
 
+  // Active Impulse Expansion Anchor:
+  // In institutional SMC, if live price or recent completed candles have broken
+  // beyond historical swing boundaries (ongoing impulse leg / breakout),
+  // the dealing range MUST dynamically incorporate the active impulse high and low
+  // so that Equilibrium, Premium, Discount, and OTE are NEVER stale or disjoint from current price action!
+  const activeLookback = Math.min(candles.length, 30);
+  for (let i = candles.length - activeLookback; i < candles.length; i++) {
+    const bar = candles[i];
+    if (bar.high > highPrice) highPrice = bar.high;
+    if (bar.low < lowPrice && bar.low > 0) lowPrice = bar.low;
+  }
+
   if (highPrice === lowPrice || highPrice <= 0) {
     const p = candles[candles.length - 1]?.close || 100;
     highPrice = p * 1.05;

@@ -2,7 +2,7 @@
 // Real mathematical implementation of 10 institutional quantitative strategies
 // Backed by deterministic historical indicator calculations and completed candle rules.
 
-import { Candle } from '../types';
+import { Candle, MarketType } from '../types';
 import { calculateSMA, calculateEMA, calculateRSI, calculateMACD, calculateBollinger } from '../indicators';
 import { calculateSMC, SmcConfirmedSetup, SmcSetupType } from '../smcEngine';
 
@@ -298,9 +298,10 @@ export function generateCandlesForSymbol(
   symbol: string,
   currentPrice: number,
   changePct: number = 0.5,
-  days: number = 220
+  days: number = 220,
+  market: MarketType = 'INDIA'
 ): Candle[] {
-  return getVerifiedHistoricalCandles(symbol, currentPrice, currentPrice * 1.25, currentPrice * 0.75, 2500000, 'INDIA', days);
+  return getVerifiedHistoricalCandles(symbol, currentPrice, currentPrice * 1.25, currentPrice * 0.75, 2500000, market, days);
 }
 
 /**
@@ -313,9 +314,10 @@ export function evaluateAllStrategiesForStock(
   currentPrice: number,
   candles?: Candle[]
 ): StrategySignalResult[] {
+  const mktType = (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA';
   const data = candles && candles.length >= 200
     ? candles
-    : generateCandlesForSymbol(symbol, currentPrice);
+    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType);
 
   const n = data.length;
   const last = data[n - 1];
@@ -707,9 +709,11 @@ export function evaluateSmcStrategiesForStock(
   currentPrice: number,
   candles?: Candle[]
 ): StrategySignalResult[] {
+  const mktType = (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA';
+  const currSym = market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : (market === 'CRYPTO' ? '$' : '₹');
   const data = candles && candles.length >= 10
     ? candles
-    : generateCandlesForSymbol(symbol, currentPrice);
+    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType);
 
   const n = data.length;
   const last = data[n - 1];
@@ -719,10 +723,12 @@ export function evaluateSmcStrategiesForStock(
   const results: StrategySignalResult[] = [];
 
   for (const strat of SMC_STRATEGY_DEFINITIONS) {
-    const matchingSetup = analysis.allSetups.find((s) => SMC_TYPE_TO_STRATEGY_ID[s.setupType] === strat.id);
+    // Select the most recent setup matching this strategy ID to maintain exact chart parity
+    const matchingSetups = analysis.allSetups.filter((s) => SMC_TYPE_TO_STRATEGY_ID[s.setupType] === strat.id);
+    const matchingSetup = matchingSetups.sort((a, b) => b.candleIndex - a.candleIndex)[0];
 
     if (matchingSetup) {
-      const isConfirmed = matchingSetup.status === 'CONFIRMED' || matchingSetup.status === 'RETESTING';
+      const isConfirmed = matchingSetup.status === 'CONFIRMED' || matchingSetup.status === 'RETESTING' || matchingSetup.status === 'ENTRY_ZONE_REACHED';
       const direction = matchingSetup.direction.toLowerCase() as 'bullish' | 'bearish';
       results.push({
         symbol,
@@ -736,10 +742,12 @@ export function evaluateSmcStrategiesForStock(
         currentPrice,
         triggerPrice: matchingSetup.entryPrice,
         keyMetrics: {
-          'Entry Level': `₹${matchingSetup.entryPrice.toFixed(2)}`,
-          'Stop Loss': `₹${matchingSetup.stopLoss.toFixed(2)}`,
-          'Target (TP1)': `₹${matchingSetup.targetPrice.toFixed(2)}`,
-          'Risk/Reward': `${matchingSetup.riskReward.toFixed(1)}:1`,
+          'Entry Level': `${currSym}${matchingSetup.entryPrice.toFixed(2)}`,
+          'Stop Loss': `${currSym}${matchingSetup.stopLoss.toFixed(2)}`,
+          'Target (TP1)': `${currSym}${matchingSetup.targetPrice.toFixed(2)}`,
+          'Target (TP2)': matchingSetup.targetPrice2 ? `${currSym}${matchingSetup.targetPrice2.toFixed(2)}` : 'N/A',
+          'Risk/Reward': `1:${matchingSetup.riskReward.toFixed(1)}`,
+          'Status': matchingSetup.status,
           'Lifecycle': matchingSetup.lifecycleState,
           'Setup Type': matchingSetup.setupType,
         },
@@ -760,8 +768,8 @@ export function evaluateSmcStrategiesForStock(
         currentPrice,
         triggerPrice: currentPrice,
         keyMetrics: {
-          'Equilibrium (50%)': `₹${analysis.equilibriumPrice.toFixed(2)}`,
-          'Dealing Range': `₹${analysis.dealingRange.lowPrice.toFixed(2)} - ₹${analysis.dealingRange.highPrice.toFixed(2)}`,
+          'Equilibrium (50%)': `${currSym}${analysis.equilibriumPrice.toFixed(2)}`,
+          'Dealing Range': `${currSym}${analysis.dealingRange.lowPrice.toFixed(2)} - ${currSym}${analysis.dealingRange.highPrice.toFixed(2)}`,
           'Status': 'Awaiting Confluence',
         },
         status: 'Confirmed',

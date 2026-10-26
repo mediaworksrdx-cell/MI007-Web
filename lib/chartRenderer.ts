@@ -1243,7 +1243,13 @@ export function renderChart(
       ctx.stroke();
       ctx.setLineDash([]);
 
-      const eqText = `EQ (50%): ${formatPrice(smcData.equilibriumPrice)}`;
+      const lastBar = candles[Math.min(endIdx - 1, candles.length - 1)];
+      const activePrice = options.currentPriceOverride && options.currentPriceOverride > 0
+        ? options.currentPriceOverride
+        : (lastBar ? lastBar.close : smcData.equilibriumPrice);
+      const isAboveEq = activePrice >= smcData.equilibriumPrice;
+      const zoneTag = isAboveEq ? '▲ PREMIUM' : '▼ DISCOUNT';
+      const eqText = `EQ (50%): ${formatPrice(smcData.equilibriumPrice)} | Price in ${zoneTag}`;
       ctx.font = `bold ${9.5 * dpr}px "JetBrains Mono",monospace`;
       const tm = ctx.measureText(eqText);
       const tw = tm.width + 10 * dpr;
@@ -1464,20 +1470,28 @@ export function renderChart(
           ? (fvg.isBullish ? '+IFVG (Support)' : '-IFVG (Resistance)')
           : (fvg.isBullish ? '+FVG' : '-FVG');
         if (isMit) {
-          tag += ' (Mitigated)';
+          tag += ' [MITIGATED - HISTORICAL]';
         }
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(tag);
         const tw = tm.width + 6 * dpr;
         const th = 12 * dpr;
 
-        ctx.fillStyle = `rgba(${base},${isMit ? 0.18 : 0.28})`;
+        ctx.fillStyle = `rgba(${base},${isMit ? 0.12 : 0.28})`;
         ctx.fillRect(lx + 2 * dpr, bTop + 2 * dpr, tw, th);
-        ctx.strokeStyle = `rgba(${base},${isMit ? 0.55 : 0.85})`;
+        ctx.strokeStyle = `rgba(${base},${isMit ? 0.40 : 0.85})`;
         ctx.lineWidth = 0.8 * dpr;
+        if (isMit) {
+          ctx.setLineDash([2 * dpr, 2 * dpr]);
+        }
         ctx.strokeRect(lx + 2 * dpr, bTop + 2 * dpr, tw, th);
+        if (isMit) {
+          ctx.setLineDash([]);
+        }
 
-        ctx.fillStyle = fvg.isBullish ? '#047857' : '#BE123C';
+        ctx.fillStyle = isMit
+          ? (fvg.isBullish ? 'rgba(4, 120, 87, 0.70)' : 'rgba(190, 18, 60, 0.70)')
+          : (fvg.isBullish ? '#047857' : '#BE123C');
         if (fvg.isInverse) {
           ctx.fillStyle = fvg.isBullish ? '#0E7490' : '#7C3AED';
         }
@@ -1688,22 +1702,17 @@ export function renderChart(
 
     // 10. Confirmed Directional SMC Setups (Bullish vs Bearish Master Controlled)
     if (smcData.confirmedSetups && smcData.confirmedSetups.length > 0) {
-      const visibleSetups = smcData.confirmedSetups.filter((st) => {
-        if (st.direction === 'BULLISH' && (!smcCfg.showBullishConfluence || !isBullishMaster)) return false;
-        if (st.direction === 'BEARISH' && (!smcCfg.showBearishConfluence || !isBearishMaster)) return false;
-        return st.candleIndex >= startIdx && st.candleIndex < endIdx;
-      });
-
-      // Filter to the single most recent active setup per direction to eliminate overlapping visual clutter
+      // Filter to the single most recent active setup per direction to eliminate overlapping visual clutter.
+      // Active setups remain authoritative across the canvas regardless of viewport pan/scroll offsets.
       const isActiveSetup = (s: SmcConfirmedSetup) =>
         s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED';
 
-      const activeBullish = visibleSetups
-        .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s))
+      const activeBullish = smcData.confirmedSetups
+        .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && smcCfg.showBullishConfluence && isBullishMaster)
         .sort((a, b) => b.candleIndex - a.candleIndex)[0];
 
-      const activeBearish = visibleSetups
-        .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s))
+      const activeBearish = smcData.confirmedSetups
+        .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && smcCfg.showBearishConfluence && isBearishMaster)
         .sort((a, b) => b.candleIndex - a.candleIndex)[0];
 
       const setupsToRender = [activeBullish, activeBearish].filter(Boolean) as SmcConfirmedSetup[];
