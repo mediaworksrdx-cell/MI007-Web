@@ -1435,18 +1435,22 @@ export function renderChart(
         ctx.setLineDash([]);
       }
 
-      if (!fvg.isMitigated && bw > 20 * dpr) {
-        const tag = fvg.isInverse
-          ? (fvg.isBullish ? '+IFVG' : '-IFVG')
+      if (bw > 20 * dpr) {
+        const isMit = fvg.isMitigated || fvg.isInvalidated;
+        let tag = fvg.isInverse
+          ? (fvg.isBullish ? '+IFVG (Support)' : '-IFVG (Resistance)')
           : (fvg.isBullish ? '+FVG' : '-FVG');
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        if (isMit) {
+          tag += ' (Mitigated)';
+        }
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(tag);
         const tw = tm.width + 6 * dpr;
         const th = 12 * dpr;
 
-        ctx.fillStyle = `rgba(${base},0.25)`;
+        ctx.fillStyle = `rgba(${base},${isMit ? 0.18 : 0.28})`;
         ctx.fillRect(lx + 2 * dpr, bTop + 2 * dpr, tw, th);
-        ctx.strokeStyle = `rgba(${base},0.85)`;
+        ctx.strokeStyle = `rgba(${base},${isMit ? 0.55 : 0.85})`;
         ctx.lineWidth = 0.8 * dpr;
         ctx.strokeRect(lx + 2 * dpr, bTop + 2 * dpr, tw, th);
 
@@ -1509,19 +1513,22 @@ export function renderChart(
 
       // Clean pill badge centered on the break segment
       const midX = (x1 + x2) / 2;
+      const isChoch = sb.breakType === 'CHoCH' || sb.breakType === 'MSS';
       const text = sb.type;
       ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
       const tm = ctx.measureText(text);
       const tw = tm.width + 8 * dpr;
       const th = 14 * dpr;
 
-      ctx.fillStyle = sb.isBullish ? 'rgba(8, 153, 129, 0.25)' : 'rgba(242, 54, 69, 0.25)';
+      ctx.fillStyle = isChoch
+        ? (sb.isBullish ? 'rgba(8, 153, 129, 0.35)' : 'rgba(242, 54, 69, 0.35)')
+        : (sb.isBullish ? 'rgba(8, 153, 129, 0.22)' : 'rgba(242, 54, 69, 0.22)');
       ctx.fillRect(midX - tw / 2, y - th / 2, tw, th);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1 * dpr;
+      ctx.strokeStyle = isChoch ? (sb.isBullish ? '#059669' : '#DC2626') : color;
+      ctx.lineWidth = isChoch ? 1.5 * dpr : 1 * dpr;
       ctx.strokeRect(midX - tw / 2, y - th / 2, tw, th);
 
-      ctx.fillStyle = color;
+      ctx.fillStyle = isChoch ? (sb.isBullish ? '#047857' : '#BE123C') : color;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(text, midX, y);
@@ -1595,18 +1602,26 @@ export function renderChart(
         const li = sw.candleIndex - startIdx;
         const x = li * candleW + candleW / 2;
         const y = priceToY(sw.price);
+        const isHigh = sw.isHighSweep;
+        const label = isHigh ? '▼ BSL SWEEP' : '▲ SSL SWEEP';
+
         ctx.save();
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+        const tm = ctx.measureText(label);
+        const tw = tm.width + 8 * dpr;
+        const th = 13 * dpr;
+        const badgeY = isHigh ? y - th - 5 * dpr : y + 5 * dpr;
+
+        ctx.fillStyle = isHigh ? 'rgba(244, 63, 94, 0.25)' : 'rgba(16, 185, 129, 0.25)';
+        ctx.fillRect(x - tw / 2, badgeY, tw, th);
+        ctx.strokeStyle = isHigh ? BEAR : BULL;
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeRect(x - tw / 2, badgeY, tw, th);
+
+        ctx.fillStyle = isHigh ? BEAR : BULL;
         ctx.textAlign = 'center';
-        if (sw.isHighSweep) {
-          ctx.fillStyle = BEAR;
-          ctx.textBaseline = 'bottom';
-          ctx.fillText('▼ BSL', x, y - 4 * dpr);
-        } else {
-          ctx.fillStyle = BULL;
-          ctx.textBaseline = 'top';
-          ctx.fillText('▲ SSL', x, y + 4 * dpr);
-        }
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, x, badgeY + th / 2);
         ctx.restore();
       }
     }
@@ -1646,6 +1661,83 @@ export function renderChart(
         ctx.fillText(`PDL: ${formatPrice(pdl)}`, 12 * dpr, yPdl + 11 * dpr);
       }
       ctx.restore();
+    }
+
+    // 10. Confirmed Directional SMC Setups (Bullish vs Bearish Master Controlled)
+    if (smcData.confirmedSetups && smcData.confirmedSetups.length > 0) {
+      const visibleSetups = smcData.confirmedSetups.filter((st) => {
+        if (st.direction === 'BULLISH' && (!smcCfg.showBullishConfluence || !isBullishMaster)) return false;
+        if (st.direction === 'BEARISH' && (!smcCfg.showBearishConfluence || !isBearishMaster)) return false;
+        return st.candleIndex >= startIdx && st.candleIndex < endIdx;
+      });
+
+      // Render the most recent 4 visible confirmed setups
+      const setupsToRender = visibleSetups.slice(-4);
+
+      for (const st of setupsToRender) {
+        const li = st.candleIndex - startIdx;
+        const x = li * candleW + candleW / 2;
+        const yEntry = priceToY(st.entryPrice);
+        const ySL = priceToY(st.stopLoss);
+        const yTP = priceToY(st.targetPrice);
+        const isBull = st.direction === 'BULLISH';
+        const color = isBull ? '#059669' : '#DC2626';
+        const bgFill = isBull ? 'rgba(5, 150, 105, 0.12)' : 'rgba(220, 38, 38, 0.12)';
+        const borderStroke = isBull ? 'rgba(5, 150, 105, 0.85)' : 'rgba(220, 38, 38, 0.85)';
+
+        ctx.save();
+        // 1. Target Projection Box (Entry to TP)
+        const boxTop = Math.min(yEntry, yTP);
+        const boxH = Math.max(Math.abs(yEntry - yTP), 2 * dpr);
+        const boxW = Math.min(candleW * 5, chartW - x);
+        ctx.fillStyle = bgFill;
+        ctx.fillRect(x, boxTop, boxW, boxH);
+        ctx.strokeStyle = borderStroke;
+        ctx.lineWidth = 1 * dpr;
+        ctx.setLineDash([3 * dpr, 2 * dpr]);
+        ctx.strokeRect(x, boxTop, boxW, boxH);
+        ctx.setLineDash([]);
+
+        // 2. Stop Loss Line (Red Dash)
+        ctx.strokeStyle = '#DC2626';
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.setLineDash([4 * dpr, 3 * dpr]);
+        ctx.beginPath();
+        ctx.moveTo(x, ySL);
+        ctx.lineTo(x + boxW, ySL);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 3. Take Profit Line (Green Dash)
+        ctx.strokeStyle = '#059669';
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.setLineDash([4 * dpr, 3 * dpr]);
+        ctx.beginPath();
+        ctx.moveTo(x, yTP);
+        ctx.lineTo(x + boxW, yTP);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 4. Confirmed Setup Signal Pill Badge
+        const tag = `${isBull ? '▲ BULLISH SETUP' : '▼ BEARISH SETUP'}: ${st.name.replace(/ \(Bullish\)| \(Bearish\)/, '')} (R:R 1:${(st.riskReward || 2).toFixed(1)})`;
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        const tm = ctx.measureText(tag);
+        const tw = tm.width + 10 * dpr;
+        const th = 15 * dpr;
+        const badgeY = isBull ? Math.min(chartH - th - 5 * dpr, yEntry + 8 * dpr) : Math.max(5 * dpr, yEntry - th - 8 * dpr);
+
+        ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.92)' : 'rgba(220, 38, 38, 0.92)';
+        ctx.fillRect(x, badgeY, tw, th);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeRect(x, badgeY, tw, th);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tag, x + 5 * dpr, badgeY + th / 2);
+        ctx.restore();
+      }
     }
   }
 

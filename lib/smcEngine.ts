@@ -604,8 +604,7 @@ export function detectStructureBreaks(
     // Break Above Active High
     if (activeHigh && cur.close > activeHigh.price && prev.close <= activeHigh.price && passFilters) {
       const isReversal = trendDirection === -1;
-      const isSwingBreak = options?.structureType === 'SWING';
-      const breakType: SmcBreakType = isReversal ? (isSwingBreak ? 'MSS' : 'CHoCH') : 'BOS';
+      const breakType: SmcBreakType = isReversal ? 'CHoCH' : 'BOS';
       const label = `${breakType} ↑`;
 
       breaks.push({
@@ -627,8 +626,7 @@ export function detectStructureBreaks(
     // Break Below Active Low
     if (activeLow && cur.close < activeLow.price && prev.close >= activeLow.price && passFilters) {
       const isReversal = trendDirection === 1;
-      const isSwingBreak = options?.structureType === 'SWING';
-      const breakType: SmcBreakType = isReversal ? (isSwingBreak ? 'MSS' : 'CHoCH') : 'BOS';
+      const breakType: SmcBreakType = isReversal ? 'CHoCH' : 'BOS';
       const label = `${breakType} ↓`;
 
       breaks.push({
