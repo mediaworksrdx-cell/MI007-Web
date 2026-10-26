@@ -1695,12 +1695,15 @@ export function renderChart(
       });
 
       // Filter to the single most recent active setup per direction to eliminate overlapping visual clutter
+      const isActiveSetup = (s: SmcConfirmedSetup) =>
+        s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED';
+
       const activeBullish = visibleSetups
-        .filter((s) => s.direction === 'BULLISH' && s.status !== 'INVALIDATED')
+        .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s))
         .sort((a, b) => b.candleIndex - a.candleIndex)[0];
 
       const activeBearish = visibleSetups
-        .filter((s) => s.direction === 'BEARISH' && s.status !== 'INVALIDATED')
+        .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s))
         .sort((a, b) => b.candleIndex - a.candleIndex)[0];
 
       const setupsToRender = [activeBullish, activeBearish].filter(Boolean) as SmcConfirmedSetup[];

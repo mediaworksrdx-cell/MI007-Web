@@ -1400,13 +1400,15 @@ export function detectAll16SmcSetups(
     description: string,
     statusOverride?: 'CONFIRMED' | 'RETESTING' | 'PENDING' | 'DETECTED' | 'FORMING' | 'ENTRY_ZONE_REACHED' | 'TARGET_HIT' | 'EXITED' | 'INVALIDATED' | 'EXPIRED'
   ): SmcConfirmedSetup => {
-    const risk = Math.max(Math.abs(entryPrice - stopLoss), entryPrice * 0.005);
-    const guaranteedTarget = direction === 'BULLISH'
-      ? (targetPrice > entryPrice ? targetPrice : entryPrice + risk * 2.5)
-      : (targetPrice < entryPrice ? targetPrice : entryPrice - risk * 2.5);
+    const isBull = direction === 'BULLISH';
+    const rawRisk = isBull ? (entryPrice - stopLoss) : (stopLoss - entryPrice);
+    const risk = rawRisk > 0 ? rawRisk : Math.max(Math.abs(entryPrice - stopLoss), entryPrice * 0.005);
+    const guaranteedTarget = isBull
+      ? (targetPrice > entryPrice + risk * 1.5 ? targetPrice : entryPrice + risk * 2.5)
+      : (targetPrice < entryPrice - risk * 1.5 ? targetPrice : entryPrice - risk * 2.5);
     const reward = Math.abs(guaranteedTarget - entryPrice);
-    const rr = Number((reward / risk).toFixed(2));
-    const targetPrice2 = direction === 'BULLISH'
+    const rr = Number((reward / risk).toFixed(1));
+    const targetPrice2 = isBull
       ? Number((entryPrice + reward * 1.5).toFixed(2))
       : Number((entryPrice - reward * 1.5).toFixed(2));
 
@@ -1414,40 +1416,62 @@ export function detectAll16SmcSetups(
     let lifecycleState: SmcLifecycleState = statusOverride === 'CONFIRMED' ? 'CONFIRMED' : (status === 'RETESTING' ? 'RETESTED' : 'CONFIRMED');
     let retestCount = 0;
 
-    // Track post-formation bar outcomes to determine historical lifecycle state
-    for (let k = candleIndex + 1; k < candles.length; k++) {
-      const bar = candles[k];
-      if (direction === 'BULLISH') {
-        if (bar.low <= stopLoss) {
-          status = 'INVALIDATED';
-          lifecycleState = 'INVALIDATED';
+    // 1. Formation bar validation
+    const formBar = candles[candleIndex];
+    if (formBar) {
+      if (isBull && formBar.close <= stopLoss) {
+        status = 'INVALIDATED';
+        lifecycleState = 'INVALIDATED';
+      } else if (!isBull && formBar.close >= stopLoss) {
+        status = 'INVALIDATED';
+        lifecycleState = 'INVALIDATED';
+      }
+    }
+
+    // 2. Track post-formation bar outcomes to determine historical lifecycle state
+    if (status !== 'INVALIDATED') {
+      const maxLifespanBars = 30;
+      for (let k = candleIndex + 1; k < candles.length; k++) {
+        const bar = candles[k];
+        if (isBull) {
+          if (bar.low <= stopLoss || bar.close <= stopLoss) {
+            status = 'INVALIDATED';
+            lifecycleState = 'INVALIDATED';
+            break;
+          }
+          if (bar.high >= guaranteedTarget) {
+            status = 'TARGET_HIT';
+            lifecycleState = 'TARGET_HIT';
+            break;
+          }
+          if (bar.low <= entryPrice && bar.close >= stopLoss) {
+            status = 'RETESTING';
+            lifecycleState = 'RETESTED';
+            retestCount++;
+          }
+        } else {
+          if (bar.high >= stopLoss || bar.close >= stopLoss) {
+            status = 'INVALIDATED';
+            lifecycleState = 'INVALIDATED';
+            break;
+          }
+          if (bar.low <= guaranteedTarget) {
+            status = 'TARGET_HIT';
+            lifecycleState = 'TARGET_HIT';
+            break;
+          }
+          if (bar.high >= entryPrice && bar.close <= stopLoss) {
+            status = 'RETESTING';
+            lifecycleState = 'RETESTED';
+            retestCount++;
+          }
+        }
+
+        // Expiration check: if setup has not reached target or stopped out within 30 bars
+        if (k - candleIndex >= maxLifespanBars && status !== 'TARGET_HIT') {
+          status = 'EXPIRED';
+          lifecycleState = 'EXPIRED';
           break;
-        }
-        if (bar.high >= targetPrice) {
-          status = 'TARGET_HIT';
-          lifecycleState = 'TARGET_HIT';
-          break;
-        }
-        if (bar.low <= entryPrice && bar.close >= stopLoss) {
-          status = 'RETESTING';
-          lifecycleState = 'RETESTED';
-          retestCount++;
-        }
-      } else {
-        if (bar.high >= stopLoss) {
-          status = 'INVALIDATED';
-          lifecycleState = 'INVALIDATED';
-          break;
-        }
-        if (bar.low <= targetPrice) {
-          status = 'TARGET_HIT';
-          lifecycleState = 'TARGET_HIT';
-          break;
-        }
-        if (bar.high >= entryPrice && bar.close <= stopLoss) {
-          status = 'RETESTING';
-          lifecycleState = 'RETESTED';
-          retestCount++;
         }
       }
     }
@@ -1642,7 +1666,7 @@ export function detectAll16SmcSetups(
         const sl = dealingRange.lowPrice * 0.998;
         const tp = dealingRange.highPrice;
         if (entry > sl && tp > entry) {
-          setups.push(makeSetup(
+          const st = makeSetup(
             `setup_dr_ote_bull_${i}`,
             'Discount Dealing Range OTE Long',
             'PREMIUM_DISCOUNT_OTE',
@@ -1652,8 +1676,11 @@ export function detectAll16SmcSetups(
             entry,
             sl,
             tp,
-            `Price tapped institutional Discount OTE zone (61.8%-78.6% retracement [₹${dOteMin.toFixed(2)} - ₹${dOteMax.toFixed(2)}]), targeting range high.`
-          ));
+            `Price tapped institutional Discount OTE zone (62%-79% retracement [₹${dOteMin.toFixed(2)} - ₹${dOteMax.toFixed(2)}]), targeting range high.`
+          );
+          // Standard ICT -0.27 Extension for TP2
+          st.targetPrice2 = Number((dealingRange.highPrice + (dealingRange.highPrice - dealingRange.lowPrice) * 0.27).toFixed(2));
+          setups.push(st);
           break; // Retain most recent confirmed tap
         }
       }
@@ -1667,7 +1694,7 @@ export function detectAll16SmcSetups(
         const sl = dealingRange.highPrice * 1.002;
         const tp = dealingRange.lowPrice;
         if (entry < sl && tp < entry) {
-          setups.push(makeSetup(
+          const st = makeSetup(
             `setup_dr_ote_bear_${i}`,
             'Premium Dealing Range OTE Short',
             'PREMIUM_DISCOUNT_OTE',
@@ -1677,8 +1704,11 @@ export function detectAll16SmcSetups(
             entry,
             sl,
             tp,
-            `Price tapped institutional Premium OTE zone (61.8%-78.6% retracement [₹${pOteMin.toFixed(2)} - ₹${pOteMax.toFixed(2)}]), targeting range low.`
-          ));
+            `Price tapped institutional Premium OTE zone (62%-79% retracement [₹${pOteMin.toFixed(2)} - ₹${pOteMax.toFixed(2)}]), targeting range low.`
+          );
+          // Standard ICT -0.27 Extension for TP2
+          st.targetPrice2 = Number((dealingRange.lowPrice - (dealingRange.highPrice - dealingRange.lowPrice) * 0.27).toFixed(2));
+          setups.push(st);
           break; // Retain most recent confirmed tap
         }
       }
