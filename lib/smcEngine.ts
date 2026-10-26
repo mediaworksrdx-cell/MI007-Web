@@ -1384,15 +1384,60 @@ export function detectAll16SmcSetups(
     description: string,
     statusOverride?: 'CONFIRMED' | 'RETESTING' | 'PENDING' | 'DETECTED' | 'FORMING' | 'ENTRY_ZONE_REACHED' | 'TARGET_HIT' | 'EXITED' | 'INVALIDATED' | 'EXPIRED'
   ): SmcConfirmedSetup => {
-    const risk = Math.abs(entryPrice - stopLoss);
-    const reward = Math.abs(targetPrice - entryPrice);
-    const rr = risk > 0 ? Number((reward / risk).toFixed(2)) : 2.5;
+    const risk = Math.max(Math.abs(entryPrice - stopLoss), entryPrice * 0.005);
+    const guaranteedTarget = direction === 'BULLISH'
+      ? (targetPrice > entryPrice ? targetPrice : entryPrice + risk * 2.5)
+      : (targetPrice < entryPrice ? targetPrice : entryPrice - risk * 2.5);
+    const reward = Math.abs(guaranteedTarget - entryPrice);
+    const rr = Number((reward / risk).toFixed(2));
     const targetPrice2 = direction === 'BULLISH'
       ? Number((entryPrice + reward * 1.5).toFixed(2))
       : Number((entryPrice - reward * 1.5).toFixed(2));
 
-    const status = statusOverride || (Math.abs(lastPrice - entryPrice) / entryPrice <= 0.005 ? 'RETESTING' : 'CONFIRMED');
-    const lifecycleState: SmcLifecycleState = status === 'RETESTING' ? 'RETESTED' : (status === 'CONFIRMED' ? 'CONFIRMED' : 'DETECTED');
+    let status: 'CONFIRMED' | 'RETESTING' | 'PENDING' | 'DETECTED' | 'FORMING' | 'ENTRY_ZONE_REACHED' | 'TARGET_HIT' | 'EXITED' | 'INVALIDATED' | 'EXPIRED' = statusOverride || 'CONFIRMED';
+    let lifecycleState: SmcLifecycleState = statusOverride === 'CONFIRMED' ? 'CONFIRMED' : (status === 'RETESTING' ? 'RETESTED' : 'CONFIRMED');
+    let retestCount = 0;
+
+    // Track post-formation bar outcomes to determine historical lifecycle state
+    for (let k = candleIndex + 1; k < candles.length; k++) {
+      const bar = candles[k];
+      if (direction === 'BULLISH') {
+        if (bar.low <= stopLoss) {
+          status = 'INVALIDATED';
+          lifecycleState = 'INVALIDATED';
+          break;
+        }
+        if (bar.high >= targetPrice) {
+          status = 'TARGET_HIT';
+          lifecycleState = 'TARGET_HIT';
+          break;
+        }
+        if (bar.low <= entryPrice && bar.close >= stopLoss) {
+          status = 'RETESTING';
+          lifecycleState = 'RETESTED';
+          retestCount++;
+        }
+      } else {
+        if (bar.high >= stopLoss) {
+          status = 'INVALIDATED';
+          lifecycleState = 'INVALIDATED';
+          break;
+        }
+        if (bar.low <= targetPrice) {
+          status = 'TARGET_HIT';
+          lifecycleState = 'TARGET_HIT';
+          break;
+        }
+        if (bar.high >= entryPrice && bar.close <= stopLoss) {
+          status = 'RETESTING';
+          lifecycleState = 'RETESTED';
+          retestCount++;
+        }
+      }
+    }
+
+    const intervalMs = candles.length > 1 ? candles[1].openTime - candles[0].openTime : 3600000;
+    const confirmationTime = candles[candleIndex].openTime + intervalMs;
 
     return {
       id: `${baseId}_${time}`,
@@ -1403,16 +1448,16 @@ export function detectAll16SmcSetups(
       time,
       entryPrice: Number(entryPrice.toFixed(2)),
       stopLoss: Number(stopLoss.toFixed(2)),
-      targetPrice: Number(targetPrice.toFixed(2)),
+      targetPrice: Number(guaranteedTarget.toFixed(2)),
       targetPrice2,
       riskReward: Math.max(1.0, rr),
       status,
       lifecycleState,
-      retestCount: status === 'RETESTING' ? 1 : 0,
+      retestCount,
       description,
       invalidationLevel: stopLoss,
       formationTime: time,
-      confirmationTime: lastCandle.openTime,
+      confirmationTime,
     };
   };
 
@@ -1501,7 +1546,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 5: Fair Value Gap (FVG) Retracement
-  const activeFvgs = fvgs.filter((f) => !f.isInvalidated && f.state !== 'MITIGATED').slice(-2);
+  const activeFvgs = fvgs.filter((f) => !f.isInverse && !f.isInvalidated && !f.isMitigated && f.state !== 'MITIGATED' && f.state !== 'INVALIDATED').slice(-2);
   for (const fvg of activeFvgs) {
     const isBull = fvg.isBullish;
     const entry = fvg.cePrice; // 50% CE entry
@@ -1582,6 +1627,19 @@ export function detectAll16SmcSetups(
         dealingRange.highPrice,
         `Price in Discount territory (< 50% EQ ₹${dealingRange.equilibriumPrice.toFixed(2)}), OTE 61.8-78.6% zone.`
       ));
+    } else if (!isDiscount && oteHigh > 0) {
+      setups.push(makeSetup(
+        `setup_dr_ote_bear`,
+        'Premium Dealing Range OTE Short',
+        'PREMIUM_DISCOUNT_OTE',
+        'BEARISH',
+        candles.length - 1,
+        lastCandle.openTime,
+        (oteLow + oteHigh) / 2,
+        dealingRange.highPrice * 1.005,
+        dealingRange.lowPrice,
+        `Price in Premium territory (> 50% EQ ₹${dealingRange.equilibriumPrice.toFixed(2)}), OTE 61.8-78.6% zone.`
+      ));
     }
   }
 
@@ -1642,7 +1700,7 @@ export function detectAll16SmcSetups(
     const sw = sweeps[sweeps.length - 1];
     const ch = breaks.find((b) => (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex > sw.candleIndex);
     if (ch) {
-      const fvg = fvgs.find((f) => f.startIndex >= ch.candleIndex && f.isBullish === ch.isBullish && !f.isInvalidated);
+      const fvg = fvgs.find((f) => !f.isInverse && f.startIndex >= ch.candleIndex && f.isBullish === ch.isBullish && !f.isInvalidated && !f.isMitigated && f.state !== 'MITIGATED' && f.state !== 'INVALIDATED');
       if (fvg) {
         const isBull = ch.isBullish;
         setups.push(makeSetup(
@@ -1664,7 +1722,7 @@ export function detectAll16SmcSetups(
   // ── Strategy 12: BOS + Displacement + FVG Retest
   const bosWithFvg = breaks.find((b) => b.breakType === 'BOS');
   if (bosWithFvg) {
-    const nearbyFvg = fvgs.find((f) => Math.abs(f.startIndex - bosWithFvg.candleIndex) <= 2 && f.isBullish === bosWithFvg.isBullish);
+    const nearbyFvg = fvgs.find((f) => !f.isInverse && Math.abs(f.startIndex - bosWithFvg.candleIndex) <= 2 && f.isBullish === bosWithFvg.isBullish && !f.isInvalidated && !f.isMitigated && f.state !== 'MITIGATED' && f.state !== 'INVALIDATED');
     if (nearbyFvg) {
       const isBull = bosWithFvg.isBullish;
       setups.push(makeSetup(
@@ -1685,7 +1743,7 @@ export function detectAll16SmcSetups(
   // ── Strategy 13: Order Block + FVG Confluence
   for (const ob of activeObs) {
     const overlappingFvg = fvgs.find(
-      (f) => f.isBullish === ob.isBullish && !f.isInvalidated && Math.abs(f.startIndex - ob.startIndex) <= 3
+      (f) => !f.isInverse && f.isBullish === ob.isBullish && !f.isInvalidated && !f.isMitigated && f.state !== 'MITIGATED' && f.state !== 'INVALIDATED' && Math.abs(f.startIndex - ob.startIndex) <= 3
     );
     if (overlappingFvg) {
       const isBull = ob.isBullish;

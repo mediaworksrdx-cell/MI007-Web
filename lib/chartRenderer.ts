@@ -1671,8 +1671,16 @@ export function renderChart(
         return st.candleIndex >= startIdx && st.candleIndex < endIdx;
       });
 
-      // Render the most recent 4 visible confirmed setups
-      const setupsToRender = visibleSetups.slice(-4);
+      // Filter to the single most recent active setup per direction to eliminate overlapping visual clutter
+      const activeBullish = visibleSetups
+        .filter((s) => s.direction === 'BULLISH' && s.status !== 'INVALIDATED')
+        .sort((a, b) => b.candleIndex - a.candleIndex)[0];
+
+      const activeBearish = visibleSetups
+        .filter((s) => s.direction === 'BEARISH' && s.status !== 'INVALIDATED')
+        .sort((a, b) => b.candleIndex - a.candleIndex)[0];
+
+      const setupsToRender = [activeBullish, activeBearish].filter(Boolean) as SmcConfirmedSetup[];
 
       for (const st of setupsToRender) {
         const li = st.candleIndex - startIdx;
@@ -1681,52 +1689,85 @@ export function renderChart(
         const ySL = priceToY(st.stopLoss);
         const yTP = priceToY(st.targetPrice);
         const isBull = st.direction === 'BULLISH';
-        const color = isBull ? '#059669' : '#DC2626';
-        const bgFill = isBull ? 'rgba(5, 150, 105, 0.12)' : 'rgba(220, 38, 38, 0.12)';
-        const borderStroke = isBull ? 'rgba(5, 150, 105, 0.85)' : 'rgba(220, 38, 38, 0.85)';
+        const boxW = Math.max(candleW * 6, Math.min(candleW * 10, chartW - x));
 
         ctx.save();
-        // 1. Target Projection Box (Entry to TP)
-        const boxTop = Math.min(yEntry, yTP);
-        const boxH = Math.max(Math.abs(yEntry - yTP), 2 * dpr);
-        const boxW = Math.min(candleW * 5, chartW - x);
-        ctx.fillStyle = bgFill;
-        ctx.fillRect(x, boxTop, boxW, boxH);
-        ctx.strokeStyle = borderStroke;
+        // 1. Take Profit (Reward) Zone (Entry to TP)
+        const tpTop = Math.min(yEntry, yTP);
+        const tpH = Math.max(Math.abs(yEntry - yTP), 2 * dpr);
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+        ctx.fillRect(x, tpTop, boxW, tpH);
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.75)';
         ctx.lineWidth = 1 * dpr;
-        ctx.setLineDash([3 * dpr, 2 * dpr]);
-        ctx.strokeRect(x, boxTop, boxW, boxH);
-        ctx.setLineDash([]);
-
-        // 2. Stop Loss Line (Red Dash)
-        ctx.strokeStyle = '#DC2626';
-        ctx.lineWidth = 1.2 * dpr;
         ctx.setLineDash([4 * dpr, 3 * dpr]);
-        ctx.beginPath();
-        ctx.moveTo(x, ySL);
-        ctx.lineTo(x + boxW, ySL);
-        ctx.stroke();
+        ctx.strokeRect(x, tpTop, boxW, tpH);
         ctx.setLineDash([]);
 
-        // 3. Take Profit Line (Green Dash)
-        ctx.strokeStyle = '#059669';
-        ctx.lineWidth = 1.2 * dpr;
+        // 2. Stop Loss (Risk) Zone (Entry to SL)
+        const slTop = Math.min(yEntry, ySL);
+        const slH = Math.max(Math.abs(yEntry - ySL), 2 * dpr);
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.12)';
+        ctx.fillRect(x, slTop, boxW, slH);
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.75)';
+        ctx.lineWidth = 1 * dpr;
         ctx.setLineDash([4 * dpr, 3 * dpr]);
-        ctx.beginPath();
-        ctx.moveTo(x, yTP);
-        ctx.lineTo(x + boxW, yTP);
-        ctx.stroke();
+        ctx.strokeRect(x, slTop, boxW, slH);
         ctx.setLineDash([]);
 
-        // 4. Confirmed Setup Signal Pill Badge
-        const tag = `${isBull ? '▲ BULLISH SETUP' : '▼ BEARISH SETUP'}: ${st.name.replace(/ \(Bullish\)| \(Bearish\)/, '')} (R:R 1:${(st.riskReward || 2).toFixed(1)})`;
+        // 3. Entry Line (Solid Razor Line)
+        ctx.strokeStyle = isBull ? '#059669' : '#DC2626';
+        ctx.lineWidth = 1.5 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(x, yEntry);
+        ctx.lineTo(x + boxW, yEntry);
+        ctx.stroke();
+
+        // 4. Compact Price Badges on the right of the bracket
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+
+        // TP Badge
+        const tpText = `TP: ${formatPrice(st.targetPrice)}`;
+        const tpTm = ctx.measureText(tpText);
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.90)';
+        ctx.fillRect(x + boxW - tpTm.width - 8 * dpr, yTP - 7 * dpr, tpTm.width + 8 * dpr, 14 * dpr);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tpText, x + boxW - 4 * dpr, yTP);
+
+        // SL Badge
+        const slText = `SL: ${formatPrice(st.stopLoss)}`;
+        const slTm = ctx.measureText(slText);
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.90)';
+        ctx.fillRect(x + boxW - slTm.width - 8 * dpr, ySL - 7 * dpr, slTm.width + 8 * dpr, 14 * dpr);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(slText, x + boxW - 4 * dpr, ySL);
+
+        // Entry Badge
+        const entryText = `Entry: ${formatPrice(st.entryPrice)}`;
+        const entryTm = ctx.measureText(entryText);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.fillRect(x + 4 * dpr, yEntry - 7 * dpr, entryTm.width + 8 * dpr, 14 * dpr);
+        ctx.strokeStyle = isBull ? '#059669' : '#DC2626';
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeRect(x + 4 * dpr, yEntry - 7 * dpr, entryTm.width + 8 * dpr, 14 * dpr);
+        ctx.fillStyle = '#F8FAFC';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(entryText, x + 8 * dpr, yEntry);
+
+        // 5. Header Setup Signal Pill Badge
+        const statusTag = st.status === 'RETESTING' ? 'RETEST' : (st.status === 'TARGET_HIT' ? 'TP HIT' : 'CONFIRMED');
+        const headerTag = `${isBull ? '▲ BULLISH SETUP' : '▼ BEARISH SETUP'}: ${st.name.replace(/ \(Bullish\)| \(Bearish\)/, '')} | R:R 1:${(st.riskReward || 2).toFixed(1)} [${statusTag}]`;
         ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-        const tm = ctx.measureText(tag);
+        const tm = ctx.measureText(headerTag);
         const tw = tm.width + 10 * dpr;
         const th = 15 * dpr;
-        const badgeY = isBull ? Math.min(chartH - th - 5 * dpr, yEntry + 8 * dpr) : Math.max(5 * dpr, yEntry - th - 8 * dpr);
+        const badgeY = isBull ? Math.min(chartH - th - 5 * dpr, yEntry + 10 * dpr) : Math.max(5 * dpr, yEntry - th - 10 * dpr);
 
-        ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.92)' : 'rgba(220, 38, 38, 0.92)';
+        ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)';
         ctx.fillRect(x, badgeY, tw, th);
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 1 * dpr;
@@ -1735,7 +1776,7 @@ export function renderChart(
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(tag, x + 5 * dpr, badgeY + th / 2);
+        ctx.fillText(headerTag, x + 5 * dpr, badgeY + th / 2);
         ctx.restore();
       }
     }
