@@ -1170,22 +1170,22 @@ export function renderChart(
       ctx.save();
       // Premium Zone (>50% to High) - Short-side context
       if (isBearishMaster && yEq > yHigh) {
-        ctx.fillStyle = 'rgba(244, 63, 94, 0.04)';
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.08)';
         ctx.fillRect(0, yHigh, chartW, yEq - yHigh);
-        ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = 'rgba(244, 63, 94, 0.5)';
+        ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = '#E11D48';
         ctx.textAlign = 'right';
-        ctx.fillText('PREMIUM (Sell Zone)', chartW - 8 * dpr, yHigh + 10 * dpr);
+        ctx.fillText('PREMIUM (Sell Zone)', chartW - 10 * dpr, yHigh + 14 * dpr);
       }
 
       // Discount Zone (<50% to Low) - Long-side context
       if (isBullishMaster && yLow > yEq) {
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.04)';
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
         ctx.fillRect(0, yEq, chartW, yLow - yEq);
-        ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.5)';
+        ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = '#059669';
         ctx.textAlign = 'right';
-        ctx.fillText('DISCOUNT (Buy Zone)', chartW - 8 * dpr, yLow - 4 * dpr);
+        ctx.fillText('DISCOUNT (Buy Zone)', chartW - 10 * dpr, yLow - 6 * dpr);
       }
 
       // OTE (Optimal Trade Entry 61.8% to 78.6%)
@@ -1194,15 +1194,15 @@ export function renderChart(
         const yOte2 = priceToY(dr.oteRange[1]);
         const oteTop = Math.min(yOte1, yOte2);
         const oteH = Math.max(Math.abs(yOte1 - yOte2), 2 * dpr);
-        ctx.fillStyle = 'rgba(217, 119, 6, 0.06)';
+        ctx.fillStyle = 'rgba(217, 119, 6, 0.12)';
         ctx.fillRect(0, oteTop, chartW, oteH);
-        ctx.strokeStyle = 'rgba(217, 119, 6, 0.25)';
-        ctx.lineWidth = 0.8 * dpr;
+        ctx.strokeStyle = 'rgba(217, 119, 6, 0.60)';
+        ctx.lineWidth = 1.2 * dpr;
         ctx.strokeRect(0, oteTop, chartW, oteH);
-        ctx.font = `bold ${6.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = 'rgba(217, 119, 6, 0.7)';
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = '#B45309';
         ctx.textAlign = 'left';
-        ctx.fillText('OTE (61.8% - 78.6%)', 10 * dpr, oteTop + oteH / 2 + 2 * dpr);
+        ctx.fillText('OTE (61.8% - 78.6%)', 10 * dpr, oteTop + oteH / 2 + 3 * dpr);
       }
       ctx.restore();
     }
@@ -1211,19 +1211,31 @@ export function renderChart(
     if (smcCfg.showEquilibrium && smcData.equilibriumPrice > 0 && smcData.equilibriumPrice >= pMin && smcData.equilibriumPrice <= pMax) {
       const eqY = priceToY(smcData.equilibriumPrice);
       ctx.save();
-      ctx.setLineDash([8 * dpr, 6 * dpr]);
-      ctx.strokeStyle = 'rgba(217, 119, 6, 0.75)';
-      ctx.lineWidth = 1.2 * dpr;
+      ctx.setLineDash([8 * dpr, 5 * dpr]);
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.90)';
+      ctx.lineWidth = 1.5 * dpr;
       ctx.beginPath();
       ctx.moveTo(0, eqY);
       ctx.lineTo(chartW, eqY);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
-      ctx.fillStyle = '#D97706';
+
+      const eqText = `EQ (50%): ${formatPrice(smcData.equilibriumPrice)}`;
+      ctx.font = `bold ${9.5 * dpr}px "JetBrains Mono",monospace`;
+      const tm = ctx.measureText(eqText);
+      const tw = tm.width + 10 * dpr;
+      const th = 15 * dpr;
+
+      ctx.fillStyle = 'rgba(217, 119, 6, 0.18)';
+      ctx.fillRect(8 * dpr, eqY - th - 3 * dpr, tw, th);
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.75)';
+      ctx.lineWidth = 1 * dpr;
+      ctx.strokeRect(8 * dpr, eqY - th - 3 * dpr, tw, th);
+
+      ctx.fillStyle = '#B45309';
       ctx.textAlign = 'left';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(`EQ (50%): ${formatPrice(smcData.equilibriumPrice)}`, 10 * dpr, eqY - 3 * dpr);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(eqText, 13 * dpr, eqY - th / 2 - 3 * dpr);
       ctx.restore();
     }
 
@@ -1239,12 +1251,24 @@ export function renderChart(
         const y = priceToY(sw.price);
         const isH = sw.isHigh;
 
-        ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = isH ? 'bottom' : 'top';
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        const text = sw.type;
+        const tm = ctx.measureText(text);
+        const tw = tm.width + 8 * dpr;
+        const th = 13 * dpr;
+        const yBox = isH ? y - th - 4 * dpr : y + 4 * dpr;
+
+        // Badge pill behind swing label for high contrast
+        ctx.fillStyle = isH ? 'rgba(244, 63, 94, 0.18)' : 'rgba(16, 185, 129, 0.18)';
+        ctx.fillRect(x - tw / 2, yBox, tw, th);
+        ctx.strokeStyle = isH ? 'rgba(244, 63, 94, 0.75)' : 'rgba(16, 185, 129, 0.75)';
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeRect(x - tw / 2, yBox, tw, th);
+
         ctx.fillStyle = isH ? '#E11D48' : '#059669';
-        const yOffset = isH ? -4 * dpr : 4 * dpr;
-        ctx.fillText(sw.type, x, y + yOffset);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, x, yBox + th / 2);
       }
       ctx.restore();
     }
@@ -1297,29 +1321,47 @@ export function renderChart(
       const bTop = Math.min(yT, yB);
       const bH = Math.max(Math.abs(yT - yB), 3 * dpr);
 
-      let obColor = ob.isBullish ? '#0284C7' : '#EA580C';
-      let obBg = ob.isBullish ? 'rgba(2, 132, 199, 0.12)' : 'rgba(234, 88, 12, 0.12)';
-      let obBorder = ob.isBullish ? 'rgba(2, 132, 199, 0.50)' : 'rgba(234, 88, 12, 0.50)';
+      let obColor = ob.isBullish ? '#0284C7' : '#C2410C';
+      let obBg = ob.isBullish ? 'rgba(2, 132, 199, 0.22)' : 'rgba(234, 88, 12, 0.22)';
+      let obBorder = ob.isBullish ? 'rgba(2, 132, 199, 0.85)' : 'rgba(234, 88, 12, 0.85)';
 
       if (ob.isBreaker) {
-        obColor = ob.isBullish ? '#10B981' : '#8B5CF6';
-        obBg = ob.isBullish ? 'rgba(16, 185, 129, 0.12)' : 'rgba(139, 92, 246, 0.12)';
-        obBorder = ob.isBullish ? 'rgba(16, 185, 129, 0.60)' : 'rgba(139, 92, 246, 0.60)';
+        obColor = ob.isBullish ? '#059669' : '#7C3AED';
+        obBg = ob.isBullish ? 'rgba(16, 185, 129, 0.22)' : 'rgba(139, 92, 246, 0.22)';
+        obBorder = ob.isBullish ? 'rgba(16, 185, 129, 0.85)' : 'rgba(139, 92, 246, 0.85)';
       }
 
       ctx.save();
       ctx.fillStyle = obBg;
       ctx.fillRect(lx, bTop, bw, bH);
+      if (ob.isBreaker) {
+        ctx.setLineDash([5 * dpr, 3 * dpr]);
+      }
       ctx.strokeStyle = obBorder;
-      ctx.lineWidth = 1 * dpr;
+      ctx.lineWidth = 1.3 * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
+      if (ob.isBreaker) {
+        ctx.setLineDash([]);
+      }
 
       if (bw > 25 * dpr) {
-        ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
+        const text = ob.label || (ob.isBullish ? 'OB (Demand)' : 'OB (Supply)');
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        const tm = ctx.measureText(text);
+        const tw = tm.width + 8 * dpr;
+        const th = 13 * dpr;
+
+        // Clean label badge at top-left inside/above the OB
+        ctx.fillStyle = ob.isBullish ? 'rgba(2, 132, 199, 0.25)' : (ob.isBreaker ? 'rgba(139, 92, 246, 0.25)' : 'rgba(234, 88, 12, 0.25)');
+        ctx.fillRect(lx + 3 * dpr, bTop + 3 * dpr, tw, th);
+        ctx.strokeStyle = obBorder;
+        ctx.lineWidth = 0.8 * dpr;
+        ctx.strokeRect(lx + 3 * dpr, bTop + 3 * dpr, tw, th);
+
         ctx.fillStyle = obColor;
         ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        ctx.fillText(ob.label || (ob.isBullish ? 'OB (Demand)' : 'OB (Supply)'), lx + 4 * dpr, bTop + 2 * dpr);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, lx + 7 * dpr, bTop + 3 * dpr + th / 2);
       }
       ctx.restore();
     }
@@ -1364,8 +1406,8 @@ export function renderChart(
       const base = fvg.isBullish
         ? (fvg.isInverse ? [6, 182, 212] : [16, 185, 129])
         : (fvg.isInverse ? [168, 85, 247] : [244, 63, 94]);
-      const fa = fvg.isMitigated ? 0.04 : (fvg.isInverse ? 0.10 : 0.10);
-      const ba = fvg.isMitigated ? 0.12 : (fvg.isInverse ? 0.50 : 0.40);
+      const fa = fvg.isMitigated ? 0.08 : (fvg.isInverse ? 0.22 : 0.20);
+      const ba = fvg.isMitigated ? 0.35 : (fvg.isInverse ? 0.85 : 0.80);
 
       ctx.save();
       ctx.fillStyle = `rgba(${base},${fa})`;
@@ -1374,7 +1416,7 @@ export function renderChart(
         ctx.setLineDash([4 * dpr, 3 * dpr]);
       }
       ctx.strokeStyle = `rgba(${base},${ba})`;
-      ctx.lineWidth = (fvg.isInverse ? 1.0 : 0.8) * dpr;
+      ctx.lineWidth = (fvg.isInverse ? 1.3 : 1.1) * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
       if (fvg.isInverse) {
         ctx.setLineDash([]);
@@ -1384,8 +1426,8 @@ export function renderChart(
       if (smcCfg.showFvgMidpoint && fvg.cePrice) {
         const yCe = priceToY(fvg.cePrice);
         ctx.setLineDash([3 * dpr, 3 * dpr]);
-        ctx.strokeStyle = `rgba(${base},0.5)`;
-        ctx.lineWidth = 0.8 * dpr;
+        ctx.strokeStyle = `rgba(${base},0.65)`;
+        ctx.lineWidth = 1 * dpr;
         ctx.beginPath();
         ctx.moveTo(lx, yCe);
         ctx.lineTo(lx + bw, yCe);
@@ -1394,14 +1436,27 @@ export function renderChart(
       }
 
       if (!fvg.isMitigated && bw > 20 * dpr) {
-        ctx.font = `bold ${6.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = `rgba(${base},0.9)`;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
         const tag = fvg.isInverse
-          ? (fvg.isBullish ? '+IFVG (Support)' : '-IFVG (Resistance)')
+          ? (fvg.isBullish ? '+IFVG' : '-IFVG')
           : (fvg.isBullish ? '+FVG' : '-FVG');
-        ctx.fillText(tag, lx + 3 * dpr, bTop + 2 * dpr);
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        const tm = ctx.measureText(tag);
+        const tw = tm.width + 6 * dpr;
+        const th = 12 * dpr;
+
+        ctx.fillStyle = `rgba(${base},0.25)`;
+        ctx.fillRect(lx + 2 * dpr, bTop + 2 * dpr, tw, th);
+        ctx.strokeStyle = `rgba(${base},0.85)`;
+        ctx.lineWidth = 0.8 * dpr;
+        ctx.strokeRect(lx + 2 * dpr, bTop + 2 * dpr, tw, th);
+
+        ctx.fillStyle = fvg.isBullish ? '#047857' : '#BE123C';
+        if (fvg.isInverse) {
+          ctx.fillStyle = fvg.isBullish ? '#0E7490' : '#7C3AED';
+        }
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tag, lx + 5 * dpr, bTop + 2 * dpr + th / 2);
       }
       ctx.restore();
     }
@@ -1437,7 +1492,7 @@ export function renderChart(
       ctx.save();
       ctx.setLineDash([4 * dpr, 3 * dpr]);
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.1 * dpr;
+      ctx.lineWidth = 1.3 * dpr;
       ctx.beginPath();
       ctx.moveTo(x1, y);
       ctx.lineTo(x2, y);
@@ -1446,24 +1501,24 @@ export function renderChart(
 
       // Subtle vertical ticks at swing origin and break candle
       ctx.beginPath();
-      ctx.moveTo(x1, y - 3 * dpr);
-      ctx.lineTo(x1, y + 3 * dpr);
-      ctx.moveTo(x2, y - 3 * dpr);
-      ctx.lineTo(x2, y + 3 * dpr);
+      ctx.moveTo(x1, y - 4 * dpr);
+      ctx.lineTo(x1, y + 4 * dpr);
+      ctx.moveTo(x2, y - 4 * dpr);
+      ctx.lineTo(x2, y + 4 * dpr);
       ctx.stroke();
 
       // Clean pill badge centered on the break segment
       const midX = (x1 + x2) / 2;
       const text = sb.type;
-      ctx.font = `bold ${6.5 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
       const tm = ctx.measureText(text);
-      const tw = tm.width + 6 * dpr;
-      const th = 10 * dpr;
+      const tw = tm.width + 8 * dpr;
+      const th = 14 * dpr;
 
-      ctx.fillStyle = sb.isBullish ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)';
+      ctx.fillStyle = sb.isBullish ? 'rgba(8, 153, 129, 0.25)' : 'rgba(242, 54, 69, 0.25)';
       ctx.fillRect(midX - tw / 2, y - th / 2, tw, th);
       ctx.strokeStyle = color;
-      ctx.lineWidth = 0.8 * dpr;
+      ctx.lineWidth = 1 * dpr;
       ctx.strokeRect(midX - tw / 2, y - th / 2, tw, th);
 
       ctx.fillStyle = color;
@@ -1491,26 +1546,37 @@ export function renderChart(
       for (const lvl of levelsToDraw) {
         const y = priceToY(lvl.price);
         const isHighSide = lvl.type === 'BSL' || lvl.type === 'EQH';
-        const color = isHighSide ? 'rgba(244, 63, 94, 0.65)' : 'rgba(16, 185, 129, 0.65)';
+        const color = isHighSide ? 'rgba(244, 63, 94, 0.85)' : 'rgba(16, 185, 129, 0.85)';
         const originIdx = lvl.candleIndices ? lvl.candleIndices[0] : startIdx;
         const x1 = Math.max(0, (originIdx - startIdx) * candleW + candleW / 2);
         const x2 = chartW;
 
         ctx.save();
-        ctx.setLineDash([2 * dpr, 4 * dpr]);
+        ctx.setLineDash([3 * dpr, 4 * dpr]);
         ctx.strokeStyle = color;
-        ctx.lineWidth = 0.9 * dpr;
+        ctx.lineWidth = 1.2 * dpr;
         ctx.beginPath();
         ctx.moveTo(x1, y);
         ctx.lineTo(x2, y);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        ctx.font = `bold ${6.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = color;
+        const text = lvl.label;
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        const tm = ctx.measureText(text);
+        const tw = tm.width + 6 * dpr;
+        const th = 13 * dpr;
+
+        ctx.fillStyle = isHighSide ? 'rgba(244, 63, 94, 0.20)' : 'rgba(16, 185, 129, 0.20)';
+        ctx.fillRect(x2 - tw - 6 * dpr, y - th - 2 * dpr, tw, th);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 0.8 * dpr;
+        ctx.strokeRect(x2 - tw - 6 * dpr, y - th - 2 * dpr, tw, th);
+
+        ctx.fillStyle = isHighSide ? '#E11D48' : '#059669';
         ctx.textAlign = 'right';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(lvl.label, x2 - 8 * dpr, y - 2 * dpr);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, x2 - 9 * dpr, y - th / 2 - 2 * dpr);
         ctx.restore();
       }
     }
@@ -1530,16 +1596,16 @@ export function renderChart(
         const x = li * candleW + candleW / 2;
         const y = priceToY(sw.price);
         ctx.save();
-        ctx.font = `bold ${6.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
         ctx.textAlign = 'center';
         if (sw.isHighSweep) {
           ctx.fillStyle = BEAR;
           ctx.textBaseline = 'bottom';
-          ctx.fillText('▼ BSL', x, y - 3 * dpr);
+          ctx.fillText('▼ BSL', x, y - 4 * dpr);
         } else {
           ctx.fillStyle = BULL;
           ctx.textBaseline = 'top';
-          ctx.fillText('▲ SSL', x, y + 2 * dpr);
+          ctx.fillText('▲ SSL', x, y + 4 * dpr);
         }
         ctx.restore();
       }
@@ -1552,32 +1618,32 @@ export function renderChart(
       if (pdh && pdh >= pMin && pdh <= pMax) {
         const yPdh = priceToY(pdh);
         ctx.setLineDash([6 * dpr, 4 * dpr]);
-        ctx.strokeStyle = 'rgba(59, 130, 246, 0.7)';
-        ctx.lineWidth = 1 * dpr;
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.85)';
+        ctx.lineWidth = 1.3 * dpr;
         ctx.beginPath();
         ctx.moveTo(0, yPdh);
         ctx.lineTo(chartW, yPdh);
         ctx.stroke();
         ctx.setLineDash([]);
-        ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = '#3B82F6';
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = '#2563EB';
         ctx.textAlign = 'left';
-        ctx.fillText(`PDH: ${formatPrice(pdh)}`, 12 * dpr, yPdh - 2 * dpr);
+        ctx.fillText(`PDH: ${formatPrice(pdh)}`, 12 * dpr, yPdh - 3 * dpr);
       }
       if (pdl && pdl >= pMin && pdl <= pMax) {
         const yPdl = priceToY(pdl);
         ctx.setLineDash([6 * dpr, 4 * dpr]);
-        ctx.strokeStyle = 'rgba(59, 130, 246, 0.7)';
-        ctx.lineWidth = 1 * dpr;
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.85)';
+        ctx.lineWidth = 1.3 * dpr;
         ctx.beginPath();
         ctx.moveTo(0, yPdl);
         ctx.lineTo(chartW, yPdl);
         ctx.stroke();
         ctx.setLineDash([]);
-        ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = '#3B82F6';
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = '#2563EB';
         ctx.textAlign = 'left';
-        ctx.fillText(`PDL: ${formatPrice(pdl)}`, 12 * dpr, yPdl + 9 * dpr);
+        ctx.fillText(`PDL: ${formatPrice(pdl)}`, 12 * dpr, yPdl + 11 * dpr);
       }
       ctx.restore();
     }
