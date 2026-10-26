@@ -1797,18 +1797,20 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(slText, x + boxW - 4 * dpr, ySL);
 
-        // Entry Badge
+        // Entry Badge — offset above entry line for bulls, below for bears, to avoid current-price overlap
         const entryText = `Entry: ${formatPrice(st.entryPrice)}`;
         const entryTm = ctx.measureText(entryText);
+        const entryBadgeH = 14 * dpr;
+        const entryBadgeY = isBull ? yEntry - entryBadgeH - 2 * dpr : yEntry + 2 * dpr;
         ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-        ctx.fillRect(x + 4 * dpr, yEntry - 7 * dpr, entryTm.width + 8 * dpr, 14 * dpr);
+        ctx.fillRect(x + 4 * dpr, entryBadgeY, entryTm.width + 8 * dpr, entryBadgeH);
         ctx.strokeStyle = isBull ? '#059669' : '#DC2626';
         ctx.lineWidth = 1 * dpr;
-        ctx.strokeRect(x + 4 * dpr, yEntry - 7 * dpr, entryTm.width + 8 * dpr, 14 * dpr);
+        ctx.strokeRect(x + 4 * dpr, entryBadgeY, entryTm.width + 8 * dpr, entryBadgeH);
         ctx.fillStyle = '#F8FAFC';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(entryText, x + 8 * dpr, yEntry);
+        ctx.fillText(entryText, x + 8 * dpr, entryBadgeY + entryBadgeH / 2);
 
         // 6. Header Setup Signal Pill Badge (Compact & Non-Overlapping)
         const shortName = st.name
@@ -1824,7 +1826,10 @@ export function renderChart(
         const tm = ctx.measureText(headerTag);
         const tw = tm.width + 10 * dpr;
         const th = 14 * dpr;
-        const badgeY = isBull ? Math.min(chartH - th - 4 * dpr, yEntry + 8 * dpr) : Math.max(4 * dpr, yEntry - th - 8 * dpr);
+        // Place header badge below SL for bulls, above SL for bears — away from entry/price overlap
+        const badgeY = isBull
+          ? Math.min(chartH - th - 4 * dpr, Math.max(ySL + 4 * dpr, yEntry + 22 * dpr))
+          : Math.max(4 * dpr, Math.min(ySL - th - 4 * dpr, yEntry - th - 22 * dpr));
 
         ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)';
         ctx.fillRect(x, badgeY, tw, th);
