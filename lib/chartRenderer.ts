@@ -1689,10 +1689,10 @@ export function renderChart(
         const ySL = priceToY(st.stopLoss);
         const yTP = priceToY(st.targetPrice);
         const isBull = st.direction === 'BULLISH';
-        const boxW = Math.max(candleW * 6, Math.min(candleW * 10, chartW - x));
+        const boxW = Math.min(chartW - x - 5 * dpr, Math.max(candleW * 3.5, 95 * dpr));
 
         ctx.save();
-        // 1. Take Profit (Reward) Zone (Entry to TP)
+        // 1. Take Profit (Reward) Zone (Entry to TP1)
         const tpTop = Math.min(yEntry, yTP);
         const tpH = Math.max(Math.abs(yEntry - yTP), 2 * dpr);
         ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
@@ -1722,11 +1722,37 @@ export function renderChart(
         ctx.lineTo(x + boxW, yEntry);
         ctx.stroke();
 
-        // 4. Compact Price Badges on the right of the bracket
+        // 4. TP2 Extension Line (if available)
+        if (st.targetPrice2 && st.targetPrice2 > 0) {
+          const yTP2 = priceToY(st.targetPrice2);
+          if (yTP2 >= 0 && yTP2 <= chartH) {
+            ctx.setLineDash([3 * dpr, 3 * dpr]);
+            ctx.strokeStyle = 'rgba(5, 150, 105, 0.75)';
+            ctx.lineWidth = 1 * dpr;
+            ctx.beginPath();
+            ctx.moveTo(x, yTP2);
+            ctx.lineTo(x + boxW, yTP2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // TP2 Badge
+            ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+            const tp2Text = `TP2: ${formatPrice(st.targetPrice2)}`;
+            const tp2Tm = ctx.measureText(tp2Text);
+            ctx.fillStyle = 'rgba(5, 150, 105, 0.85)';
+            ctx.fillRect(x + boxW - tp2Tm.width - 6 * dpr, yTP2 - 6 * dpr, tp2Tm.width + 6 * dpr, 12 * dpr);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(tp2Text, x + boxW - 3 * dpr, yTP2);
+          }
+        }
+
+        // 5. Compact Price Badges on the right of the bracket
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
 
-        // TP Badge
-        const tpText = `TP: ${formatPrice(st.targetPrice)}`;
+        // TP1 Badge
+        const tpText = `TP1: ${formatPrice(st.targetPrice)}`;
         const tpTm = ctx.measureText(tpText);
         ctx.fillStyle = 'rgba(16, 185, 129, 0.90)';
         ctx.fillRect(x + boxW - tpTm.width - 8 * dpr, yTP - 7 * dpr, tpTm.width + 8 * dpr, 14 * dpr);
@@ -1758,14 +1784,21 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(entryText, x + 8 * dpr, yEntry);
 
-        // 5. Header Setup Signal Pill Badge
+        // 6. Header Setup Signal Pill Badge (Compact & Non-Overlapping)
+        const shortName = st.name
+          .replace(/ \(Bullish\)| \(Bearish\)/g, '')
+          .replace('Trend Continuation', 'BOS')
+          .replace('Structural Reversal', 'CHoCH')
+          .replace('Dealing Range ', '')
+          .replace('Liquidity Pool ', '')
+          .replace('Power of Three ', '');
         const statusTag = st.status === 'RETESTING' ? 'RETEST' : (st.status === 'TARGET_HIT' ? 'TP HIT' : 'CONFIRMED');
-        const headerTag = `${isBull ? '▲ BULLISH SETUP' : '▼ BEARISH SETUP'}: ${st.name.replace(/ \(Bullish\)| \(Bearish\)/, '')} | R:R 1:${(st.riskReward || 2).toFixed(1)} [${statusTag}]`;
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (1:${(st.riskReward || 2).toFixed(1)})`;
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(headerTag);
         const tw = tm.width + 10 * dpr;
-        const th = 15 * dpr;
-        const badgeY = isBull ? Math.min(chartH - th - 5 * dpr, yEntry + 10 * dpr) : Math.max(5 * dpr, yEntry - th - 10 * dpr);
+        const th = 14 * dpr;
+        const badgeY = isBull ? Math.min(chartH - th - 4 * dpr, yEntry + 8 * dpr) : Math.max(4 * dpr, yEntry - th - 8 * dpr);
 
         ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)';
         ctx.fillRect(x, badgeY, tw, th);

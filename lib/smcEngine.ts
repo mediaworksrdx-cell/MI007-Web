@@ -1462,7 +1462,7 @@ export function detectAll16SmcSetups(
   };
 
   // ── Strategy 1: BOS Continuation Scanner
-  const recentBOS = breaks.filter((b) => b.breakType === 'BOS').slice(-2);
+  const recentBOS = breaks.filter((b) => b.breakType === 'BOS').slice(-8);
   for (const brk of recentBOS) {
     const isBull = brk.isBullish;
     const entry = brk.price;
@@ -1483,7 +1483,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 2: CHoCH / MSS Reversal Scanner
-  const recentCHoCH = breaks.filter((b) => b.breakType === 'CHoCH' || b.breakType === 'MSS').slice(-2);
+  const recentCHoCH = breaks.filter((b) => b.breakType === 'CHoCH' || b.breakType === 'MSS').slice(-8);
   for (const brk of recentCHoCH) {
     const isBull = brk.isBullish;
     const entry = brk.price;
@@ -1504,10 +1504,10 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 3: Liquidity Sweep Reversal (Mirrored BSL/SSL)
-  const recentSweeps = sweeps.slice(-2);
+  const recentSweeps = sweeps.slice(-8);
   for (const sw of recentSweeps) {
     const isBull = !sw.isHighSweep; // SSL sweep = Bullish reversal
-    const entry = lastPrice;
+    const entry = candles[sw.candleIndex]?.close || lastPrice;
     const sl = isBull ? sw.price * 0.995 : sw.price * 1.005;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
     setups.push(makeSetup(
@@ -1525,10 +1525,10 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 4: Equal Highs & Equal Lows (EQH / EQL Sweep)
-  const eqSwept = sweeps.filter((s) => s.label.includes('EQH') || s.label.includes('EQL')).slice(-2);
+  const eqSwept = sweeps.filter((s) => s.label.includes('EQH') || s.label.includes('EQL')).slice(-8);
   for (const eq of eqSwept) {
     const isBull = !eq.isHighSweep;
-    const entry = lastPrice;
+    const entry = candles[eq.candleIndex]?.close || lastPrice;
     const sl = isBull ? eq.price * 0.996 : eq.price * 1.004;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
     setups.push(makeSetup(
@@ -1546,7 +1546,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 5: Fair Value Gap (FVG) Retracement
-  const activeFvgs = fvgs.filter((f) => !f.isInverse && !f.isInvalidated && !f.isMitigated && f.state !== 'MITIGATED' && f.state !== 'INVALIDATED').slice(-2);
+  const activeFvgs = fvgs.filter((f) => !f.isInverse && !f.isInvalidated && !f.isMitigated && f.state !== 'MITIGATED' && f.state !== 'INVALIDATED').slice(-8);
   for (const fvg of activeFvgs) {
     const isBull = fvg.isBullish;
     const entry = fvg.cePrice; // 50% CE entry
@@ -1567,7 +1567,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 6: Order Block (OB) Retest in Discount/Premium
-  const activeObs = orderBlocks.filter((ob) => !ob.isMitigated).slice(-2);
+  const activeObs = orderBlocks.filter((ob) => !ob.isMitigated).slice(-8);
   for (const ob of activeObs) {
     const isBull = ob.isBullish;
     const entry = (ob.topPrice + ob.bottomPrice) / 2;
@@ -1588,7 +1588,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 7: Breaker Block Role Reversal
-  const activeBreakers = breakers.slice(-2);
+  const activeBreakers = breakers.slice(-8);
   for (const brk of activeBreakers) {
     const isBull = !brk.isBullish; // Violated supply becomes demand
     const entry = (brk.topPrice + brk.bottomPrice) / 2;
@@ -1797,7 +1797,7 @@ export function detectAll16SmcSetups(
         isBull ? 'BULLISH' : 'BEARISH',
         sw.candleIndex,
         sw.time,
-        lastPrice,
+        candles[sw.candleIndex]?.close || lastPrice,
         isBull ? sw.price * 0.996 : sw.price * 1.004,
         isBull ? dealingRange.highPrice : dealingRange.lowPrice,
         `Accumulation range false breakout (Judas sweep) followed by explosive distribution wave.`
@@ -1806,7 +1806,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 16: Inverse Fair Value Gap (IFVG)
-  const invalidatedFvgs = fvgs.filter((f) => f.isInvalidated).slice(-2);
+  const invalidatedFvgs = fvgs.filter((f) => f.isInvalidated).slice(-8);
   for (const ifvg of invalidatedFvgs) {
     const isBull = !ifvg.isBullish; // Violated bearish FVG becomes bullish support
     const entry = ifvg.cePrice;

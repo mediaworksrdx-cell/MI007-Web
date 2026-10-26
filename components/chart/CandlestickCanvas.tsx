@@ -1473,6 +1473,45 @@ export function CandlestickCanvas({
 
     const smc = calculateSMC(cleanCandles, smcConfig);
 
+    // 0. Confirmed Directional SMC Setups (Position Brackets)
+    if (smc.confirmedSetups && smc.confirmedSetups.length > 0) {
+      for (const st of smc.confirmedSetups) {
+        if (st.candleIndex < startIdx || st.candleIndex > endIdx) continue;
+        const li = st.candleIndex - startIdx;
+        const sx = li * candleW + candleW / 2;
+        const boxW = Math.min(chartW - sx - 5, Math.max(candleW * 3.5, 95));
+        const yEntry = priceToY(st.entryPrice);
+        const ySL = priceToY(st.stopLoss);
+        const yTP = priceToY(st.targetPrice);
+        const yTP2 = st.targetPrice2 ? priceToY(st.targetPrice2) : yTP;
+        const minY = Math.min(yEntry, ySL, yTP, yTP2) - 20;
+        const maxY = Math.max(yEntry, ySL, yTP, yTP2) + 20;
+
+        if (x >= sx - 5 && x <= sx + boxW + 10 && y >= minY && y <= maxY) {
+          const isBull = st.direction === 'BULLISH';
+          const formationTimeStr = st.formationTime ? new Date(st.formationTime).toLocaleString() : 'Recent';
+          const statusLabel =
+            st.status === 'RETESTING'
+              ? 'Active Retest'
+              : st.status === 'TARGET_HIT'
+              ? 'Target Achieved'
+              : 'Confirmed Active';
+          return {
+            title: `${isBull ? 'Bullish' : 'Bearish'} Setup: ${st.name}`,
+            type: `${isBull ? 'Long Position' : 'Short Position'} Bracket`,
+            timeframe,
+            formationTime: formationTimeStr,
+            priceBoundaries: `Entry: ${formatPrice(st.entryPrice)} | SL: ${formatPrice(st.stopLoss)}`,
+            detectionRule: st.description || `${st.setupType} confirmed on completed candle structure`,
+            currentStatus: statusLabel,
+            invalidation: `Candle close breaching ${formatPrice(st.stopLoss)} invalidates setup structure`,
+            target: `TP1: ${formatPrice(st.targetPrice)}${st.targetPrice2 ? ` | TP2: ${formatPrice(st.targetPrice2)}` : ''}`,
+            riskReward: `1:${(st.riskReward || 2.5).toFixed(1)} R:R`,
+          };
+        }
+      }
+    }
+
     // 1. Order Blocks & Breakers
     for (const ob of smc.orderBlocks) {
       if (ob.endIndex < startIdx || ob.startIndex > endIdx) continue;
