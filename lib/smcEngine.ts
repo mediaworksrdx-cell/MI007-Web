@@ -1411,30 +1411,40 @@ export function detectAll16SmcSetups(
       statusOverride = 'INVALIDATED';
     }
 
-    // 2. Strict Directional Risk Ordering Validation
-    // LONG: stopLoss MUST be strictly below entryPrice
+    // 2. Strict Directional Risk Ordering Validation & Correction
+    // LONG:  stopLoss MUST be strictly below entryPrice
     // SHORT: stopLoss MUST be strictly above entryPrice
-    const rawRisk = isBull ? (entryPrice - stopLoss) : (stopLoss - entryPrice);
-    if (rawRisk <= 0) {
-      statusOverride = 'INVALIDATED';
+    let cleanStopLoss = stopLoss;
+    if (isBull && (!Number.isFinite(cleanStopLoss) || cleanStopLoss >= entryPrice)) {
+      cleanStopLoss = Number((entryPrice * 0.992).toFixed(2));
+    } else if (!isBull && (!Number.isFinite(cleanStopLoss) || cleanStopLoss <= entryPrice)) {
+      cleanStopLoss = Number((entryPrice * 1.008).toFixed(2));
     }
-    const risk = rawRisk > 0 ? rawRisk : Math.max(Math.abs(entryPrice - stopLoss), entryPrice * 0.005);
+    const rawRisk = isBull ? (entryPrice - cleanStopLoss) : (cleanStopLoss - entryPrice);
+    const risk = rawRisk > 0 ? rawRisk : Math.max(Math.abs(entryPrice - cleanStopLoss), entryPrice * 0.005);
 
-    // 3. Strict Directional Target (TP1) Ordering Validation
-    // LONG: targetPrice MUST be strictly above entryPrice
-    // SHORT: targetPrice MUST be strictly below entryPrice
-    const guaranteedTarget = isBull
-      ? (targetPrice > entryPrice + risk * 1.5 ? targetPrice : entryPrice + risk * 2.5)
-      : (targetPrice < entryPrice - risk * 1.5 ? targetPrice : entryPrice - risk * 2.5);
+    // 3. Strict Directional Target (TP1) Ordering Validation & Invariant
+    // LONG:  targetPrice MUST be strictly above entryPrice (at least 1.5R or 1.5% distance)
+    // SHORT: targetPrice MUST be strictly below entryPrice (at least 1.5R or 1.5% distance)
+    let guaranteedTarget = targetPrice;
+    if (isBull) {
+      if (!Number.isFinite(guaranteedTarget) || guaranteedTarget <= entryPrice + risk * 1.2) {
+        guaranteedTarget = Number((entryPrice + Math.max(risk * 2.5, entryPrice * 0.02)).toFixed(2));
+      }
+    } else {
+      if (!Number.isFinite(guaranteedTarget) || guaranteedTarget >= entryPrice - risk * 1.2) {
+        guaranteedTarget = Number((entryPrice - Math.max(risk * 2.5, entryPrice * 0.02)).toFixed(2));
+      }
+    }
     const reward = Math.abs(guaranteedTarget - entryPrice);
     const rr = Number((reward / risk).toFixed(1));
 
-    // 4. Strict Directional TP2 Ordering Validation
-    // LONG: TP1 must be nearer than TP2 (entry < TP1 < TP2)
+    // 4. Strict Directional TP2 Ordering Validation & Invariant
+    // LONG:  TP1 must be nearer than TP2 (entry < TP1 < TP2)
     // SHORT: TP1 must be nearer than TP2 (entry > TP1 > TP2)
     const targetPrice2 = isBull
-      ? Number((entryPrice + reward * 1.5).toFixed(2))
-      : Number((entryPrice - reward * 1.5).toFixed(2));
+      ? Number((guaranteedTarget + Math.max(reward * 0.5, risk * 1.0)).toFixed(2))
+      : Number((guaranteedTarget - Math.max(reward * 0.5, risk * 1.0)).toFixed(2));
 
     let status: 'CONFIRMED' | 'RETESTING' | 'PENDING' | 'DETECTED' | 'FORMING' | 'ENTRY_ZONE_REACHED' | 'TARGET_HIT' | 'EXITED' | 'INVALIDATED' | 'EXPIRED' = statusOverride || 'CONFIRMED';
     let lifecycleState: SmcLifecycleState = statusOverride === 'CONFIRMED' ? 'CONFIRMED' : (status === 'RETESTING' ? 'RETESTED' : 'CONFIRMED');
@@ -1443,60 +1453,123 @@ export function detectAll16SmcSetups(
     // 1. Formation bar validation
     const formBar = candles[candleIndex];
     if (formBar) {
-      if (isBull && formBar.close <= stopLoss) {
+      if (isBull && formBar.close <= cleanStopLoss) {
         status = 'INVALIDATED';
         lifecycleState = 'INVALIDATED';
-      } else if (!isBull && formBar.close >= stopLoss) {
+      } else if (!isBull && formBar.close >= cleanStopLoss) {
         status = 'INVALIDATED';
         lifecycleState = 'INVALIDATED';
       }
     }
 
     // 2. Track post-formation bar outcomes to determine historical lifecycle state
+    // Institutional rules:
+    // - maxLifespanBars = 12: Setups older than 12 bars without reaching target expire.
+    // - Retest failure: A setup is invalidated if price drops past retest tolerance (> 45% risk or > 2.2% price).
+    // - Momentum failure: 3 consecutive bars closing beyond entry on the adverse side invalidates the setup.
+    const maxLifespanBars = 12;
+    const maxRetestDistance = Math.min(risk * 0.45, entryPrice * 0.022);
+    let adverseBars = 0;
+
     if (status !== 'INVALIDATED') {
-      const maxLifespanBars = 30;
       for (let k = candleIndex + 1; k < candles.length; k++) {
         const bar = candles[k];
         if (isBull) {
-          if (bar.low <= stopLoss || bar.close <= stopLoss) {
+          // Hard stop loss hit
+          if (bar.low <= cleanStopLoss || bar.close <= cleanStopLoss) {
             status = 'INVALIDATED';
             lifecycleState = 'INVALIDATED';
             break;
           }
+          // Target 1 hit
           if (bar.high >= guaranteedTarget) {
             status = 'TARGET_HIT';
             lifecycleState = 'TARGET_HIT';
             break;
           }
-          if (bar.low <= entryPrice && bar.close >= stopLoss) {
+          // Retest breakdown failure: close significantly below entry
+          if (bar.close < entryPrice - maxRetestDistance) {
+            status = 'INVALIDATED';
+            lifecycleState = 'INVALIDATED';
+            break;
+          }
+          // Consecutive adverse bars
+          if (bar.close < entryPrice) {
+            adverseBars++;
+            if (adverseBars >= 3) {
+              status = 'INVALIDATED';
+              lifecycleState = 'INVALIDATED';
+              break;
+            }
+          } else {
+            adverseBars = 0;
+          }
+          // Valid retest tap
+          if (bar.low <= entryPrice && bar.close >= entryPrice - maxRetestDistance) {
             status = 'RETESTING';
             lifecycleState = 'RETESTED';
             retestCount++;
           }
         } else {
-          if (bar.high >= stopLoss || bar.close >= stopLoss) {
+          // Hard stop loss hit
+          if (bar.high >= cleanStopLoss || bar.close >= cleanStopLoss) {
             status = 'INVALIDATED';
             lifecycleState = 'INVALIDATED';
             break;
           }
+          // Target 1 hit
           if (bar.low <= guaranteedTarget) {
             status = 'TARGET_HIT';
             lifecycleState = 'TARGET_HIT';
             break;
           }
-          if (bar.high >= entryPrice && bar.close <= stopLoss) {
+          // Retest breakout failure: close significantly above entry
+          if (bar.close > entryPrice + maxRetestDistance) {
+            status = 'INVALIDATED';
+            lifecycleState = 'INVALIDATED';
+            break;
+          }
+          // Consecutive adverse bars
+          if (bar.close > entryPrice) {
+            adverseBars++;
+            if (adverseBars >= 3) {
+              status = 'INVALIDATED';
+              lifecycleState = 'INVALIDATED';
+              break;
+            }
+          } else {
+            adverseBars = 0;
+          }
+          // Valid retest tap
+          if (bar.high >= entryPrice && bar.close <= entryPrice + maxRetestDistance) {
             status = 'RETESTING';
             lifecycleState = 'RETESTED';
             retestCount++;
           }
         }
 
-        // Expiration check: if setup has not reached target or stopped out within 30 bars
+        // Expiration check: if setup has not reached target or stopped out within 12 bars
         if (k - candleIndex >= maxLifespanBars && status !== 'TARGET_HIT') {
           status = 'EXPIRED';
           lifecycleState = 'EXPIRED';
           break;
         }
+      }
+    }
+
+    // 3. Current Bar Reality Invariant Check:
+    // If at the terminal candle, price has drifted deeply against entry, mark setup INVALIDATED / EXPIRED
+    const lastBar = candles[candles.length - 1];
+    if (lastBar && (status === 'CONFIRMED' || status === 'RETESTING' || status === 'ENTRY_ZONE_REACHED')) {
+      if (isBull && lastBar.close < entryPrice - maxRetestDistance) {
+        status = 'INVALIDATED';
+        lifecycleState = 'INVALIDATED';
+      } else if (!isBull && lastBar.close > entryPrice + maxRetestDistance) {
+        status = 'INVALIDATED';
+        lifecycleState = 'INVALIDATED';
+      } else if (candles.length - 1 - candleIndex >= maxLifespanBars) {
+        status = 'EXPIRED';
+        lifecycleState = 'EXPIRED';
       }
     }
 
@@ -1511,7 +1584,7 @@ export function detectAll16SmcSetups(
       candleIndex,
       time,
       entryPrice: Number(entryPrice.toFixed(2)),
-      stopLoss: Number(stopLoss.toFixed(2)),
+      stopLoss: Number(cleanStopLoss.toFixed(2)),
       targetPrice: Number(guaranteedTarget.toFixed(2)),
       targetPrice2,
       riskReward: Math.max(1.0, rr),
@@ -1519,7 +1592,7 @@ export function detectAll16SmcSetups(
       lifecycleState,
       retestCount,
       description,
-      invalidationLevel: stopLoss,
+      invalidationLevel: Number(cleanStopLoss.toFixed(2)),
       formationTime: time,
       confirmationTime,
     };
@@ -1531,7 +1604,8 @@ export function detectAll16SmcSetups(
     const isBull = brk.isBullish;
     const entry = brk.price;
     const sl = isBull ? brk.brokenSwingPrice * 0.995 : brk.brokenSwingPrice * 1.005;
-    const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
+    const risk = Math.max(Math.abs(entry - sl), entry * 0.005);
+    const tp = isBull ? Math.max(dealingRange.highPrice, entry + risk * 2.5) : Math.min(dealingRange.lowPrice, entry - risk * 2.5);
     setups.push(makeSetup(
       `setup_bos_${brk.candleIndex}`,
       isBull ? 'BOS Trend Continuation (Bullish)' : 'BOS Trend Continuation (Bearish)',
@@ -1552,7 +1626,8 @@ export function detectAll16SmcSetups(
     const isBull = brk.isBullish;
     const entry = brk.price;
     const sl = isBull ? brk.price * 0.992 : brk.price * 1.008;
-    const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
+    const risk = Math.max(Math.abs(entry - sl), entry * 0.005);
+    const tp = isBull ? Math.max(dealingRange.highPrice, entry + risk * 2.5) : Math.min(dealingRange.lowPrice, entry - risk * 2.5);
     setups.push(makeSetup(
       `setup_choch_${brk.candleIndex}`,
       isBull ? `${brk.breakType} Structural Reversal (Bullish)` : `${brk.breakType} Structural Reversal (Bearish)`,

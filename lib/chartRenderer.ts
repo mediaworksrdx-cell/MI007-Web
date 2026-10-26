@@ -1710,12 +1710,24 @@ export function renderChart(
 
       for (const st of setupsToRender) {
         const li = st.candleIndex - startIdx;
-        const x = li * candleW + candleW / 2;
+        const rawX = li * candleW + candleW / 2;
+        const minBracketW = 110 * dpr;
+        const maxBracketW = Math.max(minBracketW, Math.min(candleW * 5, 200 * dpr));
+        const bracketX = Math.max(5 * dpr, Math.min(rawX, chartW - minBracketW - 5 * dpr));
+        const boxW = Math.min(chartW - bracketX - 4 * dpr, maxBracketW);
+        const x = bracketX;
+
         const yEntry = priceToY(st.entryPrice);
         const ySL = priceToY(st.stopLoss);
         const yTP = priceToY(st.targetPrice);
         const isBull = st.direction === 'BULLISH';
-        const boxW = Math.min(chartW - x - 5 * dpr, Math.max(candleW * 3.5, 95 * dpr));
+
+        // Obtain current price level for collision prevention
+        const lastC = candles[Math.min(endIdx - 1, candles.length - 1)];
+        const curPrice = options.currentPriceOverride && options.currentPriceOverride > 0
+          ? options.currentPriceOverride
+          : (lastC ? lastC.close : 0);
+        const yCur = curPrice > 0 ? priceToY(curPrice) : -999;
 
         ctx.save();
         // 1. Take Profit (Reward) Zone (Entry to TP1)
@@ -1761,7 +1773,7 @@ export function renderChart(
             ctx.stroke();
             ctx.setLineDash([]);
 
-            // TP2 Badge
+            // TP2 Badge (Right edge of bracket)
             ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
             const tp2Text = `TP2: ${formatPrice(st.targetPrice2)}`;
             const tp2Tm = ctx.measureText(tp2Text);
@@ -1788,12 +1800,17 @@ export function renderChart(
         ctx.fillText(tpText, x + boxW - 4 * dpr, yTP);
 
         // SL Badge (Right edge of bracket)
-        // Collision prevention: If SL is too close to Entry (< 18px), nudge SL badge away
+        // Collision prevention: If SL is too close to Entry (< 18px) or Current Price (< 14px), nudge SL badge away
         const slText = `SL: ${formatPrice(st.stopLoss)}`;
         const slTm = ctx.measureText(slText);
-        const slDist = Math.abs(ySL - yEntry);
-        const slOffset = slDist < 18 * dpr ? (isBull ? 8 * dpr : -8 * dpr) : 0;
-        const finalSlY = ySL + slOffset;
+        let slOffset = 0;
+        if (Math.abs(ySL - yEntry) < 18 * dpr) {
+          slOffset += isBull ? 10 * dpr : -10 * dpr;
+        }
+        if (yCur > 0 && Math.abs((ySL + slOffset) - yCur) < 14 * dpr) {
+          slOffset += isBull ? 12 * dpr : -12 * dpr;
+        }
+        const finalSlY = Math.max(8 * dpr, Math.min(chartH - 8 * dpr, ySL + slOffset));
         ctx.fillStyle = 'rgba(244, 63, 94, 0.90)';
         ctx.fillRect(x + boxW - slTm.width - 8 * dpr, finalSlY - 7 * dpr, slTm.width + 8 * dpr, 14 * dpr);
         ctx.fillStyle = '#FFFFFF';
@@ -1805,7 +1822,12 @@ export function renderChart(
         const entryText = `Entry: ${formatPrice(st.entryPrice)}`;
         const entryTm = ctx.measureText(entryText);
         const entryBadgeH = 14 * dpr;
-        const entryBadgeY = isBull ? yEntry - entryBadgeH - 3 * dpr : yEntry + 3 * dpr;
+        let entryBadgeY = yEntry - entryBadgeH / 2;
+        if (yCur > 0 && Math.abs(yEntry - yCur) < 14 * dpr) {
+          entryBadgeY += isBull ? -10 * dpr : 10 * dpr;
+        }
+        entryBadgeY = Math.max(4 * dpr, Math.min(chartH - entryBadgeH - 4 * dpr, entryBadgeY));
+
         ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
         ctx.fillRect(x + 4 * dpr, entryBadgeY, entryTm.width + 8 * dpr, entryBadgeH);
         ctx.strokeStyle = isBull ? '#059669' : '#DC2626';
@@ -1816,7 +1838,7 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(entryText, x + 8 * dpr, entryBadgeY + entryBadgeH / 2);
 
-        // 6. Header Setup Signal Pill Badge (Compact & Non-Overlapping)
+        // 6. Header Setup Signal Pill Badge (Placed at TOP-LEFT of bracket structure, never colliding with entry/price)
         const shortName = st.name
           .replace(/ \(Bullish\)| \(Bearish\)/g, '')
           .replace('Trend Continuation', 'BOS')
@@ -1824,27 +1846,26 @@ export function renderChart(
           .replace('Dealing Range ', '')
           .replace('Liquidity Pool ', '')
           .replace('Power of Three ', '');
-        const statusTag = st.status === 'RETESTING' ? 'RETEST' : (st.status === 'TARGET_HIT' ? 'TP HIT' : 'CONFIRMED');
         const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (1:${(st.riskReward || 2).toFixed(1)})`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(headerTag);
         const tw = tm.width + 10 * dpr;
         const th = 14 * dpr;
-        // Place header badge below SL for bulls, above SL for bears — away from entry/price overlap
-        const badgeY = isBull
-          ? Math.min(chartH - th - 4 * dpr, Math.max(ySL + 4 * dpr, yEntry + 22 * dpr))
-          : Math.max(4 * dpr, Math.min(ySL - th - 4 * dpr, yEntry - th - 22 * dpr));
+
+        // Place header badge above the upper boundary of the bracket
+        const upperBracketY = isBull ? yTP : ySL;
+        const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, upperBracketY - th - 5 * dpr));
 
         ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)';
-        ctx.fillRect(x, badgeY, tw, th);
+        ctx.fillRect(x + 4 * dpr, badgeY, tw, th);
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 1 * dpr;
-        ctx.strokeRect(x, badgeY, tw, th);
+        ctx.strokeRect(x + 4 * dpr, badgeY, tw, th);
 
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(headerTag, x + 5 * dpr, badgeY + th / 2);
+        ctx.fillText(headerTag, x + 9 * dpr, badgeY + th / 2);
         ctx.restore();
       }
     }
