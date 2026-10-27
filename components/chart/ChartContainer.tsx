@@ -260,6 +260,101 @@ export function ChartContainer({
       if (setupIdParam) {
         setTargetSetupId(setupIdParam);
       }
+
+      // Read indicators and strategies from URL parameters (e.g. from Screener Actions)
+      const indicatorsParam = sp.get('indicators');
+      const strategiesParam = sp.get('strategies');
+
+      if (indicatorsParam || strategiesParam) {
+        const activeTypes: { type: IndicatorType; period?: number; color?: string }[] = [];
+
+        // Parse strategiesParam
+        if (strategiesParam) {
+          const strats = decodeURIComponent(strategiesParam).split(',');
+          if (strats.includes('ma_alignment') || strats.includes('golden_cross') || strats.includes('death_cross')) {
+            activeTypes.push({ type: 'SMA', period: 50, color: '#38BDF8' });
+            activeTypes.push({ type: 'SMA', period: 200, color: '#F59E0B' });
+          }
+          if (strats.includes('ma_20_50_cross')) {
+            activeTypes.push({ type: 'SMA', period: 20, color: '#10B981' });
+            activeTypes.push({ type: 'SMA', period: 50, color: '#38BDF8' });
+          }
+          if (strats.includes('ema_9_21_cross')) {
+            activeTypes.push({ type: 'EMA', period: 9, color: '#A855F7' });
+            activeTypes.push({ type: 'EMA', period: 21, color: '#EC4899' });
+          }
+          if (strats.includes('rsi_momentum')) {
+            activeTypes.push({ type: 'RSI', period: 14, color: '#818CF8' });
+          }
+          if (strats.includes('macd_cross')) {
+            activeTypes.push({ type: 'MACD', color: '#38BDF8' });
+          }
+          if (strats.includes('bb_reversal')) {
+            activeTypes.push({ type: 'BOLLINGER_BANDS', period: 20, color: '#6366F1' });
+          }
+          if (strats.includes('breakout')) {
+            activeTypes.push({ type: 'DONCHIAN', period: 20, color: '#F97316' });
+          }
+          if (strats.includes('adx_trend')) {
+            activeTypes.push({ type: 'ADX', period: 14, color: '#EAB308' });
+            activeTypes.push({ type: 'EMA', period: 9, color: '#A855F7' });
+            activeTypes.push({ type: 'EMA', period: 21, color: '#EC4899' });
+          }
+          if (strats.some((s) => s.startsWith('smc_'))) {
+            setSmcConfig((prev) => {
+              const next = { ...prev, enabled: true };
+              saveStoredSmcConfig(next);
+              return next;
+            });
+          }
+        }
+
+        // Parse direct indicatorsParam
+        if (indicatorsParam) {
+          const inds = decodeURIComponent(indicatorsParam).split(',');
+          inds.forEach((ind) => {
+            const clean = ind.trim().toLowerCase();
+            if (clean === 'sma50' && !activeTypes.some((t) => t.type === 'SMA' && t.period === 50)) {
+              activeTypes.push({ type: 'SMA', period: 50, color: '#38BDF8' });
+            } else if (clean === 'sma200' && !activeTypes.some((t) => t.type === 'SMA' && t.period === 200)) {
+              activeTypes.push({ type: 'SMA', period: 200, color: '#F59E0B' });
+            } else if (clean === 'sma20' && !activeTypes.some((t) => t.type === 'SMA' && t.period === 20)) {
+              activeTypes.push({ type: 'SMA', period: 20, color: '#10B981' });
+            } else if (clean === 'ema9' && !activeTypes.some((t) => t.type === 'EMA' && t.period === 9)) {
+              activeTypes.push({ type: 'EMA', period: 9, color: '#A855F7' });
+            } else if (clean === 'ema21' && !activeTypes.some((t) => t.type === 'EMA' && t.period === 21)) {
+              activeTypes.push({ type: 'EMA', period: 21, color: '#EC4899' });
+            } else if (clean === 'rsi' && !activeTypes.some((t) => t.type === 'RSI')) {
+              activeTypes.push({ type: 'RSI', period: 14, color: '#818CF8' });
+            } else if (clean === 'macd' && !activeTypes.some((t) => t.type === 'MACD')) {
+              activeTypes.push({ type: 'MACD', color: '#38BDF8' });
+            } else if (clean === 'bollinger' && !activeTypes.some((t) => t.type === 'BOLLINGER_BANDS')) {
+              activeTypes.push({ type: 'BOLLINGER_BANDS', period: 20, color: '#6366F1' });
+            } else if (clean === 'donchian' && !activeTypes.some((t) => t.type === 'DONCHIAN')) {
+              activeTypes.push({ type: 'DONCHIAN', period: 20, color: '#F97316' });
+            } else if (clean === 'adx' && !activeTypes.some((t) => t.type === 'ADX')) {
+              activeTypes.push({ type: 'ADX', period: 14, color: '#EAB308' });
+            }
+          });
+        }
+
+        if (activeTypes.length > 0) {
+          const generatedConfigs: IndicatorConfig[] = activeTypes.map((item, idx) => {
+            const def = INDICATOR_DEFAULTS[item.type] || INDICATOR_DEFAULTS.SMA;
+            return {
+              ...def,
+              id: `${item.type.toLowerCase()}-${item.period || 'def'}-${idx}`,
+              type: item.type,
+              period: item.period ?? def.period,
+              color: item.color ?? def.color,
+              enabled: true,
+            };
+          });
+
+          setIndicatorConfigs(generatedConfigs);
+          localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(generatedConfigs));
+        }
+      }
     }
   }, []);
 

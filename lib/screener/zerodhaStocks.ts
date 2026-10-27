@@ -221,7 +221,7 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     currency: 'INR',
     currencySymbol: '₹',
     sector,
-    industry: sector,
+    industry: sector === 'Information Technology' ? 'IT - Software' : sector,
     marketCapCategory: estimatedMarketCap > 50000 ? 'Large' : estimatedMarketCap > 15000 ? 'Mid' : 'Small',
     isConsolidated: true,
     about: `${item.name} is a publicly traded corporate entity listed on the National Stock Exchange of India (NSE: ${item.symbol}, Zerodha Instrument Token: ${item.token}).`,

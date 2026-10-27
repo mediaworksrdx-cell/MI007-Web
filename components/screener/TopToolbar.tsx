@@ -71,12 +71,12 @@ export function TopToolbar({
         </div>
 
         {/* Global Search & Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 flex-1 justify-end min-w-0">
           {/* Company Search trigger */}
           <button
             type="button"
             onClick={onOpenSearchModal}
-            className="w-72 sm:w-88 md:w-[420px] h-9 px-4 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12.5px] font-bold hover:border-emerald-500 transition-all flex items-center justify-between gap-3 shadow-xs group cursor-pointer"
+            className="flex-1 min-w-[180px] max-w-xs sm:max-w-sm md:max-w-md h-9 px-4 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12.5px] font-bold hover:border-emerald-500 transition-all flex items-center justify-between gap-3 shadow-xs group cursor-pointer"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <svg className="w-3.5 h-3.5 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

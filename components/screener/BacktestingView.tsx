@@ -67,6 +67,12 @@ export function BacktestingView({
 }: BacktestingViewProps) {
   const [symbol, setSymbol] = useState(initialSymbol);
   const [strategyId, setStrategyId] = useState<StrategyId>(initialStrategyId);
+
+  // Sync state when props change (e.g. clicking Backtest on a stock in Technical Strategies screener)
+  useEffect(() => {
+    if (initialSymbol) setSymbol(initialSymbol);
+    if (initialStrategyId) setStrategyId(initialStrategyId);
+  }, [initialSymbol, initialStrategyId]);
   const [initialCapital, setInitialCapital] = useState(100000);
   const [takeProfitPct, setTakeProfitPct] = useState(10);
   const [stopLossPct, setStopLossPct] = useState(5);

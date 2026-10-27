@@ -29,6 +29,7 @@ export function QueryEditor({
   const [copiedLink, setCopiedLink] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const helperRef = useRef<HTMLDivElement>(null);
+  const toggleButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleShareScreenLink = () => {
     if (typeof window === 'undefined' || !query.trim()) return;
@@ -62,7 +63,11 @@ export function QueryEditor({
       }
     };
     const handleClickOutside = (e: MouseEvent) => {
-      if (helperRef.current && !helperRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (toggleButtonRef.current && toggleButtonRef.current.contains(target)) {
+        return;
+      }
+      if (helperRef.current && !helperRef.current.contains(target)) {
         setMetricHelperOpen(false);
       }
     };
@@ -193,6 +198,7 @@ export function QueryEditor({
 
           {/* Clean Metric Browser Helper Toggle */}
           <button
+            ref={toggleButtonRef}
             type="button"
             onClick={() => setMetricHelperOpen((v) => !v)}
             className={`px-2.5 py-1 rounded-lg border mono text-[11.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${

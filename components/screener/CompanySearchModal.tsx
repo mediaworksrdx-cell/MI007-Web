@@ -89,7 +89,7 @@ export function CompanySearchModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="relative w-full max-w-2xl rounded-2xl border-2 terminal-page-panel shadow-2xl overflow-hidden bg-[var(--theme-card-bg)] flex flex-col my-auto max-h-[85vh]">
         {/* Search Input Bar */}
         <div className="p-4 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] flex items-center gap-3">

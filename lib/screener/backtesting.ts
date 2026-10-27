@@ -263,6 +263,198 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
         }
         break;
       }
+
+      // ── Smart Money Concepts (SMC) Institutional Strategies (16 Strategies) ──
+      case 'smc_bos': {
+        const swingHigh = Math.max(...candles.slice(Math.max(0, i - 20), i).map((x) => x.high));
+        if (currentPrice > swingHigh && prevC.close <= swingHigh) {
+          isEntrySignal = true;
+        }
+        const recentLow = Math.min(...candles.slice(Math.max(0, i - 10), i).map((x) => x.low));
+        if (currentPrice < recentLow) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_choch': {
+        const s20 = sma20[i] || currentPrice;
+        if (prevC.close < s20 && currentPrice > s20 && currentPrice > prevC.high) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < s20 * 0.97) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_liquidity_sweep': {
+        const swingLow = Math.min(...candles.slice(Math.max(0, i - 15), i - 1).map((x) => x.low));
+        if (c.low < swingLow && currentPrice > swingLow) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < swingLow * 0.98) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_eqh_eql': {
+        const slice = candles.slice(Math.max(0, i - 10), i);
+        const minL = Math.min(...slice.map((x) => x.low));
+        if (Math.abs(c.low - minL) / minL < 0.003 && currentPrice > c.open) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < minL * 0.985) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_fvg': {
+        if (i >= 2) {
+          const fvgTop = candles[i - 2].high;
+          const fvgBottom = candles[i - 1].low;
+          if (fvgBottom > fvgTop && c.low <= fvgBottom && currentPrice > fvgTop) {
+            isEntrySignal = true;
+          }
+        }
+        if (currentPrice < (sma20[i] || currentPrice * 0.97)) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_order_block': {
+        if (i >= 3 && prevC.close > prevC.open && candles[i - 2].close < candles[i - 2].open) {
+          const obLevel = candles[i - 2].high;
+          if (c.low <= obLevel && currentPrice > obLevel) {
+            isEntrySignal = true;
+          }
+        }
+        if (currentPrice < (sma50[i] || currentPrice * 0.96)) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_breaker_block': {
+        const s50 = sma50[i] || currentPrice;
+        if (prevC.close <= s50 && currentPrice > s50 && c.volume > prevC.volume) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < s50 * 0.97) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_premium_discount': {
+        const high30 = Math.max(...candles.slice(Math.max(0, i - 30), i).map((x) => x.high));
+        const low30 = Math.min(...candles.slice(Math.max(0, i - 30), i).map((x) => x.low));
+        const range = high30 - low30;
+        if (range > 0) {
+          const eqPct = (currentPrice - low30) / range;
+          if (eqPct < 0.38 && currentPrice > prevC.high) {
+            isEntrySignal = true;
+          }
+          if (eqPct > 0.75) {
+            isExitSignal = true;
+          }
+        }
+        break;
+      }
+
+      case 'smc_mtf_confluence': {
+        const s50 = sma50[i] || 0;
+        const s200 = sma200[i] || 0;
+        const e9 = ema9[i] || 0;
+        const e21 = ema21[i] || 0;
+        if (currentPrice > s50 && s50 > s200 && e9 > e21 && prevC.close <= (ema9[i - 1] || 0)) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < s50) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_session_liquidity': {
+        if (c.low < prevC.low && currentPrice > prevC.close) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < prevC.low * 0.99) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_3stage_reversal': {
+        const r = rsi[i] ?? 50;
+        const s20 = sma20[i] || currentPrice;
+        if (r < 40 && currentPrice > prevC.high && currentPrice > s20) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < s20 * 0.97) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_bos_fvg_retest': {
+        const s20 = sma20[i] || currentPrice;
+        if (currentPrice > s20 && prevC.close <= s20 && c.volume > prevC.volume) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < s20 * 0.96) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_ob_fvg_confluence': {
+        const s50 = sma50[i] || currentPrice;
+        if (currentPrice > s50 && c.low <= s50 * 1.01 && currentPrice > c.open) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < s50 * 0.97) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_inducement_sweep': {
+        if (c.low < prevC.low && currentPrice > prevC.high) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < prevC.low * 0.985) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_amd': {
+        const e9 = ema9[i] || 0;
+        const e21 = ema21[i] || 0;
+        if (prevC.close < e21 && currentPrice > e9 && currentPrice > e21) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < e21 * 0.97) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_ifvg': {
+        const s20 = sma20[i] || currentPrice;
+        if (prevC.close <= s20 && currentPrice > s20) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < s20 * 0.97) {
+          isExitSignal = true;
+        }
+        break;
+      }
     }
 
     // Position Management Logic
