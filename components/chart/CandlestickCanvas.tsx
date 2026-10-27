@@ -236,7 +236,7 @@ export function CandlestickCanvas({
     }
 
     if (inlineTextEditor.mode === 'create') {
-      const newId = `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+      const newId = `draw_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       const newDrawing: DrawingItem = {
         id: newId,
         tool: inlineTextEditor.tool,
@@ -451,11 +451,13 @@ export function CandlestickCanvas({
 
   const lastNavigatedTargetRef = useRef<string | null>(null);
   const targetBeaconIndexRef = useRef<number | null>(null);
-  targetBeaconIndexRef.current = targetBeaconIndex;
   const isSurrogateBeaconRef = useRef(false);
-  isSurrogateBeaconRef.current = isSurrogateBeacon;
   const targetSetupIdRef = useRef<string | undefined>(targetSetupId);
-  targetSetupIdRef.current = targetSetupId;
+  useLayoutEffect(() => {
+    targetBeaconIndexRef.current = targetBeaconIndex;
+    isSurrogateBeaconRef.current = isSurrogateBeacon;
+    targetSetupIdRef.current = targetSetupId;
+  });
 
   // Auto-scroll and target beacon placement for SMC scanner deep-linking
   useEffect(() => {
@@ -807,49 +809,52 @@ export function CandlestickCanvas({
 
   // ── Sync latest props and states to refs for direct 120 FPS overlay rendering ──
   const cleanCandlesRef = useRef(cleanCandles);
-  cleanCandlesRef.current = cleanCandles;
   const chartTypeRef = useRef(chartType);
-  chartTypeRef.current = chartType;
   const showVolumeRef = useRef(showVolume);
-  showVolumeRef.current = showVolume;
   const showVolumePanelRef = useRef(showVolumePanel);
-  showVolumePanelRef.current = showVolumePanel;
   const showSmcOverlayRef = useRef(showSmcOverlay);
-  showSmcOverlayRef.current = showSmcOverlay;
   const smcConfigRef = useRef(smcConfig);
-  smcConfigRef.current = smcConfig;
   const showVolumeProfileRef = useRef(showVolumeProfile);
-  showVolumeProfileRef.current = showVolumeProfile;
   const indicatorsRef = useRef(indicators);
-  indicatorsRef.current = indicators;
   const indicatorResultsRef = useRef(indicatorResults);
-  indicatorResultsRef.current = indicatorResults;
   const currentPriceOverrideRef = useRef(currentPriceOverride);
-  currentPriceOverrideRef.current = currentPriceOverride;
   const timeframeRef = useRef(timeframe);
-  timeframeRef.current = timeframe;
   const cursorModeRef = useRef(cursorMode);
-  cursorModeRef.current = cursorMode;
   const drawingsRef = useRef(drawings);
-  drawingsRef.current = drawings;
   const drawingInProgressRef = useRef(drawingInProgress);
-  drawingInProgressRef.current = drawingInProgress;
   const selectedDrawingIdRef = useRef(selectedDrawingId);
-  selectedDrawingIdRef.current = selectedDrawingId;
   const isAllDrawingsHiddenRef = useRef(isAllDrawingsHidden);
-  isAllDrawingsHiddenRef.current = isAllDrawingsHidden;
   const priceScaleRatioRef = useRef(priceScaleRatio);
-  priceScaleRatioRef.current = priceScaleRatio;
   const priceOffsetRef = useRef(priceOffset);
-  priceOffsetRef.current = priceOffset;
   const startIdxRef = useRef(startIdx);
-  startIdxRef.current = startIdx;
   const endIdxRef = useRef(endIdx);
-  endIdxRef.current = endIdx;
   const dprRef = useRef(dpr);
-  dprRef.current = dpr;
   const sizeRef = useRef(size);
-  sizeRef.current = size;
+  // Keep latest-value refs in sync before paint (avoids writing refs during render)
+  useLayoutEffect(() => {
+    cleanCandlesRef.current = cleanCandles;
+    chartTypeRef.current = chartType;
+    showVolumeRef.current = showVolume;
+    showVolumePanelRef.current = showVolumePanel;
+    showSmcOverlayRef.current = showSmcOverlay;
+    smcConfigRef.current = smcConfig;
+    showVolumeProfileRef.current = showVolumeProfile;
+    indicatorsRef.current = indicators;
+    indicatorResultsRef.current = indicatorResults;
+    currentPriceOverrideRef.current = currentPriceOverride;
+    timeframeRef.current = timeframe;
+    cursorModeRef.current = cursorMode;
+    drawingsRef.current = drawings;
+    drawingInProgressRef.current = drawingInProgress;
+    selectedDrawingIdRef.current = selectedDrawingId;
+    isAllDrawingsHiddenRef.current = isAllDrawingsHidden;
+    priceScaleRatioRef.current = priceScaleRatio;
+    priceOffsetRef.current = priceOffset;
+    startIdxRef.current = startIdx;
+    endIdxRef.current = endIdx;
+    dprRef.current = dpr;
+    sizeRef.current = size;
+  });
 
   // ── Direct 120 FPS Overlay Canvas Render (Bypasses React Re-renders on Pointer Move) ──
   const renderOverlayNow = useCallback(() => {
@@ -2021,7 +2026,7 @@ export function CandlestickCanvas({
         setDrawingInProgress(null);
         return;
       } else {
-        const newId = `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+        const newId = `draw_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
         onAddDrawing?.({
           id: newId,
           tool: activeDrawingTool,
@@ -2043,7 +2048,7 @@ export function CandlestickCanvas({
     if (activeDrawingTool === 'BRUSH' || activeDrawingTool === 'HIGHLIGHTER') {
       isBrushingRef.current = true;
       const newBrush: DrawingItem = {
-        id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        id: `draw_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         tool: activeDrawingTool,
         points: [{ index: pt.index, time: pt.time, price: pt.price }],
         color: getDefaultToolColor(activeDrawingTool),
@@ -2061,7 +2066,7 @@ export function CandlestickCanvas({
       committedPointsRef.current = [{ index: pt.index, time: pt.time, price: pt.price }];
       const defaultColor = getDefaultToolColor(activeDrawingTool);
       setDrawingInProgress({
-        id: `draw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        id: `draw_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         tool: activeDrawingTool,
         points: [...committedPointsRef.current],
         color: defaultColor,

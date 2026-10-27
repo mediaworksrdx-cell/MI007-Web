@@ -34,17 +34,17 @@ export function useFnoDataFeed({
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
 
   const activeSymbolRef = useRef(symbol);
-  activeSymbolRef.current = symbol;
+  useEffect(() => {
+    activeSymbolRef.current = symbol;
+  }, [symbol]);
 
   // Fetch status once on mount
   useEffect(() => {
     let cancelled = false;
     async function loadStatus() {
       try {
-        let res = await fetch('/api/trade-engine/fno/status');
-        if (!res.ok) {
-          res = await fetch('/api/fno?action=status');
-        }
+        // Upstream /fno/status does not exist on the Trade Engine (404) — use dedicated route directly
+        const res = await fetch('/api/fno?action=status');
         if (res.ok) {
           const data = await res.json();
           if (!cancelled) setEngineStatus(data);
@@ -60,16 +60,15 @@ export function useFnoDataFeed({
   }, []);
 
   // Fetch live spot quote for the selected instrument
-  const fetchSpot = useCallback(async () => {
-    const sym = activeSymbolRef.current;
+  const fetchSpot = useCallback(async (symOverride?: string) => {
+    const sym = symOverride || activeSymbolRef.current;
     if (!sym) return;
+    activeSymbolRef.current = sym;
 
     try {
       setIsLoading(true);
-      let res = await fetch(`/api/trade-engine/fno/quote?symbol=${encodeURIComponent(sym)}`);
-      if (!res.ok) {
-        res = await fetch(`/api/fno?action=spot&symbol=${encodeURIComponent(sym)}`);
-      }
+      // Upstream /fno/quote does not exist on the Trade Engine (404) — use dedicated route directly
+      const res = await fetch(`/api/fno?action=spot&symbol=${encodeURIComponent(sym)}`);
       if (res.ok) {
         const data: FnoSpotQuote = await res.json();
         if (activeSymbolRef.current === sym && data && typeof data.price === 'number' && data.price > 0) {
@@ -88,7 +87,7 @@ export function useFnoDataFeed({
   // Trigger fetch whenever symbol changes
   useEffect(() => {
     setLiveSpot(fallbackSpot);
-    fetchSpot();
+    fetchSpot(symbol);
   }, [symbol, fallbackSpot, fetchSpot]);
 
   // Periodic polling interval
@@ -110,6 +109,6 @@ export function useFnoDataFeed({
     engineStatus,
     isLoading,
     lastUpdated,
-    refetch: fetchSpot,
+    refetch: () => { fetchSpot(); },
   };
 }

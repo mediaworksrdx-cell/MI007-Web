@@ -117,6 +117,41 @@ interface ChartSymbolSearchProps {
   backLabel?: string;
 }
 
+// Resolve active instrument metadata (pure; extracted for React Compiler memoization)
+function resolveCurrentInstrument(selectedSymbol: string) {
+  const clean = selectedSymbol.toUpperCase().replace(/[\s\/-]+/g, '');
+  const found = MASTER_CHART_INSTRUMENTS.find(
+    (i) => i.symbol.toUpperCase().replace(/[\s\/-]+/g, '') === clean
+  );
+  if (found) return found;
+
+  // Fallback: Check Zerodha stocks
+  const zd = searchZerodhaStocks(clean, 1)[0];
+  if (zd) {
+    return {
+      symbol: zd.symbol,
+      name: zd.name,
+      category: 'STOCK' as const,
+      market: 'INDIA' as const,
+      exchange: zd.exchange || 'NSE',
+      currency: '₹',
+      flag: '🇮🇳',
+      basePrice: zd.lastPrice || 1000,
+      sector: zd.sector || 'Indian Equity',
+    };
+  }
+
+  return {
+    symbol: selectedSymbol,
+    name: selectedSymbol,
+    category: 'STOCK' as const,
+    exchange: 'GLOBAL',
+    currency: '₹',
+    flag: '📈',
+    basePrice: 1000,
+  };
+}
+
 export function ChartSymbolSearch({
   selectedSymbol,
   market: _market,
@@ -158,39 +193,7 @@ export function ChartSymbolSearch({
   }, [isOpen]);
 
   // Find active instrument metadata
-  const currentInstrument = useMemo(() => {
-    const clean = selectedSymbol.toUpperCase().replace(/[\s\/-]+/g, '');
-    const found = MASTER_CHART_INSTRUMENTS.find(
-      (i) => i.symbol.toUpperCase().replace(/[\s\/-]+/g, '') === clean
-    );
-    if (found) return found;
-
-    // Fallback: Check Zerodha stocks
-    const zd = searchZerodhaStocks(clean, 1)[0];
-    if (zd) {
-      return {
-        symbol: zd.symbol,
-        name: zd.name,
-        category: 'STOCK' as const,
-        market: 'INDIA' as const,
-        exchange: zd.exchange || 'NSE',
-        currency: '₹',
-        flag: '🇮🇳',
-        basePrice: zd.lastPrice || 1000,
-        sector: zd.sector || 'Indian Equity',
-      };
-    }
-
-    return {
-      symbol: selectedSymbol,
-      name: selectedSymbol,
-      category: 'STOCK' as const,
-      exchange: 'GLOBAL',
-      currency: '₹',
-      flag: '📈',
-      basePrice: 1000,
-    };
-  }, [selectedSymbol]);
+  const currentInstrument = useMemo(() => resolveCurrentInstrument(selectedSymbol), [selectedSymbol]);
 
   // Compute live filtered suggestions
   const searchResults = useMemo(() => {

@@ -1268,24 +1268,73 @@ export function renderChart(
       ctx.restore();
     }
 
-    // 3. Swing Point Labels (HH, HL, LH, LL)
+    // 3. Swing Point Labels (HH, HL, LH, LL) - Non-Overlapping Collision Prevention & Density Control
     if (smcCfg.showSwings && smcData.swings) {
       ctx.save();
-      for (const sw of smcData.swings) {
-        if (sw.index < startIdx || sw.index >= endIdx) continue;
-        if (sw.isHigh && !isBearishMaster) continue;
-        if (!sw.isHigh && !isBullishMaster) continue;
+      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+      const th = 13 * dpr;
+
+      // Filter visible swings within horizontal window & master bias
+      const visibleSwings = smcData.swings.filter((sw) => {
+        if (sw.index < startIdx || sw.index >= endIdx) return false;
+        if (sw.isHigh && !isBearishMaster) return false;
+        if (!sw.isHigh && !isBullishMaster) return false;
+        return true;
+      });
+
+      // Density control: if viewport is dense (candleW < 14 * dpr), enforce min bar spacing
+      const minBarSpacing = candleW < 8 * dpr ? 5 : candleW < 14 * dpr ? 3 : 2;
+      const minPixelSpacing = 28 * dpr;
+
+      interface RenderedSwingPill {
+        x: number;
+        yBox: number;
+        w: number;
+        h: number;
+        isHigh: boolean;
+        index: number;
+      }
+      const renderedPills: RenderedSwingPill[] = [];
+
+      for (const sw of visibleSwings) {
         const li = sw.index - startIdx;
         const x = li * candleW + candleW / 2;
         const y = priceToY(sw.price);
         const isH = sw.isHigh;
-
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
         const text = sw.type;
         const tm = ctx.measureText(text);
         const tw = tm.width + 8 * dpr;
-        const th = 13 * dpr;
-        const yBox = isH ? y - th - 4 * dpr : y + 4 * dpr;
+        let yBox = isH ? y - th - 4 * dpr : y + 4 * dpr;
+
+        // Collision check against previously rendered swing labels
+        let skip = false;
+        for (const prev of renderedPills) {
+          const xDist = Math.abs(x - prev.x);
+          const barDist = Math.abs(sw.index - prev.index);
+
+          // If too close horizontally (pixel or bar spacing):
+          if (xDist < minPixelSpacing || barDist < minBarSpacing) {
+            // If on same side (both highs or both lows), eliminate redundant clutter
+            if (isH === prev.isHigh) {
+              skip = true;
+              break;
+            }
+            // If opposite side, check vertical collision
+            const yDist = Math.abs(yBox - prev.yBox);
+            if (yDist < th + 3 * dpr) {
+              if (isH) {
+                yBox = Math.min(yBox, prev.yBox - th - 3 * dpr);
+              } else {
+                yBox = Math.max(yBox, prev.yBox + prev.h + 3 * dpr);
+              }
+            }
+          }
+        }
+
+        if (skip) continue;
+
+        // Clamp yBox within chart viewport
+        yBox = Math.max(2 * dpr, Math.min(chartH - th - 2 * dpr, yBox));
 
         // Badge pill behind swing label for high contrast
         ctx.fillStyle = isH ? 'rgba(244, 63, 94, 0.18)' : 'rgba(16, 185, 129, 0.18)';
@@ -1298,6 +1347,8 @@ export function renderChart(
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(text, x, yBox + th / 2);
+
+        renderedPills.push({ x, yBox, w: tw, h: th, isHigh: isH, index: sw.index });
       }
       ctx.restore();
     }
@@ -1720,11 +1771,25 @@ export function renderChart(
       for (const st of setupsToRender) {
         const li = st.candleIndex - startIdx;
         const rawX = li * candleW + candleW / 2;
-        const minBracketW = 110 * dpr;
-        const maxBracketW = Math.max(minBracketW, Math.min(candleW * 5, 200 * dpr));
-        const bracketX = Math.max(5 * dpr, Math.min(rawX, chartW - minBracketW - 5 * dpr));
-        const boxW = Math.min(chartW - bracketX - 4 * dpr, maxBracketW);
-        const x = bracketX;
+        const lastCandleIdx = Math.min(endIdx - 1, candles.length - 1);
+        const currentCandleX = (lastCandleIdx - startIdx) * candleW + candleW / 2;
+
+        const minBracketW = 120 * dpr;
+        let x: number;
+        let boxW: number;
+
+        // An active setup must project across current market action and into the right margin
+        // so entry, stop loss, and targets are directly visible at current price.
+        if (rawX < 15 * dpr) {
+          // Formation happened to the left of the current viewport, but setup is actively live:
+          x = Math.max(8 * dpr, currentCandleX - 160 * dpr);
+          boxW = Math.min(chartW - x - 6 * dpr, Math.max(minBracketW, currentCandleX - x + 60 * dpr));
+        } else {
+          // Formation is visible on canvas: span from formation candle through current candle + forward projection
+          x = Math.max(5 * dpr, Math.min(rawX, chartW - minBracketW - 6 * dpr));
+          const targetW = Math.max(minBracketW, (currentCandleX - x) + 60 * dpr);
+          boxW = Math.min(chartW - x - 6 * dpr, targetW);
+        }
 
         const yEntry = priceToY(st.entryPrice);
         const ySL = priceToY(st.stopLoss);

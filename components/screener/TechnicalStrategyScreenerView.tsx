@@ -25,6 +25,9 @@ interface TechnicalStrategyScreenerViewProps {
   onBackToScreener: () => void;
 }
 
+// Evaluation cache (module-scoped: results are a pure function of the cache key)
+const TECH_EVAL_CACHE = new Map<string, StrategySignalResult[]>();
+
 export function TechnicalStrategyScreenerView({
   companies,
   market,
@@ -74,17 +77,17 @@ export function TechnicalStrategyScreenerView({
   }, [companies, searchQuery]);
 
   // Memoized evaluation cache: skips re-generating candles and indicator math if price is identical
-  const evalCacheRef = useRef<Map<string, StrategySignalResult[]>>(new Map());
 
   // Evaluate all 10 quantitative models across the target universe
   const scanResults = useMemo(() => {
     const list: StrategySignalResult[] = [];
-    const cache = evalCacheRef.current;
+    const cache = TECH_EVAL_CACHE;
+    if (cache.size > 5000) cache.clear();
 
     targetUniverse.forEach((comp) => {
       const live = getSymbolPrice(comp.symbol);
       const price = live?.price ?? comp.currentPrice;
-      const cacheKey = `${comp.symbol}:${price}`;
+      const cacheKey = `${comp.market}:${comp.symbol}:${price}`;
 
       let results = cache.get(cacheKey);
       if (!results) {

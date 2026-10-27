@@ -227,11 +227,9 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   const [status, setStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
   const [latencyMs, setLatencyMs] = useState<number>(18);
   const latencyMsRef = useRef<number>(18);
-  const storeRef = useRef<SymbolPriceStore | null>(null);
-  if (!storeRef.current) {
-    storeRef.current = new SymbolPriceStore(buildInitialPriceMap());
-  }
-  const [livePrices, setLivePrices] = useState<Map<string, LiveSymbolData>>(() => storeRef.current!.getMap());
+  // Stable store instance (lazy useState init avoids reading refs during render)
+  const [store] = useState<SymbolPriceStore>(() => new SymbolPriceStore(buildInitialPriceMap()));
+  const [livePrices, setLivePrices] = useState<Map<string, LiveSymbolData>>(() => store.getMap());
   const [cryptoPrices, setCryptoPrices] = useState<TradeEngineCrypto[]>([]);
   const [macroData, setMacroData] = useState<TradeEngineMacro[]>([
     { symbol: 'DXY', value: '104.20' },
@@ -255,8 +253,8 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     const now = Date.now();
     if (now - lastLivePricesUpdateRef.current >= 2000) {
       lastLivePricesUpdateRef.current = now;
-      if (storeRef.current) {
-        setLivePrices(new Map(storeRef.current.getMap()));
+      if (store) {
+        setLivePrices(new Map(store.getMap()));
       }
       if (lastTickRef.current) {
         setLastTick(lastTickRef.current);
@@ -267,8 +265,8 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
       throttleLivePricesTimeoutRef.current = setTimeout(() => {
         throttleLivePricesTimeoutRef.current = null;
         lastLivePricesUpdateRef.current = Date.now();
-        if (storeRef.current) {
-          setLivePrices(new Map(storeRef.current.getMap()));
+        if (store) {
+          setLivePrices(new Map(store.getMap()));
         }
         if (lastTickRef.current) {
           setLastTick(lastTickRef.current);
@@ -294,7 +292,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
       let mostRecentTick: TradeEngineTick | null = null;
 
-      const changed = storeRef.current?.updateBatch((prev) => {
+      const changed = store?.updateBatch((prev) => {
         const next = new Map(prev);
         const changedKeys = new Set<string>();
         for (const p of prices) {
@@ -363,7 +361,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
         lastTickRef.current = mostRecentTick;
       }
 
-      if (changed && storeRef.current) {
+      if (changed && store) {
         scheduleLivePricesUpdate();
       }
     } catch (err) {
@@ -382,7 +380,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
       let mostRecentTick: TradeEngineTick | null = null;
 
       // Index cryptos into livePrices map
-      const changed = storeRef.current?.updateBatch((prev) => {
+      const changed = store?.updateBatch((prev) => {
         const next = new Map(prev);
         const changedKeys = new Set<string>();
         for (const c of cryptos) {
@@ -456,7 +454,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
       const now = Date.now();
 
       // Index commodities, forex, and macro into livePrices map
-      const changed = storeRef.current?.updateBatch((prev) => {
+      const changed = store?.updateBatch((prev) => {
         const next = new Map(prev);
         const changedKeys = new Set<string>();
         for (const m of macros) {
@@ -662,7 +660,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             });
 
             const key = normalizeSymbolKey(sym);
-            const changed = storeRef.current?.updateBatch((prev) => {
+            const changed = store?.updateBatch((prev) => {
               const prevEntry = prev.get(key) || prev.get(sym);
               const dir = prevEntry
                 ? price > prevEntry.price ? 'up' : price < prevEntry.price ? 'down' : prevEntry.tickDirection
@@ -744,7 +742,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
             const key = normalizeSymbolKey(tick.symbol);
             const now = Date.now();
-            const changed = storeRef.current?.updateBatch((prev) => {
+            const changed = store?.updateBatch((prev) => {
               const prevEntry = prev.get(key) || prev.get(tick.symbol.toUpperCase());
               const dir = prevEntry
                 ? tick.price > prevEntry.price ? 'up' : tick.price < prevEntry.price ? 'down' : 'neutral'
@@ -824,13 +822,13 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
   const getSymbolPrice = useCallback((symbol: string): LiveSymbolData | undefined => {
     if (!symbol) return undefined;
-    return storeRef.current?.getSymbol(symbol);
+    return store?.getSymbol(symbol);
   }, []);
 
   const requestQuoteFetch = useCallback((symbol: string) => {
     if (!symbol) return;
     const cleanKey = normalizeSymbolKey(symbol);
-    if (storeRef.current?.getSymbol(symbol)) return;
+    if (store?.getSymbol(symbol)) return;
     if (pendingQuoteFetches.current.has(cleanKey)) return;
 
     pendingQuoteFetches.current.add(cleanKey);
@@ -846,7 +844,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             tickDirection: 'neutral',
             lastUpdated: Date.now(),
           };
-          storeRef.current?.updateBatch((prev) => {
+          store?.updateBatch((prev) => {
             const next = new Map(prev);
             const changedKeys = new Set<string>();
             changedKeys.add(cleanKey);
@@ -873,8 +871,8 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const subscribeToSymbol = useCallback((symbol: string, callback: () => void) => {
-    if (!storeRef.current) return () => {};
-    return storeRef.current.subscribeSymbol(symbol, callback);
+    if (!store) return () => {};
+    return store.subscribeSymbol(symbol, callback);
   }, []);
 
   const contextValue = useMemo<TradeEngineContextValue>(

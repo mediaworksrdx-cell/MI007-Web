@@ -278,6 +278,20 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
           fnoEngineStatus={fnoFeed.engineStatus}
         />
 
+        {/* ── Data transparency notice ── */}
+        <div
+          role="note"
+          className="mt-2 mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-amber-300/70 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 text-[11px] font-medium text-amber-800 dark:text-amber-300"
+        >
+          <span className="font-mono font-bold tracking-wide">MODELLED DATA</span>
+          <span>
+            Option chain strikes, premiums, OI, IV and Greeks are modelled from the live spot price — not exchange-reported values.
+          </span>
+          {fnoFeed.spotQuote?.source === 'catalog-fallback' && (
+            <span className="font-bold">Spot feed unavailable — using reference price.</span>
+          )}
+        </div>
+
         {/* ── Active Tab Workspace Body ── */}
         <div>
           {activeTab === 'overview' && (

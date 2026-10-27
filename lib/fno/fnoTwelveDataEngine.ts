@@ -119,7 +119,11 @@ export async function fetchFnoSpotQuote(symbol: string): Promise<FnoSpotQuote> {
     );
     if (res.ok) {
       const json = await res.json();
-      if (json && json.close && !json.code && json.status !== 'error') {
+      // Guard: Trade Engine may substitute a proxy instrument (e.g. SPX -> SPY ETF, ~10x off).
+      // Only accept the payload when the returned symbol matches what we asked for.
+      const returnedSym = typeof json?.symbol === 'string' ? json.symbol.trim().toUpperCase() : '';
+      const symbolMatches = !returnedSym || returnedSym === tdSymbol.toUpperCase();
+      if (json && symbolMatches && json.close && !json.code && json.status !== 'error') {
         const ltp = parseFloat(json.close);
         const prev = parseFloat(json.previous_close || json.close);
         const chg = parseFloat(json.change || (ltp - prev).toFixed(2));

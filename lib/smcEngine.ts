@@ -1181,8 +1181,19 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
   const recentLows = recentSwings.filter((s) => !s.isHigh);
 
   if (recentHighs.length > 0 && recentLows.length > 0) {
-    highPrice = Math.max(...recentHighs.map((s) => s.price));
-    lowPrice = Math.min(...recentLows.map((s) => s.price));
+    // Structural dealing range: anchor to the active confirmed impulse leg
+    const latestHigh = recentHighs[recentHighs.length - 1];
+    const latestLow = recentLows[recentLows.length - 1];
+
+    if (latestHigh.index > latestLow.index) {
+      // Upward impulse leg from latestLow to latestHigh
+      lowPrice = latestLow.price;
+      highPrice = latestHigh.price;
+    } else {
+      // Downward impulse leg from latestHigh to latestLow
+      highPrice = latestHigh.price;
+      lowPrice = latestLow.price;
+    }
   } else {
     for (const c of candles) {
       if (c.high > highPrice) highPrice = c.high;
@@ -1191,12 +1202,14 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
   }
 
   // Active Impulse Expansion Anchor:
-  // In institutional SMC, if live price or recent completed candles have broken
-  // beyond historical swing boundaries (ongoing impulse leg / breakout),
-  // the dealing range MUST dynamically incorporate the active impulse high and low
-  // so that Equilibrium, Premium, Discount, and OTE are NEVER stale or disjoint from current price action!
-  const activeLookback = Math.min(candles.length, 30);
-  for (let i = candles.length - activeLookback; i < candles.length; i++) {
+  // In institutional SMC, if live price or candles have broken beyond historical swing boundaries
+  // after the anchor swing points formed (ongoing impulse leg / breakout),
+  // the dealing range dynamically incorporates the active impulse expansion high and low.
+  const anchorStart = Math.min(
+    recentHighs[recentHighs.length - 1]?.index ?? (candles.length - 1),
+    recentLows[recentLows.length - 1]?.index ?? (candles.length - 1)
+  );
+  for (let i = anchorStart; i < candles.length; i++) {
     const bar = candles[i];
     if (bar.high > highPrice) highPrice = bar.high;
     if (bar.low < lowPrice && bar.low > 0) lowPrice = bar.low;
@@ -1499,25 +1512,14 @@ export function detectAll16SmcSetups(
             lifecycleState = 'TARGET_HIT';
             break;
           }
-          // Retest breakdown failure: close significantly below entry
-          if (bar.close < entryPrice - maxRetestDistance) {
+          // Hard deep-drop adverse failure (> 3.2% adverse drop below entry)
+          if (bar.close < entryPrice * 0.968) {
             status = 'INVALIDATED';
             lifecycleState = 'INVALIDATED';
             break;
           }
-          // Consecutive adverse bars
-          if (bar.close < entryPrice) {
-            adverseBars++;
-            if (adverseBars >= 3) {
-              status = 'INVALIDATED';
-              lifecycleState = 'INVALIDATED';
-              break;
-            }
-          } else {
-            adverseBars = 0;
-          }
-          // Valid retest tap
-          if (bar.low <= entryPrice && bar.close >= entryPrice - maxRetestDistance) {
+          // Valid retest tap in entry/demand zone (above stop loss)
+          if (bar.low <= entryPrice && bar.close > cleanStopLoss) {
             status = 'RETESTING';
             lifecycleState = 'RETESTED';
             retestCount++;
@@ -1535,25 +1537,14 @@ export function detectAll16SmcSetups(
             lifecycleState = 'TARGET_HIT';
             break;
           }
-          // Retest breakout failure: close significantly above entry
-          if (bar.close > entryPrice + maxRetestDistance) {
+          // Hard deep-rise adverse failure (> 3.2% adverse rise above entry)
+          if (bar.close > entryPrice * 1.032) {
             status = 'INVALIDATED';
             lifecycleState = 'INVALIDATED';
             break;
           }
-          // Consecutive adverse bars
-          if (bar.close > entryPrice) {
-            adverseBars++;
-            if (adverseBars >= 3) {
-              status = 'INVALIDATED';
-              lifecycleState = 'INVALIDATED';
-              break;
-            }
-          } else {
-            adverseBars = 0;
-          }
-          // Valid retest tap
-          if (bar.high >= entryPrice && bar.close <= entryPrice + maxRetestDistance) {
+          // Valid retest tap in entry/supply zone (below stop loss)
+          if (bar.high >= entryPrice && bar.close < cleanStopLoss) {
             status = 'RETESTING';
             lifecycleState = 'RETESTED';
             retestCount++;
@@ -1570,13 +1561,13 @@ export function detectAll16SmcSetups(
     }
 
     // 3. Current Bar Reality Invariant Check:
-    // If at the terminal candle, price has drifted deeply against entry, mark setup INVALIDATED / EXPIRED
+    // If at the terminal candle, price has breached stop loss or drifted deeply against entry (> 3.0%), mark setup INVALIDATED / EXPIRED
     const lastBar = candles[candles.length - 1];
     if (lastBar && (status === 'CONFIRMED' || status === 'RETESTING' || status === 'ENTRY_ZONE_REACHED')) {
-      if (isBull && lastBar.close < entryPrice - maxRetestDistance) {
+      if (isBull && (lastBar.close <= cleanStopLoss || lastBar.close < entryPrice * 0.97)) {
         status = 'INVALIDATED';
         lifecycleState = 'INVALIDATED';
-      } else if (!isBull && lastBar.close > entryPrice + maxRetestDistance) {
+      } else if (!isBull && (lastBar.close >= cleanStopLoss || lastBar.close > entryPrice * 1.03)) {
         status = 'INVALIDATED';
         lifecycleState = 'INVALIDATED';
       } else if (candles.length - 1 - candleIndex >= maxLifespanBars) {
@@ -1724,17 +1715,37 @@ export function detectAll16SmcSetups(
     const entry = (ob.topPrice + ob.bottomPrice) / 2;
     const sl = isBull ? ob.bottomPrice * 0.997 : ob.topPrice * 1.003;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
+
+    // Scan if price has actively retested this unmitigated order block
+    let lastRetestIdx = -1;
+    let lastRetestTime = ob.formationTime;
+    for (let k = ob.startIndex + 1; k < candles.length; k++) {
+      const c = candles[k];
+      const isRetest = isBull
+        ? (c.low <= ob.topPrice && c.high >= ob.bottomPrice && c.close >= ob.bottomPrice * 0.995)
+        : (c.high >= ob.bottomPrice && c.low <= ob.topPrice && c.close <= ob.topPrice * 1.005);
+      if (isRetest) {
+        lastRetestIdx = k;
+        lastRetestTime = c.openTime;
+      }
+    }
+
+    const anchorIdx = lastRetestIdx >= 0 ? lastRetestIdx : ob.startIndex;
+    const anchorTime = lastRetestIdx >= 0 ? lastRetestTime : ob.formationTime;
+    const statusOverride = lastRetestIdx >= 0 ? 'RETESTING' : undefined;
+
     setups.push(makeSetup(
       `setup_ob_${ob.id}`,
       isBull ? 'Bullish Demand Order Block Retest' : 'Bearish Supply Order Block Retest',
       'OB_RETEST',
       isBull ? 'BULLISH' : 'BEARISH',
-      ob.startIndex,
-      ob.formationTime,
+      anchorIdx,
+      anchorTime,
       entry,
       sl,
       tp,
-      `High-volume order block [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] with ${ob.volumeRatio.toFixed(1)}x impulse volume.`
+      `High-volume ${isBull ? 'Demand' : 'Supply'} order block [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] ${lastRetestIdx >= 0 ? 'actively retested' : 'confirmed'}.`,
+      statusOverride
     ));
   }
 
@@ -1745,17 +1756,37 @@ export function detectAll16SmcSetups(
     const entry = (brk.topPrice + brk.bottomPrice) / 2;
     const sl = isBull ? brk.bottomPrice * 0.997 : brk.topPrice * 1.003;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
+
+    // Scan if price has actively retested this breaker block
+    let lastRetestIdx = -1;
+    let lastRetestTime = brk.formationTime;
+    for (let k = brk.startIndex + 1; k < candles.length; k++) {
+      const c = candles[k];
+      const isRetest = isBull
+        ? (c.low <= brk.topPrice && c.high >= brk.bottomPrice && c.close >= brk.bottomPrice * 0.995)
+        : (c.high >= brk.bottomPrice && c.low <= brk.topPrice && c.close <= brk.topPrice * 1.005);
+      if (isRetest) {
+        lastRetestIdx = k;
+        lastRetestTime = c.openTime;
+      }
+    }
+
+    const anchorIdx = lastRetestIdx >= 0 ? lastRetestIdx : brk.startIndex;
+    const anchorTime = lastRetestIdx >= 0 ? lastRetestTime : brk.formationTime;
+    const statusOverride = lastRetestIdx >= 0 ? 'RETESTING' : undefined;
+
     setups.push(makeSetup(
       `setup_breaker_${brk.id}`,
       isBull ? 'Bullish Breaker Block Role Reversal' : 'Bearish Breaker Block Role Reversal',
       'BREAKER_RETEST',
       isBull ? 'BULLISH' : 'BEARISH',
-      brk.startIndex,
-      brk.formationTime,
+      anchorIdx,
+      anchorTime,
       entry,
       sl,
       tp,
-      `Failed order block flipped polarity at [${brk.bottomPrice.toFixed(2)} - ${brk.topPrice.toFixed(2)}].`
+      `Failed order block flipped polarity at [${brk.bottomPrice.toFixed(2)} - ${brk.topPrice.toFixed(2)}] ${lastRetestIdx >= 0 ? 'actively retested' : 'confirmed'}.`,
+      statusOverride
     ));
   }
 
@@ -2171,7 +2202,9 @@ export function calculateSMC(
     return true;
   });
 
-  const confirmedSetups = filteredSetups.filter((s) => s.status === 'CONFIRMED' || s.status === 'RETESTING');
+  const confirmedSetups = filteredSetups.filter(
+    (s) => s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED'
+  );
 
   const result: SmcAnalysis = {
     swings,

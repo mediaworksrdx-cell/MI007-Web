@@ -105,6 +105,9 @@ const SETUP_TYPE_LABELS: Record<SmcSetupType, { label: string; badgeClass: strin
   },
 };
 
+// SMC scan cache (module-scoped: results are a pure function of the cache key)
+const SMC_SCAN_CACHE = new Map<string, ScannedSmcItem[]>();
+
 export function SmcScannerView({
   companies,
   market,
@@ -147,17 +150,17 @@ export function SmcScannerView({
   }, [companies, searchQuery]);
 
   // SMC Scan Cache
-  const scanCacheRef = useRef<Map<string, ScannedSmcItem[]>>(new Map());
 
   // Execute quantitative SMC scanning across universe
   const scanResults = useMemo(() => {
     const list: ScannedSmcItem[] = [];
-    const cache = scanCacheRef.current;
+    const cache = SMC_SCAN_CACHE;
+    if (cache.size > 5000) cache.clear();
 
     targetUniverse.forEach((comp) => {
       const live = getSymbolPrice(comp.symbol);
       const price = live?.price ?? comp.currentPrice;
-      const cacheKey = `${comp.symbol}:${timeframe}:${price}`;
+      const cacheKey = `${market}:${comp.symbol}:${timeframe}:${price}`;
 
       let items = cache.get(cacheKey);
       if (!items) {

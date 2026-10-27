@@ -1371,11 +1371,21 @@ export function ChartToolbar({
 
       {/* ── Right Controls: Live Beacon & Quote ── */}
       <div className="flex items-center gap-2.5 shrink-0 ml-auto">
-        {/* Beacon */}
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300 shadow-xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>CONNECTED</span>
-        </div>
+        {/* Beacon — reflects real data source (engine vs. offline demo fallback) */}
+        {isLiveFromEngine ? (
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>CONNECTED</span>
+          </div>
+        ) : (
+          <div
+            title="Trade Engine returned no candles for this symbol. Showing simulated demo data — not real market prices."
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-700/70 bg-amber-50 dark:bg-amber-900/30 text-[11px] font-mono font-bold text-amber-700 dark:text-amber-300 shadow-xs"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span>DEMO DATA</span>
+          </div>
+        )}
 
         {/* Price Tracker */}
         {displayPrice !== undefined && displayPrice > 0 && (
