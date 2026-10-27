@@ -121,6 +121,32 @@ export function BacktestingView({
 
   const activeStrategy = STRATEGY_DEFINITIONS.find((s) => s.id === strategyId);
 
+  // Strategy-specific chart link ensuring only this strategy's corresponding indicators/SMC state render
+  const strategyChartHref = useMemo(() => {
+    const isSmc = strategyId.startsWith('smc_');
+    const indList: string[] = [];
+    if (strategyId === 'ma_alignment' || strategyId === 'golden_cross' || strategyId === 'death_cross') {
+      indList.push('sma50', 'sma200');
+    } else if (strategyId === 'ma_20_50_cross') {
+      indList.push('sma20', 'sma50');
+    } else if (strategyId === 'ema_9_21_cross') {
+      indList.push('ema9', 'ema21');
+    } else if (strategyId === 'rsi_momentum') {
+      indList.push('rsi');
+    } else if (strategyId === 'macd_cross') {
+      indList.push('macd');
+    } else if (strategyId === 'bb_reversal') {
+      indList.push('bollinger');
+    } else if (strategyId === 'breakout') {
+      indList.push('donchian');
+    } else if (strategyId === 'adx_trend') {
+      indList.push('adx', 'ema9', 'ema21');
+    }
+    const stratParam = encodeURIComponent(strategyId);
+    const indParam = encodeURIComponent(indList.join(','));
+    return `/chart/${activeCompany.symbol}?market=${activeCompany.market}&tf=1D&smc=${isSmc ? `1&setupId=${strategyId}` : '0'}&strategies=${stratParam}&indicators=${indParam}&from=screener`;
+  }, [activeCompany.symbol, activeCompany.market, strategyId]);
+
   // Adjusted trades with any manual user exits applied
   const displayedTrades = useMemo<BacktestTrade[]>(() => {
     return backtestResult.trades.map((t) => {
@@ -295,7 +321,7 @@ export function BacktestingView({
 
           {/* View Chart Link */}
           <Link
-            href={`/chart/${activeCompany.symbol}?market=${activeCompany.market}&from=screener`}
+            href={strategyChartHref}
             onClick={() => {
               if (typeof window !== 'undefined') {
                 sessionStorage.setItem('mi007_return_tab', 'backtesting');
@@ -654,7 +680,7 @@ export function BacktestingView({
 
         <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0">
           <Link
-            href={`/chart/${activeCompany.symbol}?market=${activeCompany.market}&from=screener`}
+            href={strategyChartHref}
             onClick={() => {
               if (typeof window !== 'undefined') {
                 sessionStorage.setItem('mi007_return_tab', 'backtesting');

@@ -303,7 +303,7 @@ export function ChartSymbolSearch({
   return (
     <div
       ref={containerRef}
-      className="relative z-50 flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-[#070A12] backdrop-blur-md"
+      className="relative z-[80] flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-[#070A12] backdrop-blur-md"
     >
       {/* ── Left side: Active Symbol Badge & Quick Search Trigger ── */}
       <div className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0">
@@ -380,7 +380,7 @@ export function ChartSymbolSearch({
 
           {/* ── Expandable Floating Search Dropdown (Institutional TV Style) ── */}
       {isOpen && (
-        <div className="absolute top-full left-0 w-full min-w-[340px] sm:min-w-[480px] max-w-xl mt-1.5 max-h-96 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/98 dark:bg-[#0A0E1A]/98 backdrop-blur-xl shadow-2xl z-[120] overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-100">
+        <div className="absolute top-full left-0 right-0 w-full mt-1.5 max-h-96 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/98 dark:bg-[#0A0E1A]/98 backdrop-blur-xl shadow-2xl z-[150] overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-100">
           {/* Category Tabs Header */}
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/80 px-3 py-2 flex-wrap gap-1.5">
             <div className="flex items-center gap-1">

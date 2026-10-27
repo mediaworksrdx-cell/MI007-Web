@@ -384,43 +384,32 @@ export function TechnicalStrategyScreenerView({
                   const isBull = res.direction === 'bullish';
                   const isBear = res.direction === 'bearish';
 
-                  // Identify all strategies that this stock currently qualifies for
-                  const qualifiedForSymbol = scanResults.filter(
-                    (s) => s.symbol.toUpperCase() === res.symbol.toUpperCase()
-                  );
-                  const qualifiedStratIds = Array.from(new Set(qualifiedForSymbol.map((s) => s.strategyId)));
-                  const hasSmc = qualifiedStratIds.some((id) => id.startsWith('smc_'));
+                  // Strategy-specific chart indicator isolation
+                  // Only plot indicators corresponding strictly to this specific strategy row so the user clearly interprets the setup
+                  const isSmc = res.strategyId.startsWith('smc_');
+                  const indicatorsToEnable: string[] = [];
 
-                  // Map qualified strategies to indicators that explain the setup on the chart
-                  const indicatorsToEnable = new Set<string>();
-                  qualifiedStratIds.forEach((sid) => {
-                    if (sid === 'ma_alignment' || sid === 'golden_cross' || sid === 'death_cross') {
-                      indicatorsToEnable.add('sma50');
-                      indicatorsToEnable.add('sma200');
-                    } else if (sid === 'ma_20_50_cross') {
-                      indicatorsToEnable.add('sma20');
-                      indicatorsToEnable.add('sma50');
-                    } else if (sid === 'ema_9_21_cross') {
-                      indicatorsToEnable.add('ema9');
-                      indicatorsToEnable.add('ema21');
-                    } else if (sid === 'rsi_momentum') {
-                      indicatorsToEnable.add('rsi');
-                    } else if (sid === 'macd_cross') {
-                      indicatorsToEnable.add('macd');
-                    } else if (sid === 'bb_reversal') {
-                      indicatorsToEnable.add('bollinger');
-                    } else if (sid === 'breakout') {
-                      indicatorsToEnable.add('donchian');
-                      indicatorsToEnable.add('sma50');
-                    } else if (sid === 'adx_trend') {
-                      indicatorsToEnable.add('adx');
-                      indicatorsToEnable.add('ema9');
-                      indicatorsToEnable.add('ema21');
-                    }
-                  });
-                  const stratParam = encodeURIComponent(qualifiedStratIds.join(','));
-                  const indParam = encodeURIComponent(Array.from(indicatorsToEnable).join(','));
-                  const chartHref = `/chart/${res.symbol}?market=${res.market}&tf=1D${hasSmc ? `&smc=1&setupId=${res.strategyId}` : ''}&strategies=${stratParam}&indicators=${indParam}&from=screener`;
+                  if (res.strategyId === 'ma_alignment' || res.strategyId === 'golden_cross' || res.strategyId === 'death_cross') {
+                    indicatorsToEnable.push('sma50', 'sma200');
+                  } else if (res.strategyId === 'ma_20_50_cross') {
+                    indicatorsToEnable.push('sma20', 'sma50');
+                  } else if (res.strategyId === 'ema_9_21_cross') {
+                    indicatorsToEnable.push('ema9', 'ema21');
+                  } else if (res.strategyId === 'rsi_momentum') {
+                    indicatorsToEnable.push('rsi');
+                  } else if (res.strategyId === 'macd_cross') {
+                    indicatorsToEnable.push('macd');
+                  } else if (res.strategyId === 'bb_reversal') {
+                    indicatorsToEnable.push('bollinger');
+                  } else if (res.strategyId === 'breakout') {
+                    indicatorsToEnable.push('donchian');
+                  } else if (res.strategyId === 'adx_trend') {
+                    indicatorsToEnable.push('adx', 'ema9', 'ema21');
+                  }
+
+                  const stratParam = encodeURIComponent(res.strategyId);
+                  const indParam = encodeURIComponent(indicatorsToEnable.join(','));
+                  const chartHref = `/chart/${res.symbol}?market=${res.market}&tf=1D&smc=${isSmc ? `1&setupId=${res.strategyId}` : '0'}&strategies=${stratParam}&indicators=${indParam}&from=screener`;
 
                   return (
                     <tr key={`${res.symbol}-${res.strategyId}-${i}`} className="hover:bg-emerald-500/5 transition-colors group">

@@ -67,7 +67,7 @@ export function CompanyAnalysisView({
     const factor = 0.86;
     const profitFactor = 0.82;
 
-    const standaloneQuarterly = activeFinancials.quarterly.map((q) => ({
+    const standaloneQuarterly = company.quarterlyResults.map((q) => ({
       ...q,
       sales: Math.round(q.sales * factor),
       expenses: Math.round(q.expenses * factor),
@@ -80,7 +80,7 @@ export function CompanyAnalysisView({
       eps: Math.round(q.eps * profitFactor * 100) / 100,
     }));
 
-    const standaloneAnnualPl = activeFinancials.annualPl.map((pl) => ({
+    const standaloneAnnualPl = company.annualProfitLoss.map((pl) => ({
       ...pl,
       sales: Math.round(pl.sales * factor),
       expenses: Math.round(pl.expenses * factor),
@@ -93,7 +93,7 @@ export function CompanyAnalysisView({
       eps: Math.round(pl.eps * profitFactor * 100) / 100,
     }));
 
-    const standaloneBalanceSheet = activeFinancials.balanceSheet.map((bs) => ({
+    const standaloneBalanceSheet = company.balanceSheet.map((bs) => ({
       ...bs,
       borrowings: Math.round(bs.borrowings * 0.78),
       reserves: Math.round(bs.reserves * 0.84),
@@ -106,7 +106,7 @@ export function CompanyAnalysisView({
       totalAssets: Math.round(bs.totalAssets * 0.82),
     }));
 
-    const standaloneCashFlow = activeFinancials.cashFlow.map((cf) => ({
+    const standaloneCashFlow = company.cashFlow.map((cf) => ({
       ...cf,
       cashFromOperating: Math.round(cf.cashFromOperating * factor),
       cashFromInvesting: Math.round(cf.cashFromInvesting * 0.85),
@@ -115,7 +115,7 @@ export function CompanyAnalysisView({
       freeCashFlow: Math.round((cf.freeCashFlow || 0) * factor),
     }));
 
-    const standaloneRatios = activeFinancials.ratios.map((r) => ({
+    const standaloneRatios = company.historicalRatios.map((r) => ({
       ...r,
       rocePct: Math.round(r.rocePct * 1.05 * 10) / 10,
       roePct: Math.round(r.roePct * 0.95 * 10) / 10,
@@ -667,7 +667,6 @@ export function CompanyAnalysisView({
             {[
               { id: 'quarterly', label: 'Quarterly Results' },
               { id: 'pl', label: 'Profit & Loss (Annual)' },
-              { id: 'growth', label: 'Growth & Return Metrics' },
               { id: 'growth', label: 'Growth & Return Metrics' },
               { id: 'balanceSheet', label: 'Balance Sheet' },
               { id: 'cashFlow', label: 'Cash Flows' },
@@ -1384,13 +1383,44 @@ export function CompanyAnalysisView({
         {/* Tab 7: Interactive Technical Candlestick Chart */}
         {activeTab === 'technicals' && (
           <div id="company-live-chart" className="p-2 sm:p-4 animate-in fade-in duration-150">
-            <div className="mb-2 px-1 flex items-center justify-between">
-              <span className="mono text-xs font-bold text-emerald-400">
-                ⚡ Interactive Live Candlestick Chart ({isConsolidated ? 'Consolidated Group View' : 'Standalone Parent View'})
-              </span>
-              <span className="mono text-[11px] text-[var(--theme-card-text-muted)]">
-                Scroll / drag to navigate · Multi-indicator overlays supported
-              </span>
+            <div className="mb-3 px-1 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <span className="mono text-xs sm:text-sm font-black text-emerald-400">
+                  ⚡ Interactive Live Candlestick Chart
+                </span>
+                <span className="mono text-[11px] text-[var(--theme-card-text-muted)] block sm:inline sm:ml-2 font-medium">
+                  ({activeFinancials.modeLabel})
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="mono text-[11px] font-bold text-[var(--theme-card-text-muted)] uppercase">
+                  Chart Mode:
+                </span>
+                <div className="flex items-center p-0.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => setIsConsolidated(true)}
+                    className={`px-3 py-1 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
+                      isConsolidated
+                        ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                        : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
+                    }`}
+                  >
+                    Consolidated
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsConsolidated(false)}
+                    className={`px-3 py-1 rounded-lg mono text-[11px] font-black transition-all cursor-pointer ${
+                      !isConsolidated
+                        ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                        : 'text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
+                    }`}
+                  >
+                    Standalone
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="w-full rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xl overflow-hidden min-h-[750px] h-[calc(100vh-14rem)] flex flex-col">
               <ChartContainer

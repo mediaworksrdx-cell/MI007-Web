@@ -214,7 +214,23 @@ export function ChartContainer({
   const [showVolume, setShowVolume] = useState(true);
   const [showVolumePanel, setShowVolumePanel] = useState(false);
   const [smcConfig, setSmcConfig] = useState<SmcConfig>(() => {
-    return getStoredSmcConfig();
+    const stored = getStoredSmcConfig();
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      const smcParam = sp.get('smc');
+      if (smcParam === '1' || smcParam === 'true') {
+        return { ...stored, enabled: true };
+      }
+      if (smcParam === '0' || smcParam === 'false') {
+        return { ...stored, enabled: false };
+      }
+      const stratParam = sp.get('strategies');
+      if (stratParam) {
+        const hasSmc = decodeURIComponent(stratParam).split(',').some(s => s.startsWith('smc_'));
+        return { ...stored, enabled: hasSmc };
+      }
+    }
+    return stored;
   });
   const showSmcOverlay = smcConfig.enabled;
   const setShowSmcOverlay = useCallback((valOrFn: boolean | ((prev: boolean) => boolean)) => {
@@ -234,17 +250,33 @@ export function ChartContainer({
   const [targetCandleTime, setTargetCandleTime] = useState<number | undefined>();
   const [targetSetupId, setTargetSetupId] = useState<string | undefined>();
 
-  // Detect URL parameter for initial SMC mode activation (e.g. from SMC scanner)
+  // Detect URL parameter for initial SMC mode activation (e.g. from SMC scanner or screener)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search);
-      if (sp.get('smc') === '1' || sp.get('smc') === 'true') {
+      const smcParam = sp.get('smc');
+      const strategiesParam = sp.get('strategies');
+      const indicatorsParam = sp.get('indicators');
+
+      const hasSmcStrat = strategiesParam
+        ? decodeURIComponent(strategiesParam).split(',').some(s => s.startsWith('smc_'))
+        : false;
+
+      if (smcParam === '1' || smcParam === 'true' || hasSmcStrat) {
         setSmcConfig(prev => {
           const next = { ...prev, enabled: true };
           saveStoredSmcConfig(next);
           return next;
         });
+      } else if (smcParam === '0' || smcParam === 'false' || strategiesParam || indicatorsParam) {
+        // Explicitly disable SMC overlay for pure technical strategies
+        setSmcConfig(prev => {
+          const next = { ...prev, enabled: false };
+          saveStoredSmcConfig(next);
+          return next;
+        });
       }
+
       const tfParam = sp.get('tf') as Timeframe;
       if (tfParam && ['1m', '5m', '15m', '30m', '1H', '4H', '1D', '1W', '1M'].includes(tfParam)) {
         setTimeframe(tfParam);
@@ -262,10 +294,7 @@ export function ChartContainer({
       }
 
       // Read indicators and strategies from URL parameters (e.g. from Screener Actions)
-      const indicatorsParam = sp.get('indicators');
-      const strategiesParam = sp.get('strategies');
-
-      if (indicatorsParam || strategiesParam) {
+      if (indicatorsParam !== null || strategiesParam !== null) {
         const activeTypes: { type: IndicatorType; period?: number; color?: string }[] = [];
 
         // Parse strategiesParam
@@ -300,13 +329,6 @@ export function ChartContainer({
             activeTypes.push({ type: 'EMA', period: 9, color: '#A855F7' });
             activeTypes.push({ type: 'EMA', period: 21, color: '#EC4899' });
           }
-          if (strats.some((s) => s.startsWith('smc_'))) {
-            setSmcConfig((prev) => {
-              const next = { ...prev, enabled: true };
-              saveStoredSmcConfig(next);
-              return next;
-            });
-          }
         }
 
         // Parse direct indicatorsParam
@@ -338,22 +360,21 @@ export function ChartContainer({
           });
         }
 
-        if (activeTypes.length > 0) {
-          const generatedConfigs: IndicatorConfig[] = activeTypes.map((item, idx) => {
-            const def = INDICATOR_DEFAULTS[item.type] || INDICATOR_DEFAULTS.SMA;
-            return {
-              ...def,
-              id: `${item.type.toLowerCase()}-${item.period || 'def'}-${idx}`,
-              type: item.type,
-              period: item.period ?? def.period,
-              color: item.color ?? def.color,
-              enabled: true,
-            };
-          });
+        // Set strictly to the strategy's corresponding indicators (empty if none requested)
+        const generatedConfigs: IndicatorConfig[] = activeTypes.map((item, idx) => {
+          const def = INDICATOR_DEFAULTS[item.type] || INDICATOR_DEFAULTS.SMA;
+          return {
+            ...def,
+            id: `${item.type.toLowerCase()}-${item.period || 'def'}-${idx}`,
+            type: item.type,
+            period: item.period ?? def.period,
+            color: item.color ?? def.color,
+            enabled: true,
+          };
+        });
 
-          setIndicatorConfigs(generatedConfigs);
-          localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(generatedConfigs));
-        }
+        setIndicatorConfigs(generatedConfigs);
+        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(generatedConfigs));
       }
     }
   }, []);
@@ -362,6 +383,84 @@ export function ChartContainer({
   const [indicatorConfigs, setIndicatorConfigs] = useState<IndicatorConfig[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
+      // If URL specified indicators or strategies, initialize strictly to those indicators immediately
+      const sp = new URLSearchParams(window.location.search);
+      const indParam = sp.get('indicators');
+      const stratParam = sp.get('strategies');
+      if (indParam !== null || stratParam !== null) {
+        const initialTypes: { type: IndicatorType; period?: number; color?: string }[] = [];
+        if (stratParam) {
+          const strats = decodeURIComponent(stratParam).split(',');
+          if (strats.includes('ma_alignment') || strats.includes('golden_cross') || strats.includes('death_cross')) {
+            initialTypes.push({ type: 'SMA', period: 50, color: '#38BDF8' });
+            initialTypes.push({ type: 'SMA', period: 200, color: '#F59E0B' });
+          }
+          if (strats.includes('ma_20_50_cross')) {
+            initialTypes.push({ type: 'SMA', period: 20, color: '#10B981' });
+            initialTypes.push({ type: 'SMA', period: 50, color: '#38BDF8' });
+          }
+          if (strats.includes('ema_9_21_cross')) {
+            initialTypes.push({ type: 'EMA', period: 9, color: '#A855F7' });
+            initialTypes.push({ type: 'EMA', period: 21, color: '#EC4899' });
+          }
+          if (strats.includes('rsi_momentum')) {
+            initialTypes.push({ type: 'RSI', period: 14, color: '#818CF8' });
+          }
+          if (strats.includes('macd_cross')) {
+            initialTypes.push({ type: 'MACD', color: '#38BDF8' });
+          }
+          if (strats.includes('bb_reversal')) {
+            initialTypes.push({ type: 'BOLLINGER_BANDS', period: 20, color: '#6366F1' });
+          }
+          if (strats.includes('breakout')) {
+            initialTypes.push({ type: 'DONCHIAN', period: 20, color: '#F97316' });
+          }
+          if (strats.includes('adx_trend')) {
+            initialTypes.push({ type: 'ADX', period: 14, color: '#EAB308' });
+            initialTypes.push({ type: 'EMA', period: 9, color: '#A855F7' });
+            initialTypes.push({ type: 'EMA', period: 21, color: '#EC4899' });
+          }
+        }
+        if (indParam) {
+          const inds = decodeURIComponent(indParam).split(',');
+          inds.forEach((ind) => {
+            const clean = ind.trim().toLowerCase();
+            if (clean === 'sma50' && !initialTypes.some((t) => t.type === 'SMA' && t.period === 50)) {
+              initialTypes.push({ type: 'SMA', period: 50, color: '#38BDF8' });
+            } else if (clean === 'sma200' && !initialTypes.some((t) => t.type === 'SMA' && t.period === 200)) {
+              initialTypes.push({ type: 'SMA', period: 200, color: '#F59E0B' });
+            } else if (clean === 'sma20' && !initialTypes.some((t) => t.type === 'SMA' && t.period === 20)) {
+              initialTypes.push({ type: 'SMA', period: 20, color: '#10B981' });
+            } else if (clean === 'ema9' && !initialTypes.some((t) => t.type === 'EMA' && t.period === 9)) {
+              initialTypes.push({ type: 'EMA', period: 9, color: '#A855F7' });
+            } else if (clean === 'ema21' && !initialTypes.some((t) => t.type === 'EMA' && t.period === 21)) {
+              initialTypes.push({ type: 'EMA', period: 21, color: '#EC4899' });
+            } else if (clean === 'rsi' && !initialTypes.some((t) => t.type === 'RSI')) {
+              initialTypes.push({ type: 'RSI', period: 14, color: '#818CF8' });
+            } else if (clean === 'macd' && !initialTypes.some((t) => t.type === 'MACD')) {
+              initialTypes.push({ type: 'MACD', color: '#38BDF8' });
+            } else if (clean === 'bollinger' && !initialTypes.some((t) => t.type === 'BOLLINGER_BANDS')) {
+              initialTypes.push({ type: 'BOLLINGER_BANDS', period: 20, color: '#6366F1' });
+            } else if (clean === 'donchian' && !initialTypes.some((t) => t.type === 'DONCHIAN')) {
+              initialTypes.push({ type: 'DONCHIAN', period: 20, color: '#F97316' });
+            } else if (clean === 'adx' && !initialTypes.some((t) => t.type === 'ADX')) {
+              initialTypes.push({ type: 'ADX', period: 14, color: '#EAB308' });
+            }
+          });
+        }
+        return initialTypes.map((item, idx) => {
+          const def = INDICATOR_DEFAULTS[item.type] || INDICATOR_DEFAULTS.SMA;
+          return {
+            ...def,
+            id: `${item.type.toLowerCase()}-${item.period || 'def'}-${idx}`,
+            type: item.type,
+            period: item.period ?? def.period,
+            color: item.color ?? def.color,
+            enabled: true,
+          };
+        });
+      }
+
       const savedV2 = localStorage.getItem('mi007_chart_indicators_v2');
       if (savedV2) {
         const parsed = JSON.parse(savedV2);
