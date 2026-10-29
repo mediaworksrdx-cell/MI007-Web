@@ -16,6 +16,7 @@ import {
   CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN,
 } from './types';
 import { calculateSMC, DEFAULT_SMC_CONFIG, type SmcConfig } from './smcEngine';
+import { renderOrderFlowFootprint } from './orderflow/orderFlowRenderer';
 
 export type {
   Candle, ChartType, IndicatorType, IndicatorConfig,
@@ -2135,6 +2136,39 @@ export function renderChart(
     }
   }
 
+  const isDark = typeof document !== 'undefined'
+    ? (document.documentElement.getAttribute('data-theme') !== 'ivory' && document.documentElement.getAttribute('data-theme') !== 'excel')
+    : true;
+
+  // ── LAYER 4.5: Order Flow Footprint Canvas ───────────────────────────
+  const isOrderFlowActive = Boolean(
+    options.showOrderFlow &&
+    options.orderFlowConfig?.enabled &&
+    options.orderFlowData &&
+    options.orderFlowData.footprints.length > 0
+  );
+
+  if (isOrderFlowActive && options.orderFlowData && options.orderFlowConfig) {
+    renderOrderFlowFootprint({
+      ctx,
+      candles,
+      footprints: options.orderFlowData.footprints,
+      activeZones: options.orderFlowData.activeZones,
+      signals: options.orderFlowData.signals,
+      config: options.orderFlowConfig,
+      priceToY,
+      safeStart,
+      safeEnd,
+      startIdx,
+      candleW,
+      chartW,
+      chartH,
+      dpr,
+      isDark,
+      tickSize: options.orderFlowData.tickSizeUsed || 1.0,
+    });
+  }
+
   // ── LAYER 5: Candles ──────────────────────────────────────────────────
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 0, chartW, chartH); ctx.clip();
@@ -2165,8 +2199,8 @@ export function renderChart(
       pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
       ctx.strokeStyle = LINE_COLOR; ctx.lineWidth = 1.5*dpr; ctx.stroke();
     }
-  } else {
-    // Candlestick, Hollow, Heikin-Ashi
+  } else if (!isOrderFlowActive || (candleW / dpr < 12)) {
+    // Candlestick, Hollow, Heikin-Ashi (standard rendering when footprint is off or ultra-condensed)
     const candleGap = Math.max(1.5 * dpr, Math.min(3 * dpr, candleW * 0.25));
     const bodyW = Math.max(1 * dpr, candleW - candleGap);
     const wickW = Math.max(1 * dpr, 1);

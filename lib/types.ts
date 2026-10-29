@@ -123,6 +123,20 @@ export type {
   SmcConfig,
 } from './smcEngine';
 
+export type {
+  FootprintViewMode,
+  FootprintDataSource,
+  PriceLevelFootprint,
+  StackedImbalanceZone,
+  AbsorptionEvent,
+  CandleFootprint,
+  OrderFlowSignalType,
+  OrderFlowSignal,
+  OrderFlowConfig,
+  OrderFlowAnalysisResult,
+} from './orderflow/types';
+export { DEFAULT_ORDER_FLOW_CONFIG } from './orderflow/types';
+
 export interface FnoOverlayLevels {
   callWall?: number;
   putWall?: number;
@@ -151,6 +165,9 @@ export interface ChartOptions {
   showVolumePanel: boolean;
   showSmcOverlay: boolean;
   smcConfig?: import('./smcEngine').SmcConfig;
+  showOrderFlow?: boolean;
+  orderFlowConfig?: import('./orderflow/types').OrderFlowConfig;
+  orderFlowData?: import('./orderflow/types').OrderFlowAnalysisResult;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;

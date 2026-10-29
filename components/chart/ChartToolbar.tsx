@@ -5,6 +5,8 @@ import { Timeframe, IndicatorType, IndicatorConfig, INDICATOR_DEFAULTS, OVERLAY_
 import type { ChartType } from '@/lib/types';
 import { ChartTemplate } from '@/lib/chartTemplates';
 import { SmcConfig, DEFAULT_SMC_CONFIG } from '@/lib/smcEngine';
+import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG } from '@/lib/orderflow/types';
+import { OrderFlowToolbarMenu } from './OrderFlowToolbarMenu';
 
 const TIMEFRAMES: { value: Timeframe; label: string }[] = [
   { value: '1m',  label: '1m (1 Min)' },
@@ -39,6 +41,12 @@ interface ChartToolbarProps {
   showVolumePanel: boolean;
   showSmcOverlay: boolean;
   smcConfig?: SmcConfig;
+  showOrderFlow?: boolean;
+  orderFlowConfig?: OrderFlowConfig;
+  onToggleOrderFlow?: () => void;
+  onOrderFlowConfigChange?: (config: OrderFlowConfig) => void;
+  orderFlowSignalsCount?: number;
+  onOpenOrderFlowSignals?: () => void;
   showVolumeProfile: boolean;
   activeIndicators: IndicatorType[];
   indicators?: IndicatorConfig[];
@@ -136,6 +144,12 @@ export function ChartToolbar({
   showVolumePanel: _showVolumePanel,
   showSmcOverlay,
   smcConfig,
+  showOrderFlow = false,
+  orderFlowConfig,
+  onToggleOrderFlow,
+  onOrderFlowConfigChange,
+  orderFlowSignalsCount = 0,
+  onOpenOrderFlowSignals,
   showVolumeProfile,
   activeIndicators,
   indicators,
@@ -167,10 +181,15 @@ export function ChartToolbar({
   isFullscreen,
   onToggleFullscreen,
 }: ChartToolbarProps) {
-  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | 'SMC' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | 'SMC' | 'ORDER_FLOW' | null>(null);
   const [indicatorSearch, setIndicatorSearch] = useState('');
   const [recentlyAddedType, setRecentlyAddedType] = useState<string | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+
+  const activeOfConfig: OrderFlowConfig = orderFlowConfig || {
+    ...DEFAULT_ORDER_FLOW_CONFIG,
+    enabled: showOrderFlow,
+  };
 
   const activeSmcConfig: SmcConfig = smcConfig || {
     ...DEFAULT_SMC_CONFIG,
@@ -1059,6 +1078,43 @@ export function ChartToolbar({
               </div>
             </div>
           )}
+        </div>
+
+        <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
+
+        {/* 4.5 Order Flow Footprint Dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setOpenMenu(openMenu === 'ORDER_FLOW' ? null : 'ORDER_FLOW')}
+            title="Order Flow Footprint Analysis Mode"
+            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+              openMenu === 'ORDER_FLOW'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 font-bold'
+                : 'border-slate-200 dark:border-slate-700 hover:border-blue-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
+            }`}
+          >
+            <span className="font-mono font-black text-xs px-1 rounded bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
+              OF
+            </span>
+            <span>Order Flow</span>
+            {activeOfConfig.enabled && (
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            )}
+            <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
+          </button>
+
+          <OrderFlowToolbarMenu
+            isOpen={openMenu === 'ORDER_FLOW'}
+            onClose={() => setOpenMenu(null)}
+            config={activeOfConfig}
+            onChangeConfig={(updates) => {
+              const updated = { ...activeOfConfig, ...updates };
+              onOrderFlowConfigChange?.(updated);
+            }}
+            onOpenSignalsModal={onOpenOrderFlowSignals}
+            signalsCount={orderFlowSignalsCount}
+          />
         </div>
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />

@@ -20,6 +20,9 @@ interface CandlestickCanvasProps {
   showVolumePanel: boolean;
   showSmcOverlay: boolean;
   smcConfig?: SmcConfig;
+  showOrderFlow?: boolean;
+  orderFlowConfig?: import("../../lib/orderflow/types").OrderFlowConfig;
+  orderFlowData?: import("../../lib/orderflow/types").OrderFlowAnalysisResult;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;
@@ -151,7 +154,7 @@ const VISIBLE_CANDLES_BASE = 60;
 
 export function CandlestickCanvas({
   candles, chartType, showVolume, showVolumePanel,
-  showSmcOverlay, smcConfig, showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
+  showSmcOverlay, smcConfig, showOrderFlow = false, orderFlowConfig, orderFlowData, showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
   currentPriceOverride, timeframe, targetCandleTime, targetSetupId, className = '',
   activeDrawingTool = 'NONE',
@@ -1089,6 +1092,9 @@ export function CandlestickCanvas({
           chartType, showVolume, showVolumePanel,
           showSmcOverlay: smcConfig ? smcConfig.enabled : showSmcOverlay,
           smcConfig,
+          showOrderFlow,
+          orderFlowConfig,
+          orderFlowData,
           showVolumeProfile,
           showFnoOverlay, fnoLevels,
           strategyOverlay,
@@ -1112,7 +1118,7 @@ export function CandlestickCanvas({
         chartRafIdRef.current = null;
       }
     };
-  }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, smcConfig, showVolumeProfile,
+  }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, smcConfig, showOrderFlow, orderFlowConfig, orderFlowData, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, isAllDrawingsHidden, startIdx, endIdx, priceScaleRatio, priceOffset, size, dpr, clockTick]);

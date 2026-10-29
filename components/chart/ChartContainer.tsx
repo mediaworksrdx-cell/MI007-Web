@@ -29,6 +29,9 @@ import {
   setActiveTemplateId,
 } from '@/lib/chartTemplates';
 import { SmcConfig, DEFAULT_SMC_CONFIG, getStoredSmcConfig, saveStoredSmcConfig } from '@/lib/smcEngine';
+import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG } from '@/lib/orderflow/types';
+import { analyzeOrderFlow } from '@/lib/orderflow/orderFlowEngine';
+import { OrderFlowSignalsModal } from './OrderFlowSignalsModal';
 import { ChartToolbar } from './ChartToolbar';
 import { CandlestickCanvas } from './CandlestickCanvas';
 import { OHLCVHeader } from './OHLCVHeader';
@@ -255,6 +258,27 @@ export function ChartContainer({
   const handleSmcConfigChange = useCallback((newCfg: SmcConfig) => {
     setSmcConfig(newCfg);
     saveStoredSmcConfig(newCfg);
+  }, []);
+
+  // Order Flow Footprint configuration and live signal state
+  const [orderFlowConfig, setOrderFlowConfig] = useState<OrderFlowConfig>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('mi007_orderflow_config');
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return DEFAULT_ORDER_FLOW_CONFIG;
+  });
+  const [isOfSignalsOpen, setIsOfSignalsOpen] = useState(false);
+
+  const handleOrderFlowConfigChange = useCallback((newCfg: OrderFlowConfig) => {
+    setOrderFlowConfig(newCfg);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('mi007_orderflow_config', JSON.stringify(newCfg));
+      } catch (e) {}
+    }
   }, []);
 
   const [targetCandleTime, setTargetCandleTime] = useState<number | undefined>();
@@ -544,6 +568,11 @@ export function ChartContainer({
   }, [indicatorConfigs]);
 
   const [candles, setCandles] = useState<Candle[]>([]);
+
+  const orderFlowData = useMemo(() => {
+    if (!orderFlowConfig.enabled || candles.length === 0) return undefined;
+    return analyzeOrderFlow(candles, orderFlowConfig);
+  }, [candles, orderFlowConfig]);
   const [currentPrice, setCurrentPrice] = useState<number | undefined>();
   const [isLoadingCandles, setIsLoadingCandles] = useState(true);
   const [isLiveFromEngine, setIsLiveFromEngine] = useState(false);
@@ -1482,6 +1511,12 @@ export function ChartContainer({
         showSmcOverlay={showSmcOverlay}
         smcConfig={smcConfig}
         onSmcConfigChange={handleSmcConfigChange}
+        showOrderFlow={orderFlowConfig.enabled}
+        orderFlowConfig={orderFlowConfig}
+        onToggleOrderFlow={() => handleOrderFlowConfigChange({ ...orderFlowConfig, enabled: !orderFlowConfig.enabled })}
+        onOrderFlowConfigChange={handleOrderFlowConfigChange}
+        orderFlowSignalsCount={orderFlowData?.signals.length || 0}
+        onOpenOrderFlowSignals={() => setIsOfSignalsOpen(true)}
         showVolumeProfile={showVolumeProfile}
         activeIndicators={activeIndicators}
         indicators={indicatorConfigs}
@@ -1565,6 +1600,9 @@ export function ChartContainer({
             showVolumePanel={showVolumePanel}
             showSmcOverlay={showSmcOverlay}
             smcConfig={smcConfig}
+            showOrderFlow={orderFlowConfig.enabled}
+            orderFlowConfig={orderFlowConfig}
+            orderFlowData={orderFlowData}
             showVolumeProfile={showVolumeProfile}
             showFnoOverlay={false}
             fnoLevels={undefined}
@@ -1705,6 +1743,14 @@ export function ChartContainer({
         onUpdateDrawing={handleUpdateDrawing}
         onDeleteDrawing={handleDeleteDrawing}
         onClearAllDrawings={handleClearDrawings}
+      />
+
+      {/* ── Order Flow Signals & Setups Inspector Modal ── */}
+      <OrderFlowSignalsModal
+        isOpen={isOfSignalsOpen}
+        onClose={() => setIsOfSignalsOpen(false)}
+        signals={orderFlowData?.signals || []}
+        symbol={selectedSymbol}
       />
     </div>
   );
