@@ -81,7 +81,7 @@ function SmcToggleRow({
   onChange,
   badge,
   badgeColor,
-  accent = 'amber',
+  accent = 'emerald',
 }: {
   label: string;
   sublabel?: string;
@@ -89,13 +89,13 @@ function SmcToggleRow({
   onChange: (val: boolean) => void;
   badge?: string;
   badgeColor?: string;
-  accent?: 'amber' | 'emerald' | 'rose' | 'teal' | 'indigo' | 'purple' | 'blue';
+  accent?: 'emerald' | 'amber' | 'rose' | 'teal' | 'indigo' | 'purple' | 'blue';
 }) {
   const getToggleColor = () => {
     if (!checked) return 'bg-slate-300 dark:bg-slate-700';
     switch (accent) {
-      case 'emerald':
-        return 'bg-emerald-500';
+      case 'amber':
+        return 'bg-amber-500';
       case 'rose':
         return 'bg-rose-500';
       case 'teal':
@@ -106,9 +106,9 @@ function SmcToggleRow({
         return 'bg-purple-500';
       case 'indigo':
         return 'bg-indigo-500';
-      case 'amber':
+      case 'emerald':
       default:
-        return 'bg-amber-500';
+        return 'bg-emerald-500';
     }
   };
 
@@ -712,17 +712,17 @@ export function ChartToolbar({
             onClick={() => setOpenMenu(openMenu === 'SMC' ? null : 'SMC')}
             title="Smart Money Concepts (SMC) Analysis Mode"
             className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
-              openMenu === 'SMC' || activeSmcConfig.enabled
-                ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 font-bold'
-                : 'border-slate-200 dark:border-slate-700 hover:border-amber-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
+              openMenu === 'SMC'
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
+                : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
-            <span className="font-mono font-black text-[10px] px-1 rounded bg-amber-100 dark:bg-amber-500/30 text-amber-800 dark:text-amber-300">
+            <span className="font-mono font-black text-xs px-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
               SMC
             </span>
-            <span className="font-bold">SMC Analysis</span>
+            <span>SMC Analysis</span>
             {activeSmcConfig.enabled && (
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             )}
             <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
           </button>
@@ -735,7 +735,7 @@ export function ChartToolbar({
               {/* Header */}
               <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 shrink-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-black text-[11px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                  <span className="font-mono font-black text-[11px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                     SMC
                   </span>
                   <div>
@@ -753,7 +753,7 @@ export function ChartToolbar({
               </div>
 
               {/* Master Toggle */}
-              <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-amber-50/50 dark:bg-amber-500/5 flex items-center justify-between shrink-0">
+              <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-emerald-50/50 dark:bg-emerald-500/5 flex items-center justify-between shrink-0">
                 <div>
                   <div className="text-xs font-bold text-slate-800 dark:text-slate-100">Enable SMC Overlays</div>
                   <div className="text-[10px] text-slate-500 dark:text-slate-400">Master switch for all institutional zones</div>
@@ -762,7 +762,7 @@ export function ChartToolbar({
                   type="button"
                   onClick={() => handleUpdateSmc({ enabled: !activeSmcConfig.enabled })}
                   className={`w-10 h-5.5 rounded-full transition-colors relative cursor-pointer ${
-                    activeSmcConfig.enabled ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'
+                    activeSmcConfig.enabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
                   }`}
                 >
                   <span
@@ -779,7 +779,7 @@ export function ChartToolbar({
                 <button
                   type="button"
                   onClick={() => handleSetPreset('all')}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
                 >
                   All
                 </button>
@@ -800,14 +800,14 @@ export function ChartToolbar({
                 <button
                   type="button"
                   onClick={() => handleSetPreset('structure')}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
                 >
                   Structure
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSetPreset('zones')}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
                 >
                   OB & FVG
                 </button>
@@ -911,14 +911,14 @@ export function ChartToolbar({
                   </div>
 
                   <div className="flex items-center gap-1.5 text-[9px] text-slate-400 dark:text-slate-500 px-0.5">
-                    <span className="font-bold text-amber-500">Note:</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">Note:</span>
                     <span>Equilibrium (50% EQ) renders as neutral context independent of direction filters.</span>
                   </div>
                 </div>
 
                 {/* 1. Market Structure */}
                 <div>
-                  <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1 px-1">
+                  <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1 px-1">
                     Market Structure (Directional)
                   </div>
                   <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
@@ -928,7 +928,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showBos}
                       onChange={(v) => handleUpdateSmc({ showBos: v })}
                       badge="BOS ↑↓"
-                      accent="amber"
+                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="CHoCH / MSS"
@@ -936,7 +936,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showChoch}
                       onChange={(v) => handleUpdateSmc({ showChoch: v })}
                       badge="CHoCH"
-                      accent="amber"
+                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Bullish BOS & CHoCH / MSS"
@@ -962,7 +962,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showSwings}
                       onChange={(v) => handleUpdateSmc({ showSwings: v })}
                       badge="HH/HL/LH/LL"
-                      accent="amber"
+                      accent="emerald"
                     />
                   </div>
                 </div>
@@ -979,7 +979,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showLiquidityLevels}
                       onChange={(v) => handleUpdateSmc({ showLiquidityLevels: v })}
                       badge="$$$"
-                      accent="amber"
+                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Equal Highs & Lows"
@@ -987,7 +987,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showEqualHighLow}
                       onChange={(v) => handleUpdateSmc({ showEqualHighLow: v })}
                       badge="EQH/EQL"
-                      accent="amber"
+                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Liquidity Sweeps (Master)"
@@ -995,7 +995,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showSweeps}
                       onChange={(v) => handleUpdateSmc({ showSweeps: v })}
                       badge="Sweeps"
-                      accent="amber"
+                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Bullish Sweeps (SSL Sweeps)"
@@ -1073,7 +1073,7 @@ export function ChartToolbar({
                       sublabel="Display already tested order blocks"
                       checked={activeSmcConfig.showMitigatedOb}
                       onChange={(v) => handleUpdateSmc({ showMitigatedOb: v })}
-                      accent="amber"
+                      accent="emerald"
                     />
                   </div>
                 </div>
@@ -1126,14 +1126,14 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showFvgMidpoint}
                       onChange={(v) => handleUpdateSmc({ showFvgMidpoint: v })}
                       badge="50% CE"
-                      accent="amber"
+                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Show Mitigated FVGs"
                       sublabel="Display fully filled imbalances"
                       checked={activeSmcConfig.showMitigatedFvg}
                       onChange={(v) => handleUpdateSmc({ showMitigatedFvg: v })}
-                      accent="amber"
+                      accent="emerald"
                     />
                   </div>
                 </div>
@@ -1184,8 +1184,8 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showEquilibrium}
                       onChange={(v) => handleUpdateSmc({ showEquilibrium: v })}
                       badge="50% EQ"
-                      badgeColor="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                      accent="amber"
+                      badgeColor="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Optimal Trade Entry (OTE)"
@@ -1211,7 +1211,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showPdhPdl}
                       onChange={(v) => handleUpdateSmc({ showPdhPdl: v })}
                       badge="PDH/PDL"
-                      accent="amber"
+                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Previous Week High/Low"
@@ -1219,7 +1219,7 @@ export function ChartToolbar({
                       checked={activeSmcConfig.showPwhPwl}
                       onChange={(v) => handleUpdateSmc({ showPwhPwl: v })}
                       badge="PWH/PWL"
-                      accent="amber"
+                      accent="emerald"
                     />
                   </div>
                 </div>
@@ -1228,7 +1228,7 @@ export function ChartToolbar({
               {/* Scanner Link Footer */}
               <a
                 href="/terminal/screener?tab=smcScanner"
-                className="flex items-center justify-between px-3.5 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors shrink-0"
+                className="flex items-center justify-between px-3.5 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors shrink-0"
               >
                 <span className="flex items-center gap-1.5">
                   <span>⚡</span>
