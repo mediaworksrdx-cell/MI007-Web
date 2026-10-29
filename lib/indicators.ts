@@ -163,3 +163,31 @@ export function toHeikinAshi(candles: Candle[]): Candle[] {
   }
   return result;
 }
+
+
+/** Average True Range (ATR) with RMA smoothing */
+export function calculateATR(candles: Candle[], period: number = 14): (number | null)[] {
+  if (!candles || candles.length === 0) return [];
+  const p = Math.max(1, period);
+  const trs: number[] = new Array(candles.length);
+  trs[0] = candles[0].high - candles[0].low;
+  for (let i = 1; i < candles.length; i++) {
+    const hl = candles[i].high - candles[i].low;
+    const hpc = Math.abs(candles[i].high - candles[i - 1].close);
+    const lpc = Math.abs(candles[i].low - candles[i - 1].close);
+    trs[i] = Math.max(hl, hpc, lpc);
+  }
+  const result: (number | null)[] = new Array(candles.length).fill(null);
+  let sum = 0;
+  const warmup = Math.min(p, candles.length);
+  for (let i = 0; i < warmup; i++) {
+    sum += trs[i];
+  }
+  let prevAtr = sum / warmup;
+  result[warmup - 1] = prevAtr;
+  for (let i = p; i < candles.length; i++) {
+    prevAtr = (prevAtr * (p - 1) + trs[i]) / p;
+    result[i] = prevAtr;
+  }
+  return result;
+}

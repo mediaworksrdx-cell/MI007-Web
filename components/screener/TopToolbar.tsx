@@ -44,13 +44,15 @@ export function TopToolbar({
   const TABS = [
     { id: 'screener', label: '1. Screeners' },
     { id: 'smcScanner', label: '2. SMC Scanner' },
-    { id: 'technicalScreener', label: '3. Technical Strategies' },
-    { id: 'queryBuilder', label: '4. Query Builder' },
-    { id: 'discover', label: '5. Discover Screens' },
-    { id: 'watchlists', label: '6. Watchlists' },
-    { id: 'analysis', label: '7. Company Analysis' },
-    { id: 'peers', label: '8. Peer Matrix' },
-    { id: 'alerts', label: '9. Alerts' },
+    { id: 'mi007Strategies', label: '3. MI-007 Strategies' },
+    { id: 'tradingStrategies', label: '4. Trading Strategies' },
+    { id: 'investmentStrategies', label: '5. Investment Strategies' },
+    { id: 'queryBuilder', label: '6. Query Builder' },
+    { id: 'discover', label: '7. Discover Screens' },
+    { id: 'watchlists', label: '8. Watchlists' },
+    { id: 'analysis', label: '9. Company Analysis' },
+    { id: 'peers', label: '10. Peer Matrix' },
+    { id: 'alerts', label: '11. Alerts' },
   ];
 
   return (
