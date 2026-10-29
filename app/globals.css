@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
 @font-face {
+  font-family: 'Berkshire Swash';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/BerkshireSwash.woff2') format('woff2');
+}
+
+@font-face {
   font-family: 'Playwrite US Trad';
   font-style: normal;
   font-weight: 100 400;
@@ -36,7 +44,7 @@
   --font-sans: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", "Roboto Mono", Menlo, monospace;
   --font-marker: "Permanent Marker", cursive, sans-serif;
-  --font-caveat: "Playwrite US Trad", "Caveat", cursive, sans-serif;
+  --font-caveat: "Berkshire Swash", "Playwrite US Trad", "Caveat", cursive, sans-serif;
 
   --animate-ticker: ticker 36s linear infinite;
   --animate-pulse-green: pulse-green 2.5s ease-in-out infinite;
@@ -383,7 +391,7 @@ section p.page-subtitle,
 }
 
 .font-caveat {
-  font-family: 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
+  font-family: 'Berkshire Swash', 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
   letter-spacing: 0 !important;
 }
 
@@ -405,7 +413,7 @@ html[data-theme="violet"] .brand-accent-green {
 }
 
 .hero-title-gradient {
-  font-family: 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
+  font-family: 'Berkshire Swash', 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
   letter-spacing: 0 !important;
 }
 
@@ -815,7 +823,7 @@ html[data-theme="cyberpunk"] .navbar-brand-badge {
 }
 
 .navbar-brand-title {
-  font-family: 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
+  font-family: 'Berkshire Swash', 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
 }
@@ -916,7 +924,7 @@ footer .footer-brand-title,
 html footer .footer-brand-title,
 html[data-theme] footer .footer-brand-title,
 html[data-theme] footer span.footer-brand-title {
-  font-family: 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
+  font-family: 'Berkshire Swash', 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
 }
