@@ -832,8 +832,13 @@ export function calculateCMF(candles: Candle[], period = 20): (number|null)[] {
   return res;
 }
 
-export function detectSMC(candles: Candle[], config?: Partial<SmcConfig>): SmcAnalysis {
-  return calculateSMC(candles, config);
+export function detectSMC(
+  candles: Candle[],
+  config?: Partial<SmcConfig>,
+  symbol = 'UNKNOWN',
+  timeframe = '1H'
+): SmcAnalysis {
+  return calculateSMC(candles, config, symbol, timeframe);
 }
 
 
@@ -1156,7 +1161,9 @@ export function renderChart(
   // ── LAYER 3: Smart Money Concepts (SMC) Overlays ──
   const smcCfg = options.smcConfig || (options.showSmcOverlay ? DEFAULT_SMC_CONFIG : null);
   if (smcCfg && smcCfg.enabled) {
-    const smcData = calculateSMC(candles, smcCfg);
+    const sym = (options as any).symbol || 'NIFTY';
+    const tf = options.timeframe || '1H';
+    const smcData = calculateSMC(candles, smcCfg, sym, tf);
     const isBullishMaster = smcCfg.showBullishSetups !== false;
     const isBearishMaster = smcCfg.showBearishSetups !== false;
 
@@ -1168,25 +1175,49 @@ export function renderChart(
       const yEq = Math.max(0, Math.min(chartH, priceToY(dr.equilibriumPrice)));
 
       ctx.save();
-      // Premium Zone (>50% to High) - Short-side context
-      if (isBearishMaster && yEq > yHigh) {
-        ctx.fillStyle = 'rgba(244, 63, 94, 0.08)';
+      // Premium Zone (>50% to High) - Clear structural auction boundary
+      if (yEq > yHigh) {
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.07)';
         ctx.fillRect(0, yHigh, chartW, yEq - yHigh);
-        ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.30)';
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeRect(0, yHigh, chartW, yEq - yHigh);
+
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
         ctx.fillStyle = '#E11D48';
         ctx.textAlign = 'right';
-        ctx.fillText('PREMIUM (Sell Zone)', chartW - 10 * dpr, yHigh + 14 * dpr);
+        ctx.fillText(`PREMIUM ZONE (Sell Zone) [${formatPrice(dr.equilibriumPrice)} – ${formatPrice(dr.highPrice)}]`, chartW - 10 * dpr, yHigh + 14 * dpr);
       }
 
-      // Discount Zone (<50% to Low) - Long-side context
-      if (isBullishMaster && yLow > yEq) {
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+      // Discount Zone (<50% to Low) - Clear structural auction boundary
+      if (yLow > yEq) {
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.07)';
         ctx.fillRect(0, yEq, chartW, yLow - yEq);
-        ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.30)';
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeRect(0, yEq, chartW, yLow - yEq);
+
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
         ctx.fillStyle = '#059669';
         ctx.textAlign = 'right';
-        ctx.fillText('DISCOUNT (Buy Zone)', chartW - 10 * dpr, yLow - 6 * dpr);
+        ctx.fillText(`DISCOUNT ZONE (Buy Zone) [${formatPrice(dr.lowPrice)} – ${formatPrice(dr.equilibriumPrice)}]`, chartW - 10 * dpr, yLow - 6 * dpr);
       }
+
+      // Range Boundary Lines (High and Low)
+      ctx.setLineDash([4 * dpr, 4 * dpr]);
+      ctx.lineWidth = 1 * dpr;
+      ctx.strokeStyle = 'rgba(244, 63, 94, 0.50)';
+      ctx.beginPath();
+      ctx.moveTo(0, yHigh);
+      ctx.lineTo(chartW, yHigh);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.50)';
+      ctx.beginPath();
+      ctx.moveTo(0, yLow);
+      ctx.lineTo(chartW, yLow);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
       // OTE (Optimal Trade Entry 61.8% to 78.6%)
       if (smcCfg.showOte && (isBullishMaster || isBearishMaster)) {
@@ -1249,13 +1280,15 @@ export function renderChart(
         : (lastBar ? lastBar.close : smcData.equilibriumPrice);
       const isAboveEq = activePrice >= smcData.equilibriumPrice;
       const zoneTag = isAboveEq ? '▲ PREMIUM' : '▼ DISCOUNT';
-      const eqText = `EQ (50%): ${formatPrice(smcData.equilibriumPrice)} | Price in ${zoneTag}`;
-      ctx.font = `bold ${9.5 * dpr}px "JetBrains Mono",monospace`;
+      
+      // Explicit Midpoint Label on line (clearly identifying 50% midpoint value)
+      const eqText = `50% Equilibrium (Midpoint): ${formatPrice(smcData.equilibriumPrice)}`;
+      ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
       const tm = ctx.measureText(eqText);
       const tw = tm.width + 10 * dpr;
       const th = 15 * dpr;
 
-      ctx.fillStyle = 'rgba(217, 119, 6, 0.18)';
+      ctx.fillStyle = 'rgba(217, 119, 6, 0.20)';
       ctx.fillRect(8 * dpr, eqY - th - 3 * dpr, tw, th);
       ctx.strokeStyle = 'rgba(217, 119, 6, 0.75)';
       ctx.lineWidth = 1 * dpr;
@@ -1265,6 +1298,19 @@ export function renderChart(
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(eqText, 13 * dpr, eqY - th / 2 - 3 * dpr);
+
+      // Separate Current Price Context Badge on the right
+      const priceBadgeText = `Current: ${formatPrice(activePrice)} in ${zoneTag} Zone`;
+      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+      const ptm = ctx.measureText(priceBadgeText);
+      const ptw = ptm.width + 10 * dpr;
+      ctx.fillStyle = isAboveEq ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+      ctx.fillRect(chartW - ptw - 10 * dpr, eqY - th - 3 * dpr, ptw, th);
+      ctx.strokeStyle = isAboveEq ? 'rgba(244, 63, 94, 0.65)' : 'rgba(16, 185, 129, 0.65)';
+      ctx.strokeRect(chartW - ptw - 10 * dpr, eqY - th - 3 * dpr, ptw, th);
+      ctx.fillStyle = isAboveEq ? '#E11D48' : '#059669';
+      ctx.textAlign = 'left';
+      ctx.fillText(priceBadgeText, chartW - ptw - 5 * dpr, eqY - th / 2 - 3 * dpr);
       ctx.restore();
     }
 
@@ -1364,8 +1410,9 @@ export function renderChart(
     const inWindowBlocks = rawBlocks.filter((ob) => {
       if (ob.isBreaker) {
         if (!smcCfg.showBreakers) return false;
-        if (ob.isBullish && (!smcCfg.showBullishBreakers || !isBullishMaster)) return false;
-        if (!ob.isBullish && (!smcCfg.showBearishBreakers || !isBearishMaster)) return false;
+        const isBullBreaker = ob.isBullish || ob.label.includes('Bull');
+        if (isBullBreaker && (!smcCfg.showBullishBreakers || !isBullishMaster)) return false;
+        if (!isBullBreaker && (!smcCfg.showBearishBreakers || !isBearishMaster)) return false;
       } else {
         if (ob.isBullish && (!smcCfg.showBullishOb || !isBullishMaster)) return false;
         if (!ob.isBullish && (!smcCfg.showBearishOb || !isBearishMaster)) return false;
@@ -1406,9 +1453,10 @@ export function renderChart(
       let obBorder = ob.isBullish ? 'rgba(2, 132, 199, 0.85)' : 'rgba(234, 88, 12, 0.85)';
 
       if (ob.isBreaker) {
-        obColor = ob.isBullish ? '#059669' : '#7C3AED';
-        obBg = ob.isBullish ? 'rgba(16, 185, 129, 0.22)' : 'rgba(139, 92, 246, 0.22)';
-        obBorder = ob.isBullish ? 'rgba(16, 185, 129, 0.85)' : 'rgba(139, 92, 246, 0.85)';
+        const isBullBreaker = ob.isBullish || ob.label.includes('Bull');
+        obColor = isBullBreaker ? '#059669' : '#DC2626';
+        obBg = isBullBreaker ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)';
+        obBorder = isBullBreaker ? 'rgba(16, 185, 129, 0.85)' : 'rgba(239, 68, 68, 0.85)';
       }
 
       ctx.save();
@@ -1521,7 +1569,7 @@ export function renderChart(
           ? (fvg.isBullish ? '+IFVG (Support)' : '-IFVG (Resistance)')
           : (fvg.isBullish ? '+FVG' : '-FVG');
         if (isMit) {
-          tag += ' [MITIGATED - HISTORICAL]';
+          tag += ' [MITIGATED - HISTORICAL (Non-Tradeable)]';
         }
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(tag);

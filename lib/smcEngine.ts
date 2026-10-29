@@ -840,7 +840,30 @@ export function detectOrderBlocksAndBreakers(
           ob.endIndex = k;
           ob.mitigationIndex = k;
           ob.label = 'Breaker (Bear)';
-          breakers.push({ ...ob });
+
+          const brk: SmcOrderBlock = {
+            id: `breaker-bear-${i}`,
+            startIndex: k,
+            endIndex: candles.length - 1,
+            topPrice: ob.topPrice,
+            bottomPrice: ob.bottomPrice,
+            isBullish: false,
+            isBreaker: true,
+            isMitigated: false,
+            mitigationIndex: k,
+            volumeRatio: candles[k].volume / ma,
+            label: 'Breaker (Bear)',
+            formationTime: candles[k].openTime,
+          };
+          // Track post-breakout invalidation: closed back above top
+          for (let m = k + 1; m < candles.length; m++) {
+            if (candles[m].close > brk.topPrice) {
+              brk.isMitigated = true;
+              brk.endIndex = m;
+              break;
+            }
+          }
+          breakers.push(brk);
           break;
         } else if (candles[k].low <= ob.topPrice) {
           ob.isMitigated = true;
@@ -884,7 +907,30 @@ export function detectOrderBlocksAndBreakers(
           ob.endIndex = k;
           ob.mitigationIndex = k;
           ob.label = 'Breaker (Bull)';
-          breakers.push({ ...ob });
+
+          const brk: SmcOrderBlock = {
+            id: `breaker-bull-${i}`,
+            startIndex: k,
+            endIndex: candles.length - 1,
+            topPrice: ob.topPrice,
+            bottomPrice: ob.bottomPrice,
+            isBullish: true,
+            isBreaker: true,
+            isMitigated: false,
+            mitigationIndex: k,
+            volumeRatio: candles[k].volume / ma,
+            label: 'Breaker (Bull)',
+            formationTime: candles[k].openTime,
+          };
+          // Track post-breakout invalidation: closed back below bottom
+          for (let m = k + 1; m < candles.length; m++) {
+            if (candles[m].close < brk.bottomPrice) {
+              brk.isMitigated = true;
+              brk.endIndex = m;
+              break;
+            }
+          }
+          breakers.push(brk);
           break;
         } else if (candles[k].high >= ob.bottomPrice) {
           ob.isMitigated = true;
@@ -1750,14 +1796,14 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 7: Breaker Block Role Reversal
-  const activeBreakers = breakers.slice(-8);
+  const activeBreakers = breakers.filter((b) => !b.isMitigated).slice(-8);
   for (const brk of activeBreakers) {
-    const isBull = !brk.isBullish; // Violated supply becomes demand
+    const isBull = brk.label.includes('Bull') || (brk.isBreaker ? brk.isBullish : !brk.isBullish);
     const entry = (brk.topPrice + brk.bottomPrice) / 2;
     const sl = isBull ? brk.bottomPrice * 0.997 : brk.topPrice * 1.003;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
 
-    // Scan if price has actively retested this breaker block
+    // Scan if price has actively retested this breaker block after formation/breakout
     let lastRetestIdx = -1;
     let lastRetestTime = brk.formationTime;
     for (let k = brk.startIndex + 1; k < candles.length; k++) {
@@ -2020,9 +2066,14 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 16: Inverse Fair Value Gap (IFVG)
-  const invalidatedFvgs = fvgs.filter((f) => f.isInvalidated).slice(-8);
-  for (const ifvg of invalidatedFvgs) {
-    const isBull = !ifvg.isBullish; // Violated bearish FVG becomes bullish support
+  // Strictly filter out mitigated or fully violated IFVGs
+  const activeInverseGaps = fvgs.filter((f) => f.isInverse && !f.isMitigated && !f.isInvalidated && f.state !== 'MITIGATED' && f.state !== 'INVALIDATED').slice(-8);
+  const ifvgCandidates = activeInverseGaps.length > 0
+    ? activeInverseGaps
+    : fvgs.filter((f) => f.isInvalidated && !f.isMitigated && f.state !== 'MITIGATED').slice(-8);
+
+  for (const ifvg of ifvgCandidates) {
+    const isBull = ifvg.isInverse ? ifvg.isBullish : !ifvg.isBullish;
     const entry = ifvg.cePrice;
     const sl = isBull ? ifvg.bottomPrice * 0.996 : ifvg.topPrice * 1.004;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
@@ -2036,7 +2087,7 @@ export function detectAll16SmcSetups(
       entry,
       sl,
       tp,
-      `Failed ${ifvg.isBullish ? 'Bullish' : 'Bearish'} FVG flipped polarity: body close through boundary creates IFVG.`
+      `Failed ${!isBull ? 'Bullish' : 'Bearish'} FVG flipped polarity: body close through boundary creates IFVG.`
     ));
   }
 
