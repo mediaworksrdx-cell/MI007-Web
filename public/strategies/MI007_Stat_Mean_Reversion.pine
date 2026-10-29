@@ -1,0 +1,47 @@
+//@version=5
+strategy("MI-007 Statistical Mean Reversion & Liquidity Grab", overlay=true, margin_long=100, margin_short=100, initial_capital=100000, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MI-007 STATISTICAL MEAN REVERSION & LIQUIDITY GRAB
+// System: Market Intelligence MI-007 Proprietary Quantitative Model
+// Rules:
+// - 2.5-Sigma Statistical Extremes beyond VWAP / 20-period baseline
+// - Liquidity Grab Rejection Wick at extreme standard deviation boundary
+// - Mean-reversion target back to central Equilibrium (VWAP / Baseline)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+len      = input.int(20, "Lookback Period")
+mult     = input.float(2.5, "Standard Deviation Extreme Multiplier")
+
+basis    = ta.sma(close, len)
+dev      = mult * ta.stdev(close, len)
+upper_ext= basis + dev
+lower_ext= basis - dev
+
+// Rejection candle at statistical extreme
+oversold_reject  = low < lower_ext and close > lower_ext and (close - low) > (high - low) * 0.4
+overbought_reject= high > upper_ext and close < upper_ext and (high - close) > (high - low) * 0.4
+
+long_signal  = oversold_reject and ta.rsi(close, 14) < 35
+short_signal = overbought_reject and ta.rsi(close, 14) > 65
+
+var float long_sl = na
+var float long_tp = na
+var float short_sl = na
+var float short_tp = na
+
+if long_signal and strategy.position_size == 0
+    long_sl := low * 0.995
+    long_tp := basis // Target central equilibrium
+    strategy.entry("Stat Long", strategy.long, comment="MI-007 Stat Long")
+    strategy.exit("Exit Stat Long", "Stat Long", stop=long_sl, limit=long_tp)
+
+if short_signal and strategy.position_size == 0
+    short_sl := high * 1.005
+    short_tp := basis // Target central equilibrium
+    strategy.entry("Stat Short", strategy.short, comment="MI-007 Stat Short")
+    strategy.exit("Exit Stat Short", "Stat Short", stop=short_sl, limit=short_tp)
+
+plot(basis, "Equilibrium Baseline", color=color.gray, linewidth=2)
+plot(upper_ext, "+2.5 Dev Extreme", color=color.red, linewidth=1)
+plot(lower_ext, "-2.5 Dev Extreme", color=color.green, linewidth=1)

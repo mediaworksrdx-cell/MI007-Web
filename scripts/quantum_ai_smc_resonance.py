@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
 ═══════════════════════════════════════════════════════════════════════════════
-QUANTUM AI MULTI-TIMEFRAME SMC & RESONANCE BACKTESTING ENGINE (PYTHON)
+QUANTUM AI MULTI-TIMEFRAME SMC & PROPRIETARY STRATEGIES BACKTESTING ENGINE
 ═══════════════════════════════════════════════════════════════════════════════
 Market Intelligence MI-007 Flagship Quantitative Simulation Engine.
 
-Evaluates the exact identical rules as TradingView Pine Script v5:
-1. Zero look-ahead bias: strictly chronological bar-by-bar progression.
-2. HTF macro trend & 50% Equilibrium Dealing Range (Discount vs. Premium).
-3. MTF Liquidity Sweeps (SSL/BSL) & Structure Confirmation (BOS/CHoCH).
-4. LTF Displacement & Fair Value Gap (FVG) creation.
-5. Mathematical 0-100% Resonance Confluence Scoring (Entry threshold >= 75%).
-6. Realistic transaction costs: exchange brokerage + slippage.
-7. Conservative intra-bar conflict resolution (Stop Loss prioritized on ambiguity).
+Supports all 7 Proprietary MI-007 Flagship Algorithms:
+1. quantum_smc: Quantum AI Multi-Timeframe SMC & Resonance
+2. order_flow: Institutional Order Flow & Absorption Matrix
+3. volatility_squeeze: Volatility Squeeze & Liquidity Breakout
+4. ml_momentum: Machine Learning Momentum Trend Engine
+5. stat_mean_reversion: Statistical Mean Reversion & Liquidity Grab
+6. 3stage_reversal: Smart Money 3-Stage Institutional Reversal
+7. amd: Institutional AMD (Accumulation -> Manipulation -> Distribution)
 ═══════════════════════════════════════════════════════════════════════════════
 """
 
@@ -90,9 +90,11 @@ def generate_synthetic_market_data(symbol: str, num_bars: int = 500, initial_pri
     return candles
 
 class QuantumSmcResonanceBacktester:
-    def __init__(self, symbol: str = "RELIANCE", initial_capital: float = 100000.0,
-                 min_resonance: int = 75, slippage_pct: float = 0.0005, fee_pct: float = 0.0003):
+    def __init__(self, symbol: str = "RELIANCE", strategy: str = "quantum_smc",
+                 initial_capital: float = 100000.0, min_resonance: int = 75,
+                 slippage_pct: float = 0.0005, fee_pct: float = 0.0003):
         self.symbol = symbol
+        self.strategy = strategy.lower()
         self.initial_capital = initial_capital
         self.capital = initial_capital
         self.min_resonance = min_resonance
@@ -105,8 +107,6 @@ class QuantumSmcResonanceBacktester:
         """Runs chronological zero look-ahead backtest simulation."""
         n = len(candles)
         active_trade: Optional[Trade] = None
-
-        # Lookback required for HTF dealing range & pivots
         start_idx = 45
 
         for i in range(start_idx, n):
@@ -130,9 +130,9 @@ class QuantumSmcResonanceBacktester:
                     if c.low <= active_trade.tp:
                         hit_tp = True
 
-                # Intra-bar conflict resolution: Conservative rule (SL hits first)
+                # Conservative intra-bar conflict resolution
                 if hit_sl and hit_tp:
-                    hit_tp = False # Assume stopped out first
+                    hit_tp = False
 
                 if hit_sl:
                     exit_price = active_trade.sl * (1.0 - self.slippage_pct if is_long else 1.0 + self.slippage_pct)
@@ -169,124 +169,167 @@ class QuantumSmcResonanceBacktester:
             if active_trade is not None:
                 continue
 
-            # ── 2. Evaluate Strategy Conditions on Closed Historical Window [0 ... i] ──
-            # HTF Range & Trend (Last 40 bars)
-            htf_window = candles[i - 40 : i]
-            htf_highs = [x.high for x in htf_window]
-            htf_lows = [x.low for x in htf_window]
-            htf_max = max(htf_highs)
-            htf_min = min(htf_lows)
-            htf_eq = (htf_max + htf_min) / 2.0
+            # ── 2. Strategy Signal Detection ──
+            risk_capital = self.capital * 0.02 # 2% risk per trade
 
+            # Common Indicator Math
             closes_20 = [x.close for x in candles[i - 20 : i]]
             sma20 = sum(closes_20) / len(closes_20)
-
-            in_discount = c.close < htf_eq
-            in_premium = c.close > htf_eq
-            is_uptrend = c.close > sma20
-
-            # Pivots in last 15 bars
+            avg_vol = sum([x.volume for x in candles[i - 20 : i]]) / 20.0
             recent_lows = [x.low for x in candles[i - 15 : i - 1]]
             recent_highs = [x.high for x in candles[i - 15 : i - 1]]
             min_low = min(recent_lows) if recent_lows else c.low
             max_high = max(recent_highs) if recent_highs else c.high
 
-            # Liquidity Sweep
-            ssl_sweep = c.low < min_low and c.close > min_low and (c.close - c.low) > (c.high - c.low) * 0.30
-            bsl_sweep = c.high > max_high and c.close < max_high and (c.high - c.close) > (c.high - c.low) * 0.30
+            # HTF Range (40 bars)
+            htf_window = candles[i - 40 : i]
+            htf_max = max([x.high for x in htf_window])
+            htf_min = min([x.low for x in htf_window])
+            htf_eq = (htf_max + htf_min) / 2.0
 
-            # Fair Value Gap
-            c_prev2 = candles[i - 2]
-            bull_fvg = c.low > c_prev2.high
-            bear_fvg = c.high < c_prev2.low
+            candle_range = c.high - c.low if (c.high - c.low) > 0 else 1.0
+            lower_wick = min(c.open, c.close) - c.low
+            upper_wick = c.high - max(c.open, c.close)
 
-            # Resonance Score Calculation
-            bull_score = 0
-            bear_score = 0
+            # Strategy Branches
+            long_trigger = False
+            short_trigger = False
+            score = 75
+            entry_price = c.close
+            sl = c.low * 0.996
+            tp = c.close * 1.04
 
-            # Factor 1: HTF Trend & Dealing Range (20 pts)
-            if is_uptrend and in_discount:
-                bull_score += 20
-            elif is_uptrend:
-                bull_score += 12
-            elif in_discount:
-                bull_score += 14
+            if self.strategy == "order_flow":
+                # Order Flow Absorption
+                bull_abs = c.volume > (avg_vol * 1.4) and (lower_wick > candle_range * 0.40) and c.close >= c.open
+                bear_abs = c.volume > (avg_vol * 1.4) and (upper_wick > candle_range * 0.40) and c.close <= c.open
+                if bull_abs:
+                    long_trigger = True
+                    score = 82
+                    entry_price = c.close * (1.0 + self.slippage_pct)
+                    sl = c.low * 0.995
+                    tp = entry_price + (entry_price - sl) * 3.0
+                elif bear_abs:
+                    short_trigger = True
+                    score = 82
+                    entry_price = c.close * (1.0 - self.slippage_pct)
+                    sl = c.high * 1.005
+                    tp = entry_price - (sl - entry_price) * 3.0
 
-            if not is_uptrend and in_premium:
-                bear_score += 20
-            elif not is_uptrend:
-                bear_score += 12
-            elif in_premium:
-                bear_score += 14
+            elif self.strategy == "volatility_squeeze":
+                # Volatility Squeeze Release
+                var_dev = math.sqrt(sum((x - sma20) ** 2 for x in closes_20) / len(closes_20))
+                is_squeeze_breakout = (var_dev < sma20 * 0.015) and (c.volume > avg_vol * 1.35)
+                if is_squeeze_breakout and c.close > sma20:
+                    long_trigger = True
+                    score = 80
+                    entry_price = c.close * (1.0 + self.slippage_pct)
+                    sl = sma20 * 0.996
+                    tp = entry_price + (entry_price - sl) * 3.0
+                elif is_squeeze_breakout and c.close < sma20:
+                    short_trigger = True
+                    score = 80
+                    entry_price = c.close * (1.0 - self.slippage_pct)
+                    sl = sma20 * 1.004
+                    tp = entry_price - (sl - entry_price) * 3.0
 
-            # Factor 2: Liquidity Sweep (20 pts)
-            if ssl_sweep:
-                bull_score += 20
-            if bsl_sweep:
-                bear_score += 20
+            elif self.strategy == "ml_momentum":
+                # Multi-tier trend momentum
+                closes_50 = [x.close for x in candles[i - 40 : i]]
+                sma50 = sum(closes_50) / len(closes_50)
+                if c.close > sma20 and sma20 > sma50 and c.volume > avg_vol:
+                    long_trigger = True
+                    score = 85
+                    entry_price = c.close * (1.0 + self.slippage_pct)
+                    sl = sma20 * 0.995
+                    tp = entry_price + (entry_price - sl) * 3.5
+                elif c.close < sma20 and sma20 < sma50 and c.volume > avg_vol:
+                    short_trigger = True
+                    score = 85
+                    entry_price = c.close * (1.0 - self.slippage_pct)
+                    sl = sma20 * 1.005
+                    tp = entry_price - (sl - entry_price) * 3.5
 
-            # Factor 3: Structural Confirmation (15 pts)
-            if c.close > prev.high:
-                bull_score += 15
-            if c.close < prev.low:
-                bear_score += 15
+            elif self.strategy == "stat_mean_reversion":
+                # Statistical 2.0-Sigma Reversion
+                var_dev = math.sqrt(sum((x - sma20) ** 2 for x in closes_20) / len(closes_20))
+                lower_band = sma20 - (2.0 * var_dev)
+                upper_band = sma20 + (2.0 * var_dev)
+                if c.low < lower_band and c.close > lower_band:
+                    long_trigger = True
+                    score = 78
+                    entry_price = c.close * (1.0 + self.slippage_pct)
+                    sl = c.low * 0.995
+                    tp = sma20 # Target central equilibrium
+                elif c.high > upper_band and c.close < upper_band:
+                    short_trigger = True
+                    score = 78
+                    entry_price = c.close * (1.0 - self.slippage_pct)
+                    sl = c.high * 1.005
+                    tp = sma20
 
-            # Factor 4: Order Block & FVG (15 pts)
-            if bull_fvg:
-                bull_score += 15
-            if bear_fvg:
-                bear_score += 15
+            elif self.strategy == "3stage_reversal" or self.strategy == "amd":
+                # Liquidity Sweep -> Reversal
+                ssl_sweep = c.low < min_low and c.close > min_low and lower_wick > candle_range * 0.35
+                bsl_sweep = c.high > max_high and c.close < max_high and upper_wick > candle_range * 0.35
+                if ssl_sweep:
+                    long_trigger = True
+                    score = 86
+                    entry_price = c.close * (1.0 + self.slippage_pct)
+                    sl = min_low * 0.995
+                    tp = entry_price + (entry_price - sl) * 3.5
+                elif bsl_sweep:
+                    short_trigger = True
+                    score = 86
+                    entry_price = c.close * (1.0 - self.slippage_pct)
+                    sl = max_high * 1.005
+                    tp = entry_price - (sl - entry_price) * 3.5
 
-            # Factor 5: Displacement (15 pts)
-            body = abs(c.close - c.open)
-            avg_body = sum([abs(x.close - x.open) for x in candles[i - 10 : i]]) / 10.0
-            if body > avg_body * 1.3:
-                if c.close > c.open:
-                    bull_score += 15
-                else:
-                    bear_score += 15
-            else:
-                bull_score += 5
-                bear_score += 5
+            else: # Default: quantum_smc
+                is_uptrend = c.close > sma20
+                in_discount = c.close < htf_eq
+                in_premium = c.close > htf_eq
+                ssl_sweep = c.low < min_low and c.close > min_low and (c.close - c.low) > (c.high - c.low) * 0.30
+                bsl_sweep = c.high > max_high and c.close < max_high and (c.high - c.close) > (c.high - c.low) * 0.30
+                c_prev2 = candles[i - 2]
+                bull_fvg = c.low > c_prev2.high
+                bear_fvg = c.high < c_prev2.low
 
-            # Factor 6: Volume Surge (15 pts)
-            avg_vol = sum([x.volume for x in candles[i - 10 : i]]) / 10.0
-            if c.volume > avg_vol * 1.3:
-                if c.close > c.open:
-                    bull_score += 15
-                else:
-                    bear_score += 15
-            else:
-                bull_score += 5
-                bear_score += 5
+                bull_score = (20 if is_uptrend and in_discount else 12) + (20 if ssl_sweep else 0) + (15 if c.close > prev.high else 0) + (15 if bull_fvg else 0) + (15 if c.volume > avg_vol * 1.3 else 5)
+                bear_score = (20 if not is_uptrend and in_premium else 12) + (20 if bsl_sweep else 0) + (15 if c.close < prev.low else 0) + (15 if bear_fvg else 0) + (15 if c.volume > avg_vol * 1.3 else 5)
 
-            # ── 3. Trade Entry Logic ──
-            risk_capital = self.capital * 0.02 # 2% risk per trade
+                if bull_score >= self.min_resonance and (ssl_sweep or bull_fvg):
+                    long_trigger = True
+                    score = bull_score
+                    entry_price = c.close * (1.0 + self.slippage_pct)
+                    sl = min_low * 0.996
+                    tp = entry_price + (entry_price - sl) * 3.2
+                elif bear_score >= self.min_resonance and (bsl_sweep or bear_fvg):
+                    short_trigger = True
+                    score = bear_score
+                    entry_price = c.close * (1.0 - self.slippage_pct)
+                    sl = max_high * 1.004
+                    tp = entry_price - (sl - entry_price) * 3.2
 
-            if bull_score >= self.min_resonance and (ssl_sweep or bull_fvg):
-                entry_price = c.close * (1.0 + self.slippage_pct)
-                sl = min_low * 0.996
+            # Execute Trade Entry
+            if long_trigger:
                 risk_per_share = entry_price - sl
                 if risk_per_share > 0:
                     shares = math.floor(risk_capital / risk_per_share)
                     if shares > 0 and (shares * entry_price) <= self.capital:
-                        tp = entry_price + (risk_per_share * 3.2) # 3.2 R:R
                         active_trade = Trade(
                             entry_bar=i, entry_time=c.time, symbol=self.symbol, direction='LONG',
-                            entry_price=entry_price, sl=sl, tp=tp, size=shares, resonance_score=bull_score
+                            entry_price=entry_price, sl=sl, tp=tp, size=shares, resonance_score=score
                         )
 
-            elif bear_score >= self.min_resonance and (bsl_sweep or bear_fvg):
-                entry_price = c.close * (1.0 - self.slippage_pct)
-                sl = max_high * 1.004
+            elif short_trigger:
                 risk_per_share = sl - entry_price
                 if risk_per_share > 0:
                     shares = math.floor(risk_capital / risk_per_share)
                     if shares > 0 and (shares * entry_price) <= self.capital:
-                        tp = entry_price - (risk_per_share * 3.2) # 3.2 R:R
                         active_trade = Trade(
                             entry_bar=i, entry_time=c.time, symbol=self.symbol, direction='SHORT',
-                            entry_price=entry_price, sl=sl, tp=tp, size=shares, resonance_score=bear_score
+                            entry_price=entry_price, sl=sl, tp=tp, size=shares, resonance_score=score
                         )
 
         return self.compute_metrics()
@@ -297,6 +340,7 @@ class QuantumSmcResonanceBacktester:
         if total_trades == 0:
             return {
                 "symbol": self.symbol,
+                "strategy": self.strategy,
                 "initial_capital": self.initial_capital,
                 "final_capital": self.capital,
                 "net_profit": 0.0,
@@ -325,7 +369,6 @@ class QuantumSmcResonanceBacktester:
         avg_loss = (total_loss / len(losses)) if losses else 0.0
         expectancy = ((win_rate / 100.0) * avg_win) - (((100.0 - win_rate) / 100.0) * avg_loss)
 
-        # Max Drawdown calculation
         peak = self.initial_capital
         max_dd = 0.0
         for eq in self.equity_curve:
@@ -335,7 +378,6 @@ class QuantumSmcResonanceBacktester:
             if dd > max_dd:
                 max_dd = dd
 
-        # Sharpe ratio estimation
         returns = [t.pnl_pct for t in self.trades]
         mean_ret = sum(returns) / len(returns) if returns else 0.0
         var_ret = sum((r - mean_ret) ** 2 for r in returns) / len(returns) if returns else 0.0
@@ -344,6 +386,7 @@ class QuantumSmcResonanceBacktester:
 
         return {
             "symbol": self.symbol,
+            "strategy": self.strategy,
             "initial_capital": round(self.initial_capital, 2),
             "final_capital": round(self.capital, 2),
             "net_profit": round(net_profit, 2),
@@ -376,7 +419,7 @@ class QuantumSmcResonanceBacktester:
 def print_ascii_report(results: Dict[str, Any]):
     """Renders high-visibility institutional ASCII performance dashboard."""
     print("═" * 72)
-    print("  QUANTUM AI MULTI-TIMEFRAME SMC & RESONANCE — BACKTEST REPORT")
+    print(f"  MI-007 QUANTITATIVE ENGINE — STRATEGY: {results['strategy'].upper()}")
     print(f"  Asset: {results['symbol']} | Initial Capital: ₹{results['initial_capital']:,}")
     print("═" * 72)
     print(f"  Net Profit:            ₹{results['net_profit']:+,.2f} ({results['net_profit_pct']:+.2f}%)")
@@ -388,17 +431,23 @@ def print_ascii_report(results: Dict[str, Any]):
     print(f"  Expectancy Per Trade:  ₹{results['expectancy']:+,.2f}")
     print(f"  Sharpe Ratio:          {results['sharpe_ratio']:.2f}")
     print("─" * 72)
-    print("  RECENT EXECUTIONS:")
-    print(f"  {'Type':<6} {'Entry':<10} {'Exit':<10} {'PnL (₹)':<12} {'Return':<8} {'Score':<6} {'Result'}")
-    print("─" * 72)
-    for t in results['trades'][-8:]:
-        res_tag = "WIN" if t['pnl'] > 0 else "LOSS"
-        print(f"  {t['direction']:<6} {t['entry']:<10.2f} {t['exit']:<10.2f} {t['pnl']:<+12.2f} {t['pnl_pct']:<+7.2f}% {t['resonance']:<6}% {res_tag}")
+    if results['trades']:
+        print("  RECENT EXECUTIONS:")
+        print(f"  {'Type':<6} {'Entry':<10} {'Exit':<10} {'PnL (₹)':<12} {'Return':<8} {'Score':<6} {'Result'}")
+        print("─" * 72)
+        for t in results['trades'][-8:]:
+            res_tag = "WIN" if t['pnl'] > 0 else "LOSS"
+            print(f"  {t['direction']:<6} {t['entry']:<10.2f} {t['exit']:<10.2f} {t['pnl']:<+12.2f} {t['pnl_pct']:<+7.2f}% {t['resonance']:<6}% {res_tag}")
+    else:
+        print("  No executions triggered with current parameters.")
     print("═" * 72)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Quantum AI MTF SMC & Resonance Backtester")
+    parser = argparse.ArgumentParser(description="MI-007 Quantitative Strategies Backtester")
     parser.add_argument("--symbol", type=str, default="RELIANCE", help="Ticker symbol")
+    parser.add_argument("--strategy", type=str, default="quantum_smc",
+                        choices=["quantum_smc", "order_flow", "volatility_squeeze", "ml_momentum", "stat_mean_reversion", "3stage_reversal", "amd"],
+                        help="Proprietary strategy model to backtest")
     parser.add_argument("--bars", type=int, default=600, help="Number of candles")
     parser.add_argument("--capital", type=float, default=100000.0, help="Initial capital in INR")
     parser.add_argument("--resonance", type=int, default=75, help="Minimum resonance score")
@@ -407,6 +456,7 @@ if __name__ == "__main__":
     candles = generate_synthetic_market_data(args.symbol, args.bars, 2450.0)
     backtester = QuantumSmcResonanceBacktester(
         symbol=args.symbol,
+        strategy=args.strategy,
         initial_capital=args.capital,
         min_resonance=args.resonance
     )

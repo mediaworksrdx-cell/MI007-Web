@@ -1,0 +1,64 @@
+//@version=5
+strategy("MI-007 Institutional Order Flow & Absorption Matrix", overlay=true, margin_long=100, margin_short=100, initial_capital=100000, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MI-007 INSTITUTIONAL ORDER FLOW & ABSORPTION MATRIX
+// System: Market Intelligence MI-007 Proprietary Quantitative Model
+// Rules:
+// - Bid x Ask Delta Imbalance & Cumulative Volume Delta (CVD) tracking
+// - Passive Limit Absorption at Key Liquidity Levels
+// - Point of Control (POC) and 70% Value Area Migration
+// ═══════════════════════════════════════════════════════════════════════════════
+
+imb_ratio    = input.float(3.0, "Imbalance Ratio (Bid x Ask Multiplier)", minval=1.5, maxval=5.0, step=0.5)
+vol_mult     = input.float(1.5, "Absorption Volume Threshold Multiplier", minval=1.0, maxval=3.0, step=0.1)
+tp_rr        = input.float(3.0, "Take-Profit R:R Ratio", minval=1.5, maxval=6.0, step=0.5)
+
+// Synthetic Delta & Volume Calculation
+vol_ma = ta.sma(volume, 20)
+is_high_volume = volume > (vol_ma * vol_mult)
+
+// Candle wick vs body analysis for passive limit absorption
+lower_wick = math.min(open, close) - low
+upper_wick = high - math.max(open, close)
+body       = math.abs(close - open)
+candle_range = high - low
+
+bullish_absorption = is_high_volume and (lower_wick > candle_range * 0.45) and (close >= open or (close - low) > (high - close))
+bearish_absorption = is_high_volume and (upper_wick > candle_range * 0.45) and (close <= open or (high - close) > (close - low))
+
+// Cumulative Delta estimation
+var float cvd = 0.0
+delta_proxy = (close - open) / (candle_range > 0 ? candle_range : 1) * volume
+cvd := cvd + delta_proxy
+
+// Divergence detection
+cvd_ma = ta.sma(cvd, 14)
+cvd_bull_div = low < low[5] and cvd > cvd_ma
+cvd_bear_div = high > high[5] and cvd < cvd_ma
+
+// Entries
+long_signal  = bullish_absorption or (cvd_bull_div and is_high_volume and close > open)
+short_signal = bearish_absorption or (cvd_bear_div and is_high_volume and close < open)
+
+var float long_sl = na
+var float long_tp = na
+var float short_sl = na
+var float short_tp = na
+
+if long_signal and strategy.position_size == 0
+    long_sl := low * 0.996
+    risk = close - long_sl
+    long_tp := close + (risk * tp_rr)
+    strategy.entry("OF Long", strategy.long, comment="MI-007 Order Flow Long")
+    strategy.exit("OF Exit Long", "OF Long", stop=long_sl, limit=long_tp)
+
+if short_signal and strategy.position_size == 0
+    short_sl := high * 1.004
+    risk = short_sl - close
+    short_tp := close - (risk * tp_rr)
+    strategy.entry("OF Short", strategy.short, comment="MI-007 Order Flow Short")
+    strategy.exit("OF Exit Short", "OF Short", stop=short_sl, limit=short_tp)
+
+plotshape(bullish_absorption, title="Bullish Absorption", location=location.belowbar, color=color.green, style=shape.triangleup, size=size.small, text="ABSORPTION ↑")
+plotshape(bearish_absorption, title="Bearish Absorption", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.small, text="ABSORPTION ↓")

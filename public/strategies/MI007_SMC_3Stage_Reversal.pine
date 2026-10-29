@@ -1,0 +1,76 @@
+//@version=5
+strategy("MI-007 Smart Money 3-Stage Reversal", overlay=true, margin_long=100, margin_short=100, initial_capital=100000, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MI-007 SMART MONEY 3-STAGE REVERSAL (SWEEP -> CHOCH -> RETEST)
+// System: Market Intelligence MI-007 Proprietary Quantitative Model
+// Rules:
+// - Stage 1: Liquidity Sweep of major swing high/low (BSL/SSL)
+// - Stage 2: Impulsive Change of Character (CHoCH / MSS) displacement
+// - Stage 3: Retest of unmitigated Order Block / 50% CE Fair Value Gap
+// ═══════════════════════════════════════════════════════════════════════════════
+
+pvt_len = input.int(5, "Pivot Lookback")
+tp_rr   = input.float(3.5, "Target R:R")
+
+ph = ta.pivothigh(high, pvt_len, pvt_len)
+pl = ta.pivotlow(low, pvt_len, pvt_len)
+
+var float swing_high = na
+var float swing_low  = na
+if not na(ph)
+    swing_high := ph
+if not na(pl)
+    swing_low := pl
+
+// Stage 1: Sweep
+ssl_swept = not na(swing_low) and low < swing_low and close > swing_low
+bsl_swept = not na(swing_high) and high > swing_high and close < swing_high
+
+var bool stage1_bull = false
+var bool stage1_bear = false
+if ssl_swept
+    stage1_bull := true
+if bsl_swept
+    stage1_bear := true
+
+// Stage 2: CHoCH
+bull_choch = stage1_bull and not na(swing_high) and ta.crossover(close, swing_high)
+bear_choch = stage1_bear and not na(swing_low) and ta.crossunder(close, swing_low)
+
+// Stage 3: Retest entry
+var bool bull_ready = false
+var bool bear_ready = false
+if bull_choch
+    bull_ready := true
+    stage1_bull := false
+if bear_choch
+    bear_ready := true
+    stage1_bear := false
+
+fvg_bull = low > high[2]
+fvg_bear = high < low[2]
+
+long_entry  = bull_ready and (fvg_bull or close <= open)
+short_entry = bear_ready and (fvg_bear or close >= open)
+
+var float long_sl = na
+var float long_tp = na
+var float short_sl = na
+var float short_tp = na
+
+if long_entry and strategy.position_size == 0
+    long_sl := not na(swing_low) ? swing_low * 0.996 : low * 0.996
+    risk = close - long_sl
+    long_tp := close + (risk * tp_rr)
+    strategy.entry("3-Stage Long", strategy.long, comment="MI-007 3-Stage Long")
+    strategy.exit("Exit 3-Stage Long", "3-Stage Long", stop=long_sl, limit=long_tp)
+    bull_ready := false
+
+if short_entry and strategy.position_size == 0
+    short_sl := not na(swing_high) ? swing_high * 1.004 : high * 1.004
+    risk = short_sl - close
+    short_tp := close - (risk * tp_rr)
+    strategy.entry("3-Stage Short", strategy.short, comment="MI-007 3-Stage Short")
+    strategy.exit("Exit 3-Stage Short", "3-Stage Short", stop=short_sl, limit=short_tp)
+    bear_ready := false

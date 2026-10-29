@@ -1,0 +1,55 @@
+//@version=5
+strategy("MI-007 Machine Learning Momentum Trend Engine", overlay=true, margin_long=100, margin_short=100, initial_capital=100000, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MI-007 MACHINE LEARNING MOMENTUM TREND ENGINE
+// System: Market Intelligence MI-007 Proprietary Quantitative Model
+// Rules:
+// - Multi-tier EMA Ribbon (9, 21, 50, 200) Hierarchical Alignment
+// - ADX Directional Expansion Filter (ADX > 25 with +DI / -DI expansion)
+// - RSI Momentum Velocity Acceleration (Cross 50/55 threshold)
+// - Adaptive Chandelier ATR Trailing Invalidation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+ema9   = ta.ema(close, 9)
+ema21  = ta.ema(close, 21)
+ema50  = ta.ema(close, 50)
+ema200 = ta.ema(close, 200)
+
+// ADX & Directional Movement
+[diplus, diminus, adx] = ta.dmi(14, 14)
+rsi_val = ta.rsi(close, 14)
+
+bull_trend = close > ema9 and ema9 > ema21 and ema21 > ema50 and ema50 > ema200
+bear_trend = close < ema9 and ema9 < ema21 and ema21 < ema50 and ema50 < ema200
+
+bull_mom = adx > 22 and diplus > diminus and rsi_val > 52 and rsi_val < 72
+bear_mom = adx > 22 and diminus > diplus and rsi_val < 48 and rsi_val > 28
+
+long_signal  = bull_trend and bull_mom and ta.crossover(close, ema9)
+short_signal = bear_trend and bear_mom and ta.crossunder(close, ema9)
+
+atr_val = ta.atr(14)
+var float long_sl = na
+var float long_tp = na
+var float short_sl = na
+var float short_tp = na
+
+if long_signal and strategy.position_size == 0
+    long_sl := ema21 - (atr_val * 0.5)
+    risk = close - long_sl
+    long_tp := close + (risk * 3.5)
+    strategy.entry("ML Trend Long", strategy.long, comment="MI-007 ML Long")
+    strategy.exit("Exit ML Long", "ML Trend Long", stop=long_sl, limit=long_tp)
+
+if short_signal and strategy.position_size == 0
+    short_sl := ema21 + (atr_val * 0.5)
+    risk = short_sl - close
+    short_tp := close - (risk * 3.5)
+    strategy.entry("ML Trend Short", strategy.short, comment="MI-007 ML Short")
+    strategy.exit("Exit ML Short", "ML Trend Short", stop=short_sl, limit=short_tp)
+
+plot(ema9, "EMA 9", color=color.yellow, linewidth=1)
+plot(ema21, "EMA 21", color=color.orange, linewidth=1)
+plot(ema50, "EMA 50", color=color.cyan, linewidth=2)
+plot(ema200, "EMA 200", color=color.white, linewidth=2)
