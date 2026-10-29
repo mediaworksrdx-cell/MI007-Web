@@ -7,8 +7,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental } from '@/lib/screener/types';
-import { STRATEGY_DEFINITIONS, StrategyId, generateCandlesForSymbol } from '@/lib/screener/technicalStrategies';
+import { COMBINED_STRATEGY_DEFINITIONS, StrategyId, generateCandlesForSymbol } from '@/lib/screener/technicalStrategies';
 import { runBacktest, BacktestResult, BacktestTrade } from '@/lib/screener/backtesting';
+import { searchZerodhaStocks } from '@/lib/screener/zerodhaStocks';
 
 export interface SavedPortfolio {
   id: string;
@@ -95,8 +96,73 @@ export function BacktestingView({
   }, []);
 
   // Active Company Object
-  const activeCompany = useMemo(() => {
-    return companies.find((c) => c.symbol === symbol) || companies[0];
+  const activeCompany = useMemo<CompanyFundamental>(() => {
+    const found = companies.find((c) => c.symbol.toUpperCase() === symbol.toUpperCase());
+    if (found) return found;
+
+    // Graceful resolution for Zerodha Kite stocks or external catalog symbols
+    const zd = searchZerodhaStocks(symbol, 1)[0];
+    if (zd) {
+      return {
+        symbol: zd.symbol,
+        name: zd.name,
+        market: 'INDIA',
+        sector: zd.sector || 'Indian Equity',
+        industry: zd.sector || 'Equities',
+        currentPrice: zd.lastPrice || 1000,
+        priceChangePct: 1.2,
+        marketCap: (zd.lastPrice || 1000) * 1000000,
+        pe: 22.5,
+        pb: 3.2,
+        dividendYield: 1.2,
+        roce: 18.5,
+        roe: 16.2,
+        debtToEquity: 0.35,
+        eps: (zd.lastPrice || 1000) / 22.5,
+        salesGrowth3Y: 14.5,
+        profitGrowth3Y: 16.8,
+        high52W: (zd.lastPrice || 1000) * 1.15,
+        low52W: (zd.lastPrice || 1000) * 0.82,
+        currencySymbol: '₹',
+        isConsolidated: true,
+        quarterlyResults: [],
+        annualProfitLoss: [],
+        balanceSheet: [],
+        cashFlow: [],
+        historicalRatios: [],
+        shareholdingPattern: [],
+      } as unknown as CompanyFundamental;
+    }
+
+    return companies[0] || ({
+      symbol: symbol || 'RELIANCE',
+      name: symbol || 'Reliance Industries Ltd.',
+      market: 'INDIA',
+      sector: 'Energy',
+      industry: 'Oil & Gas',
+      currentPrice: 1211.20,
+      priceChangePct: 1.2,
+      marketCap: 1800000,
+      pe: 24.5,
+      pb: 2.1,
+      dividendYield: 0.8,
+      roce: 12.5,
+      roe: 10.5,
+      debtToEquity: 0.4,
+      eps: 55.4,
+      salesGrowth3Y: 12.0,
+      profitGrowth3Y: 10.0,
+      high52W: 1350,
+      low52W: 1050,
+      currencySymbol: '₹',
+      isConsolidated: true,
+      quarterlyResults: [],
+      annualProfitLoss: [],
+      balanceSheet: [],
+      cashFlow: [],
+      historicalRatios: [],
+      shareholdingPattern: [],
+    } as unknown as CompanyFundamental);
   }, [companies, symbol]);
 
   // Run Backtest
@@ -105,7 +171,7 @@ export function BacktestingView({
       activeCompany.symbol,
       activeCompany.currentPrice,
       activeCompany.priceChangePct,
-      260
+      300
     );
     return runBacktest({
       symbol: activeCompany.symbol,
@@ -119,7 +185,7 @@ export function BacktestingView({
     });
   }, [activeCompany, strategyId, initialCapital, takeProfitPct, stopLossPct, maxHoldingDays, positionSizePct]);
 
-  const activeStrategy = STRATEGY_DEFINITIONS.find((s) => s.id === strategyId);
+  const activeStrategy = COMBINED_STRATEGY_DEFINITIONS.find((s) => s.id === strategyId);
 
   // Strategy-specific chart link ensuring only this strategy's corresponding indicators/SMC state render
   const strategyChartHref = useMemo(() => {
@@ -451,6 +517,11 @@ export function BacktestingView({
               onChange={(e) => setSymbol(e.target.value)}
               className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             >
+              {!companies.some((c) => c.symbol.toUpperCase() === symbol.toUpperCase()) && (
+                <option value={symbol} className="bg-[var(--theme-card-surface)] text-[var(--theme-card-text)]">
+                  {symbol} ({activeCompany.name})
+                </option>
+              )}
               {companies.map((c) => (
                 <option key={c.symbol} value={c.symbol} className="bg-[var(--theme-card-surface)] text-[var(--theme-card-text)]">
                   {c.symbol} ({c.name})
@@ -469,7 +540,7 @@ export function BacktestingView({
               onChange={(e) => setStrategyId(e.target.value as StrategyId)}
               className="w-full px-2.5 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] mono text-[12px] font-bold focus:outline-none focus:border-emerald-500"
             >
-              {STRATEGY_DEFINITIONS.map((s) => (
+              {COMBINED_STRATEGY_DEFINITIONS.map((s) => (
                 <option key={s.id} value={s.id} className="bg-[var(--theme-card-surface)] text-[var(--theme-card-text)]">
                   {s.name}
                 </option>

@@ -66,6 +66,7 @@ export function getToolRequiredPoints(tool: DrawingToolType): number {
     case 'ARROW_UP':
     case 'ARROW_DOWN':
     case 'FLAG':
+    case 'PIVOT_POINTS':
       return 1;
 
     case 'CHANNEL':
@@ -711,15 +712,22 @@ export function CandlestickCanvas({
       }
 
       // 4.5 Pivot Points (P, R1-R3, S1-S3)
-      if (d.tool === 'PIVOT_POINTS' && pts.length >= 2) {
-        const p2 = pts[1];
-        const minX = Math.min(p1.x, p2.x);
-        if (x >= minX - 18) {
-          const high = Math.max(p1.rawPrice, p2.rawPrice);
-          const low = Math.min(p1.rawPrice, p2.rawPrice);
-          const rng = high - low;
-          const p = (high + low) / 2;
-          const pivotLvls = [high + rng, p + rng, high, p, low, p - rng, low - rng];
+      if (d.tool === 'PIVOT_POINTS' && pts.length >= 1) {
+        if (x >= p1.x - 18) {
+          const anchorIdx = resolveDrawingPointIndex(d.points[0], cleanCandles);
+          const anchorCandle = cleanCandles[anchorIdx] || cleanCandles[Math.min(Math.max(0, d.points[0].index), cleanCandles.length - 1)];
+          const high = anchorCandle ? anchorCandle.high : (d.points[1] ? Math.max(d.points[0].price, d.points[1].price) : d.points[0].price * 1.008);
+          const low = anchorCandle ? anchorCandle.low : (d.points[1] ? Math.min(d.points[0].price, d.points[1].price) : d.points[0].price * 0.992);
+          const close = anchorCandle ? anchorCandle.close : d.points[0].price;
+          const rng = Math.max(0.05, high - low);
+          const p = (high + low + close) / 3;
+          const r1 = 2 * p - low;
+          const r2 = p + rng;
+          const r3 = high + 2 * (p - low);
+          const s1 = 2 * p - high;
+          const s2 = p - rng;
+          const s3 = low - 2 * (high - p);
+          const pivotLvls = [r3, r2, r1, p, s1, s2, s3];
           for (const pl of pivotLvls) {
             const ly = chartH * (1 - (pl - pMin) / pRange);
             if (Math.abs(y - ly) <= 18) return d;
@@ -2159,7 +2167,7 @@ export function CandlestickCanvas({
         else if (e.key === 'h' || e.key === 'H') { e.preventDefault(); onDrawingToolChange?.('HORIZONTAL'); }
         else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); onDrawingToolChange?.('RAY'); }
         else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); onDrawingToolChange?.('FIBONACCI'); }
-        else if (e.key === 'b' || e.key === 'B') { e.preventDefault(); onDrawingToolChange?.('RECTANGLE'); }
+
         else if (e.key === 'c' || e.key === 'C') { e.preventDefault(); onDrawingToolChange?.('CHANNEL'); }
         else if (e.key === 's' || e.key === 'S') { e.preventDefault(); onExportSnapshot?.('download'); }
       } else if (e.key === ' ') {

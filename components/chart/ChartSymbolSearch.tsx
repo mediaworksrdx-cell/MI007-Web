@@ -115,6 +115,7 @@ interface ChartSymbolSearchProps {
   onSelectInstrument: (item: ChartInstrumentItem) => void;
   backHref?: string;
   backLabel?: string;
+  isStandalone?: boolean;
 }
 
 // Resolve active instrument metadata (pure; extracted for React Compiler memoization)
@@ -158,6 +159,7 @@ export function ChartSymbolSearch({
   onSelectInstrument,
   backHref,
   backLabel,
+  isStandalone,
 }: ChartSymbolSearchProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -336,10 +338,21 @@ export function ChartSymbolSearch({
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hidden sm:inline-block">
             {currentInstrument.category}
           </span>
+          {isStandalone !== undefined && (
+            <span
+              className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded border hidden sm:inline-block ${
+                isStandalone
+                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400'
+                  : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
+              }`}
+            >
+              {isStandalone ? '🏛️ STANDALONE' : '🏢 CONSOLIDATED'}
+            </span>
+          )}
         </div>
 
         {/* ── Prominent Search Input Box ── */}
-        <div className="relative flex-1 max-w-xl">
+        <div className="relative flex-1 max-w-2xl">
           <div className="relative flex items-center">
             <span className="absolute left-3 text-slate-400 dark:text-slate-500 pointer-events-none text-xs">
               🔍
@@ -380,16 +393,16 @@ export function ChartSymbolSearch({
 
           {/* ── Expandable Floating Search Dropdown (Institutional TV Style) ── */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 w-full mt-1.5 max-h-96 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/98 dark:bg-[#0A0E1A]/98 backdrop-blur-xl shadow-2xl z-[150] overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-100">
+        <div className="absolute top-full left-0 w-full min-w-[320px] sm:min-w-[540px] md:min-w-[620px] max-w-2xl mt-1.5 max-h-96 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/98 dark:bg-[#0A0E1A]/98 backdrop-blur-xl shadow-2xl z-[250] overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-100">
           {/* Category Tabs Header */}
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/80 px-3 py-2 flex-wrap gap-1.5">
-            <div className="flex items-center gap-1">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/80 px-3 py-2 gap-2">
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none whitespace-nowrap py-0.5">
               {(['ALL', 'STOCKS', 'INDICES', 'COMMODITIES', 'FOREX', 'CRYPTO'] as const).map((cat) => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => setCategoryFilter(cat)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-bold transition-all cursor-pointer shrink-0 ${
                     categoryFilter === cat
                       ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800'
@@ -399,8 +412,8 @@ export function ChartSymbolSearch({
                 </button>
               ))}
             </div>
-            <div className="text-[11px] font-mono text-slate-400 dark:text-slate-500 font-medium">
-              {searchResults.length} {searchResults.length === 1 ? 'match' : 'matches'} · Use ↑↓ and Enter
+            <div className="text-[10.5px] font-mono text-slate-400 dark:text-slate-500 font-medium shrink-0 hidden sm:block">
+              {searchResults.length} {searchResults.length === 1 ? 'match' : 'matches'}
             </div>
           </div>
 

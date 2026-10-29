@@ -29,7 +29,6 @@ const SECTIONS: HotkeySection[] = [
       { keys: ['Alt', 'H'], label: 'Horizontal Line', desc: 'Full-width S/R level' },
       { keys: ['Alt', 'R'], label: 'Extended Ray', desc: 'Ray projecting rightward' },
       { keys: ['Alt', 'F'], label: 'Fibonacci Retracement', desc: '0.618 golden pocket' },
-      { keys: ['Alt', 'B'], label: 'S/R Box', desc: 'Order blocks & consolidations' },
       { keys: ['Alt', 'C'], label: 'Parallel Channel', desc: '3-point trend channel' },
       { keys: ['Alt', 'M'], label: 'Measure Tool', desc: 'Price % delta & bars' },
     ],

@@ -130,10 +130,10 @@ export function CompanySearchModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-28 sm:pt-36 p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto">
+    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-44 sm:pt-52 md:pt-60 p-4 pb-12 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto">
       <div
         style={{ transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)` }}
-        className="relative w-full max-w-2xl rounded-2xl border-2 terminal-page-panel shadow-2xl overflow-hidden bg-[var(--theme-card-bg)] flex flex-col max-h-[75vh]"
+        className="relative w-full max-w-2xl rounded-2xl border-2 terminal-page-panel shadow-2xl overflow-hidden bg-[var(--theme-card-bg)] flex flex-col max-h-[68vh] my-auto"
       >
         {/* Search Input Bar with Reposition Drag Handle */}
         <div

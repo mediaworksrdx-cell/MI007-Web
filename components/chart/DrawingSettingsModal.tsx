@@ -163,8 +163,9 @@ export function DrawingSettingsModal({
     setFibLevels(drawing.fibLevels && drawing.fibLevels.length > 0 ? drawing.fibLevels : DEFAULT_FIB_LEVELS);
 
     if (drawing.points && drawing.points.length > 0) {
+      const pts = drawing.tool === 'PIVOT_POINTS' ? [drawing.points[0]] : drawing.points;
       setPointCoords(
-        drawing.points.map((p) => {
+        pts.map((p) => {
           const resolvedIdx = (candles && candles.length > 0)
             ? resolveDrawingPointIndex(p, candles)
             : p.index;
@@ -244,7 +245,8 @@ export function DrawingSettingsModal({
     if (!drawing) return;
 
     // Apply exact prices and coordinates back to drawing points
-    const updatedPoints = drawing.points.map((p, idx) => {
+    const pointsSource = drawing.tool === 'PIVOT_POINTS' ? [drawing.points[0]] : drawing.points;
+    const updatedPoints = pointsSource.map((p, idx) => {
       const coord = pointCoords[idx];
       if (!coord) return p;
       const cleanPriceStr = String(coord.price).replace(/,/g, '').trim();
@@ -452,15 +454,17 @@ export function DrawingSettingsModal({
                     className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5"
                   >
                     <div className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                      <span>Point {idx + 1} Coordinates</span>
-                      <span className="font-mono text-[10px] text-slate-400">Anchor #{idx + 1}</span>
+                      <span>{drawing.tool === 'PIVOT_POINTS' ? 'Pivot Coordinates' : `Point ${idx + 1} Coordinates`}</span>
+                      <span className="font-mono text-[10px] text-slate-400">
+                        {drawing.tool === 'PIVOT_POINTS' ? 'Anchor' : `Anchor #${idx + 1}`}
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       {/* Exact Price Input */}
                       <div>
                         <label className="block text-[10.5px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                          Price {idx + 1}
+                          {drawing.tool === 'PIVOT_POINTS' ? 'Pivot Price' : `Price ${idx + 1}`}
                         </label>
                         <input
                           type="number"
@@ -476,7 +480,7 @@ export function DrawingSettingsModal({
                       {/* Bar # / Time index */}
                       <div>
                         <label className="block text-[10.5px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                          Bar #{idx + 1}
+                          {drawing.tool === 'PIVOT_POINTS' ? 'Bar #' : `Bar #${idx + 1}`}
                         </label>
                         <input
                           type="number"

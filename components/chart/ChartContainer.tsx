@@ -43,6 +43,11 @@ interface ChartContainerProps {
   backHref?: string;
   backLabel?: string;
   isStandalone?: boolean;
+  initialStrategies?: string;
+  initialIndicatorsParam?: string;
+  initialSmcParam?: string;
+  initialSetupId?: string;
+  initialTfParam?: string;
 }
 
 const TIMEFRAME_MS: Record<string, number> = {
@@ -168,6 +173,11 @@ export function ChartContainer({
   backHref,
   backLabel,
   isStandalone = false,
+  initialStrategies,
+  initialIndicatorsParam,
+  initialSmcParam,
+  initialSetupId,
+  initialTfParam,
 }: ChartContainerProps) {
   const instruments = INSTRUMENTS[market];
   const [selectedSymbol, setSelectedSymbol] = useState(
@@ -254,9 +264,9 @@ export function ChartContainer({
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search);
-      const smcParam = sp.get('smc');
-      const strategiesParam = sp.get('strategies');
-      const indicatorsParam = sp.get('indicators');
+      const smcParam = initialSmcParam !== undefined ? initialSmcParam : sp.get('smc');
+      const strategiesParam = initialStrategies !== undefined ? initialStrategies : sp.get('strategies');
+      const indicatorsParam = initialIndicatorsParam !== undefined ? initialIndicatorsParam : sp.get('indicators');
 
       const hasSmcStrat = strategiesParam
         ? decodeURIComponent(strategiesParam).split(',').some(s => s.startsWith('smc_'))
@@ -294,7 +304,10 @@ export function ChartContainer({
       }
 
       // Read indicators and strategies from URL parameters (e.g. from Screener Actions)
-      if (indicatorsParam !== null || strategiesParam !== null) {
+      const hasStrategyOrIndParams = Boolean(
+        (indicatorsParam && indicatorsParam !== '') || (strategiesParam && strategiesParam !== '')
+      );
+      if (hasStrategyOrIndParams) {
         const activeTypes: { type: IndicatorType; period?: number; color?: string }[] = [];
 
         // Parse strategiesParam
@@ -383,11 +396,15 @@ export function ChartContainer({
   const [indicatorConfigs, setIndicatorConfigs] = useState<IndicatorConfig[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
-      // If URL specified indicators or strategies, initialize strictly to those indicators immediately
       const sp = new URLSearchParams(window.location.search);
-      const indParam = sp.get('indicators');
-      const stratParam = sp.get('strategies');
-      if (indParam !== null || stratParam !== null) {
+      const indParam = initialIndicatorsParam !== undefined ? initialIndicatorsParam : sp.get('indicators');
+      const stratParam = initialStrategies !== undefined ? initialStrategies : sp.get('strategies');
+
+      // If URL/props specified indicators or strategies, strictly isolate to ONLY those indicators
+      const hasSpecificRequestedInds = Boolean(
+        (indParam && indParam !== '') || (stratParam && stratParam !== '')
+      );
+      if (hasSpecificRequestedInds) {
         const initialTypes: { type: IndicatorType; period?: number; color?: string }[] = [];
         if (stratParam) {
           const strats = decodeURIComponent(stratParam).split(',');
@@ -1442,6 +1459,7 @@ export function ChartContainer({
         market={market}
         backHref={backHref}
         backLabel={backLabel}
+        isStandalone={isStandalone}
         onSelectInstrument={(item: ChartInstrumentItem) => {
           setSelectedSymbol(item.symbol);
           if (typeof window !== 'undefined' && window.location.pathname.startsWith('/chart/')) {

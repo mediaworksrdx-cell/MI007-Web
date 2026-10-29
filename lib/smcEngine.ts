@@ -656,7 +656,7 @@ export function detectStructureBreaks(
 export function detectLiquidity(
   candles: Candle[],
   swings: SmcSwingPoint[],
-  minWickRatio = 0.40
+  minWickRatio = 0.25
 ): { levels: SmcLiquidityLevel[]; sweeps: SmcLiquiditySweep[] } {
   const levels: SmcLiquidityLevel[] = [];
   const sweeps: SmcLiquiditySweep[] = [];
@@ -664,12 +664,13 @@ export function detectLiquidity(
   const highs = swings.filter((s) => s.isHigh);
   const lows = swings.filter((s) => !s.isHigh);
 
-  // Equal Highs (EQH) within 0.15% threshold
+  // Equal Highs (EQH) within 0.35% threshold
   for (let i = 0; i < highs.length; i++) {
     for (let j = i + 1; j < highs.length; j++) {
+      if (Math.abs(highs[i].index - highs[j].index) < 3) continue;
       const diff = Math.abs(highs[i].price - highs[j].price);
       const avg = (highs[i].price + highs[j].price) / 2;
-      if (diff / avg <= 0.0015) {
+      if (diff / avg <= 0.0035) {
         levels.push({
           id: `eqh-${highs[i].index}-${highs[j].index}`,
           price: Math.max(highs[i].price, highs[j].price),
@@ -682,12 +683,13 @@ export function detectLiquidity(
     }
   }
 
-  // Equal Lows (EQL) within 0.15% threshold
+  // Equal Lows (EQL) within 0.35% threshold
   for (let i = 0; i < lows.length; i++) {
     for (let j = i + 1; j < lows.length; j++) {
+      if (Math.abs(lows[i].index - lows[j].index) < 3) continue;
       const diff = Math.abs(lows[i].price - lows[j].price);
       const avg = (lows[i].price + lows[j].price) / 2;
-      if (diff / avg <= 0.0015) {
+      if (diff / avg <= 0.0035) {
         levels.push({
           id: `eql-${lows[i].index}-${lows[j].index}`,
           price: Math.min(lows[i].price, lows[j].price),
@@ -740,7 +742,7 @@ export function detectLiquidity(
           const upperWick = cur.high - Math.max(cur.open, cur.close);
           const upperWickRatio = upperWick / totalRange;
 
-          if (upperWickRatio >= minWickRatio || totalRange / cur.open > 0.01) {
+          if (upperWickRatio >= minWickRatio || (cur.high - lvl.price) / lvl.price > 0.0015 || totalRange / cur.open > 0.006) {
             lvl.isSwept = true;
             lvl.sweepCandleIndex = i;
             sweeps.push({
@@ -760,7 +762,7 @@ export function detectLiquidity(
           const lowerWick = Math.min(cur.open, cur.close) - cur.low;
           const lowerWickRatio = lowerWick / totalRange;
 
-          if (lowerWickRatio >= minWickRatio || totalRange / cur.open > 0.01) {
+          if (lowerWickRatio >= minWickRatio || (lvl.price - cur.low) / lvl.price > 0.0015 || totalRange / cur.open > 0.006) {
             lvl.isSwept = true;
             lvl.sweepCandleIndex = i;
             sweeps.push({
@@ -785,11 +787,15 @@ export function detectLiquidity(
 
 export function detectOrderBlocksAndBreakers(
   candles: Candle[],
-  breaks: SmcStructureBreak[]
+  breaks: SmcStructureBreak[],
+  options?: SmcFilterOptions
 ): { orderBlocks: SmcOrderBlock[]; breakers: SmcOrderBlock[] } {
   const orderBlocks: SmcOrderBlock[] = [];
   const breakers: SmcOrderBlock[] = [];
   if (candles.length < 5) return { orderBlocks, breakers };
+
+  const reqVol = options?.requireVolumeExpansion ?? false;
+  const volMult = options?.volumeSmaMultiple ?? 1.10;
 
   const volMa20: number[] = [];
   for (let i = 0; i < candles.length; i++) {
@@ -805,10 +811,11 @@ export function detectOrderBlocksAndBreakers(
     const candle = candles[i];
     const next = candles[i + 1];
     const ma = volMa20[i + 1] || next.volume || 1;
-    const isHighVol = next.volume >= 1.15 * ma;
+    const isHighVol = reqVol ? next.volume >= volMult * ma : true;
 
-    // Bullish OB (Demand): Bearish candle followed by high volume impulse candle breaking high
-    if (candle.close < candle.open && next.close > candle.high && isHighVol) {
+    // Bullish OB (Demand): Bearish candle followed by strong bullish impulse breaking candle high
+    const isBullImpulse = next.close > candle.high && (next.close - next.open) >= (candle.high - candle.low) * 0.35;
+    if (candle.close < candle.open && isBullImpulse && isHighVol) {
       if (orderBlocks.length > 0) {
         const lastOb = orderBlocks[orderBlocks.length - 1];
         if (lastOb.isBullish && Math.abs(lastOb.startIndex - i) <= 1) {
@@ -818,12 +825,16 @@ export function detectOrderBlocksAndBreakers(
         }
       }
 
+      const topPrice = candle.high;
+      const bottomPrice = candle.low;
+      const mtPrice = (topPrice + bottomPrice) / 2; // 50% Mean Threshold
+
       const ob: SmcOrderBlock = {
         id: `ob-bull-${i}`,
         startIndex: i,
         endIndex: candles.length - 1,
-        topPrice: candle.high,
-        bottomPrice: candle.low,
+        topPrice,
+        bottomPrice,
         isBullish: true,
         isBreaker: false,
         isMitigated: false,
@@ -833,7 +844,7 @@ export function detectOrderBlocksAndBreakers(
       };
 
       for (let k = i + 2; k < candles.length; k++) {
-        // Violated -> flipped to Breaker
+        // Violated -> closed below bottom boundary -> converted to Bearish Breaker (Resistance)
         if (candles[k].close < ob.bottomPrice) {
           ob.isMitigated = true;
           ob.isBreaker = true;
@@ -865,7 +876,8 @@ export function detectOrderBlocksAndBreakers(
           }
           breakers.push(brk);
           break;
-        } else if (candles[k].low <= ob.topPrice) {
+        } else if (candles[k].low <= mtPrice) {
+          // Mitigated when price trades deep into the 50% mean threshold
           ob.isMitigated = true;
           ob.endIndex = k;
           ob.mitigationIndex = k;
@@ -875,8 +887,9 @@ export function detectOrderBlocksAndBreakers(
       orderBlocks.push(ob);
     }
 
-    // Bearish OB (Supply): Bullish candle followed by high volume breakdown candle breaking low
-    if (candle.close > candle.open && next.close < candle.low && isHighVol) {
+    // Bearish OB (Supply): Bullish candle followed by strong bearish impulse breaking candle low
+    const isBearImpulse = next.close < candle.low && (next.open - next.close) >= (candle.high - candle.low) * 0.35;
+    if (candle.close > candle.open && isBearImpulse && isHighVol) {
       if (orderBlocks.length > 0) {
         const lastOb = orderBlocks[orderBlocks.length - 1];
         if (!lastOb.isBullish && Math.abs(lastOb.startIndex - i) <= 1) {
@@ -886,12 +899,16 @@ export function detectOrderBlocksAndBreakers(
         }
       }
 
+      const topPrice = candle.high;
+      const bottomPrice = candle.low;
+      const mtPrice = (topPrice + bottomPrice) / 2; // 50% Mean Threshold
+
       const ob: SmcOrderBlock = {
         id: `ob-bear-${i}`,
         startIndex: i,
         endIndex: candles.length - 1,
-        topPrice: candle.high,
-        bottomPrice: candle.low,
+        topPrice,
+        bottomPrice,
         isBullish: false,
         isBreaker: false,
         isMitigated: false,
@@ -901,6 +918,7 @@ export function detectOrderBlocksAndBreakers(
       };
 
       for (let k = i + 2; k < candles.length; k++) {
+        // Violated -> closed above top boundary -> converted to Bullish Breaker (Support)
         if (candles[k].close > ob.topPrice) {
           ob.isMitigated = true;
           ob.isBreaker = true;
@@ -932,7 +950,8 @@ export function detectOrderBlocksAndBreakers(
           }
           breakers.push(brk);
           break;
-        } else if (candles[k].high >= ob.bottomPrice) {
+        } else if (candles[k].high >= mtPrice) {
+          // Mitigated when price trades deep into the 50% mean threshold
           ob.isMitigated = true;
           ob.endIndex = k;
           ob.mitigationIndex = k;
@@ -1366,7 +1385,10 @@ export function detectSessionLevels(candles: Candle[]): SmcSessionLevels {
   for (const c of candles) {
     const d = new Date(c.openTime);
     const dayKey = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
-    const weekKey = `${d.getUTCFullYear()}-W${Math.floor(d.getUTCDate() / 7)}`;
+    const dayOfWeek = (d.getUTCDay() + 6) % 7; // 0 = Monday, 6 = Sunday
+    const mondayEpoch = c.openTime - dayOfWeek * 86400000;
+    const monDate = new Date(mondayEpoch);
+    const weekKey = `${monDate.getUTCFullYear()}-W${monDate.getUTCMonth()}-${monDate.getUTCDate()}`;
 
     const curDay = dayGroups.get(dayKey);
     if (!curDay) {
@@ -1535,10 +1557,10 @@ export function detectAll16SmcSetups(
 
     // 2. Track post-formation bar outcomes to determine historical lifecycle state
     // Institutional rules:
-    // - maxLifespanBars = 12: Setups older than 12 bars without reaching target expire.
+    // - maxLifespanBars = 50: Setups remain active across the session unless target or stop loss is reached.
     // - Retest failure: A setup is invalidated if price drops past retest tolerance (> 45% risk or > 2.2% price).
     // - Momentum failure: 3 consecutive bars closing beyond entry on the adverse side invalidates the setup.
-    const maxLifespanBars = 12;
+    const maxLifespanBars = 50;
     const maxRetestDistance = Math.min(risk * 0.45, entryPrice * 0.022);
     let adverseBars = 0;
 
@@ -2001,12 +2023,18 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 13: Order Block + FVG Confluence
+  let foundBullObFvg = false;
+  let foundBearObFvg = false;
   for (const ob of activeObs) {
+    if (ob.isBullish && foundBullObFvg) continue;
+    if (!ob.isBullish && foundBearObFvg) continue;
     const overlappingFvg = fvgs.find(
       (f) => !f.isInverse && f.isBullish === ob.isBullish && !f.isInvalidated && !f.isMitigated && f.state !== 'MITIGATED' && f.state !== 'INVALIDATED' && Math.abs(f.startIndex - ob.startIndex) <= 3
     );
     if (overlappingFvg) {
       const isBull = ob.isBullish;
+      if (isBull) foundBullObFvg = true;
+      else foundBearObFvg = true;
       setups.push(makeSetup(
         `setup_ob_fvg_${ob.id}`,
         isBull ? 'Order Block + FVG Confluence (Bullish)' : 'Order Block + FVG Confluence (Bearish)',
@@ -2019,7 +2047,7 @@ export function detectAll16SmcSetups(
         isBull ? dealingRange.highPrice : dealingRange.lowPrice,
         `Strong confluence: Order Block overlaps with Fair Value Gap at ${overlappingFvg.cePrice.toFixed(2)}.`
       ));
-      break;
+      if (foundBullObFvg && foundBearObFvg) break;
     }
   }
 
@@ -2218,7 +2246,7 @@ export function calculateSMC(
   const { levels: liquidityLevels, sweeps } = detectLiquidity(candles, swings);
 
   // 4. Detect Order Blocks & Breakers
-  const { orderBlocks, breakers } = detectOrderBlocksAndBreakers(candles, structureBreaks);
+  const { orderBlocks, breakers } = detectOrderBlocksAndBreakers(candles, structureBreaks, opt);
 
   // 5. Detect Fair Value Gaps (FVGs) with Invalidation-First Waterfall
   const fvgs = detectFairValueGaps(candles);

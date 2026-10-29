@@ -7,7 +7,15 @@ import { MarketType } from '@/lib/types';
 
 interface ChartPageProps {
   params: Promise<{ symbol: string }>;
-  searchParams: Promise<{ market?: string; from?: string }>;
+  searchParams: Promise<{
+    market?: string;
+    from?: string;
+    strategies?: string;
+    indicators?: string;
+    smc?: string;
+    setupId?: string;
+    tf?: string;
+  }>;
 }
 
 const CRYPTO_SET = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC']);
@@ -22,7 +30,8 @@ const UAE_SET = new Set(['DFMGI', 'ADXGI', 'ADX', 'EMAAR', 'FAB', 'DEWA', 'ALDAR
 
 export default function ChartPage({ params, searchParams }: ChartPageProps) {
   const { symbol } = use(params);
-  const { market: marketParam, from } = use(searchParams);
+  const resolvedSearchParams = use(searchParams);
+  const { market: marketParam, from } = resolvedSearchParams;
   const isFromScreener = from === 'screener';
 
   const cleanSym = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
@@ -85,6 +94,11 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
             backHref={backHref}
             backLabel={backLabel}
             isStandalone={true}
+            initialStrategies={resolvedSearchParams.strategies}
+            initialIndicatorsParam={resolvedSearchParams.indicators}
+            initialSmcParam={resolvedSearchParams.smc}
+            initialSetupId={resolvedSearchParams.setupId}
+            initialTfParam={resolvedSearchParams.tf}
           />
         </div>
       </main>

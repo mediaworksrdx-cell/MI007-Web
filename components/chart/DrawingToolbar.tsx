@@ -68,25 +68,9 @@ const TOOL_GROUPS: ToolGroup[] = [
       { id: 'FIBONACCI', label: 'Fib Retracement', desc: '0.236, 0.382, 0.5, 0.618 golden pocket', icon: '≡' },
       { id: 'FIBONACCI_EXTENSION', label: 'Fib Extension', desc: '3 points: 1.0, 1.618, 2.618 targets', icon: '⤢' },
       { id: 'FIB_CHANNEL', label: 'Fib Channel', desc: '3 points: Fibonacci channel rails', icon: '⫸' },
-      { id: 'PIVOT_POINTS', label: 'Pivot Points', desc: '2 points: anchor High/Low to plot Pivot (P), R1-R3, S1-S3 levels', icon: '☩' },
+      { id: 'PIVOT_POINTS', label: 'Pivot Points', desc: '1 point: click anchor candle to plot Pivot (P), R1-R3, S1-S3 levels', icon: '☩' },
       { id: 'GANN_BOX', label: 'Gann Box', desc: '4x4 square grid with diagonal rays', icon: '⊞' },
       { id: 'GANN_FAN', label: 'Gann Fan', desc: '1x8 to 8x1 geometric Gann angles', icon: '◬' },
-    ],
-  },
-  {
-    id: 'shapes',
-    title: 'Shapes & Zones',
-    defaultTool: 'RECTANGLE',
-    tools: [
-      { id: 'RECTANGLE', label: 'Support / Resistance Box', desc: '2 points: frame order blocks & zones', icon: '▭' },
-      { id: 'ROTATED_RECTANGLE', label: 'Rotated Rectangle', desc: '3 points: angled order block channel', icon: '▱' },
-      { id: 'CIRCLE', label: 'Circle Marker', desc: '2 points: center point and radius', icon: '○' },
-      { id: 'ELLIPSE', label: 'Ellipse Zone', desc: '2 points: horizontal/vertical swing oval', icon: '⬭' },
-      { id: 'TRIANGLE', label: 'Triangle Pattern', desc: '3 points: triangle consolidation pattern', icon: '△' },
-      { id: 'POLYLINE', label: 'Polyline', desc: 'Multi-point connected path (dbl-click to end)', icon: '⌇' },
-      { id: 'CURVE', label: 'Curved Arc', desc: '3 points: quadratic curve/cup pattern', icon: '⌒' },
-      { id: 'BRUSH', label: 'Freehand Pen', desc: 'Click and drag to sketch freeform paths', icon: '✎' },
-      { id: 'HIGHLIGHTER', label: 'Highlighter', desc: 'Wide translucent marker stroke', icon: '🖍' },
     ],
   },
   {
@@ -140,7 +124,6 @@ export function DrawingToolbar({
   const [selectedToolsInGroup, setSelectedToolsInGroup] = useState<Record<string, DrawingToolType>>({
     lines: 'TRENDLINE',
     fib: 'FIBONACCI',
-    shapes: 'RECTANGLE',
     annotations: 'TEXT',
   });
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -294,7 +277,7 @@ export function DrawingToolbar({
 
       <div className="w-5 h-[1px] bg-slate-200 dark:bg-slate-800 my-1" />
 
-      {/* ── 2. Tool Groups (Lines, Fib, Shapes, Harmonics, Positions, Text) ── */}
+      {/* ── 2. Tool Groups (Lines, Fib, Text & Annotations) ── */}
       <div className="flex flex-col items-center gap-1">
         {TOOL_GROUPS.map((group, groupIndex) => {
           const isGroupActive = group.tools.some((t) => t.id === activeDrawingTool);
