@@ -80,8 +80,6 @@ function SmcToggleRow({
   checked,
   onChange,
   badge,
-  badgeColor,
-  accent = 'emerald',
 }: {
   label: string;
   sublabel?: string;
@@ -89,55 +87,41 @@ function SmcToggleRow({
   onChange: (val: boolean) => void;
   badge?: string;
   badgeColor?: string;
-  accent?: 'emerald' | 'amber' | 'rose' | 'teal' | 'indigo' | 'purple' | 'blue';
+  accent?: string;
 }) {
-  const getToggleColor = () => {
-    if (!checked) return 'bg-slate-300 dark:bg-slate-700';
-    switch (accent) {
-      case 'amber':
-        return 'bg-amber-500';
-      case 'rose':
-        return 'bg-rose-500';
-      case 'teal':
-        return 'bg-teal-500';
-      case 'blue':
-        return 'bg-blue-500';
-      case 'purple':
-        return 'bg-purple-500';
-      case 'indigo':
-        return 'bg-indigo-500';
-      case 'emerald':
-      default:
-        return 'bg-emerald-500';
-    }
-  };
-
   return (
-    <div className="flex items-center justify-between py-1 px-1.5 rounded-lg hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+    <div
+      onClick={() => onChange(!checked)}
+      className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors cursor-pointer select-none"
+    >
       <div className="min-w-0 pr-2">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-semibold text-[11.5px] text-slate-800 dark:text-slate-200">{label}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium text-slate-700 dark:text-slate-200">{label}</span>
           {badge && (
-            <span
-              className={`text-[9px] font-mono font-bold px-1 rounded border ${
-                badgeColor ||
-                'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700'
-              }`}
-            >
+            <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500 px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700">
               {badge}
             </span>
           )}
         </div>
-        {sublabel && <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{sublabel}</div>}
+        {sublabel && (
+          <div className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight mt-0.5">
+            {sublabel}
+          </div>
+        )}
       </div>
       <button
         type="button"
-        onClick={() => onChange(!checked)}
-        className={`w-7 h-4 rounded-full transition-colors relative cursor-pointer shrink-0 ${getToggleColor()}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onChange(!checked);
+        }}
+        className={`w-8 h-4.5 rounded-full transition-colors relative shrink-0 cursor-pointer ${
+          checked ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'
+        }`}
       >
         <span
-          className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
-            checked ? 'translate-x-3' : 'translate-x-0'
+          className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+            checked ? 'translate-x-3.5' : 'translate-x-0'
           }`}
         />
       </button>
@@ -729,513 +713,350 @@ export function ChartToolbar({
 
           {openMenu === 'SMC' && (
             <div
-              className="absolute top-full left-0 mt-1 w-96 sm:w-[420px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[580px] flex flex-col animate-in fade-in duration-75 overflow-hidden"
+              className="absolute top-full left-0 mt-1 w-80 sm:w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[520px] flex flex-col animate-in fade-in duration-75 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 shrink-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-black text-[11px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+              <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-black text-xs px-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
                     SMC
                   </span>
-                  <div>
-                    <div className="text-xs font-bold text-slate-900 dark:text-slate-100">Smart Money Concepts</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Institutional Order Flow & Structure</div>
-                  </div>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100">Smart Money Concepts</span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setOpenMenu(null)}
-                  className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-sm font-bold"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenMenu(null);
+                  }}
+                  title="Close SMC menu"
+                  className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer font-bold text-sm"
                 >
                   ✕
                 </button>
               </div>
 
-              {/* Master Toggle */}
-              <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-emerald-50/50 dark:bg-emerald-500/5 flex items-center justify-between shrink-0">
+              {/* Master Switch */}
+              <div
+                onClick={() => handleUpdateSmc({ enabled: !activeSmcConfig.enabled })}
+                className="px-3.5 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-slate-900/40 cursor-pointer select-none shrink-0"
+              >
                 <div>
-                  <div className="text-xs font-bold text-slate-800 dark:text-slate-100">Enable SMC Overlays</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400">Master switch for all institutional zones</div>
+                  <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">Enable SMC Overlays</div>
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500">Master switch for all SMC chart elements</div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleUpdateSmc({ enabled: !activeSmcConfig.enabled })}
-                  className={`w-10 h-5.5 rounded-full transition-colors relative cursor-pointer ${
-                    activeSmcConfig.enabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleUpdateSmc({ enabled: !activeSmcConfig.enabled });
+                  }}
+                  className={`w-8 h-4.5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                    activeSmcConfig.enabled ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 w-4.5 h-4.5 rounded-full bg-white transition-transform ${
-                      activeSmcConfig.enabled ? 'translate-x-4.5' : 'translate-x-0'
+                    className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+                      activeSmcConfig.enabled ? 'translate-x-3.5' : 'translate-x-0'
                     }`}
                   />
                 </button>
               </div>
 
               {/* Presets Bar */}
-              <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex items-center gap-1.5 overflow-x-auto shrink-0">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Presets:</span>
-                <button
-                  type="button"
-                  onClick={() => handleSetPreset('all')}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
-                >
-                  All
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetPreset('bullish')}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 cursor-pointer transition-colors"
-                >
-                  ▲ Bullish
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetPreset('bearish')}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 cursor-pointer transition-colors"
-                >
-                  ▼ Bearish
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetPreset('structure')}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
-                >
-                  Structure
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetPreset('zones')}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
-                >
-                  OB & FVG
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetPreset('reset')}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200/70 dark:bg-slate-800 hover:bg-rose-500/20 hover:text-rose-500 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
-                >
-                  Reset
-                </button>
+              <div className="px-3.5 py-1.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex items-center gap-1 overflow-x-auto shrink-0">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1 shrink-0">Presets:</span>
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'bullish', label: 'Bullish' },
+                  { id: 'bearish', label: 'Bearish' },
+                  { id: 'structure', label: 'Structure' },
+                  { id: 'zones', label: 'OB & FVG' },
+                  { id: 'reset', label: 'Reset' },
+                ].map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleSetPreset(p.id as any)}
+                    className="px-2 py-0.5 text-[11px] font-medium rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors shrink-0"
+                  >
+                    {p.label}
+                  </button>
+                ))}
               </div>
 
               {/* Toggles Container */}
-              <div className={`flex-1 overflow-y-auto px-3 py-2 space-y-3.5 text-xs ${!activeSmcConfig.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
-                {/* ── SMC Setup Direction (Master Controls) ── */}
-                <div className="p-2.5 rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-slate-100/60 dark:bg-slate-900/60 space-y-2">
-                  <div className="flex items-center justify-between px-0.5">
-                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                      <span>🎯</span>
-                      <span>SMC Setup Direction (Master Controls)</span>
-                    </div>
-                    <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500">Filters all signals & zones</span>
+              <div className={`flex-1 overflow-y-auto px-2 py-2 space-y-3 text-xs ${!activeSmcConfig.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                {/* 1. Setup Direction */}
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
+                    Direction Controls
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Bullish Setup Master Card */}
-                    <div className={`p-2 rounded-lg border transition-all ${
-                      activeSmcConfig.showBullishSetups !== false
-                        ? 'bg-emerald-500/8 border-emerald-500/40 dark:bg-emerald-950/25 dark:border-emerald-500/35'
-                        : 'bg-slate-100/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800 opacity-60'
-                    }`}>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
-                          <span className="font-bold text-[11px] text-emerald-700 dark:text-emerald-400">Bullish Setup</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateSmc({ showBullishSetups: activeSmcConfig.showBullishSetups === false ? true : false })}
-                          className={`w-7 h-4 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                            activeSmcConfig.showBullishSetups !== false ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
-                          }`}
-                          title="Toggle all Bullish / Long setups"
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
-                              activeSmcConfig.showBullishSetups !== false ? 'translate-x-3' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
-                      <div className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight mb-1.5">
-                        Demand zones & long-side signals
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">+BOS</span>
-                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">SSL Sweep</span>
-                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Demand OB</span>
-                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">+FVG</span>
-                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">+IFVG</span>
-                      </div>
-                    </div>
-
-                    {/* Bearish Setup Master Card */}
-                    <div className={`p-2 rounded-lg border transition-all ${
-                      activeSmcConfig.showBearishSetups !== false
-                        ? 'bg-rose-500/8 border-rose-500/40 dark:bg-rose-950/25 dark:border-rose-500/35'
-                        : 'bg-slate-100/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800 opacity-60'
-                    }`}>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-rose-500 inline-block shadow-[0_0_6px_rgba(244,63,94,0.5)]" />
-                          <span className="font-bold text-[11px] text-rose-700 dark:text-rose-400">Bearish Setup</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateSmc({ showBearishSetups: activeSmcConfig.showBearishSetups === false ? true : false })}
-                          className={`w-7 h-4 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                            activeSmcConfig.showBearishSetups !== false ? 'bg-rose-500' : 'bg-slate-300 dark:bg-slate-700'
-                          }`}
-                          title="Toggle all Bearish / Short setups"
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
-                              activeSmcConfig.showBearishSetups !== false ? 'translate-x-3' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
-                      <div className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-tight mb-1.5">
-                        Supply zones & short-side signals
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">-BOS</span>
-                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">BSL Sweep</span>
-                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">Supply OB</span>
-                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">-FVG</span>
-                        <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">-IFVG</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 text-[9px] text-slate-400 dark:text-slate-500 px-0.5">
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">Note:</span>
-                    <span>Equilibrium (50% EQ) renders as neutral context independent of direction filters.</span>
+                  <div className="space-y-0.5">
+                    <SmcToggleRow
+                      label="Bullish Setups"
+                      sublabel="Demand zones, +BOS, +CHoCH, SSL sweeps"
+                      checked={activeSmcConfig.showBullishSetups !== false}
+                      onChange={(v) => handleUpdateSmc({ showBullishSetups: v })}
+                    />
+                    <SmcToggleRow
+                      label="Bearish Setups"
+                      sublabel="Supply zones, -BOS, -CHoCH, BSL sweeps"
+                      checked={activeSmcConfig.showBearishSetups !== false}
+                      onChange={(v) => handleUpdateSmc({ showBearishSetups: v })}
+                    />
                   </div>
                 </div>
 
-                {/* 1. Market Structure */}
+                {/* 2. Market Structure */}
                 <div>
-                  <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1 px-1">
-                    Market Structure (Directional)
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
+                    Market Structure
                   </div>
-                  <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
+                  <div className="space-y-0.5">
                     <SmcToggleRow
-                      label="BOS (Break of Structure)"
+                      label="Break of Structure (BOS)"
                       sublabel="Trend continuation breaks"
                       checked={activeSmcConfig.showBos}
                       onChange={(v) => handleUpdateSmc({ showBos: v })}
-                      badge="BOS ↑↓"
-                      accent="emerald"
+                      badge="BOS"
                     />
                     <SmcToggleRow
-                      label="CHoCH / MSS"
-                      sublabel="Change of Character reversal shifts"
+                      label="Change of Character (CHoCH)"
+                      sublabel="Trend reversal character shifts"
                       checked={activeSmcConfig.showChoch}
                       onChange={(v) => handleUpdateSmc({ showChoch: v })}
                       badge="CHoCH"
-                      accent="emerald"
                     />
                     <SmcToggleRow
-                      label="Bullish BOS & CHoCH / MSS"
-                      sublabel="Demand-side break of structure & character shifts"
+                      label="Bullish Structure (+BOS / +CHoCH)"
+                      sublabel="Demand-side structure shifts"
                       checked={activeSmcConfig.showBullishStructure}
                       onChange={(v) => handleUpdateSmc({ showBullishStructure: v })}
-                      badge="+BOS / +CHoCH"
-                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                      accent="emerald"
                     />
                     <SmcToggleRow
-                      label="Bearish BOS & CHoCH / MSS"
-                      sublabel="Supply-side break of structure & character shifts"
+                      label="Bearish Structure (-BOS / -CHoCH)"
+                      sublabel="Supply-side structure shifts"
                       checked={activeSmcConfig.showBearishStructure}
                       onChange={(v) => handleUpdateSmc({ showBearishStructure: v })}
-                      badge="-BOS / -CHoCH"
-                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                      accent="rose"
                     />
                     <SmcToggleRow
                       label="Swing Points"
-                      sublabel="Confirmed pivot highs and lows"
+                      sublabel="Confirmed pivot highs and lows (HH, HL, LH, LL)"
                       checked={activeSmcConfig.showSwings}
                       onChange={(v) => handleUpdateSmc({ showSwings: v })}
-                      badge="HH/HL/LH/LL"
-                      accent="emerald"
                     />
                   </div>
                 </div>
 
-                {/* 2. Liquidity */}
+                {/* 3. Liquidity */}
                 <div>
-                  <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1 px-1">
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
                     Liquidity Pools & Sweeps
                   </div>
-                  <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
+                  <div className="space-y-0.5">
                     <SmcToggleRow
                       label="BSL & SSL Levels"
-                      sublabel="Buy-Side and Sell-Side order pools"
+                      sublabel="Buy-Side and Sell-Side liquidity lines"
                       checked={activeSmcConfig.showLiquidityLevels}
                       onChange={(v) => handleUpdateSmc({ showLiquidityLevels: v })}
-                      badge="$$$"
-                      accent="emerald"
                     />
                     <SmcToggleRow
-                      label="Equal Highs & Lows"
+                      label="Equal Highs & Lows (EQH / EQL)"
                       sublabel="Double top/bottom liquidity clusters"
                       checked={activeSmcConfig.showEqualHighLow}
                       onChange={(v) => handleUpdateSmc({ showEqualHighLow: v })}
-                      badge="EQH/EQL"
-                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Liquidity Sweeps (Master)"
-                      sublabel="Stop hunt & wick rejection sweeps"
+                      sublabel="Stop hunt & rejection wicks"
                       checked={activeSmcConfig.showSweeps}
                       onChange={(v) => handleUpdateSmc({ showSweeps: v })}
-                      badge="Sweeps"
-                      accent="emerald"
                     />
                     <SmcToggleRow
-                      label="Bullish Sweeps (SSL Sweeps)"
-                      sublabel="Sell-side liquidity sweep & rapid bullish reclaim"
+                      label="Bullish Sweeps (SSL)"
+                      sublabel="Sell-side sweep with bullish reclaim"
                       checked={activeSmcConfig.showSslSweeps}
                       onChange={(v) => handleUpdateSmc({ showSslSweeps: v })}
-                      badge="SSL Sweep"
-                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                      accent="emerald"
                     />
                     <SmcToggleRow
-                      label="Bearish Sweeps (BSL Sweeps)"
-                      sublabel="Buy-side liquidity sweep & rapid bearish rejection"
+                      label="Bearish Sweeps (BSL)"
+                      sublabel="Buy-side sweep with bearish rejection"
                       checked={activeSmcConfig.showBslSweeps}
                       onChange={(v) => handleUpdateSmc({ showBslSweeps: v })}
-                      badge="BSL Sweep"
-                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                      accent="rose"
                     />
                   </div>
                 </div>
 
-                {/* 3. Order Blocks & Breakers */}
+                {/* 4. Order Blocks & Breakers */}
                 <div>
-                  <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1 px-1">
-                    Institutional Order Blocks & Breakers
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
+                    Order Blocks & Breakers
                   </div>
-                  <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
+                  <div className="space-y-0.5">
                     <SmcToggleRow
-                      label="Bullish Demand OB"
-                      sublabel="Institutional buying footprint before rally"
+                      label="Demand Order Blocks (Bullish)"
+                      sublabel="Institutional buying zones"
                       checked={activeSmcConfig.showBullishOb}
                       onChange={(v) => handleUpdateSmc({ showBullishOb: v })}
-                      badge="Demand"
-                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                      accent="emerald"
                     />
                     <SmcToggleRow
-                      label="Bearish Supply OB"
-                      sublabel="Institutional selling footprint before drop"
+                      label="Supply Order Blocks (Bearish)"
+                      sublabel="Institutional selling zones"
                       checked={activeSmcConfig.showBearishOb}
                       onChange={(v) => handleUpdateSmc({ showBearishOb: v })}
-                      badge="Supply"
-                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                      accent="rose"
                     />
                     <SmcToggleRow
                       label="Breaker Blocks (Master)"
                       sublabel="Violated order blocks flipped into opposite role"
                       checked={activeSmcConfig.showBreakers}
                       onChange={(v) => handleUpdateSmc({ showBreakers: v })}
-                      badge="Breakers"
-                      accent="purple"
                     />
                     <SmcToggleRow
                       label="Bullish Breakers (+BRK Support)"
-                      sublabel="Failed supply OB converting into support"
+                      sublabel="Failed supply OB converted to support"
                       checked={activeSmcConfig.showBullishBreakers}
                       onChange={(v) => handleUpdateSmc({ showBullishBreakers: v })}
-                      badge="+BRK"
-                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Bearish Breakers (-BRK Resistance)"
-                      sublabel="Failed demand OB converting into resistance"
+                      sublabel="Failed demand OB converted to resistance"
                       checked={activeSmcConfig.showBearishBreakers}
                       onChange={(v) => handleUpdateSmc({ showBearishBreakers: v })}
-                      badge="-BRK"
-                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                      accent="rose"
                     />
                     <SmcToggleRow
                       label="Show Mitigated Blocks"
-                      sublabel="Display already tested order blocks"
+                      sublabel="Keep tested order blocks visible (dimmed)"
                       checked={activeSmcConfig.showMitigatedOb}
                       onChange={(v) => handleUpdateSmc({ showMitigatedOb: v })}
-                      accent="emerald"
                     />
                   </div>
                 </div>
 
-                {/* 4. Fair Value Gaps & IFVG */}
+                {/* 5. Fair Value Gaps (FVG) */}
                 <div>
-                  <div className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider mb-1 px-1">
-                    Fair Value Gaps (FVG) & Inverse FVGs (IFVG)
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
+                    Fair Value Gaps (FVG)
                   </div>
-                  <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
+                  <div className="space-y-0.5">
                     <SmcToggleRow
                       label="Bullish Imbalance (+FVG)"
                       sublabel="3-candle displacement buy imbalance"
                       checked={activeSmcConfig.showBullishFvg}
                       onChange={(v) => handleUpdateSmc({ showBullishFvg: v })}
-                      badge="+FVG"
-                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Bearish Imbalance (-FVG)"
                       sublabel="3-candle displacement sell imbalance"
                       checked={activeSmcConfig.showBearishFvg}
                       onChange={(v) => handleUpdateSmc({ showBearishFvg: v })}
-                      badge="-FVG"
-                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                      accent="rose"
                     />
                     <SmcToggleRow
-                      label="Bullish Inverse FVG (+IFVG Support)"
-                      sublabel="Violated bearish FVG flipped to bullish support"
+                      label="Bullish Inverse FVG (+IFVG)"
+                      sublabel="Violated bearish FVG flipped to support"
                       checked={activeSmcConfig.showBullishIfvg}
                       onChange={(v) => handleUpdateSmc({ showBullishIfvg: v })}
-                      badge="+IFVG"
-                      badgeColor="bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20"
-                      accent="teal"
                     />
                     <SmcToggleRow
-                      label="Bearish Inverse FVG (-IFVG Resistance)"
-                      sublabel="Violated bullish FVG flipped to bearish resistance"
+                      label="Bearish Inverse FVG (-IFVG)"
+                      sublabel="Violated bullish FVG flipped to resistance"
                       checked={activeSmcConfig.showBearishIfvg}
                       onChange={(v) => handleUpdateSmc({ showBearishIfvg: v })}
-                      badge="-IFVG"
-                      badgeColor="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
-                      accent="purple"
                     />
                     <SmcToggleRow
-                      label="Consequent Encroachment (CE)"
+                      label="Consequent Encroachment (50% CE)"
                       sublabel="50% midpoint magnet midline"
                       checked={activeSmcConfig.showFvgMidpoint}
                       onChange={(v) => handleUpdateSmc({ showFvgMidpoint: v })}
-                      badge="50% CE"
-                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Show Mitigated FVGs"
-                      sublabel="Display fully filled imbalances"
+                      sublabel="Keep filled imbalances visible (dimmed)"
                       checked={activeSmcConfig.showMitigatedFvg}
                       onChange={(v) => handleUpdateSmc({ showMitigatedFvg: v })}
-                      accent="emerald"
                     />
                   </div>
                 </div>
 
-                {/* 5. Confluence & Reversal Setups */}
+                {/* 6. Confluence Setups */}
                 <div>
-                  <div className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-1 px-1">
-                    Confluence & Reversal Setups
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
+                    Confluence Setups
                   </div>
-                  <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
+                  <div className="space-y-0.5">
                     <SmcToggleRow
                       label="Bullish Confluence Setups"
-                      sublabel="SSL sweep + FVG + Demand OB confluence signals"
+                      sublabel="SSL sweep + FVG + Demand OB confluence"
                       checked={activeSmcConfig.showBullishConfluence}
                       onChange={(v) => handleUpdateSmc({ showBullishConfluence: v })}
-                      badge="Bullish"
-                      badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Bearish Confluence Setups"
-                      sublabel="BSL sweep + FVG + Supply OB confluence signals"
+                      sublabel="BSL sweep + FVG + Supply OB confluence"
                       checked={activeSmcConfig.showBearishConfluence}
                       onChange={(v) => handleUpdateSmc({ showBearishConfluence: v })}
-                      badge="Bearish"
-                      badgeColor="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                      accent="rose"
                     />
                   </div>
                 </div>
 
-                {/* 6. Dealing Range */}
+                {/* 7. Premium / Discount & Levels */}
                 <div>
-                  <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1 px-1">
-                    Premium & Discount Zones
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
+                    Range & Session Levels
                   </div>
-                  <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
+                  <div className="space-y-0.5">
                     <SmcToggleRow
                       label="Dealing Range Zones"
-                      sublabel="Subtle background tint for Buy/Sell regions"
+                      sublabel="Premium and discount zones tint"
                       checked={activeSmcConfig.showPremiumDiscount}
                       onChange={(v) => handleUpdateSmc({ showPremiumDiscount: v })}
-                      accent="indigo"
                     />
                     <SmcToggleRow
-                      label="Equilibrium (EQ)"
-                      sublabel="50% fair-value midline (Neutral context)"
+                      label="Equilibrium (50% EQ)"
+                      sublabel="Fair value midpoint line"
                       checked={activeSmcConfig.showEquilibrium}
                       onChange={(v) => handleUpdateSmc({ showEquilibrium: v })}
-                      badge="50% EQ"
-                      badgeColor="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                      accent="emerald"
                     />
                     <SmcToggleRow
                       label="Optimal Trade Entry (OTE)"
-                      sublabel="61.8% to 78.6% institutional entry zone"
+                      sublabel="61.8% to 78.6% retracement zone"
                       checked={activeSmcConfig.showOte}
                       onChange={(v) => handleUpdateSmc({ showOte: v })}
-                      badge="OTE"
-                      badgeColor="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30"
-                      accent="blue"
                     />
-                  </div>
-                </div>
-
-                {/* 7. Key Session Levels */}
-                <div>
-                  <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 px-1">
-                    Key Historical Levels
-                  </div>
-                  <div className="space-y-0.5 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-1 border border-slate-100 dark:border-slate-800/60">
                     <SmcToggleRow
-                      label="Previous Day High/Low"
-                      sublabel="Prior trading day liquidity reference"
+                      label="Previous Day High / Low (PDH / PDL)"
+                      sublabel="Key daily liquidity references"
                       checked={activeSmcConfig.showPdhPdl}
                       onChange={(v) => handleUpdateSmc({ showPdhPdl: v })}
-                      badge="PDH/PDL"
-                      accent="emerald"
                     />
                     <SmcToggleRow
-                      label="Previous Week High/Low"
-                      sublabel="Prior weekly macro liquidity frame"
+                      label="Previous Week High / Low (PWH / PWL)"
+                      sublabel="Major weekly liquidity references"
                       checked={activeSmcConfig.showPwhPwl}
                       onChange={(v) => handleUpdateSmc({ showPwhPwl: v })}
-                      badge="PWH/PWL"
-                      accent="emerald"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Scanner Link Footer */}
-              <a
-                href="/terminal/screener?tab=smcScanner"
-                className="flex items-center justify-between px-3.5 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors shrink-0"
-              >
-                <span className="flex items-center gap-1.5">
-                  <span>⚡</span>
-                  <span>Open SMC Institutional Scanner</span>
-                </span>
-                <span className="font-mono text-xs">↗</span>
-              </a>
+              {/* Clean Simple Footer */}
+              <div className="px-3.5 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 shrink-0 flex items-center justify-between">
+                <a
+                  href="/terminal/screener?tab=smcScanner"
+                  className="text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1"
+                >
+                  <span>Open SMC Scanner</span>
+                  <span className="text-[11px]">↗</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => handleSetPreset('reset')}
+                  className="text-xs text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                >
+                  Reset Defaults
+                </button>
+              </div>
             </div>
           )}
         </div>
