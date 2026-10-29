@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
 @font-face {
+  font-family: 'Playwrite US Trad';
+  font-style: normal;
+  font-weight: 100 400;
+  font-display: swap;
+  src: url('/fonts/PlaywriteUSTrad.woff2') format('woff2');
+}
+
+@font-face {
   font-family: 'Caveat';
   font-style: normal;
   font-weight: 400 700;
@@ -28,7 +36,7 @@
   --font-sans: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", "Roboto Mono", Menlo, monospace;
   --font-marker: "Permanent Marker", cursive, sans-serif;
-  --font-caveat: "Caveat", cursive, sans-serif;
+  --font-caveat: "Playwrite US Trad", "Caveat", cursive, sans-serif;
 
   --animate-ticker: ticker 36s linear infinite;
   --animate-pulse-green: pulse-green 2.5s ease-in-out infinite;
@@ -375,7 +383,8 @@ section p.page-subtitle,
 }
 
 .font-caveat {
-  font-family: 'Caveat', cursive, sans-serif !important;
+  font-family: 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
+  letter-spacing: 0 !important;
 }
 
 .brand-title-dark {
@@ -396,8 +405,8 @@ html[data-theme="violet"] .brand-accent-green {
 }
 
 .hero-title-gradient {
-  font-family: 'Caveat', cursive, sans-serif !important;
-  letter-spacing: 0.02em;
+  font-family: 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
+  letter-spacing: 0 !important;
 }
 
 .hero-secondary-btn {
@@ -806,8 +815,9 @@ html[data-theme="cyberpunk"] .navbar-brand-badge {
 }
 
 .navbar-brand-title {
-  font-family: 'Caveat', cursive, sans-serif !important;
-  letter-spacing: 0.02em;
+  font-family: 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
 }
 
 .navbar-brand-subtitle {
@@ -906,8 +916,9 @@ footer .footer-brand-title,
 html footer .footer-brand-title,
 html[data-theme] footer .footer-brand-title,
 html[data-theme] footer span.footer-brand-title {
-  font-family: 'Caveat', cursive, sans-serif !important;
-  letter-spacing: 0.02em;
+  font-family: 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
 }
 
 .footer-brand-subtitle,

@@ -309,7 +309,7 @@ export default function HeroSection() {
           className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-[48px] font-bold tracking-tight leading-tight page-heading"
         >
           <span className="whitespace-nowrap inline-flex items-center justify-center gap-2 sm:gap-3.5 font-caveat font-bold">
-            <span className="brand-title-dark font-caveat">MARKET INTELLIGENCE</span>
+            <span className="brand-title-dark font-caveat">Market Intelligence</span>
             <span className="brand-accent-green font-caveat">MI-007</span>
           </span>
         </motion.h1>
