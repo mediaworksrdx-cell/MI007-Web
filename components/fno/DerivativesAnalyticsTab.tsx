@@ -52,6 +52,8 @@ export function DerivativesAnalyticsTab({
 
   const lotSize = instrument.lotSize || chainData.lotSize || 1;
   const spot = chainData.spotPrice;
+  const isIndex = instrument.sector?.toLowerCase().includes('index') ||
+    ['NIFTY 50', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY', 'SENSEX', 'BANKEX', 'SPX', 'NDX', 'DJI'].includes(instrument.symbol);
 
   // Sync candidatePrice when instrument changes
   React.useEffect(() => {
@@ -392,11 +394,11 @@ export function DerivativesAnalyticsTab({
       {/* ════════════════════════════════════════════════════════════════════════ */}
       {/* TOP COMMAND DECK: 5-PILLAR BENTO KPI CARDS                              */}
       {/* ════════════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
         {/* 1. Max Pain KPI Card */}
         <div
           onClick={() => setActivePillar(activePillar === 'MAX_PAIN' ? 'ALL' : 'MAX_PAIN')}
-          className={`relative overflow-hidden p-4 rounded-2xl border transition-all cursor-pointer group ${
+          className={`relative overflow-hidden p-4 rounded-2xl border transition-all cursor-pointer group min-w-0 ${
             activePillar === 'MAX_PAIN'
               ? 'border-amber-400 bg-amber-500/10 ring-1 ring-amber-400/30 shadow-lg shadow-amber-500/5'
               : 'border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] hover:border-amber-400/60'
@@ -404,26 +406,26 @@ export function DerivativesAnalyticsTab({
         >
           <div className="absolute top-0 inset-x-0 h-[2.5px] bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600" />
           <div className="flex items-center justify-between">
-            <span className="mono text-[10px] font-black text-amber-400 uppercase tracking-widest">
+            <span className="mono text-[10px] font-black text-amber-400 uppercase tracking-widest truncate">
               01 · MAX PAIN MAGNET
             </span>
-            <span className="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 mono text-[9.5px] font-bold text-amber-300">
+            <span className="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 mono text-[9.5px] font-bold text-amber-300 shrink-0 ml-1">
               {maxPainData.distancePct}% GAP
             </span>
           </div>
-          <div className="mono text-2xl font-black text-[var(--theme-card-text)] mt-2 tracking-tight">
+          <div className="mono text-2xl font-black text-[var(--theme-card-text)] mt-2 tracking-tight truncate">
             {curr}{maxPainData.maxPainStrike.toLocaleString(loc)}
           </div>
-          <div className="flex items-center justify-between text-[11px] mono text-[var(--theme-card-subtitle)] mt-2 pt-2 border-t border-[var(--theme-card-border)]/60">
-            <span>Min Payout:</span>
-            <span className="font-bold text-amber-300">{curr}{maxPainData.minLossCr} {unit}</span>
+          <div className="flex items-center justify-between text-[11px] mono text-[var(--theme-card-subtitle)] mt-2 pt-2 border-t border-[var(--theme-card-border)]/60 gap-1">
+            <span className="shrink-0">Min Payout:</span>
+            <span className="font-bold text-amber-300 truncate">{curr}{maxPainData.minLossCr} {unit}</span>
           </div>
         </div>
 
         {/* 2. PCR & OI Flow KPI Card */}
         <div
           onClick={() => setActivePillar(activePillar === 'PCR' ? 'ALL' : 'PCR')}
-          className={`relative overflow-hidden p-4 rounded-2xl border transition-all cursor-pointer group ${
+          className={`relative overflow-hidden p-4 rounded-2xl border transition-all cursor-pointer group min-w-0 ${
             activePillar === 'PCR'
               ? 'border-emerald-400 bg-emerald-500/10 ring-1 ring-emerald-400/30 shadow-lg shadow-emerald-500/5'
               : 'border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] hover:border-emerald-400/60'
@@ -431,18 +433,18 @@ export function DerivativesAnalyticsTab({
         >
           <div className="absolute top-0 inset-x-0 h-[2.5px] bg-gradient-to-r from-rose-500 via-emerald-400 to-emerald-600" />
           <div className="flex items-center justify-between">
-            <span className="mono text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+            <span className="mono text-[10px] font-black text-emerald-400 uppercase tracking-widest truncate">
               02 · PUT-CALL RATIO
             </span>
-            <span className={`px-1.5 py-0.5 rounded border mono text-[9px] font-black ${pcrData.sentimentColor}`}>
+            <span className={`px-1.5 py-0.5 rounded border mono text-[9px] font-black shrink-0 ml-1 ${pcrData.sentimentColor}`}>
               {pcrData.sentiment.split(' ')[0]}
             </span>
           </div>
-          <div className="flex items-baseline gap-2 mt-2">
+          <div className="flex items-baseline gap-2 mt-2 flex-wrap">
             <span className="mono text-2xl font-black text-emerald-400 tracking-tight">
               {pcrData.oiPcr.toFixed(2)}
             </span>
-            <span className="mono text-xs text-[var(--theme-card-subtitle)]">
+            <span className="mono text-xs text-[var(--theme-card-subtitle)] truncate">
               Vol PCR: <strong className="text-[var(--theme-card-text)]">{pcrData.volPcr}</strong>
             </span>
           </div>
@@ -462,7 +464,7 @@ export function DerivativesAnalyticsTab({
         {/* 3. ATM Straddle & Expected Move KPI Card */}
         <div
           onClick={() => setActivePillar(activePillar === 'IV' ? 'ALL' : 'IV')}
-          className={`relative overflow-hidden p-4 rounded-2xl border transition-all cursor-pointer group ${
+          className={`relative overflow-hidden p-4 rounded-2xl border transition-all cursor-pointer group min-w-0 ${
             activePillar === 'IV'
               ? 'border-sky-400 bg-sky-500/10 ring-1 ring-sky-400/30 shadow-lg shadow-sky-500/5'
               : 'border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] hover:border-sky-400/60'
@@ -470,19 +472,19 @@ export function DerivativesAnalyticsTab({
         >
           <div className="absolute top-0 inset-x-0 h-[2.5px] bg-gradient-to-r from-sky-400 via-cyan-400 to-indigo-500" />
           <div className="flex items-center justify-between">
-            <span className="mono text-[10px] font-black text-sky-400 uppercase tracking-widest">
+            <span className="mono text-[10px] font-black text-sky-400 uppercase tracking-widest truncate">
               03 · IMPLIED MOVE (1σ)
             </span>
-            <span className="px-1.5 py-0.5 rounded bg-sky-500/15 border border-sky-500/30 mono text-[9.5px] font-bold text-sky-300">
+            <span className="px-1.5 py-0.5 rounded bg-sky-500/15 border border-sky-500/30 mono text-[9.5px] font-bold text-sky-300 shrink-0 ml-1">
               ±{ivData.expectedMovePct}%
             </span>
           </div>
-          <div className="mono text-2xl font-black text-[var(--theme-card-text)] mt-2 tracking-tight">
+          <div className="mono text-2xl font-black text-[var(--theme-card-text)] mt-2 tracking-tight truncate">
             ±{curr}{ivData.atmStraddle.toLocaleString(loc)}
           </div>
-          <div className="flex items-center justify-between text-[10.5px] mono text-[var(--theme-card-subtitle)] mt-2 pt-2 border-t border-[var(--theme-card-border)]/60">
-            <span>Range:</span>
-            <span className="font-bold text-sky-300">
+          <div className="flex items-center justify-between text-[10.5px] mono text-[var(--theme-card-subtitle)] mt-2 pt-2 border-t border-[var(--theme-card-border)]/60 gap-1">
+            <span className="shrink-0">Range:</span>
+            <span className="font-bold text-sky-300 text-[10px] tracking-tight truncate">
               {curr}{ivData.lowerBreakeven.toLocaleString(loc)} – {curr}{ivData.upperBreakeven.toLocaleString(loc)}
             </span>
           </div>
@@ -491,7 +493,7 @@ export function DerivativesAnalyticsTab({
         {/* 4. GEX & DEX Dealer Regime KPI Card */}
         <div
           onClick={() => setActivePillar(activePillar === 'DEX' ? 'ALL' : 'DEX')}
-          className={`relative overflow-hidden p-4 rounded-2xl border transition-all cursor-pointer group ${
+          className={`relative overflow-hidden p-4 rounded-2xl border transition-all cursor-pointer group min-w-0 ${
             activePillar === 'DEX'
               ? 'border-purple-400 bg-purple-500/10 ring-1 ring-purple-400/30 shadow-lg shadow-purple-500/5'
               : 'border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] hover:border-purple-400/60'
@@ -499,11 +501,11 @@ export function DerivativesAnalyticsTab({
         >
           <div className="absolute top-0 inset-x-0 h-[2.5px] bg-gradient-to-r from-purple-500 via-fuchsia-400 to-indigo-500" />
           <div className="flex items-center justify-between">
-            <span className="mono text-[10px] font-black text-purple-400 uppercase tracking-widest">
+            <span className="mono text-[10px] font-black text-purple-400 uppercase tracking-widest truncate">
               04 · DEALER GAMMA (GEX)
             </span>
             <span
-              className={`px-1.5 py-0.5 rounded mono text-[9px] font-black border ${
+              className={`px-1.5 py-0.5 rounded mono text-[9px] font-black border shrink-0 ml-1 ${
                 exposureData.totalNetGex >= 0
                   ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                   : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
@@ -513,22 +515,22 @@ export function DerivativesAnalyticsTab({
             </span>
           </div>
           <div
-            className={`mono text-2xl font-black mt-2 tracking-tight ${
+            className={`mono text-2xl font-black mt-2 tracking-tight truncate ${
               exposureData.totalNetGex >= 0 ? 'text-emerald-400' : 'text-rose-400'
             }`}
           >
             {exposureData.totalNetGex >= 0 ? '+' : ''}{curr}{exposureData.totalNetGex} {unit}
           </div>
-          <div className="flex items-center justify-between text-[11px] mono text-[var(--theme-card-subtitle)] mt-2 pt-2 border-t border-[var(--theme-card-border)]/60">
-            <span>Zero Γ Flip:</span>
-            <span className="font-bold text-purple-300">{curr}{exposureData.gexFlipStrike.toLocaleString(loc)}</span>
+          <div className="flex items-center justify-between text-[11px] mono text-[var(--theme-card-subtitle)] mt-2 pt-2 border-t border-[var(--theme-card-border)]/60 gap-1">
+            <span className="shrink-0">Zero Γ Flip:</span>
+            <span className="font-bold text-purple-300 truncate">{curr}{exposureData.gexFlipStrike.toLocaleString(loc)}</span>
           </div>
         </div>
 
         {/* 5. Net Greeks & IV Regime KPI Card */}
         <div
           onClick={() => setActivePillar(activePillar === 'GREEKS' ? 'ALL' : 'GREEKS')}
-          className={`relative overflow-hidden p-4 rounded-2xl border transition-all cursor-pointer group ${
+          className={`relative overflow-hidden p-4 rounded-2xl border transition-all cursor-pointer group min-w-0 ${
             activePillar === 'GREEKS'
               ? 'border-cyan-400 bg-cyan-500/10 ring-1 ring-cyan-400/30 shadow-lg shadow-cyan-500/5'
               : 'border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] hover:border-cyan-400/60'
@@ -536,32 +538,32 @@ export function DerivativesAnalyticsTab({
         >
           <div className="absolute top-0 inset-x-0 h-[2.5px] bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400" />
           <div className="flex items-center justify-between">
-            <span className="mono text-[10px] font-black text-cyan-400 uppercase tracking-widest">
+            <span className="mono text-[10px] font-black text-cyan-400 uppercase tracking-widest truncate">
               05 · IV & GREEKS PULSE
             </span>
-            <span className="px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 mono text-[9.5px] font-bold text-cyan-300">
+            <span className="px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 mono text-[9.5px] font-bold text-cyan-300 shrink-0 ml-1">
               IVP {ivData.ivPercentile}%
             </span>
           </div>
-          <div className="flex items-baseline gap-2 mt-2">
+          <div className="flex items-baseline gap-2 mt-2 flex-wrap">
             <span className="mono text-2xl font-black text-cyan-400 tracking-tight">
               {ivData.atmIV}%
             </span>
-            <span className="mono text-xs text-[var(--theme-card-subtitle)]">
+            <span className="mono text-xs text-[var(--theme-card-subtitle)] truncate">
               ATM IV (Skew {ivData.avgSkew > 0 ? `+${ivData.avgSkew}` : ivData.avgSkew}%)
             </span>
           </div>
-          <div className="flex items-center justify-between text-[11px] mono text-[var(--theme-card-subtitle)] mt-2 pt-2 border-t border-[var(--theme-card-border)]/60">
-            <span>Chain Decay (Θ):</span>
-            <span className="font-bold text-cyan-300">{curr}{greeksData.netThetaScaled} {unit}/d</span>
+          <div className="flex items-center justify-between text-[11px] mono text-[var(--theme-card-subtitle)] mt-2 pt-2 border-t border-[var(--theme-card-border)]/60 gap-1">
+            <span className="shrink-0">Chain Decay (Θ):</span>
+            <span className="font-bold text-cyan-300 truncate">{curr}{greeksData.netThetaScaled} {unit}/d</span>
           </div>
         </div>
       </div>
 
       {/* ── Pillar Filter Switcher Ribbon ── */}
-      <div className="flex items-center justify-between gap-2 p-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-1.5">
-          <span className="mono text-[10.5px] font-black text-[var(--theme-card-subtitle)] uppercase tracking-wider px-2 shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 p-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <span className="mono text-[10.5px] font-black text-[var(--theme-card-subtitle)] uppercase tracking-wider px-1 shrink-0">
             FOCUS MODULE:
           </span>
           {PILLARS.map((p) => {
@@ -571,7 +573,7 @@ export function DerivativesAnalyticsTab({
                 key={p.id}
                 type="button"
                 onClick={() => setActivePillar(p.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs mono font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs mono font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                   isActive
                     ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
                     : 'bg-[var(--theme-card-subsurface)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] hover:border-emerald-500/50'
@@ -597,7 +599,7 @@ export function DerivativesAnalyticsTab({
           <button
             type="button"
             onClick={onOpenBuilderTab}
-            className="px-3 py-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 mono text-xs font-bold shrink-0 cursor-pointer transition-colors"
+            className="px-3 py-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 mono text-xs font-bold shrink-0 cursor-pointer transition-colors ml-auto"
           >
             Open Strategy Builder →
           </button>
@@ -944,16 +946,16 @@ export function DerivativesAnalyticsTab({
                 </div>
               </div>
 
-              {/* Weekly vs Monthly Cycle Comparison Strip */}
+              {/* Weekly/Near vs Monthly/Next Cycle Comparison Strip */}
               {weeklyChainData && monthlyChainData && (
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--theme-card-border)]/60 text-[11px] mono">
                   <span className="text-[var(--theme-card-subtitle)] font-bold">CYCLE COMPARISON:</span>
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
-                      <strong>WK ({weeklyChainData.expiry}):</strong> PCR {weeklyChainData.pcr} · Max Pain {curr}{weeklyChainData.maxPain.toLocaleString(loc)}
+                      <strong>{isIndex ? 'WK' : 'NEAR MO'} ({weeklyChainData.expiry}):</strong> PCR {weeklyChainData.pcr} · Max Pain {curr}{weeklyChainData.maxPain.toLocaleString(loc)}
                     </span>
                     <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
-                      <strong>MO ({monthlyChainData.expiry}):</strong> PCR {monthlyChainData.pcr} · Max Pain {curr}{monthlyChainData.maxPain.toLocaleString(loc)}
+                      <strong>{isIndex ? 'MO' : 'NEXT MO'} ({monthlyChainData.expiry}):</strong> PCR {monthlyChainData.pcr} · Max Pain {curr}{monthlyChainData.maxPain.toLocaleString(loc)}
                     </span>
                   </div>
                 </div>

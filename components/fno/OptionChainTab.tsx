@@ -23,6 +23,7 @@ interface OptionChainTabProps {
     greeks: Greeks
   ) => void;
   onOpenBuilderTab?: () => void;
+  onOpenChart?: (contractType: 'CE' | 'PE', strike: number) => void;
 }
 
 type ViewMode = 'ALL' | 'OI_VOL' | 'GREEKS';
@@ -49,6 +50,7 @@ export function OptionChainTab({
   chainData,
   onAddLegToBuilder,
   onOpenBuilderTab,
+  onOpenChart,
 }: OptionChainTabProps) {
   const inst = findFnoInstrument(chainData.underlyingSymbol);
   const curr = inst.market === 'USA' ? '$' : inst.market === 'UAE' ? 'AED ' : '₹';
@@ -238,8 +240,12 @@ export function OptionChainTab({
                 <th className="py-2.5 px-2 text-right font-black pr-2.5 min-w-[65px]">Chng</th>
 
                 {/* ── Central Strike ── */}
-                <th className="py-2.5 px-3 text-center font-black bg-[#221a46] dark:bg-[#15102c] border-x border-indigo-900/80 min-w-[90px] text-amber-300">
-                  STRIKE
+                <th className="py-2.5 px-2 text-center font-black bg-[#221a46] dark:bg-[#15102c] border-x border-indigo-900/80 min-w-[130px] text-amber-300">
+                  <div className="flex items-center justify-between text-[9px] px-1">
+                    <span className="text-emerald-400 font-black">CE</span>
+                    <span className="text-amber-300 font-black tracking-wider text-[11px]">STRIKE</span>
+                    <span className="text-rose-400 font-black">PE</span>
+                  </div>
                 </th>
 
                 {/* ── Put Columns ── */}
@@ -260,11 +266,18 @@ export function OptionChainTab({
             </thead>
             <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/60 tabular-nums">
               {visibleRows.map((row) => {
+                const liveSpot = chainData.spotPrice;
                 const callOIBarWidth = Math.min(100, Math.round((row.call.openInterest / maxOI) * 100));
                 const putOIBarWidth = Math.min(100, Math.round((row.put.openInterest / maxOI) * 100));
-                const isITMCall = row.call.isITM;
-                const isITMPut = row.put.isITM;
-                const isATM = row.isATM;
+                
+                // Dynamic moneyness calculation based on live spot
+                const minStrikeDiff = Math.min(...chainData.strikes.map(s => Math.abs(s.strike - liveSpot)));
+                const isATM = row.isATM || (Math.abs(row.strike - liveSpot) === minStrikeDiff);
+                const callMoneyness: 'ITM' | 'ATM' | 'OTM' = isATM ? 'ATM' : row.strike < liveSpot ? 'ITM' : 'OTM';
+                const putMoneyness: 'ITM' | 'ATM' | 'OTM' = isATM ? 'ATM' : row.strike > liveSpot ? 'ITM' : 'OTM';
+
+                const isITMCall = callMoneyness === 'ITM';
+                const isITMPut = putMoneyness === 'ITM';
 
                 // Color classes matching reference image:
                 // ITM = warm light cream/ivory tint (#fffbee in light mode, #272115 in dark mode)
@@ -304,6 +317,16 @@ export function OptionChainTab({
                         >
                           S
                         </button>
+                        {onOpenChart && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenChart('CE', row.strike)}
+                            className="px-1 py-0.5 rounded text-[9px] font-black bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/40 hover:bg-sky-500 hover:text-white transition-colors cursor-pointer"
+                            title={`View CE ${row.strike} Candlestick Chart`}
+                          >
+                            📊
+                          </button>
+                        )}
                       </div>
                     </td>
 
@@ -371,23 +394,46 @@ export function OptionChainTab({
                       {formatChange(row.call.change)}
                     </td>
 
-                    {/* ── Central Strike ── */}
+                    {/* ── Central Strike with Adjacent Moneyness Labels ── */}
                     <td
-                      className={`py-1.5 px-3 text-center font-extrabold border-x border-slate-300 dark:border-slate-700 text-[12px] ${
+                      className={`py-1.5 px-2 text-center font-extrabold border-x border-slate-300 dark:border-slate-700 text-[12px] ${
                         isATM
                           ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200'
                           : 'bg-[#f4f6fa] dark:bg-[#161c2d] text-[#1d4ed8] dark:text-sky-300'
                       }`}
                     >
-                      <div className="flex items-center justify-center gap-1.5">
-                        <span className="cursor-pointer hover:underline">
+                      <div className="flex items-center justify-between gap-1.5 px-0.5">
+                        <span
+                          className={`text-[8.5px] px-1 py-0.5 rounded font-black tracking-wider uppercase inline-block min-w-[28px] text-center ${
+                            callMoneyness === 'ITM'
+                              ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40'
+                              : callMoneyness === 'ATM'
+                              ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                          }`}
+                          title={`Call is ${callMoneyness} (Strike ${row.strike} vs Spot ${liveSpot.toFixed(2)})`}
+                        >
+                          {callMoneyness}
+                        </span>
+                        <span
+                          onClick={() => onOpenChart?.('CE', row.strike)}
+                          className="cursor-pointer hover:underline font-mono font-black text-slate-900 dark:text-slate-100 px-1"
+                          title="Click to view CE/PE Candlestick Chart"
+                        >
                           {row.strike.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
-                        {isATM && (
-                          <span className="text-[8px] px-1 py-0.2 bg-amber-500 text-slate-950 rounded font-black tracking-wider uppercase">
-                            ATM
-                          </span>
-                        )}
+                        <span
+                          className={`text-[8.5px] px-1 py-0.5 rounded font-black tracking-wider uppercase inline-block min-w-[28px] text-center ${
+                            putMoneyness === 'ITM'
+                              ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40'
+                              : putMoneyness === 'ATM'
+                              ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                          }`}
+                          title={`Put is ${putMoneyness} (Strike ${row.strike} vs Spot ${liveSpot.toFixed(2)})`}
+                        >
+                          {putMoneyness}
+                        </span>
                       </div>
                     </td>
 
@@ -458,6 +504,16 @@ export function OptionChainTab({
                     {/* ── Put Action Buttons ── */}
                     <td className={`py-1.5 px-1 text-center whitespace-nowrap ${putBgClass}`}>
                       <div className="flex items-center justify-center gap-1 opacity-75 group-hover:opacity-100 transition-opacity">
+                        {onOpenChart && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenChart('PE', row.strike)}
+                            className="px-1 py-0.5 rounded text-[9px] font-black bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/40 hover:bg-sky-500 hover:text-white transition-colors cursor-pointer"
+                            title={`View PE ${row.strike} Candlestick Chart`}
+                          >
+                            📊
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleQuickAdd('BUY', 'PE', row.put)}

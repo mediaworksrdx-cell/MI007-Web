@@ -83,10 +83,41 @@ export function PresetConfigModal({
           ✕
         </button>
 
-        {/* Header: Strategy Name */}
-        <h3 className="text-[15px] font-bold text-[var(--theme-card-text)] text-center mb-4">
-          {preset.name}
-        </h3>
+        {/* Header: Strategy Name & Contract Composition */}
+        <div className="text-center mb-4">
+          <h3 className="text-[15px] font-bold text-[var(--theme-card-text)]">
+            {preset.name}
+          </h3>
+          {preset.contractComposition && (
+            <div className="mt-1.5 flex justify-center">
+              <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 font-bold tracking-wide">
+                Composition: {preset.contractComposition}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Contract Composition Variant Pills */}
+        {preset.compositionVariants && preset.compositionVariants.length > 0 && (
+          <div className="mb-3.5 p-2 rounded-lg bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)]">
+            <span className="text-[9px] uppercase font-bold text-[var(--theme-card-subtitle)] block mb-1.5">
+              Contract Composition Presets:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {preset.compositionVariants.map((v, vIdx) => (
+                <button
+                  key={vIdx}
+                  type="button"
+                  onClick={() => setOffsets([...v.offsets])}
+                  className="px-2 py-1 rounded text-[9.5px] font-bold border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 cursor-pointer transition"
+                  title={v.description}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Legs rows */}
         <div className="space-y-3 mb-4">

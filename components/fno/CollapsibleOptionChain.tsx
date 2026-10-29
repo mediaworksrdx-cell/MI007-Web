@@ -87,7 +87,12 @@ export function CollapsibleOptionChain({
             </thead>
             <tbody>
               {chainData.strikes.map((row) => {
-                const isATM = row.isATM;
+                const liveSpot = chainData.spotPrice;
+                const minStrikeDiff = Math.min(...chainData.strikes.map(s => Math.abs(s.strike - liveSpot)));
+                const isATM = row.isATM || (Math.abs(row.strike - liveSpot) === minStrikeDiff);
+                const callMoneyness: 'ITM' | 'ATM' | 'OTM' = isATM ? 'ATM' : row.strike < liveSpot ? 'ITM' : 'OTM';
+                const putMoneyness: 'ITM' | 'ATM' | 'OTM' = isATM ? 'ATM' : row.strike > liveSpot ? 'ITM' : 'OTM';
+
                 return (
                   <tr
                     key={row.strike}
@@ -126,13 +131,37 @@ export function CollapsibleOptionChain({
                       {row.call.impliedVolatility.toFixed(1)}%
                     </td>
 
-                    {/* Central Strike */}
+                    {/* Central Strike with Adjacent Moneyness Labels */}
                     <td
-                      className={`py-1 px-3 font-bold text-center ${
+                      className={`py-1 px-2 font-bold text-center ${
                         isATM ? 'bg-amber-500/20 text-amber-500' : 'bg-[var(--theme-card-surface)] text-[var(--theme-card-text)]'
                       }`}
                     >
-                      {row.strike} {isATM ? '★' : ''}
+                      <div className="flex items-center justify-between gap-1 text-[11px]">
+                        <span
+                          className={`text-[8px] px-1 py-0.2 rounded font-bold uppercase ${
+                            callMoneyness === 'ITM'
+                              ? 'bg-amber-500/20 text-amber-500'
+                              : callMoneyness === 'ATM'
+                              ? 'bg-amber-500 text-slate-950'
+                              : 'text-slate-400'
+                          }`}
+                        >
+                          {callMoneyness}
+                        </span>
+                        <span className="font-mono">{row.strike}</span>
+                        <span
+                          className={`text-[8px] px-1 py-0.2 rounded font-bold uppercase ${
+                            putMoneyness === 'ITM'
+                              ? 'bg-amber-500/20 text-amber-500'
+                              : putMoneyness === 'ATM'
+                              ? 'bg-amber-500 text-slate-950'
+                              : 'text-slate-400'
+                          }`}
+                        >
+                          {putMoneyness}
+                        </span>
+                      </div>
                     </td>
 
                     {/* Put Side */}

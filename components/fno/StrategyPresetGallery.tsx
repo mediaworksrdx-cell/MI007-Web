@@ -83,15 +83,15 @@ export function StrategyPresetGallery({
                 key={preset.id}
                 type="button"
                 onClick={() => onSelectPreset(preset)}
-                className={`w-[88px] sm:w-[94px] h-[82px] flex flex-col items-center justify-between p-1.5 rounded-lg border transition-all cursor-pointer select-none bg-[var(--theme-card-surface)] ${
+                className={`w-[96px] sm:w-[102px] h-[98px] flex flex-col items-center justify-between p-1.5 rounded-lg border transition-all cursor-pointer select-none bg-[var(--theme-card-surface)] ${
                   isSelected
                     ? 'border-blue-500 ring-1 ring-blue-500 shadow-xs'
                     : 'border-[var(--theme-card-border)] hover:border-blue-500/50 hover:shadow-xs'
                 }`}
-                title={preset.name}
+                title={`${preset.name} (${preset.contractComposition || ''})`}
               >
                 {/* Mini Payoff Chart Box */}
-                <div className="w-full h-[46px] border border-[var(--theme-card-border)] rounded bg-[var(--theme-card-bg)] relative overflow-hidden flex items-center justify-center">
+                <div className="w-full h-[42px] border border-[var(--theme-card-border)] rounded bg-[var(--theme-card-bg)] relative overflow-hidden flex items-center justify-center">
                   <svg viewBox="0 0 60 40" className="w-full h-full">
                     {/* Zero axis line */}
                     <line x1="2" y1="20" x2="58" y2="20" stroke="#64748B" strokeWidth="0.8" strokeDasharray="2 1" opacity="0.5" />
@@ -109,9 +109,16 @@ export function StrategyPresetGallery({
                 </div>
 
                 {/* Strategy Name */}
-                <span className="text-[10px] text-[var(--theme-card-text)] font-semibold text-center leading-tight line-clamp-2 w-full">
+                <span className="text-[10px] text-[var(--theme-card-text)] font-semibold text-center leading-tight line-clamp-1 w-full">
                   {preset.name}
                 </span>
+
+                {/* Contract Composition Badge */}
+                {preset.contractComposition && (
+                  <span className="text-[7.5px] px-1 py-0.2 rounded font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30 truncate max-w-full text-center">
+                    {preset.contractComposition}
+                  </span>
+                )}
               </button>
             );
           })}

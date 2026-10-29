@@ -186,6 +186,12 @@ export interface OptionStrategyPreset {
   category: StrategyCategory;
   description: string;
   outlook: string;
+  contractComposition?: string; // e.g. "ATM / ITM / OTM", "ITM & OTM / ATM & OTM", "ATM", "OTM"
+  compositionVariants?: Array<{
+    label: string;
+    offsets: number[];
+    description: string;
+  }>;
   payoffSvgPath?: string;
   legsTemplate: Array<{
     action: TradeAction;

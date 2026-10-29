@@ -22,6 +22,7 @@ interface FnoHeaderProps {
   liveChangePct?: number;
   engineConnected?: boolean;
   fnoEngineStatus?: FnoEngineStatus | null;
+  onOpenFuturesChart?: () => void;
 }
 
 export function FnoHeader({
@@ -40,6 +41,7 @@ export function FnoHeader({
   liveChangePct,
   engineConnected = true,
   fnoEngineStatus,
+  onOpenFuturesChart,
 }: FnoHeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,6 +73,12 @@ export function FnoHeader({
   }, []);
 
   const [metricMode, setMetricMode] = useState<'DUAL' | 'ACTIVE'>('DUAL');
+
+  const isIndex = useMemo(() => {
+    if (selectedInstrument.sector?.toLowerCase().includes('index')) return true;
+    const indexSymbols = ['NIFTY 50', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY', 'SENSEX', 'BANKEX', 'SPX', 'NDX', 'DJI'];
+    return indexSymbols.includes(selectedInstrument.symbol);
+  }, [selectedInstrument.sector, selectedInstrument.symbol]);
 
   const wkExp = weeklyExpiry || selectedInstrument.expiries[0] || selectedExpiry;
   const moExp = monthlyExpiry || (selectedInstrument.expiries.length >= 3 ? selectedInstrument.expiries[2] : (selectedInstrument.expiries[1] || selectedInstrument.expiries[0] || selectedExpiry));
@@ -274,7 +282,9 @@ export function FnoHeader({
               ACTIVE EXPIRY
             </label>
             <span className="text-[8.5px] mono font-bold text-emerald-400">
-              {selectedExpiry === wkExp ? 'WK' : selectedExpiry === moExp ? 'MO' : 'CYCLE'}
+              {isIndex
+                ? (selectedExpiry === wkExp ? 'WK' : selectedExpiry === moExp ? 'MO' : 'CYCLE')
+                : (selectedExpiry === selectedInstrument.expiries[0] ? 'NEAR MO' : selectedExpiry === selectedInstrument.expiries[1] ? 'NEXT MO' : 'FAR MO')}
             </span>
           </div>
           <select
@@ -282,8 +292,13 @@ export function FnoHeader({
             onChange={(e) => onSelectExpiry(e.target.value)}
             className="mt-1 w-full px-2 py-1.5 rounded-lg bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] text-[12px] mono font-bold text-[var(--theme-card-text)] focus:outline-hidden focus:border-emerald-500 cursor-pointer"
           >
-            {selectedInstrument.expiries.map((exp) => {
-              const tag = exp === wkExp ? ' • Weekly' : exp === moExp ? ' • Monthly' : '';
+            {selectedInstrument.expiries.map((exp, idx) => {
+              let tag = '';
+              if (isIndex) {
+                tag = exp === wkExp ? ' • Weekly' : exp === moExp ? ' • Monthly' : '';
+              } else {
+                tag = idx === 0 ? ' • Monthly (Near)' : idx === 1 ? ' • Monthly (Next)' : ' • Monthly (Far)';
+              }
               return (
                 <option key={exp} value={exp} className="bg-[var(--theme-card-surface)] text-[var(--theme-card-text)]">
                   {exp}{tag}
@@ -298,8 +313,18 @@ export function FnoHeader({
 
         {/* Futures Price & Basis */}
         <div>
-          <div className="mono text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase tracking-wider">
-            FUTURES (NEAR)
+          <div className="mono text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase tracking-wider flex items-center justify-between">
+            <span>FUTURES (NEAR)</span>
+            {onOpenFuturesChart && (
+              <button
+                type="button"
+                onClick={onOpenFuturesChart}
+                className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30 hover:bg-sky-500/30 transition cursor-pointer flex items-center gap-1"
+                title="Open Futures Interactive Candlestick Chart"
+              >
+                📊 Chart
+              </button>
+            )}
           </div>
           <div className="mono text-[15px] font-black text-[var(--theme-card-text)] mt-0.5">
             {curr}{currentFuture?.ltp.toLocaleString(loc, { minimumFractionDigits: 2 })}
@@ -321,15 +346,15 @@ export function FnoHeader({
               type="button"
               onClick={() => setMetricMode((m) => (m === 'DUAL' ? 'ACTIVE' : 'DUAL'))}
               className="text-[8px] mono font-extrabold px-1.5 py-0.2 rounded bg-[var(--theme-card-subsurface)] text-cyan-400 border border-cyan-500/30 hover:border-cyan-400 transition cursor-pointer"
-              title="Toggle between Dual (Weekly + Monthly) and Active Expiry view"
+              title="Toggle between Dual and Active Expiry view"
             >
-              {metricMode === 'DUAL' ? 'DUAL: WK & MO' : 'ACTIVE ONLY'}
+              {metricMode === 'DUAL' ? (isIndex ? 'DUAL: WK & MO' : 'DUAL: NEAR & NEXT') : 'ACTIVE ONLY'}
             </button>
           </div>
 
           {metricMode === 'DUAL' ? (
             <div className="mt-1 space-y-1">
-              {/* Weekly PCR */}
+              {/* Primary Cycle (Weekly for Index, Near Month for Equities) */}
               <div
                 onClick={() => onSelectExpiry(wkExp)}
                 className={`px-1.5 py-0.8 rounded text-[11px] mono flex items-center justify-between cursor-pointer transition border ${
@@ -337,10 +362,12 @@ export function FnoHeader({
                     ? 'bg-amber-500/10 border-amber-500/40 text-[var(--theme-card-text)]'
                     : 'bg-[var(--theme-card-subsurface)]/60 border-transparent hover:border-amber-500/30 text-[var(--theme-card-subtitle)]'
                 }`}
-                title={`Click to switch option chain to Weekly (${wkExp})`}
+                title={isIndex ? `Click to switch option chain to Weekly (${wkExp})` : `Click to switch option chain to Near Month (${wkExp})`}
               >
                 <div className="flex items-center gap-1">
-                  <span className="text-[8.5px] font-black px-1 py-0.2 rounded bg-amber-500/20 text-amber-400">WK</span>
+                  <span className="text-[8.5px] font-black px-1 py-0.2 rounded bg-amber-500/20 text-amber-400">
+                    {isIndex ? 'WK' : 'NEAR'}
+                  </span>
                   <span className={`font-black ${wkData.pcr >= 1.2 ? 'text-emerald-400' : wkData.pcr <= 0.8 ? 'text-rose-400' : 'text-amber-400'}`}>
                     {wkData.pcr.toFixed(2)}
                   </span>
@@ -353,7 +380,7 @@ export function FnoHeader({
                 </span>
               </div>
 
-              {/* Monthly PCR */}
+              {/* Secondary Cycle (Monthly for Index, Next Month for Equities) */}
               <div
                 onClick={() => onSelectExpiry(moExp)}
                 className={`px-1.5 py-0.8 rounded text-[11px] mono flex items-center justify-between cursor-pointer transition border ${
@@ -361,10 +388,12 @@ export function FnoHeader({
                     ? 'bg-indigo-500/10 border-indigo-500/40 text-[var(--theme-card-text)]'
                     : 'bg-[var(--theme-card-subsurface)]/60 border-transparent hover:border-indigo-500/30 text-[var(--theme-card-subtitle)]'
                 }`}
-                title={`Click to switch option chain to Monthly (${moExp})`}
+                title={isIndex ? `Click to switch option chain to Monthly (${moExp})` : `Click to switch option chain to Next Month (${moExp})`}
               >
                 <div className="flex items-center gap-1">
-                  <span className="text-[8.5px] font-black px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-400">MO</span>
+                  <span className="text-[8.5px] font-black px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-400">
+                    {isIndex ? 'MO' : 'NEXT'}
+                  </span>
                   <span className={`font-black ${moData.pcr >= 1.2 ? 'text-emerald-400' : moData.pcr <= 0.8 ? 'text-rose-400' : 'text-amber-400'}`}>
                     {moData.pcr.toFixed(2)}
                   </span>
