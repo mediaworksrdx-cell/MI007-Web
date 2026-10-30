@@ -154,7 +154,7 @@ export function TradingStrategiesView({
                 Trading Strategies Intelligence Cockpit
               </h1>
               <span className="mono text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-                34 Trading & Chart Models
+                {TRADING_STRATEGIES.length} Trading & Chart Models
               </span>
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 mono text-[10.5px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -162,7 +162,7 @@ export function TradingStrategiesView({
               </div>
             </div>
             <p className="text-[12.5px] text-[var(--theme-card-text-muted)] font-medium mt-0.5">
-              Flagship Quantum AI SMC & Resonance, 10 Classic Technical, 16 Institutional SMC, and 7 Order Flow Footprint strategies.
+              Flagship Quantum AI SMC, 10 Classic Technical, 4 Unified & Confluence SMC (Master, Fibonacci, Volume Profile, Pivot Points), and 7 Order Flow models.
             </p>
           </div>
         </div>
@@ -193,7 +193,7 @@ export function TradingStrategiesView({
               : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
           }`}
         >
-          All Categories (34)
+          All Categories ({TRADING_STRATEGIES.length})
         </button>
         {categories.map((cat) => (
           <button

@@ -274,33 +274,21 @@ const setups16 = detectAll16SmcSetups(trendWave, DEFAULT_SMC_CONFIG);
 assert(Array.isArray(setups16), 'detectAll16SmcSetups must return an array');
 console.log(`  ✓ detectAll16SmcSetups executed successfully across wave: returned ${setups16.length} setups.`);
 
-// Verify SMC_STRATEGY_DEFINITIONS has all 16 strategies
-assert(SMC_STRATEGY_DEFINITIONS.length === 16, `SMC_STRATEGY_DEFINITIONS must have exactly 16 strategies, found: ${SMC_STRATEGY_DEFINITIONS.length}`);
+// Verify SMC_STRATEGY_DEFINITIONS has the 4 unified & confluence strategies
+assert(SMC_STRATEGY_DEFINITIONS.length === 4, `SMC_STRATEGY_DEFINITIONS must have exactly 4 strategies, found: ${SMC_STRATEGY_DEFINITIONS.length}`);
 
 const strategyIds = new Set<string>(SMC_STRATEGY_DEFINITIONS.map(s => s.id));
 const expectedIds = [
-  'smc_bos',
-  'smc_choch',
-  'smc_liquidity_sweep',
-  'smc_eqh_eql',
-  'smc_fvg',
-  'smc_order_block',
-  'smc_breaker_block',
-  'smc_premium_discount',
-  'smc_mtf_confluence',
-  'smc_session_liquidity',
-  'smc_3stage_reversal',
-  'smc_bos_fvg_retest',
-  'smc_ob_fvg_confluence',
-  'smc_inducement_sweep',
-  'smc_amd',
-  'smc_ifvg',
+  'smc_master',
+  'smc_fibonacci',
+  'smc_volume_profile',
+  'smc_pivot_points',
 ];
 
 for (const id of expectedIds) {
   assert(strategyIds.has(id), `Missing strategy definition for: ${id}`);
 }
-console.log('  ✓ All 16 institutional SMC strategies defined and validated.');
+console.log('  ✓ All 4 unified and confluence institutional SMC strategies defined and validated.');
 
 // -----------------------------------------------------------------------------
 // TEST 7: Technical Strategies Invariance & Backward Compatibility
@@ -311,17 +299,17 @@ console.log('\n▶ Test 7: Technical Strategies Screener Compatibility...');
 // STRATEGY_DEFINITIONS must maintain length === 10 for legacy tests
 assert(STRATEGY_DEFINITIONS.length === 10, `STRATEGY_DEFINITIONS must remain exactly 10, got: ${STRATEGY_DEFINITIONS.length}`);
 
-// COMBINED_STRATEGY_DEFINITIONS has 10 classic + 16 SMC = 26
-assert(COMBINED_STRATEGY_DEFINITIONS.length === 26, `COMBINED_STRATEGY_DEFINITIONS must be exactly 26, got: ${COMBINED_STRATEGY_DEFINITIONS.length}`);
+// COMBINED_STRATEGY_DEFINITIONS has 10 classic + 4 SMC = 14
+assert(COMBINED_STRATEGY_DEFINITIONS.length === 14, `COMBINED_STRATEGY_DEFINITIONS must be exactly 14, got: ${COMBINED_STRATEGY_DEFINITIONS.length}`);
 
 // Test evaluation on mock stock candidate
 const combinedResults = evaluateCombinedStrategiesForStock('RELIANCE', 'Reliance Industries', 'india', 2950, trendWave);
-assert(combinedResults.length === 26, `evaluateCombinedStrategiesForStock must evaluate all 26 strategies, got: ${combinedResults.length}`);
+assert(combinedResults.length === 14, `evaluateCombinedStrategiesForStock must evaluate all 14 strategies, got: ${combinedResults.length}`);
 
 const smcOnlyResults = evaluateSmcStrategiesForStock('RELIANCE', 'Reliance Industries', 'india', 2950, trendWave);
-assert(smcOnlyResults.length === 16, `evaluateSmcStrategiesForStock must evaluate all 16 SMC strategies, got: ${smcOnlyResults.length}`);
+assert(smcOnlyResults.length === 4, `evaluateSmcStrategiesForStock must evaluate all 4 SMC strategies, got: ${smcOnlyResults.length}`);
 
-console.log('  ✓ Screener compatibility verified: 10 classic + 16 SMC = 26 combined models cleanly evaluated.');
+console.log('  ✓ Screener compatibility verified: 10 classic + 4 SMC confluence = 14 combined models cleanly evaluated.');
 
 console.log('\n================================================================');
 console.log('✅ ALL COMPREHENSIVE INSTITUTIONAL SMC TESTS PASSED (100%)');

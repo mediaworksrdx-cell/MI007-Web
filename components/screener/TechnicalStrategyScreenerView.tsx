@@ -168,7 +168,7 @@ export function TechnicalStrategyScreenerView({
                 Technical Strategy Intelligence Scanner
               </h1>
               <span className="mono text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-                26 Quantitative Models (10 Classic + 16 SMC)
+                14 Quantitative Models (10 Classic + 4 SMC Confluence)
               </span>
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 mono text-[10.5px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

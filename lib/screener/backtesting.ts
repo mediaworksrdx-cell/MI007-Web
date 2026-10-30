@@ -275,7 +275,67 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
         break;
       }
 
-      // ── Smart Money Concepts (SMC) Institutional Strategies (16 Strategies) ──
+      // ── Smart Money Concepts (SMC) Institutional Strategies (Unified & Confluence) ──
+      case 'smc_master': {
+        const swingHigh = Math.max(...candles.slice(Math.max(0, i - 12), i).map((x) => x.high));
+        const swingLow = Math.min(...candles.slice(Math.max(0, i - 12), i).map((x) => x.low));
+        if ((currentPrice >= swingHigh * 0.998 && prevC.close < swingHigh) || (c.low < swingLow && currentPrice > swingLow)) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < swingLow * 0.99) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_fibonacci': {
+        const slice = candles.slice(Math.max(0, i - 25), i);
+        const sHigh = Math.max(...slice.map((x) => x.high));
+        const sLow = Math.min(...slice.map((x) => x.low));
+        const sSpan = sHigh - sLow || 1;
+        const ote618 = sHigh - sSpan * 0.618;
+        const ote786 = sHigh - sSpan * 0.786;
+        if (currentPrice >= ote786 && currentPrice <= ote618 && currentPrice > c.open) {
+          isEntrySignal = true;
+        }
+        if (currentPrice < sLow * 0.995 || currentPrice >= sHigh) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_volume_profile': {
+        const slice = candles.slice(Math.max(0, i - 30), i);
+        const sLow = Math.min(...slice.map((x) => x.low));
+        const sHigh = Math.max(...slice.map((x) => x.high));
+        const val = sLow + (sHigh - sLow) * 0.30;
+        const poc = sLow + (sHigh - sLow) * 0.50;
+        if (c.low <= val * 1.01 && currentPrice > val) {
+          isEntrySignal = true;
+        }
+        if (currentPrice >= poc || currentPrice < sLow * 0.99) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      case 'smc_pivot_points': {
+        const slice = candles.slice(Math.max(0, i - 20), i);
+        const pH = Math.max(...slice.map((x) => x.high));
+        const pL = Math.min(...slice.map((x) => x.low));
+        const pC = slice[slice.length - 1].close;
+        const P = (pH + pL + pC) / 3;
+        const S1 = 2 * P - pH;
+        if (c.low <= S1 * 1.008 && currentPrice > S1) {
+          isEntrySignal = true;
+        }
+        if (currentPrice >= P || currentPrice < (P - (pH - pL)) * 0.995) {
+          isExitSignal = true;
+        }
+        break;
+      }
+
+      // ── Legacy Aliases ──
       case 'smc_bos': {
         const swingHigh = Math.max(...candles.slice(Math.max(0, i - 12), i).map((x) => x.high));
         if ((currentPrice >= swingHigh * 0.998 && prevC.close < swingHigh) || (c.high > swingHigh && currentPrice > prevC.close)) {
