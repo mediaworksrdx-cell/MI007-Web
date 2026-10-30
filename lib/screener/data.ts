@@ -8,6 +8,8 @@ import {
   findZerodhaStockBySymbol,
   generateFundamentalFromZerodha,
   getZerodhaCatalog,
+  INDIA_FUNDAMENTALS_MAP,
+  VERIFIED_PRICES_MAP,
 } from './zerodhaStocks';
 
 export const US_INDEX_UNIVERSE: CompanyFundamental[] = usFundamentalsCache as unknown as CompanyFundamental[];
@@ -3700,11 +3702,60 @@ export const MASTER_COMPANIES: CompanyFundamental[] = [
 
 let cachedIndiaUniverse: CompanyFundamental[] | null = null;
 
+function enrichCuratedIndianCompany(comp: CompanyFundamental): CompanyFundamental {
+  if (comp.market !== 'INDIA') return comp;
+  const sym = comp.symbol.toUpperCase();
+  const f = INDIA_FUNDAMENTALS_MAP?.[sym];
+  const vQuote = VERIFIED_PRICES_MAP?.[sym];
+
+  const currentPrice = vQuote && vQuote.price > 0 ? vQuote.price : (f?.currentPrice || comp.currentPrice);
+  const prevClose = vQuote && vQuote.prev > 0 ? vQuote.prev : currentPrice;
+  const priceChangePct = prevClose > 0 && currentPrice !== prevClose
+    ? Math.round(((currentPrice - prevClose) / prevClose) * 10000) / 100
+    : comp.priceChangePct;
+
+  if (!f) {
+    return {
+      ...comp,
+      currentPrice,
+      priceChangePct,
+    };
+  }
+
+  return {
+    ...comp,
+    currentPrice,
+    priceChangePct,
+    marketCap: f.marketCap ?? comp.marketCap,
+    pe: f.pe ?? comp.pe,
+    pb: f.pb ?? comp.pb,
+    roce: f.roce ?? comp.roce,
+    roe: f.roe ?? comp.roe,
+    roa: f.roa ?? comp.roa,
+    opm: f.opm ?? comp.opm,
+    npm: f.npm ?? comp.npm,
+    debtToEquity: f.debtToEquity ?? comp.debtToEquity,
+    dividendYield: f.dividendYield ?? comp.dividendYield,
+    salesGrowth1Y: f.salesGrowth1Y ?? comp.salesGrowth1Y,
+    salesGrowth3Y: f.salesGrowth3Y ?? comp.salesGrowth3Y,
+    salesGrowth5Y: f.salesGrowth5Y ?? comp.salesGrowth5Y,
+    salesGrowth10Y: f.salesGrowth10Y ?? comp.salesGrowth10Y,
+    profitGrowth1Y: f.profitGrowth1Y ?? comp.profitGrowth1Y,
+    profitGrowth3Y: f.profitGrowth3Y ?? comp.profitGrowth3Y,
+    profitGrowth5Y: f.profitGrowth5Y ?? comp.profitGrowth5Y,
+    profitGrowth10Y: f.profitGrowth10Y ?? comp.profitGrowth10Y,
+    promoterHolding: f.promoterHolding ?? comp.promoterHolding,
+    fiiHolding: f.fiiHolding ?? comp.fiiHolding,
+    diiHolding: f.diiHolding ?? comp.diiHolding,
+    publicHolding: f.publicHolding ?? comp.publicHolding,
+  };
+}
+
 /** Build or retrieve cached comprehensive universe of Indian equities (3,800+ Zerodha Kite stocks) */
 export function buildIndiaUniverse(): CompanyFundamental[] {
   if (cachedIndiaUniverse) return cachedIndiaUniverse;
 
-  const curatedIndia = MASTER_COMPANIES.filter((c) => c.market === 'INDIA');
+  const curatedIndia = MASTER_COMPANIES.filter((c) => c.market === 'INDIA').map(enrichCuratedIndianCompany);
   const curatedSymbolSet = new Set(curatedIndia.map((c) => c.symbol.toUpperCase()));
 
   const zerodhaList = getZerodhaCatalog();
@@ -3758,7 +3809,7 @@ export function getCompanyBySymbol(symbol: string): CompanyFundamental | undefin
   const existing = MASTER_COMPANIES.find(
     (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
   );
-  if (existing) return existing;
+  if (existing) return enrichCuratedIndianCompany(existing);
 
   // 2. Check US 3-index universe if symbol matches
   const fromUs = US_INDEX_UNIVERSE.find(

@@ -94,7 +94,7 @@ export function ScreenerWorkspace() {
   const [activeViewPreset, setActiveViewPreset] = useState<TableViewPreset>('overview');
 
   // Zerodha Kite Trade Engine Integration
-  const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
+  const { livePrices, getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
 
   // Query State
   const defaultScreen = PREDEFINED_SCREENS[0];
@@ -255,16 +255,11 @@ export function ScreenerWorkspace() {
       const priceChangePct = live.changePct ?? comp.priceChangePct;
 
       // Dynamically calculate live P/E if annual EPS is available
-      const latestEps = comp.annualProfitLoss && comp.annualProfitLoss[0]?.eps;
-      const pe = latestEps && latestEps > 0
-        ? Math.round((currentPrice / latestEps) * 10) / 10
-        : comp.pe;
-
-      // Scaled Market Cap based on live price ratio
       const originalPrice = comp.currentPrice || currentPrice;
       const priceRatio = (originalPrice > 0 && Math.abs(currentPrice - originalPrice) / originalPrice < 0.25)
         ? (currentPrice / originalPrice)
         : 1;
+      const pe = comp.pe != null ? Math.round(comp.pe * priceRatio * 10) / 10 : null;
       const marketCap = Math.round(comp.marketCap * priceRatio);
 
       return {
@@ -278,7 +273,7 @@ export function ScreenerWorkspace() {
         isLiveTick: true,
       };
     });
-  }, [market, getSymbolPrice]);
+  }, [market, livePrices, getSymbolPrice]);
 
   // Master list of all companies enriched with live Zerodha Kite ticks
   const allCompaniesEnriched = useMemo(() => {
@@ -288,14 +283,11 @@ export function ScreenerWorkspace() {
 
       const currentPrice = live.price;
       const priceChangePct = live.changePct ?? comp.priceChangePct;
-      const latestEps = comp.annualProfitLoss && comp.annualProfitLoss[0]?.eps;
-      const pe = latestEps && latestEps > 0
-        ? Math.round((currentPrice / latestEps) * 10) / 10
-        : comp.pe;
       const originalPrice = comp.currentPrice || currentPrice;
       const priceRatio = (originalPrice > 0 && Math.abs(currentPrice - originalPrice) / originalPrice < 0.25)
         ? (currentPrice / originalPrice)
         : 1;
+      const pe = comp.pe != null ? Math.round(comp.pe * priceRatio * 10) / 10 : null;
       const marketCap = Math.round(comp.marketCap * priceRatio);
 
       return {
@@ -309,7 +301,7 @@ export function ScreenerWorkspace() {
         isLiveTick: true,
       };
     });
-  }, [getSymbolPrice]);
+  }, [livePrices, getSymbolPrice]);
 
   const availableSectors = useMemo(() => {
     return getSectors(market);

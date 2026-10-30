@@ -14157,16 +14157,16 @@
   "NIFTY 50": {
     "symbol": "NIFTY 50",
     "price": 23053.1,
-    "prev": 22698.8
+    "prev": 22936.75
   },
   "BANKNIFTY": {
     "symbol": "BANKNIFTY",
     "price": 54686.95,
-    "prev": 54267.4
+    "prev": 54909.65
   },
   "SENSEX": {
     "symbol": "SENSEX",
     "price": 74459.53,
-    "prev": 73246
+    "prev": 74151.04
   }
 }
