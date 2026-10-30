@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isMarketOpen } from '@/lib/marketHours';
 import { fetchLiveMarketNews } from '@/lib/terminal/marketNewsData';
 import { fetchLiveEconomicCalendar } from '@/lib/terminal/economicCalendarData';
-import { findZerodhaStockBySymbol } from '@/lib/screener/zerodhaStocks';
+import { findZerodhaStockBySymbol, getZerodhaStockPrice, KNOWN_ZERODHA_PRICES } from '@/lib/screener/zerodhaStocks';
 import {
   fetchFnoSpotQuote,
   fetchFnoOptionChain,
@@ -819,20 +819,15 @@ function mapTimeframeToYahooParams(timeframe: string): { interval: string; range
 }
 
 function getSymbolBaselinePrice(symbol: string): number {
-  const clean = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
+  const clean = symbol.toUpperCase().replace(/[\s\/-]+/g, '').replace(/\.NS$/, '').replace(/\.BO$/, '');
   const BASES: Record<string, number> = {
+    ...KNOWN_ZERODHA_PRICES,
     SPX: 7690.73, 'S&P 500': 7690.73, NDX: 29529.34, 'NASDAQ 100': 29529.34, DJI: 51966.03, 'DOW JONES': 51966.03,
     VIX: 18.44, RUT: 2721.37, QQQ: 718.36, NVDA: 217.09, AAPL: 342.94, MSFT: 533.52, TSLA: 368.06, AMZN: 262.45,
     META: 705.44, GOOGL: 344.18, AMD: 168.50, NFLX: 685.00, INTC: 28.40,
     NIFTY: 22888.95, 'NIFTY 50': 22888.95, BANKNIFTY: 55488.10, 'BANK NIFTY': 55488.10, SENSEX: 73852.90,
     FINNIFTY: 25480.00, MIDCPNIFTY: 12958.00, BANKEX: 61083.00, INDIAVIX: 14.50,
     DFMGI: 5820.00, ADXGI: 9340.00, 'FTSE ADX 15': 8920.00,
-    RELIANCE: 1211.20, TCS: 2542.00, HDFCBANK: 694.00, INFY: 1158.00, ICICIBANK: 1388.00,
-    ITC: 258.00, SBIN: 952.00, TATAMOTORS: 261.00, LT: 3606.00, BHARTIARTL: 1865.00,
-    JIOFIN: 204.00, TATASTEEL: 152.00, ADANIENT: 2520.00, ZOMATO: 262.00, HAL: 4795.00,
-    IRFC: 135.00, VEDL: 485.00, BEL: 295.00, SUZLON: 68.00, PAYTM: 740.00,
-    KOTAKBANK: 1780.00, AXISBANK: 1140.00, WIPRO: 490.00, BAJFINANCE: 6900.00,
-    MARUTI: 11800.00, HCLTECH: 1820.00, ASIANPAINT: 2450.00, SUNPHARMA: 1850.00, TITAN: 3450.00,
     GOLD: 4156.80, XAU: 4156.80, XAUUSD: 4156.80, SILVER: 57.16, XAG: 57.16, XAGUSD: 57.16,
     CRUDEOIL: 74.20, BRENT: 74.20, WTI: 70.80, NATGAS: 2.85, COPPER: 4.38, PLATINUM: 1024.50,
     EURUSD: 1.1232, GBPUSD: 1.2980, USDJPY: 152.40, USDINR: 84.08, USDCAD: 1.4092, AUDCAD: 0.9838,
@@ -847,7 +842,7 @@ function getSymbolBaselinePrice(symbol: string): number {
   const zd = findZerodhaStockBySymbol(clean);
   if (zd && zd.lastPrice && zd.lastPrice > 0) return zd.lastPrice;
 
-  return 250.0;
+  return getZerodhaStockPrice(clean);
 }
 
 function generateFallbackCandles(symbol: string, timeframe: string, basePrice: number, count: number = 200): any[] {

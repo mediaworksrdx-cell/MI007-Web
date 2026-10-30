@@ -1,5 +1,6 @@
 // ─── Market Intelligence MI- 007 — Real-Time Tick Simulator ─────────────────
 import { Candle, MarketType } from './types';
+import { getZerodhaStockPrice } from './screener/zerodhaStocks';
 
 export type TickCallback = (candle: Candle, isNew: boolean) => void;
 
@@ -29,7 +30,7 @@ export class TickSimulator {
       USA: { SPX: 7703.58, NDX: 29630.77, DJI: 51964.04, QQQ: 717.71, VIX: 18.56, AAPL: 343.50, NVDA: 214.10, TSLA: 354.70 },
       UAE: { DFMGI: 4850, ADXGI: 9250, EMAAR: 8.45, FAB: 13.80, DEWA: 2.92 },
     };
-    return prices[this.options.market]?.[this.options.symbol] ?? 1000;
+    return prices[this.options.market]?.[this.options.symbol] ?? getZerodhaStockPrice(this.options.symbol);
   }
 
   private newCandle(open: number): Candle {

@@ -124,7 +124,7 @@ const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number;
   { symbol: 'LTIM', price: 5420.00, change: 82.50, changePct: 1.55 },
   { symbol: 'MIDCPNIFTY', price: 12958.45, change: 42.10, changePct: 0.33 },
   { symbol: 'BANKEX', price: 61083.33, change: -682.67, changePct: -1.10 },
-  { symbol: 'JIOFIN', price: 203.59, change: -12.66, changePct: -5.85 },
+  { symbol: 'JIOFIN', price: 315.00, change: 4.50, changePct: 1.45 },
   { symbol: 'TATASTEEL', price: 151.80, change: 1.20, changePct: 0.80 },
   { symbol: 'ADANIENT', price: 2515.00, change: 35.40, changePct: 1.43 },
   { symbol: 'HAL', price: 4795.80, change: -193.20, changePct: -3.87 },

@@ -13,7 +13,7 @@ import {
   getCompanyBySymbol,
   getSectors,
 } from '@/lib/screener/data';
-import { findZerodhaStockBySymbol, generateFundamentalFromZerodha } from '@/lib/screener/zerodhaStocks';
+import { findZerodhaStockBySymbol, generateFundamentalFromZerodha, getZerodhaStockPrice } from '@/lib/screener/zerodhaStocks';
 import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
 import {
   getSavedScreens,
@@ -421,7 +421,7 @@ export function ScreenerWorkspace() {
     const zd = findZerodhaStockBySymbol(cleanSym);
     if (zd) {
       const live = getSymbolPrice(zd.symbol);
-      const price = (live && live.price > 0) ? live.price : (zd.lastPrice || 250);
+      const price = (live && live.price > 0) ? live.price : (zd.lastPrice && zd.lastPrice > 0 ? zd.lastPrice : getZerodhaStockPrice(zd));
       const generated = generateFundamentalFromZerodha(zd, price);
       return {
         ...generated,
