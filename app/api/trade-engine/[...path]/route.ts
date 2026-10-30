@@ -223,40 +223,33 @@ function getIndianFallbackLivePrices(): any[] {
 
 function getUsLiveBenchmarks(): any[] {
   const now = Date.now();
-  const isUsOpen = isMarketOpen('USA', new Date(now));
-  const timeDrift = isUsOpen ? (Math.sin(now / 5000) * 0.0004) : 0;
   const items = [
-    { instrumentToken: 900001, symbol: 'SPX', base: 7690.73, change: 31.29, changePercent: 0.41 },
-    { instrumentToken: 900002, symbol: 'S&P 500', base: 7690.73, change: 31.29, changePercent: 0.41 },
-    { instrumentToken: 900003, symbol: 'NDX', base: 29529.34, change: 341.80, changePercent: 1.17 },
-    { instrumentToken: 900004, symbol: 'NASDAQ 100', base: 29529.34, change: 341.80, changePercent: 1.17 },
-    { instrumentToken: 900005, symbol: 'NASDAQ', base: 29529.34, change: 341.80, changePercent: 1.17 },
-    { instrumentToken: 900006, symbol: 'DJI', base: 51966.03, change: -36.38, changePercent: -0.07 },
-    { instrumentToken: 900007, symbol: 'DOW JONES', base: 51966.03, change: -36.38, changePercent: -0.07 },
-    { instrumentToken: 900008, symbol: 'VIX', base: 18.44, change: -1.55, changePercent: -7.75 },
-    { instrumentToken: 900009, symbol: 'QQQ', base: 718.36, change: 8.56, changePercent: 1.21 },
-    { instrumentToken: 900010, symbol: 'NVDA', base: 217.09, change: 2.96, changePercent: 1.38 },
-    { instrumentToken: 900011, symbol: 'AAPL', base: 342.94, change: -0.52, changePercent: -0.15 },
-    { instrumentToken: 900012, symbol: 'MSFT', base: 533.52, change: 4.47, changePercent: 0.84 },
-    { instrumentToken: 900013, symbol: 'TSLA', base: 368.06, change: 13.34, changePercent: 3.76 },
-    { instrumentToken: 900014, symbol: 'META', base: 705.44, change: -3.89, changePercent: -0.55 },
-    { instrumentToken: 900015, symbol: 'AMZN', base: 262.45, change: 12.45, changePercent: 4.98 },
-    { instrumentToken: 900016, symbol: 'GOOGL', base: 344.18, change: 3.59, changePercent: 1.05 },
+    { instrumentToken: 900001, symbol: 'SPX', base: 7626.75, change: -93.64, changePercent: -1.21 },
+    { instrumentToken: 900002, symbol: 'S&P 500', base: 7626.75, change: -93.64, changePercent: -1.21 },
+    { instrumentToken: 900003, symbol: 'NDX', base: 28636.47, change: -766.04, changePercent: -2.61 },
+    { instrumentToken: 900004, symbol: 'NASDAQ 100', base: 28636.47, change: -766.04, changePercent: -2.61 },
+    { instrumentToken: 900005, symbol: 'NASDAQ', base: 28636.47, change: -766.04, changePercent: -2.61 },
+    { instrumentToken: 900006, symbol: 'DJI', base: 52129.31, change: -213.25, changePercent: -0.41 },
+    { instrumentToken: 900007, symbol: 'DOW JONES', base: 52129.31, change: -213.25, changePercent: -0.41 },
+    { instrumentToken: 900008, symbol: 'VIX', base: 18.92, change: 1.72, changePercent: 10.00 },
+    { instrumentToken: 900009, symbol: 'QQQ', base: 696.86, change: -18.48, changePercent: -2.58 },
+    { instrumentToken: 900010, symbol: 'NVDA', base: 207.12, change: -6.54, changePercent: -3.06 },
+    { instrumentToken: 900011, symbol: 'AAPL', base: 345.51, change: -3.40, changePercent: -0.97 },
+    { instrumentToken: 900012, symbol: 'MSFT', base: 522.50, change: -7.64, changePercent: -1.44 },
+    { instrumentToken: 900013, symbol: 'TSLA', base: 393.50, change: -9.80, changePercent: -2.43 },
+    { instrumentToken: 900014, symbol: 'META', base: 618.50, change: -6.02, changePercent: -0.96 },
+    { instrumentToken: 900015, symbol: 'AMZN', base: 239.28, change: -4.51, changePercent: -1.85 },
+    { instrumentToken: 900016, symbol: 'GOOGL', base: 280.94, change: -2.88, changePercent: -1.01 },
   ];
 
-  return items.map(item => {
-    const delta = item.base * timeDrift;
-    const ltp = +(item.base + delta).toFixed(2);
-    const chg = +(item.change + delta).toFixed(2);
-    return {
-      instrumentToken: item.instrumentToken,
-      symbol: item.symbol,
-      ltp,
-      change: chg,
-      changePercent: +((chg / (ltp - chg)) * 100).toFixed(2),
-      timestamp: now,
-    };
-  });
+  return items.map(item => ({
+    instrumentToken: item.instrumentToken,
+    symbol: item.symbol,
+    ltp: item.base,
+    change: item.change,
+    changePercent: item.changePercent,
+    timestamp: now,
+  }));
 }
 
 // In-memory server cache to conserve Twelve Data credit quota and prevent high-frequency hammering
@@ -357,64 +350,6 @@ async function fetchYahooMacroData(): Promise<{ value: any[]; Count: number } | 
     console.warn('[YahooMacro] Error fetching Yahoo macro data:', err);
   }
   return null;
-}
-
-let isRefreshingTradeEngineUs = false;
-
-async function refreshTradeEngineUsPricesInBackground(): Promise<void> {
-  if (isRefreshingTradeEngineUs) return;
-  isRefreshingTradeEngineUs = true;
-
-  const stockSymbols = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'META', 'AMZN', 'GOOGL'];
-  const tokenMap: Record<string, number> = {
-    NVDA: 900010,
-    AAPL: 900011,
-    MSFT: 900012,
-    TSLA: 900013,
-    META: 900014,
-    AMZN: 900015,
-    GOOGL: 900016,
-  };
-
-  try {
-    for (const sym of stockSymbols) {
-      try {
-        const res = await fetch(
-          `${TRADE_ENGINE_URL}/us/quote?symbol=${encodeURIComponent(sym)}`,
-          { cache: 'no-store', signal: AbortSignal.timeout(12000) }
-        );
-        if (res.ok) {
-          const quote = await res.json();
-          if (quote && typeof quote === 'object' && quote.close) {
-            const ltp = parseFloat(quote.close);
-            const prevClose = parseFloat(quote.previous_close || quote.close);
-            const chg = parseFloat(quote.change || (ltp - prevClose).toFixed(2));
-            const pct = parseFloat(
-              quote.percent_change || (((ltp - prevClose) / Math.max(0.01, prevClose)) * 100).toFixed(2)
-            );
-            const updatedItem = {
-              instrumentToken: tokenMap[sym] || 900050,
-              symbol: sym,
-              ltp: +ltp.toFixed(2),
-              change: +chg.toFixed(2),
-              changePercent: +pct.toFixed(2),
-              timestamp: Date.now(),
-            };
-            const existing: any[] = getCached('twelve-data-stocks', 15 * 60 * 1000) || [];
-            const merged = [
-              ...existing.filter((item) => item.symbol !== sym),
-              updatedItem,
-            ];
-            setCached('twelve-data-stocks', merged);
-          }
-        }
-      } catch {
-        // Continue to next symbol
-      }
-    }
-  } finally {
-    isRefreshingTradeEngineUs = false;
-  }
 }
 
 async function fetchYahooFallbackUsPrices(): Promise<any[]> {
@@ -531,50 +466,23 @@ async function fetchRealUsIndices(): Promise<any[]> {
 }
 
 async function getActiveUsPrices(): Promise<any[]> {
-  // Fixed 15-minute interval for US stocks and indices (15 * 60 * 1000 = 900,000ms)
-  const stockTtl = 15 * 60 * 1000;
-  const indexTtl = 15 * 60 * 1000;
+  // Stable 30-second cache for US stocks and indices (30,000ms)
+  const usTtl = 30 * 1000;
 
-  let cachedStocks = getCached('twelve-data-stocks', stockTtl);
-  let cachedIndices = getCached('real-us-indices', indexTtl);
-
-  if (cachedStocks && cachedIndices) {
-    return [...cachedIndices, ...cachedStocks];
+  let cached = getCached('real-us-market-quotes', usTtl);
+  if (cached && cached.length > 0) {
+    return cached;
   }
 
-  // 1. Trigger non-blocking background refresh from Trade Engine Twelve Data (/us/quote)
-  // and immediately seed any missing symbols from Yahoo so /live-prices never blocks on the 8s rate-limit spacing
-  if (!cachedStocks || cachedStocks.length < 7) {
-    void refreshTradeEngineUsPricesInBackground();
-  }
+  // Fetch authentic spot indices and US megacap equities via Yahoo chart API
+  const [indices, stocks] = await Promise.all([
+    fetchRealUsIndices(),
+    fetchYahooFallbackUsPrices(),
+  ]);
 
-  // Fallback / initial seed for stocks while Trade Engine's 8s-paced Twelve Data queue populates
-  if (!cachedStocks || cachedStocks.length === 0) {
-    cachedStocks = await fetchYahooFallbackUsPrices();
-    if (cachedStocks && cachedStocks.length > 0) {
-      setCached('twelve-data-stocks', cachedStocks);
-    }
-  }
-
-  // 2. Fetch authentic spot index benchmark points (SPX: ~7,690, NDX: ~29,529, DJI: ~51,966, VIX: ~18.44)
-  // Sourced via Yahoo chart API (0 Twelve Data credits consumed)
-  if (!cachedIndices) {
-    const fetchedIndices = await fetchRealUsIndices();
-    if (fetchedIndices.length > 0) {
-      setCached('real-us-indices', fetchedIndices);
-      cachedIndices = fetchedIndices;
-    }
-  }
-
-  // If live feeds fail, fallback to authentic benchmark baseline
-  if (!cachedIndices) {
-    cachedIndices = getUsLiveBenchmarks().filter(item =>
-      ['SPX', 'S&P 500', 'NDX', 'NASDAQ 100', 'NASDAQ', 'DJI', 'DOW JONES', 'VIX', 'Volatility Index', 'QQQ'].includes(item.symbol)
-    );
-  }
-
-  const combined = [...(cachedIndices || []), ...(cachedStocks || [])];
-  if (combined.length > 0) {
+  if (indices.length > 0 || stocks.length > 0) {
+    const combined = [...indices, ...stocks];
+    setCached('real-us-market-quotes', combined);
     return combined;
   }
 
@@ -822,9 +730,9 @@ function getSymbolBaselinePrice(symbol: string): number {
   const clean = symbol.toUpperCase().replace(/[\s\/-]+/g, '').replace(/\.NS$/, '').replace(/\.BO$/, '');
   const BASES: Record<string, number> = {
     ...KNOWN_ZERODHA_PRICES,
-    SPX: 7690.73, 'S&P 500': 7690.73, NDX: 29529.34, 'NASDAQ 100': 29529.34, DJI: 51966.03, 'DOW JONES': 51966.03,
-    VIX: 18.44, RUT: 2721.37, QQQ: 718.36, NVDA: 217.09, AAPL: 342.94, MSFT: 533.52, TSLA: 368.06, AMZN: 262.45,
-    META: 705.44, GOOGL: 344.18, AMD: 168.50, NFLX: 685.00, INTC: 28.40,
+    SPX: 7626.75, 'S&P 500': 7626.75, NDX: 28636.47, 'NASDAQ 100': 28636.47, DJI: 52129.31, 'DOW JONES': 52129.31,
+    VIX: 18.92, RUT: 2721.37, QQQ: 696.86, NVDA: 207.12, AAPL: 345.51, MSFT: 522.50, TSLA: 393.50, AMZN: 239.28,
+    META: 618.50, GOOGL: 280.94, AMD: 168.50, NFLX: 685.00, INTC: 28.40,
     NIFTY: 22888.95, 'NIFTY 50': 22888.95, BANKNIFTY: 55488.10, 'BANK NIFTY': 55488.10, SENSEX: 73852.90,
     FINNIFTY: 25480.00, MIDCPNIFTY: 12958.00, BANKEX: 61083.00, INDIAVIX: 14.50,
     DFMGI: 5820.00, ADXGI: 9340.00, 'FTSE ADX 15': 8920.00,

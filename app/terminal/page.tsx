@@ -84,20 +84,20 @@ const DEFAULT_INDIA_WATCHLIST: WatchlistItem[] = [
 ];
 
 const DEFAULT_USA_INDICES: IndexItem[] = [
-  { symbol: 'SPX', name: 'S&P 500', base: 7690.73, changePct: 0.41 },
-  { symbol: 'NDX', name: 'NASDAQ 100', base: 29529.34, changePct: 1.17 },
-  { symbol: 'DJI', name: 'DOW JONES', base: 51966.03, changePct: -0.07 },
-  { symbol: 'VIX', name: 'Volatility Index', base: 18.44, changePct: -7.75 },
+  { symbol: 'SPX', name: 'S&P 500', base: 7626.75, changePct: -1.21 },
+  { symbol: 'NDX', name: 'NASDAQ 100', base: 28636.47, changePct: -2.61 },
+  { symbol: 'DJI', name: 'DOW JONES', base: 52129.31, changePct: -0.41 },
+  { symbol: 'VIX', name: 'Volatility Index', base: 18.92, changePct: 10.00 },
 ];
 
 const DEFAULT_USA_WATCHLIST: WatchlistItem[] = [
-  { symbol: 'NVDA', name: 'NVIDIA Corporation', base: 217.09, sector: 'Technology', changePct: 1.38 },
-  { symbol: 'AAPL', name: 'Apple Inc.', base: 342.94, sector: 'Technology', changePct: -0.15 },
-  { symbol: 'MSFT', name: 'Microsoft Corporation', base: 533.52, sector: 'Technology', changePct: 0.84 },
-  { symbol: 'TSLA', name: 'Tesla Inc.', base: 368.06, sector: 'Consumer Cyclical', changePct: 3.76 },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.', base: 262.45, sector: 'Consumer Cyclical', changePct: 4.98 },
-  { symbol: 'META', name: 'Meta Platforms Inc.', base: 705.44, sector: 'Communication Services', changePct: -0.55 },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', base: 344.18, sector: 'Communication Services', changePct: 1.05 },
+  { symbol: 'NVDA', name: 'NVIDIA Corporation', base: 207.12, sector: 'Technology', changePct: -3.06 },
+  { symbol: 'AAPL', name: 'Apple Inc.', base: 345.51, sector: 'Technology', changePct: -0.97 },
+  { symbol: 'MSFT', name: 'Microsoft Corporation', base: 522.50, sector: 'Technology', changePct: -1.44 },
+  { symbol: 'TSLA', name: 'Tesla Inc.', base: 393.50, sector: 'Consumer Cyclical', changePct: -2.43 },
+  { symbol: 'AMZN', name: 'Amazon.com Inc.', base: 239.28, sector: 'Consumer Cyclical', changePct: -1.85 },
+  { symbol: 'META', name: 'Meta Platforms Inc.', base: 618.50, sector: 'Communication Services', changePct: -0.96 },
+  { symbol: 'GOOGL', name: 'Alphabet Inc.', base: 280.94, sector: 'Communication Services', changePct: -1.01 },
 ];
 
 const DEFAULT_UAE_INDICES: IndexItem[] = [
@@ -159,10 +159,10 @@ const KNOWN_INDICES: Record<string, { name: string; base: number; market: Market
   MIDCPNIFTY: { name: 'NIFTY MIDCAP SELECT', base: 12450.00, market: 'INDIA' },
   BANKEX: { name: 'BSE BANKEX', base: 59800.00, market: 'INDIA' },
   NIFTYNXT50: { name: 'NIFTY NEXT 50', base: 67200.00, market: 'INDIA' },
-  SPX: { name: 'S&P 500', base: 7703.58, market: 'USA' },
-  NDX: { name: 'NASDAQ 100', base: 29630.77, market: 'USA' },
-  DJI: { name: 'DOW JONES', base: 51964.04, market: 'USA' },
-  VIX: { name: 'Volatility Index', base: 18.56, market: 'USA' },
+  SPX: { name: 'S&P 500', base: 7626.75, market: 'USA' },
+  NDX: { name: 'NASDAQ 100', base: 28636.47, market: 'USA' },
+  DJI: { name: 'DOW JONES', base: 52129.31, market: 'USA' },
+  VIX: { name: 'Volatility Index', base: 18.92, market: 'USA' },
   RUT: { name: 'Russell 2000', base: 2721.37, market: 'USA' },
   DFMGI: { name: 'DFM General', base: 4850.0, market: 'UAE' },
   ADX: { name: 'ADX General', base: 9250.0, market: 'UAE' },

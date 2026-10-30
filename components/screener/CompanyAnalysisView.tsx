@@ -181,7 +181,10 @@ export function CompanyAnalysisView({
     : company.pe;
 
 
-  const liveMarketCap = Math.round(company.marketCap * (currentPrice / (company.currentPrice || 1)));
+  const priceRatio = (company.currentPrice && Math.abs(currentPrice - company.currentPrice) / company.currentPrice < 0.25)
+    ? (currentPrice / company.currentPrice)
+    : 1;
+  const liveMarketCap = Math.round(company.marketCap * priceRatio);
 
   // Institutional Quantitative Scoring Models
   const piotroski = calculatePiotroskiScore(company);

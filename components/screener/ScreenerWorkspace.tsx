@@ -259,7 +259,10 @@ export function ScreenerWorkspace() {
 
       // Scaled Market Cap based on live price ratio
       const originalPrice = comp.currentPrice || currentPrice;
-      const marketCap = Math.round(comp.marketCap * (currentPrice / originalPrice));
+      const priceRatio = (originalPrice > 0 && Math.abs(currentPrice - originalPrice) / originalPrice < 0.25)
+        ? (currentPrice / originalPrice)
+        : 1;
+      const marketCap = Math.round(comp.marketCap * priceRatio);
 
       return {
         ...comp,
@@ -287,7 +290,10 @@ export function ScreenerWorkspace() {
         ? Math.round((currentPrice / latestEps) * 10) / 10
         : comp.pe;
       const originalPrice = comp.currentPrice || currentPrice;
-      const marketCap = Math.round(comp.marketCap * (currentPrice / originalPrice));
+      const priceRatio = (originalPrice > 0 && Math.abs(currentPrice - originalPrice) / originalPrice < 0.25)
+        ? (currentPrice / originalPrice)
+        : 1;
+      const marketCap = Math.round(comp.marketCap * priceRatio);
 
       return {
         ...comp,
