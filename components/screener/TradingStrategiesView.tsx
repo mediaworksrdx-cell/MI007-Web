@@ -151,18 +151,14 @@ export function TradingStrategiesView({
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="mono text-[18px] sm:text-[22px] font-black inst-card-text uppercase tracking-wide">
-                Trading Strategies Intelligence Cockpit
+                Trading Strategies
               </h1>
               <span className="mono text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-                {TRADING_STRATEGIES.length} Trading & Chart Models
+                {TRADING_STRATEGIES.length} Models
               </span>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 mono text-[10.5px] font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>LIVE FEED</span>
-              </div>
             </div>
             <p className="text-[12.5px] text-[var(--theme-card-text-muted)] font-medium mt-0.5">
-              Flagship Quantum AI SMC, 10 Classic Technical, 4 Unified & Confluence SMC (Master, Fibonacci, Volume Profile, Pivot Points), and 7 Order Flow models.
+              Classic technical, SMC confluence, and order flow models.
             </p>
           </div>
         </div>

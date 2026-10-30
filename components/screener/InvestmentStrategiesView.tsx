@@ -113,18 +113,14 @@ export function InvestmentStrategiesView({
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="mono text-[18px] sm:text-[22px] font-black inst-card-text uppercase tracking-wide">
-                Institutional Investment Strategies Cockpit
+                Investment Strategies
               </h1>
               <span className="mono text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
                 35 Fundamental Models
               </span>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 mono text-[10.5px] font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>UNIVERSE SCREENED</span>
-              </div>
             </div>
             <p className="text-[12.5px] text-[var(--theme-card-text-muted)] font-medium mt-0.5">
-              Deep Value, Graham Net-Net, Piotroski F-Score, Altman Z, High ROCE Moats, CAN SLIM, and Dividend Aristocrats.
+              35 fundamental models across Value, Quality, Growth, and Dividends.
             </p>
           </div>
         </div>
@@ -170,8 +166,8 @@ export function InvestmentStrategiesView({
         ))}
       </div>
 
-      {/* ── Active Investment Strategy Hero Card ── */}
-      <div className="p-5 rounded-2xl border-2 border-emerald-500/50 bg-gradient-to-r from-emerald-950/20 via-[var(--theme-card-bg)] to-cyan-950/20 shadow-lg">
+      {/* ── Active Investment Strategy Card ── */}
+      <div className="p-5 rounded-2xl border-2 border-emerald-500/40 bg-[var(--theme-card-bg)] shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -256,11 +252,11 @@ export function InvestmentStrategiesView({
       <div className="flex flex-col gap-3 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] p-5 shadow-md mt-2">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--theme-card-border)]">
           <div>
-            <h2 className="mono text-[16px] font-black inst-card-text uppercase">
-              Screened Candidates: {activeStrategy.name} ({filteredEvaluations.length} Results)
+            <h2 className="mono text-[15px] font-black inst-card-text uppercase">
+              Results: {activeStrategy.name} ({filteredEvaluations.length})
             </h2>
             <p className="text-[12px] text-[var(--theme-card-text-muted)]">
-              Ranked by model qualification score and criteria adherence.
+              Ranked by qualification score.
             </p>
           </div>
         </div>
@@ -273,8 +269,8 @@ export function InvestmentStrategiesView({
                 <th className="py-2.5 px-3">Company</th>
                 <th className="py-2.5 px-3">Price</th>
                 <th className="py-2.5 px-3">Market Cap</th>
-                <th className="py-2.5 px-3">Model Status</th>
-                <th className="py-2.5 px-3">Adherence Score</th>
+                <th className="py-2.5 px-3">Status</th>
+                <th className="py-2.5 px-3">Score</th>
                 <th className="py-2.5 px-3">P/E</th>
                 <th className="py-2.5 px-3">P/B</th>
                 <th className="py-2.5 px-3">ROE %</th>
@@ -310,7 +306,7 @@ export function InvestmentStrategiesView({
                           : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
                       }`}
                     >
-                      {ev.qualifies ? '✓ QUALIFIED' : 'PARTIAL MATCH'}
+                      {ev.qualifies ? '✓ Qualified' : 'Partial'}
                     </span>
                   </td>
                   <td className="py-2.5 px-3 font-black text-emerald-400">{ev.score}%</td>
@@ -327,9 +323,9 @@ export function InvestmentStrategiesView({
                     <button
                       type="button"
                       onClick={() => onSelectCompany(company.symbol)}
-                      className="px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-slate-950 font-bold transition-colors text-[10.5px] cursor-pointer"
+                      className="px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500 hover:text-slate-950 font-bold transition-colors text-[11px] cursor-pointer"
                     >
-                      Analyze →
+                      Analyze
                     </button>
                   </td>
                 </tr>
