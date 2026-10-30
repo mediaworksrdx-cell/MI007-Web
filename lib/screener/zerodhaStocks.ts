@@ -646,12 +646,12 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     // Growth
     salesGrowth1Y,
     salesGrowth3Y,
-    salesGrowth5Y: cachedFund?.salesGrowth5Y != null ? cachedFund.salesGrowth5Y : +(salesGrowth3Y * 0.92).toFixed(1),
-    salesGrowth10Y: cachedFund?.salesGrowth10Y != null ? cachedFund.salesGrowth10Y : +(salesGrowth3Y * 0.85).toFixed(1),
+    salesGrowth5Y: +(salesGrowth3Y * 0.92).toFixed(1),
+    salesGrowth10Y: +(salesGrowth3Y * 0.85).toFixed(1),
     profitGrowth1Y,
     profitGrowth3Y,
-    profitGrowth5Y: cachedFund?.profitGrowth5Y != null ? cachedFund.profitGrowth5Y : +(profitGrowth3Y * 0.94).toFixed(1),
-    profitGrowth10Y: cachedFund?.profitGrowth10Y != null ? cachedFund.profitGrowth10Y : +(profitGrowth3Y * 0.88).toFixed(1),
+    profitGrowth5Y: +(profitGrowth3Y * 0.94).toFixed(1),
+    profitGrowth10Y: +(profitGrowth3Y * 0.88).toFixed(1),
     epsGrowth: profitGrowth1Y,
     ebitdaGrowth: +(profitGrowth1Y * 0.95).toFixed(1),
     qtrSalesGrowthYoY: salesGrowth1Y,
@@ -661,7 +661,7 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     roce,
     roe,
     roic: +(roce * 0.88).toFixed(1),
-    roa: cachedFund?.roa != null ? cachedFund.roa : +(roe * 0.52).toFixed(1),
+    roa: +(roe * 0.52).toFixed(1),
     opm,
     npm,
     grossMargin: cachedFund?.grossMargin != null ? cachedFund.grossMargin : +(opm * 1.8).toFixed(1),
@@ -686,12 +686,12 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     altmanZScore: 3.4,
 
     // Ownership & Shareholding
-    promoterHolding: cachedFund?.promoterHolding != null ? cachedFund.promoterHolding : 52.5,
+    promoterHolding: 52.5,
     promoterHoldingChange3Y: 0.0,
     pledgedPct: 0.0,
-    fiiHolding: cachedFund?.fiiHolding != null ? cachedFund.fiiHolding : 18.5,
-    diiHolding: cachedFund?.diiHolding != null ? cachedFund.diiHolding : 14.2,
-    publicHolding: cachedFund?.publicHolding != null ? cachedFund.publicHolding : 14.8,
+    fiiHolding: 18.5,
+    diiHolding: 14.2,
+    publicHolding: 14.8,
 
     // Market & Technical
     high52W: cachedFund?.high52W || (price > 0 ? Math.round(price * 1.25 * 10) / 10 : 0),

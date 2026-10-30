@@ -21,7 +21,7 @@
   },
   "ADANIENT": {
     "symbol": "ADANIENT",
-    "price": 2579,
+    "price": 2579.4,
     "prev": 2607.9
   },
   "ADOR": {
@@ -161,7 +161,7 @@
   },
   "AUROPHARMA": {
     "symbol": "AUROPHARMA",
-    "price": 1681,
+    "price": 1681.4,
     "prev": 1659.9
   },
   "GICRE": {
@@ -191,7 +191,7 @@
   },
   "BAJFINANCE": {
     "symbol": "BAJFINANCE",
-    "price": 939,
+    "price": 939.1,
     "prev": 938.9
   },
   "ANGELONE": {
@@ -206,7 +206,7 @@
   },
   "BALKRISIND": {
     "symbol": "BALKRISIND",
-    "price": 2073,
+    "price": 2072.6,
     "prev": 2099.3
   },
   "BALMLAWRIE": {
@@ -266,7 +266,7 @@
   },
   "BEL": {
     "symbol": "BEL",
-    "price": 370,
+    "price": 369.9,
     "prev": 370
   },
   "MAHLOG": {
@@ -291,7 +291,7 @@
   },
   "BERGEPAINT": {
     "symbol": "BERGEPAINT",
-    "price": 465,
+    "price": 465.1,
     "prev": 466.55
   },
   "BEPL": {
@@ -451,7 +451,7 @@
   },
   "CIPLA": {
     "symbol": "CIPLA",
-    "price": 1379,
+    "price": 1378.9,
     "prev": 1358
   },
   "HEMIPROP": {
@@ -511,7 +511,7 @@
   },
   "DABUR": {
     "symbol": "DABUR",
-    "price": 366,
+    "price": 365.6,
     "prev": 370
   },
   "KEEPLEARN": {
@@ -811,7 +811,7 @@
   },
   "GRASIM": {
     "symbol": "GRASIM",
-    "price": 2981,
+    "price": 2981.4,
     "prev": 2932.8
   },
   "GREAVESCOT": {
@@ -906,7 +906,7 @@
   },
   "HINDUNILVR": {
     "symbol": "HINDUNILVR",
-    "price": 1865,
+    "price": 1864.6,
     "prev": 1858.2
   },
   "HINDOILEXP": {
@@ -1001,7 +1001,7 @@
   },
   "INDHOTEL": {
     "symbol": "INDHOTEL",
-    "price": 812,
+    "price": 811.65,
     "prev": 810
   },
   "INDIACEM": {
@@ -1066,7 +1066,7 @@
   },
   "IOC": {
     "symbol": "IOC",
-    "price": 130,
+    "price": 130.15,
     "prev": 130.41
   },
   "LINDEINDIA": {
@@ -1196,7 +1196,7 @@
   },
   "KOTAKBANK": {
     "symbol": "KOTAKBANK",
-    "price": 462,
+    "price": 461.6,
     "prev": 459
   },
   "WEALTH": {
@@ -1221,7 +1221,7 @@
   },
   "TRENT": {
     "symbol": "TRENT",
-    "price": 3017,
+    "price": 3017.3,
     "prev": 2861.7
   },
   "LMW": {
@@ -1251,7 +1251,7 @@
   },
   "IRFC": {
     "symbol": "IRFC",
-    "price": 73.4,
+    "price": 73.37,
     "prev": 75.71
   },
   "M&M": {
@@ -1406,7 +1406,7 @@
   },
   "HAL": {
     "symbol": "HAL",
-    "price": 4854,
+    "price": 4853.7,
     "prev": 4869.9
   },
   "BESTAGRO": {
@@ -1511,7 +1511,7 @@
   },
   "ONGC": {
     "symbol": "ONGC",
-    "price": 225,
+    "price": 225.39,
     "prev": 225.79
   },
   "ONWARDTEC": {
@@ -1611,7 +1611,7 @@
   },
   "PIDILITIND": {
     "symbol": "PIDILITIND",
-    "price": 1462,
+    "price": 1461.6,
     "prev": 1422
   },
   "POLYPLEX": {
@@ -1846,7 +1846,7 @@
   },
   "VEDL": {
     "symbol": "VEDL",
-    "price": 238,
+    "price": 237.9,
     "prev": 234.55
   },
   "SESHAPAPER": {
@@ -1991,7 +1991,7 @@
   },
   "SUNPHARMA": {
     "symbol": "SUNPHARMA",
-    "price": 1778,
+    "price": 1777.7,
     "prev": 1761
   },
   "SUPREMEIND": {
@@ -2096,12 +2096,12 @@
   },
   "TATASTEEL": {
     "symbol": "TATASTEEL",
-    "price": 168,
+    "price": 167.6,
     "prev": 169.46
   },
   "TITAN": {
     "symbol": "TITAN",
-    "price": 4436,
+    "price": 4436.5,
     "prev": 4434
   },
   "MAFANG": {
@@ -2126,7 +2126,7 @@
   },
   "ADANIGREEN": {
     "symbol": "ADANIGREEN",
-    "price": 1299,
+    "price": 1298.7,
     "prev": 1307
   },
   "UNICHEMLAB": {
@@ -2256,7 +2256,7 @@
   },
   "WIPRO": {
     "symbol": "WIPRO",
-    "price": 198,
+    "price": 198.31,
     "prev": 190.1
   },
   "WSTCSTPAPR": {
@@ -2601,7 +2601,7 @@
   },
   "BANKBARODA": {
     "symbol": "BANKBARODA",
-    "price": 239,
+    "price": 238.6,
     "prev": 241.31
   },
   "SONACOMS": {
@@ -2751,7 +2751,7 @@
   },
   "ETERNAL": {
     "symbol": "ETERNAL",
-    "price": 344,
+    "price": 343.65,
     "prev": 337.85
   },
   "KPIGREEN": {
@@ -3301,7 +3301,7 @@
   },
   "GREENLAM": {
     "symbol": "GREENLAM",
-    "price": 207,
+    "price": 207.07,
     "prev": 209.1
   },
   "DHRUV": {
@@ -3436,7 +3436,7 @@
   },
   "HCLTECH": {
     "symbol": "HCLTECH",
-    "price": 1428,
+    "price": 1428.1,
     "prev": 1403.9
   },
   "METROBRAND": {
@@ -4286,7 +4286,7 @@
   },
   "HAVELLS": {
     "symbol": "HAVELLS",
-    "price": 1014,
+    "price": 1013.8,
     "prev": 1020
   },
   "NV20BEES": {
@@ -5191,7 +5191,7 @@
   },
   "CANBK": {
     "symbol": "CANBK",
-    "price": 118,
+    "price": 117.54,
     "prev": 119.79
   },
   "MOQUALITY": {
@@ -5376,7 +5376,7 @@
   },
   "INDIGO": {
     "symbol": "INDIGO",
-    "price": 4878,
+    "price": 4877.6,
     "prev": 4675
   },
   "AXISILINAV": {
@@ -5521,7 +5521,7 @@
   },
   "PETRONET": {
     "symbol": "PETRONET",
-    "price": 290,
+    "price": 289.5,
     "prev": 289.15
   },
   "PTC": {
@@ -5731,7 +5731,7 @@
   },
   "WESTLIFE": {
     "symbol": "WESTLIFE",
-    "price": 594,
+    "price": 593.8,
     "prev": 610.35
   },
   "TRACXN": {
@@ -5776,7 +5776,7 @@
   },
   "NTPC": {
     "symbol": "NTPC",
-    "price": 316,
+    "price": 316.25,
     "prev": 310.5
   },
   "SALSTEEL": {
@@ -6296,7 +6296,7 @@
   },
   "PVRINOX": {
     "symbol": "PVRINOX",
-    "price": 1495,
+    "price": 1495.1,
     "prev": 1490.3
   },
   "CELEBRITY": {
@@ -6556,7 +6556,7 @@
   },
   "TECHM": {
     "symbol": "TECHM",
-    "price": 1791,
+    "price": 1790.8,
     "prev": 1769.6
   },
   "AVONMORE": {
@@ -7071,7 +7071,7 @@
   },
   "PFC": {
     "symbol": "PFC",
-    "price": 314,
+    "price": 313.6,
     "prev": 320.6
   },
   "FSL": {
@@ -7246,7 +7246,7 @@
   },
   "PHOENIXLTD": {
     "symbol": "PHOENIXLTD",
-    "price": 1957,
+    "price": 1957.2,
     "prev": 1969.9
   },
   "AROGRANITE": {
@@ -7351,7 +7351,7 @@
   },
   "DLF": {
     "symbol": "DLF",
-    "price": 692,
+    "price": 691.55,
     "prev": 694.35
   },
   "SENSEXAXIS": {
@@ -7746,7 +7746,7 @@
   },
   "ZOMATO": {
     "symbol": "ZOMATO",
-    "price": 344,
+    "price": 343.65,
     "prev": 337.85
   },
   "TATAMOTORS": {
@@ -7796,7 +7796,7 @@
   },
   "RECLTD": {
     "symbol": "RECLTD",
-    "price": 286,
+    "price": 285.6,
     "prev": 296.15
   },
   "GOLDADD": {
@@ -7936,7 +7936,7 @@
   },
   "BAJAJFINSV": {
     "symbol": "BAJAJFINSV",
-    "price": 1668,
+    "price": 1667.6,
     "prev": 1668
   },
   "PTCIL": {
@@ -8451,7 +8451,7 @@
   },
   "JSWENERGY": {
     "symbol": "JSWENERGY",
-    "price": 500,
+    "price": 500.35,
     "prev": 510
   },
   "GODREJPROP": {
@@ -8606,7 +8606,7 @@
   },
   "JIOFIN": {
     "symbol": "JIOFIN",
-    "price": 204,
+    "price": 204.5,
     "prev": 207
   },
   "TVSSCS": {
@@ -9066,7 +9066,7 @@
   },
   "BSE": {
     "symbol": "BSE",
-    "price": 3510,
+    "price": 3510.4,
     "prev": 3502
   },
   "IRMENERGY": {
