@@ -20,13 +20,12 @@ export interface FnoConfig {
 }
 
 export function getFnoConfig(): FnoConfig {
-  // Twelve Data API keys are managed in the Trade Engine backend (config.properties).
-  // Web layer only proxies to Trade Engine and never stores or exposes raw Twelve Data keys.
+  const apiKey = process.env.TWELVE_DATA_API_KEY || '3925d32210e845e087ea7b75b1b7720b';
   const planEnv = (process.env.TWELVE_DATA_FNO_PLAN?.trim().toLowerCase() || 'venture') as 'venture' | 'pro' | 'basic' | 'free';
   const isVenture = planEnv === 'venture';
 
   return {
-    twelveDataApiKey: '',
+    twelveDataApiKey: apiKey,
     plan: isVenture ? 'venture' : planEnv,
     isVentureReady: isVenture,
     callsPerMinuteLimit: isVenture ? 600 : 8,
