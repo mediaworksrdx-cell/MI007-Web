@@ -33,6 +33,8 @@ export function InvestmentStrategiesView({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
+  const [showAllStrategies, setShowAllStrategies] = useState(false);
+
   useEffect(() => {
     setPage(1);
   }, [selectedStrategyId, categoryFilter, searchQuery, onlyQualifying]);
@@ -97,65 +99,80 @@ export function InvestmentStrategiesView({
   }, [filteredEvaluations, safePage, pageSize]);
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+    <div className="flex flex-col gap-3 animate-in fade-in duration-200">
       {/* ── Top Header Bar ── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xs">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onBackToScreener}
-            className="px-3.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 transition-colors flex items-center gap-1.5 mono text-[12px] font-black shadow-xs cursor-pointer group"
+            className="px-3 py-1 rounded-lg border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 transition-colors flex items-center gap-1.5 mono text-[11px] font-black shadow-xs cursor-pointer group"
           >
             <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
             <span>BACK TO SCREENER</span>
           </button>
 
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="mono text-[18px] sm:text-[22px] font-black inst-card-text uppercase tracking-wide">
-                Investment Strategies
-              </h1>
-              <span className="mono text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-                35 Fundamental Models
-              </span>
-            </div>
-            <p className="text-[12.5px] text-[var(--theme-card-text-muted)] font-medium mt-0.5">
-              35 fundamental models across Value, Quality, Growth, and Dividends.
-            </p>
+          <div className="flex items-center gap-2">
+            <h1 className="mono text-[16px] sm:text-[18px] font-black inst-card-text uppercase tracking-wide">
+              Investment Strategies
+            </h1>
+            <span className="mono text-[10.5px] font-bold px-2 py-0.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+              35 Models
+            </span>
           </div>
         </div>
 
-        {/* Search */}
-        <div className="flex items-center gap-2">
+        {/* Strategy Selector Dropdown & Search */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={selectedStrategyId}
+            onChange={(e) => setSelectedStrategyId(e.target.value)}
+            className="h-8 px-2.5 rounded-lg mono text-[11.5px] font-bold border border-emerald-500/50 bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] focus:border-emerald-500 outline-none cursor-pointer max-w-[240px] sm:max-w-[280px]"
+          >
+            {visibleStrategies.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.category})
+              </option>
+            ))}
+          </select>
+
           <input
             type="text"
-            placeholder="Search investment models or companies..."
+            placeholder="Search stocks or models..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-9 px-3 rounded-xl mono text-[12px] font-bold border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] focus:border-emerald-500 outline-none w-52 sm:w-64"
+            className="h-8 px-2.5 rounded-lg mono text-[11.5px] font-bold border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] focus:border-emerald-500 outline-none w-44 sm:w-56"
           />
+
+          <button
+            type="button"
+            onClick={() => setShowAllStrategies((prev) => !prev)}
+            className="h-8 px-2.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] mono text-[11px] font-bold cursor-pointer transition-colors"
+          >
+            {showAllStrategies ? 'Hide Grid ▴' : 'Browse All 35 ▾'}
+          </button>
         </div>
       </div>
 
       {/* ── Category Filter Bar ── */}
-      <div className="flex flex-wrap items-center gap-2 pb-1">
+      <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
         <button
           type="button"
           onClick={() => setCategoryFilter('ALL')}
-          className={`px-3 py-1.5 rounded-xl mono text-[11.5px] font-bold transition-all ${
+          className={`px-2.5 py-1 rounded-lg mono text-[11px] font-bold transition-all ${
             categoryFilter === 'ALL'
               ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
               : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
           }`}
         >
-          All Categories (35)
+          All (35)
         </button>
         {categories.map((cat) => (
           <button
             key={cat}
             type="button"
             onClick={() => setCategoryFilter(cat)}
-            className={`px-3 py-1.5 rounded-xl mono text-[11.5px] font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg mono text-[11px] font-bold transition-all ${
               categoryFilter === cat
                 ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
                 : 'border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
@@ -166,91 +183,69 @@ export function InvestmentStrategiesView({
         ))}
       </div>
 
-      {/* ── Active Investment Strategy Card ── */}
-      <div className="p-5 rounded-2xl border-2 border-emerald-500/40 bg-[var(--theme-card-bg)] shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="mono text-[18px] sm:text-[20px] font-black text-emerald-400">
-                {activeStrategy.name}
-              </span>
-              <span className="px-2 py-0.5 rounded-md mono text-[10.5px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                {activeStrategy.category}
-              </span>
-              <span className="px-2 py-0.5 rounded-md mono text-[10.5px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                {activeStrategy.horizon} Horizon
-              </span>
-              <span className="px-2 py-0.5 rounded-md mono text-[10.5px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                {activeStrategy.riskProfile} Risk
-              </span>
-            </div>
-            <p className="text-[13px] text-[var(--theme-card-text)] font-medium mt-1.5 max-w-3xl">
-              {activeStrategy.description}
-            </p>
-            <div className="mt-3 flex flex-col gap-1">
-              <span className="mono text-[10.5px] font-bold uppercase text-[var(--theme-card-text-muted)]">
-                Screening Rules & Criteria:
-              </span>
-              <ul className="list-disc list-inside text-[12px] text-[var(--theme-card-text-muted)] space-y-0.5">
-                {activeStrategy.rules.map((r, i) => (
-                  <li key={i}>{r}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 mono text-[11.5px] text-[var(--theme-card-text)] font-bold cursor-pointer">
-              <input
-                type="checkbox"
-                checked={onlyQualifying}
-                onChange={(e) => setOnlyQualifying(e.target.checked)}
-                className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400"
-              />
-              <span>Only Qualifying Candidates</span>
-            </label>
-          </div>
+      {/* ── Active Strategy Compact Banner ── */}
+      <div className="px-3.5 py-2.5 rounded-xl border border-emerald-500/40 bg-[var(--theme-card-bg)] shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <span className="mono text-[14px] sm:text-[15px] font-black text-emerald-400">
+            {activeStrategy.name}
+          </span>
+          <span className="px-1.5 py-0.5 rounded mono text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            {activeStrategy.category}
+          </span>
+          <span className="text-[11.5px] text-[var(--theme-card-text-muted)] font-medium truncate max-w-xl">
+            Rules: {activeStrategy.rules.join(' • ')}
+          </span>
         </div>
+
+        <label className="flex items-center gap-2 mono text-[11px] text-[var(--theme-card-text)] font-bold cursor-pointer shrink-0">
+          <input
+            type="checkbox"
+            checked={onlyQualifying}
+            onChange={(e) => setOnlyQualifying(e.target.checked)}
+            className="w-3.5 h-3.5 rounded text-emerald-500 focus:ring-emerald-400 cursor-pointer"
+          />
+          <span>Only Qualifying Candidates</span>
+        </label>
       </div>
 
-      {/* ── Investment Strategies Selection Grid (Horizontal scroll / compact grid) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {visibleStrategies.map((strat) => {
-          const isSelected = selectedStrategyId === strat.id;
-          return (
-            <div
-              key={strat.id}
-              onClick={() => setSelectedStrategyId(strat.id)}
-              className={`p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
-                isSelected
-                  ? 'border-emerald-500 bg-emerald-500/10 shadow-md ring-1 ring-emerald-500'
-                  : 'border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] hover:border-emerald-500/50 hover:bg-[var(--theme-card-surface)]/60'
-              }`}
-            >
-              <div>
-                <div className="mono text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] truncate mb-1">
-                  {strat.category}
+      {/* ── Expandable Strategy Selection Grid ── */}
+      {showAllStrategies && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 p-3 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/40 max-h-80 overflow-y-auto">
+          {visibleStrategies.map((strat) => {
+            const isSelected = selectedStrategyId === strat.id;
+            return (
+              <div
+                key={strat.id}
+                onClick={() => {
+                  setSelectedStrategyId(strat.id);
+                  setShowAllStrategies(false);
+                }}
+                className={`p-2.5 rounded-lg border cursor-pointer transition-all flex flex-col justify-between ${
+                  isSelected
+                    ? 'border-emerald-500 bg-emerald-500/15 shadow-xs ring-1 ring-emerald-500'
+                    : 'border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] hover:border-emerald-500/50 hover:bg-[var(--theme-card-surface)]/60'
+                }`}
+              >
+                <div>
+                  <div className="mono text-[9.5px] font-bold uppercase text-[var(--theme-card-text-muted)] truncate mb-0.5">
+                    {strat.category}
+                  </div>
+                  <div className="mono text-[12px] font-bold text-[var(--theme-card-text)] line-clamp-1">
+                    {strat.name}
+                  </div>
+                  <p className="text-[10.5px] text-[var(--theme-card-text-muted)] mt-0.5 line-clamp-1">
+                    {strat.rules.join(', ')}
+                  </p>
                 </div>
-                <div className="mono text-[13px] font-bold text-[var(--theme-card-text)] line-clamp-1">
-                  {strat.name}
-                </div>
-                <p className="text-[11px] text-[var(--theme-card-text-muted)] mt-1 line-clamp-2">
-                  {strat.description}
-                </p>
               </div>
-
-              <div className="mt-3 pt-2 border-t border-[var(--theme-card-border)]/50 flex items-center justify-between text-[10.5px] mono">
-                <span className="text-emerald-400 font-bold">{strat.horizon}</span>
-                <span className="text-[var(--theme-card-text-muted)]">{strat.riskProfile}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── Screened Companies Table for Active Investment Strategy ── */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] p-5 shadow-md mt-2">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--theme-card-border)]">
+      <div className="flex flex-col gap-2 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] p-3.5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-[var(--theme-card-border)]">
           <div>
             <h2 className="mono text-[15px] font-black inst-card-text uppercase">
               Results: {activeStrategy.name} ({filteredEvaluations.length})

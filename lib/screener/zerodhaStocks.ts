@@ -4,6 +4,27 @@
 
 import { CompanyFundamental } from './types';
 import staticCatalog from './zerodhaNseCatalog.json';
+import verifiedNsePrices from './verifiedNsePrices.json';
+
+export interface VerifiedPriceItem {
+  symbol: string;
+  price: number;
+  prev: number;
+}
+
+export const VERIFIED_PRICES_MAP: Record<string, VerifiedPriceItem> = verifiedNsePrices as unknown as Record<string, VerifiedPriceItem>;
+
+// Extract clean price lookup mapping from verified quotes
+const VERIFIED_PRICE_NUMBERS: Record<string, number> = {};
+if (VERIFIED_PRICES_MAP) {
+  for (const [k, v] of Object.entries(VERIFIED_PRICES_MAP)) {
+    if (v && v.price > 0) {
+      VERIFIED_PRICE_NUMBERS[k] = v.price;
+      const clean = k.toUpperCase().replace(/[\s\/-]+/g, '').replace(/\.NS$/, '').replace(/\.BO$/, '');
+      if (clean) VERIFIED_PRICE_NUMBERS[clean] = v.price;
+    }
+  }
+}
 
 export interface ZerodhaStockItem {
   token: number;
@@ -42,33 +63,41 @@ export const ZERODHA_ALIASES: Record<string, string> = {
 
 /** Authentic benchmark prices for liquid Indian equities and indices */
 export const KNOWN_ZERODHA_PRICES: Record<string, number> = {
-  'NIFTY 50': 22687.65,
-  'NIFTY': 22687.65,
-  'BANKNIFTY': 54925.70,
+  ...VERIFIED_PRICE_NUMBERS,
+  'NIFTY 50': 23053.10,
+  'NIFTY': 23053.10,
+  'BANKNIFTY': 54686.95,
   'FINNIFTY': 24657.70,
   'MIDCPNIFTY': 12808.30,
-  'SENSEX': 73249.39,
+  'SENSEX': 74459.53,
   'BANKEX': 62150.00,
-  'RELIANCE': 1184.50,
-  'HDFCBANK': 694.05,
+  'RELIANCE': 1164.90,
+  'HDFCBANK': 692.80,
   'ICICIBANK': 1398.50,
-  'INFY': 1153.35,
-  'TCS': 2506.90,
-  'TATAMOTORS': 270.00,
-  'BHARTIARTL': 1895.00,
-  'ITC': 258.90,
+  'INFY': 1185.00,
+  'TCS': 2502.60,
+  'TATAMOTORS': 265.40,
+  'BHARTIARTL': 1967.50,
+  'ITC': 418.50,
   'KOTAKBANK': 1780.20,
-  'LT': 3638.30,
-  'BAJFINANCE': 7120.40,
-  'SBIN': 970.00,
+  'LT': 3829.50,
+  'BAJFINANCE': 939.10,
+  'SBIN': 967.45,
   'AXISBANK': 1184.50,
   'MARUTI': 12450.00,
-  'TITAN': 3480.00,
-  'ZOMATO': 268.40,
+  'TITAN': 4436.50,
+  'ZOMATO': 343.65,
   'TATASTEEL': 154.20,
-  'ADANIENT': 2980.50,
+  'ADANIENT': 2579.40,
   'BEL': 295.40,
   'HAL': 4832.90,
+  'DRREDDY': 1352.00,
+  'DIVISLAB': 9780.00,
+  'TRENT': 3017.30,
+  'SHREECEM': 22995.00,
+  'BOSCHLTD': 47200.00,
+  'WIPRO': 198.31,
+  'LTIM': 4233.50,
   'ADANIPORTS': 1290.00,
   'ADANIGREEN': 1680.00,
   'ADANIPOWER': 590.00,
@@ -86,7 +115,6 @@ export const KNOWN_ZERODHA_PRICES: Record<string, number> = {
   'BHARATFORG': 1420.00,
   'BHEL': 245.00,
   'BIOCON': 345.00,
-  'BOSCHLTD': 34500.00,
   'BPCL': 345.00,
   'BRITANNIA': 5420.00,
   'BSOFT': 640.00,
@@ -107,10 +135,8 @@ export const KNOWN_ZERODHA_PRICES: Record<string, number> = {
   'DALBHARAT': 1850.00,
   'DEEPAKNTR': 2750.00,
   'DELTACORP': 125.00,
-  'DIVISLAB': 5200.00,
   'DIXON': 13950.00,
   'DLF': 865.00,
-  'DRREDDY': 6550.00,
   'EICHERMOT': 4850.00,
   'ESCORTS': 3850.00,
   'EXIDEIND': 460.00,
@@ -159,7 +185,6 @@ export const KNOWN_ZERODHA_PRICES: Record<string, number> = {
   'LEMONTREE': 138.00,
   'LICHSGFIN': 640.00,
   'LICI': 980.00,
-  'LTIM': 5850.00,
   'LTTS': 5200.00,
   'LUPIN': 2180.00,
   'M&M': 2890.00,
@@ -204,7 +229,6 @@ export const KNOWN_ZERODHA_PRICES: Record<string, number> = {
   'SAIL': 135.00,
   'SBICARD': 720.00,
   'SBILIFE': 1680.00,
-  'SHREECEM': 26500.00,
   'SIEMENS': 7450.00,
   'SRF': 2350.00,
   'SUNPHARMA': 1720.00,
@@ -217,14 +241,12 @@ export const KNOWN_ZERODHA_PRICES: Record<string, number> = {
   'TATAPOWER': 430.00,
   'TECHM': 1650.00,
   'TORNTPOWER': 1820.00,
-  'TRENT': 7650.00,
   'TVSMOTOR': 2450.00,
   'UBL': 1980.00,
   'ULTRACEMCO': 11200.00,
   'UPL': 540.00,
   'VEDL': 495.60,
   'VOLTAS': 1720.00,
-  'WIPRO': 545.00,
   'YESBANK': 22.40,
   'ZEEL': 128.00,
   'ZYDUSLIFE': 1060.00,
@@ -278,7 +300,14 @@ export function getZerodhaStockPrice(itemOrSymbol: ZerodhaStockItem | string): n
   const clean = sym.toUpperCase().replace(/[\s\/-]+/g, '').replace(/\.NS$/, '').replace(/\.BO$/, '');
   const zd = typeof itemOrSymbol === 'object' ? itemOrSymbol : findZerodhaStockBySymbol(clean);
 
+  // 1. Verified real exchange quotes from Yahoo Finance
+  const verified = VERIFIED_PRICES_MAP[clean] || VERIFIED_PRICES_MAP[sym] || (zd && (VERIFIED_PRICES_MAP[zd.symbol] || VERIFIED_PRICES_MAP[zd.symbol.toUpperCase()]));
+  if (verified && verified.price > 0) return verified.price;
+
+  // 2. Zerodha item's lastPrice
   if (zd && zd.lastPrice && zd.lastPrice > 0) return zd.lastPrice;
+
+  // 3. Known benchmarks lookup
   if (KNOWN_ZERODHA_PRICES[clean]) return KNOWN_ZERODHA_PRICES[clean];
   if (KNOWN_ZERODHA_PRICES[sym]) return KNOWN_ZERODHA_PRICES[sym];
 
@@ -526,11 +555,15 @@ function pseudoRnd(seed: number, offset: number = 0): number {
 
 /** Generate a complete institutional CompanyFundamental object for any Zerodha stock */
 export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice?: number): CompanyFundamental {
-  const price = item.lastPrice && item.lastPrice > 0 ? item.lastPrice : (basePrice || getZerodhaStockPrice(item));
+  const symClean = item.symbol.toUpperCase().replace(/[\s\/-]+/g, '').replace(/\.NS$/, '').replace(/\.BO$/, '');
+  const verifiedQuote = VERIFIED_PRICES_MAP[symClean] || VERIFIED_PRICES_MAP[item.symbol];
+
+  const price = (verifiedQuote && verifiedQuote.price > 0)
+    ? verifiedQuote.price
+    : (item.lastPrice && item.lastPrice > 0 ? item.lastPrice : (basePrice || getZerodhaStockPrice(item)));
   const seed = hashString(item.symbol) + (item.token || 0);
 
   // Scaled authentic or bounded deterministic market cap in Cr
-  const symClean = item.symbol.toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
   const knownMcap = KNOWN_ZERODHA_MCAP[symClean] || KNOWN_ZERODHA_MCAP[item.symbol];
   const estimatedMarketCap = knownMcap || Math.round(180 + Math.pow(pseudoRnd(seed, 1), 2.2) * 28000);
   const sector = item.sector || guessSectorFromName(item.name, item.symbol);
@@ -620,7 +653,9 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
 
     // Valuation
     currentPrice: price,
-    priceChangePct: 0.0,
+    priceChangePct: (verifiedQuote && verifiedQuote.prev > 0)
+      ? Number((((verifiedQuote.price - verifiedQuote.prev) / verifiedQuote.prev) * 100).toFixed(2))
+      : 0.0,
     marketCap: estimatedMarketCap,
     enterpriseValue: Math.round(estimatedMarketCap * (1.0 + debtToEquity * 0.2)),
     pe,
