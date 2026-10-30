@@ -11,13 +11,13 @@ interface MarketContextType {
 }
 
 const MarketContext = createContext<MarketContextType>({
-  market: 'USA',
+  market: 'INDIA',
   setMarket: () => {},
-  currency: '$',
+  currency: '₹',
 });
 
 export function MarketProvider({ children }: { children: React.ReactNode }) {
-  const [market, setMarketState] = useState<MarketType>('USA');
+  const [market, setMarketState] = useState<MarketType>('INDIA');
 
   useEffect(() => {
     try {

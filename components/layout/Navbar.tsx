@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { TickerTape } from '@/components/market/TickerTape';
 import { MarketType } from '@/lib/types';
 import { useMarket } from '@/lib/marketContext';
+import { MarketToggle } from '@/components/market/MarketToggle';
 import { useAppTheme, THEMES, ThemeConfig } from '@/lib/themeContext';
 import { SettingsModal } from '@/components/ui/SettingsModal';
 import { LoginModal } from '@/components/auth/LoginModal';
@@ -294,6 +295,15 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
         {/* ── Top-Right Institutional Cluster: Single Terminal CTA + 1 Unified Account/Settings Icon ── */}
         <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Active Market Selector */}
+          <MarketToggle
+            selected={market}
+            onChange={(m) => {
+              context.setMarket(m);
+              propOnMarketChange?.(m);
+            }}
+          />
+
           {/* ── Exactly 1 Single Launch Terminal Button ── */}
           {!isTerminalOrDashboard && (
             <Link

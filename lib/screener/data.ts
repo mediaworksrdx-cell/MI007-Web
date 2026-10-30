@@ -3754,25 +3754,25 @@ export function getCompanyBySymbol(symbol: string): CompanyFundamental | undefin
   if (!symbol) return undefined;
   const clean = symbol.trim().toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
 
-  // 1. Check US 3-index universe first if symbol matches
+  // 1. Check curated master companies (Reliance, TCS, HDFC, Infosys, Apple, Microsoft, etc.)
+  const existing = MASTER_COMPANIES.find(
+    (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
+  );
+  if (existing) return existing;
+
+  // 2. Check US 3-index universe if symbol matches
   const fromUs = US_INDEX_UNIVERSE.find(
     (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
   );
   if (fromUs) return fromUs;
 
-  // 2. Check cached India universe if initialized
+  // 3. Check cached India universe if initialized
   if (cachedIndiaUniverse) {
     const fromUniv = cachedIndiaUniverse.find(
       (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
     );
     if (fromUniv) return fromUniv;
   }
-
-  // 3. Check curated master companies (curated India, USA, UAE)
-  const existing = MASTER_COMPANIES.find(
-    (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
-  );
-  if (existing) return existing;
 
   // 4. Resolve dynamically from full Zerodha Kite catalog (3,800+ stocks)
   const zerodhaStock = findZerodhaStockBySymbol(clean);

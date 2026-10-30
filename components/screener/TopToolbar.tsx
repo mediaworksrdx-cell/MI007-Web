@@ -25,7 +25,7 @@ interface TopToolbarProps {
 
 export function TopToolbar({
   market,
-  onChangeMarket: _onChangeMarket,
+  onChangeMarket,
   sector,
   onChangeSector,
   indexFilter = 'ALL',
@@ -63,23 +63,54 @@ export function TopToolbar({
     <div className="flex flex-col gap-3 rounded-2xl border-2 terminal-page-panel p-4 sm:p-5 bg-[var(--theme-card-bg)] shadow-xl relative z-10">
       {/* Top Controls Row */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--theme-card-border)]">
-        {/* Title & Zerodha Badge */}
-        <div className="flex items-center gap-2.5">
+        {/* Title & Direct Country Selector */}
+        <div className="flex flex-wrap items-center gap-2.5">
           <span className="mono text-[15px] sm:text-[17px] font-black inst-card-text tracking-wide uppercase">
             SCREENERS
           </span>
-          {market === 'INDIA' && (
-            <span className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 mono text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>NSE: 3,801 Stocks</span>
-            </span>
-          )}
-          {market === 'USA' && (
-            <span className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-blue-500/40 bg-blue-500/10 text-blue-400 mono text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              <span>US 3-INDEX: 517 Stocks</span>
-            </span>
-          )}
+
+          {/* 1-Click Country Switcher: India / USA / UAE */}
+          <div className="inline-flex items-center rounded-xl p-0.5 border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-xs">
+            <button
+              type="button"
+              onClick={() => onChangeMarket('INDIA')}
+              className={`px-3 py-1 rounded-lg mono text-[12px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                market === 'INDIA'
+                  ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                  : 'text-[var(--theme-card-text-muted)] hover:text-emerald-400'
+              }`}
+              title="Switch to Indian Equities (NSE / BSE 3,801 Stocks)"
+            >
+              <span>🇮🇳</span>
+              <span>INDIA (3,801)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangeMarket('USA')}
+              className={`px-3 py-1 rounded-lg mono text-[12px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                market === 'USA'
+                  ? 'bg-blue-500 text-white font-black shadow-xs'
+                  : 'text-[var(--theme-card-text-muted)] hover:text-blue-400'
+              }`}
+              title="Switch to USA Equities (S&P 500, NASDAQ 100, Dow 30)"
+            >
+              <span>🇺🇸</span>
+              <span>USA (517)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangeMarket('UAE')}
+              className={`px-3 py-1 rounded-lg mono text-[12px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                market === 'UAE'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                  : 'text-[var(--theme-card-text-muted)] hover:text-amber-400'
+              }`}
+              title="Switch to UAE Equities (DFM / ADX)"
+            >
+              <span>🇦🇪</span>
+              <span>UAE</span>
+            </button>
+          </div>
         </div>
 
         {/* Global Search & Action Buttons */}

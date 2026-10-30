@@ -17,8 +17,8 @@ const MARKET_OPTIONS: {
   currency: string;
   exchanges: string;
 }[] = [
-  { key: 'USA',   label: 'USA',   currency: '$', exchanges: 'NYSE · NASDAQ · CBOE' },
   { key: 'INDIA', label: 'INDIA', currency: '₹', exchanges: 'NSE · BSE' },
+  { key: 'USA',   label: 'USA',   currency: '$', exchanges: 'NYSE · NASDAQ · CBOE' },
   { key: 'UAE',   label: 'UAE',   currency: 'AED', exchanges: 'DFM · ADX' },
 ];
 
