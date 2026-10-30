@@ -3,11 +3,14 @@
 // Complete multi-year historical statements, quarterly results, ratios & shareholding
 
 import { CompanyFundamental } from './types';
+import usFundamentalsCache from './usFundamentalsCache.json';
 import {
   findZerodhaStockBySymbol,
   generateFundamentalFromZerodha,
   getZerodhaCatalog,
 } from './zerodhaStocks';
+
+export const US_INDEX_UNIVERSE: CompanyFundamental[] = usFundamentalsCache as unknown as CompanyFundamental[];
 
 export const MASTER_COMPANIES: CompanyFundamental[] = [
   // ══════════════════════════════════════════════════════════════════════════════
@@ -3731,6 +3734,9 @@ export function getCompaniesByMarket(market: 'INDIA' | 'USA' | 'UAE'): CompanyFu
   if (market === 'INDIA') {
     return buildIndiaUniverse();
   }
+  if (market === 'USA') {
+    return US_INDEX_UNIVERSE;
+  }
   return MASTER_COMPANIES.filter((c) => c.market === market);
 }
 
@@ -3748,7 +3754,13 @@ export function getCompanyBySymbol(symbol: string): CompanyFundamental | undefin
   if (!symbol) return undefined;
   const clean = symbol.trim().toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
 
-  // 1. Check cached universe first if initialized
+  // 1. Check US 3-index universe first if symbol matches
+  const fromUs = US_INDEX_UNIVERSE.find(
+    (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
+  );
+  if (fromUs) return fromUs;
+
+  // 2. Check cached India universe if initialized
   if (cachedIndiaUniverse) {
     const fromUniv = cachedIndiaUniverse.find(
       (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
@@ -3756,13 +3768,13 @@ export function getCompanyBySymbol(symbol: string): CompanyFundamental | undefin
     if (fromUniv) return fromUniv;
   }
 
-  // 2. Check curated master companies (curated India, USA, UAE)
+  // 3. Check curated master companies (curated India, USA, UAE)
   const existing = MASTER_COMPANIES.find(
     (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
   );
   if (existing) return existing;
 
-  // 3. Resolve dynamically from full Zerodha Kite catalog (3,800+ stocks)
+  // 4. Resolve dynamically from full Zerodha Kite catalog (3,800+ stocks)
   const zerodhaStock = findZerodhaStockBySymbol(clean);
   if (zerodhaStock) {
     return generateFundamentalFromZerodha(zerodhaStock);

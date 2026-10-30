@@ -100,6 +100,7 @@ export function ScreenerWorkspace() {
   const defaultScreen = PREDEFINED_SCREENS[0];
   const [currentQuery, setCurrentQuery] = useState<string>(defaultScreen.query);
   const [sectorFilter, setSectorFilter] = useState<string>('ALL');
+  const [indexFilter, setIndexFilter] = useState<string>('ALL');
   const [sortColumn, setSortColumn] = useState<string>('marketCap');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedColumns, setSelectedColumns] = useState<string[]>(DEFAULT_COLUMNS);
@@ -211,6 +212,7 @@ export function ScreenerWorkspace() {
 
       // Reset selected company and sector so no country data stays stuck across countries
       setSectorFilter('ALL');
+      setIndexFilter('ALL');
       setSelectedSymbol('');
       setPeerSymbols(DEFAULT_PEER_SYMBOLS[globalMarket as MarketRegion] || ['TCS', 'INFY']);
     }
@@ -221,6 +223,7 @@ export function ScreenerWorkspace() {
     setMarket(newMarket);
     setGlobalMarket(newMarket);
     setSectorFilter('ALL');
+    setIndexFilter('ALL');
     // Reset selected company so no company stays stuck across countries
     setSelectedSymbol('');
     setPeerSymbols(DEFAULT_PEER_SYMBOLS[newMarket] || ['TCS', 'INFY']);
@@ -319,6 +322,12 @@ export function ScreenerWorkspace() {
 
     if (sectorFilter && sectorFilter !== 'ALL') {
       comps = comps.filter((c) => c.sector.toLowerCase() === sectorFilter.toLowerCase());
+    }
+    if (indexFilter && indexFilter !== 'ALL') {
+      comps = comps.filter((c) => {
+        const ind = (c as any).indices;
+        return Array.isArray(ind) && ind.includes(indexFilter);
+      });
     }
 
     let parsedAst: any = null;
@@ -449,6 +458,8 @@ export function ScreenerWorkspace() {
         onChangeMarket={handleMarketChange}
         sector={sectorFilter}
         onChangeSector={setSectorFilter}
+        indexFilter={indexFilter}
+        onChangeIndexFilter={setIndexFilter}
         availableSectors={availableSectors}
         savedScreens={savedScreens}
         onSelectSavedScreen={handleRunSavedScreen}
@@ -475,6 +486,7 @@ export function ScreenerWorkspace() {
             onResetQuery={() => {
               setCurrentQuery('');
               setSectorFilter('ALL');
+              setIndexFilter('ALL');
             }}
             onOpenSaveScreen={() => setSaveScreenModalOpen(true)}
             matchCount={filteredCompanies.length}

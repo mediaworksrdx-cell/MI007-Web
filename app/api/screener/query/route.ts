@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
-import { MASTER_COMPANIES } from '@/lib/screener/data';
+import { getCompaniesByMarket } from '@/lib/screener/data';
 import { CompanyFundamental, MarketRegion } from '@/lib/screener/types';
 import { getMetricValue } from '@/lib/screener/metrics';
 
@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     const {
       query = '',
       market = 'INDIA',
+      index = '',
       sector = '',
       industry = '',
       sortColumn = 'marketCap',
@@ -25,9 +26,15 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Filter by market
-    let companies: CompanyFundamental[] = MASTER_COMPANIES.filter(
-      (c) => !market || c.market === market
-    );
+    let companies: CompanyFundamental[] = getCompaniesByMarket((market || 'INDIA') as any);
+
+    // Filter by index (e.g. SP500, NASDAQ100, DOW30)
+    if (index && index !== 'ALL') {
+      companies = companies.filter((c) => {
+        const ind = (c as any).indices;
+        return Array.isArray(ind) && ind.includes(index);
+      });
+    }
 
     // Filter by sector if provided
     if (sector && sector !== 'ALL') {

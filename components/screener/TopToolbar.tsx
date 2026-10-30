@@ -10,6 +10,8 @@ interface TopToolbarProps {
   onChangeMarket: (m: MarketRegion) => void;
   sector: string;
   onChangeSector: (s: string) => void;
+  indexFilter?: string;
+  onChangeIndexFilter?: (idx: string) => void;
   availableSectors: string[];
   savedScreens: SavedScreen[];
   selectedScreenId?: string;
@@ -26,6 +28,8 @@ export function TopToolbar({
   onChangeMarket: _onChangeMarket,
   sector,
   onChangeSector,
+  indexFilter = 'ALL',
+  onChangeIndexFilter,
   availableSectors,
   savedScreens,
   selectedScreenId,
@@ -70,6 +74,12 @@ export function TopToolbar({
               <span>NSE: 3,801 Stocks</span>
             </span>
           )}
+          {market === 'USA' && (
+            <span className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-blue-500/40 bg-blue-500/10 text-blue-400 mono text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+              <span>US 3-INDEX: 517 Stocks</span>
+            </span>
+          )}
         </div>
 
         {/* Global Search & Action Buttons */}
@@ -93,6 +103,21 @@ export function TopToolbar({
               /
             </span>
           </button>
+
+          {/* US Index Filter (S&P 500, NASDAQ 100, Dow 30) */}
+          {market === 'USA' && onChangeIndexFilter && (
+            <select
+              value={indexFilter || 'ALL'}
+              onChange={(e) => onChangeIndexFilter(e.target.value)}
+              className="h-9 px-3 rounded-xl mono text-[12.5px] font-bold border border-blue-500/40 bg-[var(--theme-card-surface)] text-blue-400 focus:outline-none focus:border-blue-500 max-w-44"
+              title="Filter by US Benchmark Index"
+            >
+              <option value="ALL">All 3 Indices (517)</option>
+              <option value="SP500">S&P 500 (503)</option>
+              <option value="NASDAQ100">NASDAQ 100 (100)</option>
+              <option value="DOW30">Dow Jones 30 (30)</option>
+            </select>
+          )}
 
           {/* Sector filter (Filtered to active country) */}
           <select
