@@ -229,7 +229,35 @@ export const KNOWN_ZERODHA_PRICES: Record<string, number> = {
   'ZEEL': 128.00,
   'ZYDUSLIFE': 1060.00,
   'ANDHRSUGAR': 110.00,
+  'GREENPLY': 283.00,
+  'GREENLAM': 206.95,
+  'GREENPANEL': 133.50,
+  'GREENPOWER': 8.35,
+  'OSWALGREEN': 18.35,
+  'CENTURYPLY': 785.00,
 };
+
+/** Get authentic or deterministic realistic equity price for any Zerodha item */
+export function getZerodhaStockPrice(itemOrSymbol: ZerodhaStockItem | string): number {
+  const sym = typeof itemOrSymbol === 'string' ? itemOrSymbol : itemOrSymbol.symbol;
+  const clean = sym.toUpperCase().replace(/[\s\/-]+/g, '').replace(/\.NS$/, '').replace(/\.BO$/, '');
+  const zd = typeof itemOrSymbol === 'object' ? itemOrSymbol : findZerodhaStockBySymbol(clean);
+
+  if (zd && zd.lastPrice && zd.lastPrice > 0) return zd.lastPrice;
+  if (KNOWN_ZERODHA_PRICES[clean]) return KNOWN_ZERODHA_PRICES[clean];
+  if (KNOWN_ZERODHA_PRICES[sym]) return KNOWN_ZERODHA_PRICES[sym];
+
+  // Deterministic realistic equity price (between ₹65 and ₹880) based on symbol & token
+  let hash = 0;
+  const token = zd?.token || 1000;
+  const str = `${clean}-${token}`;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const abs = Math.abs(hash);
+  return Number((65 + (abs % 750) + ((abs % 90) / 100)).toFixed(2));
+}
 
 function rebuildIndex() {
   symbolMap.clear();
@@ -328,10 +356,8 @@ function pseudoRnd(seed: number, offset: number = 0): number {
 }
 
 /** Generate a complete institutional CompanyFundamental object for any Zerodha stock */
-export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice: number = 250): CompanyFundamental {
-  const symClean = item.symbol.toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
-  const known = KNOWN_ZERODHA_PRICES[symClean] || KNOWN_ZERODHA_PRICES[item.symbol];
-  const price = item.lastPrice && item.lastPrice > 0 ? item.lastPrice : (known || basePrice);
+export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice?: number): CompanyFundamental {
+  const price = item.lastPrice && item.lastPrice > 0 ? item.lastPrice : (basePrice || getZerodhaStockPrice(item));
   const seed = hashString(item.symbol) + (item.token || 0);
 
   // Scaled deterministic market cap in Cr

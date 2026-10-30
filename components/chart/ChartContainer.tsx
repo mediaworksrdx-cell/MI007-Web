@@ -15,7 +15,7 @@ import {
   calculateEmaRibbon, calculatePivotPoints, calculateDonchian, calculateHMA, calculateCMF,
 } from '@/lib/chartRenderer';
 import { getMockCandles, getMockQuote } from '@/lib/mockData';
-import { findZerodhaStockBySymbol, KNOWN_ZERODHA_PRICES } from '@/lib/screener/zerodhaStocks';
+import { findZerodhaStockBySymbol, KNOWN_ZERODHA_PRICES, getZerodhaStockPrice } from '@/lib/screener/zerodhaStocks';
 import { fetchCandles, areSymbolsEqual } from '@/lib/tradeEngineClient';
 import { useTradeEngine, useLiveSymbol } from '@/lib/tradeEngineContext';
 import { loadStoredCandles, saveStoredCandles, mergeCandleArrays, purgeStoredCandles } from '@/lib/candleStorage';
@@ -111,7 +111,7 @@ function getExpectedPrice(market: MarketType, symbol: string): number {
     const q = getMockQuote(market, symbol);
     if (q && q.price > 0) return q.price;
   } catch {}
-  return 1000;
+  return getZerodhaStockPrice(symbol);
 }
 
 function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[] {
@@ -703,9 +703,9 @@ export function ChartContainer({
         let cleanEngine = validateAndCleanCandles(rawEngine || [], timeframe);
 
         // Universal scale reconciliation across all markets (Forex, Commodities, Indices, Stocks):
-        // If the backend Trade Engine returned dislocated candles (e.g. ETF proxy or dummy scale)
-        // while expectedPrice is known, dynamically scale candle prices to authentic scale.
-        if (expectedPrice > 0 && cleanEngine.length > 0) {
+        // Only scale if expectedPrice is an explicitly verified real-time tick, NOT an unverified fallback
+        const isVerifiedLivePrice = Boolean(live && live.price > 0);
+        if (isVerifiedLivePrice && expectedPrice > 0 && cleanEngine.length > 0) {
           const engineLast = cleanEngine[cleanEngine.length - 1];
           if (engineLast && engineLast.close > 0) {
             const dislocation = Math.abs(engineLast.close - expectedPrice) / expectedPrice;
@@ -786,7 +786,17 @@ export function ChartContainer({
         const lastC = candles[candles.length - 1];
         if (lastC && lastC.close > 0) {
           const dis = Math.abs(live.price - lastC.close) / lastC.close;
-          if (dis > 0.25) return;
+          if (dis > 0.25) {
+            // Re-anchor candles to verified live price scale
+            const ratio = live.price / lastC.close;
+            setCandles(cPrev => cPrev.map(c => ({
+              ...c,
+              open: +(c.open * ratio).toFixed(2),
+              high: +(c.high * ratio).toFixed(2),
+              low: +(c.low * ratio).toFixed(2),
+              close: +(c.close * ratio).toFixed(2),
+            })));
+          }
         }
       }
       setCurrentPrice(live.price);
@@ -803,10 +813,17 @@ export function ChartContainer({
           const currentLast = prev[prev.length - 1];
           if (!currentLast || currentLast.close <= 0) return prev;
 
-          // Scale dislocation guard: ignore ticks > 25% off current bar scale to prevent distorted candles
+          // Scale dislocation guard: re-anchor candles if arriving tick is verified on authentic scale
           const dislocation = Math.abs(tick.price - currentLast.close) / currentLast.close;
           if (dislocation > 0.25) {
-            return prev;
+            const ratio = tick.price / currentLast.close;
+            return prev.map(c => ({
+              ...c,
+              open: +(c.open * ratio).toFixed(2),
+              high: +(c.high * ratio).toFixed(2),
+              low: +(c.low * ratio).toFixed(2),
+              close: +(c.close * ratio).toFixed(2),
+            }));
           }
 
           setIsLiveFromEngine(true);

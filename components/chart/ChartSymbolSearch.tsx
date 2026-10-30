@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { MarketType } from '@/lib/types';
-import { searchZerodhaStocks } from '@/lib/screener/zerodhaStocks';
+import { searchZerodhaStocks, getZerodhaStockPrice, KNOWN_ZERODHA_PRICES } from '@/lib/screener/zerodhaStocks';
+import { useTradeEngine } from '@/lib/tradeEngineContext';
 
 export interface ChartInstrumentItem {
   symbol: string;
@@ -137,7 +138,7 @@ function resolveCurrentInstrument(selectedSymbol: string) {
       exchange: zd.exchange || 'NSE',
       currency: '₹',
       flag: '🇮🇳',
-      basePrice: zd.lastPrice || 1000,
+      basePrice: getZerodhaStockPrice(zd),
       sector: zd.sector || 'Indian Equity',
     };
   }
@@ -165,6 +166,7 @@ export function ChartSymbolSearch({
   const [isOpen, setIsOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'STOCKS' | 'INDICES' | 'COMMODITIES' | 'FOREX' | 'CRYPTO'>('ALL');
   const [highlightIndex, setHighlightIndex] = useState(0);
+  const { getSymbolPrice, requestQuoteFetch } = useTradeEngine();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -247,7 +249,7 @@ export function ChartSymbolSearch({
               exchange: zd.exchange || 'NSE',
               currency: '₹',
               flag: '🇮🇳',
-              basePrice: zd.lastPrice || 1000,
+              basePrice: getZerodhaStockPrice(zd),
               sector: zd.sector || (isIdx ? 'Benchmark Index' : 'Indian Equity'),
             });
           }
@@ -257,6 +259,18 @@ export function ChartSymbolSearch({
 
     return results.slice(0, 36);
   }, [query, categoryFilter]);
+
+  // Live quote fetcher
+  useEffect(() => {
+    if (!isOpen || searchResults.length === 0) return;
+    const topItems = searchResults.slice(0, 16);
+    topItems.forEach((item) => {
+      const live = getSymbolPrice(item.symbol);
+      if (!live || !live.price) {
+        requestQuoteFetch(item.symbol);
+      }
+    });
+  }, [isOpen, searchResults, getSymbolPrice, requestQuoteFetch]);
 
   // Auto-reset highlight index on search change
   useEffect(() => {
@@ -446,6 +460,9 @@ export function ChartSymbolSearch({
               searchResults.map((item, idx) => {
                 const isSelected = item.symbol.toUpperCase() === selectedSymbol.toUpperCase();
                 const isHighlighted = idx === highlightIndex;
+                const live = getSymbolPrice(item.symbol);
+                const displayPrice = (live && live.price > 0) ? live.price : item.basePrice;
+                const isLive = Boolean(live && live.price > 0);
                 return (
                   <div
                     key={`${item.category}-${item.symbol}`}
@@ -492,19 +509,28 @@ export function ChartSymbolSearch({
                     </div>
 
                     <div className="text-right shrink-0 pl-3">
-                      <div className="font-mono font-bold text-xs sm:text-[13px] text-slate-900 dark:text-slate-100">
-                        {item.currency}
-                        {item.basePrice.toLocaleString(undefined, {
-                          minimumFractionDigits: item.basePrice < 2 ? 4 : 2,
-                          maximumFractionDigits: item.basePrice < 2 ? 4 : 2,
-                        })}
+                      <div className="flex items-center justify-end gap-1.5">
+                        {isLive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Live tick" />
+                        )}
+                        <span className={`font-mono font-bold text-xs sm:text-[13px] ${isLive ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'}`}>
+                          {item.currency}
+                          {displayPrice.toLocaleString(undefined, {
+                            minimumFractionDigits: displayPrice < 2 ? 4 : 2,
+                            maximumFractionDigits: displayPrice < 2 ? 4 : 2,
+                          })}
+                        </span>
                       </div>
-                      {isSelected && (
+                      {live && live.changePct !== undefined ? (
+                        <div className={`font-mono text-[10.5px] font-bold ${live.changePct >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          {live.changePct >= 0 ? '+' : ''}{live.changePct.toFixed(2)}%
+                        </div>
+                      ) : isSelected ? (
                         <span className="text-[10px] font-mono font-black text-emerald-600 dark:text-emerald-400 flex items-center justify-end gap-1">
                           <span>ACTIVE</span>
                           <span>✓</span>
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 );

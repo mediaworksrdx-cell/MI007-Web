@@ -1,5 +1,6 @@
 // ─── Market Intelligence MI- 007 — Realistic Mock Data Generator ─────────────
 import { Candle, MarketType } from './types';
+import { getZerodhaStockPrice } from './screener/zerodhaStocks';
 
 /** Base prices for different instruments */
 const BASE_PRICES: Record<MarketType, Record<string, number>> = {
@@ -113,7 +114,7 @@ export function generateMockCandles(
     BASE_PRICES.INDIA[symClean] ??
     BASE_PRICES.USA[symClean] ??
     BASE_PRICES.UAE[symClean] ??
-    1000;
+    getZerodhaStockPrice(symClean);
 
   const decimals = basePrice < 2 ? 4 : basePrice < 10 ? 3 : 2;
   const candles: Candle[] = [];
@@ -205,7 +206,7 @@ export function getMockQuote(
     BASE_PRICES.INDIA[symClean] ??
     BASE_PRICES.USA[symClean] ??
     BASE_PRICES.UAE[symClean] ??
-    1000;
+    getZerodhaStockPrice(symClean);
   const change = (Math.random() - 0.48) * basePrice * 0.018;
   const open = basePrice - change * 0.3;
   const high = basePrice + Math.abs(change) * 1.4;
