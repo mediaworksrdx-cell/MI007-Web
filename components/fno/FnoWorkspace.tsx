@@ -31,14 +31,12 @@ import { BuildupScannerTab } from './BuildupScannerTab';
 import { DerivativesAnalyticsTab } from './DerivativesAnalyticsTab';
 import { StrategyBuilderTab } from './StrategyBuilderTab';
 import { SavedStrategiesTab } from './SavedStrategiesTab';
-import { FnoCandlestickChartTab } from './FnoCandlestickChartTab';
 
 export type FnoTabId =
   | 'overview'
   | 'chain'
   | 'buildup'
   | 'analytics'
-  | 'charts'
   | 'builder'
   | 'strategies';
 
@@ -63,18 +61,6 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
 
   // Active workspace tab
   const [activeTab, setActiveTab] = useState<FnoTabId>(initialTab);
-
-  // Active chart contract and strike context for Candlestick Charts tab
-  const [chartContractType, setChartContractType] = useState<'FUTURES' | 'CE' | 'PE'>('FUTURES');
-  const [chartStrike, setChartStrike] = useState<number | undefined>(undefined);
-
-  const handleOpenChart = (contractType: 'FUTURES' | 'CE' | 'PE', strike?: number) => {
-    setChartContractType(contractType);
-    if (strike) {
-      setChartStrike(strike);
-    }
-    setActiveTab('charts');
-  };
 
   // Synchronize instrument when active market toggle changes
   useEffect(() => {
@@ -201,7 +187,6 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
   const WORKSPACE_TABS = [
     { id: 'overview' as const, label: 'OVERVIEW', icon: '⚡' },
     { id: 'chain' as const, label: 'OPTION CHAIN', icon: '⛓️' },
-    { id: 'charts' as const, label: 'CANDLESTICK CHARTS', icon: '📈' },
     { id: 'buildup' as const, label: 'BUILDUP SCANNER', icon: '📡' },
     { id: 'analytics' as const, label: 'ANALYTICS', icon: '📊' },
     { id: 'builder' as const, label: 'STRATEGY BUILDER', icon: '🛠️' },
@@ -291,7 +276,6 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
           liveChangePct={liveChangePct}
           engineConnected={tradeEngineStatus === 'connected'}
           fnoEngineStatus={fnoFeed.engineStatus}
-          onOpenFuturesChart={() => handleOpenChart('FUTURES')}
         />
 
         {/* ── Data transparency notice ── */}
@@ -323,21 +307,6 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
           {activeTab === 'chain' && (
             <OptionChainTab
               chainData={chainData}
-              onAddLegToBuilder={handleAddLegFromChain}
-              onOpenBuilderTab={() => setActiveTab('builder')}
-              onOpenChart={(type, strike) => handleOpenChart(type, strike)}
-            />
-          )}
-
-          {activeTab === 'charts' && (
-            <FnoCandlestickChartTab
-              instrument={selectedInstrument}
-              chainData={chainData}
-              termStructure={termStructure}
-              selectedExpiry={selectedExpiry}
-              onSelectExpiry={setSelectedExpiry}
-              initialContractType={chartContractType}
-              initialStrike={chartStrike}
               onAddLegToBuilder={handleAddLegFromChain}
               onOpenBuilderTab={() => setActiveTab('builder')}
             />
