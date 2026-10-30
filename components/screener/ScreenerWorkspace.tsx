@@ -50,6 +50,9 @@ import { ScreeningAlertsView } from './ScreeningAlertsView';
 import { TechnicalStrategyScreenerView } from './TechnicalStrategyScreenerView';
 import { SmcScannerView } from './SmcScannerView';
 import { BacktestingView } from './BacktestingView';
+import { MI007StrategiesView } from './MI007StrategiesView';
+import { TradingStrategiesView } from './TradingStrategiesView';
+import { InvestmentStrategiesView } from './InvestmentStrategiesView';
 import { SaveScreenModal } from './SaveScreenModal';
 import { CustomRatioModal } from './CustomRatioModal';
 import { StrategyId } from '@/lib/screener/technicalStrategies';
@@ -70,6 +73,9 @@ export function ScreenerWorkspace() {
   const [activeTab, setActiveTab] = useState<
     | 'screener'
     | 'smcScanner'
+    | 'mi007Strategies'
+    | 'tradingStrategies'
+    | 'investmentStrategies'
     | 'technicalScreener'
     | 'backtesting'
     | 'queryBuilder'
@@ -79,7 +85,7 @@ export function ScreenerWorkspace() {
     | 'peers'
     | 'alerts'
   >(
-    urlTab && ['screener', 'smcScanner', 'technicalScreener', 'backtesting', 'queryBuilder', 'discover', 'watchlists', 'analysis', 'peers', 'alerts'].includes(urlTab)
+    urlTab && ['screener', 'smcScanner', 'mi007Strategies', 'tradingStrategies', 'investmentStrategies', 'technicalScreener', 'backtesting', 'queryBuilder', 'discover', 'watchlists', 'analysis', 'peers', 'alerts'].includes(urlTab)
       ? (urlTab as any)
       : urlTab === 'saved'
       ? 'discover'
@@ -502,16 +508,36 @@ export function ScreenerWorkspace() {
         />
       )}
 
-      {/* ── 3. Technical Strategy Screener (14 Quantitative Models) ── */}
-      {activeTab === 'technicalScreener' && (
-        <TechnicalStrategyScreenerView
+      {/* ── 3. MI-007 Strategies (Flagship Quantum AI MTF SMC & Resonance) ── */}
+      {activeTab === 'mi007Strategies' && (
+        <MI007StrategiesView
+          companies={marketCompanies}
+          market={market}
+          onSelectCompany={handleOpenCompanyAnalysis}
+          onBackToScreener={() => setActiveTab('screener')}
+        />
+      )}
+
+      {/* ── 4. Trading Strategies (34 Trading & Chart Models) ── */}
+      {(activeTab === 'tradingStrategies' || activeTab === 'technicalScreener') && (
+        <TradingStrategiesView
           companies={marketCompanies}
           market={market}
           onSelectCompany={handleOpenCompanyAnalysis}
           onOpenBacktest={(sym, stratId) => {
             setBacktestParams({ symbol: sym, strategyId: stratId });
-            setActiveTab('backtesting');
+            setActiveTab('backtesting' as any);
           }}
+          onBackToScreener={() => setActiveTab('screener')}
+        />
+      )}
+
+      {/* ── 5. Investment Strategies (35 Fundamental Models) ── */}
+      {activeTab === 'investmentStrategies' && (
+        <InvestmentStrategiesView
+          companies={marketCompanies}
+          market={market}
+          onSelectCompany={handleOpenCompanyAnalysis}
           onBackToScreener={() => setActiveTab('screener')}
         />
       )}
