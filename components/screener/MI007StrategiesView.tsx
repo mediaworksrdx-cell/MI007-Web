@@ -22,7 +22,9 @@ export interface MI007StrategyMeta {
   winRate: number;
   profitFactor: number;
   trades: number;
+  category: string;
   description: string;
+  rules: string[];
 }
 
 export const MI007_STRATEGIES: MI007StrategyMeta[] = [
@@ -35,7 +37,13 @@ export const MI007_STRATEGIES: MI007StrategyMeta[] = [
     winRate: 64.5,
     profitFactor: 2.35,
     trades: 28,
-    description: 'Higher timeframe structure, liquidity sweeps, order blocks, and displacement.',
+    category: 'Multi-Timeframe SMC',
+    description: 'Higher timeframe market structure, liquidity sweeps, order blocks, and displacement.',
+    rules: [
+      'HTF Dealing Range (50% Equilibrium Context)',
+      'Liquidity Sweep at Major Swing Extreme (BSL/SSL)',
+      'LTF Displacement with 50% CE FVG / OB Retest',
+    ],
   },
   {
     id: 'order_flow',
@@ -46,7 +54,13 @@ export const MI007_STRATEGIES: MI007StrategyMeta[] = [
     winRate: 59.2,
     profitFactor: 2.10,
     trades: 34,
+    category: 'Volume Delta & Absorption',
     description: 'Bid-Ask volume delta imbalances and limit buyer/seller absorption at key swing levels.',
+    rules: [
+      'Bid × Ask Diagonal Imbalance >= 300%',
+      'Passive Limit Buyer/Seller Absorption at Extreme',
+      'CVD Cumulative Volume Delta Divergence',
+    ],
   },
   {
     id: 'volatility_squeeze',
@@ -57,7 +71,13 @@ export const MI007_STRATEGIES: MI007StrategyMeta[] = [
     winRate: 61.0,
     profitFactor: 2.18,
     trades: 31,
+    category: 'Volatility Compression',
     description: 'Bollinger Band compression inside Keltner Channels followed by volume expansion.',
+    rules: [
+      'Bollinger Bands Compressed Inside Keltner Channel',
+      'Momentum Histogram Directional Flip',
+      'Volume Surge > 1.3x 20-Day Average',
+    ],
   },
   {
     id: 'ml_momentum',
@@ -68,7 +88,13 @@ export const MI007_STRATEGIES: MI007StrategyMeta[] = [
     winRate: 66.7,
     profitFactor: 2.45,
     trades: 26,
+    category: 'Trend Momentum',
     description: 'EMA ribbon hierarchy (9/21/50) with ADX trend strength and RSI momentum.',
+    rules: [
+      'EMA Ribbon Hierarchy (9 > 21 > 50)',
+      'ADX Trend Conviction > 25',
+      'RSI Momentum Acceleration > 55',
+    ],
   },
   {
     id: 'stat_mean_reversion',
@@ -79,7 +105,13 @@ export const MI007_STRATEGIES: MI007StrategyMeta[] = [
     winRate: 68.2,
     profitFactor: 2.28,
     trades: 30,
+    category: 'Statistical Arbitrage',
     description: 'Price extension beyond 2 standard deviations from VWAP with rejection back to mean.',
+    rules: [
+      'Price Extension > 2.0 Standard Deviations from VWAP',
+      'Wick Rejection Ratio > 40%',
+      'RSI Extreme (< 30 or > 70) Returning to Mean',
+    ],
   },
   {
     id: '3stage_reversal',
@@ -90,7 +122,13 @@ export const MI007_STRATEGIES: MI007StrategyMeta[] = [
     winRate: 63.8,
     profitFactor: 2.30,
     trades: 29,
+    category: 'Smart Money Reversal',
     description: '3-step sequence: liquidity sweep, CHoCH displacement, and zone retest.',
+    rules: [
+      'Stage 1: Liquidity Sweep of Key High/Low',
+      'Stage 2: CHoCH Structural Shift with Displacement',
+      'Stage 3: Retest of Fresh Order Block or FVG Midline',
+    ],
   },
   {
     id: 'amd',
@@ -101,7 +139,13 @@ export const MI007_STRATEGIES: MI007StrategyMeta[] = [
     winRate: 62.1,
     profitFactor: 2.22,
     trades: 27,
+    category: 'Session Liquidity',
     description: 'Range accumulation, Judas swing manipulation fakeout, and trend distribution.',
+    rules: [
+      'Range Accumulation Consolidation Phase',
+      'Judas Swing Manipulation (False Breakout & Trap)',
+      'Trend Distribution Expansion toward Liquidity Target',
+    ],
   },
 ];
 
@@ -424,72 +468,76 @@ export function MI007StrategiesView({
       {/* ── Sub-Tab 1: Signals ── */}
       {selectedSubTab === 'SIGNALS' && (
         <div className="flex flex-col gap-4">
-          {/* Top Setup Card for THIS Selected Strategy */}
-          {topSignal && (
-            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black shadow-xs">
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-sm font-black text-slate-950 dark:text-white">
-                      {activeStrategyMeta.name}
-                    </span>
-                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400">
-                      Win Rate {activeStrategyMeta.winRate}%
-                    </span>
-                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400">
-                      Profit Factor {activeStrategyMeta.profitFactor}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    {activeStrategyMeta.description}
-                  </p>
+          {/* Top Setup Card for THIS Selected Strategy (Matches Image 1 style) */}
+          <div className="p-5 rounded-2xl border-2 border-emerald-500/40 bg-[var(--theme-card-bg)] shadow-md">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex-1 min-w-[280px]">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="mono text-[18px] sm:text-[20px] font-black text-emerald-600 dark:text-emerald-400">
+                    {activeStrategyMeta.name}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-md mono text-[10.5px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    {activeStrategyMeta.category}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-md mono text-[10.5px] font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
+                    Win Rate {activeStrategyMeta.winRate}%
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-md mono text-[10.5px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                    Profit Factor {activeStrategyMeta.profitFactor}
+                  </span>
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="text-right font-mono">
-                    <div className="text-[10px] text-slate-500 uppercase">Top Signal</div>
-                    <div className="text-sm font-black text-slate-950 dark:text-white">
-                      {topSignal.symbol} ({topSignal.score}%)
-                    </div>
-                  </div>
-                  <Link
-                    href={`/chart/${topSignal.symbol}`}
-                    className="px-3 py-1.5 rounded-lg bg-black text-white dark:bg-white dark:text-black font-mono text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
-                  >
-                    Chart ↗
-                  </Link>
+                <p className="text-[13px] text-[var(--theme-card-text)] font-medium mt-1.5 max-w-3xl">
+                  {activeStrategyMeta.description}
+                </p>
+                <div className="mt-3 flex flex-col gap-1">
+                  <span className="mono text-[10.5px] font-bold uppercase text-[var(--theme-card-text-muted)] tracking-wider">
+                    Screening Rules & Criteria:
+                  </span>
+                  <ul className="list-disc list-inside text-[12px] text-[var(--theme-card-text-muted)] space-y-0.5 font-mono">
+                    {activeStrategyMeta.rules.map((r, i) => (
+                      <li key={i}>{r}</li>
+                    ))}
+                  </ul>
                 </div>
               </div>
 
-              {/* Top Signal Key Details */}
-              <div className="pt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-bold text-slate-950 dark:text-white">
-                    {topSignal.symbol}
-                  </span>
-                  <span className="text-slate-600 dark:text-slate-400">
-                    ₹{topSignal.price.toFixed(2)}
-                  </span>
-                  <span
-                    className={`px-1.5 py-0.5 rounded font-black text-[10.5px] ${
-                      topSignal.direction === 'BUY'
-                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                        : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                    }`}
-                  >
-                    {topSignal.direction}
-                  </span>
-                  <span>Entry: ₹{topSignal.entry.toFixed(2)}</span>
-                  <span className="text-rose-600 dark:text-rose-400">SL: ₹{topSignal.stopLoss.toFixed(2)}</span>
-                  <span className="text-emerald-600 dark:text-emerald-400">Target: ₹{topSignal.target.toFixed(2)}</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-300">R:R 1:{topSignal.riskReward}</span>
+              {topSignal && (
+                <div className="flex flex-col items-end gap-1.5 bg-[var(--theme-card-surface)] p-3.5 rounded-xl border border-[var(--theme-card-border)] text-xs font-mono">
+                  <div className="text-[10px] text-[var(--theme-card-text-muted)] uppercase font-bold">
+                    Top Setup ({topSignal.symbol})
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-base font-black text-[var(--theme-card-text)]">
+                      ₹{topSignal.price.toFixed(2)}
+                    </span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded font-black text-[10.5px] ${
+                        topSignal.direction === 'BUY'
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                          : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                      }`}
+                    >
+                      {topSignal.direction}
+                    </span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                      {topSignal.score}%
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-[var(--theme-card-text-muted)]">
+                    Entry: ₹{topSignal.entry.toFixed(2)} | SL: ₹{topSignal.stopLoss.toFixed(2)} | Target: ₹{topSignal.target.toFixed(2)}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Link
+                      href={`/chart/${topSignal.symbol}`}
+                      className="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition-all shadow-xs cursor-pointer text-xs"
+                    >
+                      Chart ↗
+                    </Link>
+                  </div>
                 </div>
-                <div className="text-slate-500 dark:text-slate-400 text-[11px]">
-                  {topSignal.trigger}
-                </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Signals Table */}
           <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black shadow-xs overflow-hidden">
