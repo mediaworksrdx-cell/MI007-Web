@@ -5,6 +5,7 @@ import React, { useState, useMemo } from 'react';
 import { BuildupRecord, BuildupType, FnoInstrument } from '@/lib/fno/fnoTypes';
 import { getBuildupScannerData, findFnoInstrument } from '@/lib/fno/fnoDataService';
 import { MarketType } from '@/lib/types';
+import { useTradeEngine } from '@/lib/tradeEngineContext';
 
 interface BuildupScannerTabProps {
   market?: MarketType;
@@ -25,7 +26,21 @@ export function BuildupScannerTab({
   const [sortField, setSortField] = useState<SortField>('oiChangePct');
   const [sortAsc, setSortAsc] = useState(false);
 
+  const { getSymbolPrice } = useTradeEngine();
+
   const rawData = useMemo(() => getBuildupScannerData(market), [market]);
+
+  const enrichedRecords = useMemo(() => {
+    return rawData.map((r) => {
+      const live = getSymbolPrice(r.symbol);
+      if (!live || !live.price) return r;
+      return {
+        ...r,
+        spotPrice: live.price,
+        priceChangePct: live.changePct ?? r.priceChangePct,
+      };
+    });
+  }, [rawData, getSymbolPrice]);
 
   const curr = market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹';
   const loc = market === 'INDIA' ? 'en-IN' : 'en-US';
@@ -35,7 +50,7 @@ export function BuildupScannerTab({
 
   // Filter and sort records
   const filteredRecords = useMemo(() => {
-    let list = [...rawData];
+    let list = [...enrichedRecords];
 
     // Filter by quadrant tab
     if (activeTab !== 'ALL') {
