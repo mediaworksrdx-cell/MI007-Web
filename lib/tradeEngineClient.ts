@@ -42,6 +42,13 @@ export function normalizeSymbolKey(sym: string): string {
     .replace(/-USD$/, '')
     .replace(/USDT$/, '');
 
+  // Canonical Forex & Commodity mappings
+  const noSlash = clean.replace(/[\/-]/g, '');
+  const FOREX = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDCAD', 'AUDCAD', 'USDCHF', 'AUDUSD', 'USDAED', 'NZDUSD', 'XAUUSD', 'XAGUSD'];
+  if (FOREX.includes(noSlash)) {
+    return noSlash;
+  }
+
   // Canonical index mappings
   if (clean === 'NIFTY50' || clean === 'NIFTY_50' || clean === 'CNXNIFTY' || clean === 'NIFTY') {
     return 'NIFTY';

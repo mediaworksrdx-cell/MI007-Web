@@ -140,14 +140,14 @@ const DEFAULT_COMMODITIES: CommodityItem[] = [
 ];
 
 const DEFAULT_FOREX: ForexItem[] = [
-  { symbol: 'EURUSD', name: 'EUR / USD', pair: 'EUR / USD', base: 1.0845, pipSpread: '0.8 pips', changePct: 0.18 },
-  { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP / USD', base: 1.2980, pipSpread: '1.0 pips', changePct: 0.22 },
-  { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD / JPY', base: 152.40, pipSpread: '0.9 pips', changePct: -0.35 },
-  { symbol: 'USDINR', name: 'USD / INR', pair: 'USD / INR', base: 84.08, pipSpread: '1.2 pips', changePct: 0.05 },
-  { symbol: 'USDCAD', name: 'USD / CAD', pair: 'USD / CAD', base: 1.4092, pipSpread: '0.9 pips', changePct: 0.12 },
-  { symbol: 'AUDCAD', name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9838, pipSpread: '1.2 pips', changePct: 0.23 },
-  { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD / CHF', base: 0.8850, pipSpread: '0.9 pips', changePct: -0.15 },
-  { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips', changePct: 0.40 },
+  { symbol: 'EURUSD', name: 'EUR / USD', pair: 'EUR / USD', base: 1.1151, pipSpread: '0.8 pips', changePct: -0.27 },
+  { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP / USD', base: 1.3388, pipSpread: '1.0 pips', changePct: 0.10 },
+  { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD / JPY', base: 157.28, pipSpread: '0.9 pips', changePct: -0.23 },
+  { symbol: 'USDINR', name: 'USD / INR', pair: 'USD / INR', base: 94.94, pipSpread: '1.2 pips', changePct: -0.28 },
+  { symbol: 'USDCAD', name: 'USD / CAD', pair: 'USD / CAD', base: 1.3960, pipSpread: '0.9 pips', changePct: -0.19 },
+  { symbol: 'AUDCAD', name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9816, pipSpread: '1.2 pips', changePct: -0.13 },
+  { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD / CHF', base: 0.8248, pipSpread: '0.9 pips', changePct: 0.12 },
+  { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD / USD', base: 0.7034, pipSpread: '1.1 pips', changePct: 0.04 },
 ];
 
 // Predefined catalog of recognized indices & cryptos for instantaneous auto-detection
@@ -196,16 +196,16 @@ const KNOWN_COMMODITIES: Record<string, { name: string; base: number; unit: stri
 };
 
 const KNOWN_FOREX: Record<string, { name: string; base: number; pair: string; pipSpread: string }> = {
-  EURUSD: { name: 'EUR / USD', pair: 'EUR / USD', base: 1.0845, pipSpread: '0.8 pips' },
-  GBPUSD: { name: 'GBP / USD', pair: 'GBP / USD', base: 1.2980, pipSpread: '1.0 pips' },
-  USDJPY: { name: 'USD / JPY', pair: 'USD / JPY', base: 152.40, pipSpread: '0.9 pips' },
-  USDINR: { name: 'USD / INR', pair: 'USD / INR', base: 84.08, pipSpread: '1.2 pips' },
-  USDCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4092, pipSpread: '0.9 pips' },
-  AUDCAD: { name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9838, pipSpread: '1.2 pips' },
-  USDCHF: { name: 'USD / CHF', pair: 'USD / CHF', base: 0.8850, pipSpread: '0.9 pips' },
+  EURUSD: { name: 'EUR / USD', pair: 'EUR / USD', base: 1.1151, pipSpread: '0.8 pips' },
+  GBPUSD: { name: 'GBP / USD', pair: 'GBP / USD', base: 1.3388, pipSpread: '1.0 pips' },
+  USDJPY: { name: 'USD / JPY', pair: 'USD / JPY', base: 157.28, pipSpread: '0.9 pips' },
+  USDINR: { name: 'USD / INR', pair: 'USD / INR', base: 94.94, pipSpread: '1.2 pips' },
+  USDCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.3960, pipSpread: '0.9 pips' },
+  AUDCAD: { name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9816, pipSpread: '1.2 pips' },
+  USDCHF: { name: 'USD / CHF', pair: 'USD / CHF', base: 0.8248, pipSpread: '0.9 pips' },
   USDAED: { name: 'USD / AED', pair: 'USD / AED', base: 3.6725, pipSpread: '0.5 pips' },
-  AUDUSD: { name: 'AUD / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips' },
-  UADCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4092, pipSpread: '0.9 pips' },
+  AUDUSD: { name: 'AUD / USD', pair: 'AUD / USD', base: 0.7034, pipSpread: '1.1 pips' },
+  UADCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.3960, pipSpread: '0.9 pips' },
 };
 
 const KNOWN_US_STOCKS: Record<string, { name: string; base: number; sector: string }> = {
@@ -807,7 +807,7 @@ const ForexTile = React.memo(function ForexTile({
                 ? 'text-rose-400 bg-rose-500/20 ring-1 ring-rose-500/30'
                 : 'inst-card-text'
             }`}>
-              {price.toFixed(price < 2 ? 4 : 2)}
+              {price.toFixed(item.symbol.includes('JPY') || item.symbol.includes('INR') ? 2 : (price < 10 ? 4 : 2))}
             </span>
           </div>
           <span className={`mono text-[11.5px] sm:text-[12px] font-bold ${up ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -947,9 +947,17 @@ export default function TerminalPage() {
         const savedFx = localStorage.getItem(`${STORAGE_PREFIX}forex`);
         if (savedFx) {
           const parsed: ForexItem[] = JSON.parse(savedFx);
-          const existingSyms = new Set(parsed.map(p => p.symbol));
+          const defaultMap = new Map(DEFAULT_FOREX.map(d => [d.symbol, d]));
+          const upgraded = parsed.map(p => {
+            const def = defaultMap.get(p.symbol);
+            if (def && (p.changePct === 0 || p.base === 1.0845)) {
+              return { ...p, base: def.base, changePct: def.changePct };
+            }
+            return p;
+          });
+          const existingSyms = new Set(upgraded.map(p => p.symbol));
           const missingDefaults = DEFAULT_FOREX.filter(d => !existingSyms.has(d.symbol));
-          setForex(missingDefaults.length > 0 ? [...parsed, ...missingDefaults] : parsed);
+          setForex(missingDefaults.length > 0 ? [...upgraded, ...missingDefaults] : upgraded);
         }
       } catch {}
     }

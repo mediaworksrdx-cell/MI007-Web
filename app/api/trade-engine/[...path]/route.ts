@@ -325,8 +325,10 @@ async function fetchYahooMacroData(): Promise<{ value: any[]; Count: number } | 
           const price = meta?.regularMarketPrice;
           const prevClose = meta?.chartPreviousClose || price;
           if (typeof price === 'number') {
-            const chg = +(price - prevClose).toFixed(2);
-            const chgPct = +((chg / Math.max(0.001, prevClose)) * 100).toFixed(2);
+            const rawDiff = price - prevClose;
+            const decimals = price < 5 ? 5 : 2;
+            const chg = +rawDiff.toFixed(decimals);
+            const chgPct = +((rawDiff / Math.max(0.0001, prevClose)) * 100).toFixed(2);
             return item.symbols.map(sym => ({
               symbol: sym,
               value: item.format(price),
@@ -505,15 +507,19 @@ function cacheYahooQuote(rawSymbol: string, meta: any) {
   if (!meta?.regularMarketPrice || meta.regularMarketPrice <= 0) return;
   const price = meta.regularMarketPrice;
   const prev = meta.chartPreviousClose || price;
-  const chg = +(price - prev).toFixed(2);
-  const pct = +(((price - prev) / Math.max(0.001, prev)) * 100).toFixed(2);
+  const rawDiff = price - prev;
+  const isForex = price < 5 || rawSymbol.toUpperCase().includes('=X');
+  const priceDecimals = isForex ? 4 : 2;
+  const chgDecimals = isForex ? 5 : 2;
+  const chg = +rawDiff.toFixed(chgDecimals);
+  const pct = +((rawDiff / Math.max(0.0001, prev)) * 100).toFixed(2);
   const clean = rawSymbol.toUpperCase().replace(/[\s\/-]+/g, '').replace(/\.NS$/, '').replace(/\.BO$/, '');
   const now = Date.now();
   const token = 960000 + (Math.abs(clean.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0)) % 30000);
   const item = {
     instrumentToken: token,
     symbol: clean,
-    ltp: +price.toFixed(2),
+    ltp: +price.toFixed(priceDecimals),
     change: chg,
     changePercent: pct,
     timestamp: meta.regularMarketTime ? meta.regularMarketTime * 1000 : now,
@@ -523,6 +529,7 @@ function cacheYahooQuote(rawSymbol: string, meta: any) {
   if (meta.symbol) {
     setBoundedYahooQuote(meta.symbol.toUpperCase(), item);
     setBoundedYahooQuote(meta.symbol.toUpperCase().replace(/\.NS$/, ''), item);
+    setBoundedYahooQuote(meta.symbol.toUpperCase().replace(/=X$/, ''), item);
   }
 }
 
@@ -1013,9 +1020,9 @@ export async function GET(
     });
   }
 
-  // 1. Check in-memory cache for macro-data (Commodities & Forex: 15-minute interval = 900,000ms)
+  // 1. Check in-memory cache for macro-data (Commodities & Forex: 30-second interval for real-time responsiveness)
   if (pathStr === 'macro-data') {
-    const ttl = 15 * 60 * 1000;
+    const ttl = 30 * 1000;
 
     const cachedMacro = getCached(cacheKey, ttl);
     if (cachedMacro) {

@@ -185,6 +185,24 @@ const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number;
   { symbol: 'GOLD', price: 2650.50, change: 11.80, changePct: 0.45 },
   { symbol: 'XAU/USD', price: 2650.50, change: 12.20, changePct: 0.57 },
   { symbol: 'BRENT', price: 74.50, change: 0.45, changePct: 0.55 },
+
+  // Forex Major Pairs (Live Market Benchmarks)
+  { symbol: 'EUR/USD', price: 1.1151, change: -0.0030, changePct: -0.27 },
+  { symbol: 'EURUSD', price: 1.1151, change: -0.0030, changePct: -0.27 },
+  { symbol: 'GBP/USD', price: 1.3388, change: 0.0013, changePct: 0.10 },
+  { symbol: 'GBPUSD', price: 1.3388, change: 0.0013, changePct: 0.10 },
+  { symbol: 'USD/JPY', price: 157.28, change: -0.37, changePct: -0.23 },
+  { symbol: 'USDJPY', price: 157.28, change: -0.37, changePct: -0.23 },
+  { symbol: 'USD/INR', price: 94.94, change: -0.27, changePct: -0.28 },
+  { symbol: 'USDINR', price: 94.94, change: -0.27, changePct: -0.28 },
+  { symbol: 'USD/CAD', price: 1.3960, change: -0.0027, changePct: -0.19 },
+  { symbol: 'USDCAD', price: 1.3960, change: -0.0027, changePct: -0.19 },
+  { symbol: 'AUD/CAD', price: 0.9816, change: -0.0013, changePct: -0.13 },
+  { symbol: 'AUDCAD', price: 0.9816, change: -0.0013, changePct: -0.13 },
+  { symbol: 'USD/CHF', price: 0.8248, change: 0.0010, changePct: 0.12 },
+  { symbol: 'USDCHF', price: 0.8248, change: 0.0010, changePct: 0.12 },
+  { symbol: 'AUD/USD', price: 0.7034, change: 0.0003, changePct: 0.04 },
+  { symbol: 'AUDUSD', price: 0.7034, change: 0.0003, changePct: 0.04 },
 ];
 
 function buildInitialPriceMap(): Map<string, LiveSymbolData> {
@@ -462,13 +480,14 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
           if (!isNaN(numVal) && numVal > 0) {
             const key = normalizeSymbolKey(m.symbol);
             const prevEntry = next.get(key) || next.get(m.symbol);
-            if (prevEntry && prevEntry.price === numVal) continue;
-            const tickDirection = prevEntry
-              ? numVal > prevEntry.price ? 'up' : numVal < prevEntry.price ? 'down' : 'neutral'
-              : 'neutral';
 
             const chg = typeof (m as any).change === 'number' ? (m as any).change : (prevEntry?.change || 0);
             const chgPct = typeof (m as any).changePercent === 'number' ? (m as any).changePercent : (prevEntry?.changePct || 0);
+
+            if (prevEntry && prevEntry.price === numVal && prevEntry.changePct === chgPct && prevEntry.change === chg) continue;
+            const tickDirection = prevEntry
+              ? numVal > prevEntry.price ? 'up' : numVal < prevEntry.price ? 'down' : (chgPct >= 0 ? 'up' : 'down')
+              : (chgPct >= 0 ? 'up' : 'down');
 
             const data: LiveSymbolData = {
               symbol: m.symbol,
@@ -480,11 +499,14 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               lastUpdated: now,
             };
 
+            const unslashed = m.symbol.replace(/[\/-]/g, '');
             changedKeys.add(key);
+            changedKeys.add(m.symbol);
+            changedKeys.add(unslashed);
             next.set(key, data);
             next.set(m.symbol, data);
             next.set(m.symbol.toUpperCase(), data);
-            next.set(m.symbol.replace('/', ''), data);
+            next.set(unslashed, data);
             next.set(m.symbol.replace(/\s+/g, ''), data);
 
             if (m.symbol === 'XAU/USD' || m.symbol === 'GOLD') {
