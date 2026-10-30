@@ -44,15 +44,13 @@ export function TopToolbar({
   const TABS = [
     { id: 'screener', label: '1. Screeners' },
     { id: 'smcScanner', label: '2. SMC Scanner' },
-    { id: 'mi007Strategies', label: '3. MI-007 Strategies' },
-    { id: 'tradingStrategies', label: '4. Trading Strategies' },
-    { id: 'investmentStrategies', label: '5. Investment Strategies' },
-    { id: 'queryBuilder', label: '6. Query Builder' },
-    { id: 'discover', label: '7. Discover Screens' },
-    { id: 'watchlists', label: '8. Watchlists' },
-    { id: 'analysis', label: '9. Company Analysis' },
-    { id: 'peers', label: '10. Peer Matrix' },
-    { id: 'alerts', label: '11. Alerts' },
+    { id: 'technicalScreener', label: '3. Technical Strategies' },
+    { id: 'queryBuilder', label: '4. Query Builder' },
+    { id: 'discover', label: '5. Discover Screens' },
+    { id: 'watchlists', label: '6. Watchlists' },
+    { id: 'analysis', label: '7. Company Analysis' },
+    { id: 'peers', label: '8. Peer Matrix' },
+    { id: 'alerts', label: '9. Alerts' },
   ];
 
   return (
@@ -62,7 +60,7 @@ export function TopToolbar({
         {/* Title & Zerodha Badge */}
         <div className="flex items-center gap-2.5">
           <span className="mono text-[15px] sm:text-[17px] font-black inst-card-text tracking-wide uppercase">
-            SCREENERS
+            SCREENERS COCKPIT
           </span>
           {market === 'INDIA' && (
             <span className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 mono text-[11px] font-bold">
