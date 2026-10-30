@@ -328,19 +328,19 @@ export function TradingStrategiesView({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[12.5px] mono">
             <thead>
-              <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[11px] uppercase tracking-wider">
-                <th className="py-2.5 px-3">Symbol</th>
-                <th className="py-2.5 px-3">Strategy</th>
-                <th className="py-2.5 px-3">Direction</th>
-                <th className="py-2.5 px-3">Trigger Price</th>
-                <th className="py-2.5 px-3">Setup Details</th>
-                <th className="py-2.5 px-3 text-right">Actions</th>
+              <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[10.5px] uppercase tracking-wider">
+                <th className="py-2 px-2.5">Symbol</th>
+                <th className="py-2 px-2.5">Strategy</th>
+                <th className="py-2 px-2.5">Dir</th>
+                <th className="py-2 px-2.5">Trigger</th>
+                <th className="py-2 px-2.5">Details</th>
+                <th className="py-2 px-2.5 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--theme-card-border)]/50">
               {paginatedResults.map((r, i) => (
                 <tr key={`${r.symbol}-${r.strategyId}-${i}`} className="hover:bg-[var(--theme-card-surface)]/50 transition-colors">
-                  <td className="py-2.5 px-3">
+                  <td className="py-1.5 px-2.5">
                     <button
                       type="button"
                       onClick={() => onSelectCompany(r.symbol)}
@@ -350,27 +350,27 @@ export function TradingStrategiesView({
                     </button>
                     <div className="text-[10px] text-[var(--theme-card-text-muted)]">{r.companyName}</div>
                   </td>
-                  <td className="py-2.5 px-3 font-semibold text-[var(--theme-card-text)]">
+                  <td className="py-1.5 px-2.5 font-semibold text-[var(--theme-card-text)]">
                     {r.strategyName}
                   </td>
-                  <td className="py-2.5 px-3">
+                  <td className="py-1.5 px-2.5">
                     <span
-                      className={`px-2 py-0.5 rounded text-[10.5px] font-bold ${
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         r.direction === 'bullish'
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                           : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                       }`}
                     >
-                      {r.direction === 'bullish' ? '▲ BULLISH' : '▼ BEARISH'}
+                      {r.direction === 'bullish' ? '▲ LONG' : '▼ SHORT'}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 font-bold text-emerald-300">
+                  <td className="py-1.5 px-2.5 font-bold text-emerald-300">
                     ₹{r.triggerPrice ? r.triggerPrice.toFixed(2) : '-'}
                   </td>
-                  <td className="py-2.5 px-3 text-[11.5px] text-[var(--theme-card-text-muted)] max-w-md truncate">
+                  <td className="py-1.5 px-2.5 text-[11px] text-[var(--theme-card-text-muted)] max-w-md truncate">
                     {r.explanation || 'Condition confirmed'}
                   </td>
-                  <td className="py-2.5 px-3 text-right">
+                  <td className="py-1.5 px-2.5 text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       {onOpenBacktest && (
                         <button

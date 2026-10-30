@@ -583,59 +583,59 @@ export function CustomQueryBuilderView({
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
-            <table className="w-full border-collapse text-left mono text-[12.5px]">
+            <table className="w-full border-collapse text-left mono text-[12px]">
               <thead>
-                <tr className="border-b border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] text-[11px] font-black uppercase">
+                <tr className="border-b border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text-muted)] text-[10.5px] font-black uppercase">
                   <th
-                    className="py-3 px-4 cursor-pointer hover:text-[var(--theme-card-text)] select-none"
+                    className="py-2 px-2.5 cursor-pointer hover:text-[var(--theme-card-text)] select-none"
                     onClick={() => toggleSort('symbol')}
                   >
                     Symbol {testSortColumn === 'symbol' && (testSortDirection === 'asc' ? '▲' : '▼')}
                   </th>
                   <th
-                    className="py-3 px-4 cursor-pointer hover:text-[var(--theme-card-text)] select-none"
+                    className="py-2 px-2.5 cursor-pointer hover:text-[var(--theme-card-text)] select-none"
                     onClick={() => toggleSort('name')}
                   >
-                    Company Name {testSortColumn === 'name' && (testSortDirection === 'asc' ? '▲' : '▼')}
+                    Company {testSortColumn === 'name' && (testSortDirection === 'asc' ? '▲' : '▼')}
                   </th>
-                  <th className="py-3 px-4">Sector</th>
+                  <th className="py-2 px-2.5">Sector</th>
                   <th
-                    className="py-3 px-4 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
+                    className="py-2 px-2.5 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
                     onClick={() => toggleSort('currentPrice')}
                   >
-                    Price ({market === 'USA' ? '$' : market === 'UAE' ? 'AED' : '₹'}) {testSortColumn === 'currentPrice' && (testSortDirection === 'asc' ? '▲' : '▼')}
+                    Price {testSortColumn === 'currentPrice' && (testSortDirection === 'asc' ? '▲' : '▼')}
                   </th>
                   <th
-                    className="py-3 px-4 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
+                    className="py-2 px-2.5 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
                     onClick={() => toggleSort('marketCap')}
                   >
-                    Market Cap ({market === 'INDIA' ? 'Cr' : 'B'}) {testSortColumn === 'marketCap' && (testSortDirection === 'asc' ? '▲' : '▼')}
+                    Market Cap {testSortColumn === 'marketCap' && (testSortDirection === 'asc' ? '▲' : '▼')}
                   </th>
                   <th
-                    className="py-3 px-4 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
+                    className="py-2 px-2.5 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
                     onClick={() => toggleSort('pe')}
                   >
                     P/E {testSortColumn === 'pe' && (testSortDirection === 'asc' ? '▲' : '▼')}
                   </th>
                   <th
-                    className="py-3 px-4 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
+                    className="py-2 px-2.5 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
                     onClick={() => toggleSort('roce')}
                   >
-                    ROCE % {testSortColumn === 'roce' && (testSortDirection === 'asc' ? '▲' : '▼')}
+                    ROCE {testSortColumn === 'roce' && (testSortDirection === 'asc' ? '▲' : '▼')}
                   </th>
                   <th
-                    className="py-3 px-4 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
+                    className="py-2 px-2.5 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
                     onClick={() => toggleSort('roe')}
                   >
-                    ROE % {testSortColumn === 'roe' && (testSortDirection === 'asc' ? '▲' : '▼')}
+                    ROE {testSortColumn === 'roe' && (testSortDirection === 'asc' ? '▲' : '▼')}
                   </th>
                   <th
-                    className="py-3 px-4 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
+                    className="py-2 px-2.5 text-right cursor-pointer hover:text-[var(--theme-card-text)] select-none"
                     onClick={() => toggleSort('debtToEquity')}
                   >
-                    Debt/Eq {testSortColumn === 'debtToEquity' && (testSortDirection === 'asc' ? '▲' : '▼')}
+                    D/E {testSortColumn === 'debtToEquity' && (testSortDirection === 'asc' ? '▲' : '▼')}
                   </th>
-                  <th className="py-3 px-4 text-center">Action</th>
+                  <th className="py-2 px-2.5 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--theme-card-border)]/50">
@@ -644,39 +644,39 @@ export function CustomQueryBuilderView({
                     key={c.symbol}
                     className="hover:bg-emerald-500/5 transition-colors group cursor-default"
                   >
-                    <td className="py-2.5 px-4 font-black text-emerald-700 dark:text-emerald-400">
+                    <td className="py-1.5 px-2.5 font-black text-emerald-700 dark:text-emerald-400">
                       {c.symbol}
                     </td>
-                    <td className="py-2.5 px-4 font-bold text-[var(--theme-card-text)]">
+                    <td className="py-1.5 px-2.5 font-bold text-[var(--theme-card-text)]">
                       {c.name}
                     </td>
-                    <td className="py-2.5 px-4 text-[var(--theme-card-text-muted)] text-[11.5px]">
+                    <td className="py-1.5 px-2.5 text-[var(--theme-card-text-muted)] text-[11px]">
                       {c.sector}
                     </td>
-                    <td className="py-2.5 px-4 text-right font-mono font-bold text-[var(--theme-card-text)]">
+                    <td className="py-1.5 px-2.5 text-right font-mono font-bold text-[var(--theme-card-text)]">
                       {c.currencySymbol || (market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹')}{c.currentPrice?.toLocaleString() || c.currentPrice}
                     </td>
-                    <td className="py-2.5 px-4 text-right font-mono text-[var(--theme-card-text-muted)]">
+                    <td className="py-1.5 px-2.5 text-right font-mono text-[var(--theme-card-text-muted)]">
                       {c.currencySymbol || (market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹')}{c.marketCap?.toLocaleString() || c.marketCap}
                     </td>
-                    <td className="py-2.5 px-4 text-right font-mono text-[var(--theme-card-text)]">
+                    <td className="py-1.5 px-2.5 text-right font-mono text-[var(--theme-card-text)]">
                       {c.pe ? `${c.pe.toFixed(1)}x` : '—'}
                     </td>
-                    <td className="py-2.5 px-4 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                    <td className="py-1.5 px-2.5 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400">
                       {c.roce ? `${c.roce.toFixed(1)}%` : '—'}
                     </td>
-                    <td className="py-2.5 px-4 text-right font-mono text-[var(--theme-card-text)]">
+                    <td className="py-1.5 px-2.5 text-right font-mono text-[var(--theme-card-text)]">
                       {c.roe ? `${c.roe.toFixed(1)}%` : '—'}
                     </td>
-                    <td className="py-2.5 px-4 text-right font-mono text-[var(--theme-card-text-muted)]">
+                    <td className="py-1.5 px-2.5 text-right font-mono text-[var(--theme-card-text-muted)]">
                       {c.debtToEquity != null ? c.debtToEquity.toFixed(2) : '0.00'}
                     </td>
-                    <td className="py-2.5 px-4 text-center">
+                    <td className="py-1.5 px-2.5 text-center">
                       {onSelectCompany && (
                         <button
                           type="button"
                           onClick={() => onSelectCompany(c.symbol)}
-                          className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400 mono text-[11px] font-bold transition-all cursor-pointer"
+                          className="px-2 py-0.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400 mono text-[10.5px] font-bold transition-all cursor-pointer"
                         >
                           Inspect ↗
                         </button>

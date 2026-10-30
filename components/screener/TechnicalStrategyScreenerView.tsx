@@ -356,15 +356,15 @@ export function TechnicalStrategyScreenerView({
         <div className="overflow-x-auto overflow-y-auto max-h-[550px]">
           <table className="w-full border-collapse text-left mono text-[12.5px]">
             <thead className="sticky top-0 z-10 bg-[var(--theme-card-surface)] border-b border-[var(--theme-card-border)] shadow-xs">
-              <tr className="text-[11px] text-[var(--theme-card-text-muted)] font-black uppercase tracking-wider">
-                <th className="py-3 px-3.5">Company / Symbol</th>
-                <th className="py-3 px-3">Strategy</th>
-                <th className="py-3 px-3 text-center">Direction</th>
-                <th className="py-3 px-3 text-right">LTP</th>
-                <th className="py-3 px-3 text-right">Trigger Price</th>
-                <th className="py-3 px-3 text-right">Historical Win %</th>
-                <th className="py-3 px-3">Signal Explanation</th>
-                <th className="py-3 px-3 text-center">Actions</th>
+              <tr className="text-[10.5px] text-[var(--theme-card-text-muted)] font-black uppercase tracking-wider">
+                <th className="py-2 px-2.5">Company</th>
+                <th className="py-2 px-2.5">Strategy</th>
+                <th className="py-2 px-2.5 text-center">Dir</th>
+                <th className="py-2 px-2.5 text-right">Price</th>
+                <th className="py-2 px-2.5 text-right">Trigger</th>
+                <th className="py-2 px-2.5 text-right">Win %</th>
+                <th className="py-2 px-2.5">Signal</th>
+                <th className="py-2 px-2.5 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--theme-card-border)]/40 tabular-nums">
@@ -414,32 +414,32 @@ export function TechnicalStrategyScreenerView({
                   return (
                     <tr key={`${res.symbol}-${res.strategyId}-${i}`} className="hover:bg-emerald-500/5 transition-colors group">
                       {/* Symbol & Name */}
-                      <td className="py-2.5 px-3.5 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
+                      <td className="py-1.5 px-2.5 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => onSelectCompany(res.symbol)}
-                            className="font-black text-[13px] text-[var(--theme-card-text)] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors hover:underline text-left cursor-pointer"
+                            className="font-black text-[12.5px] text-[var(--theme-card-text)] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors hover:underline text-left cursor-pointer"
                           >
                             {res.symbol}
                           </button>
-                          <span className="text-[11px] text-[var(--theme-card-text-muted)] truncate max-w-[120px]">
+                          <span className="text-[10.5px] text-[var(--theme-card-text-muted)] truncate max-w-[110px]">
                             {res.companyName}
                           </span>
                         </div>
                       </td>
 
                       {/* Strategy */}
-                      <td className="py-2.5 px-3 whitespace-nowrap">
-                        <span className="font-bold text-[var(--theme-card-text)] text-[12px]">
+                      <td className="py-1.5 px-2.5 whitespace-nowrap">
+                        <span className="font-bold text-[var(--theme-card-text)] text-[11.5px]">
                           {res.strategyName}
                         </span>
                       </td>
 
                       {/* Direction */}
-                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-center whitespace-nowrap">
                         <span
-                          className={`px-2 py-0.5 rounded-full border text-[11px] font-black ${
+                          className={`px-1.5 py-0.5 rounded-full border text-[10px] font-black ${
                             isBull
                               ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
                               : isBear
@@ -447,36 +447,36 @@ export function TechnicalStrategyScreenerView({
                               : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400'
                           }`}
                         >
-                          {isBull ? '▲ BULLISH' : isBear ? '▼ BEARISH' : 'NEUTRAL'}
+                          {isBull ? '▲ LONG' : isBear ? '▼ SHORT' : 'NEUTRAL'}
                         </span>
                       </td>
 
                       {/* LTP */}
-                      <td className="py-2.5 px-3 text-right font-black text-[var(--theme-card-text)] whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-right font-black text-[var(--theme-card-text)] whitespace-nowrap">
                         {res.market === 'USA' ? '$' : res.market === 'UAE' ? 'AED ' : '₹'}{res.currentPrice.toFixed(2)}
                       </td>
 
                       {/* Trigger Price */}
-                      <td className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-semibold whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-right text-[var(--theme-card-text)] font-semibold whitespace-nowrap">
                         {res.market === 'USA' ? '$' : res.market === 'UAE' ? 'AED ' : '₹'}{res.triggerPrice.toFixed(2)}
                       </td>
 
                       {/* Win Rate */}
-                      <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-right whitespace-nowrap">
                         <span className="font-bold text-emerald-700 dark:text-emerald-400">
                           {res.historicalWinRate ? `${res.historicalWinRate}%` : '64.2%'}
                         </span>
                       </td>
 
                       {/* Explanation */}
-                      <td className="py-2.5 px-3 max-w-[340px]">
-                        <p className="text-[11.5px] leading-relaxed text-[var(--theme-card-text)] opacity-90 line-clamp-2">
+                      <td className="py-1.5 px-2.5 max-w-[300px]">
+                        <p className="text-[11px] leading-relaxed text-[var(--theme-card-text)] opacity-90 line-clamp-2">
                           {res.explanation}
                         </p>
                       </td>
 
                       {/* Actions */}
-                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             type="button"

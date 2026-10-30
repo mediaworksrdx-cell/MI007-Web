@@ -62,7 +62,7 @@ export function TopToolbar({
         {/* Title & Zerodha Badge */}
         <div className="flex items-center gap-2.5">
           <span className="mono text-[15px] sm:text-[17px] font-black inst-card-text tracking-wide uppercase">
-            SCREENERS COCKPIT
+            SCREENERS
           </span>
           {market === 'INDIA' && (
             <span className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 mono text-[11px] font-bold">

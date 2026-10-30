@@ -585,17 +585,17 @@ export function MI007StrategiesView({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-slate-500 uppercase text-[10.5px]">
-                    <th className="py-2.5 px-3">Symbol</th>
-                    <th className="py-2.5 px-3 text-right">Price</th>
-                    <th className="py-2.5 px-3 text-center">Direction</th>
-                    <th className="py-2.5 px-3 text-center">Score</th>
-                    <th className="py-2.5 px-3 text-right">Entry</th>
-                    <th className="py-2.5 px-3 text-right">Stop Loss</th>
-                    <th className="py-2.5 px-3 text-right">Target</th>
-                    <th className="py-2.5 px-3 text-center">R:R</th>
-                    <th className="py-2.5 px-3">Trigger</th>
-                    <th className="py-2.5 px-3 text-center">Action</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-slate-500 uppercase text-[10px]">
+                    <th className="py-2 px-2.5">Symbol</th>
+                    <th className="py-2 px-2.5 text-right">Price</th>
+                    <th className="py-2 px-2.5 text-center">Dir</th>
+                    <th className="py-2 px-2.5 text-center">Score</th>
+                    <th className="py-2 px-2.5 text-right">Entry</th>
+                    <th className="py-2 px-2.5 text-right">SL</th>
+                    <th className="py-2 px-2.5 text-right">Target</th>
+                    <th className="py-2 px-2.5 text-center">R:R</th>
+                    <th className="py-2 px-2.5">Trigger</th>
+                    <th className="py-2 px-2.5 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -608,19 +608,19 @@ export function MI007StrategiesView({
                   ) : (
                     filteredSignals.map((s) => (
                       <tr key={s.symbol} className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
-                        <td className="py-2.5 px-3">
+                        <td className="py-1.5 px-2.5">
                           <div className="font-bold text-slate-950 dark:text-white">{s.symbol}</div>
-                          <div className="text-[10px] text-slate-500 truncate max-w-[130px]">{s.name}</div>
+                          <div className="text-[10px] text-slate-500 truncate max-w-[120px]">{s.name}</div>
                         </td>
-                        <td className="py-2.5 px-3 text-right font-bold">
+                        <td className="py-1.5 px-2.5 text-right font-bold">
                           ₹{s.price.toFixed(2)}
                           <div className={`text-[10px] ${s.changePct >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                             {s.changePct >= 0 ? '+' : ''}{s.changePct.toFixed(2)}%
                           </div>
                         </td>
-                        <td className="py-2.5 px-3 text-center">
+                        <td className="py-1.5 px-2.5 text-center">
                           <span
-                            className={`px-2 py-0.5 rounded font-black text-[10px] ${
+                            className={`px-1.5 py-0.5 rounded font-black text-[9.5px] ${
                               s.direction === 'BUY'
                                 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                                 : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
@@ -629,26 +629,26 @@ export function MI007StrategiesView({
                             {s.direction}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-bold text-slate-900 dark:text-white">
+                        <td className="py-1.5 px-2.5 text-center font-bold text-slate-900 dark:text-white">
                           {s.score}%
                         </td>
-                        <td className="py-2.5 px-3 text-right">₹{s.entry.toFixed(2)}</td>
-                        <td className="py-2.5 px-3 text-right text-rose-600 dark:text-rose-400">
+                        <td className="py-1.5 px-2.5 text-right">₹{s.entry.toFixed(2)}</td>
+                        <td className="py-1.5 px-2.5 text-right text-rose-600 dark:text-rose-400">
                           ₹{s.stopLoss.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400">
+                        <td className="py-1.5 px-2.5 text-right text-emerald-600 dark:text-emerald-400">
                           ₹{s.target.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-bold text-slate-700 dark:text-slate-300">
+                        <td className="py-1.5 px-2.5 text-center font-bold text-slate-700 dark:text-slate-300">
                           1:{s.riskReward}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400 text-[11px] max-w-[200px] truncate" title={s.trigger}>
+                        <td className="py-1.5 px-2.5 text-slate-600 dark:text-slate-400 text-[10.5px] max-w-[180px] truncate" title={s.trigger}>
                           {s.trigger}
                         </td>
-                        <td className="py-2.5 px-3 text-center">
+                        <td className="py-1.5 px-2.5 text-center">
                           <Link
                             href={`/chart/${s.symbol}`}
-                            className="px-2.5 py-1 rounded bg-black text-white dark:bg-white dark:text-black font-bold text-[11px] hover:opacity-90 transition-opacity"
+                            className="px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black font-bold text-[10.5px] hover:opacity-90 transition-opacity"
                           >
                             Chart ↗
                           </Link>

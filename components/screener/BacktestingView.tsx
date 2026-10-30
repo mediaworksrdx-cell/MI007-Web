@@ -902,18 +902,18 @@ export function BacktestingView({
         {/* Portfolio Table - Conditional Switch between Holdings and Trades */}
         {portfolioViewTab === 'holdings' ? (
           <div className="overflow-x-auto overflow-y-auto max-h-[460px]">
-            <table className="w-full border-collapse text-left mono text-[12.5px]">
+            <table className="w-full border-collapse text-left mono text-[12px]">
               <thead className="sticky top-0 z-10 bg-[var(--theme-card-surface)] border-b border-[var(--theme-card-border)] shadow-xs">
-                <tr className="text-[11px] text-[var(--theme-card-text-muted)] font-black uppercase tracking-wider">
-                  <th className="py-2.5 px-3">Symbol</th>
-                  <th className="py-2.5 px-3">Strategy</th>
-                  <th className="py-2.5 px-3 text-right">Initial Capital</th>
-                  <th className="py-2.5 px-3 text-right">Final Equity</th>
-                  <th className="py-2.5 px-3 text-right">Total Return</th>
-                  <th className="py-2.5 px-3 text-right">Win Rate</th>
-                  <th className="py-2.5 px-3 text-right">Trades</th>
-                  <th className="py-2.5 px-3">Added Date</th>
-                  <th className="py-2.5 px-3 text-center">Actions</th>
+                <tr className="text-[10.5px] text-[var(--theme-card-text-muted)] font-black uppercase tracking-wider">
+                  <th className="py-2 px-2.5">Symbol</th>
+                  <th className="py-2 px-2.5">Strategy</th>
+                  <th className="py-2 px-2.5 text-right">Capital</th>
+                  <th className="py-2 px-2.5 text-right">Equity</th>
+                  <th className="py-2 px-2.5 text-right">Return</th>
+                  <th className="py-2 px-2.5 text-right">Win %</th>
+                  <th className="py-2 px-2.5 text-right">Trades</th>
+                  <th className="py-2 px-2.5">Date</th>
+                  <th className="py-2 px-2.5 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--theme-card-border)]/40 tabular-nums">
@@ -998,20 +998,20 @@ export function BacktestingView({
           </div>
         ) : (
           <div className="overflow-x-auto overflow-y-auto max-h-[460px]">
-            <table className="w-full border-collapse text-left mono text-[12.5px]">
+            <table className="w-full border-collapse text-left mono text-[12px]">
               <thead className="sticky top-0 z-10 bg-[var(--theme-card-surface)] border-b border-[var(--theme-card-border)] shadow-xs">
-                <tr className="text-[11px] text-[var(--theme-card-text-muted)] font-black uppercase tracking-wider">
-                  <th className="py-2.5 px-3">#</th>
-                  <th className="py-2.5 px-3">Entry Date</th>
-                  <th className="py-2.5 px-3 text-right">Entry Price</th>
-                  <th className="py-2.5 px-3">Exit Date</th>
-                  <th className="py-2.5 px-3 text-right">Exit Price</th>
-                  <th className="py-2.5 px-3 text-right">Shares</th>
-                  <th className="py-2.5 px-3 text-right">PnL ({activeCompany.currencySymbol})</th>
-                  <th className="py-2.5 px-3 text-right">Return %</th>
-                  <th className="py-2.5 px-3 text-right">Hold Days</th>
-                  <th className="py-2.5 px-3 text-center">Exit Trigger</th>
-                  <th className="py-2.5 px-3 text-center">Exit Option</th>
+                <tr className="text-[10.5px] text-[var(--theme-card-text-muted)] font-black uppercase tracking-wider">
+                  <th className="py-2 px-2.5">#</th>
+                  <th className="py-2 px-2.5">Entry Date</th>
+                  <th className="py-2 px-2.5 text-right">Entry</th>
+                  <th className="py-2 px-2.5">Exit Date</th>
+                  <th className="py-2 px-2.5 text-right">Exit</th>
+                  <th className="py-2 px-2.5 text-right">Shares</th>
+                  <th className="py-2 px-2.5 text-right">PnL</th>
+                  <th className="py-2 px-2.5 text-right">Return</th>
+                  <th className="py-2 px-2.5 text-right">Days</th>
+                  <th className="py-2 px-2.5 text-center">Trigger</th>
+                  <th className="py-2 px-2.5 text-center">Option</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--theme-card-border)]/40 tabular-nums">

@@ -496,16 +496,16 @@ export function SmcScannerView({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/80 text-[var(--theme-card-text-muted)] font-mono text-[10.5px] uppercase tracking-wider">
-                <th className="py-3 px-4">Instrument</th>
-                <th className="py-3 px-3 text-right">LTP</th>
-                <th className="py-3 px-3">Setup Pattern</th>
-                <th className="py-3 px-3 text-center">Direction</th>
-                <th className="py-3 px-3 text-right">Entry Zone</th>
-                <th className="py-3 px-3 text-right">Invalidation (SL)</th>
-                <th className="py-3 px-3 text-right">Target (TP)</th>
-                <th className="py-3 px-3 text-center">R:R</th>
-                <th className="py-3 px-3 text-center">Status</th>
-                <th className="py-3 px-4 text-center">Action</th>
+                <th className="py-2 px-2.5">Instrument</th>
+                <th className="py-2 px-2.5 text-right">Price</th>
+                <th className="py-2 px-2.5">Pattern</th>
+                <th className="py-2 px-2.5 text-center">Dir</th>
+                <th className="py-2 px-2.5 text-right">Entry</th>
+                <th className="py-2 px-2.5 text-right">SL</th>
+                <th className="py-2 px-2.5 text-right">Target</th>
+                <th className="py-2 px-2.5 text-center">R:R</th>
+                <th className="py-2 px-2.5 text-center">Status</th>
+                <th className="py-2 px-2.5 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--theme-card-border)]/50">
@@ -531,7 +531,7 @@ export function SmcScannerView({
                       className="hover:bg-[var(--theme-card-surface)]/60 transition-colors"
                     >
                       {/* Instrument */}
-                      <td className="py-3 px-4">
+                      <td className="py-2 px-2.5">
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-black font-mono text-[13px] text-[var(--theme-card-text)]">
@@ -551,14 +551,14 @@ export function SmcScannerView({
                               </button>
                             )}
                           </div>
-                          <span className="text-[10.5px] text-[var(--theme-card-text-muted)] truncate max-w-[140px]">
+                          <span className="text-[10.5px] text-[var(--theme-card-text-muted)] truncate max-w-[130px]">
                             {item.name}
                           </span>
                         </div>
                       </td>
 
                       {/* LTP */}
-                      <td className="py-3 px-3 text-right font-mono font-bold text-[var(--theme-card-text)]">
+                      <td className="py-2 px-2.5 text-right font-mono font-bold text-[var(--theme-card-text)]">
                         <div>₹{item.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         <div
                           className={`text-[10px] font-semibold ${
@@ -571,23 +571,23 @@ export function SmcScannerView({
                       </td>
 
                       {/* Setup Pattern */}
-                      <td className="py-3 px-3">
+                      <td className="py-2 px-2.5">
                         <div className="flex flex-col gap-0.5">
                           <span
-                            className={`inline-block w-fit px-2 py-0.5 rounded-md font-mono font-bold text-[10.5px] border ${badgeInfo.badgeClass}`}
+                            className={`inline-block w-fit px-1.5 py-0.5 rounded-md font-mono font-bold text-[10px] border ${badgeInfo.badgeClass}`}
                           >
                             {badgeInfo.label}
                           </span>
-                          <span className="text-[10px] text-[var(--theme-card-text-muted)] truncate max-w-[200px]" title={item.setup.description}>
+                          <span className="text-[9.5px] text-[var(--theme-card-text-muted)] truncate max-w-[180px]" title={item.setup.description}>
                             {item.setup.description}
                           </span>
                         </div>
                       </td>
 
                       {/* Direction */}
-                      <td className="py-3 px-3 text-center">
+                      <td className="py-2 px-2.5 text-center">
                         <span
-                          className={`font-mono font-black text-xs px-2 py-0.5 rounded-md inline-flex items-center gap-1 ${
+                          className={`font-mono font-black text-xs px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 ${
                             isBull
                               ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                               : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
@@ -599,29 +599,29 @@ export function SmcScannerView({
                       </td>
 
                       {/* Entry Zone */}
-                      <td className="py-3 px-3 text-right font-mono font-bold text-[var(--theme-card-text)]">
+                      <td className="py-2 px-2.5 text-right font-mono font-bold text-[var(--theme-card-text)]">
                         ₹{item.setup.entryPrice.toFixed(2)}
                       </td>
 
                       {/* Invalidation (SL) */}
-                      <td className="py-3 px-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
+                      <td className="py-2 px-2.5 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
                         ₹{item.setup.stopLoss.toFixed(2)}
                       </td>
 
                       {/* Target (TP) */}
-                      <td className="py-3 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      <td className="py-2 px-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
                         ₹{item.setup.targetPrice.toFixed(2)}
                       </td>
 
                       {/* R:R */}
-                      <td className="py-3 px-3 text-center font-mono font-black text-amber-600 dark:text-amber-400 text-xs">
+                      <td className="py-2 px-2.5 text-center font-mono font-black text-amber-600 dark:text-amber-400 text-xs">
                         1:{item.setup.riskReward.toFixed(1)}
                       </td>
 
                       {/* Status */}
-                      <td className="py-3 px-3 text-center">
+                      <td className="py-2 px-2.5 text-center">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                          className={`px-1.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold ${
                             item.setup.status === 'RETESTING'
                               ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 animate-pulse'
                               : item.setup.status === 'CONFIRMED'
@@ -640,10 +640,10 @@ export function SmcScannerView({
                       </td>
 
                       {/* Action Button -> Direct Chart Launch with SMC Auto-enabled */}
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-2 px-2.5 text-center">
                         <Link
                           href={`/chart/${item.symbol}?market=${item.market}&tf=${timeframe}&smc=1&setupId=${item.setup.id}&time=${item.setup.time}&from=screener`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all shadow-xs cursor-pointer active:scale-95"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all shadow-xs cursor-pointer active:scale-95"
                           title={`Open ${item.symbol} Candlestick Chart with SMC Overlays Enabled`}
                         >
                           <span>Chart</span>

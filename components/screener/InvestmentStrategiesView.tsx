@@ -265,24 +265,24 @@ export function InvestmentStrategiesView({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[12.5px] mono">
             <thead>
-              <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[11px] uppercase tracking-wider">
-                <th className="py-2.5 px-3">Company</th>
-                <th className="py-2.5 px-3">Price</th>
-                <th className="py-2.5 px-3">Market Cap</th>
-                <th className="py-2.5 px-3">Status</th>
-                <th className="py-2.5 px-3">Score</th>
-                <th className="py-2.5 px-3">P/E</th>
-                <th className="py-2.5 px-3">P/B</th>
-                <th className="py-2.5 px-3">ROE %</th>
-                <th className="py-2.5 px-3">ROCE %</th>
-                <th className="py-2.5 px-3">D/E</th>
-                <th className="py-2.5 px-3 text-right">Action</th>
+              <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[10.5px] uppercase tracking-wider">
+                <th className="py-2 px-2.5">Company</th>
+                <th className="py-2 px-2.5">Price</th>
+                <th className="py-2 px-2.5">MCap</th>
+                <th className="py-2 px-2.5">Status</th>
+                <th className="py-2 px-2.5">Score</th>
+                <th className="py-2 px-2.5">P/E</th>
+                <th className="py-2 px-2.5">P/B</th>
+                <th className="py-2 px-2.5">ROE</th>
+                <th className="py-2 px-2.5">ROCE</th>
+                <th className="py-2 px-2.5">D/E</th>
+                <th className="py-2 px-2.5 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--theme-card-border)]/50">
               {paginatedEvaluations.map(({ company, eval: ev }) => (
                 <tr key={company.id} className="hover:bg-[var(--theme-card-surface)]/50 transition-colors">
-                  <td className="py-2.5 px-3">
+                  <td className="py-1.5 px-2.5">
                     <button
                       type="button"
                       onClick={() => onSelectCompany(company.symbol)}
@@ -290,17 +290,17 @@ export function InvestmentStrategiesView({
                     >
                       {company.symbol}
                     </button>
-                    <div className="text-[10px] text-[var(--theme-card-text-muted)] truncate max-w-[140px]">
+                    <div className="text-[10px] text-[var(--theme-card-text-muted)] truncate max-w-[130px]">
                       {company.name}
                     </div>
                   </td>
-                  <td className="py-2.5 px-3 font-semibold">₹{company.currentPrice.toFixed(2)}</td>
-                  <td className="py-2.5 px-3 text-[var(--theme-card-text-muted)]">
+                  <td className="py-1.5 px-2.5 font-semibold">₹{company.currentPrice.toFixed(2)}</td>
+                  <td className="py-1.5 px-2.5 text-[var(--theme-card-text-muted)]">
                     ₹{company.marketCap.toLocaleString()} Cr
                   </td>
-                  <td className="py-2.5 px-3">
+                  <td className="py-1.5 px-2.5">
                     <span
-                      className={`px-2 py-0.5 rounded text-[10.5px] font-bold ${
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         ev.qualifies
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                           : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
@@ -309,21 +309,21 @@ export function InvestmentStrategiesView({
                       {ev.qualifies ? '✓ Qualified' : 'Partial'}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 font-black text-emerald-400">{ev.score}%</td>
-                  <td className="py-2.5 px-3">{company.pe ? company.pe.toFixed(1) : '-'}</td>
-                  <td className="py-2.5 px-3">{company.pb ? company.pb.toFixed(2) : '-'}</td>
-                  <td className="py-2.5 px-3 font-semibold text-emerald-300">
+                  <td className="py-1.5 px-2.5 font-black text-emerald-400">{ev.score}%</td>
+                  <td className="py-1.5 px-2.5">{company.pe ? company.pe.toFixed(1) : '-'}</td>
+                  <td className="py-1.5 px-2.5">{company.pb ? company.pb.toFixed(2) : '-'}</td>
+                  <td className="py-1.5 px-2.5 font-semibold text-emerald-300">
                     {company.roe ? `${company.roe.toFixed(1)}%` : '-'}
                   </td>
-                  <td className="py-2.5 px-3 font-semibold text-emerald-300">
+                  <td className="py-1.5 px-2.5 font-semibold text-emerald-300">
                     {company.roce ? `${company.roce.toFixed(1)}%` : '-'}
                   </td>
-                  <td className="py-2.5 px-3">{company.debtToEquity ? company.debtToEquity.toFixed(2) : '-'}</td>
-                  <td className="py-2.5 px-3 text-right">
+                  <td className="py-1.5 px-2.5">{company.debtToEquity ? company.debtToEquity.toFixed(2) : '-'}</td>
+                  <td className="py-1.5 px-2.5 text-right">
                     <button
                       type="button"
                       onClick={() => onSelectCompany(company.symbol)}
-                      className="px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500 hover:text-slate-950 font-bold transition-colors text-[11px] cursor-pointer"
+                      className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500 hover:text-slate-950 font-bold transition-colors text-[10.5px] cursor-pointer"
                     >
                       Analyze
                     </button>

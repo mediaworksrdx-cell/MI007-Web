@@ -421,76 +421,76 @@ export function PeerComparisonView({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left mono text-[12.5px]">
+          <table className="w-full border-collapse text-left mono text-[12px]">
             <thead>
-              <tr className="border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60 text-[var(--theme-card-text-muted)] text-[11px] font-black uppercase tracking-wider">
+              <tr className="border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60 text-[var(--theme-card-text-muted)] text-[10.5px] font-black uppercase tracking-wider">
                 <th
                   onClick={() => handleSort('sno')}
-                  className="py-3 px-3 text-center cursor-pointer hover:text-emerald-400 select-none w-14"
+                  className="py-2 px-2 text-center cursor-pointer hover:text-emerald-400 select-none w-10"
                 >
-                  S.No
+                  No
                 </th>
                 <th
                   onClick={() => handleSort('symbol')}
-                  className="py-3 px-4 cursor-pointer hover:text-emerald-400 select-none min-w-[200px]"
+                  className="py-2 px-2.5 cursor-pointer hover:text-emerald-400 select-none min-w-[170px]"
                 >
                   Company {sortField === 'symbol' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
                 <th
                   onClick={() => handleSort('currentPrice')}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
+                  className="py-2 px-2.5 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
                 >
-                  CMP Rs {sortField === 'currentPrice' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  Price {sortField === 'currentPrice' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
                 <th
                   onClick={() => handleSort('pe')}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
+                  className="py-2 px-2.5 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
                 >
                   P/E {sortField === 'pe' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
                 <th
                   onClick={() => handleSort('marketCap')}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
+                  className="py-2 px-2.5 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
                 >
-                  Market Cap Rs. Cr {sortField === 'marketCap' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  Market Cap {sortField === 'marketCap' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
                 <th
                   onClick={() => handleSort('dividendYield')}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
+                  className="py-2 px-2.5 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
                 >
-                  Div Yld% {sortField === 'dividendYield' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  Div Yield {sortField === 'dividendYield' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
                 <th
                   onClick={() => handleSort('netProfit')}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
+                  className="py-2 px-2.5 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
                 >
-                  NP Qtr Rs {sortField === 'netProfit' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  NP Qtr {sortField === 'netProfit' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
                 <th
                   onClick={() => handleSort('qtrProfitGrowthYoY')}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
+                  className="py-2 px-2.5 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
                 >
-                  Qtr Profit Var% {sortField === 'qtrProfitGrowthYoY' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  Profit % {sortField === 'qtrProfitGrowthYoY' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
                 <th
                   onClick={() => handleSort('sales')}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
+                  className="py-2 px-2.5 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
                 >
-                  Sales Qtr Rs {sortField === 'sales' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  Sales Qtr {sortField === 'sales' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
                 <th
                   onClick={() => handleSort('qtrSalesGrowthYoY')}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
+                  className="py-2 px-2.5 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
                 >
-                  Qtr Sales Var% {sortField === 'qtrSalesGrowthYoY' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  Sales % {sortField === 'qtrSalesGrowthYoY' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
                 <th
                   onClick={() => handleSort('roce')}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
+                  className="py-2 px-2.5 text-right cursor-pointer hover:text-emerald-400 select-none whitespace-nowrap"
                 >
-                  ROCE% {sortField === 'roce' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  ROCE {sortField === 'roce' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </th>
-                <th className="py-3 px-3 text-center whitespace-nowrap">Actions</th>
+                <th className="py-2 px-2.5 text-center whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--theme-card-border)]/40 tabular-nums">
@@ -520,63 +520,63 @@ export function PeerComparisonView({
                           : 'hover:bg-emerald-500/5'
                       }`}
                     >
-                      <td className="py-3 px-3 text-center font-bold text-[var(--theme-card-text-muted)]">
+                      <td className="py-1.5 px-2 text-center font-bold text-[var(--theme-card-text-muted)]">
                         {index + 1}
                       </td>
-                      <td className="py-3 px-4 font-bold">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[13.5px] text-[var(--theme-card-text)] hover:text-emerald-400 transition-colors">
+                      <td className="py-1.5 px-2.5 font-bold">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[12.5px] text-[var(--theme-card-text)] hover:text-emerald-400 transition-colors">
                             {c.name}
                           </span>
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] text-emerald-400">
+                          <span className="px-1 py-0.2 rounded text-[9.5px] font-black bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] text-emerald-400">
                             {c.symbol}
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-right font-bold text-[var(--theme-card-text)] whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-right font-bold text-[var(--theme-card-text)] whitespace-nowrap">
                         ₹{cmp.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="py-3 px-3 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
                         {c.pe ? c.pe.toFixed(2) : '—'}
                       </td>
-                      <td className="py-3 px-3 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
                         {c.marketCap ? c.marketCap.toLocaleString('en-IN') : '—'}
                       </td>
-                      <td className="py-3 px-3 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
                         {c.dividendYield != null ? `${c.dividendYield.toFixed(2)}%` : '—'}
                       </td>
-                      <td className="py-3 px-3 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
                         {npQtr ? npQtr.toLocaleString('en-IN') : '—'}
                       </td>
                       <td
-                        className={`py-3 px-3 text-right font-bold whitespace-nowrap ${
+                        className={`py-1.5 px-2.5 text-right font-bold whitespace-nowrap ${
                           profitVar >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
                         }`}
                       >
                         {profitVar >= 0 ? `+${profitVar.toFixed(2)}%` : `${profitVar.toFixed(2)}%`}
                       </td>
-                      <td className="py-3 px-3 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
                         {salesQtr ? salesQtr.toLocaleString('en-IN') : '—'}
                       </td>
                       <td
-                        className={`py-3 px-3 text-right font-bold whitespace-nowrap ${
+                        className={`py-1.5 px-2.5 text-right font-bold whitespace-nowrap ${
                           salesVar >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
                         }`}
                       >
                         {salesVar >= 0 ? `+${salesVar.toFixed(2)}%` : `${salesVar.toFixed(2)}%`}
                       </td>
-                      <td className="py-3 px-3 text-right font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 text-right font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                         {c.roce != null ? `${c.roce.toFixed(2)}%` : '—'}
                       </td>
-                      <td className="py-3 px-3 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
+                      <td className="py-1.5 px-2.5 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               onSelectCompany(c.symbol);
                             }}
-                            className="px-2.5 py-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 font-black text-[11px] transition-colors cursor-pointer"
+                            className="px-2 py-0.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 font-black text-[10.5px] transition-colors cursor-pointer"
                             title="Open detailed Company Analysis"
                           >
                             Analyze
@@ -584,7 +584,7 @@ export function PeerComparisonView({
                           <Link
                             href={`/chart/${c.symbol}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="px-2.5 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-cyan-400 hover:border-cyan-500/50 font-black text-[11px] transition-colors"
+                            className="px-2 py-0.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-cyan-400 hover:border-cyan-500/50 font-black text-[10.5px] transition-colors"
                             title="Open Technical Chart"
                           >
                             Chart

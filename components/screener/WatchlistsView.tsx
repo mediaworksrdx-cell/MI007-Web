@@ -461,17 +461,17 @@ export function WatchlistsView({
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left mono text-[13px]">
             <thead>
-              <tr className="border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] text-[11px] font-black uppercase">
-                <th className="py-3 px-4">Company</th>
-                <th className="py-3 px-4 text-right">Current Price</th>
-                <th className="py-3 px-4 text-right">Today</th>
-                <th className="py-3 px-4 text-right">P/E</th>
-                <th className="py-3 px-4 text-right">ROCE %</th>
-                <th className="py-3 px-4 text-right">ROE %</th>
-                <th className="py-3 px-4 text-right">3Y Sales CAGR</th>
-                <th className="py-3 px-4 text-right">Debt / Eq</th>
-                <th className="py-3 px-4 text-right">Div Yield</th>
-                <th className="py-3 px-4 text-center">Actions</th>
+              <tr className="border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] text-[10.5px] font-black uppercase">
+                <th className="py-2 px-2.5">Company</th>
+                <th className="py-2 px-2.5 text-right">Price</th>
+                <th className="py-2 px-2.5 text-right">Change</th>
+                <th className="py-2 px-2.5 text-right">P/E</th>
+                <th className="py-2 px-2.5 text-right">ROCE</th>
+                <th className="py-2 px-2.5 text-right">ROE</th>
+                <th className="py-2 px-2.5 text-right">Sales 3Y</th>
+                <th className="py-2 px-2.5 text-right">D/E</th>
+                <th className="py-2 px-2.5 text-right">Div Yield</th>
+                <th className="py-2 px-2.5 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--theme-card-border)]/50 tabular-nums">
@@ -499,12 +499,12 @@ export function WatchlistsView({
 
                   return (
                     <tr key={comp.id || comp.symbol} className="hover:bg-emerald-500/5 transition-colors group">
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="py-2 px-2.5 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => onSelectCompany(comp.symbol)}
-                            className="font-black text-[13.5px] text-[var(--theme-card-text)] group-hover:text-emerald-400 hover:underline transition-colors text-left flex items-center gap-1.5 cursor-pointer"
+                            className="font-black text-[13px] text-[var(--theme-card-text)] group-hover:text-emerald-400 hover:underline transition-colors text-left flex items-center gap-1.5 cursor-pointer"
                           >
                             <span>{comp.symbol}</span>
                             {live && (
@@ -520,45 +520,45 @@ export function WatchlistsView({
                               />
                             )}
                           </button>
-                          <span className="text-[12px] text-[var(--theme-card-text-muted)] font-bold">
+                          <span className="text-[11px] text-[var(--theme-card-text-muted)] font-bold truncate max-w-[120px]">
                             {comp.name}
                           </span>
                         </div>
                       </td>
 
-                      <td className="py-3 px-4 text-right font-black text-[var(--theme-card-text)]">
+                      <td className="py-2 px-2.5 text-right font-black text-[var(--theme-card-text)]">
                         {comp.currencySymbol}{currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
 
-                      <td className={`py-3 px-4 text-right font-bold ${priceChangePct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+                      <td className={`py-2 px-2.5 text-right font-bold ${priceChangePct >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
                         {priceChangePct >= 0 ? '+' : ''}{priceChangePct.toFixed(2)}%
                       </td>
 
-                      <td className="py-3 px-4 text-right font-medium text-[var(--theme-card-text)]">
+                      <td className="py-2 px-2.5 text-right font-medium text-[var(--theme-card-text)]">
                         {pe ? `${pe.toFixed(1)}x` : '—'}
                       </td>
 
-                      <td className="py-3 px-4 text-right font-bold text-emerald-700 dark:text-emerald-400">
+                      <td className="py-2 px-2.5 text-right font-bold text-emerald-700 dark:text-emerald-400">
                         {comp.roce ? `${comp.roce.toFixed(1)}%` : '—'}
                       </td>
 
-                      <td className="py-3 px-4 text-right font-bold text-[var(--theme-card-text)]">
+                      <td className="py-2 px-2.5 text-right font-bold text-[var(--theme-card-text)]">
                         {comp.roe ? `${comp.roe.toFixed(1)}%` : '—'}
                       </td>
 
-                      <td className="py-3 px-4 text-right font-medium text-[var(--theme-card-text)]">
+                      <td className="py-2 px-2.5 text-right font-medium text-[var(--theme-card-text)]">
                         {comp.salesGrowth3Y ? `${comp.salesGrowth3Y.toFixed(1)}%` : '—'}
                       </td>
 
-                      <td className="py-3 px-4 text-right font-medium text-[var(--theme-card-text)]">
+                      <td className="py-2 px-2.5 text-right font-medium text-[var(--theme-card-text)]">
                         {comp.debtToEquity !== null && comp.debtToEquity !== undefined && comp.debtToEquity > 0 ? `${comp.debtToEquity.toFixed(2)}x` : '—'}
                       </td>
 
-                      <td className="py-3 px-4 text-right font-medium text-[var(--theme-card-text)]">
+                      <td className="py-2 px-2.5 text-right font-medium text-[var(--theme-card-text)]">
                         {comp.dividendYield ? `${comp.dividendYield.toFixed(2)}%` : '—'}
                       </td>
 
-                      <td className="py-3 px-4 whitespace-nowrap text-center">
+                      <td className="py-2 px-2.5 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             type="button"

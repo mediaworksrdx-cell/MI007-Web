@@ -365,12 +365,12 @@ export function ResultsTable({
           {/* Sticky Header */}
           <thead className="sticky top-0 z-20 bg-[var(--theme-card-surface)] border-b border-[var(--theme-card-border)] shadow-xs">
             <tr>
-              <th className="px-3.5 py-3 mono text-[11px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider whitespace-nowrap sticky left-0 z-30 bg-[var(--theme-card-surface)] border-r border-[var(--theme-card-border)]">
-                Company & Symbol
+              <th className="px-2.5 py-2 mono text-[10.5px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider whitespace-nowrap sticky left-0 z-30 bg-[var(--theme-card-surface)] border-r border-[var(--theme-card-border)]">
+                Company
               </th>
 
-              <th className="px-3 py-3 mono text-[11px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider text-center whitespace-nowrap">
-                Trend (1Y)
+              <th className="px-2 py-2 mono text-[10.5px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider text-center whitespace-nowrap">
+                1Y Trend
               </th>
 
               {columns.map((colKey) => {
@@ -380,7 +380,7 @@ export function ResultsTable({
                   <th
                     key={colKey}
                     onClick={() => onSort(colKey)}
-                    className="px-3 py-3 mono text-[11px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider whitespace-nowrap cursor-pointer hover:text-emerald-400 transition-colors text-right select-none"
+                    className="px-2 py-2 mono text-[10.5px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider whitespace-nowrap cursor-pointer hover:text-emerald-400 transition-colors text-right select-none"
                   >
                     <div className="flex items-center justify-end gap-1">
                       <span>{def?.label || colKey}</span>
@@ -394,8 +394,8 @@ export function ResultsTable({
                 );
               })}
 
-              <th className="px-3 py-3 mono text-[11px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider text-center whitespace-nowrap">
-                Actions
+              <th className="px-2 py-2 mono text-[10.5px] font-black text-[var(--theme-card-text-muted)] uppercase tracking-wider text-center whitespace-nowrap">
+                Action
               </th>
             </tr>
           </thead>
@@ -425,12 +425,12 @@ export function ResultsTable({
                     className="hover:bg-emerald-500/5 transition-colors group"
                   >
                     {/* Fixed Left Company Cell */}
-                    <td className="px-3.5 py-2.5 whitespace-nowrap sticky left-0 z-10 bg-[var(--theme-card-bg)] group-hover:bg-[var(--theme-card-surface)] border-r border-[var(--theme-card-border)] transition-colors">
+                    <td className="px-2.5 py-1.5 whitespace-nowrap sticky left-0 z-10 bg-[var(--theme-card-bg)] group-hover:bg-[var(--theme-card-surface)] border-r border-[var(--theme-card-border)] transition-colors">
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => onSelectCompany(comp.symbol)}
-                          className="font-black text-[13.5px] text-[var(--theme-card-text)] group-hover:text-emerald-400 transition-colors hover:underline text-left flex items-center gap-1.5"
+                          className="font-black text-[13px] text-[var(--theme-card-text)] group-hover:text-emerald-400 transition-colors hover:underline text-left flex items-center gap-1.5"
                         >
                           <span>{comp.symbol}</span>
                           {(comp as any).isLiveTick && (
@@ -446,14 +446,14 @@ export function ResultsTable({
                             />
                           )}
                         </button>
-                        <span className="text-[11px] text-[var(--theme-card-text-muted)] font-bold truncate max-w-[130px] sm:max-w-[180px]">
+                        <span className="text-[10.5px] text-[var(--theme-card-text-muted)] font-bold truncate max-w-[120px] sm:max-w-[150px]">
                           {comp.name}
                         </span>
                       </div>
                     </td>
 
                     {/* Mini Sparkline Column */}
-                    <td className="px-3 py-2.5 whitespace-nowrap text-center">
+                    <td className="px-2 py-1.5 whitespace-nowrap text-center">
                       <MiniSparkline symbol={comp.symbol} changePct={comp.priceChangePct} />
                     </td>
 
@@ -466,7 +466,7 @@ export function ResultsTable({
                       // Specialized in-cell widget: 52-Week Range Bar
                       if (colKey === 'high52W') {
                         return (
-                          <td key={colKey} className="px-3 py-1.5 whitespace-nowrap text-right">
+                          <td key={colKey} className="px-2 py-1 whitespace-nowrap text-right">
                             <div className="flex justify-end">
                               <Range52WBar
                                 current={comp.currentPrice}
@@ -488,9 +488,9 @@ export function ResultsTable({
                           ? 'border-amber-500/50 bg-amber-500/15 text-amber-400'
                           : 'border-rose-500/50 bg-rose-500/15 text-rose-400';
                         return (
-                          <td key={colKey} className="px-3 py-2.5 whitespace-nowrap text-right">
-                            <span className={`px-2 py-0.5 rounded-full border text-[11px] font-black mono ${badgeColor}`}>
-                              {score}/9 {score >= 8 ? 'Strong' : score >= 5 ? 'Average' : 'Weak'}
+                          <td key={colKey} className="px-2 py-1.5 whitespace-nowrap text-right">
+                            <span className={`px-1.5 py-0.5 rounded-full border text-[10.5px] font-black mono ${badgeColor}`}>
+                              {score}/9 {score >= 8 ? 'Strong' : score >= 5 ? 'Avg' : 'Weak'}
                             </span>
                           </td>
                         );
@@ -505,8 +505,8 @@ export function ResultsTable({
                           ? { label: 'Grey', color: 'border-amber-500/50 bg-amber-500/15 text-amber-400' }
                           : { label: 'Distress', color: 'border-rose-500/50 bg-rose-500/15 text-rose-400' };
                         return (
-                          <td key={colKey} className="px-3 py-2.5 whitespace-nowrap text-right">
-                            <span className={`px-2 py-0.5 rounded-full border text-[11px] font-black mono ${zZone.color}`}>
+                          <td key={colKey} className="px-2 py-1.5 whitespace-nowrap text-right">
+                            <span className={`px-1.5 py-0.5 rounded-full border text-[10.5px] font-black mono ${zZone.color}`}>
                               {z.toFixed(2)} · {zZone.label}
                             </span>
                           </td>
@@ -522,9 +522,9 @@ export function ResultsTable({
                           ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
                           : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
                         return (
-                          <td key={colKey} className="px-3 py-2.5 whitespace-nowrap text-right">
-                            <span className={`px-2 py-0.5 rounded border text-[11px] font-black mono ${rsiClass}`}>
-                              {rsi.toFixed(1)} {rsi >= 70 ? 'Overbought' : rsi <= 30 ? 'Oversold' : ''}
+                          <td key={colKey} className="px-2 py-1.5 whitespace-nowrap text-right">
+                            <span className={`px-1.5 py-0.5 rounded border text-[10.5px] font-black mono ${rsiClass}`}>
+                              {rsi.toFixed(1)} {rsi >= 70 ? 'OB' : rsi <= 30 ? 'OS' : ''}
                             </span>
                           </td>
                         );
@@ -547,7 +547,7 @@ export function ResultsTable({
                       return (
                         <td
                           key={colKey}
-                          className={`px-3 py-2.5 whitespace-nowrap text-right font-medium tabular-nums transition-colors duration-200 ${colorClass}`}
+                          className={`px-2 py-1.5 whitespace-nowrap text-right font-medium tabular-nums transition-colors duration-200 ${colorClass}`}
                         >
                           {formatted}
                         </td>
@@ -555,7 +555,7 @@ export function ResultsTable({
                     })}
 
                     {/* Actions Column */}
-                    <td className="px-3 py-2.5 whitespace-nowrap text-center">
+                    <td className="px-2 py-1.5 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         {/* Open Analysis Button */}
                         <button
