@@ -84,9 +84,9 @@ const TOKEN_EXPLANATIONS: Record<string, TokenDetail> = {
     title: 'Proprietary Quantitative Neural Momentum Score',
     category: 'QUANTITATIVE AI & ARBITRAGE',
     categoryColor: 'text-emerald-200 border-emerald-500/60 bg-emerald-950/80',
-    description: 'Deep neural tensor processing 40+ sub-second features including tape velocity, order book shape, gamma exposure, and cross-asset beta. Outputs a real-time probabilistic conviction index for multi-timeframe directional price delivery.',
+    description: 'Deep neural engine processing 40+ sub-second features including tape velocity, order book shape, gamma exposure, and cross-asset beta. Outputs a real-time probabilistic conviction index for multi-timeframe directional price delivery.',
     signal: 'High-confidence bullish vector: 94.2% institutional conviction score.',
-    formulaOrRule: 'Tensor Output: Probability(Upmove_30m > 1.2σ) > 0.85 across 40+ L2/L3 Inputs',
+    formulaOrRule: 'Model Output: Probability(Upmove_30m > 1.2σ) > 0.85 across 40+ L2/L3 Inputs',
   },
   'SMT DIVERGE': {
     title: 'Smart Money Divergence (Inter-Market SMT)',

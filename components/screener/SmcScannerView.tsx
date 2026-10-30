@@ -146,24 +146,33 @@ export function SmcScannerView({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
-  const { getSymbolPrice } = useTradeEngine();
+  const { getSymbolPrice, requestQuoteFetch } = useTradeEngine();
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
   }, [selectedSetupType, directionFilter, statusFilter, timeframe, searchQuery, oneSetupPerSymbol]);
 
-  // Universe selection: top 75 market cap stocks plus query matches
+  // Universe selection: top institutional equities (filtered of junk debt/bonds/SGBs) plus query matches
   const targetUniverse = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    let baseList = companies;
-    if (companies.length > 75) {
-      const sorted = [...companies].sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0));
+    const cleanEquities = companies.filter((c) => {
+      const sym = c.symbol.toUpperCase();
+      if (/^[0-9]/.test(sym)) return false;
+      if (/-(BE|BZ|ST|SM|SF|SG|YI|YL|E1|NA|NB|NC|ND|NE|NF|NG|NH|NI|RR|IV|SZ)$/.test(sym)) return false;
+      if (!c.name || c.name.trim() === '') return false;
+      if (/\b(BOND|DEBENTURE|SGB|G-SEC|GOVT)\b/i.test(c.name)) return false;
+      return true;
+    });
+
+    let baseList = cleanEquities;
+    if (cleanEquities.length > 75) {
+      const sorted = [...cleanEquities].sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0));
       baseList = sorted.slice(0, 75);
     }
     if (!q) return baseList;
 
-    const matched = companies.filter(
+    const matched = cleanEquities.filter(
       (c) => c.symbol.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)
     ).slice(0, 30);
 
@@ -189,11 +198,13 @@ export function SmcScannerView({
       let items = cache.get(cacheKey);
       if (!items) {
         items = [];
+        const high52W = (comp.high52W && comp.high52W > price * 1.03) ? comp.high52W : price * 1.25;
+        const low52W = (comp.low52W && comp.low52W < price * 0.97) ? comp.low52W : price * 0.75;
         const candles: Candle[] = getVerifiedHistoricalCandles(
           comp.symbol,
           price,
-          comp.high52W || price * 1.25,
-          comp.low52W || price * 0.75,
+          high52W,
+          low52W,
           comp.volume || 2000000,
           market,
           180

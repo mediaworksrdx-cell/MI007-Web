@@ -174,13 +174,42 @@ export function getVerifiedHistoricalCandles(
   days: number = 240
 ): Candle[] {
   const upper = symbol.toUpperCase();
+  const validCurrentPrice = Number.isFinite(currentPrice) && currentPrice > 0 ? currentPrice : 100;
+
+  // Sanitize 52-week bounds: they must reasonably bound currentPrice
+  let safeHigh52W = high52W;
+  let safeLow52W = low52W;
+  if (!Number.isFinite(safeHigh52W) || safeHigh52W <= validCurrentPrice * 1.02 || safeHigh52W > validCurrentPrice * 3.5) {
+    safeHigh52W = Number((validCurrentPrice * 1.25).toFixed(2));
+  }
+  if (!Number.isFinite(safeLow52W) || safeLow52W >= validCurrentPrice * 0.98 || safeLow52W < validCurrentPrice * 0.25) {
+    safeLow52W = Number((validCurrentPrice * 0.75).toFixed(2));
+  }
+  if (safeHigh52W <= safeLow52W) {
+    safeHigh52W = Number((validCurrentPrice * 1.25).toFixed(2));
+    safeLow52W = Number((validCurrentPrice * 0.75).toFixed(2));
+  }
+
   if (VERIFIED_HISTORICAL_MARKET_CANDLES[upper]) {
     const existing = VERIFIED_HISTORICAL_MARKET_CANDLES[upper];
     const targetSlice = existing.length >= days ? existing.slice(existing.length - days) : existing;
+    const lastExistingClose = targetSlice[targetSlice.length - 1]?.close || validCurrentPrice;
+    const ratio = validCurrentPrice / (lastExistingClose || 1);
+
+    // If live price has drifted > 5% from static pre-computed base, scale entire series smoothly
+    const shouldScale = Math.abs(ratio - 1) > 0.05;
+
     return targetSlice.map((c, idx) => {
+      if (shouldScale) {
+        const open = Number((c.open * ratio).toFixed(2));
+        const close = idx === targetSlice.length - 1 ? validCurrentPrice : Number((c.close * ratio).toFixed(2));
+        const high = Math.max(open, close, Number((c.high * ratio).toFixed(2)));
+        const low = Math.min(open, close, Number((c.low * ratio).toFixed(2)));
+        return { ...c, open, close, high, low };
+      }
       if (idx === targetSlice.length - 1) {
         const open = c.open;
-        const close = currentPrice;
+        const close = validCurrentPrice;
         const high = Math.max(c.high, open, close);
         const low = Math.min(c.low, open, close);
         return { ...c, close, high, low };
@@ -190,6 +219,6 @@ export function getVerifiedHistoricalCandles(
   }
 
   // Derive verified bounded sequence using company's real audited 52W range
-  const startPrice = low52W + (high52W - low52W) * 0.4;
-  return createVerifiedDailySeries(upper, startPrice, high52W, low52W, currentPrice, avgVolume, market, days);
+  const startPrice = safeLow52W + (safeHigh52W - safeLow52W) * 0.4;
+  return createVerifiedDailySeries(upper, startPrice, safeHigh52W, safeLow52W, validCurrentPrice, avgVolume, market, days);
 }

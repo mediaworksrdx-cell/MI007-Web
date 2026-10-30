@@ -64,7 +64,7 @@ export default function HowItWorksSection() {
               </div>
               <div className="text-left sm:text-right">
                 <span className="mono text-[11px] sm:text-[13px] opacity-70 font-black block">BUY DELTA</span>
-                <span className="mono text-[15px] sm:text-[17px] text-emerald-400 font-black">+4.8M TENSORS</span>
+                <span className="mono text-[15px] sm:text-[17px] text-emerald-400 font-black">+4.8M</span>
               </div>
             </div>
 
@@ -137,7 +137,7 @@ export default function HowItWorksSection() {
               </div>
               <div className="text-left sm:text-right">
                 <span className="mono text-[11px] sm:text-[13px] opacity-70 font-black block">SELL DELTA</span>
-                <span className="mono text-[15px] sm:text-[17px] text-rose-400 font-black">-3.9M TENSORS</span>
+                <span className="mono text-[15px] sm:text-[17px] text-rose-400 font-black">-3.9M</span>
               </div>
             </div>
 

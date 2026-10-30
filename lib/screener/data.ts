@@ -3713,6 +3713,12 @@ export function buildIndiaUniverse(): CompanyFundamental[] {
     // Exclude indices and volatility gauges from equity screener
     if (item.sector && (item.sector.includes('Index') || item.sector.includes('Volatility'))) continue;
 
+    // Filter out non-equity debt instruments, bonds, SGBs, illiquid series
+    if (/^[0-9]/.test(sym)) continue; // Starts with digit (e.g. 903SFL28-YI, 865IRFC29-NA, 10IIFL28A-NE)
+    if (/-(BE|BZ|ST|SM|SF|SG|YI|YL|E1|NA|NB|NC|ND|NE|NF|NG|NH|NI|RR|IV|SZ)$/.test(sym)) continue; // Bond / debt series
+    if (!item.name || item.name.trim() === '') continue;
+    if (/\b(BOND|DEBENTURE|SGB|G-SEC|GOVT)\b/i.test(item.name)) continue;
+
     additional.push(generateFundamentalFromZerodha(item));
   }
 

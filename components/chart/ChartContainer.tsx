@@ -15,7 +15,7 @@ import {
   calculateEmaRibbon, calculatePivotPoints, calculateDonchian, calculateHMA, calculateCMF,
 } from '@/lib/chartRenderer';
 import { getMockCandles, getMockQuote } from '@/lib/mockData';
-import { findZerodhaStockBySymbol } from '@/lib/screener/zerodhaStocks';
+import { findZerodhaStockBySymbol, KNOWN_ZERODHA_PRICES } from '@/lib/screener/zerodhaStocks';
 import { fetchCandles, areSymbolsEqual } from '@/lib/tradeEngineClient';
 import { useTradeEngine, useLiveSymbol } from '@/lib/tradeEngineContext';
 import { loadStoredCandles, saveStoredCandles, mergeCandleArrays, purgeStoredCandles } from '@/lib/candleStorage';
@@ -106,6 +106,7 @@ function getExpectedPrice(market: MarketType, symbol: string): number {
 
     const zd = findZerodhaStockBySymbol(symClean);
     if (zd && zd.lastPrice && zd.lastPrice > 0) return zd.lastPrice;
+    if (KNOWN_ZERODHA_PRICES[symClean]) return KNOWN_ZERODHA_PRICES[symClean];
 
     const q = getMockQuote(market, symbol);
     if (q && q.price > 0) return q.price;

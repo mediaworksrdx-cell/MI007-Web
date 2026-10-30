@@ -1504,6 +1504,15 @@ export function detectAll16SmcSetups(
       statusOverride = 'INVALIDATED';
     }
 
+    // 1b. SMC Proximity Invariant: Entry price must be within realistic trading proximity (±5.0%) of the current market close
+    const terminalBar = candles[candles.length - 1];
+    if (terminalBar && terminalBar.close > 0) {
+      const priceDistancePct = Math.abs(entryPrice - terminalBar.close) / terminalBar.close;
+      if (priceDistancePct > 0.05) {
+        statusOverride = 'INVALIDATED';
+      }
+    }
+
     // 2. Strict Directional Risk Ordering Validation & Correction
     // LONG:  stopLoss MUST be strictly below entryPrice
     // SHORT: stopLoss MUST be strictly above entryPrice
@@ -1529,8 +1538,19 @@ export function detectAll16SmcSetups(
         guaranteedTarget = Number((entryPrice - Math.max(risk * 2.5, entryPrice * 0.02)).toFixed(2));
       }
     }
-    const reward = Math.abs(guaranteedTarget - entryPrice);
-    const rr = Number((reward / risk).toFixed(1));
+    let reward = Math.abs(guaranteedTarget - entryPrice);
+
+    // Realistic Institutional R:R Invariant (1:1.5 to 1:5.5 maximum)
+    if (risk > 0) {
+      if (reward / risk > 5.5) {
+        reward = Number((risk * 3.5).toFixed(2));
+        guaranteedTarget = isBull ? Number((entryPrice + reward).toFixed(2)) : Number((entryPrice - reward).toFixed(2));
+      } else if (reward / risk < 1.3) {
+        reward = Number((risk * 1.8).toFixed(2));
+        guaranteedTarget = isBull ? Number((entryPrice + reward).toFixed(2)) : Number((entryPrice - reward).toFixed(2));
+      }
+    }
+    const rr = Number((reward / Math.max(0.01, risk)).toFixed(1));
 
     // 4. Strict Directional TP2 Ordering Validation & Invariant
     // LONG:  TP1 must be nearer than TP2 (entry < TP1 < TP2)
@@ -1674,9 +1694,14 @@ export function detectAll16SmcSetups(
   for (const brk of recentBOS) {
     const isBull = brk.isBullish;
     const entry = brk.price;
-    const sl = isBull ? brk.brokenSwingPrice * 0.995 : brk.brokenSwingPrice * 1.005;
+    const slDist = Math.max(Math.abs(entry - brk.brokenSwingPrice), entry * 0.008);
+    const sl = isBull
+      ? Number((entry - Math.min(slDist, entry * 0.022)).toFixed(2))
+      : Number((entry + Math.min(slDist, entry * 0.022)).toFixed(2));
     const risk = Math.max(Math.abs(entry - sl), entry * 0.005);
-    const tp = isBull ? Math.max(dealingRange.highPrice, entry + risk * 2.5) : Math.min(dealingRange.lowPrice, entry - risk * 2.5);
+    const tp = isBull
+      ? Number((entry + risk * 2.8).toFixed(2))
+      : Number((entry - risk * 2.8).toFixed(2));
     setups.push(makeSetup(
       `setup_bos_${brk.candleIndex}`,
       isBull ? 'BOS Trend Continuation (Bullish)' : 'BOS Trend Continuation (Bearish)',
@@ -1696,9 +1721,14 @@ export function detectAll16SmcSetups(
   for (const brk of recentCHoCH) {
     const isBull = brk.isBullish;
     const entry = brk.price;
-    const sl = isBull ? brk.price * 0.992 : brk.price * 1.008;
+    const slDist = Math.max(Math.abs(entry - brk.brokenSwingPrice), entry * 0.008);
+    const sl = isBull
+      ? Number((entry - Math.min(slDist, entry * 0.022)).toFixed(2))
+      : Number((entry + Math.min(slDist, entry * 0.022)).toFixed(2));
     const risk = Math.max(Math.abs(entry - sl), entry * 0.005);
-    const tp = isBull ? Math.max(dealingRange.highPrice, entry + risk * 2.5) : Math.min(dealingRange.lowPrice, entry - risk * 2.5);
+    const tp = isBull
+      ? Number((entry + risk * 2.6).toFixed(2))
+      : Number((entry - risk * 2.6).toFixed(2));
     setups.push(makeSetup(
       `setup_choch_${brk.candleIndex}`,
       isBull ? `${brk.breakType} Structural Reversal (Bullish)` : `${brk.breakType} Structural Reversal (Bearish)`,
@@ -1718,8 +1748,9 @@ export function detectAll16SmcSetups(
   for (const sw of recentSweeps) {
     const isBull = !sw.isHighSweep; // SSL sweep = Bullish reversal
     const entry = candles[sw.candleIndex]?.close || lastPrice;
-    const sl = isBull ? sw.price * 0.995 : sw.price * 1.005;
-    const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
+    const sl = isBull ? Number((sw.price * 0.994).toFixed(2)) : Number((sw.price * 1.006).toFixed(2));
+    const risk = Math.max(Math.abs(entry - sl), entry * 0.005);
+    const tp = isBull ? Number((entry + risk * 2.5).toFixed(2)) : Number((entry - risk * 2.5).toFixed(2));
     setups.push(makeSetup(
       `setup_sweep_${sw.candleIndex}`,
       isBull ? 'SSL Liquidity Pool Sweep (Bullish)' : 'BSL Liquidity Pool Sweep (Bearish)',
