@@ -295,6 +295,7 @@ export const KNOWN_ZERODHA_PRICES: Record<string, number> = {
   'APOLLOTYRE': 480.00,
   'CEATLTD': 2850.00,
   'JKTYRE': 395.00,
+  ...VERIFIED_PRICE_NUMBERS,
 };
 
 /** Get authentic or deterministic realistic equity price for any Zerodha item */
@@ -646,12 +647,12 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     // Growth
     salesGrowth1Y,
     salesGrowth3Y,
-    salesGrowth5Y: +(salesGrowth3Y * 0.92).toFixed(1),
-    salesGrowth10Y: +(salesGrowth3Y * 0.85).toFixed(1),
+    salesGrowth5Y: cachedFund?.salesGrowth5Y != null ? cachedFund.salesGrowth5Y : +(salesGrowth3Y * 0.92).toFixed(1),
+    salesGrowth10Y: cachedFund?.salesGrowth10Y != null ? cachedFund.salesGrowth10Y : +(salesGrowth3Y * 0.85).toFixed(1),
     profitGrowth1Y,
     profitGrowth3Y,
-    profitGrowth5Y: +(profitGrowth3Y * 0.94).toFixed(1),
-    profitGrowth10Y: +(profitGrowth3Y * 0.88).toFixed(1),
+    profitGrowth5Y: cachedFund?.profitGrowth5Y != null ? cachedFund.profitGrowth5Y : +(profitGrowth3Y * 0.94).toFixed(1),
+    profitGrowth10Y: cachedFund?.profitGrowth10Y != null ? cachedFund.profitGrowth10Y : +(profitGrowth3Y * 0.88).toFixed(1),
     epsGrowth: profitGrowth1Y,
     ebitdaGrowth: +(profitGrowth1Y * 0.95).toFixed(1),
     qtrSalesGrowthYoY: salesGrowth1Y,
