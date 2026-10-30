@@ -36,6 +36,7 @@ interface ScannedSmcItem {
   equilibrium: number;
   dealingRangeHigh: number;
   dealingRangeLow: number;
+  totalSymbolSetups?: number;
 }
 
 const SETUP_TYPE_LABELS: Record<SmcSetupType, { label: string; badgeClass: string }> = {
@@ -105,6 +106,28 @@ const SETUP_TYPE_LABELS: Record<SmcSetupType, { label: string; badgeClass: strin
   },
 };
 
+// Priority helper for ranking active setups over dead/invalidated ones
+function getStatusPriority(status: string): number {
+  switch (status) {
+    case 'RETESTING':
+      return 5;
+    case 'ENTRY_ZONE_REACHED':
+      return 4;
+    case 'CONFIRMED':
+      return 3;
+    case 'FORMING':
+    case 'PENDING':
+    case 'DETECTED':
+      return 2;
+    case 'TARGET_HIT':
+      return 1;
+    case 'INVALIDATED':
+    case 'EXPIRED':
+    default:
+      return 0;
+  }
+}
+
 // SMC scan cache (module-scoped: results are a pure function of the cache key)
 const SMC_SCAN_CACHE = new Map<string, ScannedSmcItem[]>();
 
@@ -116,7 +139,8 @@ export function SmcScannerView({
 }: SmcScannerViewProps) {
   const [selectedSetupType, setSelectedSetupType] = useState<SmcSetupType | 'ALL'>('ALL');
   const [directionFilter, setDirectionFilter] = useState<'ALL' | 'BULLISH' | 'BEARISH'>('ALL');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'CONFIRMED' | 'RETESTING'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ACTIVE' | 'CONFIRMED' | 'RETESTING' | 'ALL'>('ACTIVE');
+  const [oneSetupPerSymbol, setOneSetupPerSymbol] = useState(true);
   const [timeframe, setTimeframe] = useState<'15m' | '1H' | '4H' | '1D'>('1H');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -127,7 +151,7 @@ export function SmcScannerView({
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [selectedSetupType, directionFilter, statusFilter, timeframe, searchQuery]);
+  }, [selectedSetupType, directionFilter, statusFilter, timeframe, searchQuery, oneSetupPerSymbol]);
 
   // Universe selection: top 75 market cap stocks plus query matches
   const targetUniverse = useMemo(() => {
@@ -205,7 +229,7 @@ export function SmcScannerView({
     return list;
   }, [targetUniverse, timeframe, market, getSymbolPrice]);
 
-  // Filtered setups
+  // Filtered setups based on setup type, direction, status, search query
   const filteredResults = useMemo(() => {
     return scanResults.filter((item) => {
       if (selectedSetupType !== 'ALL' && item.setup.setupType !== selectedSetupType) {
@@ -214,7 +238,13 @@ export function SmcScannerView({
       if (directionFilter !== 'ALL' && item.setup.direction !== directionFilter) {
         return false;
       }
-      if (statusFilter !== 'ALL' && item.setup.status !== statusFilter) {
+      if (statusFilter === 'ACTIVE') {
+        const st = item.setup.status;
+        // Active actionable setups only
+        if (st !== 'CONFIRMED' && st !== 'RETESTING' && st !== 'ENTRY_ZONE_REACHED') {
+          return false;
+        }
+      } else if (statusFilter !== 'ALL' && item.setup.status !== statusFilter) {
         return false;
       }
       if (searchQuery.trim()) {
@@ -225,22 +255,74 @@ export function SmcScannerView({
     });
   }, [scanResults, selectedSetupType, directionFilter, statusFilter, searchQuery]);
 
+  // Deduplicate per symbol when oneSetupPerSymbol is true (selects highest-conviction setup)
+  const displayedResults = useMemo(() => {
+    if (!oneSetupPerSymbol) {
+      // Return all matching setups sorted by priority & recency
+      return [...filteredResults].sort((a, b) => {
+        const priorityDiff = getStatusPriority(b.setup.status) - getStatusPriority(a.setup.status);
+        if (priorityDiff !== 0) return priorityDiff;
+        const rrDiff = b.setup.riskReward - a.setup.riskReward;
+        if (Math.abs(rrDiff) > 0.01) return rrDiff;
+        return (b.setup.candleIndex || 0) - (a.setup.candleIndex || 0);
+      });
+    }
+
+    // Group by symbol to guarantee each instrument appears exactly once
+    const symbolGroups = new Map<string, ScannedSmcItem[]>();
+    for (const item of filteredResults) {
+      const existing = symbolGroups.get(item.symbol);
+      if (!existing) {
+        symbolGroups.set(item.symbol, [item]);
+      } else {
+        existing.push(item);
+      }
+    }
+
+    const deduplicated: ScannedSmcItem[] = [];
+    symbolGroups.forEach((items) => {
+      // Find the highest conviction setup for this symbol
+      const sorted = [...items].sort((a, b) => {
+        const priorityDiff = getStatusPriority(b.setup.status) - getStatusPriority(a.setup.status);
+        if (priorityDiff !== 0) return priorityDiff;
+        const rrDiff = b.setup.riskReward - a.setup.riskReward;
+        if (Math.abs(rrDiff) > 0.01) return rrDiff;
+        return (b.setup.candleIndex || 0) - (a.setup.candleIndex || 0);
+      });
+
+      deduplicated.push({
+        ...sorted[0],
+        totalSymbolSetups: items.length,
+      });
+    });
+
+    // Sort deduplicated instruments by priority and recency
+    return deduplicated.sort((a, b) => {
+      const priorityDiff = getStatusPriority(b.setup.status) - getStatusPriority(a.setup.status);
+      if (priorityDiff !== 0) return priorityDiff;
+      const rrDiff = b.setup.riskReward - a.setup.riskReward;
+      if (Math.abs(rrDiff) > 0.01) return rrDiff;
+      return (b.setup.candleIndex || 0) - (a.setup.candleIndex || 0);
+    });
+  }, [filteredResults, oneSetupPerSymbol]);
+
   // Aggregate stats
   const stats = useMemo(() => {
-    const total = filteredResults.length;
+    const totalSetups = filteredResults.length;
+    const uniqueStocks = new Set(filteredResults.map((r) => r.symbol)).size;
     const bullish = filteredResults.filter((r) => r.setup.direction === 'BULLISH').length;
     const bearish = filteredResults.filter((r) => r.setup.direction === 'BEARISH').length;
     const retests = filteredResults.filter((r) => r.setup.status === 'RETESTING').length;
     const highRr = filteredResults.filter((r) => r.setup.riskReward >= 2.5).length;
-    return { total, bullish, bearish, retests, highRr };
+    return { totalSetups, uniqueStocks, bullish, bearish, retests, highRr };
   }, [filteredResults]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredResults.length / pageSize) || 1;
+  const totalPages = Math.ceil(displayedResults.length / pageSize) || 1;
   const paginatedResults = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return filteredResults.slice(start, start + pageSize);
-  }, [filteredResults, page, pageSize]);
+    return displayedResults.slice(start, start + pageSize);
+  }, [displayedResults, page, pageSize]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -272,14 +354,19 @@ export function SmcScannerView({
           </div>
         </div>
 
-        {/* 4 Stat KPI Metric Badges */}
+        {/* 5 Stat KPI Metric Badges */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
           <div className="p-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
             <div className="text-[10px] font-bold text-[var(--theme-card-text-muted)] uppercase tracking-wider">
-              Setups Found
+              {oneSetupPerSymbol ? 'Stocks Found' : 'Setups Found'}
             </div>
-            <div className="text-lg font-black font-mono text-[var(--theme-card-text)]">
-              {stats.total}
+            <div className="text-lg font-black font-mono text-[var(--theme-card-text)] flex items-baseline gap-1">
+              <span>{displayedResults.length}</span>
+              {oneSetupPerSymbol && stats.totalSetups > displayedResults.length && (
+                <span className="text-[10.5px] font-medium text-[var(--theme-card-text-muted)]">
+                  ({stats.totalSetups} setups)
+                </span>
+              )}
             </div>
           </div>
           <div className="p-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]">
@@ -368,10 +455,26 @@ export function SmcScannerView({
             onChange={(e) => setStatusFilter(e.target.value as any)}
             className="h-8 px-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] font-semibold focus:outline-none focus:border-amber-500"
           >
-            <option value="ALL">All Statuses</option>
-            <option value="CONFIRMED">Confirmed Break</option>
-            <option value="RETESTING">Active Retest</option>
+            <option value="ACTIVE">⚡ Active Setups Only</option>
+            <option value="CONFIRMED">Confirmed Breakout Only</option>
+            <option value="RETESTING">Active Retest Only</option>
+            <option value="ALL">All Statuses (Include Historical)</option>
           </select>
+
+          {/* Deduplication Toggle: 1 Setup Per Stock */}
+          <button
+            type="button"
+            onClick={() => setOneSetupPerSymbol((prev) => !prev)}
+            className={`h-8 px-3 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              oneSetupPerSymbol
+                ? 'bg-amber-500/15 border-amber-500/50 text-amber-600 dark:text-amber-400 shadow-xs'
+                : 'border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)]'
+            }`}
+            title="When active, keeps each stock deduplicated showing its highest-conviction setup."
+          >
+            <span className="font-mono text-sm">{oneSetupPerSymbol ? '✓' : '○'}</span>
+            <span>1 Setup Per Stock</span>
+          </button>
 
           {/* Search box */}
           <div className="flex-1 min-w-[180px] max-w-xs relative">
@@ -430,12 +533,24 @@ export function SmcScannerView({
                       {/* Instrument */}
                       <td className="py-3 px-4">
                         <div className="flex flex-col">
-                          <span className="font-black font-mono text-[13px] text-[var(--theme-card-text)] flex items-center gap-1.5">
-                            {item.symbol}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-black font-mono text-[13px] text-[var(--theme-card-text)]">
+                              {item.symbol}
+                            </span>
                             <span className="text-[10px] px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-normal">
                               {timeframe}
                             </span>
-                          </span>
+                            {oneSetupPerSymbol && item.totalSymbolSetups && item.totalSymbolSetups > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setOneSetupPerSymbol(false)}
+                                className="text-[9.5px] px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-mono font-bold hover:bg-amber-500/25 transition-colors cursor-pointer"
+                                title={`This stock has ${item.totalSymbolSetups} detected setups. Click to view all.`}
+                              >
+                                +{item.totalSymbolSetups - 1} more
+                              </button>
+                            )}
+                          </div>
                           <span className="text-[10.5px] text-[var(--theme-card-text-muted)] truncate max-w-[140px]">
                             {item.name}
                           </span>
@@ -508,8 +623,16 @@ export function SmcScannerView({
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                             item.setup.status === 'RETESTING'
-                              ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 animate-pulse'
-                              : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                              ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 animate-pulse'
+                              : item.setup.status === 'CONFIRMED'
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                              : item.setup.status === 'ENTRY_ZONE_REACHED'
+                              ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30'
+                              : item.setup.status === 'TARGET_HIT'
+                              ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
+                              : item.setup.status === 'INVALIDATED'
+                              ? 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20 line-through opacity-75'
+                              : 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-500/30'
                           }`}
                         >
                           {item.setup.status}
@@ -539,7 +662,7 @@ export function SmcScannerView({
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/50 text-xs">
             <span className="text-[var(--theme-card-text-muted)] font-mono">
-              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filteredResults.length)} of {filteredResults.length} setups
+              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, displayedResults.length)} of {displayedResults.length} {oneSetupPerSymbol ? 'stocks' : 'setups'}
             </span>
             <div className="flex items-center gap-2">
               <button
