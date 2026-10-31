@@ -198,9 +198,9 @@ export interface CompanyFundamental {
   // Market & Technical
   high52W: number;
   low52W: number;
-  priceTo52WHighPct: number;
-  priceReturn1M: number;
-  priceReturn1Y: number;
+  priceTo52WHighPct: number | null;
+  priceReturn1M: number | null;
+  priceReturn1Y: number | null;
   volume: number;
   beta: number | null;
 

@@ -67,7 +67,7 @@ export function CompanyAnalysisView({
     const factor = 0.86;
     const profitFactor = 0.82;
 
-    const standaloneQuarterly = company.quarterlyResults.map((q) => ({
+    const standaloneQuarterly = (company.quarterlyResults || []).map((q) => ({
       ...q,
       sales: Math.round(q.sales * factor),
       expenses: Math.round(q.expenses * factor),
@@ -80,7 +80,7 @@ export function CompanyAnalysisView({
       eps: Math.round(q.eps * profitFactor * 100) / 100,
     }));
 
-    const standaloneAnnualPl = company.annualProfitLoss.map((pl) => ({
+    const standaloneAnnualPl = (company.annualProfitLoss || []).map((pl) => ({
       ...pl,
       sales: Math.round(pl.sales * factor),
       expenses: Math.round(pl.expenses * factor),
@@ -93,7 +93,7 @@ export function CompanyAnalysisView({
       eps: Math.round(pl.eps * profitFactor * 100) / 100,
     }));
 
-    const standaloneBalanceSheet = company.balanceSheet.map((bs) => ({
+    const standaloneBalanceSheet = (company.balanceSheet || []).map((bs) => ({
       ...bs,
       borrowings: Math.round(bs.borrowings * 0.78),
       reserves: Math.round(bs.reserves * 0.84),
@@ -106,7 +106,7 @@ export function CompanyAnalysisView({
       totalAssets: Math.round(bs.totalAssets * 0.82),
     }));
 
-    const standaloneCashFlow = company.cashFlow.map((cf) => ({
+    const standaloneCashFlow = (company.cashFlow || []).map((cf) => ({
       ...cf,
       cashFromOperating: Math.round(cf.cashFromOperating * factor),
       cashFromInvesting: Math.round(cf.cashFromInvesting * 0.85),
@@ -115,7 +115,7 @@ export function CompanyAnalysisView({
       freeCashFlow: Math.round((cf.freeCashFlow || 0) * factor),
     }));
 
-    const standaloneRatios = company.historicalRatios.map((r) => ({
+    const standaloneRatios = (company.historicalRatios || []).map((r) => ({
       ...r,
       rocePct: Math.round(r.rocePct * 1.05 * 10) / 10,
       roePct: Math.round(r.roePct * 0.95 * 10) / 10,
@@ -769,6 +769,7 @@ export function CompanyAnalysisView({
 
         {/* Tab 1: Quarterly Results Table */}
         {activeTab === 'quarterly' && (
+          activeFinancials.quarterly.length > 0 ? (
           <div className="p-4 overflow-x-auto">
             <table className="w-full border-collapse text-left mono text-[13px]">
               <thead>
@@ -884,10 +885,16 @@ export function CompanyAnalysisView({
               </tbody>
             </table>
           </div>
+          ) : (
+            <div className="p-10 text-center mono text-xs sm:text-sm text-[var(--theme-card-text-muted)] border border-dashed border-[var(--theme-card-border)] rounded-2xl m-5">
+              No audited quarterly results filings reported for {company.name}.
+            </div>
+          )
         )}
 
         {/* Tab 2: Profit & Loss Statement (Annual) */}
         {activeTab === 'pl' && (
+          activeFinancials.annualPl.length > 0 ? (
           <div className="p-4 overflow-x-auto">
             <table className="w-full border-collapse text-left mono text-[13px]">
               <thead>
@@ -976,6 +983,11 @@ export function CompanyAnalysisView({
               </tbody>
             </table>
           </div>
+          ) : (
+            <div className="p-10 text-center mono text-xs sm:text-sm text-[var(--theme-card-text-muted)] border border-dashed border-[var(--theme-card-border)] rounded-2xl m-5">
+              No audited annual profit & loss statements reported for {company.name}.
+            </div>
+          )
         )}
 
         {/* Tab 2b: Growth & Return Metrics (Compounding Tables) */}
@@ -1096,6 +1108,7 @@ export function CompanyAnalysisView({
 
         {/* Tab 3: Balance Sheet */}
         {activeTab === 'balanceSheet' && (
+          activeFinancials.balanceSheet.length > 0 ? (
           <div className="p-4 overflow-x-auto">
             <table className="w-full border-collapse text-left mono text-[13px]">
               <thead>
@@ -1192,10 +1205,16 @@ export function CompanyAnalysisView({
               </tbody>
             </table>
           </div>
+          ) : (
+            <div className="p-10 text-center mono text-xs sm:text-sm text-[var(--theme-card-text-muted)] border border-dashed border-[var(--theme-card-border)] rounded-2xl m-5">
+              No audited balance sheet statements reported for {company.name}.
+            </div>
+          )
         )}
 
         {/* Tab 4: Cash Flows */}
         {activeTab === 'cashFlow' && (
+          activeFinancials.cashFlow.length > 0 ? (
           <div className="p-4 overflow-x-auto">
             <table className="w-full border-collapse text-left mono text-[13px]">
               <thead>
@@ -1267,10 +1286,16 @@ export function CompanyAnalysisView({
               </tbody>
             </table>
           </div>
+          ) : (
+            <div className="p-10 text-center mono text-xs sm:text-sm text-[var(--theme-card-text-muted)] border border-dashed border-[var(--theme-card-border)] rounded-2xl m-5">
+              No audited cash flow statements reported for {company.name}.
+            </div>
+          )
         )}
 
         {/* Tab 5: Ratios */}
         {activeTab === 'ratios' && (
+          activeFinancials.ratios.length > 0 ? (
           <div className="p-4 overflow-x-auto">
             <table className="w-full border-collapse text-left mono text-[13px]">
               <thead>
@@ -1343,10 +1368,16 @@ export function CompanyAnalysisView({
               </tbody>
             </table>
           </div>
+          ) : (
+            <div className="p-10 text-center mono text-xs sm:text-sm text-[var(--theme-card-text-muted)] border border-dashed border-[var(--theme-card-border)] rounded-2xl m-5">
+              No historical financial ratios reported for {company.name}.
+            </div>
+          )
         )}
 
         {/* Tab 6: Shareholding Pattern */}
         {activeTab === 'shareholding' && (
+          (company.shareholdingPattern && company.shareholdingPattern.length > 0) ? (
           <div className="p-4 overflow-x-auto">
             <table className="w-full border-collapse text-left mono text-[13px]">
               <thead>
@@ -1402,11 +1433,11 @@ export function CompanyAnalysisView({
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 text-[var(--theme-card-text-muted)]">No. Of Shareholders</td>
-                  {company.shareholdingPattern.map((sh, idx) => {
-                    const count = 2854000 + idx * 42000;
+                  {company.shareholdingPattern.map((sh) => {
+                    const count = (sh as any).shareholdersCount;
                     return (
                       <td key={sh.quarter} className="py-2.5 px-3 text-right text-[var(--theme-card-text)] font-medium">
-                        {count.toLocaleString()}
+                        {count != null ? count.toLocaleString() : '—'}
                       </td>
                     );
                   })}
@@ -1422,6 +1453,11 @@ export function CompanyAnalysisView({
               </tbody>
             </table>
           </div>
+          ) : (
+            <div className="p-10 text-center mono text-xs sm:text-sm text-[var(--theme-card-text-muted)] border border-dashed border-[var(--theme-card-border)] rounded-2xl m-5">
+              No shareholding pattern filings published for {company.name}.
+            </div>
+          )
         )}
 
         {/* Tab 7: Interactive Technical Candlestick Chart */}

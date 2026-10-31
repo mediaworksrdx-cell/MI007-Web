@@ -977,7 +977,7 @@ export function evaluateInvestmentStrategyForCompany(
     case 'inv_can_slim_leaders': {
       if (qtrProfit > 20) matched.push(`Accelerating EPS growth ${qtrProfit.toFixed(1)}% (> 20%)`);
       else failed.push(`EPS growth ${qtrProfit.toFixed(1)}% < 20%`);
-      if (company.priceTo52WHighPct > -18) matched.push('Trading within 18% of 52W High');
+      if (company.priceTo52WHighPct != null && company.priceTo52WHighPct > -18) matched.push('Trading within 18% of 52W High');
       else failed.push('More than 18% below 52W High');
       if (institutional > 15) matched.push(`Institutional sponsorship ${institutional.toFixed(1)}%`);
       else failed.push(`Institutional backing ${institutional.toFixed(1)}% < 15%`);

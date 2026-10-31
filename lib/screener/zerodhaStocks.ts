@@ -629,19 +629,6 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
 
   const sector = item.sector || guessSectorFromName(item.name, item.symbol);
 
-  // Sector baseline calibrations if not in audited top-130 cache
-  const sectorDefaults: Record<string, { pe: number; roce: number; roe: number; de: number; opm: number; pb: number }> = {
-    'Financial Services': { pe: 16.5, roce: 14.5, roe: 15.2, de: 2.8, opm: 26.0, pb: 1.9 },
-    'Information Technology': { pe: 24.2, roce: 28.5, roe: 24.0, de: 0.05, opm: 21.5, pb: 4.2 },
-    'Healthcare & Pharma': { pe: 28.0, roce: 18.2, roe: 16.5, de: 0.15, opm: 19.2, pb: 3.5 },
-    'Consumer & Retail': { pe: 32.5, roce: 22.0, roe: 20.5, de: 0.12, opm: 16.8, pb: 5.1 },
-    'FMCG & Food': { pe: 36.0, roce: 26.5, roe: 24.2, de: 0.08, opm: 18.5, pb: 6.2 },
-    'Automotive': { pe: 22.0, roce: 16.8, roe: 15.5, de: 0.35, opm: 12.4, pb: 2.8 },
-    'Energy & Power': { pe: 14.2, roce: 13.5, roe: 12.8, de: 0.85, opm: 18.2, pb: 1.6 },
-    'Metals & Mining': { pe: 11.5, roce: 15.2, roe: 13.8, de: 0.55, opm: 16.0, pb: 1.4 },
-    'Infrastructure & Capital Goods': { pe: 25.5, roce: 17.5, roe: 15.8, de: 0.42, opm: 11.8, pb: 3.1 },
-  };
-
   // Priority 1: Audited Real Fundamentals from Cache; Priority 2: null (clean em-dash, NO dummy identical hardcoded numbers)
   const pe = cachedFund?.pe != null ? cachedFund.pe : null;
   const pb = cachedFund?.pb != null ? cachedFund.pb : null;
@@ -728,35 +715,37 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
 
     // Financial Health & Solvency
     debtToEquity,
-    netDebt: Math.round(knownMcap * (((debtToEquity ?? 0.2)) * 0.25)),
-    interestCoverage: debtToEquity != null ? +(debtToEquity < 0.1 ? 25.0 : Math.max(2.5, 12.0 / (debtToEquity + 0.1))).toFixed(1) : null,
+    netDebt: (debtToEquity != null && cachedFund?.bookValue) ? Math.round(debtToEquity * cachedFund.bookValue) : null,
+    interestCoverage: cachedFund?.interestCoverage != null ? cachedFund.interestCoverage : null,
     currentRatio: cachedFund?.currentRatio != null ? cachedFund.currentRatio : null,
     quickRatio: cachedFund?.quickRatio != null ? cachedFund.quickRatio : null,
-    cfo,
-    freeCashFlow,
-    cashConversionCycle: 32,
-    capex: Math.round(cfo * 0.35),
-    workingCapitalDays: 28,
-    debtReduction3Y: 10.0,
-    piotroskiScore: 7,
-    altmanZScore: 3.4,
+    cfo: cachedFund?.cfo != null ? cachedFund.cfo : null,
+    freeCashFlow: cachedFund?.freeCashFlow != null ? cachedFund.freeCashFlow : null,
+    cashConversionCycle: cachedFund?.cashConversionCycle != null ? cachedFund.cashConversionCycle : null,
+    capex: cachedFund?.capex != null ? cachedFund.capex : null,
+    workingCapitalDays: cachedFund?.workingCapitalDays != null ? cachedFund.workingCapitalDays : null,
+    debtReduction3Y: cachedFund?.debtReduction3Y != null ? cachedFund.debtReduction3Y : null,
+    piotroskiScore: cachedFund?.piotroskiScore != null ? cachedFund.piotroskiScore : null,
+    altmanZScore: cachedFund?.altmanZScore != null ? cachedFund.altmanZScore : null,
 
     // Ownership & Shareholding
-    promoterHolding: cachedFund?.promoterHolding != null ? cachedFund.promoterHolding : 52.5,
-    promoterHoldingChange3Y: 0.0,
-    pledgedPct: 0.0,
-    fiiHolding: cachedFund?.fiiHolding != null ? cachedFund.fiiHolding : 18.5,
-    diiHolding: cachedFund?.diiHolding != null ? cachedFund.diiHolding : 14.2,
-    publicHolding: 14.8,
+    promoterHolding: cachedFund?.promoterHolding != null ? cachedFund.promoterHolding : null,
+    promoterHoldingChange3Y: cachedFund?.promoterHoldingChange3Y != null ? cachedFund.promoterHoldingChange3Y : null,
+    pledgedPct: cachedFund?.pledgedPct != null ? cachedFund.pledgedPct : null,
+    fiiHolding: cachedFund?.fiiHolding != null ? cachedFund.fiiHolding : null,
+    diiHolding: cachedFund?.diiHolding != null ? cachedFund.diiHolding : null,
+    publicHolding: cachedFund?.publicHolding != null ? cachedFund.publicHolding : null,
 
     // Market & Technical
     high52W: cachedFund?.high52W || (price > 0 ? Math.round(price * 1.25 * 10) / 10 : 0),
     low52W: cachedFund?.low52W || (price > 0 ? Math.round(price * 0.75 * 10) / 10 : 0),
-    priceTo52WHighPct: -12.5,
-    priceReturn1M: 1.8,
-    priceReturn1Y: 14.2,
+    priceTo52WHighPct: (price > 0 && (cachedFund?.high52W || price * 1.25) > 0)
+      ? Number((((price - (cachedFund?.high52W || price * 1.25)) / (cachedFund?.high52W || price * 1.25)) * 100).toFixed(1))
+      : null,
+    priceReturn1M: cachedFund?.priceReturn1M != null ? cachedFund.priceReturn1M : null,
+    priceReturn1Y: cachedFund?.priceReturn1Y != null ? cachedFund.priceReturn1Y : null,
     volume: cachedFund?.volume || (verifiedQuote ? (verifiedQuote as any).volume || 0 : 0),
-    beta: cachedFund?.beta || 1.0,
+    beta: cachedFund?.beta != null ? cachedFund.beta : 1.0,
 
     // Automated Insights
     pros: [
@@ -768,29 +757,13 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
       pe != null && pe > 35 ? 'Stock is trading at elevated valuation multiples compared to long-term sector averages' : 'Subject to macroeconomic industry headwinds and input price volatility',
     ],
 
-    // Historical Statements
-    quarterlyResults: [
-      { quarter: 'Sep 2026', sales: Math.round(annualSales * 0.28), expenses: Math.round(annualSales * 0.28 * (1 - (opm ?? 12) / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.28), opmPct: opm ?? 0, otherIncome: 15, interest: 8, depreciation: 18, profitBeforeTax: Math.round(annualNetProfit * 0.35), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.28), eps: eps != null ? +(eps * 0.28).toFixed(2) : 0 },
-      { quarter: 'Jun 2026', sales: Math.round(annualSales * 0.26), expenses: Math.round(annualSales * 0.26 * (1 - (opm ?? 12) / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.26), opmPct: opm ?? 0, otherIncome: 14, interest: 8, depreciation: 17, profitBeforeTax: Math.round(annualNetProfit * 0.33), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.26), eps: eps != null ? +(eps * 0.26).toFixed(2) : 0 },
-      { quarter: 'Mar 2026', sales: Math.round(annualSales * 0.24), expenses: Math.round(annualSales * 0.24 * (1 - (opm ?? 12) / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.24), opmPct: opm ?? 0, otherIncome: 12, interest: 9, depreciation: 17, profitBeforeTax: Math.round(annualNetProfit * 0.30), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.24), eps: eps != null ? +(eps * 0.24).toFixed(2) : 0 },
-      { quarter: 'Dec 2025', sales: Math.round(annualSales * 0.22), expenses: Math.round(annualSales * 0.22 * (1 - (opm ?? 12) / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.22), opmPct: opm ?? 0, otherIncome: 11, interest: 9, depreciation: 16, profitBeforeTax: Math.round(annualNetProfit * 0.28), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.22), eps: eps != null ? +(eps * 0.22).toFixed(2) : 0 },
-    ],
-    annualProfitLoss: [
-      { year: 'Mar 2026', sales: annualSales, expenses: annualSales - annualOperatingProfit, operatingProfit: annualOperatingProfit, opmPct: opm ?? 0, otherIncome: 45, interest: 32, depreciation: 68, profitBeforeTax: Math.round(annualNetProfit * 1.33), taxPct: 25, netProfit: annualNetProfit, eps: eps ?? 0, dividendPayoutPct: 22 },
-      { year: 'Mar 2025', sales: Math.round(annualSales / (1 + (salesGrowth1Y ?? 10) / 100)), expenses: Math.round((annualSales - annualOperatingProfit) * 0.9), operatingProfit: Math.round(annualOperatingProfit * 0.88), opmPct: opm ?? 0, otherIncome: 40, interest: 35, depreciation: 62, profitBeforeTax: Math.round(annualNetProfit * 1.15), taxPct: 25, netProfit: Math.round(annualNetProfit / (1 + (profitGrowth1Y ?? 10) / 100)), eps: eps != null ? +(eps / (1 + (profitGrowth1Y ?? 10) / 100)).toFixed(2) : 0, dividendPayoutPct: 20 },
-    ],
-    balanceSheet: [
-      { year: 'Mar 2026', equityCapital: 25, reserves: Math.round(knownMcap * 0.45), borrowings: Math.round(knownMcap * (debtToEquity || 0.2) * 0.45), otherLiabilities: Math.round(knownMcap * 0.12), totalLiabilities: Math.round(knownMcap * 0.7), fixedAssets: Math.round(knownMcap * 0.35), cwip: 30, investments: Math.round(knownMcap * 0.12), otherAssets: Math.round(knownMcap * 0.2), totalAssets: Math.round(knownMcap * 0.7) },
-    ],
-    cashFlow: [
-      { year: 'Mar 2026', cashFromOperating: cfo, cashFromInvesting: -Math.round(cfo * 0.45), cashFromFinancing: -Math.round(cfo * 0.4), netCashFlow: Math.round(cfo * 0.15), freeCashFlow },
-    ],
-    historicalRatios: [
-      { year: 'Mar 2026', rocePct: roce, roePct: roe, debtorDays: 40, inventoryDays: 50, daysPayable: 55, cashConversionCycle: 35, workingCapitalDays: 28 },
-    ],
-    shareholdingPattern: [
-      { quarter: 'Sep 2026', promoter: 52.5, fii: 18.5, dii: 14.2, government: 0.0, public: 14.8, pledgedPct: 0.0 },
-    ],
+    // Historical Statements (Only if audited filings exist in cache, otherwise empty array)
+    quarterlyResults: cachedFund?.quarterlyResults || [],
+    annualProfitLoss: cachedFund?.annualProfitLoss || [],
+    balanceSheet: cachedFund?.balanceSheet || [],
+    cashFlow: cachedFund?.cashFlow || [],
+    historicalRatios: cachedFund?.historicalRatios || [],
+    shareholdingPattern: cachedFund?.shareholdingPattern || [],
   };
 }
 

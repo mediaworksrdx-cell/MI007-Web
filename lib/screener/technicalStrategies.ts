@@ -243,19 +243,19 @@ export function evaluateAllStrategiesForStock(
   const macdData = calculateMACD(data, 12, 26, 9);
   const bbData = calculateBollinger(data, 20, 2);
 
-  const currSma20 = sma20[n - 1] || currentPrice;
-  const currSma50 = sma50[n - 1] || currentPrice * 0.96;
-  const currSma200 = sma200[n - 1] || currentPrice * 0.90;
-  const currEma9 = ema9[n - 1] || currentPrice;
-  const currEma21 = ema21[n - 1] || currentPrice * 0.98;
-  const currRsi = rsiArr[n - 1] ?? 56.4;
-  const prevRsi = rsiArr[n - 2] ?? 54.2;
-  const currMacd = macdData.macd[n - 1] ?? 1.2;
-  const currSignal = macdData.signal[n - 1] ?? 0.8;
-  const currHist = macdData.histogram[n - 1] ?? 0.4;
-  const prevHist = macdData.histogram[n - 2] ?? 0.2;
-  const currBBUpper = bbData.upper[n - 1] || currentPrice * 1.05;
-  const currBBLower = bbData.lower[n - 1] || currentPrice * 0.95;
+  const currSma20 = sma20[n - 1] ?? currentPrice;
+  const currSma50 = sma50[n - 1] ?? currentPrice;
+  const currSma200 = sma200[n - 1] ?? currentPrice;
+  const currEma9 = ema9[n - 1] ?? currentPrice;
+  const currEma21 = ema21[n - 1] ?? currentPrice;
+  const currRsi = rsiArr[n - 1] ?? 50.0;
+  const prevRsi = rsiArr[n - 2] ?? currRsi;
+  const currMacd = macdData.macd[n - 1] ?? 0.0;
+  const currSignal = macdData.signal[n - 1] ?? 0.0;
+  const currHist = macdData.histogram[n - 1] ?? 0.0;
+  const prevHist = macdData.histogram[n - 2] ?? 0.0;
+  const currBBUpper = bbData.upper[n - 1] ?? currentPrice;
+  const currBBLower = bbData.lower[n - 1] ?? currentPrice;
   const currency = market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹';
 
   const results: StrategySignalResult[] = [];
