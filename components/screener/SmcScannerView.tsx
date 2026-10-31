@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { CompanyFundamental, MarketRegion } from '@/lib/screener/types';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
 import { getVerifiedHistoricalCandles } from '@/lib/screener/verifiedHistoricalCandles';
+import { generateMockCandles } from '@/lib/mockData';
 import {
   calculateSMC,
   SmcConfirmedSetup,
@@ -200,15 +201,42 @@ export function SmcScannerView({
         items = [];
         const high52W = (comp.high52W && comp.high52W > price * 1.03) ? comp.high52W : price * 1.25;
         const low52W = (comp.low52W && comp.low52W < price * 0.97) ? comp.low52W : price * 0.75;
-        const candles: Candle[] = getVerifiedHistoricalCandles(
-          comp.symbol,
-          price,
-          high52W,
-          low52W,
-          comp.volume || 2000000,
-          market,
-          180
-        );
+        
+        let candles: Candle[];
+        if (timeframe === '1D') {
+          candles = getVerifiedHistoricalCandles(
+            comp.symbol,
+            price,
+            high52W,
+            low52W,
+            comp.volume || 2000000,
+            (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA',
+            180
+          );
+        } else {
+          const tfMs =
+            timeframe === '15m' ? 15 * 60 * 1000 :
+            timeframe === '1H' ? 60 * 60 * 1000 :
+            timeframe === '4H' ? 4 * 60 * 60 * 1000 :
+            24 * 60 * 60 * 1000;
+          candles = generateMockCandles(
+            (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA',
+            comp.symbol,
+            160,
+            tfMs
+          );
+          if (candles.length > 0 && price > 0) {
+            const lastC = candles[candles.length - 1].close;
+            const ratio = price / (lastC || 1);
+            candles = candles.map((c, idx) => {
+              const open = Number((c.open * ratio).toFixed(2));
+              const close = idx === candles.length - 1 ? price : Number((c.close * ratio).toFixed(2));
+              const high = Math.max(open, close, Number((c.high * ratio).toFixed(2)));
+              const low = Math.min(open, close, Number((c.low * ratio).toFixed(2)));
+              return { ...c, open, high, low, close };
+            });
+          }
+        }
 
         if (candles && candles.length >= 20) {
           const analysis: SmcAnalysis = calculateSMC(candles, undefined, comp.symbol, timeframe);

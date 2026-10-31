@@ -313,6 +313,10 @@ export function ChartToolbar({
     } else if (preset === 'structure') {
       handleUpdateSmc({
         enabled: true,
+        showBullishSetups: true,
+        showBearishSetups: true,
+        showBullishConfluence: false,
+        showBearishConfluence: false,
         showBos: true,
         showChoch: true,
         showBullishStructure: true,
@@ -339,6 +343,10 @@ export function ChartToolbar({
     } else if (preset === 'zones') {
       handleUpdateSmc({
         enabled: true,
+        showBullishSetups: true,
+        showBearishSetups: true,
+        showBullishConfluence: false,
+        showBearishConfluence: false,
         showBos: false,
         showChoch: false,
         showBullishStructure: false,
@@ -784,8 +792,8 @@ export function ChartToolbar({
               </div>
 
               {/* Presets Bar */}
-              <div className="px-3.5 py-1.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex items-center gap-1 overflow-x-auto shrink-0">
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1 shrink-0">Presets:</span>
+              <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex items-center gap-1 flex-wrap shrink-0">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5 shrink-0">Presets:</span>
                 {[
                   { id: 'all', label: 'All' },
                   { id: 'bullish', label: 'Bullish' },
@@ -793,16 +801,28 @@ export function ChartToolbar({
                   { id: 'structure', label: 'Structure' },
                   { id: 'zones', label: 'OB & FVG' },
                   { id: 'reset', label: 'Reset' },
-                ].map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handleSetPreset(p.id as any)}
-                    className="px-2 py-0.5 text-[11px] font-medium rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors shrink-0"
-                  >
-                    {p.label}
-                  </button>
-                ))}
+                ].map((p) => {
+                  const isActive =
+                    (p.id === 'bullish' && activeSmcConfig.showBullishSetups && !activeSmcConfig.showBearishSetups) ||
+                    (p.id === 'bearish' && !activeSmcConfig.showBullishSetups && activeSmcConfig.showBearishSetups) ||
+                    (p.id === 'all' && activeSmcConfig.showBullishSetups && activeSmcConfig.showBearishSetups && activeSmcConfig.showBos && activeSmcConfig.showBullishOb) ||
+                    (p.id === 'structure' && activeSmcConfig.showBos && !activeSmcConfig.showBullishOb) ||
+                    (p.id === 'zones' && !activeSmcConfig.showBos && activeSmcConfig.showBullishOb);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleSetPreset(p.id as any)}
+                      className={`px-2 py-0.5 text-[10.5px] font-semibold rounded-md border cursor-pointer transition-colors shrink-0 ${
+                        isActive
+                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Toggles Container */}

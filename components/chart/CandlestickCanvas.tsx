@@ -1092,6 +1092,7 @@ export function CandlestickCanvas({
           chartType, showVolume, showVolumePanel,
           showSmcOverlay: smcConfig ? smcConfig.enabled : showSmcOverlay,
           smcConfig,
+          targetSetupId: targetSetupIdRef.current || targetSetupId,
           showOrderFlow,
           orderFlowConfig,
           orderFlowData,
@@ -1494,11 +1495,17 @@ export function CandlestickCanvas({
     const priceToY = (p: number) => chartH - ((p - pMin) / pRange * chartH);
 
     const smc = calculateSMC(cleanCandles, smcConfig);
+    const isBullishMaster = smcConfig?.showBullishSetups !== false;
+    const isBearishMaster = smcConfig?.showBearishSetups !== false;
 
     // 0. Confirmed Directional SMC Setups (Position Brackets)
     if (smc.confirmedSetups && smc.confirmedSetups.length > 0) {
       for (const st of smc.confirmedSetups) {
         if (st.candleIndex < startIdx || st.candleIndex > endIdx) continue;
+        const isBull = st.direction === 'BULLISH';
+        if (isBull && (!isBullishMaster || smcConfig?.showBullishConfluence === false)) continue;
+        if (!isBull && (!isBearishMaster || smcConfig?.showBearishConfluence === false)) continue;
+
         const li = st.candleIndex - startIdx;
         const sx = li * candleW + candleW / 2;
         const boxW = Math.min(chartW - sx - 5, Math.max(candleW * 3.5, 95));
@@ -1510,7 +1517,6 @@ export function CandlestickCanvas({
         const maxY = Math.max(yEntry, ySL, yTP, yTP2) + 20;
 
         if (x >= sx - 5 && x <= sx + boxW + 10 && y >= minY && y <= maxY) {
-          const isBull = st.direction === 'BULLISH';
           const formationTimeStr = st.formationTime ? new Date(st.formationTime).toLocaleString() : 'Recent';
           const statusLabel =
             st.status === 'RETESTING'
@@ -1535,8 +1541,14 @@ export function CandlestickCanvas({
     }
 
     // 1. Order Blocks & Breakers
-    for (const ob of smc.orderBlocks) {
+    const allBlocks = [...(smc.orderBlocks || []), ...(smc.breakers || [])];
+    for (const ob of allBlocks) {
       if (ob.endIndex < startIdx || ob.startIndex > endIdx) continue;
+      if (ob.isBullish && (!isBullishMaster || smcConfig?.showBullishOb === false)) continue;
+      if (!ob.isBullish && (!isBearishMaster || smcConfig?.showBearishOb === false)) continue;
+      if (ob.isMitigated && smcConfig?.showMitigatedOb === false) continue;
+      if (ob.isBreaker && smcConfig?.showBreakers === false) continue;
+
       const lx = Math.max(0, ob.startIndex - startIdx) * candleW;
       const rx = Math.min(visCnt, ob.endIndex - startIdx) * candleW + candleW;
       const yT = priceToY(ob.topPrice);
@@ -1574,6 +1586,10 @@ export function CandlestickCanvas({
     // 2. Fair Value Gaps
     for (const fvg of smc.fvgs) {
       if (fvg.endIndex < startIdx || fvg.startIndex > endIdx) continue;
+      if (fvg.isBullish && (!isBullishMaster || smcConfig?.showBullishFvg === false)) continue;
+      if (!fvg.isBullish && (!isBearishMaster || smcConfig?.showBearishFvg === false)) continue;
+      if (fvg.isMitigated && smcConfig?.showMitigatedFvg === false) continue;
+
       const lx = Math.max(0, fvg.startIndex - startIdx) * candleW;
       const rx = Math.min(visCnt, fvg.endIndex - startIdx) * candleW + candleW;
       const yT = priceToY(fvg.topPrice);
@@ -1604,11 +1620,18 @@ export function CandlestickCanvas({
 
     // 3. Structure Breaks (BOS / CHoCH)
     for (const sb of smc.structureBreaks) {
+      if (sb.isBullish && (!isBullishMaster || smcConfig?.showBullishStructure === false)) continue;
+      if (!sb.isBullish && (!isBearishMaster || smcConfig?.showBearishStructure === false)) continue;
+      if (sb.breakType === 'BOS' && smcConfig?.showBos === false) continue;
+      if (sb.breakType === 'CHoCH' && smcConfig?.showChoch === false) continue;
+
       const lineY = priceToY(sb.price);
       if (Math.abs(y - lineY) <= 8 && x < chartW) {
         return {
-          title: sb.breakType === 'CHoCH' ? 'Change of Character (CHoCH / MSS)' : 'Break of Structure (BOS)',
-          type: 'Market Structure Break',
+          title: sb.breakType === 'CHoCH'
+            ? (sb.isBullish ? 'Bullish Change of Character (+CHoCH)' : 'Bearish Change of Character (-CHoCH)')
+            : (sb.isBullish ? 'Bullish Break of Structure (+BOS)' : 'Bearish Break of Structure (-BOS)'),
+          type: `${sb.isBullish ? 'Bullish' : 'Bearish'} Structure Shift`,
           timeframe,
           formationTime: new Date(sb.time).toLocaleString(),
           priceBoundaries: `Break Trigger Level: ${formatPrice(sb.price)}`,

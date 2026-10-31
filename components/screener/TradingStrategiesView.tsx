@@ -3,6 +3,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import { CompanyFundamental, MarketRegion } from '@/lib/screener/types';
 import {
   TRADING_STRATEGIES,
@@ -110,6 +111,10 @@ export function TradingStrategiesView({
   // Filtered Scan Results
   const filteredResults = useMemo(() => {
     return scanResults.filter((res) => {
+      // Must be a triggered signal!
+      if (!res.signalTriggered) {
+        return false;
+      }
       if (selectedStrategyId !== 'ALL' && res.strategyId !== selectedStrategyId) {
         return false;
       }
@@ -358,10 +363,12 @@ export function TradingStrategiesView({
                       className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         r.direction === 'bullish'
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                          : r.direction === 'bearish'
+                          ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                          : 'bg-slate-500/10 text-slate-400 border border-slate-500/30'
                       }`}
                     >
-                      {r.direction === 'bullish' ? '▲ LONG' : '▼ SHORT'}
+                      {r.direction === 'bullish' ? '▲ LONG' : r.direction === 'bearish' ? '▼ SHORT' : '● NEUTRAL'}
                     </span>
                   </td>
                   <td className="py-1.5 px-2.5 font-bold text-emerald-300">
@@ -381,13 +388,14 @@ export function TradingStrategiesView({
                           Backtest
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => onSelectCompany(r.symbol)}
-                        className="px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-slate-950 font-bold transition-colors text-[10.5px] cursor-pointer"
+                      <Link
+                        href={`/chart/${r.symbol}?market=${market}&smc=1&from=screener`}
+                        className="px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-slate-950 font-bold transition-colors text-[10.5px] cursor-pointer inline-flex items-center gap-1"
+                        title={`Open ${r.symbol} Chart with SMC and Indicators`}
                       >
-                        Chart →
-                      </button>
+                        <span>Chart</span>
+                        <span>↗</span>
+                      </Link>
                     </div>
                   </td>
                 </tr>

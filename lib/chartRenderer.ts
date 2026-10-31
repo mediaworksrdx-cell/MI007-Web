@@ -1216,8 +1216,9 @@ export function renderChart(
       // Filter visible swings within horizontal window & master bias
       const visibleSwings = smcData.swings.filter((sw) => {
         if (sw.index < startIdx || sw.index >= endIdx) return false;
-        if (sw.isHigh && !isBearishMaster) return false;
-        if (!sw.isHigh && !isBullishMaster) return false;
+        if (!isBullishMaster && !isBearishMaster) return false;
+        if (!isBullishMaster && (sw.type === 'HH' || sw.type === 'HL')) return false;
+        if (!isBearishMaster && (sw.type === 'LH' || sw.type === 'LL')) return false;
         return true;
       });
 
@@ -1804,15 +1805,30 @@ export function renderChart(
       const isActiveSetup = (s: SmcConfirmedSetup) =>
         s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED' || s.status === 'PENDING';
 
-      const activeBullish = smcData.confirmedSetups
-        .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && smcCfg.showBullishConfluence && isBullishMaster)
-        .sort((a, b) => b.candleIndex - a.candleIndex)[0];
+      let setupsToRender: SmcConfirmedSetup[] = [];
 
-      const activeBearish = smcData.confirmedSetups
-        .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && smcCfg.showBearishConfluence && isBearishMaster)
-        .sort((a, b) => b.candleIndex - a.candleIndex)[0];
+      // If deep-linked with a specific setupId from SMC Scanner, prioritize rendering that specific setup
+      if (options.targetSetupId) {
+        const targeted = smcData.confirmedSetups.find((s) => s.id === options.targetSetupId);
+        if (targeted) {
+          const isTargetBull = targeted.direction === 'BULLISH';
+          if ((isTargetBull && isBullishMaster) || (!isTargetBull && isBearishMaster)) {
+            setupsToRender.push(targeted);
+          }
+        }
+      }
 
-      const setupsToRender = [activeBullish, activeBearish].filter(Boolean) as SmcConfirmedSetup[];
+      if (setupsToRender.length === 0) {
+        const activeBullish = smcData.confirmedSetups
+          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && smcCfg.showBullishConfluence && isBullishMaster)
+          .sort((a, b) => b.candleIndex - a.candleIndex)[0];
+
+        const activeBearish = smcData.confirmedSetups
+          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && smcCfg.showBearishConfluence && isBearishMaster)
+          .sort((a, b) => b.candleIndex - a.candleIndex)[0];
+
+        setupsToRender = [activeBullish, activeBearish].filter(Boolean) as SmcConfirmedSetup[];
+      }
 
       for (const st of setupsToRender) {
         const li = st.candleIndex - startIdx;

@@ -165,6 +165,7 @@ export interface ChartOptions {
   showVolumePanel: boolean;
   showSmcOverlay: boolean;
   smcConfig?: import('./smcEngine').SmcConfig;
+  targetSetupId?: string;
   showOrderFlow?: boolean;
   orderFlowConfig?: import('./orderflow/types').OrderFlowConfig;
   orderFlowData?: import('./orderflow/types').OrderFlowAnalysisResult;

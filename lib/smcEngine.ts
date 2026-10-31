@@ -258,7 +258,7 @@ export interface SmcConfig {
 
 export const DEFAULT_SMC_CONFIG: SmcConfig = {
   enabled: true,
-  swingLength: 5,                   // Institutional pivot standard (5-bar lookback for clean structure)
+  swingLength: 3,                   // Institutional pivot standard (3-bar lookback for responsive non-repainting structure)
 
   // Master Direction Controls
   showBullishSetups: true,
@@ -1771,8 +1771,9 @@ export function detectAll16SmcSetups(
             tp,
             `Price tapped institutional Discount OTE zone (62%-79% retracement [${dOteMin.toFixed(2)} - ${dOteMax.toFixed(2)}]), targeting range high.`
           );
-          // Standard ICT -0.27 Extension for TP2
-          st.targetPrice2 = Number((dealingRange.highPrice + (dealingRange.highPrice - dealingRange.lowPrice) * 0.27).toFixed(2));
+          // Standard ICT -0.27 Extension for TP2 (strictly preserving SL < Entry < TP1 < TP2)
+          const rawExtBull = dealingRange.highPrice + (dealingRange.highPrice - dealingRange.lowPrice) * 0.27;
+          st.targetPrice2 = Number(Math.max(st.targetPrice + Math.max(st.targetPrice - st.entryPrice, st.entryPrice * 0.01) * 0.5, rawExtBull).toFixed(2));
           setups.push(st);
           break; // Retain most recent confirmed tap
         }
@@ -1799,8 +1800,9 @@ export function detectAll16SmcSetups(
             tp,
             `Price tapped institutional Premium OTE zone (62%-79% retracement [${pOteMin.toFixed(2)} - ${pOteMax.toFixed(2)}]), targeting range low.`
           );
-          // Standard ICT -0.27 Extension for TP2
-          st.targetPrice2 = Number((dealingRange.lowPrice - (dealingRange.highPrice - dealingRange.lowPrice) * 0.27).toFixed(2));
+          // Standard ICT -0.27 Extension for TP2 (strictly preserving SL > Entry > TP1 > TP2)
+          const rawExtBear = dealingRange.lowPrice - (dealingRange.highPrice - dealingRange.lowPrice) * 0.27;
+          st.targetPrice2 = Number(Math.min(st.targetPrice - Math.max(st.entryPrice - st.targetPrice, st.entryPrice * 0.01) * 0.5, rawExtBear).toFixed(2));
           setups.push(st);
           break; // Retain most recent confirmed tap
         }
@@ -2046,7 +2048,7 @@ export function computeCandlesFingerprint(
   const versionSegment = dataVersion !== undefined ? `v${dataVersion}:` : '';
   const f = config?.filters;
   const cfgSegment = config
-    ? `sw${config.swingLength ?? 3}_b${config.showBullishSetups !== false ? 1 : 0}_s${config.showBearishSetups !== false ? 1 : 0}_d${f?.requireDisplacement ? f?.displacementAtrMultiple ?? 1.25 : 0}_v${f?.requireVolumeExpansion ? f?.volumeSmaMultiple ?? 1.1 : 0}:`
+    ? `sw${config.swingLength ?? DEFAULT_SMC_CONFIG.swingLength}_b${config.showBullishSetups !== false ? 1 : 0}_s${config.showBearishSetups !== false ? 1 : 0}_d${f?.requireDisplacement ? f?.displacementAtrMultiple ?? 1.25 : 0}_v${f?.requireVolumeExpansion ? f?.volumeSmaMultiple ?? 1.1 : 0}:`
     : '';
   return `${symbol}:${timeframe}:${versionSegment}${cfgSegment}${candles.length}:${hashHex}`;
 }
@@ -2153,7 +2155,7 @@ export function calculateSMC(
   }
 
   const opt = config?.filters;
-  const swingLen = config?.swingLength ?? 3;
+  const swingLen = config?.swingLength ?? DEFAULT_SMC_CONFIG.swingLength;
 
   // 1. Detect Swings (with dual timestamps)
   const swings = detectSwingPoints(candles, swingLen);

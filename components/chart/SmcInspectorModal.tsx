@@ -25,8 +25,12 @@ export function SmcInspectorModal({ data, onClose }: SmcInspectorModalProps) {
 
   const isBullish =
     data.title.toLowerCase().includes('bull') ||
+    data.title.toLowerCase().includes('+bos') ||
+    data.title.toLowerCase().includes('+choch') ||
     data.title.toLowerCase().includes('demand') ||
-    data.title.toLowerCase().includes('ssl');
+    data.title.toLowerCase().includes('ssl') ||
+    data.type.toLowerCase().includes('bull') ||
+    data.type.toLowerCase().includes('long');
 
   return (
     <div
