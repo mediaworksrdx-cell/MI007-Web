@@ -7,7 +7,7 @@ import { deduplicateScreens } from '@/lib/screener/persistence';
 
 interface TopToolbarProps {
   market: MarketRegion;
-  onChangeMarket: (m: MarketRegion) => void;
+  onChangeMarket?: (m: MarketRegion) => void;
   sector: string;
   onChangeSector: (s: string) => void;
   indexFilter?: string;
@@ -25,7 +25,7 @@ interface TopToolbarProps {
 
 export function TopToolbar({
   market,
-  onChangeMarket,
+  onChangeMarket: _onChangeMarket,
   sector,
   onChangeSector,
   indexFilter = 'ALL',
@@ -68,49 +68,6 @@ export function TopToolbar({
           <span className="mono text-[15px] sm:text-[17px] font-black inst-card-text tracking-wide uppercase">
             SCREENERS
           </span>
-
-          {/* 1-Click Country Switcher: India / USA / UAE */}
-          <div className="inline-flex items-center rounded-xl p-0.5 border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-xs">
-            <button
-              type="button"
-              onClick={() => onChangeMarket('INDIA')}
-              className={`px-3 py-1 rounded-lg mono text-[12px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                market === 'INDIA'
-                  ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                  : 'text-[var(--theme-card-text-muted)] hover:text-emerald-400'
-              }`}
-              title="Switch to Indian Equities (NSE / BSE 3,801 Stocks)"
-            >
-              <span>🇮🇳</span>
-              <span>INDIA (3,801)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onChangeMarket('USA')}
-              className={`px-3 py-1 rounded-lg mono text-[12px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                market === 'USA'
-                  ? 'bg-blue-500 text-white font-black shadow-xs'
-                  : 'text-[var(--theme-card-text-muted)] hover:text-blue-400'
-              }`}
-              title="Switch to USA Equities (S&P 500, NASDAQ 100, Dow 30)"
-            >
-              <span>🇺🇸</span>
-              <span>USA (517)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onChangeMarket('UAE')}
-              className={`px-3 py-1 rounded-lg mono text-[12px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                market === 'UAE'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
-                  : 'text-[var(--theme-card-text-muted)] hover:text-amber-400'
-              }`}
-              title="Switch to UAE Equities (DFM / ADX)"
-            >
-              <span>🇦🇪</span>
-              <span>UAE</span>
-            </button>
-          </div>
         </div>
 
         {/* Global Search & Action Buttons */}
