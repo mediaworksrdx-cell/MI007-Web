@@ -12,7 +12,7 @@ export default function FnoAnalyticsPage() {
   return (
     <>
       <Navbar market={market} onMarketChange={setMarket} />
-      <main className="min-h-screen pt-28 sm:pt-32 relative z-20 bg-transparent pb-24">
+      <main className="min-h-screen pt-[86px] sm:pt-[92px] relative z-20 bg-transparent pb-12">
         <FnoWorkspace initialTab="analytics" />
       </main>
     </>

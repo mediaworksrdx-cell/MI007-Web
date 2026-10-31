@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback, useState, useLayoutEffect, useMemo } from 'react';
 import type { Candle, ChartType, IndicatorType, IndicatorConfig, FnoOverlayLevels, StrategyPayoffOverlay, MagnetReticle, ScaleState } from '@/lib/types';
-import { isOverlay, CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN } from '@/lib/types';
+import { isOverlay, CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN, calculateDynamicPanelHeight } from '@/lib/types';
 import type { DrawingItem, DrawingToolType, DrawingPoint } from '@/lib/drawingTypes';
 import { renderChart, renderOverlay, resolveDrawingPointIndex, computeChartPriceBounds, formatPrice } from '@/lib/chartRenderer';
 import { DrawingQuickBar } from './DrawingQuickBar';
@@ -527,7 +527,7 @@ export function CandlestickCanvas({
 
     const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
     const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
-    const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
+    const panelH = calculateDynamicPanelHeight(size.h, totalPanels);
     const chartH = size.h - panelH - CHART_BOTTOM_MARGIN;
     const chartW = size.w - CHART_RIGHT_MARGIN;
 
@@ -612,7 +612,7 @@ export function CandlestickCanvas({
 
     const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
     const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
-    const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
+    const panelH = calculateDynamicPanelHeight(size.h, totalPanels);
     const chartH = size.h - panelH - CHART_BOTTOM_MARGIN;
     const chartW = size.w - CHART_RIGHT_MARGIN;
     const visCnt = visibleCount;
@@ -918,7 +918,7 @@ export function CandlestickCanvas({
 
         const panelInds = indicatorsRef.current.filter(i => !isOverlay(i.type) && i.enabled);
         const totalPanels = panelInds.length + (showVolumePanelRef.current ? 1 : 0);
-        const panelH = totalPanels === 0 ? 0 : Math.min(H * 0.38, totalPanels * 95 * dpr);
+        const panelH = calculateDynamicPanelHeight(H, totalPanels, dpr);
         const chartH = H - panelH - BM;
         const chartW = W - RM;
 
@@ -1181,7 +1181,7 @@ export function CandlestickCanvas({
       if (!activeDrawingTool || activeDrawingTool === 'NONE') {
         const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
         const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
-        const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
+        const panelH = calculateDynamicPanelHeight(size.h, totalPanels);
         const chartH = size.h - panelH - CHART_BOTTOM_MARGIN;
         const chartW = size.w - CHART_RIGHT_MARGIN;
         const visCnt = visibleCount;
@@ -1477,7 +1477,7 @@ export function CandlestickCanvas({
 
     const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
     const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
-    const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
+    const panelH = calculateDynamicPanelHeight(size.h, totalPanels);
     const chartH = size.h - panelH - CHART_BOTTOM_MARGIN;
     const chartW = size.w - CHART_RIGHT_MARGIN;
     const visCnt = visibleCount;
@@ -1944,7 +1944,7 @@ export function CandlestickCanvas({
 
       const panelInds = indicators.filter(i => !isOverlay(i.type) && i.enabled);
       const totalPanels = panelInds.length + (showVolumePanel ? 1 : 0);
-      const panelH = totalPanels === 0 ? 0 : Math.min(size.h * 0.38, totalPanels * 95);
+      const panelH = calculateDynamicPanelHeight(size.h, totalPanels);
       const chartH = size.h - panelH - CHART_BOTTOM_MARGIN;
       const chartW = size.w - CHART_RIGHT_MARGIN;
       const visCnt = visibleCount;

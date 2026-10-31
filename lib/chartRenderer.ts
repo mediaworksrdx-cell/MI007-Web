@@ -13,7 +13,7 @@ import {
   FnoOverlayLevels, StrategyPayoffOverlay,
   ChartOptions, ViewState, Crosshair, MagnetReticle, ScaleState,
   INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay, formatIndicatorBadgeLabel,
-  CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN,
+  CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN, calculateDynamicPanelHeight,
 } from './types';
 import { calculateSMC, DEFAULT_SMC_CONFIG, type SmcConfig } from './smcEngine';
 import { renderOrderFlowFootprint } from './orderflow/orderFlowRenderer';
@@ -906,7 +906,7 @@ export function renderChart(
   const panelInds = options.indicators.filter(i => !isOverlay(i.type) && i.enabled);
   const hasVolPanel = options.showVolumePanel;
   const totalPanels = panelInds.length + (hasVolPanel ? 1 : 0);
-  const panelH = totalPanels === 0 ? 0 : Math.min(H * 0.38, totalPanels * 95 * dpr);
+  const panelH = calculateDynamicPanelHeight(H, totalPanels, dpr);
   const chartH = H - panelH - BM;
   const chartW = W - RM;
 
@@ -4082,7 +4082,7 @@ export function renderOverlay(
   const panelInds = options.indicators.filter(i => !isOverlay(i.type) && i.enabled);
   const hasVolPanel = options.showVolumePanel;
   const totalPanels = panelInds.length + (hasVolPanel ? 1 : 0);
-  const panelH = totalPanels === 0 ? 0 : Math.min(H * 0.38, totalPanels * 95 * dpr);
+  const panelH = calculateDynamicPanelHeight(H, totalPanels, dpr);
   const chartH = H - panelH - BM;
   const chartW = W - RM;
 

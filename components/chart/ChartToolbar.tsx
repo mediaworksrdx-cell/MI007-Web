@@ -402,10 +402,10 @@ export function ChartToolbar({
   return (
     <div
       ref={toolbarRef}
-      className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B0F19] px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 shadow-xs gap-2 relative z-50 select-none overflow-visible"
+      className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B0F19] px-2.5 sm:px-3 py-1 text-xs text-slate-800 dark:text-slate-200 shadow-xs gap-1.5 sm:gap-2 relative z-50 select-none overflow-x-auto scrollbar-none flex-nowrap"
     >
       {/* ── Left Controls: Timeframe, Chart Type, Indicators, Drawing, Overlays, Save & Templates ── */}
-      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-nowrap">
         {/* 1. Timeframe Simple Dropdown */}
         <div className="relative">
           <button
@@ -731,7 +731,8 @@ export function ChartToolbar({
             <span className="font-mono font-black text-xs px-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
               SMC
             </span>
-            <span>SMC Analysis</span>
+            <span className="hidden sm:inline">SMC Analysis</span>
+            <span className="sm:hidden">SMC</span>
             {activeSmcConfig.enabled && (
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             )}
@@ -1117,7 +1118,8 @@ export function ChartToolbar({
             <span className="font-mono font-black text-xs px-1 rounded bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
               OF
             </span>
-            <span>Order Flow</span>
+            <span className="hidden sm:inline">Order Flow</span>
+            <span className="sm:hidden">OF</span>
             {activeOfConfig.enabled && (
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             )}

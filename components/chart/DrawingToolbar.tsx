@@ -144,8 +144,8 @@ export function DrawingToolbar({
   return (
     <div
       ref={toolbarRef}
-      className={`relative z-30 flex flex-col items-center bg-white dark:bg-[#0B0F19] border-r border-slate-200 dark:border-slate-800 py-2 px-1 select-none shadow-sm ${className}`}
-      style={{ width: '44px' }}
+      className={`relative z-30 flex flex-col items-center bg-white dark:bg-[#0B0F19] border-r border-slate-200 dark:border-slate-800 py-1.5 px-0.5 sm:px-1 select-none shadow-sm overflow-y-auto scrollbar-none max-h-full ${className}`}
+      style={{ width: '42px' }}
     >
       {/* ── 1. Cursor / Arrow Mode (Standard Selection Cursor ↖) ── */}
       <button

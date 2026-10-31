@@ -1342,10 +1342,10 @@ export default function TerminalPage() {
     <>
       <Navbar market={market} onMarketChange={setMarket} />
 
-      <main className="min-h-screen pt-28 sm:pt-32 relative z-20 bg-transparent pb-20">
-        {/* ── Master Dashboard Layer (Extended width: exactly 1 inch margin on left and right) ── */}
-        <div className="w-full px-3 sm:px-6 lg:px-[1in] py-4 sm:py-6 relative z-20 isolate">
-          <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-3.5 sm:p-6 lg:p-9 overflow-hidden">
+      <main className="min-h-screen pt-[86px] sm:pt-[92px] relative z-20 bg-transparent pb-10">
+        {/* ── Master Dashboard Layer (Fluid responsive margin across 7" tab to 32" monitor) ── */}
+        <div className="w-full px-2 xs:px-3 sm:px-5 lg:px-7 xl:px-9 py-2.5 sm:py-4 relative z-20 isolate">
+          <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-2.5 xs:p-3.5 sm:p-5 lg:p-6 overflow-hidden">
             {/* Top Outer Hairline Accent */}
             <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 pointer-events-none" />
 
@@ -1628,7 +1628,7 @@ export default function TerminalPage() {
 
             {/* ── Charts Module (Shown on CHARTS tab) ── */}
             {activeTab === 'charts' && (
-              <div className="w-full rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xl overflow-hidden min-h-[780px] h-[calc(100vh-13rem)] flex flex-col mb-8 animate-in fade-in duration-150">
+              <div className="w-full rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xl overflow-hidden h-[calc(100dvh-9.5rem)] min-h-[480px] sm:min-h-[540px] md:min-h-[600px] lg:min-h-[660px] xl:min-h-[720px] flex flex-col mb-4 sm:mb-8 animate-in fade-in duration-150">
                 <DynamicChartContainer market={market} defaultSymbol={defaultChartSym} />
               </div>
             )}
@@ -1647,7 +1647,7 @@ export default function TerminalPage() {
                     No indices in this section. Use the search bar above or click Reset Defaults.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6 gap-3 sm:gap-3.5 mb-6">
                     {indices.map(idx => (
                       <IndexTile
                         key={idx.symbol}
@@ -1711,7 +1711,7 @@ export default function TerminalPage() {
                     No commodities in this section. Use the search bar above or click Reset Defaults.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">
                     {commodities.map(c => (
                       <CommodityTile
                         key={c.symbol}
@@ -1740,7 +1740,7 @@ export default function TerminalPage() {
                     No forex pairs in this section. Use the search bar above or click Reset Defaults.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">
                     {forex.map(f => (
                       <ForexTile
                         key={f.symbol}
@@ -1769,7 +1769,7 @@ export default function TerminalPage() {
                     No cryptos in this section. Use the search bar above to add crypto or click Reset Defaults.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">
                     {crypto.map(c => (
                       <CryptoTile
                         key={c.symbol}

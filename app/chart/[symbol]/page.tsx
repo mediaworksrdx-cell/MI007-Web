@@ -85,7 +85,7 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
     <>
       <Navbar market={market} onMarketChange={setMarket} />
 
-      <main className="pt-[89px] sm:pt-[93px] h-screen flex flex-col bg-transparent relative z-10 overflow-hidden">
+      <main className="pt-[84px] sm:pt-[88px] h-[100dvh] max-h-[100dvh] flex flex-col bg-transparent relative z-10 overflow-hidden">
         {/* ── Full Chart Terminal ── */}
         <div className="flex-1 min-h-0 w-full h-full p-0">
           <ChartContainer

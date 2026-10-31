@@ -18,10 +18,10 @@ export default function ScreenerTerminalPage() {
     <>
       <Navbar market={market} onMarketChange={setMarket} />
 
-      <main className="min-h-screen pt-28 sm:pt-32 relative z-20 bg-transparent pb-24">
+      <main className="min-h-screen pt-[86px] sm:pt-[92px] relative z-20 bg-transparent pb-12">
         {/* ── Master Dashboard Shell ── */}
-        <div className="mx-auto max-w-[1600px] px-3 sm:px-4 lg:px-6 relative z-20 isolate">
-          <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-3.5 sm:p-6 lg:p-8 overflow-hidden">
+        <div className="mx-auto max-w-[1600px] px-2.5 sm:px-4 lg:px-6 relative z-20 isolate">
+          <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-3 sm:p-5 lg:p-6 overflow-hidden">
             {/* Top Outer Hairline Accent */}
             <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 pointer-events-none" />
 

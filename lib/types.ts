@@ -189,6 +189,19 @@ export interface ChartOptions {
 export const CHART_RIGHT_MARGIN = 90;
 export const CHART_BOTTOM_MARGIN = 34;
 
+/**
+ * Dynamically scales indicator sub-panel height (RSI, MACD, Volume)
+ * based on available canvas height, guaranteeing the primary candlestick
+ * chart retains >= 70-78% of viewport real-estate on 14" laptops & tablets.
+ */
+export function calculateDynamicPanelHeight(height: number, totalPanels: number, dpr = 1): number {
+  if (totalPanels === 0) return 0;
+  const logicalH = height / dpr;
+  const maxRatio = logicalH < 500 ? 0.22 : logicalH < 700 ? 0.30 : 0.38;
+  const perPanel = (logicalH < 500 ? 62 : logicalH < 700 ? 78 : 95) * dpr;
+  return Math.min(height * maxRatio, totalPanels * perPanel);
+}
+
 
 export interface ScaleState {
   priceScaleRatio: number;
