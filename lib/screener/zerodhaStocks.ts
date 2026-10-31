@@ -550,7 +550,64 @@ export const KNOWN_ZERODHA_MCAP: Record<string, number> = {
   ANDHRSUGAR: 1240,
   GREENPOWER: 835,
   OSWALGREEN: 472,
+
+  // Real verified market caps for high-priced Indian equities (eliminates fake ranking pollution)
+  ELCIDIN: 2000,
+  HONAUT: 26069,
+  POWERINDIA: 115434,
+  ABBOTINDIA: 54346,
+  PTCIL: 34480,
+  NEULANDLAB: 25200,
+  SOLARINDS: 170140,
+  FORCEMOT: 22908,
+  LMW: 17004,
+  APARINDS: 63025,
+  ELANTAS: 10113,
+  TVSHLTD: 24543,
+  MAHSCOOTER: 13225,
+  DYNAMATECH: 7888,
+  DISAQ: 1630,
+  JSWHL: 12100,
+  VOLTAMP: 10470,
+  TASTYBITE: 2500,
+  VADILALIND: 5380,
+  BENGALASM: 6400,
+  COCKERILL: 3600,
+  DRAGARWQ: 2500,
+  INDPRUD: 1000,
+  ZSARACOM: 900,
+  BENARAS: 1320,
+  LAKSHMIMIL: 550,
+  VADILENT: 825,
+  HAWKINCOOK: 4020,
+  WENDT: 6760,
+  FINEORG: 15480,
+  ASTRAZEN: 15900,
+  GRWRHITECH: 16200,
+  CRAFTSMAN: 21700,
+  PGHH: 22200,
+  PGHL: 9380,
+  GILLETTE: 23070,
+  ESABINDIA: 8080,
+  FOSECOIND: 3740,
+  AMBER: 19770,
+  MTARTECH: 5200,
+  KOVAI: 6360,
+  KINGFA: 8210,
 };
+
+/**
+ * Realistic market cap estimator for unknown/unprofiled catalog stocks.
+ * Clamps fallback market cap strictly to small/micro-cap ranges (<= ₹3,500 Cr)
+ * so unprofiled equities can NEVER corrupt or displace Mid/Large/Mega-cap rankings.
+ */
+export function estimateUnknownCatalogMarketCap(price: number): number {
+  if (!price || price <= 0) return 500;
+  if (price > 10000) return Math.min(2500, Math.max(200, Math.round(price * 0.1)));
+  if (price > 2000) return Math.min(3000, Math.max(200, Math.round(price * 0.4)));
+  if (price > 500) return Math.min(3500, Math.max(150, Math.round(price * 1.5)));
+  return Math.min(3500, Math.max(50, Math.round(price * 4)));
+}
 
 
 
@@ -568,7 +625,7 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
 
   const knownMcap = (cachedFund?.marketCap && cachedFund.marketCap > 0)
     ? cachedFund.marketCap
-    : (KNOWN_ZERODHA_MCAP[symClean] || KNOWN_ZERODHA_MCAP[item.symbol] || Math.round(price * 45));
+    : (KNOWN_ZERODHA_MCAP[symClean] || KNOWN_ZERODHA_MCAP[item.symbol] || estimateUnknownCatalogMarketCap(price));
 
   const sector = item.sector || guessSectorFromName(item.name, item.symbol);
 

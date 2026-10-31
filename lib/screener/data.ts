@@ -3726,7 +3726,7 @@ function enrichCuratedIndianCompany(comp: CompanyFundamental): CompanyFundamenta
     ...comp,
     currentPrice,
     priceChangePct,
-    marketCap: f.marketCap ?? comp.marketCap,
+    marketCap: (f.marketCap && f.marketCap > 0) ? f.marketCap : comp.marketCap,
     pe: f.pe ?? comp.pe,
     pb: f.pb ?? comp.pb,
     roce: f.roce ?? comp.roce,
@@ -3766,6 +3766,13 @@ export function buildIndiaUniverse(): CompanyFundamental[] {
     if (curatedSymbolSet.has(sym)) continue;
     // Exclude indices and volatility gauges from equity screener
     if (item.sector && (item.sector.includes('Index') || item.sector.includes('Volatility'))) continue;
+
+    // Filter out ETFs, Index funds, Gold/Silver BeES from common equity screener
+    const isEtf = 
+      /(\bETF\b|BEES$|BEES\b|GOLD\b|SILVER\b|NIFTY\s*50\s*ETF|LIQUID\b|INDEX\s*FUND|EXCHANGE\s*TRADED)/i.test(item.name || '') ||
+      /(BEES|ETF)$/i.test(sym) ||
+      sym.startsWith('NETF');
+    if (isEtf) continue;
 
     // Filter out non-equity debt instruments, bonds, SGBs, illiquid series
     if (/^[0-9]/.test(sym)) continue; // Starts with digit (e.g. 903SFL28-YI, 865IRFC29-NA, 10IIFL28A-NE)

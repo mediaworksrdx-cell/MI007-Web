@@ -14168,5 +14168,10 @@
     "symbol": "SENSEX",
     "price": 74459.53,
     "prev": 74151.04
+  },
+  "MACROTECH": {
+    "symbol": "MACROTECH",
+    "price": 1190,
+    "prev": 1182.5
   }
 }

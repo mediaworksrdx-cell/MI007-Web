@@ -1,0 +1,525 @@
+[
+  {
+    "sym": "RELIANCE",
+    "our": {
+      "price": 1164.9,
+      "mcap": 1576398,
+      "pe": 21.1,
+      "roce": 9,
+      "roe": 9.2,
+      "sales3Y": 6.4,
+      "profit3Y": 6.6,
+      "de": 0.44,
+      "div": 0.51,
+      "opm": 19.4
+    },
+    "screener": {
+      "price": "1165",
+      "mcap": "1576405",
+      "pe": "19.2",
+      "roce": "10.3",
+      "roe": "8.91",
+      "sales3Y": "6",
+      "profit3Y": "5",
+      "de": 0.43,
+      "div": "0.52",
+      "opm": "16"
+    }
+  },
+  {
+    "sym": "TCS",
+    "our": {
+      "price": 2502.6,
+      "mcap": 905463,
+      "pe": 17.5,
+      "roce": 54.9,
+      "roe": 48.7,
+      "sales3Y": 5.8,
+      "profit3Y": 5.3,
+      "de": 0.11,
+      "div": 1.94,
+      "opm": 27.1
+    },
+    "screener": {
+      "price": "2503",
+      "mcap": "905463",
+      "pe": "16.6",
+      "roce": "63.0",
+      "roe": "51.8",
+      "sales3Y": "6",
+      "profit3Y": "8",
+      "de": 0.1,
+      "div": "2.56",
+      "opm": "26"
+    }
+  },
+  {
+    "sym": "HDFCBANK",
+    "our": {
+      "price": 692.8,
+      "mcap": 1068825,
+      "pe": 15.1,
+      "roce": 6.4,
+      "roe": 8.9,
+      "sales3Y": 27.5,
+      "profit3Y": 12.5,
+      "de": 0.81,
+      "div": 1.9,
+      "opm": 37.6
+    },
+    "screener": {
+      "price": "693",
+      "mcap": "1068834",
+      "pe": "13.3",
+      "roce": "7.02",
+      "roe": "13.6",
+      "sales3Y": "27",
+      "profit3Y": "18",
+      "div": "1.88",
+      "opm": "-10"
+    }
+  },
+  {
+    "sym": "BHARTIARTL",
+    "our": {
+      "price": 1973.7,
+      "mcap": 1231324,
+      "pe": 41.3,
+      "roce": 16.7,
+      "roe": 20.3,
+      "sales3Y": 14.9,
+      "profit3Y": 47.3,
+      "de": 1.31,
+      "div": 1.22,
+      "opm": 54.9
+    },
+    "screener": {
+      "price": "1974",
+      "mcap": "1231907",
+      "pe": "39.4",
+      "roce": "17.6",
+      "roe": "20.3",
+      "sales3Y": "15",
+      "profit3Y": "45",
+      "de": 1.31,
+      "div": "1.22",
+      "opm": "57"
+    }
+  },
+  {
+    "sym": "ICICIBANK",
+    "our": {
+      "price": 1398,
+      "mcap": 1003854,
+      "pe": 17.2,
+      "roce": 13.5,
+      "roe": 16,
+      "sales3Y": 18.1,
+      "profit3Y": 16.8,
+      "de": 0.57,
+      "div": 0.87,
+      "opm": 34.6
+    },
+    "screener": {
+      "price": "1398",
+      "mcap": "1003901",
+      "pe": "17.0",
+      "roce": "7.18",
+      "roe": "15.9",
+      "sales3Y": "17",
+      "profit3Y": "17",
+      "div": "0.86",
+      "opm": "-19"
+    }
+  },
+  {
+    "sym": "INFY",
+    "our": {
+      "price": 1185,
+      "mcap": 479970,
+      "pe": 15.8,
+      "roce": 41.7,
+      "roe": 31.6,
+      "sales3Y": 3.4,
+      "profit3Y": 3.6,
+      "de": 0.1,
+      "div": 4.54,
+      "opm": 25.3
+    },
+    "screener": {
+      "price": "1185",
+      "mcap": "480908",
+      "pe": "15.2",
+      "roce": "40.0",
+      "roe": "31.9",
+      "sales3Y": "7",
+      "profit3Y": "8",
+      "de": 0.09,
+      "div": "4.05",
+      "opm": "24"
+    }
+  },
+  {
+    "sym": "SBIN",
+    "our": {
+      "price": 961.85,
+      "mcap": 887861,
+      "pe": 10.3,
+      "roce": 8.6,
+      "roe": 15.4,
+      "sales3Y": 12.2,
+      "profit3Y": 14.4,
+      "de": 1.22,
+      "div": 1.79,
+      "opm": 29.9
+    },
+    "screener": {
+      "price": "962",
+      "mcap": "887861",
+      "pe": "10.6",
+      "roce": "6.13",
+      "roe": "15.4",
+      "sales3Y": "14",
+      "profit3Y": "14",
+      "div": "1.80",
+      "opm": "-16"
+    }
+  },
+  {
+    "sym": "ITC",
+    "our": {
+      "price": 265.6,
+      "mcap": 332848,
+      "pe": 16.8,
+      "roce": 36.5,
+      "roe": 29,
+      "sales3Y": 3.6,
+      "profit3Y": 2.5,
+      "de": 0.03,
+      "div": 6.04,
+      "opm": 38.1
+    },
+    "screener": {
+      "price": "266",
+      "mcap": "332848",
+      "pe": "16.8",
+      "roce": "38.9",
+      "roe": "29.3",
+      "sales3Y": "4",
+      "profit3Y": "3",
+      "de": 0.03,
+      "div": "5.46",
+      "opm": "34"
+    }
+  },
+  {
+    "sym": "HINDUNILVR",
+    "our": {
+      "price": 1864.6,
+      "mcap": 438105,
+      "pe": 41.4,
+      "roce": 22.2,
+      "roe": 30.7,
+      "sales3Y": 2.3,
+      "profit3Y": 14.1,
+      "de": 0.03,
+      "div": 2.21,
+      "opm": 24.6
+    },
+    "screener": {
+      "price": "1865",
+      "mcap": "438105",
+      "pe": "39.1",
+      "roce": "28.4",
+      "roe": "31.0",
+      "sales3Y": "2",
+      "profit3Y": "14",
+      "de": 0.03,
+      "div": "2.20",
+      "opm": "23"
+    }
+  },
+  {
+    "sym": "LT",
+    "our": {
+      "price": 3871.7,
+      "mcap": 532702,
+      "pe": 29.8,
+      "roce": 14.6,
+      "roe": 15.5,
+      "sales3Y": 16.1,
+      "profit3Y": 15.4,
+      "de": 1.15,
+      "div": 0.99,
+      "opm": 11.7
+    },
+    "screener": {
+      "price": "3872",
+      "mcap": "532713",
+      "pe": "28.2",
+      "roce": "14.6",
+      "roe": "15.9",
+      "sales3Y": "16",
+      "profit3Y": "17",
+      "de": 1.24,
+      "div": "0.98",
+      "opm": "12"
+    }
+  },
+  {
+    "sym": "HCLTECH",
+    "our": {
+      "price": 1428.1,
+      "mcap": 386533,
+      "pe": 21.1,
+      "roce": 27.2,
+      "roe": 23,
+      "sales3Y": 8.7,
+      "profit3Y": 3.9,
+      "de": 0.07,
+      "div": 3.42,
+      "opm": 21
+    },
+    "screener": {
+      "price": "1428",
+      "mcap": "387539",
+      "pe": "20.4",
+      "roce": "30.4",
+      "roe": "23.8",
+      "sales3Y": "9",
+      "profit3Y": "6",
+      "de": 0.08,
+      "div": "3.78",
+      "opm": "21"
+    }
+  },
+  {
+    "sym": "BAJFINANCE",
+    "our": {
+      "price": 939.1,
+      "mcap": 584487,
+      "pe": 27,
+      "roce": 5.5,
+      "roe": 18.1,
+      "sales3Y": 22.6,
+      "profit3Y": 18.2,
+      "de": 3.1,
+      "div": 0.58,
+      "opm": 52
+    },
+    "screener": {
+      "price": "939",
+      "mcap": "584679",
+      "pe": "26.7",
+      "roce": "10.9",
+      "roe": "18.2",
+      "sales3Y": "26",
+      "profit3Y": "19",
+      "div": "0.58",
+      "opm": "34"
+    }
+  },
+  {
+    "sym": "SUNPHARMA",
+    "our": {
+      "price": 1777.7,
+      "mcap": 426530,
+      "pe": 35.3,
+      "roce": 17.9,
+      "roe": 14.7,
+      "sales3Y": 10.4,
+      "profit3Y": 10.6,
+      "de": 0.06,
+      "div": 0.91,
+      "opm": 31.6
+    },
+    "screener": {
+      "price": "1778",
+      "mcap": "426530",
+      "pe": "34.7",
+      "roce": "20.5",
+      "roe": "16.0",
+      "sales3Y": "10",
+      "profit3Y": "13",
+      "de": 0.04,
+      "div": "0.90",
+      "opm": "29"
+    }
+  },
+  {
+    "sym": "NTPC",
+    "our": {
+      "price": 316.25,
+      "mcap": 306657,
+      "pe": 11,
+      "roce": 8.9,
+      "roe": 14,
+      "sales3Y": 1.9,
+      "profit3Y": 16.9,
+      "de": 1.33,
+      "div": 2.9,
+      "opm": 33.2
+    },
+    "screener": {
+      "price": "316",
+      "mcap": "306657",
+      "pe": "11.0",
+      "roce": "8.92",
+      "roe": "15.1",
+      "sales3Y": "2",
+      "profit3Y": "20",
+      "de": 1.33,
+      "div": "2.85",
+      "opm": "27"
+    }
+  },
+  {
+    "sym": "MARUTI",
+    "our": {
+      "price": 11397,
+      "mcap": 358325,
+      "pe": 26.6,
+      "roce": 17.2,
+      "roe": 14.4,
+      "sales3Y": 15.9,
+      "profit3Y": 21.1,
+      "de": 0,
+      "div": 1.23,
+      "opm": 14.7
+    },
+    "screener": {
+      "price": "11397",
+      "mcap": "358325",
+      "pe": "26.6",
+      "roce": "18.9",
+      "roe": "14.3",
+      "sales3Y": "16",
+      "profit3Y": "21",
+      "de": 0,
+      "div": "1.23",
+      "opm": "10"
+    }
+  },
+  {
+    "sym": "TATAMOTORS",
+    "our": {
+      "price": 265.4,
+      "mcap": 0,
+      "pe": 19.5,
+      "roce": 16.8,
+      "roe": 15,
+      "sales3Y": 12,
+      "profit3Y": 14,
+      "de": 0.25,
+      "div": 0,
+      "opm": 18
+    },
+    "screener": {}
+  },
+  {
+    "sym": "TITAN",
+    "our": {
+      "price": 4436.5,
+      "mcap": 393656,
+      "pe": 68.4,
+      "roce": 38.4,
+      "roe": 37.1,
+      "sales3Y": 29.2,
+      "profit3Y": 16,
+      "de": 1.95,
+      "div": 0.34,
+      "opm": 10.1
+    },
+    "screener": {
+      "price": "4436",
+      "mcap": "393866",
+      "pe": "67.5",
+      "roce": "20.5",
+      "roe": "37.7",
+      "sales3Y": "29",
+      "profit3Y": "17",
+      "de": 1.95,
+      "div": "0.34",
+      "opm": "10"
+    }
+  },
+  {
+    "sym": "KOTAKBANK",
+    "our": {
+      "price": 461.6,
+      "mcap": 459194,
+      "pe": 21.4,
+      "roce": 9.4,
+      "roe": 11.4,
+      "sales3Y": 14.1,
+      "profit3Y": 8.9,
+      "de": 0.53,
+      "div": 0.14,
+      "opm": 38.8
+    },
+    "screener": {
+      "price": "462",
+      "mcap": "459194",
+      "pe": "21.6",
+      "roce": "6.98",
+      "roe": "11.4",
+      "sales3Y": "18",
+      "profit3Y": "9",
+      "div": "0.14",
+      "opm": "-18"
+    }
+  },
+  {
+    "sym": "AXISBANK",
+    "our": {
+      "price": 1217,
+      "mcap": 378983,
+      "pe": 12.7,
+      "roce": 6.5,
+      "roe": 13.1,
+      "sales3Y": 12.2,
+      "profit3Y": 34.6,
+      "de": 1.3,
+      "div": 0.08,
+      "opm": 36.7
+    },
+    "screener": {
+      "price": "1217",
+      "mcap": "378983",
+      "pe": "12.6",
+      "roce": "6.24",
+      "roe": "13.1",
+      "sales3Y": "15",
+      "profit3Y": "35",
+      "div": "0.08",
+      "opm": "5"
+    }
+  },
+  {
+    "sym": "ADANIENT",
+    "our": {
+      "price": 2579.4,
+      "mcap": 349179,
+      "pe": 55,
+      "roce": 9.8,
+      "roe": 14.2,
+      "sales3Y": -7.7,
+      "profit3Y": 55.9,
+      "de": 1.32,
+      "div": 0.05,
+      "opm": 26
+    },
+    "screener": {
+      "price": "2579",
+      "mcap": "349104",
+      "pe": "109",
+      "roce": "5.80",
+      "roe": "4.48",
+      "sales3Y": "-8",
+      "profit3Y": "3",
+      "de": 1.2,
+      "div": "0.05",
+      "opm": "14"
+    }
+  }
+]
