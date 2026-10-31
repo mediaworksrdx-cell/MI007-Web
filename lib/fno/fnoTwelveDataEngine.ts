@@ -40,11 +40,11 @@ export interface FnoSpotQuote {
   low?: number;
   volume?: number;
   timestamp: number;
-  source: 'twelvedata-venture' | 'twelvedata-standard' | 'yahoo-fno-fallback' | 'catalog-fallback';
+  source: 'trade-engine' | 'trade-engine-us' | 'trade-engine-kite' | 'yahoo-fno-fallback' | 'catalog-fallback';
 }
 
 export interface FnoEngineStatus {
-  engine: 'TwelveDataFnoEngine';
+  engine: 'TradeEngineFno';
   isIsolated: boolean;
   plan: 'venture' | 'pro' | 'basic' | 'free';
   isVentureReady: boolean;
@@ -129,7 +129,7 @@ export async function fetchFnoSpotQuote(symbol: string): Promise<FnoSpotQuote> {
             change: typeof match.change === 'number' ? +match.change.toFixed(2) : 0,
             changePercent: typeof match.changePercent === 'number' ? +match.changePercent.toFixed(2) : 0,
             timestamp: match.timestamp || Date.now(),
-            source: 'twelvedata-venture',
+            source: 'trade-engine-kite',
           };
           setFnoCached(cacheKey, result);
           return result;
@@ -171,7 +171,7 @@ export async function fetchFnoSpotQuote(symbol: string): Promise<FnoSpotQuote> {
             low: json.low ? parseFloat(json.low) : undefined,
             volume: json.volume ? parseInt(json.volume, 10) : undefined,
             timestamp: Date.now(),
-            source: config.plan === 'venture' ? 'twelvedata-venture' : 'twelvedata-standard',
+            source: 'trade-engine-us',
           };
           setFnoCached(cacheKey, result);
           return result;
@@ -271,7 +271,7 @@ export function getFnoEngineStatus(): FnoEngineStatus {
   const config = getFnoConfig();
 
   return {
-    engine: 'TwelveDataFnoEngine',
+    engine: 'TradeEngineFno',
     isIsolated: true,
     plan: config.plan,
     isVentureReady: config.isVentureReady,

@@ -1,6 +1,6 @@
 // ─── Dedicated F&O Engine API Route ──────────────────────────────────────────
 // Route: /api/fno
-// Provides isolated Twelve Data Venture & Institutional derivatives feeds.
+// Provides isolated derivatives feeds powered directly by the Trade Engine backend.
 // Completely separated from /api/trade-engine to guarantee non-disturbance.
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(quote, {
           headers: {
             'Cache-Control': 'no-store, max-age=0',
-            'X-Fno-Engine': 'TwelveData-Isolated',
+            'X-Fno-Engine': 'TradeEngine-Isolated',
           },
         });
       }
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(chain, {
           headers: {
             'Cache-Control': 'no-store, max-age=0',
-            'X-Fno-Engine': 'TwelveData-Isolated',
+            'X-Fno-Engine': 'TradeEngine-Isolated',
           },
         });
       }
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(status, {
           headers: {
             'Cache-Control': 'no-store, max-age=0',
-            'X-Fno-Engine': 'TwelveData-Isolated',
+            'X-Fno-Engine': 'TradeEngine-Isolated',
           },
         });
       }

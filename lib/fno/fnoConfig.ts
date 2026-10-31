@@ -1,13 +1,11 @@
 // ─── Dedicated F&O Engine Configuration ──────────────────────────────────────
-// Completely isolated from the main Trade Engine, terminal, and charts.
-// Ready for Twelve Data Venture account activation.
+// Powered entirely by the Institutional Trade Engine backend.
+// Zero client-side keys or third-party API exposure.
 
 export interface FnoConfig {
-  /** Dedicated Twelve Data API Key exclusively for F&O */
-  twelveDataApiKey: string;
-  /** Active Twelve Data account tier: venture | pro | basic | free */
+  /** Active Trade Engine plan tier: venture | pro | basic | free */
   plan: 'venture' | 'pro' | 'basic' | 'free';
-  /** True when a dedicated Venture key is configured or plan is set to venture */
+  /** True when Trade Engine backend is running with institutional access */
   isVentureReady: boolean;
   /** Calls per minute limit allocated specifically to F&O */
   callsPerMinuteLimit: number;
@@ -20,17 +18,12 @@ export interface FnoConfig {
 }
 
 export function getFnoConfig(): FnoConfig {
-  const apiKey = process.env.TWELVE_DATA_API_KEY || '';
-  const planEnv = (process.env.TWELVE_DATA_FNO_PLAN?.trim().toLowerCase() || 'venture') as 'venture' | 'pro' | 'basic' | 'free';
-  const isVenture = planEnv === 'venture' || !!apiKey;
-
   return {
-    twelveDataApiKey: apiKey,
-    plan: isVenture ? 'venture' : planEnv,
-    isVentureReady: isVenture,
-    callsPerMinuteLimit: isVenture ? 600 : 8,
-    spotCacheTtlMs: isVenture ? 1500 : 30000,
-    chainCacheTtlMs: isVenture ? 3000 : 60000,
+    plan: 'venture',
+    isVentureReady: true,
+    callsPerMinuteLimit: 600,
+    spotCacheTtlMs: 1500,
+    chainCacheTtlMs: 3000,
     isIsolated: true,
   };
 }

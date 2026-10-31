@@ -362,56 +362,7 @@ async function fetchYahooMacroData(): Promise<{ value: any[]; Count: number } | 
   return null;
 }
 
-async function fetchTwelveDataMacroData(apiKey: string): Promise<{ value: any[]; Count: number } | null> {
-  const symbols = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/INR', 'USD/CAD', 'USD/CHF', 'AUD/USD', 'XAU/USD', 'WTI/USD'];
-  try {
-    const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols.join(','))}&apikey=${encodeURIComponent(apiKey)}`;
-    const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(6500) });
-    if (!res.ok) return null;
-    const json = await res.json();
-    if (!json || json.status === 'error' || json.code === 429) return null;
-
-    const results: any[] = [];
-    const itemMap: Record<string, { symbols: string[]; format: (p: number) => string }> = {
-      'EUR/USD': { symbols: ['EURUSD', 'EUR/USD'], format: (p) => p.toFixed(4) },
-      'GBP/USD': { symbols: ['GBPUSD', 'GBP/USD'], format: (p) => p.toFixed(4) },
-      'USD/JPY': { symbols: ['USDJPY', 'USD/JPY'], format: (p) => p.toFixed(2) },
-      'USD/INR': { symbols: ['USDINR', 'USD/INR'], format: (p) => p.toFixed(2) },
-      'USD/CAD': { symbols: ['USDCAD', 'USD/CAD', 'UADCAD', 'UAD/CAD'], format: (p) => p.toFixed(4) },
-      'USD/CHF': { symbols: ['USDCHF', 'USD/CHF'], format: (p) => p.toFixed(4) },
-      'AUD/USD': { symbols: ['AUDUSD', 'AUD/USD'], format: (p) => p.toFixed(4) },
-      'XAU/USD': { symbols: ['GOLD', 'XAU/USD', 'XAUUSD', 'XAU'], format: (p) => p.toFixed(2) },
-      'WTI/USD': { symbols: ['WTI', 'CRUDE_WTI'], format: (p) => p.toFixed(2) },
-    };
-
-    for (const [key, quote] of Object.entries(json as Record<string, any>)) {
-      if (!quote || typeof quote !== 'object' || !quote.close) continue;
-      const mapping = itemMap[key];
-      if (!mapping) continue;
-      const p = parseFloat(quote.close);
-      const prev = parseFloat(quote.previous_close || quote.close);
-      const chg = parseFloat(quote.change || (p - prev).toFixed(p < 5 ? 5 : 2));
-      const pct = parseFloat(quote.percent_change || (((p - prev) / Math.max(0.0001, prev)) * 100).toFixed(2));
-      for (const sym of mapping.symbols) {
-        results.push({
-          symbol: sym,
-          value: mapping.format(p),
-          change: chg,
-          changePercent: pct,
-        });
-      }
-    }
-
-    if (results.length >= 6) {
-      return { value: results, Count: results.length };
-    }
-  } catch (err) {
-    console.warn('[TwelveDataMacro] Notice:', err);
-  }
-  return null;
-}
-
-async function fetchTwelveDataUsPrices(apiKey: string): Promise<any[]> {
+async function fetchTradeEngineUsPrices(): Promise<any[]> {
   const stockMap: Record<string, number> = {
     NVDA: 900010,
     AAPL: 900011,
@@ -423,32 +374,36 @@ async function fetchTwelveDataUsPrices(apiKey: string): Promise<any[]> {
   };
   const symbols = Object.keys(stockMap);
   try {
-    const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols.join(','))}&apikey=${encodeURIComponent(apiKey)}`;
-    const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(6500) });
-    if (!res.ok) return [];
-    const json = await res.json();
-    if (!json || json.status === 'error' || json.code === 429) return [];
+    const promises = symbols.map(async (sym) => {
+      try {
+        const res = await fetch(`${TRADE_ENGINE_URL}/us/quote?symbol=${encodeURIComponent(sym)}`, {
+          cache: 'no-store',
+          signal: AbortSignal.timeout(4000),
+        });
+        if (!res.ok) return null;
+        const quote = await res.json();
+        if (!quote || quote.error || !quote.close) return null;
+        const p = parseFloat(quote.close);
+        const prev = parseFloat(quote.previous_close || quote.close);
+        const chg = parseFloat(quote.change || (p - prev).toFixed(2));
+        const pct = parseFloat(quote.percent_change || (((p - prev) / Math.max(0.01, prev)) * 100).toFixed(2));
+        return {
+          instrumentToken: stockMap[sym] || 900050,
+          symbol: sym,
+          ltp: +p.toFixed(2),
+          change: +chg.toFixed(2),
+          changePercent: +pct.toFixed(2),
+          timestamp: Date.now(),
+        };
+      } catch {
+        return null;
+      }
+    });
 
-    const now = Date.now();
-    const results: any[] = [];
-    for (const [sym, quote] of Object.entries(json as Record<string, any>)) {
-      if (!quote || typeof quote !== 'object' || !quote.close) continue;
-      const p = parseFloat(quote.close);
-      const prev = parseFloat(quote.previous_close || quote.close);
-      const chg = parseFloat(quote.change || (p - prev).toFixed(2));
-      const pct = parseFloat(quote.percent_change || (((p - prev) / Math.max(0.01, prev)) * 100).toFixed(2));
-      results.push({
-        instrumentToken: stockMap[sym] || 900050,
-        symbol: sym,
-        ltp: +p.toFixed(2),
-        change: +chg.toFixed(2),
-        changePercent: +pct.toFixed(2),
-        timestamp: now,
-      });
-    }
-    return results;
+    const settled = await Promise.all(promises);
+    return settled.filter((s): s is NonNullable<typeof s> => s !== null);
   } catch (err) {
-    console.warn('[TwelveDataUsPrices] Notice:', err);
+    console.warn('[TradeEngineUsPrices] Notice:', err);
     return [];
   }
 }
@@ -575,16 +530,11 @@ async function getActiveUsPrices(): Promise<any[]> {
     return cached;
   }
 
-  const apiKey = process.env.TWELVE_DATA_API_KEY || '3925d32210e845e087ea7b75b1b7720b';
+  // 1. Priority 1: Query Trade Engine backend for US Strategic Watchlist
+  const teStocks = await fetchTradeEngineUsPrices();
 
-  // 1. Priority 1: Query Twelve Data for US Strategic Watchlist
-  let tdStocks: any[] = [];
-  if (apiKey) {
-    tdStocks = await fetchTwelveDataUsPrices(apiKey);
-  }
-
-  // 2. Fall back to Yahoo for stocks if Twelve Data had insufficient items
-  const stocks = tdStocks.length >= 4 ? tdStocks : await fetchYahooFallbackUsPrices();
+  // 2. Fall back to Yahoo for stocks if Trade Engine had insufficient items
+  const stocks = teStocks.length >= 4 ? teStocks : await fetchYahooFallbackUsPrices();
   const indices = await fetchRealUsIndices();
 
   if (indices.length > 0 || stocks.length > 0) {
@@ -1137,18 +1087,23 @@ export async function GET(
       });
     }
 
-    // Priority 1: Twelve Data for Commodities & Forex
-    const apiKey = process.env.TWELVE_DATA_API_KEY || '3925d32210e845e087ea7b75b1b7720b';
-    if (apiKey) {
-      const tdMacro = await fetchTwelveDataMacroData(apiKey);
-      if (tdMacro) {
-        setCached(cacheKey, tdMacro);
-        return NextResponse.json(tdMacro, {
-          status: 200,
-          headers: { 'X-Cache': 'MISS-TWELVEDATA', 'Access-Control-Allow-Origin': '*' },
-        });
+    // Priority 1: Query Trade Engine backend for Commodities & Forex
+    try {
+      const teRes = await fetch(`${TRADE_ENGINE_URL}/macro-data`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(3500),
+      });
+      if (teRes.ok) {
+        const teJson = await teRes.json();
+        if (teJson && Array.isArray(teJson.value) && teJson.value.length > 0) {
+          setCached(cacheKey, teJson);
+          return NextResponse.json(teJson, {
+            status: 200,
+            headers: { 'X-Cache': 'MISS-TRADE-ENGINE', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
       }
-    }
+    } catch {}
 
     // Priority 2: Seamless failover to Yahoo Finance for Commodities & Forex
     const yahooMacro = await fetchYahooMacroData();
