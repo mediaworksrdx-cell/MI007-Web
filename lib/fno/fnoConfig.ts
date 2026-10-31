@@ -20,9 +20,9 @@ export interface FnoConfig {
 }
 
 export function getFnoConfig(): FnoConfig {
-  const apiKey = process.env.TWELVE_DATA_API_KEY || '3925d32210e845e087ea7b75b1b7720b';
+  const apiKey = process.env.TWELVE_DATA_API_KEY || '';
   const planEnv = (process.env.TWELVE_DATA_FNO_PLAN?.trim().toLowerCase() || 'venture') as 'venture' | 'pro' | 'basic' | 'free';
-  const isVenture = planEnv === 'venture';
+  const isVenture = planEnv === 'venture' || !!apiKey;
 
   return {
     twelveDataApiKey: apiKey,
