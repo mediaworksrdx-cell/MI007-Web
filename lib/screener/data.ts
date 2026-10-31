@@ -3764,15 +3764,19 @@ export function buildIndiaUniverse(): CompanyFundamental[] {
   for (const item of zerodhaList) {
     const sym = item.symbol.toUpperCase();
     if (curatedSymbolSet.has(sym)) continue;
-    // Exclude indices and volatility gauges from equity screener
+    // Exclude indices, sectoral benchmarks, and volatility gauges from equity screener
     if (item.sector && (item.sector.includes('Index') || item.sector.includes('Volatility'))) continue;
+    if (/(\bINDEX\b|NIFTY\s*(MEDIA|PSU|INFRA|ENERGY|REALTY|METAL|PHARMA|FMCG|AUTO|IT|BANK|50|100|500)\b)/i.test(item.name || '') || /^NIFTY\s/i.test(sym)) continue;
 
-    // Filter out ETFs, Index funds, Gold/Silver BeES, and INAV series from common equity screener
+    // Filter out ETFs, Mutual Fund AMC schemes, Index funds, Gold/Silver BeES, and INAV series
     const isEtf = 
-      /(\b(ETF|INAV|FOF)\b|BEES$|BEES\b|GOLD\b|SILVER\b|NIFTY\s*50\s*ETF|LIQUID\b|INDEX\s*FUND|EXCHANGE\s*TRADED)/i.test(item.name || '') ||
+      /(\b(ETF|INAV|FOF)\b|BEES$|BEES\b|GOLD\b|SILVER\b|NIFTY\s*50\s*ETF|LIQUID\b|INDEX\s*FUND|EXCHANGE\s*TRADED|AMC\s*-|_AMC\b|\bAMC\b)/i.test(item.name || '') ||
       /(BEES|ETF|INAV)$/i.test(sym) ||
       sym.startsWith('NETF');
     if (isEtf) continue;
+
+    // Filter out warrants and rights entitlements
+    if (/(-W\d*|-RE)$/i.test(sym) || /\b(WARRANT|RIGHTS\s*ENTITLEMENT)\b/i.test(item.name || '')) continue;
 
     // Filter out non-equity debt instruments, bonds, SGBs, illiquid series
     if (/^[0-9]/.test(sym)) continue; // Starts with digit (e.g. 903SFL28-YI, 865IRFC29-NA, 10IIFL28A-NE)
