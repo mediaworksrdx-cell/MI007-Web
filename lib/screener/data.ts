@@ -3767,10 +3767,10 @@ export function buildIndiaUniverse(): CompanyFundamental[] {
     // Exclude indices and volatility gauges from equity screener
     if (item.sector && (item.sector.includes('Index') || item.sector.includes('Volatility'))) continue;
 
-    // Filter out ETFs, Index funds, Gold/Silver BeES from common equity screener
+    // Filter out ETFs, Index funds, Gold/Silver BeES, and INAV series from common equity screener
     const isEtf = 
-      /(\bETF\b|BEES$|BEES\b|GOLD\b|SILVER\b|NIFTY\s*50\s*ETF|LIQUID\b|INDEX\s*FUND|EXCHANGE\s*TRADED)/i.test(item.name || '') ||
-      /(BEES|ETF)$/i.test(sym) ||
+      /(\b(ETF|INAV|FOF)\b|BEES$|BEES\b|GOLD\b|SILVER\b|NIFTY\s*50\s*ETF|LIQUID\b|INDEX\s*FUND|EXCHANGE\s*TRADED)/i.test(item.name || '') ||
+      /(BEES|ETF|INAV)$/i.test(sym) ||
       sym.startsWith('NETF');
     if (isEtf) continue;
 
@@ -3778,7 +3778,7 @@ export function buildIndiaUniverse(): CompanyFundamental[] {
     if (/^[0-9]/.test(sym)) continue; // Starts with digit (e.g. 903SFL28-YI, 865IRFC29-NA, 10IIFL28A-NE)
     if (/-(BE|BZ|ST|SM|SF|SG|YI|YL|E1|NA|NB|NC|ND|NE|NF|NG|NH|NI|RR|IV|SZ)$/.test(sym)) continue; // Bond / debt series
     if (!item.name || item.name.trim() === '') continue;
-    if (/\b(BOND|DEBENTURE|SGB|G-SEC|GOVT)\b/i.test(item.name)) continue;
+    if (/\b(BOND|DEBENTURE|SGB|G-SEC|GSEC|GOVT|GILT|TREASURY|SDL|SOVEREIGN)\b/i.test(item.name || '') || /^(GSEC|GS\d|TBILL|SGB)/i.test(sym) || /GSEC/i.test(sym)) continue;
 
     additional.push(generateFundamentalFromZerodha(item));
   }

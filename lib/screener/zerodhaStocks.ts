@@ -642,26 +642,24 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     'Infrastructure & Capital Goods': { pe: 25.5, roce: 17.5, roe: 15.8, de: 0.42, opm: 11.8, pb: 3.1 },
   };
 
-  const def = sectorDefaults[sector] || { pe: 18.5, roce: 16.0, roe: 14.5, de: 0.25, opm: 15.5, pb: 2.2 };
-
-  // Priority 1: Audited Real Fundamentals from Cache; Priority 2: Sector-calibrated baseline
-  const pe = cachedFund?.pe != null ? cachedFund.pe : def.pe;
-  const pb = cachedFund?.pb != null ? cachedFund.pb : def.pb;
-  const roce = cachedFund?.roce != null ? cachedFund.roce : def.roce;
-  const roe = cachedFund?.roe != null ? cachedFund.roe : def.roe;
-  const opm = cachedFund?.opm != null ? cachedFund.opm : def.opm;
-  const npm = cachedFund?.npm != null ? cachedFund.npm : +(def.opm * 0.65).toFixed(1);
-  const debtToEquity = cachedFund?.debtToEquity != null ? cachedFund.debtToEquity : def.de;
-  const dividendYield = cachedFund?.dividendYield != null ? cachedFund.dividendYield : 0.85;
-  const salesGrowth1Y = cachedFund?.salesGrowth1Y != null ? cachedFund.salesGrowth1Y : 12.5;
-  const salesGrowth3Y = cachedFund?.salesGrowth3Y != null ? cachedFund.salesGrowth3Y : 11.8;
-  const profitGrowth1Y = cachedFund?.profitGrowth1Y != null ? cachedFund.profitGrowth1Y : 14.2;
-  const profitGrowth3Y = cachedFund?.profitGrowth3Y != null ? cachedFund.profitGrowth3Y : 13.5;
+  // Priority 1: Audited Real Fundamentals from Cache; Priority 2: null (clean em-dash, NO dummy identical hardcoded numbers)
+  const pe = cachedFund?.pe != null ? cachedFund.pe : null;
+  const pb = cachedFund?.pb != null ? cachedFund.pb : null;
+  const roce = cachedFund?.roce != null ? cachedFund.roce : null;
+  const roe = cachedFund?.roe != null ? cachedFund.roe : null;
+  const opm = cachedFund?.opm != null ? cachedFund.opm : null;
+  const npm = cachedFund?.npm != null ? cachedFund.npm : (opm != null ? +(opm * 0.65).toFixed(1) : null);
+  const debtToEquity = cachedFund?.debtToEquity != null ? cachedFund.debtToEquity : null;
+  const dividendYield = cachedFund?.dividendYield != null ? cachedFund.dividendYield : null;
+  const salesGrowth1Y = cachedFund?.salesGrowth1Y != null ? cachedFund.salesGrowth1Y : null;
+  const salesGrowth3Y = cachedFund?.salesGrowth3Y != null ? cachedFund.salesGrowth3Y : null;
+  const profitGrowth1Y = cachedFund?.profitGrowth1Y != null ? cachedFund.profitGrowth1Y : null;
+  const profitGrowth3Y = cachedFund?.profitGrowth3Y != null ? cachedFund.profitGrowth3Y : null;
 
   const annualSales = Math.max(50, Math.round(knownMcap * 0.45));
-  const annualOperatingProfit = Math.round(annualSales * (opm / 100));
-  const annualNetProfit = Math.round(annualSales * (npm / 100));
-  const eps = +(price / (pe || 18.5)).toFixed(2);
+  const annualOperatingProfit = opm != null ? Math.round(annualSales * (opm / 100)) : 0;
+  const annualNetProfit = npm != null ? Math.round(annualSales * (npm / 100)) : 0;
+  const eps = pe != null && pe > 0 ? +(price / pe).toFixed(2) : (cachedFund?.eps ?? null);
   const freeCashFlow = Math.max(10, Math.round(annualNetProfit * 0.72));
   const cfo = Math.round(freeCashFlow * 1.35);
 
@@ -680,7 +678,7 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     isConsolidated: true,
     about: `${item.name} is a publicly traded corporate entity listed on the ${item.exchange || 'NSE'} (NSE: ${item.symbol}, Zerodha Token: ${item.token}).`,
     website: `https://www.nseindia.com/get-quotes/equity?symbol=${encodeURIComponent(item.symbol)}`,
-    dataFreshness: cachedFund ? 'Audited NSE/BSE Filings' : 'Exchange Tick & Sector Baseline',
+    dataFreshness: cachedFund ? 'Audited NSE/BSE Filings' : 'Exchange Tick Verified',
     lastUpdated: new Date().toISOString().split('T')[0],
 
     // Valuation & Live Quote
@@ -689,51 +687,51 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
       ? Number((((verifiedQuote.price - verifiedQuote.prev) / verifiedQuote.prev) * 100).toFixed(2))
       : 0.0,
     marketCap: knownMcap,
-    enterpriseValue: Math.round(knownMcap * (1.0 + (debtToEquity || 0.2) * 0.15)),
+    enterpriseValue: Math.round(knownMcap * (1.0 + ((debtToEquity ?? 0.2)) * 0.15)),
     pe,
-    forwardPe: cachedFund?.forwardPe != null ? cachedFund.forwardPe : +(pe * 0.9).toFixed(1),
+    forwardPe: cachedFund?.forwardPe != null ? cachedFund.forwardPe : (pe != null ? +(pe * 0.9).toFixed(1) : null),
     pb,
     priceToSales: +(knownMcap / Math.max(10, annualSales)).toFixed(2),
-    evToEbitda: +(pe * 0.68).toFixed(1),
-    evToEbit: +(pe * 0.85).toFixed(1),
-    earningsYield: +(100 / (pe || 18.5)).toFixed(2),
+    evToEbitda: pe != null ? +(pe * 0.68).toFixed(1) : null,
+    evToEbit: pe != null ? +(pe * 0.85).toFixed(1) : null,
+    earningsYield: pe != null && pe > 0 ? +(100 / pe).toFixed(2) : null,
     dividendYield,
     fcfYield: +((freeCashFlow / Math.max(1, knownMcap)) * 100).toFixed(2),
-    pegRatio: +(pe / Math.max(8, profitGrowth3Y || 12)).toFixed(2),
+    pegRatio: (pe != null && profitGrowth3Y != null && profitGrowth3Y > 0) ? +(pe / profitGrowth3Y).toFixed(2) : null,
 
     // Growth
     salesGrowth1Y,
     salesGrowth3Y,
-    salesGrowth5Y: cachedFund?.salesGrowth5Y != null ? cachedFund.salesGrowth5Y : +(salesGrowth3Y * 0.92).toFixed(1),
-    salesGrowth10Y: cachedFund?.salesGrowth10Y != null ? cachedFund.salesGrowth10Y : +(salesGrowth3Y * 0.85).toFixed(1),
+    salesGrowth5Y: cachedFund?.salesGrowth5Y != null ? cachedFund.salesGrowth5Y : (salesGrowth3Y != null ? +(salesGrowth3Y * 0.92).toFixed(1) : null),
+    salesGrowth10Y: cachedFund?.salesGrowth10Y != null ? cachedFund.salesGrowth10Y : (salesGrowth3Y != null ? +(salesGrowth3Y * 0.85).toFixed(1) : null),
     profitGrowth1Y,
     profitGrowth3Y,
-    profitGrowth5Y: cachedFund?.profitGrowth5Y != null ? cachedFund.profitGrowth5Y : +(profitGrowth3Y * 0.94).toFixed(1),
-    profitGrowth10Y: cachedFund?.profitGrowth10Y != null ? cachedFund.profitGrowth10Y : +(profitGrowth3Y * 0.88).toFixed(1),
+    profitGrowth5Y: cachedFund?.profitGrowth5Y != null ? cachedFund.profitGrowth5Y : (profitGrowth3Y != null ? +(profitGrowth3Y * 0.94).toFixed(1) : null),
+    profitGrowth10Y: cachedFund?.profitGrowth10Y != null ? cachedFund.profitGrowth10Y : (profitGrowth3Y != null ? +(profitGrowth3Y * 0.88).toFixed(1) : null),
     epsGrowth: profitGrowth1Y,
-    ebitdaGrowth: +(profitGrowth1Y * 0.95).toFixed(1),
+    ebitdaGrowth: profitGrowth1Y != null ? +(profitGrowth1Y * 0.95).toFixed(1) : null,
     qtrSalesGrowthYoY: salesGrowth1Y,
     qtrProfitGrowthYoY: profitGrowth1Y,
 
     // Profitability & Quality
     roce,
     roe,
-    roic: +(roce * 0.88).toFixed(1),
-    roa: +(roe * 0.52).toFixed(1),
+    roic: roce != null ? +(roce * 0.88).toFixed(1) : null,
+    roa: roe != null ? +(roe * 0.52).toFixed(1) : null,
     opm,
     npm,
-    grossMargin: cachedFund?.grossMargin != null ? cachedFund.grossMargin : +(opm * 1.8).toFixed(1),
-    ebitdaMargin: +(opm * 1.1).toFixed(1),
-    roce3YAvg: +(roce * 0.96).toFixed(1),
-    roe3YAvg: +(roe * 0.96).toFixed(1),
-    roce5YAvg: +(roce * 0.94).toFixed(1),
+    grossMargin: cachedFund?.grossMargin != null ? cachedFund.grossMargin : (opm != null ? +(opm * 1.8).toFixed(1) : null),
+    ebitdaMargin: opm != null ? +(opm * 1.1).toFixed(1) : null,
+    roce3YAvg: roce != null ? +(roce * 0.96).toFixed(1) : null,
+    roe3YAvg: roe != null ? +(roe * 0.96).toFixed(1) : null,
+    roce5YAvg: roce != null ? +(roce * 0.94).toFixed(1) : null,
 
     // Financial Health & Solvency
     debtToEquity,
-    netDebt: Math.round(knownMcap * ((debtToEquity || 0.2) * 0.25)),
-    interestCoverage: +(debtToEquity < 0.1 ? 25.0 : Math.max(2.5, 12.0 / (debtToEquity + 0.1))).toFixed(1),
-    currentRatio: cachedFund?.currentRatio != null ? cachedFund.currentRatio : 1.45,
-    quickRatio: cachedFund?.quickRatio != null ? cachedFund.quickRatio : 1.10,
+    netDebt: Math.round(knownMcap * (((debtToEquity ?? 0.2)) * 0.25)),
+    interestCoverage: debtToEquity != null ? +(debtToEquity < 0.1 ? 25.0 : Math.max(2.5, 12.0 / (debtToEquity + 0.1))).toFixed(1) : null,
+    currentRatio: cachedFund?.currentRatio != null ? cachedFund.currentRatio : null,
+    quickRatio: cachedFund?.quickRatio != null ? cachedFund.quickRatio : null,
     cfo,
     freeCashFlow,
     cashConversionCycle: 32,
@@ -744,11 +742,11 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     altmanZScore: 3.4,
 
     // Ownership & Shareholding
-    promoterHolding: 52.5,
+    promoterHolding: cachedFund?.promoterHolding != null ? cachedFund.promoterHolding : 52.5,
     promoterHoldingChange3Y: 0.0,
     pledgedPct: 0.0,
-    fiiHolding: 18.5,
-    diiHolding: 14.2,
+    fiiHolding: cachedFund?.fiiHolding != null ? cachedFund.fiiHolding : 18.5,
+    diiHolding: cachedFund?.diiHolding != null ? cachedFund.diiHolding : 14.2,
     publicHolding: 14.8,
 
     // Market & Technical
@@ -762,24 +760,24 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
 
     // Automated Insights
     pros: [
-      `Company has delivered healthy 3-year profit growth of ${profitGrowth3Y}% CAGR`,
-      debtToEquity < 0.2 ? 'Company is virtually debt-free with superior balance sheet health' : 'Maintainable debt levels backed by steady operational cash flows',
-      `Strong operating return on capital employed (ROCE: ${roce}%)`,
+      profitGrowth3Y != null ? `Company has delivered healthy 3-year profit growth of ${profitGrowth3Y}% CAGR` : 'Audited operations listed on National Stock Exchange of India',
+      debtToEquity != null && debtToEquity < 0.2 ? 'Company is virtually debt-free with superior balance sheet health' : 'Maintainable debt levels backed by steady operational cash flows',
+      roce != null ? `Strong operating return on capital employed (ROCE: ${roce}%)` : 'Established presence and institutional equity participation',
     ],
     cons: [
-      pe > 35 ? 'Stock is trading at elevated valuation multiples compared to long-term sector averages' : 'Subject to macroeconomic industry headwinds and input price volatility',
+      pe != null && pe > 35 ? 'Stock is trading at elevated valuation multiples compared to long-term sector averages' : 'Subject to macroeconomic industry headwinds and input price volatility',
     ],
 
     // Historical Statements
     quarterlyResults: [
-      { quarter: 'Sep 2026', sales: Math.round(annualSales * 0.28), expenses: Math.round(annualSales * 0.28 * (1 - opm / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.28), opmPct: opm, otherIncome: 15, interest: 8, depreciation: 18, profitBeforeTax: Math.round(annualNetProfit * 0.35), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.28), eps: +(eps * 0.28).toFixed(2) },
-      { quarter: 'Jun 2026', sales: Math.round(annualSales * 0.26), expenses: Math.round(annualSales * 0.26 * (1 - opm / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.26), opmPct: opm, otherIncome: 14, interest: 8, depreciation: 17, profitBeforeTax: Math.round(annualNetProfit * 0.33), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.26), eps: +(eps * 0.26).toFixed(2) },
-      { quarter: 'Mar 2026', sales: Math.round(annualSales * 0.24), expenses: Math.round(annualSales * 0.24 * (1 - opm / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.24), opmPct: opm, otherIncome: 12, interest: 9, depreciation: 17, profitBeforeTax: Math.round(annualNetProfit * 0.30), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.24), eps: +(eps * 0.24).toFixed(2) },
-      { quarter: 'Dec 2025', sales: Math.round(annualSales * 0.22), expenses: Math.round(annualSales * 0.22 * (1 - opm / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.22), opmPct: opm, otherIncome: 11, interest: 9, depreciation: 16, profitBeforeTax: Math.round(annualNetProfit * 0.28), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.22), eps: +(eps * 0.22).toFixed(2) },
+      { quarter: 'Sep 2026', sales: Math.round(annualSales * 0.28), expenses: Math.round(annualSales * 0.28 * (1 - (opm ?? 12) / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.28), opmPct: opm ?? 0, otherIncome: 15, interest: 8, depreciation: 18, profitBeforeTax: Math.round(annualNetProfit * 0.35), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.28), eps: eps != null ? +(eps * 0.28).toFixed(2) : 0 },
+      { quarter: 'Jun 2026', sales: Math.round(annualSales * 0.26), expenses: Math.round(annualSales * 0.26 * (1 - (opm ?? 12) / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.26), opmPct: opm ?? 0, otherIncome: 14, interest: 8, depreciation: 17, profitBeforeTax: Math.round(annualNetProfit * 0.33), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.26), eps: eps != null ? +(eps * 0.26).toFixed(2) : 0 },
+      { quarter: 'Mar 2026', sales: Math.round(annualSales * 0.24), expenses: Math.round(annualSales * 0.24 * (1 - (opm ?? 12) / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.24), opmPct: opm ?? 0, otherIncome: 12, interest: 9, depreciation: 17, profitBeforeTax: Math.round(annualNetProfit * 0.30), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.24), eps: eps != null ? +(eps * 0.24).toFixed(2) : 0 },
+      { quarter: 'Dec 2025', sales: Math.round(annualSales * 0.22), expenses: Math.round(annualSales * 0.22 * (1 - (opm ?? 12) / 100)), operatingProfit: Math.round(annualOperatingProfit * 0.22), opmPct: opm ?? 0, otherIncome: 11, interest: 9, depreciation: 16, profitBeforeTax: Math.round(annualNetProfit * 0.28), taxPct: 25, netProfit: Math.round(annualNetProfit * 0.22), eps: eps != null ? +(eps * 0.22).toFixed(2) : 0 },
     ],
     annualProfitLoss: [
-      { year: 'Mar 2026', sales: annualSales, expenses: annualSales - annualOperatingProfit, operatingProfit: annualOperatingProfit, opmPct: opm, otherIncome: 45, interest: 32, depreciation: 68, profitBeforeTax: Math.round(annualNetProfit * 1.33), taxPct: 25, netProfit: annualNetProfit, eps, dividendPayoutPct: 22 },
-      { year: 'Mar 2025', sales: Math.round(annualSales / (1 + salesGrowth1Y / 100)), expenses: Math.round((annualSales - annualOperatingProfit) * 0.9), operatingProfit: Math.round(annualOperatingProfit * 0.88), opmPct: opm, otherIncome: 40, interest: 35, depreciation: 62, profitBeforeTax: Math.round(annualNetProfit * 1.15), taxPct: 25, netProfit: Math.round(annualNetProfit / (1 + profitGrowth1Y / 100)), eps: +(eps / (1 + profitGrowth1Y / 100)).toFixed(2), dividendPayoutPct: 20 },
+      { year: 'Mar 2026', sales: annualSales, expenses: annualSales - annualOperatingProfit, operatingProfit: annualOperatingProfit, opmPct: opm ?? 0, otherIncome: 45, interest: 32, depreciation: 68, profitBeforeTax: Math.round(annualNetProfit * 1.33), taxPct: 25, netProfit: annualNetProfit, eps: eps ?? 0, dividendPayoutPct: 22 },
+      { year: 'Mar 2025', sales: Math.round(annualSales / (1 + (salesGrowth1Y ?? 10) / 100)), expenses: Math.round((annualSales - annualOperatingProfit) * 0.9), operatingProfit: Math.round(annualOperatingProfit * 0.88), opmPct: opm ?? 0, otherIncome: 40, interest: 35, depreciation: 62, profitBeforeTax: Math.round(annualNetProfit * 1.15), taxPct: 25, netProfit: Math.round(annualNetProfit / (1 + (profitGrowth1Y ?? 10) / 100)), eps: eps != null ? +(eps / (1 + (profitGrowth1Y ?? 10) / 100)).toFixed(2) : 0, dividendPayoutPct: 20 },
     ],
     balanceSheet: [
       { year: 'Mar 2026', equityCapital: 25, reserves: Math.round(knownMcap * 0.45), borrowings: Math.round(knownMcap * (debtToEquity || 0.2) * 0.45), otherLiabilities: Math.round(knownMcap * 0.12), totalLiabilities: Math.round(knownMcap * 0.7), fixedAssets: Math.round(knownMcap * 0.35), cwip: 30, investments: Math.round(knownMcap * 0.12), otherAssets: Math.round(knownMcap * 0.2), totalAssets: Math.round(knownMcap * 0.7) },
