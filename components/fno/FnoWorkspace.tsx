@@ -46,7 +46,7 @@ interface FnoWorkspaceProps {
 
 export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
   const { market, setMarket } = useMarket();
-  const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
+  const { livePrices, getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
 
   // Active instrument
   const [selectedInstrument, setSelectedInstrument] = useState<FnoInstrument>(() => {
@@ -142,6 +142,28 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
 
   // Active Strategy Legs (Starts clean and empty until user adds legs or selects a preset)
   const [activeLegs, setActiveLegs] = useState<StrategyLeg[]>([]);
+
+  // Synchronize active strategy legs' live option prices, IV & Greeks whenever chainData updates
+  useEffect(() => {
+    if (activeLegs.length === 0 || !chainData?.strikes) return;
+    setActiveLegs((prev) =>
+      prev.map((leg) => {
+        if (leg.instrument === 'FUT') {
+          return { ...leg, currentPrice: liveSpot };
+        }
+        const row = chainData.strikes.find((s) => s.strike === leg.strike);
+        if (!row) return leg;
+        const opt = leg.instrument === 'CE' ? row.call : row.put;
+        if (!opt) return leg;
+        return {
+          ...leg,
+          currentPrice: opt.ltp,
+          iv: opt.impliedVolatility,
+          greeks: opt.greeks,
+        };
+      })
+    );
+  }, [chainData, liveSpot]);
 
   // Switch instrument
   const handleSelectInstrument = (inst: FnoInstrument) => {

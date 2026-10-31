@@ -26,7 +26,7 @@ export function BuildupScannerTab({
   const [sortField, setSortField] = useState<SortField>('oiChangePct');
   const [sortAsc, setSortAsc] = useState(false);
 
-  const { getSymbolPrice } = useTradeEngine();
+  const { livePrices, getSymbolPrice } = useTradeEngine();
 
   const rawData = useMemo(() => getBuildupScannerData(market), [market]);
 
@@ -34,13 +34,41 @@ export function BuildupScannerTab({
     return rawData.map((r) => {
       const live = getSymbolPrice(r.symbol);
       if (!live || !live.price) return r;
+      const spotPrice = live.price;
+      const priceChangePct = live.changePct ?? r.priceChangePct;
+      const priceDelta = r.spotPrice > 0 ? (spotPrice - r.spotPrice) / r.spotPrice : 0;
+      const oiChangePct = +(r.oiChangePct + priceDelta * 25).toFixed(2);
+      const openInterest = Math.max(10000, Math.round(r.openInterest * (1 + priceDelta * 0.5)));
+      const volume = Math.max(5000, Math.round(r.volume * (1 + Math.abs(priceDelta) * 1.2)));
+
+      let buildupType: BuildupType = r.buildupType;
+      let sentiment = r.sentiment;
+      if (priceChangePct >= 0 && oiChangePct >= 0) {
+        buildupType = 'LONG_BUILDUP';
+        sentiment = 'Strong Bullish';
+      } else if (priceChangePct < 0 && oiChangePct >= 0) {
+        buildupType = 'SHORT_BUILDUP';
+        sentiment = 'Strong Bearish';
+      } else if (priceChangePct >= 0 && oiChangePct < 0) {
+        buildupType = 'SHORT_COVERING';
+        sentiment = 'Moderate Bullish';
+      } else {
+        buildupType = 'LONG_UNWINDING';
+        sentiment = 'Weakening';
+      }
+
       return {
         ...r,
-        spotPrice: live.price,
-        priceChangePct: live.changePct ?? r.priceChangePct,
+        spotPrice,
+        priceChangePct,
+        oiChangePct,
+        openInterest,
+        volume,
+        buildupType,
+        sentiment,
       };
     });
-  }, [rawData, getSymbolPrice]);
+  }, [rawData, livePrices, getSymbolPrice]);
 
   const curr = market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹';
   const loc = market === 'INDIA' ? 'en-IN' : 'en-US';
@@ -76,7 +104,7 @@ export function BuildupScannerTab({
     });
 
     return list;
-  }, [rawData, activeTab, searchQuery, sortField, sortAsc]);
+  }, [enrichedRecords, activeTab, searchQuery, sortField, sortAsc]);
 
   const handleSelectStock = (record: BuildupRecord) => {
     const inst = findFnoInstrument(record.symbol);

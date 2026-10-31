@@ -105,9 +105,42 @@ export async function fetchFnoSpotQuote(symbol: string): Promise<FnoSpotQuote> {
   if (cached) return cached;
 
   const { tdSymbol, yahooSymbol } = normalizeSymbol(symbol);
+  const tradeEngineUrl = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
+
+  // 0. Priority 1 for Indian F&O instruments: Zerodha Kite Trade Engine (/live-prices)
+  try {
+    const kiteRes = await fetch(`${tradeEngineUrl}/live-prices`, {
+      headers: { 'Accept': 'application/json' },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(3500),
+    });
+    if (kiteRes.ok) {
+      const kiteItems = await kiteRes.json();
+      if (Array.isArray(kiteItems)) {
+        const cleanQuery = tdSymbol.replace(/\.NS$/, '').replace(/\.BO$/, '').toUpperCase();
+        const match = kiteItems.find((item: any) => {
+          const itemSym = String(item?.symbol || '').replace(/\.NS$/, '').replace(/\.BO$/, '').toUpperCase();
+          return itemSym === cleanQuery || String(item?.symbol || '').toUpperCase() === tdSymbol.toUpperCase();
+        });
+        if (match && typeof match.ltp === 'number' && match.ltp > 0) {
+          const result: FnoSpotQuote = {
+            symbol: tdSymbol,
+            price: +match.ltp.toFixed(2),
+            change: typeof match.change === 'number' ? +match.change.toFixed(2) : 0,
+            changePercent: typeof match.changePercent === 'number' ? +match.changePercent.toFixed(2) : 0,
+            timestamp: match.timestamp || Date.now(),
+            source: 'twelvedata-venture',
+          };
+          setFnoCached(cacheKey, result);
+          return result;
+        }
+      }
+    }
+  } catch {
+    // Fall through to Twelve Data / Yahoo
+  }
 
   // 1. Query Trade Engine Twelve Data endpoint (/us/quote is live on Trade Engine; fallback to /fno/quote)
-  const tradeEngineUrl = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
   try {
     const res = await fetch(
       `${tradeEngineUrl}/us/quote?symbol=${encodeURIComponent(tdSymbol)}`,

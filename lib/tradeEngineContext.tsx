@@ -850,7 +850,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   const getSymbolPrice = useCallback((symbol: string): LiveSymbolData | undefined => {
     if (!symbol) return undefined;
     return store?.getSymbol(symbol);
-  }, []);
+  }, [livePrices]);
 
   const requestQuoteFetch = useCallback((symbol: string) => {
     if (!symbol) return;

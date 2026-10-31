@@ -244,64 +244,82 @@ export function ScreenerWorkspace() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [searchModalOpen]);
 
+  // Helper to enrich all price-sensitive valuation & technical metrics on every live tick
+  const enrichCompanyWithLiveTick = React.useCallback((comp: CompanyFundamental) => {
+    const live = getSymbolPrice(comp.symbol);
+    if (!live || !live.price) return comp;
+
+    const currentPrice = live.price;
+    const priceChangePct = live.changePct ?? comp.priceChangePct;
+    const originalPrice = comp.currentPrice || currentPrice;
+    const priceRatio = (originalPrice > 0 && Math.abs(currentPrice - originalPrice) / originalPrice < 0.25)
+      ? (currentPrice / originalPrice)
+      : 1;
+
+    const marketCap = Math.round(comp.marketCap * priceRatio);
+    const netDebt = comp.netDebt ?? Math.round((comp.enterpriseValue || comp.marketCap) - comp.marketCap);
+    const enterpriseValue = Math.max(1, marketCap + netDebt);
+    const evRatio = (comp.enterpriseValue && comp.enterpriseValue > 0)
+      ? (enterpriseValue / comp.enterpriseValue)
+      : priceRatio;
+
+    const pe = comp.pe != null ? Math.round(comp.pe * priceRatio * 10) / 10 : null;
+    const forwardPe = comp.forwardPe != null ? Math.round(comp.forwardPe * priceRatio * 10) / 10 : null;
+    const pb = comp.pb != null ? Math.round(comp.pb * priceRatio * 100) / 100 : null;
+    const priceToSales = comp.priceToSales != null ? Math.round(comp.priceToSales * priceRatio * 100) / 100 : null;
+    const evToEbitda = comp.evToEbitda != null ? Math.round(comp.evToEbitda * evRatio * 10) / 10 : null;
+    const evToEbit = comp.evToEbit != null ? Math.round(comp.evToEbit * evRatio * 10) / 10 : null;
+    const earningsYield = pe && pe > 0 ? Math.round((100 / pe) * 100) / 100 : comp.earningsYield;
+    const dividendYield = (comp.dividendYield != null && priceRatio > 0)
+      ? Math.round((comp.dividendYield / priceRatio) * 100) / 100
+      : comp.dividendYield;
+    const fcfYield = (comp.fcfYield != null && priceRatio > 0)
+      ? Math.round((comp.fcfYield / priceRatio) * 100) / 100
+      : comp.fcfYield;
+    const pegRatio = (pe != null && comp.profitGrowth3Y && comp.profitGrowth3Y > 0)
+      ? Math.round((pe / comp.profitGrowth3Y) * 100) / 100
+      : (comp.pegRatio != null ? Math.round(comp.pegRatio * priceRatio * 100) / 100 : null);
+
+    const high52W = comp.high52W ? Math.max(comp.high52W, currentPrice) : currentPrice;
+    const low52W = comp.low52W ? Math.min(comp.low52W, currentPrice) : currentPrice;
+    const priceTo52WHighPct = high52W > 0
+      ? Math.round(((currentPrice - high52W) / high52W) * 1000) / 10
+      : comp.priceTo52WHighPct;
+
+    return {
+      ...comp,
+      currentPrice,
+      priceChangePct,
+      marketCap,
+      enterpriseValue,
+      pe,
+      forwardPe,
+      pb,
+      priceToSales,
+      evToEbitda,
+      evToEbit,
+      earningsYield,
+      dividendYield,
+      fcfYield,
+      pegRatio,
+      high52W,
+      low52W,
+      priceTo52WHighPct,
+      tickDirection: live.tickDirection,
+      lastUpdated: new Date(live.lastUpdated).toLocaleTimeString(),
+      isLiveTick: true,
+    };
+  }, [getSymbolPrice]);
+
   // Companies for current market enriched with live Zerodha Kite streaming ticks
   const marketCompanies = useMemo(() => {
-    const base = getCompaniesByMarket(market);
-    return base.map((comp) => {
-      const live = getSymbolPrice(comp.symbol);
-      if (!live || !live.price) return comp;
-
-      const currentPrice = live.price;
-      const priceChangePct = live.changePct ?? comp.priceChangePct;
-
-      // Dynamically calculate live P/E if annual EPS is available
-      const originalPrice = comp.currentPrice || currentPrice;
-      const priceRatio = (originalPrice > 0 && Math.abs(currentPrice - originalPrice) / originalPrice < 0.25)
-        ? (currentPrice / originalPrice)
-        : 1;
-      const pe = comp.pe != null ? Math.round(comp.pe * priceRatio * 10) / 10 : null;
-      const marketCap = Math.round(comp.marketCap * priceRatio);
-
-      return {
-        ...comp,
-        currentPrice,
-        priceChangePct,
-        pe,
-        marketCap,
-        tickDirection: live.tickDirection,
-        lastUpdated: new Date(live.lastUpdated).toLocaleTimeString(),
-        isLiveTick: true,
-      };
-    });
-  }, [market, livePrices, getSymbolPrice]);
+    return getCompaniesByMarket(market).map(enrichCompanyWithLiveTick);
+  }, [market, livePrices, enrichCompanyWithLiveTick]);
 
   // Master list of all companies enriched with live Zerodha Kite ticks
   const allCompaniesEnriched = useMemo(() => {
-    return getAllCompanies().map((comp) => {
-      const live = getSymbolPrice(comp.symbol);
-      if (!live || !live.price) return comp;
-
-      const currentPrice = live.price;
-      const priceChangePct = live.changePct ?? comp.priceChangePct;
-      const originalPrice = comp.currentPrice || currentPrice;
-      const priceRatio = (originalPrice > 0 && Math.abs(currentPrice - originalPrice) / originalPrice < 0.25)
-        ? (currentPrice / originalPrice)
-        : 1;
-      const pe = comp.pe != null ? Math.round(comp.pe * priceRatio * 10) / 10 : null;
-      const marketCap = Math.round(comp.marketCap * priceRatio);
-
-      return {
-        ...comp,
-        currentPrice,
-        priceChangePct,
-        pe,
-        marketCap,
-        tickDirection: live.tickDirection,
-        lastUpdated: new Date(live.lastUpdated).toLocaleTimeString(),
-        isLiveTick: true,
-      };
-    });
-  }, [livePrices, getSymbolPrice]);
+    return getAllCompanies().map(enrichCompanyWithLiveTick);
+  }, [livePrices, enrichCompanyWithLiveTick]);
 
   const availableSectors = useMemo(() => {
     return getSectors(market);

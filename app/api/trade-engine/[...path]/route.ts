@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isMarketOpen } from '@/lib/marketHours';
 import { fetchLiveMarketNews } from '@/lib/terminal/marketNewsData';
 import { fetchLiveEconomicCalendar } from '@/lib/terminal/economicCalendarData';
-import { findZerodhaStockBySymbol, getZerodhaStockPrice, KNOWN_ZERODHA_PRICES } from '@/lib/screener/zerodhaStocks';
+import { findZerodhaStockBySymbol, getZerodhaStockPrice, KNOWN_ZERODHA_PRICES, VERIFIED_PRICES_MAP } from '@/lib/screener/zerodhaStocks';
 import {
   fetchFnoSpotQuote,
   fetchFnoOptionChain,
@@ -1368,6 +1368,27 @@ export async function GET(
               const ticker = mapSymbolToYahooTicker(s);
               if (ticker) await fetchSingleYahooQuote(ticker, s);
             }));
+          }
+        }
+
+        // Include verified NSE quotes for all top Indian equities not already in the primary Kite stream
+        const existingSymbols = new Set(enrichedIndian.map((x: any) => String(x.symbol || '').replace(/\.NS$/, '').toUpperCase()));
+        const nowTs = Date.now();
+        if (VERIFIED_PRICES_MAP) {
+          for (const [symKey, vq] of Object.entries(VERIFIED_PRICES_MAP)) {
+            if (!vq || !(vq.price > 0) || existingSymbols.has(symKey.toUpperCase())) continue;
+            const prev = vq.prev > 0 ? vq.prev : vq.price;
+            const chg = +(vq.price - prev).toFixed(2);
+            const pct = prev > 0 ? +(((vq.price - prev) / prev) * 100).toFixed(2) : 0;
+            enrichedIndian.push({
+              instrumentToken: 800000 + existingSymbols.size,
+              symbol: symKey.toUpperCase(),
+              ltp: vq.price,
+              change: chg,
+              changePercent: pct,
+              timestamp: nowTs,
+            });
+            existingSymbols.add(symKey.toUpperCase());
           }
         }
 

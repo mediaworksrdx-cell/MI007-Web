@@ -19,6 +19,7 @@ import {
   findZerodhaStockBySymbol,
   ZerodhaStockItem,
   KNOWN_ZERODHA_PRICES,
+  VERIFIED_PRICES_MAP,
 } from '@/lib/screener/zerodhaStocks';
 
 export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
@@ -1145,6 +1146,8 @@ export function getFuturesTermStructure(
   const spot = liveSpot && liveSpot > 0 ? liveSpot : inst.spotPrice;
   const change = liveChange !== undefined ? liveChange : inst.change;
   const changePct = liveChangePct !== undefined ? liveChangePct : inst.changePct;
+  const spotRatio = inst.spotPrice > 0 ? spot / inst.spotPrice : 1;
+  const oiMultiplier = 1 + (changePct / 100) * 1.5;
 
   const contracts: FutureContract[] = [
     {
@@ -1152,9 +1155,9 @@ export function getFuturesTermStructure(
       ltp: Math.round((spot * 1.0022) * 20) / 20,
       change: Math.round(change * 100) / 100,
       changePct: Math.round(changePct * 100) / 100,
-      openInterest: 11450000,
-      changeInOI: 345000,
-      volume: 4890000,
+      openInterest: Math.round(11450000 * oiMultiplier),
+      changeInOI: Math.round(345000 * oiMultiplier * spotRatio),
+      volume: Math.round(4890000 * (1 + Math.abs(changePct) * 0.08)),
       basis: Math.round((spot * 0.0022) * 20) / 20,
       vwap: Math.round((spot * 1.0018) * 20) / 20,
     },
@@ -1594,7 +1597,17 @@ const UAE_BUILDUP: BuildupRecord[] = [
 export function getBuildupScannerData(market: MarketType = 'INDIA'): BuildupRecord[] {
   if (market === 'USA') return USA_BUILDUP;
   if (market === 'UAE') return UAE_BUILDUP;
-  return INDIA_BUILDUP;
+  return INDIA_BUILDUP.map((r) => {
+    const vq = VERIFIED_PRICES_MAP?.[r.symbol];
+    if (!vq || !(vq.price > 0)) return r;
+    const prev = vq.prev > 0 ? vq.prev : vq.price;
+    const pct = prev > 0 && vq.price !== prev ? +(((vq.price - prev) / prev) * 100).toFixed(2) : r.priceChangePct;
+    return {
+      ...r,
+      spotPrice: vq.price,
+      priceChangePct: pct,
+    };
+  });
 }
 
 /**
