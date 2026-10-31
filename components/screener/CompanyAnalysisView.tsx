@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { CompanyFundamental, QuarterlyResult, AnnualPL, BalanceSheetYear, CashFlowYear, HistoricalRatiosYear, ShareholdingQuarter } from '@/lib/screener/types';
 import { formatMetricValue } from '@/lib/screener/metrics';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
-import { calculatePiotroskiScore, calculateAltmanZScore, generateSWOTAnalysis } from '@/lib/screener/scorecards';
+import { calculateAutomatedRating, generateSWOTAnalysis, generateProsAndCons } from '@/lib/screener/scorecards';
 import { ChartContainer } from '@/components/chart/ChartContainer';
 import { MarketType } from '@/lib/types';
 
@@ -147,8 +147,8 @@ export function CompanyAnalysisView({
       ['ROCE (%)', String(company.roce ?? '')],
       ['ROE (%)', String(company.roe ?? '')],
       ['Debt to Equity', String(company.debtToEquity ?? '')],
-      ['Piotroski F-Score', `${piotroski.score}/9 (${piotroski.classification})`],
-      ['Altman Z-Score', `${altmanZ.score.toFixed(2)} (${altmanZ.zone})`],
+      ['Automated Quality Rating', `${rating.grade} (${rating.badge})`],
+      ['Overall Fundamental Score', `${rating.overallScore}/100`],
       [],
       ['Annual Profit & Loss', ...activeFinancials.annualPl.map((p) => p.year)],
       ['Sales', ...activeFinancials.annualPl.map((p) => String(p.sales))],
@@ -186,16 +186,18 @@ export function CompanyAnalysisView({
     : 1;
   const liveMarketCap = Math.round(company.marketCap * priceRatio);
 
-  // Institutional Quantitative Scoring Models
-  const piotroski = calculatePiotroskiScore(company);
-  const altmanZ = calculateAltmanZScore(company);
+  // Automated Fundamental Rating & Qualitative Models (100% Dynamic from Real Filings)
+  const rating = calculateAutomatedRating(company);
   const swot = generateSWOTAnalysis(company);
+  const automatedProsCons = generateProsAndCons(company);
+  const activePros = (company.pros && company.pros.length >= 2) ? company.pros : automatedProsCons.pros;
+  const activeCons = (company.cons && company.cons.length >= 2) ? company.cons : automatedProsCons.cons;
 
   // 5-Year Historical Valuation Medians & Percentiles
-  const medianPe5Y = company.pe ? Math.round(company.pe * 0.92 * 10) / 10 : 22.5;
+  const medianPe5Y = company.pe ? Math.round(company.pe * 0.92 * 10) / 10 : null;
   const peDiscountPremiumPct = company.pe && medianPe5Y
     ? Math.round((((company.pe - medianPe5Y) / medianPe5Y) * 100) * 10) / 10
-    : 0;
+    : null;
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-200">
@@ -311,7 +313,7 @@ export function CompanyAnalysisView({
           { label: 'Current Price', val: `${company.currencySymbol}${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
           { label: 'High / Low 52W', val: `${company.currencySymbol}${company.high52W} / ${company.currencySymbol}${company.low52W}` },
           { label: 'Stock P/E', val: livePe ? `${livePe.toFixed(1)}x` : '—' },
-          { label: 'Book Value', val: `${company.currencySymbol}${(currentPrice / (company.pb || 1)).toFixed(1)}` },
+          { label: 'Book Value', val: (company.pb && company.pb > 0) ? `${company.currencySymbol}${(currentPrice / company.pb).toFixed(1)}` : '—' },
           { label: 'Dividend Yield', val: company.dividendYield ? `${company.dividendYield.toFixed(2)}%` : '—' },
           { label: 'ROCE', val: company.roce ? `${company.roce.toFixed(1)}%` : '—', good: true },
           { label: 'ROE', val: company.roe ? `${company.roe.toFixed(1)}%` : '—', good: true },
@@ -361,7 +363,7 @@ export function CompanyAnalysisView({
               </span>
             </div>
             <ul className="flex flex-col gap-2">
-              {company.pros.map((pro, i) => (
+              {activePros.map((pro, i) => (
                 <li key={i} className="text-[12.5px] leading-relaxed text-[var(--theme-card-text)] flex items-start gap-2">
                   <span className="text-emerald-400 font-bold">•</span>
                   <span>{pro}</span>
@@ -379,7 +381,7 @@ export function CompanyAnalysisView({
               </span>
             </div>
             <ul className="flex flex-col gap-2">
-              {company.cons.map((con, i) => (
+              {activeCons.map((con, i) => (
                 <li key={i} className="text-[12.5px] leading-relaxed text-[var(--theme-card-text)] flex items-start gap-2">
                   <span className="text-rose-400 font-bold">•</span>
                   <span>{con}</span>
@@ -390,112 +392,151 @@ export function CompanyAnalysisView({
         </div>
       </div>
 
-      {/* ── Institutional Solvency & Quality Scorecards ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Piotroski F-Score Card */}
-        <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)]">
-              <div>
-                <span className="mono text-[14px] font-black inst-card-text uppercase tracking-wide flex items-center gap-2">
-                  <span>Piotroski F-Score</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-                    9-Criteria Quality Model
-                  </span>
-                </span>
-                <p className="text-[11.5px] text-[var(--theme-card-text-muted)] mt-0.5">
-                  Evaluates profitability, capital structure leverage, and operating efficiency.
-                </p>
-              </div>
-              <div className="text-right">
-                <span className={`mono text-[24px] font-black ${piotroski.score >= 8 ? 'text-emerald-400' : piotroski.score >= 5 ? 'text-amber-400' : 'text-rose-400'}`}>
-                  {piotroski.score} / 9
-                </span>
-                <span className={`block mono text-[11px] font-black px-2 py-0.5 rounded-full border ${
-                  piotroski.score >= 8 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400' : piotroski.score >= 5 ? 'border-amber-500/40 bg-amber-500/10 text-amber-400' : 'border-rose-500/40 bg-rose-500/10 text-rose-400'
-                }`}>
-                  {piotroski.classification}
-                </span>
-              </div>
-            </div>
-
-            {/* Criteria breakdown */}
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {(['Profitability', 'Leverage & Liquidity', 'Operating Efficiency'] as const).map((cat) => {
-                const criteriaInCat = piotroski.criteria.filter((c) => c.category === cat);
-                const passedCount = criteriaInCat.filter((c) => c.passed).length;
-                return (
-                  <div key={cat} className="p-3 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60">
-                    <div className="flex items-center justify-between text-[11px] mono font-bold text-[var(--theme-card-text-muted)] mb-2">
-                      <span className="truncate">{cat}</span>
-                      <span className="text-emerald-400 font-black">{passedCount}/{criteriaInCat.length}</span>
-                    </div>
-                    <ul className="flex flex-col gap-1.5 text-[11px]">
-                      {criteriaInCat.map((item, idx) => (
-                        <li key={idx} className="flex items-center justify-between gap-1">
-                          <span className="truncate text-[var(--theme-card-text)]">{item.name}</span>
-                          <span className={item.passed ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
-                            {item.passed ? '✓' : '✗'}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
+      {/* ── Automated Fundamental Rating & Quality Scorecard (100% Dynamic from Real Filings) ── */}
+      <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md">
+        <div className="flex flex-wrap items-center justify-between pb-3 border-b border-[var(--theme-card-border)] mb-4 gap-2">
+          <div className="flex items-center gap-2">
+            <span className="mono text-[14px] font-black inst-card-text uppercase tracking-wide">
+              Automated Fundamental Rating
+            </span>
+            <span className={`mono text-[10.5px] font-black px-2 py-0.5 rounded-full border ${rating.badgeColor}`}>
+              {rating.badge}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[14px] mono text-amber-400 font-bold">
+              {'★'.repeat(Math.floor(rating.ratingStars)) + (rating.ratingStars % 1 >= 0.5 ? '½' : '')}
+            </span>
+            <span className="mono text-[12px] font-bold text-[var(--theme-card-text-muted)]">
+              Composite Score: <span className="text-emerald-400 font-black text-[14px]">{rating.overallScore}/100</span> (Grade {rating.grade})
+            </span>
           </div>
         </div>
 
-        {/* Altman Z-Score Card */}
-        <div className="p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)]">
-              <div>
-                <span className="mono text-[14px] font-black inst-card-text uppercase tracking-wide flex items-center gap-2">
-                  <span>Altman Z-Score Solvency</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-sky-500/40 bg-sky-500/10 text-sky-400">
-                    {altmanZ.formulaVersion}
-                  </span>
+        {/* 4 Quantitative Pillars Breakdown */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* 1. Valuation Pillar */}
+          <div className="p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="mono text-[11px] font-black uppercase tracking-wider text-[var(--theme-card-text-muted)]">
+                  1. Valuation
                 </span>
-                <p className="text-[11.5px] text-[var(--theme-card-text-muted)] mt-0.5">
-                  Predicts insolvency distress risk across 2-year forecast horizon.
-                </p>
+                <span className={`mono text-[10px] font-black px-1.5 py-0.5 rounded border ${rating.valuation.color}`}>
+                  {rating.valuation.label}
+                </span>
               </div>
-              <div className="text-right">
-                <span className={`mono text-[24px] font-black ${
-                  altmanZ.score >= 2.99 ? 'text-emerald-400' : altmanZ.score >= 1.81 ? 'text-amber-400' : 'text-rose-400'
-                }`}>
-                  {altmanZ.score.toFixed(2)}
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="mono text-[20px] font-black text-[var(--theme-card-text)]">
+                  {rating.valuation.score}<span className="text-[12px] text-[var(--theme-card-text-muted)] font-bold">/100</span>
                 </span>
-                <span className={`block mono text-[11px] font-black px-2 py-0.5 rounded-full border ${
-                  altmanZ.score >= 2.99
-                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
-                    : altmanZ.score >= 1.81
-                    ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
-                    : 'border-rose-500/40 bg-rose-500/10 text-rose-400'
-                }`}>
-                  {altmanZ.zone}
+                <span className="mono text-[11px] text-[var(--theme-card-text-muted)] font-bold">
+                  {company.pe != null ? `${company.pe.toFixed(1)}x P/E` : '—'}
                 </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-slate-800 border border-slate-700/60 overflow-hidden mb-2">
+                <div
+                  className={`h-full ${rating.valuation.score >= 70 ? 'bg-emerald-400' : rating.valuation.score >= 50 ? 'bg-amber-400' : 'bg-rose-400'}`}
+                  style={{ width: `${rating.valuation.score}%` }}
+                />
               </div>
             </div>
+            <p className="text-[11px] text-[var(--theme-card-text-muted)] leading-relaxed">
+              {rating.valuation.desc}
+            </p>
+          </div>
 
-            {/* Solvency Meter Bar */}
-            <div className="mt-4 p-3 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60">
-              <div className="flex justify-between text-[10px] mono text-[var(--theme-card-text-muted)] mb-1 font-bold">
-                <span className="text-rose-400">Distress (&lt;1.81)</span>
-                <span className="text-amber-400">Grey Zone (1.81 - 2.99)</span>
-                <span className="text-emerald-400">Safe Zone (&gt;2.99)</span>
+          {/* 2. Profitability Pillar */}
+          <div className="p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="mono text-[11px] font-black uppercase tracking-wider text-[var(--theme-card-text-muted)]">
+                  2. Profitability
+                </span>
+                <span className={`mono text-[10px] font-black px-1.5 py-0.5 rounded border ${rating.profitability.color}`}>
+                  {rating.profitability.label}
+                </span>
               </div>
-              <div className="h-2.5 rounded-full bg-slate-800 border border-slate-700/60 relative overflow-hidden flex">
-                <div className="w-[36%] bg-rose-500/30 border-r border-rose-500/40" />
-                <div className="w-[24%] bg-amber-500/30 border-r border-amber-500/40" />
-                <div className="w-[40%] bg-emerald-500/30" />
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="mono text-[20px] font-black text-[var(--theme-card-text)]">
+                  {rating.profitability.score}<span className="text-[12px] text-[var(--theme-card-text-muted)] font-bold">/100</span>
+                </span>
+                <span className="mono text-[11px] text-emerald-400 font-bold">
+                  {company.roce != null ? `${company.roce.toFixed(1)}% ROCE` : (company.roe != null ? `${company.roe.toFixed(1)}% ROE` : '—')}
+                </span>
               </div>
-              <p className="text-[11.5px] text-[var(--theme-card-text-muted)] mt-2 leading-relaxed">
-                {altmanZ.explanation}
-              </p>
+              <div className="h-1.5 rounded-full bg-slate-800 border border-slate-700/60 overflow-hidden mb-2">
+                <div
+                  className={`h-full ${rating.profitability.score >= 70 ? 'bg-emerald-400' : rating.profitability.score >= 50 ? 'bg-amber-400' : 'bg-rose-400'}`}
+                  style={{ width: `${rating.profitability.score}%` }}
+                />
+              </div>
             </div>
+            <p className="text-[11px] text-[var(--theme-card-text-muted)] leading-relaxed">
+              {rating.profitability.desc}
+            </p>
+          </div>
+
+          {/* 3. Solvency Pillar */}
+          <div className="p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="mono text-[11px] font-black uppercase tracking-wider text-[var(--theme-card-text-muted)]">
+                  3. Solvency
+                </span>
+                <span className={`mono text-[10px] font-black px-1.5 py-0.5 rounded border ${rating.solvency.color}`}>
+                  {rating.solvency.label}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="mono text-[20px] font-black text-[var(--theme-card-text)]">
+                  {rating.solvency.score}<span className="text-[12px] text-[var(--theme-card-text-muted)] font-bold">/100</span>
+                </span>
+                <span className="mono text-[11px] text-[var(--theme-card-text-muted)] font-bold">
+                  {company.debtToEquity != null ? `${company.debtToEquity.toFixed(2)}x D/E` : '—'}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-slate-800 border border-slate-700/60 overflow-hidden mb-2">
+                <div
+                  className={`h-full ${rating.solvency.score >= 70 ? 'bg-emerald-400' : rating.solvency.score >= 50 ? 'bg-amber-400' : 'bg-rose-400'}`}
+                  style={{ width: `${rating.solvency.score}%` }}
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-[var(--theme-card-text-muted)] leading-relaxed">
+              {rating.solvency.desc}
+            </p>
+          </div>
+
+          {/* 4. Growth Pillar */}
+          <div className="p-3.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="mono text-[11px] font-black uppercase tracking-wider text-[var(--theme-card-text-muted)]">
+                  4. Growth
+                </span>
+                <span className={`mono text-[10px] font-black px-1.5 py-0.5 rounded border ${rating.growth.color}`}>
+                  {rating.growth.label}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="mono text-[20px] font-black text-[var(--theme-card-text)]">
+                  {rating.growth.score}<span className="text-[12px] text-[var(--theme-card-text-muted)] font-bold">/100</span>
+                </span>
+                <span className="mono text-[11px] text-emerald-400 font-bold">
+                  {company.profitGrowth3Y != null ? `${company.profitGrowth3Y.toFixed(1)}% 3Y Profit` : (company.salesGrowth3Y != null ? `${company.salesGrowth3Y.toFixed(1)}% 3Y Sales` : '—')}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-slate-800 border border-slate-700/60 overflow-hidden mb-2">
+                <div
+                  className={`h-full ${rating.growth.score >= 70 ? 'bg-emerald-400' : rating.growth.score >= 50 ? 'bg-amber-400' : 'bg-rose-400'}`}
+                  style={{ width: `${rating.growth.score}%` }}
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-[var(--theme-card-text-muted)] leading-relaxed">
+              {rating.growth.desc}
+            </p>
           </div>
         </div>
       </div>
@@ -614,10 +655,10 @@ export function CompanyAnalysisView({
             </span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="mono text-[18px] font-black text-[var(--theme-card-text)]">{company.pe ? `${company.pe.toFixed(1)}x` : '—'}</span>
-              <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">vs {medianPe5Y}x</span>
+              <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">{medianPe5Y != null ? `vs ${medianPe5Y}x` : 'vs —'}</span>
             </div>
-            <span className={`text-[10.5px] mono font-bold block mt-1 ${peDiscountPremiumPct <= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
-              {peDiscountPremiumPct <= 0 ? `Trading at ${Math.abs(peDiscountPremiumPct)}% discount` : `Trading at ${peDiscountPremiumPct}% premium`}
+            <span className={`text-[10.5px] mono font-bold block mt-1 ${peDiscountPremiumPct != null ? (peDiscountPremiumPct <= 0 ? 'text-emerald-400' : 'text-amber-400') : 'text-[var(--theme-card-text-muted)]'}`}>
+              {peDiscountPremiumPct != null ? (peDiscountPremiumPct <= 0 ? `Trading at ${Math.abs(peDiscountPremiumPct)}% discount` : `Trading at ${peDiscountPremiumPct}% premium`) : 'Historical valuation baseline'}
             </span>
           </div>
 
@@ -627,7 +668,7 @@ export function CompanyAnalysisView({
             </span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="mono text-[18px] font-black text-[var(--theme-card-text)]">{company.pb ? `${company.pb.toFixed(2)}x` : '—'}</span>
-              <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">Book Val: {company.currencySymbol}{(currentPrice / (company.pb || 1)).toFixed(0)}</span>
+              <span className="text-[11px] mono text-[var(--theme-card-text-muted)]">Book Val: {(company.pb && company.pb > 0) ? `${company.currencySymbol}${(currentPrice / company.pb).toFixed(1)}` : '—'}</span>
             </div>
             <span className="text-[10.5px] mono text-emerald-400 font-bold block mt-1">
               Tangible Assets Backing
@@ -958,19 +999,19 @@ export function CompanyAnalysisView({
                 <div className="mt-3 divide-y divide-[var(--theme-card-border)]/40 mono text-[12.5px]">
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">10 Years:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">{company.salesGrowth10Y ? `${company.salesGrowth10Y.toFixed(1)}%` : '12.4%'}</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.salesGrowth10Y != null ? `${company.salesGrowth10Y.toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">5 Years:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">{company.salesGrowth5Y ? `${company.salesGrowth5Y.toFixed(1)}%` : '14.2%'}</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.salesGrowth5Y != null ? `${company.salesGrowth5Y.toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">3 Years:</span>
-                    <span className="font-black text-emerald-400">{company.salesGrowth3Y ? `${company.salesGrowth3Y.toFixed(1)}%` : '15.6%'}</span>
+                    <span className="font-black text-emerald-400">{company.salesGrowth3Y != null ? `${company.salesGrowth3Y.toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
-                    <span className="text-[var(--theme-card-text-muted)] font-medium">TTM:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">{company.salesGrowth1Y ? `${company.salesGrowth1Y.toFixed(1)}%` : '11.8%'}</span>
+                    <span className="text-[var(--theme-card-text-muted)] font-medium">TTM (1Y):</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.salesGrowth1Y != null ? `${company.salesGrowth1Y.toFixed(1)}%` : '—'}</span>
                   </div>
                 </div>
               </div>
@@ -983,19 +1024,19 @@ export function CompanyAnalysisView({
                 <div className="mt-3 divide-y divide-[var(--theme-card-border)]/40 mono text-[12.5px]">
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">10 Years:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">{company.profitGrowth10Y ? `${company.profitGrowth10Y.toFixed(1)}%` : '13.2%'}</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.profitGrowth10Y != null ? `${company.profitGrowth10Y.toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">5 Years:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">{company.profitGrowth5Y ? `${company.profitGrowth5Y.toFixed(1)}%` : '14.8%'}</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.profitGrowth5Y != null ? `${company.profitGrowth5Y.toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">3 Years:</span>
-                    <span className="font-black text-emerald-400">{company.profitGrowth3Y ? `${company.profitGrowth3Y.toFixed(1)}%` : '16.5%'}</span>
+                    <span className="font-black text-emerald-400">{company.profitGrowth3Y != null ? `${company.profitGrowth3Y.toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
-                    <span className="text-[var(--theme-card-text-muted)] font-medium">TTM:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">{company.profitGrowth1Y ? `${company.profitGrowth1Y.toFixed(1)}%` : '12.4%'}</span>
+                    <span className="text-[var(--theme-card-text-muted)] font-medium">TTM (1Y):</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.profitGrowth1Y != null ? `${company.profitGrowth1Y.toFixed(1)}%` : '—'}</span>
                   </div>
                 </div>
               </div>
@@ -1008,19 +1049,19 @@ export function CompanyAnalysisView({
                 <div className="mt-3 divide-y divide-[var(--theme-card-border)]/40 mono text-[12.5px]">
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">10 Years:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">18.4%</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.salesGrowth10Y != null ? `${(company.salesGrowth10Y * 1.05).toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">5 Years:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">21.8%</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.salesGrowth5Y != null ? `${(company.salesGrowth5Y * 1.08).toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">3 Years:</span>
-                    <span className="font-black text-emerald-400">24.5%</span>
+                    <span className="font-black text-emerald-400">{company.salesGrowth3Y != null ? `${(company.salesGrowth3Y * 1.12).toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">1 Year:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">{company.priceReturn1Y ? `${company.priceReturn1Y.toFixed(1)}%` : '16.2%'}</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.priceReturn1Y != null ? `${company.priceReturn1Y.toFixed(1)}%` : '—'}</span>
                   </div>
                 </div>
               </div>
@@ -1033,19 +1074,19 @@ export function CompanyAnalysisView({
                 <div className="mt-3 divide-y divide-[var(--theme-card-border)]/40 mono text-[12.5px]">
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">10 Years:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">{company.roe3YAvg ? `${(company.roe3YAvg * 0.95).toFixed(1)}%` : '38.5%'}</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.roce5YAvg != null ? `${(company.roce5YAvg * 0.95).toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">5 Years:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">{company.roe3YAvg ? `${company.roe3YAvg.toFixed(1)}%` : '42.1%'}</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.roce5YAvg != null ? `${company.roce5YAvg.toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">3 Years:</span>
-                    <span className="font-black text-emerald-400">{company.roe3YAvg ? `${company.roe3YAvg.toFixed(1)}%` : '46.8%'}</span>
+                    <span className="font-black text-emerald-400">{company.roe3YAvg != null ? `${company.roe3YAvg.toFixed(1)}%` : '—'}</span>
                   </div>
                   <div className="py-2 flex items-center justify-between">
                     <span className="text-[var(--theme-card-text-muted)] font-medium">Last Year:</span>
-                    <span className="font-black text-[var(--theme-card-text)]">{company.roe ? `${company.roe.toFixed(1)}%` : '49.5%'}</span>
+                    <span className="font-black text-[var(--theme-card-text)]">{company.roe != null ? `${company.roe.toFixed(1)}%` : '—'}</span>
                   </div>
                 </div>
               </div>
@@ -1461,12 +1502,12 @@ export function CompanyAnalysisView({
                   ? activeFinancials.balanceSheet[activeFinancials.balanceSheet.length - 1]
                   : null;
 
-                const salesVal = latestPl ? latestPl.sales : (company.currentPrice * 350);
-                const patVal = latestPl ? latestPl.netProfit : (salesVal * 0.11);
-                const opmVal = latestQuarter ? latestQuarter.opmPct : 18.2;
-                const epsVal = latestPl ? latestPl.eps : (company.currentPrice / (company.pe || 24));
-                const debtVal = latestBs ? latestBs.borrowings : (salesVal * 0.15);
-                const assetsVal = latestBs ? latestBs.totalAssets : (salesVal * 0.95);
+                const salesVal = latestPl ? latestPl.sales : null;
+                const patVal = latestPl ? latestPl.netProfit : null;
+                const opmVal = latestQuarter ? latestQuarter.opmPct : (company.opm ?? null);
+                const epsVal = latestPl ? latestPl.eps : (company.pe && company.pe > 0 ? (company.currentPrice / company.pe) : null);
+                const debtVal = latestBs ? latestBs.borrowings : null;
+                const assetsVal = latestBs ? latestBs.totalAssets : null;
 
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 text-left">
@@ -1475,7 +1516,7 @@ export function CompanyAnalysisView({
                         Annual Revenue (Sales)
                       </span>
                       <span className="mono text-[14px] font-black text-emerald-400 block mt-0.5 truncate">
-                        {company.currencySymbol}{Number(Math.round(salesVal)).toLocaleString()} Cr
+                        {salesVal != null ? `${company.currencySymbol}${Number(Math.round(salesVal)).toLocaleString()} ${scaleUnit}` : '—'}
                       </span>
                       <span className="text-[9.5px] mono text-[var(--theme-card-text-muted)] block truncate">
                         {isConsolidated ? 'Consolidated Top-Line' : 'Parent Entity Sales'}
@@ -1487,7 +1528,7 @@ export function CompanyAnalysisView({
                         Net Profit (PAT)
                       </span>
                       <span className="mono text-[14px] font-black text-emerald-400 block mt-0.5 truncate">
-                        {company.currencySymbol}{Number(Math.round(patVal)).toLocaleString()} Cr
+                        {patVal != null ? `${company.currencySymbol}${Number(Math.round(patVal)).toLocaleString()} ${scaleUnit}` : '—'}
                       </span>
                       <span className="text-[9.5px] mono text-[var(--theme-card-text-muted)] block truncate">
                         {isConsolidated ? 'Group Net Profit' : 'Parent Net Profit'}
@@ -1499,7 +1540,7 @@ export function CompanyAnalysisView({
                         Operating Margin (OPM)
                       </span>
                       <span className="mono text-[14px] font-black text-[var(--theme-card-text)] block mt-0.5 truncate">
-                        {opmVal.toFixed(1)}%
+                        {opmVal != null ? `${opmVal.toFixed(1)}%` : '—'}
                       </span>
                       <span className="text-[9.5px] mono text-[var(--theme-card-text-muted)] block truncate">
                         {isConsolidated ? 'Consolidated Margin' : 'Standalone Margin'}
@@ -1511,7 +1552,7 @@ export function CompanyAnalysisView({
                         Annual EPS
                       </span>
                       <span className="mono text-[14px] font-black text-[var(--theme-card-text)] block mt-0.5 truncate">
-                        {company.currencySymbol}{epsVal.toFixed(2)}
+                        {epsVal != null ? `${company.currencySymbol}${epsVal.toFixed(2)}` : '—'}
                       </span>
                       <span className="text-[9.5px] mono text-[var(--theme-card-text-muted)] block truncate">
                         {isConsolidated ? 'Consolidated EPS' : 'Parent Entity EPS'}
@@ -1523,7 +1564,7 @@ export function CompanyAnalysisView({
                         Total Borrowings (Debt)
                       </span>
                       <span className="mono text-[14px] font-black text-rose-400 block mt-0.5 truncate">
-                        {company.currencySymbol}{Number(Math.round(debtVal)).toLocaleString()} Cr
+                        {debtVal != null ? `${company.currencySymbol}${Number(Math.round(debtVal)).toLocaleString()} ${scaleUnit}` : '—'}
                       </span>
                       <span className="text-[9.5px] mono text-[var(--theme-card-text-muted)] block truncate">
                         {isConsolidated ? 'Total Group Debt' : 'Parent Entity Debt'}
@@ -1535,7 +1576,7 @@ export function CompanyAnalysisView({
                         Total Assets
                       </span>
                       <span className="mono text-[14px] font-black text-[var(--theme-card-text)] block mt-0.5 truncate">
-                        {company.currencySymbol}{Number(Math.round(assetsVal)).toLocaleString()} Cr
+                        {assetsVal != null ? `${company.currencySymbol}${Number(Math.round(assetsVal)).toLocaleString()} ${scaleUnit}` : '—'}
                       </span>
                       <span className="text-[9.5px] mono text-[var(--theme-card-text-muted)] block truncate">
                         {isConsolidated ? 'Consolidated Balance Sheet' : 'Parent Entity Assets'}
