@@ -38,7 +38,19 @@ import { OHLCVHeader } from './OHLCVHeader';
 import { IndicatorSettingsModal } from './IndicatorSettingsModal';
 import { DrawingToolbar, type CursorMode } from './DrawingToolbar';
 import { DrawingsManagerModal } from './DrawingsManagerModal';
+import { ChartHotkeysModal } from './ChartHotkeysModal';
 import { ChartSymbolSearch, type ChartInstrumentItem } from './ChartSymbolSearch';
+
+function rescaleCandleArray(candles: Candle[], ratio: number, targetPrice: number): Candle[] {
+  const decimals = targetPrice < 0.01 ? 6 : targetPrice < 2 ? 4 : targetPrice < 10 ? 3 : 2;
+  return candles.map(c => ({
+    ...c,
+    open: +(c.open * ratio).toFixed(decimals),
+    high: +(c.high * ratio).toFixed(decimals),
+    low: +(c.low * ratio).toFixed(decimals),
+    close: +(c.close * ratio).toFixed(decimals),
+  }));
+}
 
 interface ChartContainerProps {
   market: MarketType;
@@ -266,12 +278,20 @@ export function ChartContainer({
     if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem('mi007_orderflow_config');
-        if (stored) return JSON.parse(stored);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return {
+            ...DEFAULT_ORDER_FLOW_CONFIG,
+            ...parsed,
+            dataSource: 'SIMULATED_MICROSTRUCTURE',
+          };
+        }
       } catch (e) {}
     }
     return DEFAULT_ORDER_FLOW_CONFIG;
   });
   const [isOfSignalsOpen, setIsOfSignalsOpen] = useState(false);
+  const [isHotkeysOpen, setIsHotkeysOpen] = useState(false);
 
   const handleOrderFlowConfigChange = useCallback((newCfg: OrderFlowConfig) => {
     setOrderFlowConfig(newCfg);
@@ -609,7 +629,7 @@ export function ChartContainer({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Keyboard shortcut 'F' to toggle fullscreen
+  // Keyboard shortcut 'F' to toggle fullscreen & '?' to toggle Hotkeys Cheat Sheet
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeTag = (document.activeElement as HTMLElement)?.tagName;
@@ -619,6 +639,9 @@ export function ChartContainer({
       if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         handleToggleFullscreen();
+      } else if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setIsHotkeysOpen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -711,14 +734,7 @@ export function ChartContainer({
             const dislocation = Math.abs(engineLast.close - expectedPrice) / expectedPrice;
             if (dislocation > 0.20) {
               const scaleMultiplier = expectedPrice / engineLast.close;
-              const decimals = expectedPrice < 2 ? 4 : expectedPrice < 10 ? 3 : 2;
-              cleanEngine = cleanEngine.map(c => ({
-                ...c,
-                open: +(c.open * scaleMultiplier).toFixed(decimals),
-                high: +(c.high * scaleMultiplier).toFixed(decimals),
-                low: +(c.low * scaleMultiplier).toFixed(decimals),
-                close: +(c.close * scaleMultiplier).toFixed(decimals),
-              }));
+              cleanEngine = rescaleCandleArray(cleanEngine, scaleMultiplier, expectedPrice);
             }
           }
         }
@@ -789,13 +805,7 @@ export function ChartContainer({
           if (dis > 0.25) {
             // Re-anchor candles to verified live price scale
             const ratio = live.price / lastC.close;
-            setCandles(cPrev => cPrev.map(c => ({
-              ...c,
-              open: +(c.open * ratio).toFixed(2),
-              high: +(c.high * ratio).toFixed(2),
-              low: +(c.low * ratio).toFixed(2),
-              close: +(c.close * ratio).toFixed(2),
-            })));
+            setCandles(cPrev => rescaleCandleArray(cPrev, ratio, live.price));
           }
         }
       }
@@ -808,6 +818,9 @@ export function ChartContainer({
   useEffect(() => {
     const unsub = subscribeToTicks((tick) => {
       if (areSymbolsEqual(tick.symbol, selectedSymbol) && tick.price > 0) {
+        setIsLiveFromEngine(true);
+        setCurrentPrice(tick.price);
+
         setCandles(prev => {
           if (prev.length === 0) return prev;
           const currentLast = prev[prev.length - 1];
@@ -817,20 +830,16 @@ export function ChartContainer({
           const dislocation = Math.abs(tick.price - currentLast.close) / currentLast.close;
           if (dislocation > 0.25) {
             const ratio = tick.price / currentLast.close;
-            return prev.map(c => ({
-              ...c,
-              open: +(c.open * ratio).toFixed(2),
-              high: +(c.high * ratio).toFixed(2),
-              low: +(c.low * ratio).toFixed(2),
-              close: +(c.close * ratio).toFixed(2),
-            }));
+            return rescaleCandleArray(prev, ratio, tick.price);
           }
-
-          setIsLiveFromEngine(true);
-          setCurrentPrice(tick.price);
 
           const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
           const now = tick.timestamp || Date.now();
+
+          // Ignore stale out-of-order ticks older than the active bar's openTime
+          if (now < currentLast.openTime) {
+            return prev;
+          }
 
           // Check if tick belongs to currently active candle bucket (handling UTC vs local market midnight)
           let isSameBucket = false;
@@ -867,7 +876,7 @@ export function ChartContainer({
             };
             next = [...prev];
             next[next.length - 1] = updated;
-          } else if (now >= currentLast.openTime + tfMs) {
+          } else {
             // Case 2: Genuine new time bucket started (e.g. next day or next hour)
             const newBarOpenTime = timeframe === '1D'
               ? currentLast.openTime + tfMs
@@ -881,16 +890,6 @@ export function ChartContainer({
               volume: tick.volume > 0 ? tick.volume : 1,
             };
             next = [...prev.slice(-999), newBar];
-          } else {
-            // Case 3: Matching sub-bucket update
-            const updated: Candle = {
-              ...currentLast,
-              close: tick.price,
-              high: Math.max(currentLast.high, tick.price),
-              low: currentLast.low > 0 ? Math.min(currentLast.low, tick.price) : tick.price,
-            };
-            next = [...prev];
-            next[next.length - 1] = updated;
           }
 
           // Throttle save to storage every 4 seconds
@@ -1247,22 +1246,24 @@ export function ChartContainer({
         localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(normalized));
       } catch {}
     } else if (tpl.activeIndicators && tpl.activeIndicators.length > 0) {
-      const migrated: IndicatorConfig[] = tpl.activeIndicators.map((t, idx) => {
-        const d = INDICATOR_DEFAULTS[t];
-        const custom = tpl.customConfigs?.[t];
-        return {
-          id: `${t.toLowerCase()}-${Date.now()}-${idx}`,
-          type: t,
-          period: custom?.period ?? d.period,
-          secondaryPeriod: custom?.secondaryPeriod ?? d.secondaryPeriod,
-          tertiaryPeriod: custom?.tertiaryPeriod ?? d.tertiaryPeriod,
-          multiplier: custom?.multiplier ?? d.multiplier,
-          color: custom?.color ?? d.color,
-          secondaryColor: custom?.secondaryColor ?? d.secondaryColor,
-          tertiaryColor: custom?.tertiaryColor ?? d.tertiaryColor,
-          enabled: true,
-        };
-      });
+      const migrated: IndicatorConfig[] = tpl.activeIndicators
+        .filter((t) => Boolean(INDICATOR_DEFAULTS[t]))
+        .map((t, idx) => {
+          const d = INDICATOR_DEFAULTS[t];
+          const custom = tpl.customConfigs?.[t];
+          return {
+            id: `${t.toLowerCase()}-${Date.now()}-${idx}`,
+            type: t,
+            period: custom?.period ?? d.period,
+            secondaryPeriod: custom?.secondaryPeriod ?? d.secondaryPeriod,
+            tertiaryPeriod: custom?.tertiaryPeriod ?? d.tertiaryPeriod,
+            multiplier: custom?.multiplier ?? d.multiplier,
+            color: custom?.color ?? d.color,
+            secondaryColor: custom?.secondaryColor ?? d.secondaryColor,
+            tertiaryColor: custom?.tertiaryColor ?? d.tertiaryColor,
+            enabled: true,
+          };
+        });
       setIndicatorConfigs(migrated);
       try {
         localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(migrated));
@@ -1769,6 +1770,12 @@ export function ChartContainer({
         onClose={() => setIsOfSignalsOpen(false)}
         signals={orderFlowData?.signals || []}
         symbol={selectedSymbol}
+      />
+
+      {/* ── Keyboard Shortcuts Cheat Sheet Modal ('?') ── */}
+      <ChartHotkeysModal
+        isOpen={isHotkeysOpen}
+        onClose={() => setIsHotkeysOpen(false)}
       />
     </div>
   );

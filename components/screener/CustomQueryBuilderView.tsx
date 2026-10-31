@@ -654,10 +654,14 @@ export function CustomQueryBuilderView({
                       {c.sector}
                     </td>
                     <td className="py-1.5 px-2.5 text-right font-mono font-bold text-[var(--theme-card-text)]">
-                      {c.currencySymbol || (market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹')}{c.currentPrice?.toLocaleString() || c.currentPrice}
+                      {c.currencySymbol || (market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹')}{c.currentPrice?.toLocaleString(c.market === 'INDIA' ? 'en-IN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || c.currentPrice}
                     </td>
                     <td className="py-1.5 px-2.5 text-right font-mono text-[var(--theme-card-text-muted)]">
-                      {c.currencySymbol || (market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹')}{c.marketCap?.toLocaleString() || c.marketCap}
+                      {c.market === 'INDIA'
+                        ? `₹${c.marketCap?.toLocaleString('en-IN')} Cr`
+                        : (c.marketCap ?? 0) >= 1000
+                        ? `${c.currencySymbol || '$'}${((c.marketCap || 0) / 1000).toFixed(2)}T`
+                        : `${c.currencySymbol || '$'}${c.marketCap?.toLocaleString('en-US', { maximumFractionDigits: 2 })}B`}
                     </td>
                     <td className="py-1.5 px-2.5 text-right font-mono text-[var(--theme-card-text)]">
                       {c.pe ? `${c.pe.toFixed(1)}x` : '—'}

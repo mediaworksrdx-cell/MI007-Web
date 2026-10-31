@@ -365,7 +365,7 @@ export function TradingStrategiesView({
                     </span>
                   </td>
                   <td className="py-1.5 px-2.5 font-bold text-emerald-300">
-                    ₹{r.triggerPrice ? r.triggerPrice.toFixed(2) : '-'}
+                    {market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹'}{r.triggerPrice ? r.triggerPrice.toFixed(2) : '-'}
                   </td>
                   <td className="py-1.5 px-2.5 text-[11px] text-[var(--theme-card-text-muted)] max-w-md truncate">
                     {r.explanation || 'Condition confirmed'}

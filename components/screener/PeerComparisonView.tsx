@@ -534,19 +534,19 @@ export function PeerComparisonView({
                         </div>
                       </td>
                       <td className="py-1.5 px-2.5 text-right font-bold text-[var(--theme-card-text)] whitespace-nowrap">
-                        ₹{cmp.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {c.currencySymbol || '₹'}{cmp.toLocaleString(c.market === 'INDIA' ? 'en-IN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-1.5 px-2.5 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
                         {c.pe ? c.pe.toFixed(2) : '—'}
                       </td>
                       <td className="py-1.5 px-2.5 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
-                        {c.marketCap ? c.marketCap.toLocaleString('en-IN') : '—'}
+                        {c.marketCap ? `${c.currencySymbol || '₹'}${c.marketCap.toLocaleString(c.market === 'INDIA' ? 'en-IN' : 'en-US', { maximumFractionDigits: c.market === 'INDIA' ? 0 : 2 })} ${c.market === 'INDIA' ? 'Cr' : 'B'}` : '—'}
                       </td>
                       <td className="py-1.5 px-2.5 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
                         {c.dividendYield != null ? `${c.dividendYield.toFixed(2)}%` : '—'}
                       </td>
                       <td className="py-1.5 px-2.5 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
-                        {npQtr ? npQtr.toLocaleString('en-IN') : '—'}
+                        {npQtr ? npQtr.toLocaleString(c.market === 'INDIA' ? 'en-IN' : 'en-US') : '—'}
                       </td>
                       <td
                         className={`py-1.5 px-2.5 text-right font-bold whitespace-nowrap ${
@@ -556,7 +556,7 @@ export function PeerComparisonView({
                         {profitVar >= 0 ? `+${profitVar.toFixed(2)}%` : `${profitVar.toFixed(2)}%`}
                       </td>
                       <td className="py-1.5 px-2.5 text-right font-medium text-[var(--theme-card-text)] whitespace-nowrap">
-                        {salesQtr ? salesQtr.toLocaleString('en-IN') : '—'}
+                        {salesQtr ? salesQtr.toLocaleString(c.market === 'INDIA' ? 'en-IN' : 'en-US') : '—'}
                       </td>
                       <td
                         className={`py-1.5 px-2.5 text-right font-bold whitespace-nowrap ${
@@ -606,13 +606,13 @@ export function PeerComparisonView({
                     {medians.pe.toFixed(2)}
                   </td>
                   <td className="py-3 px-3 text-right text-[var(--theme-card-text)]">
-                    {Math.round(medians.marketCap).toLocaleString('en-IN')}
+                    {Math.round(medians.marketCap).toLocaleString(activeCompany.market === 'INDIA' ? 'en-IN' : 'en-US')}
                   </td>
                   <td className="py-3 px-3 text-right text-[var(--theme-card-text)]">
                     {medians.dividendYield.toFixed(2)}%
                   </td>
                   <td className="py-3 px-3 text-right text-[var(--theme-card-text)]">
-                    {Math.round(medians.netProfit).toLocaleString('en-IN')}
+                    {Math.round(medians.netProfit).toLocaleString(activeCompany.market === 'INDIA' ? 'en-IN' : 'en-US')}
                   </td>
                   <td
                     className={`py-3 px-3 text-right ${
@@ -624,7 +624,7 @@ export function PeerComparisonView({
                       : `${medians.qtrProfitGrowthYoY.toFixed(2)}%`}
                   </td>
                   <td className="py-3 px-3 text-right text-[var(--theme-card-text)]">
-                    {Math.round(medians.sales).toLocaleString('en-IN')}
+                    {Math.round(medians.sales).toLocaleString(activeCompany.market === 'INDIA' ? 'en-IN' : 'en-US')}
                   </td>
                   <td
                     className={`py-3 px-3 text-right ${
@@ -761,7 +761,7 @@ export function PeerComparisonView({
               <table className="w-full border-collapse text-left mono text-[13px]">
                 <thead>
                   <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[11.5px] font-black uppercase">
-                    <th className="py-2.5 px-3 min-w-[200px]">Quarterly Financials ({activeCompany.currencySymbol} Cr)</th>
+                    <th className="py-2.5 px-3 min-w-[200px]">Quarterly Financials ({activeCompany.currencySymbol}{activeCompany.market === 'INDIA' ? ' Cr' : ' B'})</th>
                     {activeFinancials.quarterly.map((q) => (
                       <th key={q.quarter} className="py-2.5 px-3 text-right whitespace-nowrap">
                         {q.quarter}
@@ -851,10 +851,10 @@ export function PeerComparisonView({
                     ))}
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-bold text-[var(--theme-card-text)]">EPS in Rs</td>
+                    <td className="py-2.5 px-3 font-bold text-[var(--theme-card-text)]">EPS ({activeCompany.currencySymbol.trim()})</td>
                     {activeFinancials.quarterly.map((q) => (
                       <td key={q.quarter} className="py-2.5 px-3 text-right font-bold">
-                        ₹{q.eps.toFixed(2)}
+                        {activeCompany.currencySymbol}{q.eps.toFixed(2)}
                       </td>
                     ))}
                   </tr>
@@ -886,7 +886,7 @@ export function PeerComparisonView({
               <table className="w-full border-collapse text-left mono text-[13px]">
                 <thead>
                   <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[11.5px] font-black uppercase">
-                    <th className="py-2.5 px-3 min-w-[200px]">Annual Profit &amp; Loss ({activeCompany.currencySymbol} Cr)</th>
+                    <th className="py-2.5 px-3 min-w-[200px]">Annual Profit &amp; Loss ({activeCompany.currencySymbol}{activeCompany.market === 'INDIA' ? ' Cr' : ' B'})</th>
                     {activeFinancials.annualPl.map((p) => (
                       <th key={p.year} className="py-2.5 px-3 text-right whitespace-nowrap">
                         {p.year}
@@ -976,10 +976,10 @@ export function PeerComparisonView({
                     ))}
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-bold text-[var(--theme-card-text)]">EPS in Rs</td>
+                    <td className="py-2.5 px-3 font-bold text-[var(--theme-card-text)]">EPS ({activeCompany.currencySymbol.trim()})</td>
                     {activeFinancials.annualPl.map((p) => (
                       <td key={p.year} className="py-2.5 px-3 text-right font-bold">
-                        ₹{p.eps.toFixed(2)}
+                        {activeCompany.currencySymbol}{p.eps.toFixed(2)}
                       </td>
                     ))}
                   </tr>
@@ -1131,7 +1131,7 @@ export function PeerComparisonView({
               <table className="w-full border-collapse text-left mono text-[13px]">
                 <thead>
                   <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[11.5px] font-black uppercase">
-                    <th className="py-2.5 px-3 min-w-[200px]">Balance Sheet ({activeCompany.currencySymbol} Cr)</th>
+                    <th className="py-2.5 px-3 min-w-[200px]">Balance Sheet ({activeCompany.currencySymbol}{activeCompany.market === 'INDIA' ? ' Cr' : ' B'})</th>
                     {activeFinancials.balanceSheet.map((bs) => (
                       <th key={bs.year} className="py-2.5 px-3 text-right whitespace-nowrap">
                         {bs.year}
@@ -1231,7 +1231,7 @@ export function PeerComparisonView({
               <table className="w-full border-collapse text-left mono text-[13px]">
                 <thead>
                   <tr className="border-b border-[var(--theme-card-border)] text-[var(--theme-card-text-muted)] text-[11.5px] font-black uppercase">
-                    <th className="py-2.5 px-3 min-w-[200px]">Cash Flow Activities ({activeCompany.currencySymbol} Cr)</th>
+                    <th className="py-2.5 px-3 min-w-[200px]">Cash Flow Activities ({activeCompany.currencySymbol}{activeCompany.market === 'INDIA' ? ' Cr' : ' B'})</th>
                     {activeFinancials.cashFlow.map((cf) => (
                       <th key={cf.year} className="py-2.5 px-3 text-right whitespace-nowrap">
                         {cf.year}

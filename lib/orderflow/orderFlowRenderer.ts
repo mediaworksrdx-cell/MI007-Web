@@ -79,11 +79,15 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
 
   ctx.save();
 
-  // Determine Level of Detail (LOD) based on horizontal candle width
+  // Determine Level of Detail (LOD) based on horizontal candle width and selected viewMode
   const effectiveW = candleW / dpr;
-  const showNumericText = effectiveW >= 36;       // Zoomed in: show full Bid x Ask numbers
-  const showSplitBars = effectiveW >= 12;         // Medium zoom: show dual mini-profile bars
-  // Below 12px: Heatmap spine mode
+  const viewMode = config.viewMode || 'BID_ASK';
+  const showBidAskText = viewMode === 'BID_ASK' && effectiveW >= 32;
+  const showDeltaText = viewMode === 'DELTA' && effectiveW >= 24;
+  const showSplitBars =
+    (viewMode === 'PROFILE' && effectiveW >= 10) ||
+    ((viewMode === 'BID_ASK' || viewMode === 'DELTA') && !showBidAskText && !showDeltaText && effectiveW >= 12);
+  // Otherwise: Heatmap mode
 
   // Palette definitions
   const buyImbalanceBg = isDark ? 'rgba(16, 185, 129, 0.40)' : 'rgba(5, 150, 105, 0.35)';
@@ -98,13 +102,14 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
   const pocBg = isDark ? 'rgba(245, 158, 11, 0.18)' : 'rgba(245, 158, 11, 0.15)';
   const valueAreaTint = isDark ? 'rgba(255, 255, 255, 0.035)' : 'rgba(0, 0, 0, 0.025)';
 
-  // ── 1. Render Order Flow Zones (Stacked Imbalances & Absorptions) ────────
-  if (config.showOrderFlowZones && activeZones.length > 0) {
+  // ── 1. Render Order Flow Zones (Stacked Imbalances) ────────
+  const shouldShowZones = config.showStackedImbalances ?? config.showOrderFlowZones;
+  if (shouldShowZones && activeZones.length > 0) {
     for (const zone of activeZones) {
-      if (zone.endIndex < safeStart || zone.startIndex > safeEnd) continue;
+      if (zone.endIndex < safeStart || zone.startIndex >= safeEnd) continue;
 
       const zStartLi = Math.max(0, zone.startIndex - startIdx);
-      const zEndLi = Math.min(safeEnd - startIdx + 10, zone.endIndex - startIdx);
+      const zEndLi = Math.min(safeEnd - startIdx, zone.endIndex - startIdx);
 
       const x1 = zStartLi * candleW;
       const x2 = (zEndLi + 1) * candleW;
@@ -210,8 +215,8 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
         ctx.strokeRect(barLeft + 1 * dpr, cellY, barBodyW, cellH);
       }
 
-      // --- Mode A: Detailed Numeric Text (Wide Zoom) ---
-      if (showNumericText) {
+      // --- Mode A1: Detailed Bid × Ask Numeric Text ---
+      if (showBidAskText) {
         const halfW = barBodyW / 2;
 
         // Bid Side (Left)
@@ -231,13 +236,13 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
         ctx.font = `bold ${fontSize}px "JetBrains Mono", monospace`;
         ctx.textBaseline = 'middle';
 
-        // Render Bid Text (Left-aligned or right-aligned to center divider)
+        // Render Bid Text
         ctx.fillStyle = lvl.hasSellImbalance ? sellImbalanceText : neutralBidText;
         ctx.textAlign = 'right';
         const bidStr = formatVol(lvl.bidVolume);
         ctx.fillText(bidStr, barMidX - 3 * dpr, cellY + cellH / 2);
 
-        // Render Ask Text (Right side of divider)
+        // Render Ask Text
         ctx.fillStyle = lvl.hasBuyImbalance ? buyImbalanceText : neutralAskText;
         ctx.textAlign = 'left';
         const askStr = formatVol(lvl.askVolume);
@@ -251,7 +256,24 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
         ctx.lineTo(barMidX, cellY + cellH);
         ctx.stroke();
       }
-      // --- Mode B: Dual Split Volume Profile Bars (Medium Zoom) ---
+      // --- Mode A2: Delta Profile Numeric Mode ---
+      else if (showDeltaText) {
+        const deltaFraction = lvl.totalVolume > 0 ? lvl.delta / lvl.totalVolume : 0;
+        const absDelta = Math.abs(deltaFraction);
+        const alpha = Math.min(0.55, Math.max(0.10, absDelta * 0.65));
+        ctx.fillStyle = lvl.delta >= 0
+          ? `rgba(16, 185, 129, ${alpha})`
+          : `rgba(239, 68, 68, ${alpha})`;
+        ctx.fillRect(barLeft + 1 * dpr, cellY, barBodyW, cellH);
+
+        const fontSize = Math.max(7, Math.min(10, Math.floor(cellH * 0.76 / dpr))) * dpr;
+        ctx.font = `bold ${fontSize}px "JetBrains Mono", monospace`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = lvl.delta >= 0 ? buyImbalanceText : sellImbalanceText;
+        ctx.fillText(formatDelta(lvl.delta), barMidX, cellY + cellH / 2);
+      }
+      // --- Mode B: Dual Split Volume Profile Bars (Medium Zoom or PROFILE mode) ---
       else if (showSplitBars) {
         const halfMaxW = (barBodyW / 2) * 0.92;
         const bidBarW = Math.max(1, (lvl.bidVolume / maxLevelVol) * halfMaxW);
@@ -265,7 +287,7 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
         ctx.fillStyle = lvl.hasBuyImbalance ? buyImbalanceText : isDark ? 'rgba(16, 185, 129, 0.55)' : 'rgba(5, 150, 105, 0.5)';
         ctx.fillRect(barMidX, cellY, askBarW, cellH);
       }
-      // --- Mode C: Compact Delta Heatmap (Standard Zoom) ---
+      // --- Mode C: Compact Delta Heatmap (Standard Zoom or HEATMAP mode) ---
       else {
         const deltaFraction = lvl.totalVolume > 0 ? lvl.delta / lvl.totalVolume : 0;
         const absDelta = Math.abs(deltaFraction);
@@ -276,6 +298,17 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
           : `rgba(239, 68, 68, ${alpha})`;
         ctx.fillRect(barLeft + 1 * dpr, cellY, barBodyW, cellH);
       }
+    }
+
+    // B2. Render Passive Absorption Marker when enabled
+    if (config.showAbsorption && fp.absorption) {
+      const absY = priceToY(fp.absorption.price);
+      const absCol = fp.absorption.isBullish ? '#06B6D4' : '#A855F7';
+      ctx.strokeStyle = absCol;
+      ctx.lineWidth = 1.6 * dpr;
+      ctx.beginPath();
+      ctx.arc(barMidX, absY, 4 * dpr, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
     // C. Render Unfinished Business markers
@@ -319,14 +352,16 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
   // ── 3. Render Order Flow Signals (Badges & Invalidation/Target guides) ──
   if (config.showSignals && signals.length > 0) {
     for (const sig of signals) {
-      if (sig.candleIndex < safeStart || sig.candleIndex > safeEnd) continue;
+      if (sig.candleIndex < safeStart || sig.candleIndex >= safeEnd) continue;
+      const sigCandle = candles[sig.candleIndex];
+      if (!sigCandle) continue;
 
       const li = sig.candleIndex - startIdx;
       const x = li * candleW + candleW / 2;
       const y = priceToY(sig.price);
 
       const isBull = sig.isBullish;
-      const badgeY = isBull ? priceToY(candles[sig.candleIndex].low) + 14 * dpr : priceToY(candles[sig.candleIndex].high) - 14 * dpr;
+      const badgeY = isBull ? priceToY(sigCandle.low) + 14 * dpr : priceToY(sigCandle.high) - 14 * dpr;
 
       // Signal Pill Badge
       const bgCol = isBull ? '#10B981' : '#EF4444';
@@ -335,7 +370,6 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
       ctx.font = `bold ${8 * dpr}px "JetBrains Mono", monospace`;
       const textW = ctx.measureText(badgeText).width;
       const padX = 4 * dpr;
-      const padY = 2 * dpr;
 
       ctx.fillStyle = bgCol;
       ctx.beginPath();
@@ -365,7 +399,7 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
   // ── 4. Footprint Data Source Watermark Badge ──────────────────────────────
   const badgeText = config.dataSource === 'VERIFIED_L2'
     ? '● ORDER FLOW: L2 VERIFIED TRADES'
-    : '◌ ORDER FLOW: SYNTHETIC MICROSTRUCTURE (DEMO)';
+    : '◌ ORDER FLOW: OHLCV ESTIMATED FOOTPRINT';
   ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono", monospace`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';

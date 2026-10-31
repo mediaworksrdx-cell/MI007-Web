@@ -82,10 +82,20 @@ export function OrderFlowToolbarMenu({
 
       {/* ── 3. Data Integrity Indicator ── */}
       <div className="px-3.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px]">
-        <span className="text-slate-500 dark:text-slate-400 font-medium">Data Integrity:</span>
-        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          {config.dataSource === 'VERIFIED_L2' ? 'L2 Real-Time Trades' : 'Simulated Microstructure'}
+        <span className="text-slate-500 dark:text-slate-400 font-medium">Data Source:</span>
+        <span
+          className={`font-mono font-bold flex items-center gap-1 ${
+            config.dataSource === 'VERIFIED_L2'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-amber-600 dark:text-amber-400'
+          }`}
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              config.dataSource === 'VERIFIED_L2' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+            }`}
+          />
+          {config.dataSource === 'VERIFIED_L2' ? 'L2 Real-Time Trades' : 'OHLCV Estimated Footprint'}
         </span>
       </div>
 
@@ -196,7 +206,7 @@ export function OrderFlowToolbarMenu({
             label="Stacked Imbalance Zones"
             sublabel="3+ contiguous imbalances as order flow S/R"
             checked={config.showStackedImbalances}
-            onChange={(v) => onChangeConfig({ showStackedImbalances: v })}
+            onChange={(v) => onChangeConfig({ showStackedImbalances: v, showOrderFlowZones: v })}
           />
           <ToggleRow
             label="Passive Absorption Detection"

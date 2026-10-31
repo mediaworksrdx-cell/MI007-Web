@@ -148,13 +148,16 @@ export function removeTemplate(id: string): ChartTemplate[] {
     const defaultTpl = DEFAULT_TEMPLATES.find(d => d.id === id);
     const updated = all.map(t => {
       if (t.id === id) {
+        if (defaultTpl) {
+          return { ...defaultTpl, updatedAt: Date.now() };
+        }
         return {
           id: t.id,
           slotNumber: t.slotNumber,
           name: `Template ${t.slotNumber}`,
           timeframe: '1H' as Timeframe,
           chartType: 'CANDLESTICK' as ChartType,
-          activeIndicators: [], // completely clean
+          activeIndicators: [],
           showVolume: true,
           showSmcOverlay: false,
           showVolumeProfile: false,

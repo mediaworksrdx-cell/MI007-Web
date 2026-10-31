@@ -434,19 +434,18 @@ export function SmcScannerView({
             ))}
           </div>
 
-          {/* Setup Type Filter */}
+          {/* Setup Type Filter (All 16 SMC Setup Types) */}
           <select
             value={selectedSetupType}
             onChange={(e) => setSelectedSetupType(e.target.value as any)}
             className="h-8 px-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] font-semibold focus:outline-none focus:border-amber-500"
           >
-            <option value="ALL">All SMC Setups</option>
-            <option value="CHOCH_REVERSAL">CHoCH Reversal</option>
-            <option value="BOS_CONTINUATION">BOS Continuation</option>
-            <option value="OB_RETEST">Order Block Retest</option>
-            <option value="FVG_TAP">FVG Imbalance Tap</option>
-            <option value="LIQUIDITY_SWEEP">Liquidity Sweep</option>
-            <option value="BREAKER_RETEST">Breaker Block Retest</option>
+            <option value="ALL">All 16 SMC Setups</option>
+            {(Object.entries(SETUP_TYPE_LABELS) as [SmcSetupType, { label: string }][]).map(([typeKey, info]) => (
+              <option key={typeKey} value={typeKey}>
+                {info.label}
+              </option>
+            ))}
           </select>
 
           {/* Direction Filter */}
@@ -535,6 +534,7 @@ export function SmcScannerView({
                   const isBull = item.setup.direction === 'BULLISH';
                   const badgeInfo =
                     SETUP_TYPE_LABELS[item.setup.setupType] || SETUP_TYPE_LABELS.CHOCH_REVERSAL;
+                  const currSym = market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹';
 
                   return (
                     <tr
@@ -570,7 +570,7 @@ export function SmcScannerView({
 
                       {/* LTP */}
                       <td className="py-2 px-2.5 text-right font-mono font-bold text-[var(--theme-card-text)]">
-                        <div>₹{item.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div>{currSym}{item.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                         <div
                           className={`text-[10px] font-semibold ${
                             item.changePct >= 0 ? 'text-emerald-500' : 'text-rose-500'
@@ -611,17 +611,17 @@ export function SmcScannerView({
 
                       {/* Entry Zone */}
                       <td className="py-2 px-2.5 text-right font-mono font-bold text-[var(--theme-card-text)]">
-                        ₹{item.setup.entryPrice.toFixed(2)}
+                        {currSym}{item.setup.entryPrice.toFixed(2)}
                       </td>
 
                       {/* Invalidation (SL) */}
                       <td className="py-2 px-2.5 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
-                        ₹{item.setup.stopLoss.toFixed(2)}
+                        {currSym}{item.setup.stopLoss.toFixed(2)}
                       </td>
 
                       {/* Target (TP) */}
                       <td className="py-2 px-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                        ₹{item.setup.targetPrice.toFixed(2)}
+                        {currSym}{item.setup.targetPrice.toFixed(2)}
                       </td>
 
                       {/* R:R */}

@@ -62,12 +62,21 @@ export function calculateBollinger(
   return { upper, middle, lower };
 }
 
-/** VWAP (resets daily / session-based) */
+/** VWAP (resets daily / session-based on UTC date boundary) */
 export function calculateVWAP(candles: Candle[]): (number | null)[] {
   if (!candles || candles.length === 0) return [];
   let cumulativeTP = 0;
   let cumulativeVol = 0;
+  let lastSessionDay = -1;
   return candles.map(c => {
+    if (c.openTime > 0) {
+      const dayKey = Math.floor(c.openTime / 86_400_000);
+      if (dayKey !== lastSessionDay) {
+        cumulativeTP = 0;
+        cumulativeVol = 0;
+        lastSessionDay = dayKey;
+      }
+    }
     const tp = (c.high + c.low + c.close) / 3;
     cumulativeTP += tp * c.volume;
     cumulativeVol += c.volume;
@@ -165,29 +174,23 @@ export function toHeikinAshi(candles: Candle[]): Candle[] {
 }
 
 
-/** Average True Range (ATR) with RMA smoothing */
+/** Average True Range (ATR) with adaptive RMA smoothing */
 export function calculateATR(candles: Candle[], period: number = 14): (number | null)[] {
   if (!candles || candles.length === 0) return [];
   const p = Math.max(1, period);
-  const trs: number[] = new Array(candles.length);
-  trs[0] = candles[0].high - candles[0].low;
+  const result: (number | null)[] = new Array(candles.length).fill(null);
+  const tr: number[] = new Array(candles.length).fill(0);
+  tr[0] = Math.max(candles[0].high - candles[0].low, 0.0001);
   for (let i = 1; i < candles.length; i++) {
     const hl = candles[i].high - candles[i].low;
     const hpc = Math.abs(candles[i].high - candles[i - 1].close);
     const lpc = Math.abs(candles[i].low - candles[i - 1].close);
-    trs[i] = Math.max(hl, hpc, lpc);
+    tr[i] = Math.max(hl, hpc, lpc);
   }
-  const result: (number | null)[] = new Array(candles.length).fill(null);
-  let sum = 0;
-  const warmup = Math.min(p, candles.length);
-  for (let i = 0; i < warmup; i++) {
-    sum += trs[i];
-  }
-  let prevAtr = sum / warmup;
-  result[warmup - 1] = prevAtr;
-  for (let i = p; i < candles.length; i++) {
-    prevAtr = (prevAtr * (p - 1) + trs[i]) / p;
-    result[i] = prevAtr;
+  result[0] = tr[0];
+  for (let i = 1; i < candles.length; i++) {
+    const effPeriod = Math.min(p, i + 1);
+    result[i] = (result[i - 1]! * (effPeriod - 1) + tr[i]) / effPeriod;
   }
   return result;
 }

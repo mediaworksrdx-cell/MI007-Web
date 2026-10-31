@@ -13,6 +13,7 @@
 
 import { Candle } from '../types';
 import { calculateSMA, calculateATR } from '../indicators';
+import { calculateSMC } from '../smcEngine';
 
 export interface ResonanceFactor {
   name: string;
@@ -76,20 +77,17 @@ export function evaluateQuantumSmcResonance(
     return createDefaultNeutralSetup(symbol, companyName, market, currentPrice);
   }
 
-  const closes = candles.map((c) => c.close);
-  const highs = candles.map((c) => c.high);
-  const lows = candles.map((c) => c.low);
   const volumes = candles.map((c) => c.volume);
   const n = candles.length;
   const lastIndex = n - 1;
 
-  // ── 1. HTF Dealing Range & Equilibrium (Last 40 candles as macro range) ──
-  const lookbackHTF = Math.min(60, n);
-  const htfHighs = highs.slice(n - lookbackHTF);
-  const htfLows = lows.slice(n - lookbackHTF);
-  const rangeHigh = Math.max(...htfHighs);
-  const rangeLow = Math.min(...htfLows);
-  const eq = (rangeHigh + rangeLow) / 2;
+  // Delegate structural SMC detection to the canonical SMC engine (shared LRU cache)
+  const smc = calculateSMC(candles, undefined, symbol, '1D');
+
+  // ── 1. HTF Dealing Range & Equilibrium ──
+  const rangeHigh = smc.dealingRange.highPrice;
+  const rangeLow = smc.dealingRange.lowPrice;
+  const eq = smc.dealingRange.equilibriumPrice;
   const rangeSpan = rangeHigh - rangeLow || 1;
   const pricePctInRange = ((currentPrice - rangeLow) / rangeSpan) * 100;
 
@@ -108,71 +106,44 @@ export function evaluateQuantumSmcResonance(
   const htfBearish = currentPrice < lastSma20 && lastSma20 <= lastSma50;
   const htfTrend: 'Bullish' | 'Bearish' | 'Neutral' = htfBullish ? 'Bullish' : htfBearish ? 'Bearish' : 'Neutral';
 
-  // ── 2. MTF Liquidity Sweeps & Market Structure ──
-  // Check swing points in intermediate window (lookback 20)
-  let sslSwept = false;
-  let bslSwept = false;
-  let mtfStructure: QuantumSmcSetup['timeframeStates']['mtfStructure'] = 'Consolidating';
+  // ── 2. MTF Liquidity Sweeps & Market Structure (from canonical SMC engine) ──
+  const recentCutoff = Math.max(0, n - 12);
+  const recentSweeps = smc.sweeps.filter((s) => s.candleIndex >= recentCutoff);
+  const sslSwept = recentSweeps.some((s) => !s.isHighSweep);
+  const bslSwept = recentSweeps.some((s) => s.isHighSweep);
 
   const recentWindow = candles.slice(Math.max(0, n - 25), n);
-  const recentHighs = recentWindow.map((c) => c.high);
-  const recentLows = recentWindow.map((c) => c.low);
-  const recentMinLow = Math.min(...recentLows.slice(0, -3));
-  const recentMaxHigh = Math.max(...recentHighs.slice(0, -3));
+  const recentMinLow = Math.min(...recentWindow.map((c) => c.low));
+  const recentMaxHigh = Math.max(...recentWindow.map((c) => c.high));
 
-  // Check last 3 candles for liquidity grab / sweep
-  for (let i = n - 3; i < n; i++) {
-    const c = candles[i];
-    // SSL Sweep: price probed below recentMinLow but closed above it
-    if (c.low < recentMinLow && c.close > recentMinLow) {
-      sslSwept = true;
-    }
-    // BSL Sweep: price probed above recentMaxHigh but closed below it
-    if (c.high > recentMaxHigh && c.close < recentMaxHigh) {
-      bslSwept = true;
-    }
-  }
-
-  // Structural Break (BOS / CHoCH)
-  const lastCandle = candles[lastIndex];
-  const prevCandle = candles[lastIndex - 1];
-  if (lastCandle.close > recentMaxHigh) {
-    mtfStructure = htfBullish ? 'BOS Confirmed' : 'CHoCH Confirmed';
-  } else if (lastCandle.close < recentMinLow) {
-    mtfStructure = htfBearish ? 'BOS Confirmed' : 'CHoCH Confirmed';
+  const recentBreaks = smc.structureBreaks.filter((b) => b.candleIndex >= recentCutoff);
+  const latestBreak = recentBreaks.length > 0 ? recentBreaks[recentBreaks.length - 1] : null;
+  let mtfStructure: QuantumSmcSetup['timeframeStates']['mtfStructure'] = 'Consolidating';
+  if (latestBreak) {
+    mtfStructure = latestBreak.breakType === 'BOS' ? 'BOS Confirmed' : 'CHoCH Confirmed';
   }
 
   // ── 3. LTF Displacement & Fair Value Gap (FVG) / Order Block ──
+  const lastCandle = candles[lastIndex];
   const atrArray = calculateATR(candles, 14);
   const currentATR = atrArray[lastIndex] || (lastCandle.high - lastCandle.low) || 1;
   const bodySize = Math.abs(lastCandle.close - lastCandle.open);
-  const isDisplacement = bodySize > currentATR * 1.3;
 
   let ltfDisplacement: QuantumSmcSetup['timeframeStates']['ltfDisplacement'] = 'Weak';
   if (bodySize > currentATR * 1.8) ltfDisplacement = 'Aggressive';
   else if (bodySize > currentATR * 1.2) ltfDisplacement = 'Moderate';
 
-  // Detect unmitigated FVG in last 5 candles
-  let bullishFVG = false;
-  let bearishFVG = false;
-  let fvgTop = 0;
-  let fvgBottom = 0;
+  // Use active unmitigated FVGs or Order Blocks from canonical SMC engine
+  const activeBullFvgs = smc.fvgs.filter((f) => f.isBullish && !f.isMitigated && !f.isInvalidated);
+  const activeBearFvgs = smc.fvgs.filter((f) => !f.isBullish && !f.isMitigated && !f.isInvalidated);
+  const activeBullObs = smc.orderBlocks.filter((o) => o.isBullish && !o.isMitigated);
+  const activeBearObs = smc.orderBlocks.filter((o) => !o.isBullish && !o.isMitigated);
 
-  for (let i = n - 4; i < n - 1; i++) {
-    if (i < 2) continue;
-    // Bullish FVG: Low of candle i > High of candle i-2
-    if (candles[i].low > candles[i - 2].high) {
-      bullishFVG = true;
-      fvgBottom = candles[i - 2].high;
-      fvgTop = candles[i].low;
-    }
-    // Bearish FVG: High of candle i < Low of candle i-2
-    if (candles[i].high < candles[i - 2].low) {
-      bearishFVG = true;
-      fvgTop = candles[i - 2].low;
-      fvgBottom = candles[i].high;
-    }
-  }
+  const latestBullZone = activeBullFvgs[activeBullFvgs.length - 1] ?? activeBullObs[activeBullObs.length - 1];
+  const latestBearZone = activeBearFvgs[activeBearFvgs.length - 1] ?? activeBearObs[activeBearObs.length - 1];
+
+  const bullishFVG = Boolean(latestBullZone);
+  const bearishFVG = Boolean(latestBearZone);
 
   // Volume Aggression / Delta proxy
   const recentVol = volumes.slice(n - 5);
@@ -246,12 +217,12 @@ export function evaluateQuantumSmcResonance(
   let takeProfit2 = 0;
 
   if (isBullishSetup) {
-    // Invalidation: lowest point of recent sweep or structural low minus 0.2%
+    // Invalidation: lowest point of recent sweep or structural low minus 0.5%
     stopLoss = Math.min(recentMinLow, lastCandle.low) * 0.995;
-    if (bullishFVG && fvgTop > fvgBottom) {
-      entryMin = fvgBottom;
-      entryMax = fvgTop;
-      optimalEntry = (fvgTop + fvgBottom) / 2; // 50% Consequent Encroachment
+    if (latestBullZone && latestBullZone.topPrice > latestBullZone.bottomPrice) {
+      entryMin = latestBullZone.bottomPrice;
+      entryMax = latestBullZone.topPrice;
+      optimalEntry = (latestBullZone.topPrice + latestBullZone.bottomPrice) / 2; // 50% Consequent Encroachment
     } else {
       entryMin = currentPrice * 0.995;
       entryMax = currentPrice * 1.002;
@@ -261,12 +232,12 @@ export function evaluateQuantumSmcResonance(
     takeProfit1 = optimalEntry + risk * 2.0; // 2R target
     takeProfit2 = Math.max(rangeHigh, optimalEntry + risk * 3.8); // Major BSL target
   } else {
-    // Bearish Invalidation: highest point of recent sweep or structural high plus 0.2%
+    // Bearish Invalidation: highest point of recent sweep or structural high plus 0.5%
     stopLoss = Math.max(recentMaxHigh, lastCandle.high) * 1.005;
-    if (bearishFVG && fvgTop > fvgBottom) {
-      entryMin = fvgBottom;
-      entryMax = fvgTop;
-      optimalEntry = (fvgTop + fvgBottom) / 2; // 50% Consequent Encroachment
+    if (latestBearZone && latestBearZone.topPrice > latestBearZone.bottomPrice) {
+      entryMin = latestBearZone.bottomPrice;
+      entryMax = latestBearZone.topPrice;
+      optimalEntry = (latestBearZone.topPrice + latestBearZone.bottomPrice) / 2; // 50% Consequent Encroachment
     } else {
       entryMin = currentPrice * 0.998;
       entryMax = currentPrice * 1.005;

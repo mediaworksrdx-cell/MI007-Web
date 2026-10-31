@@ -2132,10 +2132,11 @@ export function CandlestickCanvas({
     }
   }, [activeDrawingTool, cleanCandles, endIdx, startIdx, cursorMode, drawings, drawingInProgress, getPointFromEvent, indicators, isAllDrawingsHidden, isAllDrawingsLocked, isDrawingModeLocked, onDeleteDrawing, onAddDrawing, onDrawingToolChange, onSelectDrawing, priceOffset, priceScaleRatio, scrollOffset, showVolumePanel, size, visibleCount, inlineTextEditor, handleCommitInlineText]);
 
-  // ── Keyboard Shortcuts (Alt+Tool, Space to Live, ?, Undo, Delete) ──
+  // ── Keyboard Shortcuts (Alt+Tool, Space to Live, Undo, Delete) ──
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+      const targetEl = e.target as HTMLElement | null;
+      if (['INPUT', 'TEXTAREA'].includes(targetEl?.tagName || '') || targetEl?.isContentEditable) return;
 
       if (e.key === 'Escape') {
         committedPointsRef.current = [];
@@ -2173,7 +2174,7 @@ export function CandlestickCanvas({
         else if (e.key === 'h' || e.key === 'H') { e.preventDefault(); onDrawingToolChange?.('HORIZONTAL'); }
         else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); onDrawingToolChange?.('RAY'); }
         else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); onDrawingToolChange?.('FIBONACCI'); }
-
+        else if (e.key === 'm' || e.key === 'M') { e.preventDefault(); onDrawingToolChange?.('MEASURE'); }
         else if (e.key === 'c' || e.key === 'C') { e.preventDefault(); onDrawingToolChange?.('CHANNEL'); }
         else if (e.key === 's' || e.key === 'S') { e.preventDefault(); onExportSnapshot?.('download'); }
       } else if (e.key === ' ') {
@@ -2183,7 +2184,7 @@ export function CandlestickCanvas({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeDrawingTool, drawingInProgress, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, onUndoDrawing, onDeleteDrawing, onSelectDrawing, selectedDrawingId, onExportSnapshot]);
+  }, [activeDrawingTool, drawingInProgress, drawings, isAllDrawingsLocked, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, onUndoDrawing, onDeleteDrawing, onSelectDrawing, selectedDrawingId, onExportSnapshot]);
 
   // Wheel zoom + scroll attached to foreground overlay canvas (rAF-coalesced for 120 FPS trackpads)
   const handleWheel = useCallback((e: WheelEvent) => {

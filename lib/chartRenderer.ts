@@ -17,6 +17,15 @@ import {
 } from './types';
 import { calculateSMC, DEFAULT_SMC_CONFIG, type SmcConfig } from './smcEngine';
 import { renderOrderFlowFootprint } from './orderflow/orderFlowRenderer';
+import {
+  calculateSMA as calcSMA,
+  calculateEMA as calcEMA,
+  calculateRSI as calcRSI,
+  calculateVWAP as calcVWAP,
+  calculateATR as calcATR,
+  calculateBollinger as calcBollinger,
+  calculateMACD as calcMACDCore,
+} from './indicators';
 
 export type {
   Candle, ChartType, IndicatorType, IndicatorConfig,
@@ -407,155 +416,36 @@ function formatCrosshairTime(ts: number, isDailyOrHigher: boolean): string {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// INDICATOR CALCULATIONS (Adaptive warmup & full-span continuity)
+// INDICATOR CALCULATIONS (Unified with lib/indicators.ts)
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function calculateSMA(candles: Candle[], period: number): (number|null)[] {
-  if (!candles || candles.length === 0) return [];
-  const p = Math.max(1, period);
-  return candles.map((_, i) => {
-    const effPeriod = Math.min(p, i + 1);
-    let sum = 0;
-    for (let j = i - effPeriod + 1; j <= i; j++) {
-      sum += candles[j].close;
-    }
-    return sum / effPeriod;
-  });
+  return calcSMA(candles, period);
 }
 
 export function calculateEMA(candles: Candle[], period: number): (number|null)[] {
-  if (!candles || candles.length === 0) return [];
-  const p = Math.max(1, period);
-  const result: (number|null)[] = Array(candles.length).fill(null);
-  result[0] = candles[0].close;
-  for (let i = 1; i < candles.length; i++) {
-    const effPeriod = Math.min(p, i + 1);
-    const mult = 2 / (effPeriod + 1);
-    const prev = result[i - 1]!;
-    result[i] = (candles[i].close - prev) * mult + prev;
-  }
-  return result;
+  return calcEMA(candles, period);
 }
 
 export function calculateRSI(candles: Candle[], period: number): (number|null)[] {
-  if (!candles || candles.length === 0) return [];
-  const p = Math.max(1, period);
-  const result: (number|null)[] = Array(candles.length).fill(null);
-  result[0] = 50;
-  if (candles.length === 1) return result;
-
-  let avgGain = 0;
-  let avgLoss = 0;
-  for (let i = 1; i < candles.length; i++) {
-    const chg = candles[i].close - candles[i - 1].close;
-    const gain = chg > 0 ? chg : 0;
-    const loss = chg < 0 ? Math.abs(chg) : 0;
-    const effPeriod = Math.min(p, i);
-    if (i === 1) {
-      avgGain = gain;
-      avgLoss = loss;
-    } else {
-      avgGain = (avgGain * (effPeriod - 1) + gain) / effPeriod;
-      avgLoss = (avgLoss * (effPeriod - 1) + loss) / effPeriod;
-    }
-    if (avgLoss === 0 && avgGain === 0) {
-      result[i] = 50;
-    } else if (avgLoss === 0) {
-      result[i] = 100;
-    } else {
-      const rs = avgGain / avgLoss;
-      result[i] = 100 - 100 / (1 + rs);
-    }
-  }
-  return result;
+  return calcRSI(candles, period);
 }
 
 export function calculateMACD(candles: Candle[], fast=12, slow=26, signal=9): MACDResult {
-  const sz = candles.length;
-  const macdLine: (number|null)[] = Array(sz).fill(null);
-  const signalLine: (number|null)[] = Array(sz).fill(null);
-  const histogram: (number|null)[] = Array(sz).fill(null);
-  if (sz === 0) return { macdLine, signalLine, histogram };
-
-  const fastEma = calculateEMA(candles, fast);
-  const slowEma = calculateEMA(candles, slow);
-
-  for (let i = 0; i < sz; i++) {
-    const f = fastEma[i] ?? candles[i].close;
-    const s = slowEma[i] ?? candles[i].close;
-    macdLine[i] = f - s;
-  }
-
-  const sigP = Math.max(1, signal);
-  signalLine[0] = macdLine[0];
-  histogram[0] = 0;
-
-  for (let i = 1; i < sz; i++) {
-    const effP = Math.min(sigP, i + 1);
-    const mult = 2 / (effP + 1);
-    const m = macdLine[i] ?? 0;
-    const prevSig = signalLine[i - 1] ?? m;
-    const sig = (m - prevSig) * mult + prevSig;
-    signalLine[i] = sig;
-    histogram[i] = m - sig;
-  }
-
-  return { macdLine, signalLine, histogram };
+  const { macd, signal: sig, histogram } = calcMACDCore(candles, fast, slow, signal);
+  return { macdLine: macd, signalLine: sig, histogram };
 }
 
 export function calculateBollingerBands(candles: Candle[], period=20, deviation=2): BollingerResult {
-  const p = Math.max(1, period);
-  const sma = calculateSMA(candles, p);
-  const upper: (number|null)[] = Array(candles.length).fill(null);
-  const lower: (number|null)[] = Array(candles.length).fill(null);
-  for (let i = 0; i < candles.length; i++) {
-    const mid = sma[i];
-    if (mid === null) continue;
-    const effPeriod = Math.min(p, i + 1);
-    let sumSqDiff = 0;
-    for (let j = i - effPeriod + 1; j <= i; j++) {
-      const d = candles[j].close - mid;
-      sumSqDiff += d * d;
-    }
-    const stdDev = Math.sqrt(sumSqDiff / effPeriod);
-    upper[i] = mid + deviation * stdDev;
-    lower[i] = mid - deviation * stdDev;
-  }
-  return { upper, middle: sma, lower };
+  return calcBollinger(candles, period, deviation);
 }
 
 export function calculateVWAP(candles: Candle[]): (number|null)[] {
-  if (!candles.length) return [];
-  const result: (number|null)[] = Array(candles.length).fill(null);
-  let cumTPV = 0, cumVol = 0;
-  for (let i = 0; i < candles.length; i++) {
-    const c = candles[i];
-    const tp = (c.high + c.low + c.close) / 3;
-    cumTPV += tp * c.volume;
-    cumVol += c.volume;
-    result[i] = cumVol > 0 ? cumTPV / cumVol : tp;
-  }
-  return result;
+  return calcVWAP(candles);
 }
 
 export function calculateATR(candles: Candle[], period=14): (number|null)[] {
-  if (!candles || candles.length === 0) return [];
-  const p = Math.max(1, period);
-  const result: (number|null)[] = Array(candles.length).fill(null);
-  const tr = Array(candles.length).fill(0);
-  tr[0] = Math.max(candles[0].high - candles[0].low, 0.0001);
-  for (let i = 1; i < candles.length; i++) {
-    const hl = candles[i].high - candles[i].low;
-    const hpc = Math.abs(candles[i].high - candles[i-1].close);
-    const lpc = Math.abs(candles[i].low - candles[i-1].close);
-    tr[i] = Math.max(hl, hpc, lpc);
-  }
-  result[0] = tr[0];
-  for (let i = 1; i < candles.length; i++) {
-    const effPeriod = Math.min(p, i + 1);
-    result[i] = (result[i-1]! * (effPeriod - 1) + tr[i]) / effPeriod;
-  }
-  return result;
+  return calcATR(candles, period);
 }
 
 export function calculateSupertrend(candles: Candle[], period=10, multiplier=3): SupertrendResult {
@@ -1404,19 +1294,20 @@ export function renderChart(
 
     // 4. Order Blocks & Breakers (Demand, Supply, Breakers) — Institutional Proximity Sorting
     const lastPrice = candles[candles.length - 1]?.close || (pMin + pMax) / 2;
+    const perSideZoneLimit = Math.max(1, Math.floor((smcCfg.maxVisibleZones || 6) / 2));
 
     // Pure Order Blocks (Demand & Supply)
     const demandBlocks = (smcCfg.showBullishOb && isBullishMaster ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && ob.isBullish)
       .filter((ob) => (!ob.isMitigated || smcCfg.showMitigatedOb) && (ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated)))
       .sort((a, b) => b.topPrice - a.topPrice)
-      .slice(0, 3);
+      .slice(0, perSideZoneLimit);
 
     const supplyBlocks = (smcCfg.showBearishOb && isBearishMaster ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && !ob.isBullish)
       .filter((ob) => (!ob.isMitigated || smcCfg.showMitigatedOb) && (ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated)))
       .sort((a, b) => a.bottomPrice - b.bottomPrice)
-      .slice(0, 3);
+      .slice(0, perSideZoneLimit);
 
     // Breaker Blocks (+BRK Support & -BRK Resistance)
     const breakerBlocks = (smcCfg.showBreakers ? smcData.breakers : [])
@@ -1428,7 +1319,7 @@ export function renderChart(
         if (brk.isMitigated && brk.endIndex < startIdx) return false;
         return true;
       })
-      .slice(-3);
+      .slice(-perSideZoneLimit);
 
     const blocksToRender = [...demandBlocks, ...supplyBlocks, ...breakerBlocks];
 
@@ -1509,18 +1400,18 @@ export function renderChart(
       return true;
     });
 
-    // Proximity sorting: top 3 bullish FVGs, top 3 bearish FVGs, top 2 IFVGs
+    // Proximity sorting: respect maxVisibleZones per side
     const bullishFvgs = inWindowFvgs
       .filter((f) => f.isBullish && !f.isInverse)
       .sort((a, b) => b.topPrice - a.topPrice)
-      .slice(0, 3);
+      .slice(0, perSideZoneLimit);
     const bearishFvgs = inWindowFvgs
       .filter((f) => !f.isBullish && !f.isInverse)
       .sort((a, b) => a.bottomPrice - b.bottomPrice)
-      .slice(0, 3);
+      .slice(0, perSideZoneLimit);
     const inverseFvgs = inWindowFvgs
       .filter((f) => f.isInverse)
-      .slice(-3);
+      .slice(-perSideZoneLimit);
 
     const fvgsToRender = [...bullishFvgs, ...bearishFvgs, ...inverseFvgs];
 

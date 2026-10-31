@@ -256,9 +256,18 @@ export function ScreenerWorkspace() {
       ? (currentPrice / originalPrice)
       : 1;
 
-    const marketCap = Math.round(comp.marketCap * priceRatio);
-    const netDebt = comp.netDebt ?? Math.round((comp.enterpriseValue || comp.marketCap) - comp.marketCap);
-    const enterpriseValue = Math.max(1, marketCap + netDebt);
+    const isIndia = comp.market === 'INDIA';
+    const marketCap = isIndia
+      ? Math.round(comp.marketCap * priceRatio)
+      : +(comp.marketCap * priceRatio).toFixed(2);
+    const netDebt = comp.netDebt ?? (
+      isIndia
+        ? Math.round((comp.enterpriseValue || comp.marketCap) - comp.marketCap)
+        : +((comp.enterpriseValue || comp.marketCap) - comp.marketCap).toFixed(2)
+    );
+    const enterpriseValue = isIndia
+      ? Math.max(1, marketCap + netDebt)
+      : +Math.max(0.01, marketCap + netDebt).toFixed(2);
     const evRatio = (comp.enterpriseValue && comp.enterpriseValue > 0)
       ? (enterpriseValue / comp.enterpriseValue)
       : priceRatio;
@@ -515,7 +524,11 @@ export function ScreenerWorkspace() {
             watchlistSymbols={watchlistSymbols}
             totalMatches={marketCompanies.length}
             executionTimeMs={executionTimeMs}
-            dataFreshness={targetCompany?.dataFreshness}
+            dataFreshness={
+              targetCompany?.dataFreshness ||
+              filteredCompanies[0]?.dataFreshness ||
+              (market === 'USA' ? 'Audited SEC Filings' : market === 'UAE' ? 'DFM / ADX Filings' : 'Q2 FY27 (Sep 2026)')
+            }
             tradeEngineStatus={tradeEngineStatus}
             activePreset={activeViewPreset}
             onSelectPreset={(p, cols) => {

@@ -289,9 +289,15 @@ export function InvestmentStrategiesView({
                       {company.name}
                     </div>
                   </td>
-                  <td className="py-1.5 px-2.5 font-semibold">₹{company.currentPrice.toFixed(2)}</td>
+                  <td className="py-1.5 px-2.5 font-semibold">
+                    {company.currencySymbol || '₹'}{company.currentPrice.toFixed(2)}
+                  </td>
                   <td className="py-1.5 px-2.5 text-[var(--theme-card-text-muted)]">
-                    ₹{company.marketCap.toLocaleString()} Cr
+                    {company.market === 'INDIA'
+                      ? `₹${company.marketCap.toLocaleString('en-IN')} Cr`
+                      : company.marketCap >= 1000
+                      ? `${company.currencySymbol || '$'}${(company.marketCap / 1000).toFixed(2)}T`
+                      : `${company.currencySymbol || '$'}${company.marketCap.toLocaleString('en-US', { maximumFractionDigits: 2 })}B`}
                   </td>
                   <td className="py-1.5 px-2.5">
                     <span

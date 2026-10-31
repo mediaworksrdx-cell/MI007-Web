@@ -80,8 +80,14 @@ export function roundToTick(price: number, tickSize: number): number {
   return +(Math.round(price * factor) / factor).toFixed(decimals);
 }
 
+function roundSignalPrice(price: number): number {
+  const abs = Math.abs(price);
+  const decimals = abs > 0 && abs < 1 ? 4 : abs < 10 ? 3 : 2;
+  return +price.toFixed(decimals);
+}
+
 // ── Microstructure Volume Distributor for Simulated / OHLCV Feeds ─────────
-// Generates authentic order flow distributions matching realistic intra-bar price action
+// Generates deterministic order flow distributions from OHLCV price action
 
 export function generateMicrostructureFootprint(
   candle: Candle,
@@ -90,29 +96,37 @@ export function generateMicrostructureFootprint(
   cumDeltaPrev: number,
   config: OrderFlowConfig
 ): CandleFootprint {
-  const lowTick = roundToTick(candle.low, tickSize);
-  const highTick = roundToTick(candle.high, tickSize);
-  const openTick = roundToTick(candle.open, tickSize);
-  const closeTick = roundToTick(candle.close, tickSize);
+  const rawRange = Math.max(0, candle.high - candle.low);
+  // Cap maximum levels per candle at 60 to prevent memory/render spikes on outlier bars
+  const effectiveTick = rawRange / Math.max(tickSize, 0.0001) > 60
+    ? roundToTick(rawRange / 50, tickSize) || rawRange / 50
+    : tickSize;
+
+  const lowTick = roundToTick(candle.low, effectiveTick);
+  const highTick = roundToTick(candle.high, effectiveTick);
 
   const levels = new Map<number, PriceLevelFootprint>();
   const isBull = candle.close >= candle.open;
 
   // Approximate typical price and standard deviation for volume Gaussian curve
   const typicalPrice = (candle.high + candle.low + candle.close) / 3;
-  const range = Math.max(tickSize, candle.high - candle.low);
-  const numSteps = Math.max(1, Math.round(range / tickSize));
+  const range = Math.max(effectiveTick, candle.high - candle.low);
 
   // Base volume per price level using a bell curve centered near typicalPrice / close
   const levelPrices: number[] = [];
   let curr = lowTick;
-  while (curr <= highTick + 0.00001) {
+  let guard = 0;
+  while (curr <= highTick + 0.00001 && guard < 65) {
     levelPrices.push(+curr.toFixed(4));
-    curr = roundToTick(curr + tickSize, tickSize);
+    curr = roundToTick(curr + effectiveTick, effectiveTick);
+    guard++;
+  }
+  if (levelPrices.length === 0) {
+    levelPrices.push(+lowTick.toFixed(4));
   }
 
-  // Pseudo-deterministic random generator using candle openTime and index for reproducibility
-  let seed = ((candle.openTime % 1000000) ^ (candleIndex * 7919) ^ Math.round(candle.close * 100)) >>> 0;
+  // Deterministic PRNG seeded by candle openTime + open (NOT close) so live ticks never reshuffle historical levels
+  let seed = ((candle.openTime % 1000000) ^ (candleIndex * 7919) ^ Math.round(candle.open * 100)) >>> 0;
   function pseudoRand() {
     seed = (seed * 1664525 + 1013904223) >>> 0;
     return (seed >>> 8) / 16777216;
@@ -125,48 +139,44 @@ export function generateMicrostructureFootprint(
     // Distance from center of bar
     const dist = Math.abs(p - typicalPrice) / (range * 0.45);
     const gaussian = Math.exp(-0.5 * dist * dist);
-    // Add realistic microstructure noise
-    const noise = 0.6 + 0.8 * pseudoRand();
+    const noise = 0.75 + 0.5 * pseudoRand();
     const weight = Math.max(0.05, gaussian * noise);
     rawVols.push({ price: p, weight });
     totalVolSum += weight;
   }
 
-  const barVolume = Math.max(candle.volume || 100, levelPrices.length * 5);
+  const barVolume = Math.max(candle.volume || 0, levelPrices.length * 2);
   let accumulatedVol = 0;
   let runningDelta = 0;
   let minDelta = 0;
   let maxDelta = 0;
 
+  // Close Location Value (CLV) in [-1, +1] anchors directional delta deterministically to bar structure
+  const clv = rawRange > 0 ? ((candle.close - candle.low) - (candle.high - candle.close)) / rawRange : 0;
+  const upperWick = candle.high - Math.max(candle.open, candle.close);
+  const lowerWick = Math.min(candle.open, candle.close) - candle.low;
+
   for (const { price, weight } of rawVols) {
     const levelVol = Math.max(1, Math.round((weight / totalVolSum) * barVolume));
     accumulatedVol += levelVol;
 
-    // Delta distribution: Higher levels have more aggressive buyers if candle is green,
-    // lower levels have more aggressive sellers if red, with extreme absorption behavior
     const relPos = range > 0 ? (price - candle.low) / range : 0.5; // 0 at low, 1 at high
-    let buyRatio = 0.5;
+    let buyRatio = 0.5 + 0.22 * clv + 0.15 * (relPos - 0.5) * (isBull ? 1 : -1) + (pseudoRand() - 0.5) * 0.10;
 
-    if (isBull) {
-      buyRatio = 0.45 + 0.35 * relPos + (pseudoRand() - 0.5) * 0.15;
-    } else {
-      buyRatio = 0.55 - 0.35 * (1 - relPos) + (pseudoRand() - 0.5) * 0.15;
+    // Structural wick rejection absorption at extremes:
+    // Upper wick >= 35% of bar range: trapped aggressive buyers absorbed by passive limit sellers at high
+    if (relPos > 0.85 && upperWick >= rawRange * 0.35) {
+      buyRatio = 0.70;
+    }
+    // Lower wick >= 35% of bar range: trapped aggressive sellers absorbed by passive limit buyers at low
+    if (relPos < 0.15 && lowerWick >= rawRange * 0.35) {
+      buyRatio = 0.30;
     }
 
-    // Absorption injection at extremes:
-    // If high of red candle: buyers trapped (high ask, but price rejected)
-    if (!isBull && relPos > 0.85 && pseudoRand() > 0.6) {
-      buyRatio = 0.72; // Trapped buyers at the high
-    }
-    // If low of green candle: sellers trapped (high bid, but price bounced)
-    if (isBull && relPos < 0.15 && pseudoRand() > 0.6) {
-      buyRatio = 0.28; // Trapped sellers at the low
-    }
-
-    buyRatio = Math.max(0.12, Math.min(0.88, buyRatio));
+    buyRatio = Math.max(0.10, Math.min(0.90, buyRatio));
 
     const askVol = Math.round(levelVol * buyRatio);
-    const bidVol = Math.max(1, levelVol - askVol);
+    const bidVol = Math.max(0, levelVol - askVol);
     const delta = askVol - bidVol;
 
     runningDelta += delta;
@@ -349,13 +359,19 @@ export function generateMicrostructureFootprint(
   }
 
   // 5. Absorption Detection:
-  // Bullish: Large bid volume at extreme low, but candle closed upper or left long tail
-  // Bearish: Large ask volume at extreme high, but candle closed lower or left upper tail
+  // Bullish: Meaningful lower wick rejection (>= 35% of bar range) with elevated sell volume absorbed at low
+  // Bearish: Meaningful upper wick rejection (>= 35% of bar range) with elevated buy volume absorbed at high
   let absorption: AbsorptionEvent | null = null;
   const lowestLevel = sortedAsc[0];
   const highestLevel = sortedAsc[sortedAsc.length - 1];
 
-  if (lowestLevel && lowestLevel.bidVolume > barVolume * 0.15 && (candle.close > candle.open || candle.close > (candle.low + range * 0.4))) {
+  if (
+    lowestLevel &&
+    rawRange > 0 &&
+    lowerWick >= rawRange * 0.35 &&
+    lowestLevel.bidVolume >= (accumulatedVol / Math.max(1, sortedAsc.length)) * 0.8 &&
+    candle.close > candle.low + rawRange * 0.45
+  ) {
     absorption = {
       candleIndex,
       time: candle.openTime,
@@ -363,9 +379,15 @@ export function generateMicrostructureFootprint(
       isBullish: true,
       volume: lowestLevel.totalVolume,
       delta: lowestLevel.delta,
-      description: `Passive limit buyers absorbed ${lowestLevel.bidVolume} aggressive sells at low`,
+      description: `Passive limit buyers absorbed ${lowestLevel.bidVolume} aggressive sells at wick low`,
     };
-  } else if (highestLevel && highestLevel.askVolume > barVolume * 0.15 && (candle.close < candle.open || candle.close < (candle.high - range * 0.4))) {
+  } else if (
+    highestLevel &&
+    rawRange > 0 &&
+    upperWick >= rawRange * 0.35 &&
+    highestLevel.askVolume >= (accumulatedVol / Math.max(1, sortedAsc.length)) * 0.8 &&
+    candle.close < candle.high - rawRange * 0.45
+  ) {
     absorption = {
       candleIndex,
       time: candle.openTime,
@@ -373,16 +395,25 @@ export function generateMicrostructureFootprint(
       isBullish: false,
       volume: highestLevel.totalVolume,
       delta: highestLevel.delta,
-      description: `Passive limit sellers absorbed ${highestLevel.askVolume} aggressive buys at high`,
+      description: `Passive limit sellers absorbed ${highestLevel.askVolume} aggressive buys at wick high`,
     };
   }
 
   // 6. Unfinished Business:
-  // Non-zero bid at candle high means aggressive sellers were still active at auction top
-  // Non-zero ask at candle low means aggressive buyers were still active at auction bottom
+  // Only flagged when the candle closes near the extreme with balanced two-sided auction volume (no zero-print exhaustion)
   const unfinishedBusiness = {
-    high: highestLevel ? highestLevel.bidVolume > 0 && highestLevel.askVolume > 0 : false,
-    low: lowestLevel ? lowestLevel.bidVolume > 0 && lowestLevel.askVolume > 0 : false,
+    high: Boolean(
+      highestLevel &&
+      upperWick <= rawRange * 0.12 &&
+      highestLevel.bidVolume >= highestLevel.totalVolume * 0.30 &&
+      highestLevel.askVolume >= highestLevel.totalVolume * 0.30
+    ),
+    low: Boolean(
+      lowestLevel &&
+      lowerWick <= rawRange * 0.12 &&
+      lowestLevel.bidVolume >= lowestLevel.totalVolume * 0.30 &&
+      lowestLevel.askVolume >= lowestLevel.totalVolume * 0.30
+    ),
   };
 
   // Sorted levels high-to-low for top-down canvas rendering
@@ -424,8 +455,6 @@ export function analyzeOrderFlow(
       footprints: [],
       activeZones: [],
       signals: [],
-      cumulativeDeltaSeries: [],
-      deltaBars: [],
       dataSource: config.dataSource,
       tickSizeUsed: 1.0,
     };
@@ -435,10 +464,6 @@ export function analyzeOrderFlow(
   const footprints: CandleFootprint[] = [];
   const activeZones: StackedImbalanceZone[] = [];
   const signals: OrderFlowSignal[] = [];
-  const cumulativeDeltaSeries: number[] = [];
-  const deltaBars: number[] = [];
-
-  let cumDelta = 0;
 
   // Process all candles
   for (let i = 0; i < candles.length; i++) {
@@ -447,38 +472,32 @@ export function analyzeOrderFlow(
     const fp = generateMicrostructureFootprint(c, i, tickSizeUsed, prevCum, config);
     footprints.push(fp);
 
-    cumulativeDeltaSeries.push(fp.cumDelta);
-    deltaBars.push(fp.totalDelta);
-    cumDelta = fp.cumDelta;
-
     // Collect stacked imbalance zones
     for (const z of fp.stackedZones) {
       activeZones.push(z);
     }
   }
 
-  // Update mitigation status of active zones as future price moves through them
+  // Update mitigation status of active zones and index by mitigation candle for O(1) lookup
+  const buyZonesByMitigation = new Map<number, StackedImbalanceZone>();
+  const sellZonesByMitigation = new Map<number, StackedImbalanceZone>();
+
   for (const zone of activeZones) {
     for (let j = zone.startIndex + 1; j < candles.length; j++) {
       const c = candles[j];
-      if (zone.isBuy) {
-        // Retest: price dips into zone [bottomPrice, topPrice]
-        if (c.low <= zone.topPrice && c.high >= zone.bottomPrice) {
-          if (!zone.isMitigated) {
-            zone.isMitigated = true;
-            zone.mitigationIndex = j;
-            zone.endIndex = Math.min(candles.length - 1, j + 3);
-          }
+      const hit = zone.isBuy
+        ? c.low <= zone.topPrice && c.high >= zone.bottomPrice
+        : c.high >= zone.bottomPrice && c.low <= zone.topPrice;
+      if (hit) {
+        zone.isMitigated = true;
+        zone.mitigationIndex = j;
+        zone.endIndex = Math.min(candles.length - 1, j + 3);
+        if (zone.isBuy) {
+          buyZonesByMitigation.set(j, zone);
+        } else {
+          sellZonesByMitigation.set(j, zone);
         }
-      } else {
-        // Retest: price rallies into zone [bottomPrice, topPrice]
-        if (c.high >= zone.bottomPrice && c.low <= zone.topPrice) {
-          if (!zone.isMitigated) {
-            zone.isMitigated = true;
-            zone.mitigationIndex = j;
-            zone.endIndex = Math.min(candles.length - 1, j + 3);
-          }
-        }
+        break;
       }
     }
   }
@@ -489,10 +508,10 @@ export function analyzeOrderFlow(
       const curr = footprints[i];
       const prev = footprints[i - 1];
       const prev2 = footprints[i - 2];
-      const range = Math.max(0.01, curr.high - curr.low);
+      const range = Math.max(tickSizeUsed, curr.high - curr.low);
 
       // Signal 1: Bullish Absorption
-      if (curr.absorption && curr.absorption.isBullish) {
+      if (config.showAbsorption && curr.absorption && curr.absorption.isBullish) {
         const inv = curr.low - range * 0.15;
         const entry = curr.close;
         const target = curr.close + (curr.close - inv) * 2.5;
@@ -504,20 +523,20 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: +entry.toFixed(2),
-          invalidationPrice: +inv.toFixed(2),
-          targetPrice: +target.toFixed(2),
+          entryPrice: roundSignalPrice(entry),
+          invalidationPrice: roundSignalPrice(inv),
+          targetPrice: roundSignalPrice(target),
           riskReward: 2.5,
           conditions: [
-            'Aggressive market sell volume absorbed at candle bottom',
-            'Strong passive buyer defense with wick rejection',
+            'Aggressive sell volume absorbed at lower wick rejection',
+            'Passive buyer defense confirmed above 45% bar range',
             `Point of Control (POC) anchored at ${curr.pocPrice}`,
           ],
         });
       }
 
       // Signal 2: Bearish Absorption
-      if (curr.absorption && !curr.absorption.isBullish) {
+      if (config.showAbsorption && curr.absorption && !curr.absorption.isBullish) {
         const inv = curr.high + range * 0.15;
         const entry = curr.close;
         const target = curr.close - (inv - curr.close) * 2.5;
@@ -529,20 +548,20 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: +entry.toFixed(2),
-          invalidationPrice: +inv.toFixed(2),
-          targetPrice: +target.toFixed(2),
+          entryPrice: roundSignalPrice(entry),
+          invalidationPrice: roundSignalPrice(inv),
+          targetPrice: roundSignalPrice(target),
           riskReward: 2.5,
           conditions: [
-            'Aggressive market buy volume absorbed at candle top',
-            'Strong passive institutional seller defense',
+            'Aggressive buy volume absorbed at upper wick rejection',
+            'Passive seller defense confirmed below 55% bar range',
             `Point of Control (POC) anchored at ${curr.pocPrice}`,
           ],
         });
       }
 
       // Signal 3: Stacked Buy Imbalance Retest
-      const buyZoneRetest = activeZones.find(z => z.isBuy && z.isMitigated && z.mitigationIndex === i);
+      const buyZoneRetest = buyZonesByMitigation.get(i);
       if (buyZoneRetest && curr.close > curr.open) {
         const inv = buyZoneRetest.bottomPrice - range * 0.1;
         const entry = curr.close;
@@ -555,20 +574,20 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: +entry.toFixed(2),
-          invalidationPrice: +inv.toFixed(2),
-          targetPrice: +target.toFixed(2),
+          entryPrice: roundSignalPrice(entry),
+          invalidationPrice: roundSignalPrice(inv),
+          targetPrice: roundSignalPrice(target),
           riskReward: 2.8,
           conditions: [
             `${buyZoneRetest.levelCount}-level stacked buy imbalance confirmed`,
-            'Clean test and buyer response off institutional origin zone',
+            'Clean test and buyer response off order flow demand zone',
             `Zone range: ${buyZoneRetest.bottomPrice} - ${buyZoneRetest.topPrice}`,
           ],
         });
       }
 
       // Signal 4: Stacked Sell Imbalance Retest
-      const sellZoneRetest = activeZones.find(z => !z.isBuy && z.isMitigated && z.mitigationIndex === i);
+      const sellZoneRetest = sellZonesByMitigation.get(i);
       if (sellZoneRetest && curr.close < curr.open) {
         const inv = sellZoneRetest.topPrice + range * 0.1;
         const entry = curr.close;
@@ -581,64 +600,80 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: +entry.toFixed(2),
-          invalidationPrice: +inv.toFixed(2),
-          targetPrice: +target.toFixed(2),
+          entryPrice: roundSignalPrice(entry),
+          invalidationPrice: roundSignalPrice(inv),
+          targetPrice: roundSignalPrice(target),
           riskReward: 2.8,
           conditions: [
             `${sellZoneRetest.levelCount}-level stacked sell imbalance confirmed`,
-            'Rejection off institutional order flow supply zone',
+            'Rejection off order flow supply zone',
             `Zone range: ${sellZoneRetest.bottomPrice} - ${sellZoneRetest.topPrice}`,
           ],
         });
       }
 
-      // Signal 5: Delta Divergence (Price Lower Low with Delta Higher Low)
-      if (curr.low < prev.low && curr.totalDelta > prev.totalDelta && curr.totalDelta > 0) {
+      // Signal 5: Multi-Bar CVD / Delta Bullish Divergence (3-bar lower low with higher CVD/Delta & bullish close)
+      const minPrevLow = Math.min(prev.low, prev2.low);
+      const minPrevDelta = Math.min(prev.totalDelta, prev2.totalDelta);
+      if (
+        curr.low < minPrevLow &&
+        curr.close > curr.open &&
+        curr.totalDelta > 0 &&
+        minPrevDelta < 0 &&
+        curr.cumDelta > Math.min(prev.cumDelta, prev2.cumDelta)
+      ) {
         const inv = curr.low - range * 0.1;
         const entry = curr.close;
         const target = curr.close + (curr.close - inv) * 2.2;
         signals.push({
           id: `sig-bull-div-${curr.openTime}`,
           type: 'CVD_DIVERGENCE_BULL',
-          title: 'Bullish Delta Divergence',
+          title: 'Bullish CVD Divergence',
           isBullish: true,
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: +entry.toFixed(2),
-          invalidationPrice: +inv.toFixed(2),
-          targetPrice: +target.toFixed(2),
+          entryPrice: roundSignalPrice(entry),
+          invalidationPrice: roundSignalPrice(inv),
+          targetPrice: roundSignalPrice(target),
           riskReward: 2.2,
           conditions: [
-            'Price printed lower low while delta printed positive flip',
-            'Exhaustion of aggressive sellers into key support',
-            `Delta positive: +${curr.totalDelta.toLocaleString()}`,
+            'Price swept 3-bar low while CVD & bar delta flipped positive',
+            'Seller exhaustion confirmed with bullish close recovery',
+            `Bar Delta: +${curr.totalDelta.toLocaleString()}`,
           ],
         });
       }
 
-      // Signal 6: Delta Divergence (Price Higher High with Delta Lower High / Negative)
-      if (curr.high > prev.high && curr.totalDelta < prev.totalDelta && curr.totalDelta < 0) {
+      // Signal 6: Multi-Bar CVD / Delta Bearish Divergence (3-bar higher high with lower CVD/Delta & bearish close)
+      const maxPrevHigh = Math.max(prev.high, prev2.high);
+      const maxPrevDelta = Math.max(prev.totalDelta, prev2.totalDelta);
+      if (
+        curr.high > maxPrevHigh &&
+        curr.close < curr.open &&
+        curr.totalDelta < 0 &&
+        maxPrevDelta > 0 &&
+        curr.cumDelta < Math.max(prev.cumDelta, prev2.cumDelta)
+      ) {
         const inv = curr.high + range * 0.1;
         const entry = curr.close;
         const target = curr.close - (inv - curr.close) * 2.2;
         signals.push({
           id: `sig-bear-div-${curr.openTime}`,
           type: 'CVD_DIVERGENCE_BEAR',
-          title: 'Bearish Delta Divergence',
+          title: 'Bearish CVD Divergence',
           isBullish: false,
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: +entry.toFixed(2),
-          invalidationPrice: +inv.toFixed(2),
-          targetPrice: +target.toFixed(2),
+          entryPrice: roundSignalPrice(entry),
+          invalidationPrice: roundSignalPrice(inv),
+          targetPrice: roundSignalPrice(target),
           riskReward: 2.2,
           conditions: [
-            'Price printed higher high while delta turned negative',
-            'Passive seller absorption into auction high',
-            `Delta negative: ${curr.totalDelta.toLocaleString()}`,
+            'Price swept 3-bar high while CVD & bar delta turned negative',
+            'Buyer exhaustion confirmed with bearish close rejection',
+            `Bar Delta: ${curr.totalDelta.toLocaleString()}`,
           ],
         });
       }
@@ -649,8 +684,6 @@ export function analyzeOrderFlow(
     footprints,
     activeZones: activeZones.filter(z => !z.isMitigated || (z.mitigationIndex && z.mitigationIndex >= candles.length - 20)),
     signals: signals.slice(-15), // Keep latest 15 signals
-    cumulativeDeltaSeries,
-    deltaBars,
     dataSource: config.dataSource,
     tickSizeUsed,
   };

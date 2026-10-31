@@ -879,8 +879,13 @@ export function evaluateInvestmentStrategyForCompany(
   const peg = company.pegRatio ?? 999;
   const opm = company.opm ?? 0;
 
-  metrics['Price'] = `₹${company.currentPrice.toFixed(1)}`;
-  metrics['Market Cap'] = `₹${company.marketCap.toLocaleString()} Cr`;
+  const currSym = company.currencySymbol || (company.market === 'USA' ? '$' : company.market === 'UAE' ? 'AED ' : '₹');
+  metrics['Price'] = `${currSym}${company.currentPrice.toFixed(2)}`;
+  metrics['Market Cap'] = company.market === 'INDIA'
+    ? `${currSym}${company.marketCap.toLocaleString('en-IN')} Cr`
+    : company.marketCap >= 1000
+    ? `${currSym}${(company.marketCap / 1000).toFixed(2)}T`
+    : `${currSym}${company.marketCap.toLocaleString('en-US', { maximumFractionDigits: 2 })}B`;
   metrics['P/E'] = pe < 900 ? pe.toFixed(1) : 'N/A';
   metrics['P/B'] = pb < 900 ? pb.toFixed(2) : 'N/A';
   metrics['ROE %'] = `${roe.toFixed(1)}%`;

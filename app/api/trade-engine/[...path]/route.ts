@@ -61,13 +61,21 @@ async function fetchCoinbaseCrypto(): Promise<any[] | null> {
     const rates = json.data?.rates;
     if (!rates || typeof rates !== 'object') return null;
 
+    // Fetch real 24h open from Yahoo fallback in parallel so we never compare against stale static base
+    const yahooRef = await fetchYahooCryptoFallback();
+    const yahooBySym = new Map(yahooRef.map((y: any) => [String(y.symbol).toLowerCase(), y]));
+
     return YAHOO_CRYPTO_MAP.map(c => {
       const symUpper = c.symbol.toUpperCase();
       const r = rates[symUpper] || (c.symbol === 'matic' ? rates['POL'] || rates['MATIC'] : null);
       const parsedRate = r ? parseFloat(r) : 0;
-      const price = parsedRate > 0 ? +(1 / parsedRate).toFixed(c.symbol === 'shib' ? 8 : 2) : c.base;
-      const prevPrice = c.base;
-      const chgPct = prevPrice > 0 ? +(((price - prevPrice) / prevPrice) * 100).toFixed(2) : 0;
+      const rawPrice = parsedRate > 0 ? (1 / parsedRate) : c.base;
+      const decimals = rawPrice < 0.001 ? 8 : rawPrice < 2 ? 5 : 2;
+      const price = +rawPrice.toFixed(decimals);
+      const yItem = yahooBySym.get(c.symbol.toLowerCase());
+      const chgPct = yItem && typeof yItem.price_change_percentage_24h === 'number'
+        ? yItem.price_change_percentage_24h
+        : 0;
 
       return {
         id: c.id,
@@ -75,7 +83,7 @@ async function fetchCoinbaseCrypto(): Promise<any[] | null> {
         name: c.name,
         current_price: price,
         price_change_percentage_24h: chgPct,
-        market_cap: 0,
+        market_cap: yItem?.market_cap || 0,
       };
     });
   } catch (err) {
@@ -1174,7 +1182,17 @@ export async function GET(
       });
     }
 
-    // A. Priority 1: High-Speed Coinbase Public Feed
+    // A. Priority 1: Direct CoinGecko Public Markets API (All 12 assets with authentic 24h change %)
+    const cgData = await fetchCoinGeckoCrypto();
+    if (cgData && Array.isArray(cgData) && cgData.length > 0) {
+      setCached(cacheKey, cgData);
+      return NextResponse.json(cgData, {
+        status: 200,
+        headers: { 'X-Cache': 'MISS-COINGECKO', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
+    // B. Priority 2: High-Speed Coinbase Spot + Yahoo 24h Reference
     const cbData = await fetchCoinbaseCrypto();
     if (cbData && Array.isArray(cbData) && cbData.length > 0) {
       setCached(cacheKey, cbData);
@@ -1184,7 +1202,7 @@ export async function GET(
       });
     }
 
-    // B. Priority 2: Remote Trade Engine (User's CoinGecko service)
+    // C. Priority 3: Remote Trade Engine (User's CoinGecko service)
     try {
       const remoteRes = await fetch(`${TRADE_ENGINE_URL}/crypto-prices${search}`, {
         headers: { 'Accept': 'application/json' },
@@ -1202,16 +1220,6 @@ export async function GET(
       }
     } catch (err) {
       console.warn('[TradeEngineProxy] Remote engine crypto-prices unavailable:', err);
-    }
-
-    // C. Priority 3: Direct CoinGecko Public Markets API (All 12 assets)
-    const cgData = await fetchCoinGeckoCrypto();
-    if (cgData && Array.isArray(cgData) && cgData.length > 0) {
-      setCached(cacheKey, cgData);
-      return NextResponse.json(cgData, {
-        status: 200,
-        headers: { 'X-Cache': 'MISS-COINGECKO', 'Access-Control-Allow-Origin': '*' },
-      });
     }
 
     // D. Priority 4: Yahoo Finance Multi-Crypto Failover

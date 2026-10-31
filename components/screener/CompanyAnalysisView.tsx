@@ -184,7 +184,9 @@ export function CompanyAnalysisView({
   const priceRatio = (company.currentPrice && Math.abs(currentPrice - company.currentPrice) / company.currentPrice < 0.25)
     ? (currentPrice / company.currentPrice)
     : 1;
-  const liveMarketCap = Math.round(company.marketCap * priceRatio);
+  const liveMarketCap = company.market === 'INDIA'
+    ? Math.round(company.marketCap * priceRatio)
+    : +(company.marketCap * priceRatio).toFixed(2);
 
   // Automated Fundamental Rating & Qualitative Models (100% Dynamic from Real Filings)
   const rating = calculateAutomatedRating(company);

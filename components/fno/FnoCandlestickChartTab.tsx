@@ -262,12 +262,15 @@ export function FnoCandlestickChartTab({
   const optionCandles: Candle[] = useMemo(() => {
     if (!baseSpotCandles || baseSpotCandles.length === 0 || !activeOptionContract) return [];
     const iv = activeOptionContract.impliedVolatility || 15;
-    const timeYears = Math.max(1, chainData.daysToExpiry ?? 7) / 365;
+    const currentDte = Math.max(1, chainData.daysToExpiry ?? 7);
+    const lastBarTime = baseSpotCandles[baseSpotCandles.length - 1]?.openTime || Date.now();
     const isCall = contractType !== 'PE';
     const type: OptionType = isCall ? 'CE' : 'PE';
 
     return baseSpotCandles.map((c, idx) => {
       const isLast = idx === baseSpotCandles.length - 1;
+      const daysPrior = Math.max(0, (lastBarTime - c.openTime) / 86_400_000);
+      const timeYears = (currentDte + daysPrior) / 365;
       let o = calculateBSPrice(type, { spot: c.open, strike: selectedStrike, timeYears, volatility: iv / 100 });
       let cl = isLast
         ? activeOptionContract.ltp
@@ -280,6 +283,10 @@ export function FnoCandlestickChartTab({
       let high = Math.max(o, cl, Math.round(h1 * 100) / 100);
       let low = Math.min(o, cl, Math.max(0.05, Math.round(l1 * 100) / 100));
 
+      // Deterministic volume scaling seeded by openTime & strike
+      const seed = Math.abs(Math.sin(c.openTime * 0.0001 + selectedStrike * 0.13 + idx * 0.71));
+      const volFactor = 0.8 + seed * 0.4;
+
       return {
         openTime: c.openTime,
         time: c.time,
@@ -287,7 +294,7 @@ export function FnoCandlestickChartTab({
         high: Math.round(high * 100) / 100,
         low: Math.round(low * 100) / 100,
         close: cl,
-        volume: Math.round((activeOptionContract.volume / 80) * (0.8 + Math.random() * 0.4)),
+        volume: Math.round((activeOptionContract.volume / 80) * volFactor),
       };
     });
   }, [baseSpotCandles, activeOptionContract, contractType, selectedStrike, chainData.daysToExpiry]);

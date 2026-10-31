@@ -806,9 +806,11 @@ export function formatMetricValue(
 
   const def = getMetricDefinition(metricKey);
   const decimals = def?.decimals ?? 1;
+  const isIndia = currencySymbol === '₹';
+  const locale = isIndia ? 'en-IN' : 'en-US';
 
   if (def?.dataType === 'percent') {
-    return `${val >= 0 ? '' : ''}${val.toFixed(decimals)}%`;
+    return `${val.toFixed(decimals)}%`;
   }
 
   if (def?.dataType === 'ratio') {
@@ -817,19 +819,28 @@ export function formatMetricValue(
 
   if (def?.dataType === 'currency') {
     if (def.unit === 'Cr') {
-      return `${currencySymbol}${val.toLocaleString('en-IN', { maximumFractionDigits: decimals })} Cr`;
+      if (isIndia) {
+        return `${currencySymbol}${val.toLocaleString('en-IN', { maximumFractionDigits: decimals })} Cr`;
+      }
+      // USA ($) and UAE (AED) store scale values in Billions
+      const absVal = Math.abs(val);
+      if (absVal >= 1000) {
+        return `${currencySymbol}${(val / 1000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}T`;
+      }
+      const fracDigits = absVal > 0 && absVal < 100 ? 2 : 1;
+      return `${currencySymbol}${val.toLocaleString('en-US', { minimumFractionDigits: fracDigits, maximumFractionDigits: fracDigits })}B`;
     }
-    return `${currencySymbol}${val.toLocaleString('en-IN', {
+    return `${currencySymbol}${val.toLocaleString(locale, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     })}`;
   }
 
   if (def?.dataType === 'integer') {
-    return val.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    return val.toLocaleString(locale, { maximumFractionDigits: 0 });
   }
 
-  return val.toLocaleString('en-IN', {
+  return val.toLocaleString(locale, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });

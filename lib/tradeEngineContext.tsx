@@ -267,6 +267,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
   const listenersRef = useRef<Set<(tick: TradeEngineTick) => void>>(new Set());
   const wsRef = useRef<WebSocket | null>(null);
+  const wsCryptoLastSeenRef = useRef<Map<string, number>>(new Map());
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptRef = useRef<number>(0);
   const throttleLivePricesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -409,6 +410,13 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
         for (const c of cryptos) {
           if (!c.symbol || typeof c.current_price !== 'number' || c.current_price <= 0) continue;
           const key = normalizeSymbolKey(c.symbol);
+
+          // Do not overwrite symbols actively streaming real-time ticks & 24h open from Coinbase WebSocket
+          const lastWsTickAt = wsCryptoLastSeenRef.current.get(key) || 0;
+          if (now - lastWsTickAt < 20_000) {
+            continue;
+          }
+
           const prevEntry = next.get(key);
           const isPriceDifferent = !prevEntry || prevEntry.price !== c.current_price;
           const tickDirection = prevEntry
@@ -687,19 +695,23 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             });
 
             const key = normalizeSymbolKey(sym);
+            wsCryptoLastSeenRef.current.set(key, now);
             const changed = store?.updateBatch((prev) => {
               const prevEntry = prev.get(key) || prev.get(sym);
               const dir = prevEntry
                 ? price > prevEntry.price ? 'up' : price < prevEntry.price ? 'down' : prevEntry.tickDirection
                 : 'neutral';
 
+              const effectiveChangePct = open24h > 0 ? changePct : (prevEntry?.changePct ?? 0);
+              const effectiveChange = open24h > 0 ? change : (prevEntry?.change ?? 0);
+
               const next = new Map(prev);
               const changedKeys = new Set<string>([key, sym, `${sym}USDT`, `${sym}-USD`]);
               const data: LiveSymbolData = {
                 symbol: sym,
                 price,
-                change,
-                changePct,
+                change: effectiveChange,
+                changePct: effectiveChangePct,
                 volume: tick.volume,
                 timestamp: now,
                 tickDirection: dir,

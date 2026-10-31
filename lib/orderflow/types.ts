@@ -107,9 +107,7 @@ export interface OrderFlowConfig {
   showAbsorption: boolean;
   showOrderFlowZones: boolean;
   showDeltaSummary: boolean;          // Bar footer: Total Vol, Delta, Min/Max
-  showCvdSubpanel: boolean;
   showSignals: boolean;
-  colorTheme: 'classic' | 'neon' | 'cyberpunk' | 'monochrome';
   dataSource: FootprintDataSource;
 }
 
@@ -127,18 +125,14 @@ export const DEFAULT_ORDER_FLOW_CONFIG: OrderFlowConfig = {
   showAbsorption: true,
   showOrderFlowZones: true,
   showDeltaSummary: true,
-  showCvdSubpanel: false,
   showSignals: true,
-  colorTheme: 'classic',
-  dataSource: 'VERIFIED_L2',
+  dataSource: 'SIMULATED_MICROSTRUCTURE',
 };
 
 export interface OrderFlowAnalysisResult {
   footprints: CandleFootprint[];
   activeZones: StackedImbalanceZone[];
   signals: OrderFlowSignal[];
-  cumulativeDeltaSeries: number[];
-  deltaBars: number[];
   dataSource: FootprintDataSource;
   tickSizeUsed: number;
 }

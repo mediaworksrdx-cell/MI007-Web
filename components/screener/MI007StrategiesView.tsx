@@ -299,7 +299,7 @@ function generateSignalsForStrategy(
 
 export function MI007StrategiesView({
   companies,
-  market: _market,
+  market = 'INDIA',
   onSelectCompany: _onSelectCompany,
   onBackToScreener,
 }: MI007StrategiesViewProps) {
@@ -508,7 +508,7 @@ export function MI007StrategiesView({
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-base font-black text-[var(--theme-card-text)]">
-                      ₹{topSignal.price.toFixed(2)}
+                      {market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹'}{topSignal.price.toFixed(2)}
                     </span>
                     <span
                       className={`px-1.5 py-0.2 rounded font-black text-[10.5px] ${
@@ -524,7 +524,7 @@ export function MI007StrategiesView({
                     </span>
                   </div>
                   <div className="text-[11px] text-[var(--theme-card-text-muted)]">
-                    Entry: ₹{topSignal.entry.toFixed(2)} | SL: ₹{topSignal.stopLoss.toFixed(2)} | Target: ₹{topSignal.target.toFixed(2)}
+                    Entry: {market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹'}{topSignal.entry.toFixed(2)} | SL: {market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹'}{topSignal.stopLoss.toFixed(2)} | Target: {market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹'}{topSignal.target.toFixed(2)}
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <Link
@@ -613,7 +613,7 @@ export function MI007StrategiesView({
                           <div className="text-[10px] text-slate-500 truncate max-w-[120px]">{s.name}</div>
                         </td>
                         <td className="py-1.5 px-2.5 text-right font-bold">
-                          ₹{s.price.toFixed(2)}
+                          {market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹'}{s.price.toFixed(2)}
                           <div className={`text-[10px] ${s.changePct >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                             {s.changePct >= 0 ? '+' : ''}{s.changePct.toFixed(2)}%
                           </div>
@@ -632,12 +632,12 @@ export function MI007StrategiesView({
                         <td className="py-1.5 px-2.5 text-center font-bold text-slate-900 dark:text-white">
                           {s.score}%
                         </td>
-                        <td className="py-1.5 px-2.5 text-right">₹{s.entry.toFixed(2)}</td>
+                        <td className="py-1.5 px-2.5 text-right">{market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹'}{s.entry.toFixed(2)}</td>
                         <td className="py-1.5 px-2.5 text-right text-rose-600 dark:text-rose-400">
-                          ₹{s.stopLoss.toFixed(2)}
+                          {market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹'}{s.stopLoss.toFixed(2)}
                         </td>
                         <td className="py-1.5 px-2.5 text-right text-emerald-600 dark:text-emerald-400">
-                          ₹{s.target.toFixed(2)}
+                          {market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹'}{s.target.toFixed(2)}
                         </td>
                         <td className="py-1.5 px-2.5 text-center font-bold text-slate-700 dark:text-slate-300">
                           1:{s.riskReward}
@@ -733,7 +733,7 @@ strategy("${activeStrategyMeta.name}", overlay=true, margin_long=100, margin_sho
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
             <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
               <label className="font-bold text-slate-600 dark:text-slate-400">
-                Initial Capital (₹)
+                Initial Capital ({market === 'USA' ? '$' : market === 'UAE' ? 'AED' : '₹'})
               </label>
               <input
                 type="number"
@@ -758,7 +758,7 @@ strategy("${activeStrategyMeta.name}", overlay=true, margin_long=100, margin_sho
               <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
                 <div className="text-[10px] text-slate-500 uppercase font-bold">Net Profit</div>
                 <div className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  +₹{simResults.netProfit.toLocaleString()}
+                  +{market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : '₹'}{simResults.netProfit.toLocaleString()}
                 </div>
                 <div className="text-[10.5px] text-emerald-600 dark:text-emerald-400 font-bold">
                   +{simResults.netProfitPct}%
