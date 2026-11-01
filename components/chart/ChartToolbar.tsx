@@ -402,10 +402,10 @@ export function ChartToolbar({
   return (
     <div
       ref={toolbarRef}
-      className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B0F19] px-2.5 sm:px-3 py-1 text-xs text-slate-800 dark:text-slate-200 shadow-xs gap-1.5 sm:gap-2 relative z-50 select-none overflow-x-auto scrollbar-none flex-nowrap"
+      className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B0F19] px-2 sm:px-3 py-1 text-xs text-slate-800 dark:text-slate-200 shadow-xs gap-1 sm:gap-2 relative z-50 select-none overflow-visible flex-nowrap"
     >
       {/* ── Left Controls: Timeframe, Chart Type, Indicators, Drawing, Overlays, Save & Templates ── */}
-      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-nowrap">
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-nowrap overflow-visible">
         {/* 1. Timeframe Simple Dropdown */}
         <div className="relative">
           <button
@@ -460,7 +460,7 @@ export function ChartToolbar({
             }`}
           >
             <span className="font-mono text-sm leading-none">{currentChartType.icon}</span>
-            <span className="font-bold">{currentChartType.label}</span>
+            <span className="font-bold hidden sm:inline">{currentChartType.label}</span>
             <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
           </button>
 
@@ -506,7 +506,7 @@ export function ChartToolbar({
             }`}
           >
             <span className="font-mono font-black text-xs px-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">ƒx</span>
-            <span>Indicators</span>
+            <span className="hidden xs:inline">Indicators</span>
             {((indicators && indicators.length > 0) || activeIndicators.length > 0) && (
               <span className="h-4 px-1.5 rounded-full bg-emerald-600 text-white font-mono text-[10px] font-bold flex items-center justify-center">
                 {indicators ? indicators.length : activeIndicators.length}
@@ -731,8 +731,7 @@ export function ChartToolbar({
             <span className="font-mono font-black text-xs px-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
               SMC
             </span>
-            <span className="hidden sm:inline">SMC Analysis</span>
-            <span className="sm:hidden">SMC</span>
+            <span className="hidden sm:inline">Analysis</span>
             {activeSmcConfig.enabled && (
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             )}
@@ -1119,7 +1118,6 @@ export function ChartToolbar({
               OF
             </span>
             <span className="hidden sm:inline">Order Flow</span>
-            <span className="sm:hidden">OF</span>
             {activeOfConfig.enabled && (
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             )}
@@ -1176,14 +1174,14 @@ export function ChartToolbar({
           type="button"
           onClick={onSaveChartLayout}
           title="Save current chart layout and settings"
-          className={`h-7 px-3 rounded-lg border font-bold text-xs font-mono flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+          className={`h-7 px-2 sm:px-3 rounded-lg border font-bold text-xs font-mono flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
             saveStatus === 'saved'
               ? 'border-emerald-500 bg-emerald-600 text-white font-black'
               : 'border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/25'
           }`}
         >
           <span>{saveStatus === 'saved' ? '✓' : '💾'}</span>
-          <span>{saveStatus === 'saved' ? 'SAVED' : 'SAVE'}</span>
+          <span className="hidden sm:inline">{saveStatus === 'saved' ? 'SAVED' : 'SAVE'}</span>
         </button>
 
         {/* 7. SNAPSHOT CAMERA TOOL */}
@@ -1225,7 +1223,7 @@ export function ChartToolbar({
         )}
 
         {/* 8. TEMPLATES SIMPLE DROPDOWN */}
-        <div className="relative">
+        <div className="relative hidden sm:block">
           <button
             type="button"
             onClick={() => setOpenMenu(openMenu === 'TEMPLATES' ? null : 'TEMPLATES')}
@@ -1274,7 +1272,7 @@ export function ChartToolbar({
         {isLiveFromEngine ? (
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>CONNECTED</span>
+            <span className="hidden sm:inline">CONNECTED</span>
           </div>
         ) : (
           <div
@@ -1282,17 +1280,17 @@ export function ChartToolbar({
             className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-700/70 bg-amber-50 dark:bg-amber-900/30 text-[11px] font-mono font-bold text-amber-700 dark:text-amber-300 shadow-xs"
           >
             <span className="w-2 h-2 rounded-full bg-amber-500" />
-            <span>DEMO DATA</span>
+            <span className="hidden sm:inline">DEMO DATA</span>
           </div>
         )}
 
         {/* Price Tracker */}
         {displayPrice !== undefined && displayPrice > 0 && (
           <div
-            className="flex items-center gap-2.5 font-mono tabular-nums bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/80 px-2.5 py-0.5 rounded-lg shadow-xs"
+            className="flex items-center gap-1.5 sm:gap-2.5 font-mono tabular-nums bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/80 px-2 sm:px-2.5 py-0.5 rounded-lg shadow-xs"
             style={{ fontVariantNumeric: 'tabular-nums' }}
           >
-            <span className="text-[16px] font-black text-slate-900 dark:text-white tracking-tight tabular-nums">
+            <span className="text-[14px] sm:text-[16px] font-black text-slate-900 dark:text-white tracking-tight tabular-nums">
               {currency}
               {displayPrice.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
@@ -1301,7 +1299,7 @@ export function ChartToolbar({
             </span>
             {displayChange !== undefined && displayChangePct !== undefined && (
               <span
-                className={`text-[13px] font-extrabold tabular-nums ${
+                className={`text-[12px] sm:text-[13px] font-extrabold tabular-nums hidden xs:inline ${
                   displayChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                 }`}
               >
