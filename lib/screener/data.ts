@@ -3797,7 +3797,12 @@ export function getCompaniesByMarket(market: 'INDIA' | 'USA' | 'UAE'): CompanyFu
     return buildIndiaUniverse();
   }
   if (market === 'USA') {
-    return US_INDEX_UNIVERSE;
+    const curatedUs = MASTER_COMPANIES.filter((c) => c.market === 'USA');
+    const curatedSet = new Set(curatedUs.map((c) => c.symbol.toUpperCase()));
+    return [
+      ...curatedUs,
+      ...US_INDEX_UNIVERSE.filter((c) => !curatedSet.has(c.symbol.toUpperCase())),
+    ];
   }
   return MASTER_COMPANIES.filter((c) => c.market === market);
 }

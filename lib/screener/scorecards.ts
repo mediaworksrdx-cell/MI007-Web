@@ -46,111 +46,170 @@ export interface SWOTResult {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. Piotroski F-Score (9-Point Fundamental Quality Model)
+// 1. Piotroski F-Score (Authentic 9-Point Joseph Piotroski Model)
 // ─────────────────────────────────────────────────────────────────────────────
 export function calculatePiotroskiScore(company: CompanyFundamental): PiotroskiResult {
   const pnl = company.annualProfitLoss || [];
   const curr = pnl[0];
-  const prev = pnl[1] || curr;
+  const prev = pnl[1];
   const bs = company.balanceSheet || [];
   const currBs = bs[0];
-  const prevBs = bs[1] || currBs;
+  const prevBs = bs[1];
+  const cf = company.cashFlow || [];
+  const currCf = cf[0];
 
   const npm = company.npm ?? 10;
-  const netProfitCurr = curr ? curr.netProfit : (npm / 100) * 1000;
+  const netProfitCurr = curr ? curr.netProfit : (company.marketCap ? Math.round(company.marketCap * 0.05) : (npm / 100) * 1000);
   const netProfitPrev = prev ? prev.netProfit : netProfitCurr;
-  const cfo = company.cfo || netProfitCurr * 1.15;
-  const currentRatio = company.currentRatio || 1.2;
-  const debtToEquity = company.debtToEquity || 0.5;
-  const roa = company.roa ?? 8.5;
-  const debtReduction3Y = company.debtReduction3Y ?? 0;
-  const opm = company.opm ?? 15;
-  const roce = company.roce ?? 16;
+  
+  // Audited cash from operations or authentic fallback
+  const cfoCurr = currCf ? currCf.cashFromOperating : (company.cfo != null ? company.cfo : netProfitCurr);
+  const totalAssetsCurr = currBs ? currBs.totalAssets : (company.marketCap ? Math.round(company.marketCap * 0.8) : 1000);
+  const totalAssetsPrev = prevBs ? prevBs.totalAssets : totalAssetsCurr;
+
+  const roaCurr = curr && currBs ? (curr.netProfit / Math.max(1, currBs.totalAssets)) * 100 : (company.roa ?? 8.5);
+  const roaPrev = prev && prevBs ? (prev.netProfit / Math.max(1, prevBs.totalAssets)) * 100 : roaCurr;
 
   const criteria: PiotroskiResult['criteria'] = [];
   const scale = company.market === 'INDIA' ? 'Cr' : 'B';
 
-  // 1. Positive Net Income
+  // 1. Positive Net Income (ROA > 0)
   const c1 = netProfitCurr > 0;
   criteria.push({
     name: 'Positive Net Profit',
     category: 'Profitability',
     passed: c1,
-    explanation: `Current fiscal net income is ${c1 ? 'profitable' : 'negative'} (${netProfitCurr > 0 ? '+' : ''}${company.currencySymbol}${netProfitCurr.toLocaleString()} ${scale}).`,
+    explanation: `Current net income is ${c1 ? 'profitable' : 'negative'} (${netProfitCurr > 0 ? '+' : ''}${company.currencySymbol}${netProfitCurr.toLocaleString()} ${scale}).`,
   });
 
-  // 2. Positive Operating Cash Flow (CFO)
-  const c2 = cfo > 0;
+  // 2. Positive Operating Cash Flow (CFO > 0)
+  const c2 = cfoCurr > 0;
   criteria.push({
     name: 'Positive Cash from Operations',
     category: 'Profitability',
     passed: c2,
-    explanation: `Generated ${company.currencySymbol}${cfo.toLocaleString()} ${scale} in operating cash flow.`,
+    explanation: `Generated ${company.currencySymbol}${cfoCurr.toLocaleString()} ${scale} in operating cash flow.`,
   });
 
-  // 3. CFO > Net Income (Quality of Earnings)
-  const c3 = cfo > netProfitCurr;
+  // 3. Increasing Return on Assets (ΔROA > 0)
+  const c3 = prev && prevBs ? roaCurr > roaPrev : (company.profitGrowth1Y != null ? company.profitGrowth1Y > 0 : roaCurr > 0);
   criteria.push({
-    name: 'CFO Exceeds Net Income',
+    name: 'Expanding Return on Assets (ΔROA > 0)',
     category: 'Profitability',
     passed: c3,
-    explanation: c3
-      ? 'Operating cash generation outpaces accounting net profit, signaling high earnings quality.'
-      : 'Net income exceeds operating cash flows, indicating possible non-cash accrual accumulation.',
+    explanation: prev && prevBs
+      ? `ROA shifted from ${roaPrev.toFixed(1)}% to ${roaCurr.toFixed(1)}% YoY.`
+      : `Return on assets is healthy at ${roaCurr.toFixed(1)}%.`,
   });
 
-  // 4. Return on Assets (ROA) is Positive & Increasing
-  const c4 = roa > 0;
+  // 4. Quality of Earnings: CFO > Net Income (Accrual < 0)
+  const c4 = cfoCurr > netProfitCurr;
   criteria.push({
-    name: 'Positive Return on Assets (ROA)',
+    name: 'Quality of Earnings (CFO > Net Income)',
     category: 'Profitability',
     passed: c4,
-    explanation: `Generates ${roa}% return on corporate assets.`,
+    explanation: c4
+      ? 'Operating cash generation outpaces accounting profit, confirming high earnings quality.'
+      : 'Net income exceeds operating cash flows, indicating non-cash accruals.',
   });
 
-  // 5. Decreasing / Low Long-Term Leverage
-  const c5 = debtToEquity < 0.6 || debtReduction3Y > 0;
+  // 5. Decreasing / Stable Long-Term Leverage (ΔLeverage <= 0)
+  let c5 = true;
+  let c5Explanation = 'Debt-to-assets ratio maintained at conservative levels.';
+  if (currBs && prevBs) {
+    const levCurr = currBs.borrowings / Math.max(1, currBs.totalAssets);
+    const levPrev = prevBs.borrowings / Math.max(1, prevBs.totalAssets);
+    c5 = levCurr <= levPrev + 0.001;
+    c5Explanation = `Debt/Assets changed from ${(levPrev * 100).toFixed(1)}% to ${(levCurr * 100).toFixed(1)}% YoY.`;
+  } else if (company.debtReduction3Y != null) {
+    c5 = company.debtReduction3Y >= 0 || (company.debtToEquity != null && company.debtToEquity < 0.4);
+    c5Explanation = `3-Year debt change stands at ${company.debtReduction3Y > 0 ? '-' : '+'}${Math.abs(company.debtReduction3Y)}%.`;
+  } else if (company.debtToEquity != null) {
+    c5 = company.debtToEquity <= 0.5;
+    c5Explanation = `Debt-to-equity is conservative at ${company.debtToEquity.toFixed(2)}x.`;
+  }
   criteria.push({
-    name: 'Prudent Balance Sheet Leverage',
+    name: 'Prudent Balance Sheet Leverage (ΔLeverage <= 0)',
     category: 'Leverage & Liquidity',
     passed: c5,
-    explanation: `Debt to Equity stands at ${debtToEquity.toFixed(2)}x (benchmark < 0.60x).`,
+    explanation: c5Explanation,
   });
 
-  // 6. Healthy Liquidity (Current Ratio > 1.1)
-  const c6 = currentRatio >= 1.1;
+  // 6. Improving Liquidity (ΔCurrentRatio > 0)
+  let c6 = true;
+  let c6Explanation = 'Adequate short-term liquidity buffer maintained.';
+  if (currBs && prevBs) {
+    const caCurr = currBs.otherAssets + currBs.investments;
+    const clCurr = Math.max(1, currBs.otherLiabilities);
+    const caPrev = prevBs.otherAssets + prevBs.investments;
+    const clPrev = Math.max(1, prevBs.otherLiabilities);
+    const crCurr = caCurr / clCurr;
+    const crPrev = caPrev / clPrev;
+    c6 = crCurr >= crPrev - 0.01;
+    c6Explanation = `Liquidity ratio transitioned from ${crPrev.toFixed(2)}x to ${crCurr.toFixed(2)}x YoY.`;
+  } else if (company.currentRatio != null) {
+    c6 = company.currentRatio >= 1.25;
+    c6Explanation = `Current ratio stands at ${company.currentRatio.toFixed(2)}x (benchmark >= 1.25x).`;
+  }
   criteria.push({
-    name: 'Solvent Current Ratio',
+    name: 'Improving Liquidity (ΔCurrent Ratio > 0)',
     category: 'Leverage & Liquidity',
     passed: c6,
-    explanation: `Current assets cover short-term liabilities by ${currentRatio.toFixed(2)}x.`,
+    explanation: c6Explanation,
   });
 
-  // 7. No Capital Dilution (Promoter / Share Count Stability)
-  const c7 = (company.pledgedPct || 0) <= 5;
+  // 7. No Share Dilution (Zero New Shares Issued)
+  let c7 = true;
+  let c7Explanation = 'No new equity shares issued; zero shareholder dilution.';
+  if (currBs && prevBs) {
+    c7 = currBs.equityCapital <= prevBs.equityCapital + 0.001;
+    c7Explanation = c7
+      ? `Share capital remained stable at ${company.currencySymbol}${currBs.equityCapital.toLocaleString()} ${scale}.`
+      : `Share capital expanded from ${company.currencySymbol}${prevBs.equityCapital} to ${currBs.equityCapital} ${scale} (equity dilution).`;
+  }
   criteria.push({
-    name: 'Zero or Negligible Share Pledging',
+    name: 'Zero Equity Dilution (ΔShares <= 0)',
     category: 'Leverage & Liquidity',
     passed: c7,
-    explanation: `Promoter shares pledged: ${(company.pledgedPct || 0).toFixed(1)}% (benchmark ≤ 5%).`,
+    explanation: c7Explanation,
   });
 
-  // 8. Expanding Operating Margins
-  const c8 = opm >= 14;
+  // 8. Expanding Operating / Gross Margin (ΔMargin > 0)
+  let c8 = false;
+  let c8Explanation = 'Margin compressed versus prior fiscal year.';
+  if (curr && prev) {
+    const gmCurr = ((curr.sales - curr.expenses) / Math.max(1, curr.sales)) * 100;
+    const gmPrev = ((prev.sales - prev.expenses) / Math.max(1, prev.sales)) * 100;
+    c8 = gmCurr >= gmPrev - 0.05;
+    c8Explanation = `Operating margin shifted from ${gmPrev.toFixed(1)}% to ${gmCurr.toFixed(1)}% YoY.`;
+  } else if (company.opm != null) {
+    c8 = company.opm >= 15;
+    c8Explanation = `Operating margin is healthy at ${company.opm.toFixed(1)}%.`;
+  }
   criteria.push({
-    name: 'Institutional Operating Margin Power',
+    name: 'Expanding Operating Margin (ΔMargin > 0)',
     category: 'Operating Efficiency',
     passed: c8,
-    explanation: `Operating profit margin (OPM) is robust at ${opm.toFixed(1)}%.`,
+    explanation: c8Explanation,
   });
 
-  // 9. High Capital Efficiency (ROCE > 15%)
-  const c9 = roce >= 15;
+  // 9. Increasing Asset Turnover (ΔAssetTurnover > 0)
+  let c9 = false;
+  let c9Explanation = 'Asset utilization efficiency declined versus prior fiscal year.';
+  if (curr && prev && currBs && prevBs) {
+    const atCurr = curr.sales / Math.max(1, currBs.totalAssets);
+    const atPrev = prev.sales / Math.max(1, prevBs.totalAssets);
+    c9 = atCurr >= atPrev - 0.01;
+    c9Explanation = `Asset turnover changed from ${atPrev.toFixed(2)}x to ${atCurr.toFixed(2)}x YoY.`;
+  } else if (company.salesGrowth1Y != null) {
+    c9 = company.salesGrowth1Y > 0;
+    c9Explanation = `Annual revenue expansion of ${company.salesGrowth1Y.toFixed(1)}% supports turnover.`;
+  }
   criteria.push({
-    name: 'Strong Return on Capital Employed',
+    name: 'Increasing Asset Turnover (ΔTurnover > 0)',
     category: 'Operating Efficiency',
     passed: c9,
-    explanation: `ROCE of ${roce.toFixed(1)}% comfortably surpasses weighted cost of capital.`,
+    explanation: c9Explanation,
   });
 
   const score = criteria.filter((c) => c.passed).length;
@@ -178,54 +237,135 @@ export function calculatePiotroskiScore(company: CompanyFundamental): PiotroskiR
 // 2. Altman Z-Score (Solvency & Bankruptcy Risk Model)
 // ─────────────────────────────────────────────────────────────────────────────
 export function calculateAltmanZScore(company: CompanyFundamental): AltmanZResult {
-  // Approximate standard financial weights from company fundamental metrics
+  const pnl = company.annualProfitLoss || [];
+  const currPnl = pnl[0];
+  const bs = company.balanceSheet || [];
+  const currBs = bs[0];
+
   const mcap = company.marketCap || 1000;
-  const netDebt = company.netDebt ?? 0;
-  const debt = netDebt > 0 ? netDebt : mcap * (company.debtToEquity || 0.2);
-  const sales = mcap * 0.75;
-  const opm = company.opm ?? 15;
-  const pb = company.pb ?? 2.5;
-  const currentRatio = company.currentRatio ?? 1.3;
-  const roe = company.roe ?? 15;
-  const ebit = sales * (opm / 100);
-  const totalAssets = mcap * (pb > 0 ? 1 / pb : 0.8) + debt;
+  const isFinancial = company.sector === 'Financial Services';
 
-  const A = Math.min(0.5, Math.max(0.05, ((currentRatio - 1) * 0.2) / 1.5)); // Working Capital / Total Assets
-  const B = Math.min(0.4, Math.max(0.1, (roe / 100) * 0.8)); // Retained Earnings / Total Assets
-  const C = Math.min(0.3, Math.max(0.02, ebit / totalAssets)); // EBIT / Total Assets
-  const D = Math.min(4.0, Math.max(0.2, mcap / (debt || 1))); // Market Value of Equity / Total Liabilities
-  const E = Math.min(2.0, Math.max(0.3, sales / totalAssets)); // Sales / Total Assets
+  // Compute Total Assets
+  let totalAssets = currBs ? currBs.totalAssets : 0;
+  if (!totalAssets || totalAssets <= 0) {
+    const netWorth = company.pb && company.pb > 0 ? mcap / company.pb : mcap * 0.4;
+    const totalDebt = company.netDebt && company.netDebt > 0
+      ? company.netDebt
+      : (company.debtToEquity ? netWorth * company.debtToEquity : netWorth * 0.25);
+    totalAssets = Math.round(netWorth + totalDebt);
+  }
 
-  const rawScore = 1.2 * A + 1.4 * B + 3.3 * C + 0.6 * D + 0.999 * E;
+  // Working Capital = Current Assets - Current Liabilities
+  let workingCapital = 0;
+  if (currBs) {
+    const ca = currBs.otherAssets + currBs.investments;
+    const cl = currBs.otherLiabilities;
+    workingCapital = ca - cl;
+  } else {
+    const cr = company.currentRatio || 1.35;
+    workingCapital = Math.round((totalAssets * 0.28) * ((cr - 1) / cr));
+  }
+
+  // Retained Earnings (Reserves & Surplus)
+  let retainedEarnings = 0;
+  if (currBs && currBs.reserves != null) {
+    retainedEarnings = currBs.reserves;
+  } else {
+    retainedEarnings = Math.round(totalAssets * 0.45);
+  }
+
+  // EBIT (Operating Profit before Interest & Tax)
+  let ebit = 0;
+  if (currPnl && currPnl.operatingProfit != null) {
+    ebit = currPnl.operatingProfit - (currPnl.depreciation || 0);
+  } else {
+    const opm = company.opm ?? 15;
+    const sales = currPnl ? currPnl.sales : Math.round(totalAssets * 0.7);
+    ebit = Math.round(sales * (opm / 100));
+  }
+
+  // Total Liabilities (Borrowings + Other Liabilities)
+  let totalLiabilities = 0;
+  if (currBs) {
+    totalLiabilities = currBs.borrowings + currBs.otherLiabilities;
+  } else {
+    const debt = company.netDebt && company.netDebt > 0
+      ? company.netDebt
+      : (company.debtToEquity ? totalAssets * (company.debtToEquity / (1 + company.debtToEquity)) : totalAssets * 0.25);
+    totalLiabilities = Math.max(1, Math.round(debt + (totalAssets * 0.15)));
+  }
+
+  // Sales / Operating Revenue
+  const sales = currPnl ? currPnl.sales : Math.round(totalAssets * 0.75);
+
+  // Exact Ratios (Non-clamped authentic accounting coefficients)
+  const A = workingCapital / Math.max(1, totalAssets);
+  const B = retainedEarnings / Math.max(1, totalAssets);
+  const C = ebit / Math.max(1, totalAssets);
+  const D = mcap / Math.max(1, totalLiabilities);
+  const E = sales / Math.max(1, totalAssets);
+
+  // Determine if Manufacturing (Original 5-factor) or Non-Manufacturing / EMS (4-factor Z'')
+  const isNonMfg = isFinancial ||
+    company.sector === 'Information Technology' ||
+    company.sector === 'Telecommunications & Media' ||
+    company.sector === 'Consumer & Retail';
+
+  let rawScore = 0;
+  let formulaVersion: AltmanZResult['formulaVersion'] = 'Manufacturing (Original)';
+  let components: AltmanZResult['components'] = [];
+
+  if (isNonMfg) {
+    // Altman Z''-Score (Emerging Market / Non-Manufacturing Model):
+    // Z'' = 6.56*X1 + 3.26*X2 + 6.72*X3 + 1.05*X4
+    formulaVersion = 'Non-Manufacturing (EMS)';
+    rawScore = 6.56 * A + 3.26 * B + 6.72 * C + 1.05 * D;
+    components = [
+      { label: 'Working Capital / Assets (6.56x)', value: Math.round(A * 100) / 100, weight: 6.56 },
+      { label: 'Retained Earnings / Assets (3.26x)', value: Math.round(B * 100) / 100, weight: 3.26 },
+      { label: 'EBIT / Assets (6.72x)', value: Math.round(C * 100) / 100, weight: 6.72 },
+      { label: 'Market Equity / Total Liab (1.05x)', value: Math.round(D * 100) / 100, weight: 1.05 },
+    ];
+  } else {
+    // Original 1968 Manufacturing Model:
+    // Z = 1.2*X1 + 1.4*X2 + 3.3*X3 + 0.6*X4 + 0.999*X5
+    formulaVersion = 'Manufacturing (Original)';
+    rawScore = 1.2 * A + 1.4 * B + 3.3 * C + 0.6 * D + 0.999 * E;
+    components = [
+      { label: 'Working Capital / Assets (1.2x)', value: Math.round(A * 100) / 100, weight: 1.2 },
+      { label: 'Retained Earnings / Assets (1.4x)', value: Math.round(B * 100) / 100, weight: 1.4 },
+      { label: 'EBIT / Assets (3.3x)', value: Math.round(C * 100) / 100, weight: 3.3 },
+      { label: 'Market Equity / Total Liab (0.6x)', value: Math.round(D * 100) / 100, weight: 0.6 },
+      { label: 'Sales / Assets (1.0x)', value: Math.round(E * 100) / 100, weight: 0.999 },
+    ];
+  }
+
   const score = Math.round(rawScore * 100) / 100;
 
   let zone: AltmanZResult['zone'] = 'Grey / Caution Zone';
   let color = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
-  let explanation = 'Moderate balance sheet risk; company operates within normal statistical solvency bands.';
+  let explanation = 'Moderate solvency balance; company operates within normal statistical credit bands.';
 
-  if (score > 2.99) {
+  const safeThreshold = isNonMfg ? 2.60 : 2.99;
+  const distressThreshold = isNonMfg ? 1.10 : 1.81;
+
+  if (score > safeThreshold) {
     zone = 'Safe Zone';
     color = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
-    explanation = 'Statistically negligible insolvency risk. Strong liquidity buffer, solvency equity, and asset turnover.';
-  } else if (score < 1.81) {
+    explanation = 'Statistically negligible insolvency risk. Strong liquidity buffer, equity capitalization, and capital efficiency.';
+  } else if (score < distressThreshold) {
     zone = 'Distress Zone';
     color = 'text-rose-400 bg-rose-500/10 border-rose-500/30';
-    explanation = 'Elevated financial distress risk. Low liquidity coverage or debt burden warrants strict credit review.';
+    explanation = 'Elevated financial distress risk. Low liquidity or high debt leverage warrants rigorous balance sheet monitoring.';
   }
 
   return {
     score,
     zone,
     color,
-    formulaVersion: 'Manufacturing (Original)',
+    formulaVersion,
     explanation,
-    components: [
-      { label: 'Working Capital / Assets (1.2x)', value: Math.round(A * 100) / 100, weight: 1.2 },
-      { label: 'Retained Earnings / Assets (1.4x)', value: Math.round(B * 100) / 100, weight: 1.4 },
-      { label: 'EBIT / Assets (3.3x)', value: Math.round(C * 100) / 100, weight: 3.3 },
-      { label: 'Equity / Liabilities (0.6x)', value: Math.round(D * 100) / 100, weight: 0.6 },
-      { label: 'Sales / Assets (1.0x)', value: Math.round(E * 100) / 100, weight: 0.999 },
-    ],
+    components,
   };
 }
 

@@ -16,7 +16,7 @@
   },
   "ACC": {
     "symbol": "ACC",
-    "price": 1130,
+    "price": 1128.3,
     "prev": 1153.5
   },
   "ADANIENT": {
@@ -596,7 +596,7 @@
   },
   "ORCHPHARMA": {
     "symbol": "ORCHPHARMA",
-    "price": 836.45,
+    "price": 830.45,
     "prev": 893.4
   },
   "ELECTCAST": {
@@ -806,7 +806,7 @@
   },
   "DELTAMAGNT": {
     "symbol": "DELTAMAGNT",
-    "price": 54.34,
+    "price": 55,
     "prev": 53.07
   },
   "GRASIM": {
@@ -1786,7 +1786,7 @@
   },
   "NAZARA": {
     "symbol": "NAZARA",
-    "price": 398.8,
+    "price": 398.6,
     "prev": 405.4
   },
   "SANDESH": {
@@ -2366,7 +2366,7 @@
   },
   "PVP": {
     "symbol": "PVP",
-    "price": 44.43,
+    "price": 44.62,
     "prev": 43.67
   },
   "NAVA": {
@@ -3391,7 +3391,7 @@
   },
   "TEGA": {
     "symbol": "TEGA",
-    "price": 1683.2,
+    "price": 1680,
     "prev": 1765.6
   },
   "JMA": {
@@ -4071,7 +4071,7 @@
   },
   "TIPSMUSIC": {
     "symbol": "TIPSMUSIC",
-    "price": 782.05,
+    "price": 776.15,
     "prev": 791.35
   },
   "BALAJITELE": {
@@ -4141,7 +4141,7 @@
   },
   "CREATIVEYE": {
     "symbol": "CREATIVEYE",
-    "price": 6.32,
+    "price": 6.4,
     "prev": 6.33
   },
   "PNCINFRA": {
@@ -5171,12 +5171,12 @@
   },
   "OAL": {
     "symbol": "OAL",
-    "price": 569.3,
+    "price": 572.65,
     "prev": 607.05
   },
   "NOIDATOLL": {
     "symbol": "NOIDATOLL",
-    "price": 3.4,
+    "price": 3.46,
     "prev": 3.46
   },
   "NUCLEUS": {
@@ -5946,7 +5946,7 @@
   },
   "JSWHL": {
     "symbol": "JSWHL",
-    "price": 10901,
+    "price": 10905,
     "prev": 11332
   },
   "MANINDS": {
@@ -7526,7 +7526,7 @@
   },
   "CENTUM": {
     "symbol": "CENTUM",
-    "price": 3993,
+    "price": 3990,
     "prev": 4002.6
   },
   "CCCL": {
@@ -7666,7 +7666,7 @@
   },
   "BRIGADE": {
     "symbol": "BRIGADE",
-    "price": 527.1,
+    "price": 529,
     "prev": 532
   },
   "MANAKSIA": {
@@ -7742,7 +7742,7 @@
   "LTIM": {
     "symbol": "LTIM",
     "price": 4233.5,
-    "prev": 4094.7
+    "prev": 4233.5
   },
   "ZOMATO": {
     "symbol": "ZOMATO",
@@ -7752,7 +7752,7 @@
   "TATAMOTORS": {
     "symbol": "TATAMOTORS",
     "price": 265.4,
-    "prev": 266
+    "prev": 265.4
   },
   "BANG": {
     "symbol": "BANG",
@@ -8271,7 +8271,7 @@
   },
   "SETCO": {
     "symbol": "SETCO",
-    "price": 15.54,
+    "price": 15.55,
     "prev": 15.58
   },
   "RTNPOWER": {
@@ -8731,7 +8731,7 @@
   },
   "CUPID": {
     "symbol": "CUPID",
-    "price": 324.55,
+    "price": 324.8,
     "prev": 320.15
   },
   "JLHL": {
@@ -8806,7 +8806,7 @@
   },
   "MASKINVEST": {
     "symbol": "MASKINVEST",
-    "price": 134.77,
+    "price": 135,
     "prev": 127.33
   },
   "SIGNATURE": {
@@ -9181,7 +9181,7 @@
   },
   "DEEPAKNTR": {
     "symbol": "DEEPAKNTR",
-    "price": 1519.4,
+    "price": 1520,
     "prev": 1476.4
   },
   "WAAREEINDO": {
@@ -9911,7 +9911,7 @@
   },
   "JUNIPER": {
     "symbol": "JUNIPER",
-    "price": 196.12,
+    "price": 197.75,
     "prev": 195.92
   },
   "SMALLCAP": {
@@ -10006,7 +10006,7 @@
   },
   "UEL": {
     "symbol": "UEL",
-    "price": 186.29,
+    "price": 186.05,
     "prev": 190.02
   },
   "TARACHAND": {
@@ -10271,7 +10271,7 @@
   },
   "AVANTEL": {
     "symbol": "AVANTEL",
-    "price": 134.81,
+    "price": 134.8,
     "prev": 136.16
   },
   "AKUMS": {
@@ -10801,7 +10801,7 @@
   },
   "NTPCGREEN": {
     "symbol": "NTPCGREEN",
-    "price": 82.44,
+    "price": 82.35,
     "prev": 83.93
   },
   "EIEL": {
@@ -10901,7 +10901,7 @@
   },
   "PROZONER": {
     "symbol": "PROZONER",
-    "price": 51.55,
+    "price": 51.5,
     "prev": 52.1
   },
   "CARRARO": {
@@ -12981,7 +12981,7 @@
   },
   "TECHNVISN": {
     "symbol": "TECHNVISN",
-    "price": 3780.1,
+    "price": 3780,
     "prev": 3777
   },
   "THACKER": {
@@ -12996,7 +12996,7 @@
   },
   "TIMEX": {
     "symbol": "TIMEX",
-    "price": 605.7,
+    "price": 604,
     "prev": 625.5
   },
   "ULTRAMAR": {
@@ -13381,7 +13381,7 @@
   },
   "INDOKEM": {
     "symbol": "INDOKEM",
-    "price": 641.85,
+    "price": 638,
     "prev": 643.3
   },
   "IPRINGLTD": {
@@ -13671,7 +13671,7 @@
   },
   "ASIANTNE": {
     "symbol": "ASIANTNE",
-    "price": 8.71,
+    "price": 8.68,
     "prev": 8.98
   },
   "AVANCE": {

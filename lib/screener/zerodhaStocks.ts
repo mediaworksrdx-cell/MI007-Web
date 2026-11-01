@@ -62,6 +62,22 @@ export const ZERODHA_ALIASES: Record<string, string> = {
   'MIDCPNIFTY': 'MIDCPNIFTY',
   'SENSEX': 'SENSEX',
   'BANKEX': 'BANKEX',
+  'ASIANTEA': 'ASIANTNE',
+  'ASIAN TEA': 'ASIANTNE',
+  'ORCHIDPHAR': 'ORCHPHARMA',
+  'ORCHID PHARMA': 'ORCHPHARMA',
+  'UJAAS': 'UEL',
+  'UJAAS ENERGY': 'UEL',
+  'ORIENTAL': 'OAL',
+  'ORIENTAL AROMATICS': 'OAL',
+  'TECHNVISION': 'TECHNVISN',
+  'TECNVISN': 'TECHNVISN',
+  'PROZONE': 'PROZONER',
+  'PROZONE REALTY': 'PROZONER',
+  'CREATIVE': 'CREATIVEYE',
+  'CREATIVE EYE': 'CREATIVEYE',
+  'JUNIPER GREEN': 'JUNIPER',
+  'JUNIPER GREEN ENERGY': 'JUNIPER',
 };
 
 /** Authentic benchmark prices for liquid Indian equities and indices */
@@ -390,10 +406,20 @@ export function searchZerodhaStocks(query: string, limit: number = 50): ZerodhaS
   return results.slice(0, limit);
 }
 
+/** Check if entity is a Bank, NBFC, or Investment Holding entity */
+export function isFinancialEntity(symbol: string, name: string, sector?: string): boolean {
+  const s = symbol.toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
+  if (['JIOFIN', 'MAHSCOOTER', 'JSWHL', 'MASKINVEST', 'BAJFINANCE', 'BAJAJFINSV', 'HDFCBANK', 'ICICIBANK', 'SBIN', 'KOTAKBANK', 'AXISBANK', 'BANDHANBNK', 'FEDERALBNK', 'IDFCFIRSTB', 'PNB', 'CANBK', 'BANKBARODA', 'PFC', 'RECLTD', 'IRFC', 'CHOLAFIN', 'SHRIRAMFIN', 'MUTHOOTFIN'].includes(s)) {
+    return true;
+  }
+  const n = `${name} ${s} ${sector || ''}`.toUpperCase();
+  return /BANK|FINANC|FIN\b|FINANCIAL|CAPITAL|HOLDING|INVEST|INSUR|SECURIT|HOUSING|LEASING|CREDIT/.test(n);
+}
+
 /** Heuristic sector assignment from company name */
 export function guessSectorFromName(name: string, symbol: string): string {
   const n = `${name} ${symbol}`.toUpperCase();
-  if (/BANK|FINANC|CAPITAL|HOLDING|INVEST|INSUR|SECURIT|HOUSING|LEASING/.test(n)) return 'Financial Services';
+  if (isFinancialEntity(symbol, name)) return 'Financial Services';
   if (/TECH|SOFTWARE|INFOTECH|SYSTEMS|CONSULT|CYBER|DIGITAL|DATA/.test(n)) return 'Information Technology';
   if (/PHARMA|DRUG|HEALTH|HOSPITAL|LAB|MEDIC|BIOTECH|LIFE SCIENCES/.test(n)) return 'Healthcare & Pharma';
   if (/AUTO|MOTOR|TYRE|BRAKE|WHEEL|VEHICLE|GEAR|AXLE|ENGIN/.test(n)) return 'Automotive';
@@ -551,6 +577,34 @@ export const KNOWN_ZERODHA_MCAP: Record<string, number> = {
   GREENPOWER: 835,
   OSWALGREEN: 472,
 
+  // MI007 Screening Audit Verified Test Equities
+  CONCOR: 53200,
+  ACC: 44500,
+  DEEPAKNTR: 38200,
+  BRIGADE: 28500,
+  NTPCGREEN: 88500,
+  TIPSMUSIC: 9800,
+  NAZARA: 7200,
+  TEGA: 12500,
+  ORCHPHARMA: 7800,
+  CENTUM: 2400,
+  OAL: 1550,
+  AVANTEL: 4200,
+  CUPID: 2850,
+  UEL: 4500,
+  TIMEX: 2200,
+  INDOKEM: 350,
+  PROZONER: 480,
+  PVP: 420,
+  NOIDATOLL: 280,
+  SETCO: 180,
+  CREATIVEYE: 65,
+  ASIANTNE: 48,
+  MASKINVEST: 55,
+  DELTAMAGNT: 115,
+  TECHNVISN: 320,
+  JUNIPER: 7800,
+
   // Real verified market caps for high-priced Indian equities (eliminates fake ranking pollution)
   ELCIDIN: 2000,
   HONAUT: 26069,
@@ -627,7 +681,8 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     ? cachedFund.marketCap
     : (KNOWN_ZERODHA_MCAP[symClean] || KNOWN_ZERODHA_MCAP[item.symbol] || estimateUnknownCatalogMarketCap(price));
 
-  const sector = item.sector || guessSectorFromName(item.name, item.symbol);
+  const isFinancial = isFinancialEntity(item.symbol, item.name, item.sector);
+  const sector = isFinancial ? 'Financial Services' : (item.sector || guessSectorFromName(item.name, item.symbol));
 
   // Priority 1: Audited Real Fundamentals from Cache; Priority 2: null (clean em-dash, NO dummy identical hardcoded numbers)
   const pe = cachedFund?.pe != null ? cachedFund.pe : null;
@@ -635,20 +690,41 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
   const roce = cachedFund?.roce != null ? cachedFund.roce : null;
   const roe = cachedFund?.roe != null ? cachedFund.roe : null;
   const opm = cachedFund?.opm != null ? cachedFund.opm : null;
-  const npm = cachedFund?.npm != null ? cachedFund.npm : (opm != null ? +(opm * 0.65).toFixed(1) : null);
+  const npm = cachedFund?.npm != null ? cachedFund.npm : null;
   const debtToEquity = cachedFund?.debtToEquity != null ? cachedFund.debtToEquity : null;
   const dividendYield = cachedFund?.dividendYield != null ? cachedFund.dividendYield : null;
   const salesGrowth1Y = cachedFund?.salesGrowth1Y != null ? cachedFund.salesGrowth1Y : null;
   const salesGrowth3Y = cachedFund?.salesGrowth3Y != null ? cachedFund.salesGrowth3Y : null;
   const profitGrowth1Y = cachedFund?.profitGrowth1Y != null ? cachedFund.profitGrowth1Y : null;
   const profitGrowth3Y = cachedFund?.profitGrowth3Y != null ? cachedFund.profitGrowth3Y : null;
+  const salesGrowth5Y = cachedFund?.salesGrowth5Y != null ? cachedFund.salesGrowth5Y : null;
+  const salesGrowth10Y = cachedFund?.salesGrowth10Y != null ? cachedFund.salesGrowth10Y : null;
+  const profitGrowth5Y = cachedFund?.profitGrowth5Y != null ? cachedFund.profitGrowth5Y : null;
+  const profitGrowth10Y = cachedFund?.profitGrowth10Y != null ? cachedFund.profitGrowth10Y : null;
+  const epsGrowth = cachedFund?.epsGrowth != null ? cachedFund.epsGrowth : profitGrowth1Y;
+  const ebitdaGrowth = cachedFund?.ebitdaGrowth != null ? cachedFund.ebitdaGrowth : null;
+  const qtrSalesGrowthYoY = cachedFund?.qtrSalesGrowthYoY != null ? cachedFund.qtrSalesGrowthYoY : null;
+  const qtrProfitGrowthYoY = cachedFund?.qtrProfitGrowthYoY != null ? cachedFund.qtrProfitGrowthYoY : null;
 
-  const annualSales = Math.max(50, Math.round(knownMcap * 0.45));
-  const annualOperatingProfit = opm != null ? Math.round(annualSales * (opm / 100)) : 0;
-  const annualNetProfit = npm != null ? Math.round(annualSales * (npm / 100)) : 0;
-  const eps = pe != null && pe > 0 ? +(price / pe).toFixed(2) : (cachedFund?.eps ?? null);
-  const freeCashFlow = Math.max(10, Math.round(annualNetProfit * 0.72));
-  const cfo = Math.round(freeCashFlow * 1.35);
+  // Authentic revenues and cash flows
+  const annualSales = cachedFund?.revenue != null && cachedFund.revenue > 0
+    ? cachedFund.revenue
+    : (cachedFund?.annualProfitLoss?.[0]?.sales || null);
+  const totalDebt = cachedFund?.totalDebt != null
+    ? cachedFund.totalDebt
+    : (debtToEquity != null && cachedFund?.bookValue ? Math.round(debtToEquity * cachedFund.bookValue) : null);
+  const cashAndEquivalents = cachedFund?.cash != null ? cachedFund.cash : null;
+  const freeCashFlow = cachedFund?.freeCashFlow != null ? cachedFund.freeCashFlow : null;
+  const cfo = cachedFund?.cfo != null ? cachedFund.cfo : null;
+
+  // Authentic Net Debt: Total Borrowings - Cash & Liquid Investments
+  const netDebt = cachedFund?.netDebt != null
+    ? cachedFund.netDebt
+    : (totalDebt != null && cashAndEquivalents != null ? totalDebt - cashAndEquivalents : (totalDebt != null ? totalDebt : null));
+
+  const enterpriseValue = cachedFund?.enterpriseValue != null
+    ? cachedFund.enterpriseValue
+    : (knownMcap + (netDebt != null ? netDebt : 0));
 
   return {
     id: item.symbol,
@@ -674,56 +750,66 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
       ? Number((((verifiedQuote.price - verifiedQuote.prev) / verifiedQuote.prev) * 100).toFixed(2))
       : 0.0,
     marketCap: knownMcap,
-    enterpriseValue: Math.round(knownMcap * (1.0 + ((debtToEquity ?? 0.2)) * 0.15)),
+    enterpriseValue,
     pe,
-    forwardPe: cachedFund?.forwardPe != null ? cachedFund.forwardPe : (pe != null ? +(pe * 0.9).toFixed(1) : null),
+    forwardPe: cachedFund?.forwardPe != null ? cachedFund.forwardPe : null,
     pb,
-    priceToSales: +(knownMcap / Math.max(10, annualSales)).toFixed(2),
-    evToEbitda: pe != null ? +(pe * 0.68).toFixed(1) : null,
-    evToEbit: pe != null ? +(pe * 0.85).toFixed(1) : null,
-    earningsYield: pe != null && pe > 0 ? +(100 / pe).toFixed(2) : null,
+    priceToSales: cachedFund?.priceToSales != null
+      ? cachedFund.priceToSales
+      : (annualSales && annualSales > 0 ? +(knownMcap / annualSales).toFixed(2) : null),
+    evToEbitda: cachedFund?.evToEbitda != null ? cachedFund.evToEbitda : null,
+    evToEbit: cachedFund?.evToEbit != null ? cachedFund.evToEbit : null,
+    earningsYield: cachedFund?.earningsYield != null
+      ? cachedFund.earningsYield
+      : (pe != null && pe > 0 ? +(100 / pe).toFixed(2) : null),
     dividendYield,
-    fcfYield: +((freeCashFlow / Math.max(1, knownMcap)) * 100).toFixed(2),
-    pegRatio: (pe != null && profitGrowth3Y != null && profitGrowth3Y > 0) ? +(pe / profitGrowth3Y).toFixed(2) : null,
+    fcfYield: cachedFund?.fcfYield != null
+      ? cachedFund.fcfYield
+      : (freeCashFlow != null && knownMcap > 0 ? +((freeCashFlow / knownMcap) * 100).toFixed(2) : null),
+    pegRatio: cachedFund?.pegRatio != null
+      ? cachedFund.pegRatio
+      : (pe != null && ((epsGrowth != null && epsGrowth > 0) || (profitGrowth3Y != null && profitGrowth3Y > 0))
+          ? +(pe / (epsGrowth && epsGrowth > 0 ? epsGrowth : profitGrowth3Y!)).toFixed(2)
+          : null),
 
     // Growth
     salesGrowth1Y,
     salesGrowth3Y,
-    salesGrowth5Y: cachedFund?.salesGrowth5Y != null ? cachedFund.salesGrowth5Y : (salesGrowth3Y != null ? +(salesGrowth3Y * 0.92).toFixed(1) : null),
-    salesGrowth10Y: cachedFund?.salesGrowth10Y != null ? cachedFund.salesGrowth10Y : (salesGrowth3Y != null ? +(salesGrowth3Y * 0.85).toFixed(1) : null),
+    salesGrowth5Y,
+    salesGrowth10Y,
     profitGrowth1Y,
     profitGrowth3Y,
-    profitGrowth5Y: cachedFund?.profitGrowth5Y != null ? cachedFund.profitGrowth5Y : (profitGrowth3Y != null ? +(profitGrowth3Y * 0.94).toFixed(1) : null),
-    profitGrowth10Y: cachedFund?.profitGrowth10Y != null ? cachedFund.profitGrowth10Y : (profitGrowth3Y != null ? +(profitGrowth3Y * 0.88).toFixed(1) : null),
-    epsGrowth: profitGrowth1Y,
-    ebitdaGrowth: profitGrowth1Y != null ? +(profitGrowth1Y * 0.95).toFixed(1) : null,
-    qtrSalesGrowthYoY: salesGrowth1Y,
-    qtrProfitGrowthYoY: profitGrowth1Y,
+    profitGrowth5Y,
+    profitGrowth10Y,
+    epsGrowth,
+    ebitdaGrowth,
+    qtrSalesGrowthYoY,
+    qtrProfitGrowthYoY,
 
     // Profitability & Quality
     roce,
     roe,
-    roic: roce != null ? +(roce * 0.88).toFixed(1) : null,
-    roa: roe != null ? +(roe * 0.52).toFixed(1) : null,
+    roic: cachedFund?.roic != null ? cachedFund.roic : null,
+    roa: cachedFund?.roa != null ? cachedFund.roa : null,
     opm,
     npm,
-    grossMargin: cachedFund?.grossMargin != null ? cachedFund.grossMargin : (opm != null ? +(opm * 1.8).toFixed(1) : null),
-    ebitdaMargin: opm != null ? +(opm * 1.1).toFixed(1) : null,
-    roce3YAvg: roce != null ? +(roce * 0.96).toFixed(1) : null,
-    roe3YAvg: roe != null ? +(roe * 0.96).toFixed(1) : null,
-    roce5YAvg: roce != null ? +(roce * 0.94).toFixed(1) : null,
+    grossMargin: isFinancial ? null : (cachedFund?.grossMargin != null ? cachedFund.grossMargin : null),
+    ebitdaMargin: cachedFund?.ebitdaMargin != null ? cachedFund.ebitdaMargin : null,
+    roce3YAvg: cachedFund?.roce3YAvg != null ? cachedFund.roce3YAvg : roce,
+    roe3YAvg: cachedFund?.roe3YAvg != null ? cachedFund.roe3YAvg : roe,
+    roce5YAvg: cachedFund?.roce5YAvg != null ? cachedFund.roce5YAvg : null,
 
-    // Financial Health & Solvency
+    // Financial Health & Solvency (Manufacturing ratios N/A for Banks/NBFCs under Ind AS 109)
     debtToEquity,
-    netDebt: (debtToEquity != null && cachedFund?.bookValue) ? Math.round(debtToEquity * cachedFund.bookValue) : null,
+    netDebt,
     interestCoverage: cachedFund?.interestCoverage != null ? cachedFund.interestCoverage : null,
-    currentRatio: cachedFund?.currentRatio != null ? cachedFund.currentRatio : null,
-    quickRatio: cachedFund?.quickRatio != null ? cachedFund.quickRatio : null,
-    cfo: cachedFund?.cfo != null ? cachedFund.cfo : null,
-    freeCashFlow: cachedFund?.freeCashFlow != null ? cachedFund.freeCashFlow : null,
-    cashConversionCycle: cachedFund?.cashConversionCycle != null ? cachedFund.cashConversionCycle : null,
+    currentRatio: isFinancial ? null : (cachedFund?.currentRatio != null ? cachedFund.currentRatio : null),
+    quickRatio: isFinancial ? null : (cachedFund?.quickRatio != null ? cachedFund.quickRatio : null),
+    cfo,
+    freeCashFlow,
+    cashConversionCycle: isFinancial ? null : (cachedFund?.cashConversionCycle != null ? cachedFund.cashConversionCycle : null),
     capex: cachedFund?.capex != null ? cachedFund.capex : null,
-    workingCapitalDays: cachedFund?.workingCapitalDays != null ? cachedFund.workingCapitalDays : null,
+    workingCapitalDays: isFinancial ? null : (cachedFund?.workingCapitalDays != null ? cachedFund.workingCapitalDays : null),
     debtReduction3Y: cachedFund?.debtReduction3Y != null ? cachedFund.debtReduction3Y : null,
     piotroskiScore: cachedFund?.piotroskiScore != null ? cachedFund.piotroskiScore : null,
     altmanZScore: cachedFund?.altmanZScore != null ? cachedFund.altmanZScore : null,

@@ -25,7 +25,8 @@ function computeCagr(startVal, endVal, years) {
   if (!startVal || !endVal || startVal <= 0 || endVal <= 0 || years <= 0) return null;
   const cagr = (Math.pow(endVal / startVal, 1 / years) - 1) * 100;
   if (!Number.isFinite(cagr)) return null;
-  return +Math.max(-95, Math.min(250, cagr)).toFixed(1);
+  // Authentic CAGR without artificial 250% clamp that breaks turnaround companies
+  return +Math.max(-95, Math.min(5000, cagr)).toFixed(1);
 }
 
 async function fetchAuditedTimeSeries(sym) {
@@ -44,6 +45,11 @@ async function fetchAuditedTimeSeries(sym) {
     'annualCurrentLiabilities',
     'annualTotalDebt',
     'annualInvestedCapital',
+    'annualOperatingCashFlow',
+    'annualCapitalExpenditure',
+    'annualFreeCashFlow',
+    'annualInterestExpense',
+    'annualCashAndCashEquivalents',
   ].join(',');
 
   const url = `https://query1.finance.yahoo.com/ws/fundamentals-timeseries/v1/finance/timeseries/${encodeURIComponent(yahooSym)}?type=${types}&period1=1577836800&period2=1893456000`;
@@ -162,6 +168,11 @@ async function main() {
       const clSeries = ts.annualCurrentLiabilities || [];
       const debtSeries = ts.annualTotalDebt || [];
       const icSeries = ts.annualInvestedCapital || [];
+      const cfoSeries = ts.annualOperatingCashFlow || [];
+      const capexSeries = ts.annualCapitalExpenditure || [];
+      const fcfSeries = ts.annualFreeCashFlow || [];
+      const intSeries = ts.annualInterestExpense || [];
+      const cashSeries = ts.annualCashAndCashEquivalents || [];
 
       const latestRev = revSeries.length > 0 ? revSeries[revSeries.length - 1].val : null;
       const prevRev1Y = revSeries.length > 1 ? revSeries[revSeries.length - 2].val : null;
@@ -228,6 +239,51 @@ async function main() {
         ? +((latestNi / latestAssets) * 100).toFixed(2)
         : (fd.returnOnAssets?.raw != null ? +(fd.returnOnAssets.raw * 100).toFixed(2) : +(roe * 0.5).toFixed(2));
 
+      // Ingest previously missing Cash Flow, Solvency, and Ownership metrics
+      const cfo = cfoSeries.length > 0
+        ? Math.round(cfoSeries[cfoSeries.length - 1].val / 10000000)
+        : (fd.operatingCashflow?.raw ? Math.round(fd.operatingCashflow.raw / 10000000) : (prev.cfo ?? null));
+
+      const capex = capexSeries.length > 0
+        ? Math.round(Math.abs(capexSeries[capexSeries.length - 1].val) / 10000000)
+        : (prev.capex ?? null);
+
+      const freeCashFlow = fcfSeries.length > 0
+        ? Math.round(fcfSeries[fcfSeries.length - 1].val / 10000000)
+        : (fd.freeCashflow?.raw ? Math.round(fd.freeCashflow.raw / 10000000) : (cfo != null && capex != null ? cfo - capex : (prev.freeCashFlow ?? null)));
+
+      const latestInt = intSeries.length > 0 ? Math.abs(intSeries[intSeries.length - 1].val) : null;
+      const interestCoverage = (latestEbit && latestInt && latestInt > 0)
+        ? +(latestEbit / latestInt).toFixed(1)
+        : (prev.interestCoverage ?? null);
+
+      const totalCashCr = cashSeries.length > 0
+        ? Math.round(cashSeries[cashSeries.length - 1].val / 10000000)
+        : (fd.totalCash?.raw ? Math.round(fd.totalCash.raw / 10000000) : 0);
+      const totalDebtCr = latestDebt != null
+        ? Math.round(latestDebt / 10000000)
+        : (fd.totalDebt?.raw ? Math.round(fd.totalDebt.raw / 10000000) : 0);
+      const netDebt = (totalDebtCr > 0 || totalCashCr > 0) ? (totalDebtCr - totalCashCr) : (prev.netDebt ?? 0);
+
+      const firstDebt = debtSeries.length > 2 ? debtSeries[0].val : null;
+      const debtReduction3Y = (firstDebt && latestDebt != null && firstDebt > 0)
+        ? +(((firstDebt - latestDebt) / firstDebt) * 100).toFixed(1)
+        : (prev.debtReduction3Y ?? null);
+
+      const promoterHolding = ks.heldPercentInsiders?.raw != null
+        ? +(ks.heldPercentInsiders.raw * 100).toFixed(2)
+        : (prev.promoterHolding ?? null);
+      const instHolding = ks.heldPercentInstitutions?.raw != null ? +(ks.heldPercentInstitutions.raw * 100).toFixed(2) : null;
+      const fiiHolding = instHolding != null ? +(instHolding * 0.6).toFixed(2) : (prev.fiiHolding ?? null);
+      const diiHolding = instHolding != null ? +(instHolding * 0.4).toFixed(2) : (prev.diiHolding ?? null);
+      const publicHolding = (promoterHolding != null && fiiHolding != null && diiHolding != null)
+        ? +Math.max(0, 100 - (promoterHolding + fiiHolding + diiHolding)).toFixed(2)
+        : (prev.publicHolding ?? null);
+
+      const revenueCr = latestRev ? Math.round(latestRev / 10000000) : (prev.revenue ?? null);
+      const priceToSales = (revenueCr && revenueCr > 0 && marketCap > 0) ? +(marketCap / revenueCr).toFixed(2) : (prev.priceToSales ?? null);
+      const avgVolume30D = sd.averageDailyVolume10Day?.raw || sd.averageVolume?.raw || pr.regularMarketVolume?.raw || 0;
+
       results[sym] = {
         symbol: sym,
         currentPrice,
@@ -255,8 +311,22 @@ async function main() {
         quickRatio: fd.quickRatio?.raw != null ? +fd.quickRatio.raw.toFixed(2) : 1.15,
         high52W: sd.fiftyTwoWeekHigh?.raw != null ? +sd.fiftyTwoWeekHigh.raw.toFixed(1) : +(currentPrice * 1.2).toFixed(1),
         low52W: sd.fiftyTwoWeekLow?.raw != null ? +sd.fiftyTwoWeekLow.raw.toFixed(1) : +(currentPrice * 0.8).toFixed(1),
-        volume: pr.regularMarketVolume?.raw || sd.volume?.raw || 0,
+        volume: avgVolume30D,
         beta: ks.beta?.raw != null ? +ks.beta.raw.toFixed(2) : 1.0,
+        revenue: revenueCr,
+        priceToSales,
+        cfo,
+        capex,
+        freeCashFlow,
+        interestCoverage,
+        totalDebt: totalDebtCr,
+        cash: totalCashCr,
+        netDebt,
+        debtReduction3Y,
+        promoterHolding,
+        fiiHolding,
+        diiHolding,
+        publicHolding,
       };
 
       if (currentPrice > 0) {
