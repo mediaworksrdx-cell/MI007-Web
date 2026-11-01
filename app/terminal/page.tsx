@@ -1343,8 +1343,8 @@ export default function TerminalPage() {
       <Navbar market={market} onMarketChange={setMarket} />
 
       <main className="min-h-screen pt-[86px] sm:pt-[92px] relative z-20 bg-transparent pb-10">
-        {/* ── Master Dashboard Layer (Fluid responsive margin across 7" tab to 32" monitor) ── */}
-        <div className="w-full px-2 xs:px-3 sm:px-5 lg:px-7 xl:px-9 py-2.5 sm:py-4 relative z-20 isolate">
+        {/* ── Master Dashboard Layer (Standard 1600px container matching Navbar & Screener) ── */}
+        <div className="mx-auto max-w-[1600px] w-full px-2.5 xs:px-4 sm:px-6 lg:px-8 py-2.5 sm:py-4 relative z-20 isolate">
           <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-2.5 xs:p-3.5 sm:p-5 lg:p-6 overflow-hidden">
             {/* Top Outer Hairline Accent */}
             <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 pointer-events-none" />
@@ -1647,7 +1647,17 @@ export default function TerminalPage() {
                     No indices in this section. Use the search bar above or click Reset Defaults.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6 gap-3 sm:gap-3.5 mb-6">
+                  <div
+                    className={`grid gap-3.5 mb-6 ${
+                      indices.length <= 3
+                        ? 'grid-cols-1 sm:grid-cols-3'
+                        : indices.length === 4
+                        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                        : indices.length === 5
+                        ? 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'
+                        : 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6'
+                    }`}
+                  >
                     {indices.map(idx => (
                       <IndexTile
                         key={idx.symbol}
