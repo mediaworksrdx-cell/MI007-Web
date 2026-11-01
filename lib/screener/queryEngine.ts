@@ -72,18 +72,24 @@ export function tokenize(queryText: string): { tokens: Token[]; error?: string; 
     }
 
     // Numbers (positive or negative, integers or floating point)
-    // Note: check if it's a number token (digits, decimal, or leading minus followed immediately by digit)
+    // Note: Do not treat leading digits as a number if the upcoming phrase matches a registered metric (e.g. "200 SMA %", "3Y ROCE")
+    const toComparator = text.slice(i).split(/([><=!]|(?:\s+BETWEEN\s+))/i)[0].trim();
+    const isUpcomingMetric = Boolean(toComparator && resolveMetricKey(toComparator));
+
     const numMatch = text.slice(i).match(/^-?\d+(\.\d+)?/);
-    if (numMatch && (i === 0 || /[\s(>=<!=]/.test(text[i - 1]))) {
+    if (!isUpcomingMetric && numMatch && (i === 0 || /[\s(>=<!=]/.test(text[i - 1]))) {
       const numStr = numMatch[0];
-      tokens.push({
-        type: 'NUMBER',
-        value: numStr,
-        start: i,
-        end: i + numStr.length,
-      });
-      i += numStr.length;
-      continue;
+      const charAfter = text[i + numStr.length];
+      if (!charAfter || !/[a-zA-Z_]/.test(charAfter)) {
+        tokens.push({
+          type: 'NUMBER',
+          value: numStr,
+          start: i,
+          end: i + numStr.length,
+        });
+        i += numStr.length;
+        continue;
+      }
     }
 
     // Words / Identifiers (Can be metric names, AND, OR, NOT, BETWEEN)
