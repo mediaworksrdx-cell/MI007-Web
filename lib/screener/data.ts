@@ -10,6 +10,7 @@ import {
   getZerodhaCatalog,
   INDIA_FUNDAMENTALS_MAP,
   VERIFIED_PRICES_MAP,
+  isFinancialEntity,
 } from './zerodhaStocks';
 
 export const US_INDEX_UNIVERSE: CompanyFundamental[] = usFundamentalsCache as unknown as CompanyFundamental[];
@@ -3728,6 +3729,25 @@ function enrichCuratedIndianCompany(comp: CompanyFundamental): CompanyFundamenta
     if (v !== null && v !== undefined) {
       merged[k] = v;
     }
+  }
+
+  // Under Ind AS 109 and Screener.in standard, Banks & NBFCs do not report manufacturing ratios
+  const isFinancial = isFinancialEntity(comp.symbol, comp.name, comp.sector);
+  if (isFinancial) {
+    merged.priceToSales = null;
+    merged.evToEbitda = null;
+    merged.evToEbit = null;
+    merged.opm = null;
+    merged.grossMargin = null;
+    merged.ebitdaMargin = null;
+    merged.currentRatio = null;
+    merged.quickRatio = null;
+    merged.cashConversionCycle = null;
+    merged.workingCapitalDays = null;
+    merged.interestCoverage = null;
+    merged.debtToEquity = null;
+    merged.totalDebt = null;
+    merged.netDebt = null;
   }
 
   return {

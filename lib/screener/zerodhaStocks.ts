@@ -409,11 +409,19 @@ export function searchZerodhaStocks(query: string, limit: number = 50): ZerodhaS
 /** Check if entity is a Bank, NBFC, or Investment Holding entity */
 export function isFinancialEntity(symbol: string, name: string, sector?: string): boolean {
   const s = symbol.toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
-  if (['JIOFIN', 'MAHSCOOTER', 'JSWHL', 'MASKINVEST', 'BAJFINANCE', 'BAJAJFINSV', 'HDFCBANK', 'ICICIBANK', 'SBIN', 'KOTAKBANK', 'AXISBANK', 'BANDHANBNK', 'FEDERALBNK', 'IDFCFIRSTB', 'PNB', 'CANBK', 'BANKBARODA', 'PFC', 'RECLTD', 'IRFC', 'CHOLAFIN', 'SHRIRAMFIN', 'MUTHOOTFIN'].includes(s)) {
+  if (['JIOFIN', 'MAHSCOOTER', 'JSWHL', 'MASKINVEST', 'BAJFINANCE', 'BAJAJFINSV', 'HDFCBANK', 'ICICIBANK', 'SBIN', 'KOTAKBANK', 'AXISBANK', 'BANDHANBNK', 'FEDERALBNK', 'IDFCFIRSTB', 'PNB', 'CANBK', 'BANKBARODA', 'PFC', 'RECLTD', 'IRFC', 'CHOLAFIN', 'SHRIRAMFIN', 'MUTHOOTFIN', 'MANAPPURAM', 'AUBANK', 'INDUSINDBK', 'YESBANK', 'LICHSGFIN'].includes(s)) {
     return true;
   }
-  const n = `${name} ${s} ${sector || ''}`.toUpperCase();
-  return /BANK|FINANC|FIN\b|FINANCIAL|CAPITAL|HOLDING|INVEST|INSUR|SECURIT|HOUSING|LEASING|CREDIT/.test(n);
+  const cleanSector = (sector || '').toUpperCase();
+  if (cleanSector.includes('CAPITAL GOODS') || cleanSector.includes('INFRASTRUCTURE') || cleanSector.includes('METALS') || cleanSector.includes('MATERIALS')) {
+    return false;
+  }
+  if (cleanSector === 'FINANCIAL SERVICES' || cleanSector === 'FINANCE') {
+    return true;
+  }
+  const n = `${name} ${s}`.toUpperCase();
+  if (/CAPITAL GOODS/.test(n)) return false;
+  return /\b(BANK|FINANCE|FINANCIAL|INSURANCE|SECURITIES|LEASING|INVESTMENT)\b|HOLDING\s*CO|\bNBFC\b/.test(n) || /BANK|FINANC/.test(s);
 }
 
 /** Heuristic sector assignment from company name */
@@ -689,9 +697,9 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
   const pb = cachedFund?.pb != null ? cachedFund.pb : null;
   const roce = cachedFund?.roce != null ? cachedFund.roce : null;
   const roe = cachedFund?.roe != null ? cachedFund.roe : null;
-  const opm = cachedFund?.opm != null ? cachedFund.opm : null;
+  const opm = isFinancial ? null : (cachedFund?.opm != null ? cachedFund.opm : null);
   const npm = cachedFund?.npm != null ? cachedFund.npm : null;
-  const debtToEquity = cachedFund?.debtToEquity != null ? cachedFund.debtToEquity : null;
+  const debtToEquity = isFinancial ? null : (cachedFund?.debtToEquity != null ? cachedFund.debtToEquity : null);
   const dividendYield = cachedFund?.dividendYield != null ? cachedFund.dividendYield : null;
   const salesGrowth1Y = cachedFund?.salesGrowth1Y != null ? cachedFund.salesGrowth1Y : null;
   const salesGrowth3Y = cachedFund?.salesGrowth3Y != null ? cachedFund.salesGrowth3Y : null;
