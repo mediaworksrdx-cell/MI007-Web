@@ -3722,9 +3722,16 @@ function enrichCuratedIndianCompany(comp: CompanyFundamental): CompanyFundamenta
     };
   }
 
+  // Merge cached real fundamentals, overriding with f's non-null values
+  const merged: any = { ...comp };
+  for (const [k, v] of Object.entries(f)) {
+    if (v !== null && v !== undefined) {
+      merged[k] = v;
+    }
+  }
+
   return {
-    ...comp,
-    ...f,
+    ...merged,
     id: comp.id,
     symbol: comp.symbol,
     name: comp.name || f.name,
@@ -3816,35 +3823,51 @@ export function getAllCompanies(): CompanyFundamental[] {
 }
 
 /** Find company by symbol */
-export function getCompanyBySymbol(symbol: string): CompanyFundamental | undefined {
+export function getCompanyBySymbol(symbol: string, marketPreference?: 'INDIA' | 'USA' | 'UAE'): CompanyFundamental | undefined {
   if (!symbol) return undefined;
+  const isExplicitIndian = symbol.toUpperCase().endsWith('.NS') || symbol.toUpperCase().endsWith('.BO');
   const clean = symbol.trim().toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
 
   // 1. Check curated master companies (Reliance, TCS, HDFC, Infosys, Apple, Microsoft, etc.)
   const existing = MASTER_COMPANIES.find(
     (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
   );
-  if (existing) return enrichCuratedIndianCompany(existing);
+  if (existing) {
+    if (!marketPreference || existing.market === marketPreference) {
+      return enrichCuratedIndianCompany(existing);
+    }
+  }
 
-  // 2. Check US 3-index universe if symbol matches
-  const fromUs = US_INDEX_UNIVERSE.find(
-    (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
-  );
-  if (fromUs) return fromUs;
+  // 2. If US market is explicitly preferred, check US index universe first
+  if (marketPreference === 'USA' && !isExplicitIndian) {
+    const fromUs = US_INDEX_UNIVERSE.find(
+      (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
+    );
+    if (fromUs) return fromUs;
+  }
 
-  // 3. Check cached India universe if initialized
-  if (cachedIndiaUniverse) {
+  // 3. Check full Zerodha Kite NSE catalog (Hindustan Aeronautics, Tata Power, Suzlon, etc.)
+  const zerodhaStock = findZerodhaStockBySymbol(clean);
+  if (zerodhaStock && marketPreference !== 'USA') {
+    return generateFundamentalFromZerodha(zerodhaStock);
+  }
+
+  // 4. Check cached India universe if initialized
+  if (cachedIndiaUniverse && marketPreference !== 'USA') {
     const fromUniv = cachedIndiaUniverse.find(
       (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
     );
     if (fromUniv) return fromUniv;
   }
 
-  // 4. Resolve dynamically from full Zerodha Kite catalog (3,800+ stocks)
-  const zerodhaStock = findZerodhaStockBySymbol(clean);
-  if (zerodhaStock) {
-    return generateFundamentalFromZerodha(zerodhaStock);
-  }
+  // 5. Fallback check US 3-index universe
+  const fromUsFallback = US_INDEX_UNIVERSE.find(
+    (c) => c.symbol.toUpperCase() === clean || c.id.toUpperCase() === clean
+  );
+  if (fromUsFallback) return fromUsFallback;
+
+  if (existing) return enrichCuratedIndianCompany(existing);
+  if (zerodhaStock) return generateFundamentalFromZerodha(zerodhaStock);
 
   return undefined;
 }

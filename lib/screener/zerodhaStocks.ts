@@ -677,12 +677,12 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
       ? cachedFund.currentPrice
       : (item.lastPrice && item.lastPrice > 0 ? item.lastPrice : (basePrice || getZerodhaStockPrice(item))));
 
-  const knownMcap = (cachedFund?.marketCap && cachedFund.marketCap > 0)
-    ? cachedFund.marketCap
-    : (KNOWN_ZERODHA_MCAP[symClean] || KNOWN_ZERODHA_MCAP[item.symbol] || estimateUnknownCatalogMarketCap(price));
-
   const isFinancial = isFinancialEntity(item.symbol, item.name, item.sector);
   const sector = isFinancial ? 'Financial Services' : (item.sector || guessSectorFromName(item.name, item.symbol));
+
+  const knownMcap = (cachedFund?.marketCap && cachedFund.marketCap > 0)
+    ? cachedFund.marketCap
+    : (KNOWN_ZERODHA_MCAP[symClean] || KNOWN_ZERODHA_MCAP[item.symbol] || 0);
 
   // Priority 1: Audited Real Fundamentals from Cache; Priority 2: null (clean em-dash, NO dummy identical hardcoded numbers)
   const pe = cachedFund?.pe != null ? cachedFund.pe : null;
@@ -710,21 +710,27 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
   const annualSales = cachedFund?.revenue != null && cachedFund.revenue > 0
     ? cachedFund.revenue
     : (cachedFund?.annualProfitLoss?.[0]?.sales || null);
-  const totalDebt = cachedFund?.totalDebt != null
-    ? cachedFund.totalDebt
-    : (debtToEquity != null && cachedFund?.bookValue ? Math.round(debtToEquity * cachedFund.bookValue) : null);
+  const totalDebt = isFinancial
+    ? null
+    : (cachedFund?.totalDebt != null
+        ? cachedFund.totalDebt
+        : (debtToEquity != null && cachedFund?.bookValue ? Math.round(debtToEquity * cachedFund.bookValue) : null));
   const cashAndEquivalents = cachedFund?.cash != null ? cachedFund.cash : null;
   const freeCashFlow = cachedFund?.freeCashFlow != null ? cachedFund.freeCashFlow : null;
   const cfo = cachedFund?.cfo != null ? cachedFund.cfo : null;
 
   // Authentic Net Debt: Total Borrowings - Cash & Liquid Investments
-  const netDebt = cachedFund?.netDebt != null
-    ? cachedFund.netDebt
-    : (totalDebt != null && cashAndEquivalents != null ? totalDebt - cashAndEquivalents : (totalDebt != null ? totalDebt : null));
+  const netDebt = isFinancial
+    ? null
+    : (cachedFund?.netDebt != null
+        ? cachedFund.netDebt
+        : (totalDebt != null && cashAndEquivalents != null ? totalDebt - cashAndEquivalents : (totalDebt != null ? totalDebt : null)));
 
-  const enterpriseValue = cachedFund?.enterpriseValue != null
-    ? cachedFund.enterpriseValue
-    : (knownMcap + (netDebt != null ? netDebt : 0));
+  const enterpriseValue = isFinancial
+    ? null
+    : (cachedFund?.enterpriseValue != null
+        ? cachedFund.enterpriseValue
+        : (knownMcap > 0 ? (knownMcap + (netDebt != null ? netDebt : 0)) : null));
 
   return {
     id: item.symbol,
@@ -754,11 +760,15 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     pe,
     forwardPe: cachedFund?.forwardPe != null ? cachedFund.forwardPe : null,
     pb,
-    priceToSales: cachedFund?.priceToSales != null
-      ? cachedFund.priceToSales
-      : (annualSales && annualSales > 0 ? +(knownMcap / annualSales).toFixed(2) : null),
-    evToEbitda: cachedFund?.evToEbitda != null ? cachedFund.evToEbitda : null,
-    evToEbit: cachedFund?.evToEbit != null ? cachedFund.evToEbit : null,
+    priceToSales: isFinancial
+      ? null
+      : (cachedFund?.priceToSales != null && cachedFund.priceToSales < 50
+          ? cachedFund.priceToSales
+          : (pe && npm && npm > 0 && npm <= 100
+              ? +(pe * (npm / 100)).toFixed(2)
+              : (annualSales && annualSales > 0 && knownMcap > 0 ? +(knownMcap / annualSales).toFixed(2) : null))),
+    evToEbitda: isFinancial ? null : (cachedFund?.evToEbitda != null && cachedFund.evToEbitda > 0 && cachedFund.evToEbitda < 120 ? cachedFund.evToEbitda : null),
+    evToEbit: isFinancial ? null : (cachedFund?.evToEbit != null && cachedFund.evToEbit > 0 && cachedFund.evToEbit < 120 ? cachedFund.evToEbit : null),
     earningsYield: cachedFund?.earningsYield != null
       ? cachedFund.earningsYield
       : (pe != null && pe > 0 ? +(100 / pe).toFixed(2) : null),

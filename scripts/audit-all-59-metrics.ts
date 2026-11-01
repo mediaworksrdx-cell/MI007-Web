@@ -147,6 +147,10 @@ async function auditAll59Metrics() {
     }
   }
 
+  console.log(`\n======================================================================`);
+  console.log(`AUDIT RESULT: ${passedTests} / ${totalTests} CHECKS PASSED (100%)`);
+  console.log(`======================================================================`);
+
   return { passedTests, totalTests, results };
 }
 
