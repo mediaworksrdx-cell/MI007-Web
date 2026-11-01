@@ -5,7 +5,7 @@
 import { Candle } from '../types';
 import { StrategyId, generateCandlesForSymbol } from './technicalStrategies';
 import { calculateSMA, calculateEMA, calculateRSI, calculateMACD, calculateBollinger } from '../indicators';
-import { MASTER_COMPANIES } from './data';
+import { MASTER_COMPANIES, getCompanyBySymbol } from './data';
 
 export interface BacktestConfig {
   symbol: string;
@@ -71,7 +71,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     positionSizePct = 100,
   } = config;
 
-  const matchedCompany = MASTER_COMPANIES.find(
+  const matchedCompany = getCompanyBySymbol(symbol) || MASTER_COMPANIES.find(
     (c) => c.symbol.toUpperCase() === symbol.trim().toUpperCase()
   );
   const fallbackBasePrice = matchedCompany?.currentPrice || 2500;

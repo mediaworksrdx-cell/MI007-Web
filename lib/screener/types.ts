@@ -133,7 +133,11 @@ export interface CompanyFundamental {
   currentPrice: number;
   priceChangePct: number;
   marketCap: number; // In Crores for INDIA, Billions for USA/UAE
-  enterpriseValue: number;
+  enterpriseValue: number | null;
+  totalDebt?: number | null;
+  revenue?: number | null;
+  bookValue?: number | null;
+  cash?: number | null;
   pe: number | null;
   forwardPe: number | null;
   pb: number | null;
@@ -199,6 +203,7 @@ export interface CompanyFundamental {
   high52W: number;
   low52W: number;
   priceTo52WHighPct: number | null;
+  distanceSma200Pct?: number | null;
   priceReturn1M: number | null;
   priceReturn1Y: number | null;
   volume: number;

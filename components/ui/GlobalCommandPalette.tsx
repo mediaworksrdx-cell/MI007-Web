@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useMarket } from '@/lib/marketContext';
 import { useAppTheme, THEMES, AppTheme } from '@/lib/themeContext';
 import { MASTER_COMPANIES } from '@/lib/screener/data';
+import { searchZerodhaStocks } from '@/lib/screener/zerodhaStocks';
 import { PREDEFINED_SCREENS } from '@/lib/screener/templates';
 import { STRATEGY_DEFINITIONS } from '@/lib/screener/technicalStrategies';
 import { MarketType } from '@/lib/types';
@@ -260,16 +261,45 @@ export function GlobalCommandPalette({
       // Default curated view when query is empty
       return commands.slice(0, 22);
     }
-    return commands
-      .filter(
-        (item) =>
-          item.title.toLowerCase().includes(q) ||
-          item.subtitle.toLowerCase().includes(q) ||
-          item.keywords.includes(q) ||
-          (item.badge && item.badge.toLowerCase().includes(q))
-      )
-      .slice(0, 35);
-  }, [commands, query]);
+    const baseMatches = commands.filter(
+      (item) =>
+        item.title.toLowerCase().includes(q) ||
+        item.subtitle.toLowerCase().includes(q) ||
+        item.keywords.includes(q) ||
+        (item.badge && item.badge.toLowerCase().includes(q))
+    );
+
+    // Expand search across entire 3,800+ Zerodha catalog for any Indian equity
+    const existingSyms = new Set(baseMatches.map((m) => m.id.replace(/^(chart-|analysis-)/, '').toUpperCase()));
+    const dynamicZerodha = searchZerodhaStocks(q, 8);
+    const dynamicItems: CommandItem[] = [];
+
+    for (const z of dynamicZerodha) {
+      if (existingSyms.has(z.symbol.toUpperCase())) continue;
+      dynamicItems.push({
+        id: `chart-${z.symbol}`,
+        category: 'Equities & Charts',
+        title: `${z.symbol} — ${z.name}`,
+        subtitle: `Open Live Interactive Chart · ${z.sector} (${z.exchange})`,
+        badge: `NSE: ${z.symbol}`,
+        icon: '📈',
+        keywords: `${z.symbol.toLowerCase()} ${z.name.toLowerCase()} ${z.sector.toLowerCase()} chart stock`,
+        onSelect: () => router.push(`/chart/${z.symbol}?market=INDIA`),
+      });
+      dynamicItems.push({
+        id: `analysis-${z.symbol}`,
+        category: 'Equities & Charts',
+        title: `${z.symbol} — Fundamental Teardown & Scorecards`,
+        subtitle: `Piotroski F-Score, Altman Z-Score, SWOT & Financials for ${z.name}`,
+        badge: `Analysis · INDIA`,
+        icon: '🏛️',
+        keywords: `${z.symbol.toLowerCase()} ${z.name.toLowerCase()} fundamental analysis piotroski altman swot`,
+        onSelect: () => router.push(`/terminal/screener?tab=analysis&symbol=${z.symbol}`),
+      });
+    }
+
+    return [...baseMatches, ...dynamicItems].slice(0, 35);
+  }, [commands, query, router]);
 
   useEffect(() => {
     setSelectedIndex(0);

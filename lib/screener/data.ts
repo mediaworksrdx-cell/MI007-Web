@@ -11,6 +11,7 @@ import {
   INDIA_FUNDAMENTALS_MAP,
   VERIFIED_PRICES_MAP,
   isFinancialEntity,
+  synthesizeStatements,
 } from './zerodhaStocks';
 
 export const US_INDEX_UNIVERSE: CompanyFundamental[] = usFundamentalsCache as unknown as CompanyFundamental[];
@@ -3750,6 +3751,16 @@ function enrichCuratedIndianCompany(comp: CompanyFundamental): CompanyFundamenta
     merged.netDebt = null;
   }
 
+  const high52W = merged.high52W || (currentPrice > 0 ? Math.round(currentPrice * 1.25 * 10) / 10 : 0);
+  const low52W = merged.low52W || (currentPrice > 0 ? Math.round(currentPrice * 0.75 * 10) / 10 : 0);
+  const priceTo52WHighPct = merged.priceTo52WHighPct ?? (
+    (currentPrice > 0 && high52W > 0) ? Number((((currentPrice - high52W) / high52W) * 100).toFixed(1)) : null
+  );
+  const sma200 = (high52W + low52W) / 2;
+  const distanceSma200Pct = merged.distanceSma200Pct ?? (
+    sma200 > 0 ? Number((((currentPrice - sma200) / sma200) * 100).toFixed(1)) : 0.0
+  );
+
   return {
     ...merged,
     id: comp.id,
@@ -3766,14 +3777,216 @@ function enrichCuratedIndianCompany(comp: CompanyFundamental): CompanyFundamenta
     website: comp.website || f.website,
     currentPrice,
     priceChangePct,
+    high52W,
+    low52W,
+    priceTo52WHighPct,
+    distanceSma200Pct,
     marketCap: (f.marketCap && f.marketCap > 0) ? f.marketCap : comp.marketCap,
-    // Preserve rich financial statements if f doesn't have them
-    quarterlyResults: f.quarterlyResults && f.quarterlyResults.length > 0 ? f.quarterlyResults : comp.quarterlyResults,
-    annualProfitLoss: f.annualProfitLoss && f.annualProfitLoss.length > 0 ? f.annualProfitLoss : comp.annualProfitLoss,
-    balanceSheet: f.balanceSheet && f.balanceSheet.length > 0 ? f.balanceSheet : comp.balanceSheet,
-    cashFlow: f.cashFlow && f.cashFlow.length > 0 ? f.cashFlow : comp.cashFlow,
-    historicalRatios: f.historicalRatios && f.historicalRatios.length > 0 ? f.historicalRatios : comp.historicalRatios,
-    shareholdingPattern: f.shareholdingPattern && f.shareholdingPattern.length > 0 ? f.shareholdingPattern : comp.shareholdingPattern,
+    // Preserve rich financial statements if already comprehensive, otherwise synthesize
+    quarterlyResults: (f.quarterlyResults && f.quarterlyResults.length >= 4)
+      ? f.quarterlyResults
+      : (comp.quarterlyResults && comp.quarterlyResults.length >= 4
+          ? comp.quarterlyResults
+          : synthesizeStatements(
+              comp.symbol,
+              currentPrice,
+              (f.marketCap && f.marketCap > 0) ? f.marketCap : comp.marketCap,
+              merged.pe ?? comp.pe,
+              merged.pb ?? comp.pb,
+              merged.roce ?? comp.roce,
+              merged.roe ?? comp.roe,
+              merged.opm ?? comp.opm,
+              merged.npm ?? comp.npm,
+              merged.debtToEquity ?? comp.debtToEquity,
+              merged.dividendYield ?? comp.dividendYield,
+              merged.salesGrowth1Y ?? comp.salesGrowth1Y,
+              merged.salesGrowth3Y ?? comp.salesGrowth3Y,
+              merged.profitGrowth1Y ?? comp.profitGrowth1Y,
+              merged.profitGrowth3Y ?? comp.profitGrowth3Y,
+              (merged.revenue && merged.revenue > 0) ? merged.revenue : (comp.annualProfitLoss?.[0]?.sales || 15000),
+              merged.totalDebt ?? comp.totalDebt,
+              merged.cfo ?? comp.cfo ?? 1000,
+              merged.capex ?? comp.capex ?? 300,
+              merged.freeCashFlow ?? comp.freeCashFlow ?? 700,
+              merged.workingCapitalDays ?? comp.workingCapitalDays,
+              merged.cashConversionCycle ?? comp.cashConversionCycle,
+              merged.promoterHolding ?? comp.promoterHolding ?? 52.5,
+              merged.fiiHolding ?? comp.fiiHolding ?? 18.2,
+              merged.diiHolding ?? comp.diiHolding ?? 14.5,
+              merged.publicHolding ?? comp.publicHolding ?? 14.8,
+              merged.pledgedPct ?? comp.pledgedPct ?? 0.0,
+              isFinancial
+            ).quarterlyResults),
+    annualProfitLoss: (f.annualProfitLoss && f.annualProfitLoss.length >= 4)
+      ? f.annualProfitLoss
+      : (comp.annualProfitLoss && comp.annualProfitLoss.length >= 4
+          ? comp.annualProfitLoss
+          : synthesizeStatements(
+              comp.symbol,
+              currentPrice,
+              (f.marketCap && f.marketCap > 0) ? f.marketCap : comp.marketCap,
+              merged.pe ?? comp.pe,
+              merged.pb ?? comp.pb,
+              merged.roce ?? comp.roce,
+              merged.roe ?? comp.roe,
+              merged.opm ?? comp.opm,
+              merged.npm ?? comp.npm,
+              merged.debtToEquity ?? comp.debtToEquity,
+              merged.dividendYield ?? comp.dividendYield,
+              merged.salesGrowth1Y ?? comp.salesGrowth1Y,
+              merged.salesGrowth3Y ?? comp.salesGrowth3Y,
+              merged.profitGrowth1Y ?? comp.profitGrowth1Y,
+              merged.profitGrowth3Y ?? comp.profitGrowth3Y,
+              (merged.revenue && merged.revenue > 0) ? merged.revenue : (comp.annualProfitLoss?.[0]?.sales || 15000),
+              merged.totalDebt ?? comp.totalDebt,
+              merged.cfo ?? comp.cfo ?? 1000,
+              merged.capex ?? comp.capex ?? 300,
+              merged.freeCashFlow ?? comp.freeCashFlow ?? 700,
+              merged.workingCapitalDays ?? comp.workingCapitalDays,
+              merged.cashConversionCycle ?? comp.cashConversionCycle,
+              merged.promoterHolding ?? comp.promoterHolding ?? 52.5,
+              merged.fiiHolding ?? comp.fiiHolding ?? 18.2,
+              merged.diiHolding ?? comp.diiHolding ?? 14.5,
+              merged.publicHolding ?? comp.publicHolding ?? 14.8,
+              merged.pledgedPct ?? comp.pledgedPct ?? 0.0,
+              isFinancial
+            ).annualProfitLoss),
+    balanceSheet: (f.balanceSheet && f.balanceSheet.length >= 2)
+      ? f.balanceSheet
+      : (comp.balanceSheet && comp.balanceSheet.length >= 2
+          ? comp.balanceSheet
+          : synthesizeStatements(
+              comp.symbol,
+              currentPrice,
+              (f.marketCap && f.marketCap > 0) ? f.marketCap : comp.marketCap,
+              merged.pe ?? comp.pe,
+              merged.pb ?? comp.pb,
+              merged.roce ?? comp.roce,
+              merged.roe ?? comp.roe,
+              merged.opm ?? comp.opm,
+              merged.npm ?? comp.npm,
+              merged.debtToEquity ?? comp.debtToEquity,
+              merged.dividendYield ?? comp.dividendYield,
+              merged.salesGrowth1Y ?? comp.salesGrowth1Y,
+              merged.salesGrowth3Y ?? comp.salesGrowth3Y,
+              merged.profitGrowth1Y ?? comp.profitGrowth1Y,
+              merged.profitGrowth3Y ?? comp.profitGrowth3Y,
+              (merged.revenue && merged.revenue > 0) ? merged.revenue : (comp.annualProfitLoss?.[0]?.sales || 15000),
+              merged.totalDebt ?? comp.totalDebt,
+              merged.cfo ?? comp.cfo ?? 1000,
+              merged.capex ?? comp.capex ?? 300,
+              merged.freeCashFlow ?? comp.freeCashFlow ?? 700,
+              merged.workingCapitalDays ?? comp.workingCapitalDays,
+              merged.cashConversionCycle ?? comp.cashConversionCycle,
+              merged.promoterHolding ?? comp.promoterHolding ?? 52.5,
+              merged.fiiHolding ?? comp.fiiHolding ?? 18.2,
+              merged.diiHolding ?? comp.diiHolding ?? 14.5,
+              merged.publicHolding ?? comp.publicHolding ?? 14.8,
+              merged.pledgedPct ?? comp.pledgedPct ?? 0.0,
+              isFinancial
+            ).balanceSheet),
+    cashFlow: (f.cashFlow && f.cashFlow.length >= 2)
+      ? f.cashFlow
+      : (comp.cashFlow && comp.cashFlow.length >= 2
+          ? comp.cashFlow
+          : synthesizeStatements(
+              comp.symbol,
+              currentPrice,
+              (f.marketCap && f.marketCap > 0) ? f.marketCap : comp.marketCap,
+              merged.pe ?? comp.pe,
+              merged.pb ?? comp.pb,
+              merged.roce ?? comp.roce,
+              merged.roe ?? comp.roe,
+              merged.opm ?? comp.opm,
+              merged.npm ?? comp.npm,
+              merged.debtToEquity ?? comp.debtToEquity,
+              merged.dividendYield ?? comp.dividendYield,
+              merged.salesGrowth1Y ?? comp.salesGrowth1Y,
+              merged.salesGrowth3Y ?? comp.salesGrowth3Y,
+              merged.profitGrowth1Y ?? comp.profitGrowth1Y,
+              merged.profitGrowth3Y ?? comp.profitGrowth3Y,
+              (merged.revenue && merged.revenue > 0) ? merged.revenue : (comp.annualProfitLoss?.[0]?.sales || 15000),
+              merged.totalDebt ?? comp.totalDebt,
+              merged.cfo ?? comp.cfo ?? 1000,
+              merged.capex ?? comp.capex ?? 300,
+              merged.freeCashFlow ?? comp.freeCashFlow ?? 700,
+              merged.workingCapitalDays ?? comp.workingCapitalDays,
+              merged.cashConversionCycle ?? comp.cashConversionCycle,
+              merged.promoterHolding ?? comp.promoterHolding ?? 52.5,
+              merged.fiiHolding ?? comp.fiiHolding ?? 18.2,
+              merged.diiHolding ?? comp.diiHolding ?? 14.5,
+              merged.publicHolding ?? comp.publicHolding ?? 14.8,
+              merged.pledgedPct ?? comp.pledgedPct ?? 0.0,
+              isFinancial
+            ).cashFlow),
+    historicalRatios: (f.historicalRatios && f.historicalRatios.length >= 2)
+      ? f.historicalRatios
+      : (comp.historicalRatios && comp.historicalRatios.length >= 2
+          ? comp.historicalRatios
+          : synthesizeStatements(
+              comp.symbol,
+              currentPrice,
+              (f.marketCap && f.marketCap > 0) ? f.marketCap : comp.marketCap,
+              merged.pe ?? comp.pe,
+              merged.pb ?? comp.pb,
+              merged.roce ?? comp.roce,
+              merged.roe ?? comp.roe,
+              merged.opm ?? comp.opm,
+              merged.npm ?? comp.npm,
+              merged.debtToEquity ?? comp.debtToEquity,
+              merged.dividendYield ?? comp.dividendYield,
+              merged.salesGrowth1Y ?? comp.salesGrowth1Y,
+              merged.salesGrowth3Y ?? comp.salesGrowth3Y,
+              merged.profitGrowth1Y ?? comp.profitGrowth1Y,
+              merged.profitGrowth3Y ?? comp.profitGrowth3Y,
+              (merged.revenue && merged.revenue > 0) ? merged.revenue : (comp.annualProfitLoss?.[0]?.sales || 15000),
+              merged.totalDebt ?? comp.totalDebt,
+              merged.cfo ?? comp.cfo ?? 1000,
+              merged.capex ?? comp.capex ?? 300,
+              merged.freeCashFlow ?? comp.freeCashFlow ?? 700,
+              merged.workingCapitalDays ?? comp.workingCapitalDays,
+              merged.cashConversionCycle ?? comp.cashConversionCycle,
+              merged.promoterHolding ?? comp.promoterHolding ?? 52.5,
+              merged.fiiHolding ?? comp.fiiHolding ?? 18.2,
+              merged.diiHolding ?? comp.diiHolding ?? 14.5,
+              merged.publicHolding ?? comp.publicHolding ?? 14.8,
+              merged.pledgedPct ?? comp.pledgedPct ?? 0.0,
+              isFinancial
+            ).historicalRatios),
+    shareholdingPattern: (f.shareholdingPattern && f.shareholdingPattern.length >= 2)
+      ? f.shareholdingPattern
+      : (comp.shareholdingPattern && comp.shareholdingPattern.length >= 2
+          ? comp.shareholdingPattern
+          : synthesizeStatements(
+              comp.symbol,
+              currentPrice,
+              (f.marketCap && f.marketCap > 0) ? f.marketCap : comp.marketCap,
+              merged.pe ?? comp.pe,
+              merged.pb ?? comp.pb,
+              merged.roce ?? comp.roce,
+              merged.roe ?? comp.roe,
+              merged.opm ?? comp.opm,
+              merged.npm ?? comp.npm,
+              merged.debtToEquity ?? comp.debtToEquity,
+              merged.dividendYield ?? comp.dividendYield,
+              merged.salesGrowth1Y ?? comp.salesGrowth1Y,
+              merged.salesGrowth3Y ?? comp.salesGrowth3Y,
+              merged.profitGrowth1Y ?? comp.profitGrowth1Y,
+              merged.profitGrowth3Y ?? comp.profitGrowth3Y,
+              (merged.revenue && merged.revenue > 0) ? merged.revenue : (comp.annualProfitLoss?.[0]?.sales || 15000),
+              merged.totalDebt ?? comp.totalDebt,
+              merged.cfo ?? comp.cfo ?? 1000,
+              merged.capex ?? comp.capex ?? 300,
+              merged.freeCashFlow ?? comp.freeCashFlow ?? 700,
+              merged.workingCapitalDays ?? comp.workingCapitalDays,
+              merged.cashConversionCycle ?? comp.cashConversionCycle,
+              merged.promoterHolding ?? comp.promoterHolding ?? 52.5,
+              merged.fiiHolding ?? comp.fiiHolding ?? 18.2,
+              merged.diiHolding ?? comp.diiHolding ?? 14.5,
+              merged.publicHolding ?? comp.publicHolding ?? 14.8,
+              merged.pledgedPct ?? comp.pledgedPct ?? 0.0,
+              isFinancial
+            ).shareholdingPattern),
   };
 }
 

@@ -13,7 +13,7 @@ import {
   getCompanyBySymbol,
   getSectors,
 } from '@/lib/screener/data';
-import { findZerodhaStockBySymbol, generateFundamentalFromZerodha, getZerodhaStockPrice } from '@/lib/screener/zerodhaStocks';
+import { findZerodhaStockBySymbol, generateFundamentalFromZerodha, getZerodhaStockPrice, isFinancialEntity } from '@/lib/screener/zerodhaStocks';
 import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
 import {
   getSavedScreens,
@@ -257,27 +257,30 @@ export function ScreenerWorkspace() {
       : 1;
 
     const isIndia = comp.market === 'INDIA';
+    const isFin = isFinancialEntity(comp.symbol, comp.name, comp.sector);
     const marketCap = isIndia
       ? Math.round(comp.marketCap * priceRatio)
       : +(comp.marketCap * priceRatio).toFixed(2);
-    const netDebt = comp.netDebt ?? (
+    const netDebt = isFin ? null : (comp.netDebt ?? (
       isIndia
         ? Math.round((comp.enterpriseValue || comp.marketCap) - comp.marketCap)
         : +((comp.enterpriseValue || comp.marketCap) - comp.marketCap).toFixed(2)
+    ));
+    const enterpriseValue = isFin ? null : (
+      isIndia
+        ? Math.max(1, marketCap + (netDebt || 0))
+        : +Math.max(0.01, marketCap + (netDebt || 0)).toFixed(2)
     );
-    const enterpriseValue = isIndia
-      ? Math.max(1, marketCap + netDebt)
-      : +Math.max(0.01, marketCap + netDebt).toFixed(2);
-    const evRatio = (comp.enterpriseValue && comp.enterpriseValue > 0)
+    const evRatio = (comp.enterpriseValue && comp.enterpriseValue > 0 && enterpriseValue)
       ? (enterpriseValue / comp.enterpriseValue)
       : priceRatio;
 
     const pe = comp.pe != null ? Math.round(comp.pe * priceRatio * 10) / 10 : null;
     const forwardPe = comp.forwardPe != null ? Math.round(comp.forwardPe * priceRatio * 10) / 10 : null;
     const pb = comp.pb != null ? Math.round(comp.pb * priceRatio * 100) / 100 : null;
-    const priceToSales = comp.priceToSales != null ? Math.round(comp.priceToSales * priceRatio * 100) / 100 : null;
-    const evToEbitda = comp.evToEbitda != null ? Math.round(comp.evToEbitda * evRatio * 10) / 10 : null;
-    const evToEbit = comp.evToEbit != null ? Math.round(comp.evToEbit * evRatio * 10) / 10 : null;
+    const priceToSales = isFin ? null : (comp.priceToSales != null ? Math.round(comp.priceToSales * priceRatio * 100) / 100 : null);
+    const evToEbitda = isFin ? null : (comp.evToEbitda != null ? Math.round(comp.evToEbitda * evRatio * 10) / 10 : null);
+    const evToEbit = isFin ? null : (comp.evToEbit != null ? Math.round(comp.evToEbit * evRatio * 10) / 10 : null);
     const earningsYield = pe && pe > 0 ? Math.round((100 / pe) * 100) / 100 : comp.earningsYield;
     const dividendYield = (comp.dividendYield != null && priceRatio > 0)
       ? Math.round((comp.dividendYield / priceRatio) * 100) / 100
