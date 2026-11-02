@@ -778,7 +778,6 @@ export function getMetricValue(
     return calculatePiotroskiScore(company).score;
   }
   if (canonical === 'altmanZScore') {
-    if (typeof company.altmanZScore === 'number') return company.altmanZScore;
     return calculateAltmanZScore(company).score;
   }
   if (canonical === 'rsi14') {

@@ -425,7 +425,7 @@ export function isFinancialEntity(symbol: string, name: string, sector?: string)
     'UTKARSHBNK', 'ESAFSFB', 'EQUITASBNK', 'UJJIVANSFB', 'SURYODAY',
     'JIOFIN', 'MAHSCOOTER', 'JSWHL', 'MASKINVEST', 'BAJFINANCE', 'BAJAJFINSV',
     'CHOLAFIN', 'SHRIRAMFIN', 'MUTHOOTFIN', 'MANAPPURAM', 'MUTHOOTCAP',
-    'PFC', 'RECLTD', 'IRFC', 'IREDA', 'AUBANK', 'INDUSINDBK', 'YESBANK',
+    'PFC', 'RECLTD', 'REC', 'IRFC', 'IREDA', 'AUBANK', 'INDUSINDBK', 'YESBANK',
     'CORALFINAC', 'NIVABUPA', 'LICHSGFIN', 'HUDCO', 'LICI', 'GICRE', 'NIACL',
     'HDFCLIFE', 'SBILIFE', 'ICICIPRULI', 'ICICIGI', 'STARHEALTH', 'POONAWALLA',
     'SBICARD', 'PIRAMALENT', 'SUNDARMFIN', 'M&MFIN', 'CANFINHOME', 'IBULHSGFIN',
@@ -1114,7 +1114,7 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
       const x3 = ((roce || 14) / 100) * 0.8;
       const x4 = 1 / Math.max(0.1, debtToEquity || 0.3);
       const z = 6.56 * x1 + 3.26 * x2 + 6.72 * x3 + 1.05 * x4;
-      altmanZScore = Math.max(1.2, Math.min(8.5, +z.toFixed(2)));
+      altmanZScore = Math.max(1.2, +z.toFixed(2));
     }
   }
 

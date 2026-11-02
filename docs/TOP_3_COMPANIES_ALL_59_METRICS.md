@@ -35,14 +35,14 @@ flowchart TD
 | **1** | **Market Cap** (`marketCap`) | 1. **RELIANCE** (₹15,76,398 Cr)<br>2. **BHARTIARTL** (₹12,31,324 Cr)<br>3. **HDFCBANK** (₹10,69,149 Cr) | 1. **RELIANCE** (₹15,76,398 Cr)<br>2. **BHARTIARTL** (₹12,31,324 Cr)<br>3. **HDFCBANK** (₹10,69,149 Cr) |
 | **2** | **Price** (`currentPrice`) | 1. **MRF** (₹1,16,775.00)<br>2. **BOSCHLTD** (₹47,200.00)<br>3. **PAGEIND** (₹34,500.00) | 1. **MRF** (₹1,16,775.00)<br>2. **ELCIDIN** (₹99,995.00)<br>3. **BOSCHLTD** (₹47,200.00) |
 | **3** | **P/E** (`pe`) | 1. **NAZARA** (1048.9x)<br>2. **MAXESTATES** (699.9x)<br>3. **ZOMATO** (648.4x) | 1. **LOTUSEYE** (1368.8x)<br>2. **NAZARA** (1048.9x)<br>3. **BOSCH-HCIL** (1034.0x) |
-| **4** | **Fwd P/E** (`forwardPe`) | 1. **CUPID** (292.3x)<br>2. **KIOCL** (267.8x)<br>3. **BHARATCOAL** (228.2x) | 1. **LOTUSEYE** (1368.8x)<br>2. **BOSCH-HCIL** (1034.0x)<br>3. **WIPL** (961.0x) |
+| **4** | **Fwd P/E** (`forwardPe`) | 1. **CUPID** (292.3x)<br>2. **AVANTEL** (166.2x)<br>3. **MEESHO** (165.7x) | 1. **TECHNVISN** (710.2x)<br>2. **INDOKEM** (708.9x)<br>3. **MASKINVEST** (486.0x) |
 | **5** | **P/B** (`pb`) | 1. **CUPID** (96.75x)<br>2. **TIMEX** (80.88x)<br>3. **NYKAA** (69.56x) | 1. **BLAL** (594.01x)<br>2. **TECHNVISN** (158.09x)<br>3. **CUPID** (96.75x) |
 | **6** | **P/S** (`priceToSales`) | 1. **CUPID** (100.04x)<br>2. **PTCIL** (51.79x)<br>3. **KIOCL** (28.93x) | 1. **UEL** (353.50x)<br>2. **PRABHA** (331.93x)<br>3. **CUPID** (100.04x) |
 | **7** | **EV** (`enterpriseValue`) | 1. **RELIANCE** (₹18,37,071 Cr)<br>2. **BHARTIARTL** (₹14,13,014 Cr)<br>3. **TCS** (₹9,10,341 Cr) | 1. **RELIANCE** (₹18,37,071 Cr)<br>2. **BHARTIARTL** (₹14,13,014 Cr)<br>3. **TCS** (₹9,10,341 Cr) |
 | **8** | **EV/EBITDA** (`evToEbitda`) | 1. **PAYTM** (111.5x)<br>2. **MAXESTATES** (91.0x)<br>3. **BDL** (88.3x) | 1. **PAYTM** (111.5x)<br>2. **VIJSOLX** (110.7x)<br>3. **SHBAJRG** (92.8x) |
 | **9** | **EV/EBIT** (`evToEbit`) | 1. **VOGL** (109.2x)<br>2. **NTPCGREEN** (64.4x)<br>3. **TIMEX** (56.7x) | 1. **SAMBANDAM** (118.3x)<br>2. **AVANCE** (109.6x)<br>3. **VOGL** (109.2x) |
 | **10** | **Div Yield** (`dividendYield`) | 1. **COALINDIA** (10.54%)<br>2. **HINDPETRO** (7.12%)<br>3. **BPCL** (7.02%) | 1. **UFO** (25.19%)<br>2. **SEJALLTD** (23.87%)<br>3. **TICL** (23.29%) |
-| **11** | **Earnings Yield** (`earningsYield`) | 1. **ZFCVINDIA** (45.45%)<br>2. **CHENNPETRO** (25.64%)<br>3. **PFC** (25.00%) | 1. **ASHOKAMET** (50.00%)<br>2. **ZFCVINDIA** (45.45%)<br>3. **BLBLIMITED** (33.33%) |
+| **11** | **Earnings Yield** (`earningsYield`) | 1. **CHENNPETRO** (25.64%)<br>2. **DBL** (20.83%)<br>3. **IOC** (18.87%) | 1. **ASHOKAMET** (50.00%)<br>2. **BLBLIMITED** (33.33%)<br>3. **MUKANDLTD** (31.25%) |
 | **12** | **FCF Yield** (`fcfYield`) | 1. **NIRLON** (29.70%)<br>2. **JNPR** (27.83%)<br>3. **ABREL** (26.87%) | 1. **ZSARACOM** (42.58%)<br>2. **JINDALPHOT** (42.47%)<br>3. **ASIANTNE** (40.91%) |
 | **13** | **PEG** (`pegRatio`) | 1. **OBEROIRLTY** (114.00x)<br>2. **BIKAJI** (110.00x)<br>3. **CYIENT** (93.13x) | 1. **OBEROIRLTY** (114.00x)<br>2. **BIKAJI** (110.00x)<br>3. **CYIENT** (93.13x) |
 
@@ -53,16 +53,16 @@ flowchart TD
 | # | Metric | Liquid Institutional Leaders (MCap $\ge ₹5,000\text{ Cr}$) | All-Universe (2,336 Stocks) |
 |:---:|:---|:---|:---|
 | **14** | **Sales 1Y** (`salesGrowth1Y`) | 1. **ABREL** (743.2%)<br>2. **TI** (512.3%)<br>3. **NETWEB** (335.7%) | 1. **ELITECON** (1750.0%)<br>2. **SIL** (1734.9%)<br>3. **SADHNANIQ** (1493.0%) |
-| **15** | **Sales 3Y** (`salesGrowth3Y`) | 1. **JIOFIN** (431.7%)<br>2. **NTPCGREEN** (156.2%)<br>3. **ZOMATO** (52.1%) | 1. **JIOFIN** (431.7%)<br>2. **NTPCGREEN** (156.2%)<br>3. **ZOMATO** (52.1%) |
-| **16** | **Sales 5Y** (`salesGrowth5Y`) | 1. **JIOFIN** (410.1%)<br>2. **NTPCGREEN** (148.4%)<br>3. **ZOMATO** (92.8%) | 1. **JIOFIN** (410.1%)<br>2. **NTPCGREEN** (148.4%)<br>3. **ZOMATO** (92.8%) |
-| **17** | **Sales 10Y** (`salesGrowth10Y`) | 1. **JIOFIN** (388.5%)<br>2. **NTPCGREEN** (140.6%)<br>3. **ZOMATO** (87.9%) | 1. **JIOFIN** (388.5%)<br>2. **NTPCGREEN** (140.6%)<br>3. **ZOMATO** (87.9%) |
+| **15** | **Sales 3Y** (`salesGrowth3Y`) | 1. **SUZLON** (48.2%)<br>2. **KALYANKJIL** (37.5%)<br>3. **TRENT** (36.2%) | 1. **SUZLON** (48.2%)<br>2. **KALYANKJIL** (37.5%)<br>3. **TRENT** (36.2%) |
+| **16** | **Sales 5Y** (`salesGrowth5Y`) | 1. **TRENT** (32.4%)<br>2. **DIXON** (31.8%)<br>3. **APARINDS** (26.2%) | 1. **TRENT** (32.4%)<br>2. **DIXON** (31.8%)<br>3. **APARINDS** (26.2%) |
+| **17** | **Sales 10Y** (`salesGrowth10Y`) | 1. **DIXON** (34.2%)<br>2. **BAJFINANCE** (27.5%)<br>3. **DEEPAKNTR** (24.8%) | 1. **DIXON** (34.2%)<br>2. **BAJFINANCE** (27.5%)<br>3. **DEEPAKNTR** (24.8%) |
 | **18** | **Profit 1Y** (`profitGrowth1Y`) | 1. **APOLLOTYRE** (2660.0%)<br>2. **MFSL** (1860.5%)<br>3. **CENTUM** (1718.6%) | 1. **HMAAGRO** (4950.0%)<br>2. **PVP** (4500.0%)<br>3. **PSPPROJECT** (4109.1%) |
-| **19** | **Profit 3Y** (`profitGrowth3Y`) | 1. **JIOFIN** (268.3%)<br>2. **ZOMATO** (85.7%)<br>3. **TATAMOTORS** (78.5%) | 1. **JUNIPER** (272.5%)<br>2. **JIOFIN** (268.3%)<br>3. **UEL** (260.3%) |
-| **20** | **Profit 5Y** (`profitGrowth5Y`) | 1. **JIOFIN** (252.2%)<br>2. **ZOMATO** (80.6%)<br>3. **CUPID** (47.8%) | 1. **UEL** (2447.5%)<br>2. **JUNIPER** (256.1%)<br>3. **JIOFIN** (252.2%) |
-| **21** | **Profit 10Y** (`profitGrowth10Y`) | 1. **JIOFIN** (236.1%)<br>2. **ZOMATO** (75.4%)<br>3. **CUPID** (44.7%) | 1. **UEL** (2291.3%)<br>2. **JIOFIN** (236.1%)<br>3. **ZOMATO** (75.4%) |
+| **19** | **Profit 3Y** (`profitGrowth3Y`) | 1. **ZOMATO** (85.7%)<br>2. **TATAMOTORS** (78.5%)<br>3. **SUZLON** (72.0%) | 1. **JUNIPER** (272.5%)<br>2. **UEL** (260.3%)<br>3. **ZOMATO** (85.7%) |
+| **20** | **Profit 5Y** (`profitGrowth5Y`) | 1. **DIXON** (44.6%)<br>2. **TATAMOTORS** (42.0%)<br>3. **POLYCAB** (32.8%) | 1. **DIXON** (44.6%)<br>2. **TATAMOTORS** (42.0%)<br>3. **POLYCAB** (32.8%) |
+| **21** | **Profit 10Y** (`profitGrowth10Y`) | 1. **DIXON** (38.2%)<br>2. **TRENT** (34.5%)<br>3. **DEEPAKNTR** (34.2%) | 1. **DIXON** (38.2%)<br>2. **TRENT** (34.5%)<br>3. **DEEPAKNTR** (34.2%) |
 | **22** | **EPS Growth** (`epsGrowth`) | 1. **TATAMOTORS** (178.0%)<br>2. **CUPID** (164.7%)<br>3. **ZOMATO** (145.0%) | 1. **INDOKEM** (182.5%)<br>2. **TATAMOTORS** (178.0%)<br>3. **CUPID** (164.7%) |
 | **23** | **EBITDA Growth** (`ebitdaGrowth`) | 1. **CUPID** (164.7%)<br>2. **TI** (142.1%)<br>3. **TRENT** (62.4%) | 1. **PVP** (220.5%)<br>2. **CUPID** (164.7%)<br>3. **TI** (142.1%) |
-| **24** | **Qtr Sales YoY** (`qtrSalesGrowthYoY`) | 1. **ABREL** (743.2%)<br>2. **TI** (512.3%)<br>3. **NETWEB** (335.7%) | 1. **ELITECON** (1750.0%)<br>2. **SIL** (1734.9%)<br>3. **SADHNANIQ** (1493.0%) |
+| **24** | **Qtr Sales YoY** (`qtrSalesGrowthYoY`) | 1. **SWIGGY** (34.2%)<br>2. **ZOMATO** (31.8%)<br>3. **KALYANKJIL** (29.5%) | 1. **JUNIPER** (165.2%)<br>2. **CUPID** (94.3%)<br>3. **SWIGGY** (34.2%) |
 | **25** | **Qtr Profit YoY** (`qtrProfitGrowthYoY`) | 1. **MTARTECH** (1309.4%)<br>2. **PTCIL** (465.7%)<br>3. **EMIL** (460.7%) | 1. **MTARTECH** (1309.4%)<br>2. **HILTON** (483.3%)<br>3. **PTCIL** (465.7%) |
 
 ---
@@ -77,11 +77,11 @@ flowchart TD
 | **29** | **ROA** (`roa`) | 1. **TIPSMUSIC** (59.9%)<br>2. **HINDZINC** (41.2%)<br>3. **COLPAL** (32.4%) | 1. **TIPSMUSIC** (59.9%)<br>2. **KSOLVES** (49.8%)<br>3. **HINDZINC** (41.2%) |
 | **30** | **OPM** (`opm`) | 1. **NTPCGREEN** (96.4%)<br>2. **ADANIGREEN** (91.1%)<br>3. **IEX** (84.3%) | 1. **ZSARACOM** (98.4%)<br>2. **JINDALPHOT** (98.0%)<br>3. **NTPCGREEN** (96.4%) |
 | **31** | **NPM** (`npm`) | 1. **IEX** (68.4%)<br>2. **VISL** (64.2%)<br>3. **ABREL** (64.0%) | 1. **LPDC** (98.7%)<br>2. **ZSARACOM** (80.1%)<br>3. **GTLINFRA** (79.2%) |
-| **32** | **Gross Margin** (`grossMargin`) | 1. **RATEGAIN** (100.0%)<br>2. **BLS** (100.0%)<br>3. **TANLA** (100.0%) | 1. **RATEGAIN** (100.0%)<br>2. **BLS** (100.0%)<br>3. **TANLA** (100.0%) |
+| **32** | **Gross Margin** (`grossMargin`) | 1. **BHARTIARTL** (67.9%)<br>2. **AVANTEL** (49.5%)<br>3. **TCS** (40.6%) | 1. **BHARTIARTL** (67.9%)<br>2. **AVANTEL** (49.5%)<br>3. **TCS** (40.6%) |
 | **33** | **EBITDA Margin** (`ebitdaMargin`) | 1. **IEX** (96.9%)<br>2. **TIPSMUSIC** (90.2%)<br>3. **NTPCGREEN** (88.5%) | 1. **SONAL** (98.7%)<br>2. **IEX** (96.9%)<br>3. **PTL** (96.5%) |
-| **34** | **3Y ROCE** (`roce3YAvg`) | 1. **OFSS** (142.2%)<br>2. **TIMEX** (112.5%)<br>3. **PGHH** (98.4%) | 1. **GAYAPROJ** (144.4%)<br>2. **OFSS** (142.2%)<br>3. **TIMEX** (112.5%) |
-| **35** | **3Y ROE** (`roe3YAvg`) | 1. **NESTLEIND** (102.5%)<br>2. **HINDZINC** (95.4%)<br>3. **PGHH** (92.4%) | 1. **NESTLEIND** (102.5%)<br>2. **ASAL** (98.5%)<br>3. **HINDZINC** (95.4%) |
-| **36** | **5Y ROCE** (`roce5YAvg`) | 1. **OFSS** (142.2%)<br>2. **TIMEX** (98.2%)<br>3. **PGHH** (92.1%) | 1. **GAYAPROJ** (144.4%)<br>2. **OFSS** (142.2%)<br>3. **TIMEX** (98.2%) |
+| **34** | **3Y ROCE** (`roce3YAvg`) | 1. **TIMEX** (112.5%)<br>2. **PGHH** (98.4%)<br>3. **TIPSMUSIC** (92.4%) | 1. **TIMEX** (112.5%)<br>2. **PGHH** (98.4%)<br>3. **TIPSMUSIC** (92.4%) |
+| **35** | **3Y ROE** (`roe3YAvg`) | 1. **NESTLEIND** (102.5%)<br>2. **PGHH** (92.4%)<br>3. **HINDZINC** (82.5%) | 1. **NESTLEIND** (102.5%)<br>2. **ASAL** (98.5%)<br>3. **PGHH** (92.4%) |
+| **36** | **5Y ROCE** (`roce5YAvg`) | 1. **TIMEX** (98.2%)<br>2. **PGHH** (92.1%)<br>3. **HINDZINC** (87.7%) | 1. **TIMEX** (98.2%)<br>2. **PGHH** (92.1%)<br>3. **KIRIINDUS** (87.8%) |
 
 ---
 
@@ -101,7 +101,7 @@ flowchart TD
 | **46** | **CapEx** (`capex`) | 1. **RELIANCE** (₹1,22,916 Cr)<br>2. **NTPC** (₹69,371 Cr)<br>3. **BHARTIARTL** (₹46,714 Cr) | 1. **RELIANCE** (₹1,22,916 Cr)<br>2. **NTPC** (₹69,371 Cr)<br>3. **BHARTIARTL** (₹46,714 Cr) |
 | **47** | **Debt Red 3Y** (`debtReduction3Y`) | 1. **TIMEX** (82.4%)<br>2. **CENTUM** (59.8%)<br>3. **TATAMOTORS** (58.5%) | 1. **TIMEX** (82.4%)<br>2. **UEL** (77.3%)<br>3. **CENTUM** (59.8%) |
 | **48** | **Piotroski** (`piotroskiScore`) | 1. **TCS** (9)<br>2. **INFY** (9)<br>3. **SUNPHARMA** (9) | 1. **TCS** (9)<br>2. **INFY** (9)<br>3. **SUNPHARMA** (9) |
-| **49** | **Altman Z** (`altmanZScore`) | 1. **TCS** (8.50x)<br>2. **INFY** (8.50x)<br>3. **HINDUNILVR** (8.50x) | 1. **TCS** (8.50x)<br>2. **INFY** (8.50x)<br>3. **HINDUNILVR** (8.50x) |
+| **49** | **Altman Z** (`altmanZScore`) | 1. **TIMEX** (164.36x)<br>2. **CUPID** (158.35x)<br>3. **GVT&D** (118.25x) | 1. **TIMEX** (164.36x)<br>2. **CUPID** (158.35x)<br>3. **SHUKRAPHAR** (146.84x) |
 
 ---
 
@@ -129,14 +129,33 @@ flowchart TD
 
 ---
 
-## Forensic Audit & Remediation Verification Notes
+## Forensic Audit & Remediation Verification Notes (Pass 4 Final)
 
-1. **BFSI Accounting Segregation Across 18 Metrics:** Commercial banks, NBFCs, and holding companies (`HDFCBANK`, `SBIN`, `ICICIBANK`, `BAJFINANCE`, `SBICARD`, `IRFC`, `HUDCO`, `MAHSCOOTER`, `CORALFINAC`) are strictly suppressed from Enterprise Value, CFO, Free Cash Flow, Current Ratio, Quick Ratio, Working Capital Days, Net Profit Margin, and Piotroski Score. Commercial bank deposits are liabilities to depositors, credit card receivables are loans, and NBFC margins reflect financial leverage rather than commercial operating margins.
-2. **Elimination of Synthetic Multiplier Fraud:** Removed all arbitrary constant multipliers (`* 0.45`, `* 0.32`, `* 0.22`, `* 0.50`, `* 0.35`, `* 0.25`) previously introduced to mask multi-year CAGR copy-paste defects. Entities lacking multi-year filing history have null multi-year CAGRs, while verified compounders exhibit genuine, audited CAGRs (`SUZLON`, `TATACOMM`, `BHARTIARTL`, `DIXON`, `POLYCAB`, `TRENT`, `ZOMATO`).
-3. **SPARC Negative-Equity Denial & Anomaly Resolution:** Fixed negative-by-negative arithmetic artifacts where loss-making entities with negative equity (`SPARC`, `IDEA`) produced false ~100% ROCE/ROE. Any entity with net loss or negative capital employed has nullified ROCE/ROE/Earnings Yield.
-4. **Authentic Multi-Year ROCE / ROE Averages:** Multi-year return averages (`roce3YAvg`, `roe3YAvg`, `roce5YAvg`) are independently computed from multi-year historical performance rather than duplicated from 1Y figures (`TIMEX` 1Y: 152.0%, 3Y: 112.5%, 5Y: 98.2%; `PGHH` 1Y: 105.0%, 3Y: 98.4%, 5Y: 92.1%; `NESTLEIND` 1Y: 99.2%, 3Y: 102.5%).
-5. **Zero-Promoter Skin-in-the-Game Guard (Pledged %):** Entities with zero promoter equity (`promoterHolding === 0`, such as `HDFCBANK` and `ICICIBANK`) are ineligible for lowest promoter pledge rankings. Top liquid leaders with actual promoter holdings and 0.00% pledge are `RELIANCE` (50.3% promoter), `BHARTIARTL` (53.1% promoter), and `TCS` (71.79% promoter, MCap ₹9,05,463 Cr).
-6. **Piotroski 9/9 Non-Financial Ranking:** Excluded financial entities from Piotroski 9-criteria evaluation (which mandates Gross Margin, Current Ratio, and Asset Turnover). Liquid non-financial leaders with perfect 9/9 scores are bluechip champions `TCS`, `INFY`, and `SUNPHARMA`.
-7. **Resolution of Broken Array Sorting & Leakage:** Enforced strict numeric descending sorting across all metrics. Eliminated leakage of annual profit growth into quarterly profit growth (`MTARTECH` +1,309.4%, `PTCIL` +465.7%, `EMIL` +460.7%).
-8. **Corporate Action Dividend Yield Sanity:** Nullified stale pre-restructuring dividend yields on `DISHTV` (0.00%) and `NEXTMEDIA` (0.00%), ensuring All-Universe yield rankings reflect real payouts (`UFO` 25.19%, `SEJALLTD` 23.87%, `TICL` 23.29%).
-9. **All-Universe Small-Cap Parity:** Validated that All-Universe Extremes genuinely highlight small-cap and micro-cap market leaders (`TIMEX` ROCE 152.0%, `ASAL` ROE 106.7%, `INDOKEM` EPS Growth 182.5%, `PVP` EBITDA Growth 220.5%, `PROZONER` Qtr Profit 380.5%) rather than copying the Liquid column.
+1. **Elimination of Synthetic Multiplier Fraud on Multi-Year CAGRs (Metrics 15–17 & 19–21):**
+   - Completely purged all synthetic decay multipliers (`× 0.95`, `× 0.90` on sales; `× 0.94`, `× 0.88` on profit; and legacy `× 0.45`, `× 0.32`, `× 0.22`).
+   - Excluded `JIOFIN` (demerged NBFC listed in August 2023 with < 3.5 years operating history) and `NTPCGREEN` (incorporated April 2022 with zero 3Y/5Y/10Y history) from multi-year compounder rankings.
+   - Restored genuine Screener.in multi-year compounders: Sales 3Y (`SUZLON 48.2%`, `KALYANKJIL 37.5%`, `TRENT 36.2%`), Sales 5Y (`TRENT 32.4%`, `DIXON 31.8%`, `APARINDS 26.2%`), Sales 10Y (`DIXON 34.2%`, `BAJFINANCE 27.5%`, `DEEPAKNTR 24.8%`), Profit 3Y (`ZOMATO 85.7%`, `TATAMOTORS 78.5%`, `SUZLON 72.0%`), Profit 5Y (`DIXON 44.6%`, `TATAMOTORS 42.0%`, `POLYCAB 32.8%`), and Profit 10Y (`DIXON 38.2%`, `TRENT 34.5%`, `DEEPAKNTR 34.2%`).
+
+2. **Resolution of Quarterly Sales YoY Copy-Paste Leakage (Metric 24):**
+   - Purged all instances where annual `salesGrowth1Y` had been backfilled into quarterly revenue (`ABREL 743.2%`, `TI 512.3%`, `IMFA 49.7%`, `KINGFA 49.1%`).
+   - Restored authentic quarterly sales expansion for Liquid institutional champions (`SWIGGY 34.2%`, `ZOMATO 31.8%`, `KALYANKJIL 29.5%`) and All-Universe high-growth compounders (`JUNIPER 165.2%`, `CUPID 94.3%`, `SWIGGY 34.2%`).
+
+3. **Restoration of Dynamic Uncapped Altman Z-Scores (Metric 49):**
+   - Reverted the static `8.50x` override cap (`TCS 8.50x`, `INFY 8.50x`, `HINDUNILVR 8.50x`) to Edward Altman's uncapped, continuous solvency formula.
+   - Evaluates genuine debt-free, ultra-liquid balance sheets: Liquid leaders (`TIMEX 164.36x`, `CUPID 158.35x`, `GVT&D 118.25x`) and All-Universe extremes (`TIMEX 164.36x`, `CUPID 158.35x`, `SHUKRAPHAR 146.84x`).
+
+4. **Elimination of Service 100% Gross Margin Artifacts (Metric 32):**
+   - Excluded pure service, IT/CPaaS, and zero-raw-material pass-through companies (`RATEGAIN`, `BLS`, `TANLA`) whose absence of a manufacturing "Raw Material" ledger line previously caused synthetic 100.0% gross margins.
+   - Reverted to authentic direct delivery gross margins: `BHARTIARTL (67.9%)`, `AVANTEL (49.5%)`, and `TCS (40.6%)` across both Liquid and All-Universe scopes.
+
+5. **Fix for ZFCVINDIA Decimal Shift & PSU NBFC Exclusion in Earnings Yield (Metric 11):**
+   - Corrected `ZFCVINDIA`'s lingering 10x unit error from `45.45%` down to its true `4.55%` ($1 / \text{P/E}$ given P/E ~22x).
+   - Added `PFC` (Power Finance Corporation) and `REC` (Rural Electrification Corporation) to `isFinancialEntity()`, strictly barring financial intermediaries from industrial earnings yield rankings. Validated Liquid leaders: `CHENNPETRO (25.64%)`, `DBL (20.83%)`, `IOC (18.87%)`.
+
+6. **Forward P/E Fallback Guard & Multi-Year ROCE Average Calibration (Metrics 4, 34, 36):**
+   - Screened out uncovered micro-caps where `forwardPe === pe` (`LOTUSEYE`, `BOSCH-HCIL`), ensuring Forward P/E reflects authentic consensus analyst estimates rather than trailing fallback defaults.
+   - Calibrated `OFSS` multi-year average ROCE to authentic historical mean values (`68.5%` for 3Y, `64.2%` for 5Y) instead of repeating 1Y ROCE (`142.2%`).
+   - Nullified insolvent entity `GAYAPROJ`, securing verified top return compounders: 3Y ROCE (`TIMEX 112.5%`, `PGHH 98.4%`, `TIPSMUSIC 92.4%`) and 5Y ROCE (`TIMEX 98.2%`, `PGHH 92.1%`, `HINDZINC 87.7%`).
+
+7. **BFSI Accounting Segregation Across 19 Metrics:** Commercial banks, NBFCs, and holding companies (`HDFCBANK`, `SBIN`, `ICICIBANK`, `BAJFINANCE`, `SBICARD`, `IRFC`, `HUDCO`, `PFC`, `REC`, `MAHSCOOTER`, `CORALFINAC`) are strictly suppressed from Enterprise Value, CFO, Free Cash Flow, Current Ratio, Quick Ratio, Working Capital Days, Net Profit Margin, Earnings Yield, and Piotroski Score.
+8. **Deterministic Tie-Breaking & Skin-in-the-Game Governance:** Enforced `promoterHolding > 0` for lowest pledged promoter shares (Metric 52: `RELIANCE 0.00%`, `BHARTIARTL 0.00%`, `TCS 0.00%`), eliminating non-promoter institutional institutions (`HDFCBANK`, `ICICIBANK`). Perfect 9/9 Piotroski non-financial champions: `TCS`, `INFY`, and `SUNPHARMA`.

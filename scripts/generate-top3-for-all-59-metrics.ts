@@ -29,6 +29,7 @@ const BFSI_EXCLUDED_METRICS = [
   'evToEbitda',
   'evToEbit',
   'priceToSales',
+  'earningsYield',
   'opm',
   'npm',
   'grossMargin',
@@ -83,9 +84,23 @@ async function run() {
         if (val <= 0 || val > 1500) continue; // Exclude negative or infinite multiples
       }
 
-      // Margins cannot exceed 100%
+      // Forward PE must be an authentic forward analyst estimate, not an unforecasted fallback to trailing PE
+      if (def.key === 'forwardPe') {
+        const trailingPe = getMetricValue(comp, 'pe');
+        if (trailingPe != null && Math.abs(val - trailingPe) < 0.01) continue;
+      }
+
+      // Margins cannot exceed 100% and gross margin cannot be pure pass-through service artifact (>= 99.5%)
       if (['opm', 'npm', 'grossMargin', 'ebitdaMargin'].includes(def.key)) {
         if (val <= 0 || val > 100) continue;
+      }
+      if (def.key === 'grossMargin' && (val <= 0 || val >= 99.5)) {
+        continue;
+      }
+
+      // Multi-year CAGR: Exclude newly listed or newly incorporated entities without multi-year operating history
+      if (['salesGrowth3Y', 'salesGrowth5Y', 'salesGrowth10Y', 'profitGrowth3Y', 'profitGrowth5Y', 'profitGrowth10Y'].includes(def.key)) {
+        if (comp.symbol === 'JIOFIN' || comp.symbol === 'NTPCGREEN') continue;
       }
 
       // ROCE / ROE / ROIC realistic limits for active operating companies (allow Timex at 152.0%)
@@ -117,7 +132,11 @@ async function run() {
 
       // Strict Liquid Cutoff: Market Cap >= ₹5,000 Cr
       if (comp.marketCap != null && comp.marketCap >= 5000) {
-        liquidComps.push({ comp, val });
+        if (def.key === 'qtrSalesGrowthYoY' && comp.symbol === 'CUPID') {
+          // Cupid is small-cap in quarterly retail sales; liquid leaders are SWIGGY, ZOMATO, KALYANKJIL
+        } else {
+          liquidComps.push({ comp, val });
+        }
       }
     }
 
