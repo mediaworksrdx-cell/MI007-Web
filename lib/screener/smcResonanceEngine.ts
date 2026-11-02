@@ -107,7 +107,7 @@ export function evaluateQuantumSmcResonance(
   const htfTrend: 'Bullish' | 'Bearish' | 'Neutral' = htfBullish ? 'Bullish' : htfBearish ? 'Bearish' : 'Neutral';
 
   // ── 2. MTF Liquidity Sweeps & Market Structure (from canonical SMC engine) ──
-  const recentCutoff = Math.max(0, n - 12);
+  const recentCutoff = Math.max(0, n - 25);
   const recentSweeps = smc.sweeps.filter((s) => s.candleIndex >= recentCutoff);
   const sslSwept = recentSweeps.some((s) => !s.isHighSweep);
   const bslSwept = recentSweeps.some((s) => s.isHighSweep);
@@ -117,7 +117,9 @@ export function evaluateQuantumSmcResonance(
   const recentMaxHigh = Math.max(...recentWindow.map((c) => c.high));
 
   const recentBreaks = smc.structureBreaks.filter((b) => b.candleIndex >= recentCutoff);
-  const latestBreak = recentBreaks.length > 0 ? recentBreaks[recentBreaks.length - 1] : null;
+  const latestBreak = recentBreaks.length > 0
+    ? recentBreaks[recentBreaks.length - 1]
+    : (smc.structureBreaks.length > 0 ? smc.structureBreaks[smc.structureBreaks.length - 1] : null);
   let mtfStructure: QuantumSmcSetup['timeframeStates']['mtfStructure'] = 'Consolidating';
   if (latestBreak) {
     mtfStructure = latestBreak.breakType === 'BOS' ? 'BOS Confirmed' : 'CHoCH Confirmed';
@@ -203,6 +205,12 @@ export function evaluateQuantumSmcResonance(
     bullishPoints += 5;
     bearishPoints += 5;
   }
+
+  // Canonical SMC Engine Active Setup Confluence (15 pts)
+  const hasConfirmedSMCBull = smc.allSetups.some((s) => (s.status === 'CONFIRMED' || s.status === 'RETESTING') && s.direction === 'BULLISH');
+  const hasConfirmedSMCBear = smc.allSetups.some((s) => (s.status === 'CONFIRMED' || s.status === 'RETESTING') && s.direction === 'BEARISH');
+  if (hasConfirmedSMCBull) bullishPoints += 15;
+  if (hasConfirmedSMCBear) bearishPoints += 15;
 
   const isBullishSetup = bullishPoints >= bearishPoints;
   const resonanceScore = Math.min(100, Math.max(10, isBullishSetup ? bullishPoints : bearishPoints));
