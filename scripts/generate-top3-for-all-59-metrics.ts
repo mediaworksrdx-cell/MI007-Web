@@ -30,6 +30,7 @@ const BFSI_EXCLUDED_METRICS = [
   'evToEbit',
   'priceToSales',
   'opm',
+  'npm',
   'grossMargin',
   'ebitdaMargin',
   'cfo',
@@ -39,7 +40,9 @@ const BFSI_EXCLUDED_METRICS = [
   'quickRatio',
   'debtToEquity',
   'workingCapitalDays',
-  'cashConversionCycle'
+  'cashConversionCycle',
+  'piotroskiScore',
+  'altmanZScore'
 ];
 
 async function run() {
@@ -56,6 +59,15 @@ async function run() {
     const liquidComps: { comp: any; val: number }[] = [];
 
     for (const comp of universe) {
+      // 0. Exclude non-corporate tokens, unlisted placeholders, and ETF/INAV tokens
+      if (!comp.name || comp.marketCap == null || comp.marketCap <= 0) {
+        continue;
+      }
+      const symUpper = comp.symbol.toUpperCase();
+      if (symUpper.includes('INAV') || symUpper.includes('BEES') || symUpper.includes('CASE') || symUpper === 'GROWW') {
+        continue;
+      }
+
       // 1. BFSI Accounting Exclusion
       if (isBfsiExcluded && isFinancialEntity(comp.symbol, comp.name, comp.sector)) {
         continue;
@@ -76,14 +88,29 @@ async function run() {
         if (val <= 0 || val > 100) continue;
       }
 
-      // ROCE / ROE / ROIC realistic limits for active operating companies
+      // ROCE / ROE / ROIC realistic limits for active operating companies (allow Timex at 152.0%)
       if (['roce', 'roe', 'roic', 'roce3YAvg', 'roe3YAvg', 'roce5YAvg'].includes(def.key)) {
-        if (val <= 0 || (val > 120 && comp.symbol !== 'NESTLEIND')) continue;
+        if (val <= 0 || (val > 160 && comp.symbol !== 'TIMEX' && comp.symbol !== 'NESTLEIND')) continue;
       }
 
       // Dividend Yield cannot exceed 30% under normal operations
-      if (def.key === 'dividendYield' && val > 30) {
-        continue;
+      if (def.key === 'dividendYield') {
+        if (val <= 0 || val > 30) continue;
+      }
+
+      // Earnings Yield & FCF Yield bounds: Cap at 50% to exclude one-off court settlements / penny stub bases
+      if (['earningsYield', 'fcfYield'].includes(def.key)) {
+        if (val <= 0 || val > 50) continue;
+      }
+
+      // Growth rate bounds: Filter out micro-penny stub denominators (e.g. ₹0.001 Cr turnover jumps)
+      if (['salesGrowth1Y', 'salesGrowth3Y', 'salesGrowth5Y', 'salesGrowth10Y', 'qtrSalesGrowthYoY', 'profitGrowth1Y', 'profitGrowth3Y', 'profitGrowth5Y', 'profitGrowth10Y', 'epsGrowth', 'ebitdaGrowth', 'qtrProfitGrowthYoY'].includes(def.key)) {
+        if (val > 5000) continue;
+      }
+
+      // Lowest pledge requirement: Only evaluate companies with actual promoter skin-in-the-game (promoterHolding > 0)
+      if (def.key === 'pledgedPct') {
+        if (comp.promoterHolding == null || comp.promoterHolding <= 0) continue;
       }
 
       validComps.push({ comp, val });

@@ -774,9 +774,11 @@ export function getMetricValue(
 
   // On-the-fly evaluation of institutional scorecards & technical indicators
   if (canonical === 'piotroskiScore') {
+    if (typeof company.piotroskiScore === 'number') return company.piotroskiScore;
     return calculatePiotroskiScore(company).score;
   }
   if (canonical === 'altmanZScore') {
+    if (typeof company.altmanZScore === 'number') return company.altmanZScore;
     return calculateAltmanZScore(company).score;
   }
   if (canonical === 'rsi14') {

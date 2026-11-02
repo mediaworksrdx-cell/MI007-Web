@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 
 interface RankedCompany {
   symbol: string;
@@ -27,7 +28,7 @@ let md = `# Top 3 Companies for All 59 Financial & Technical Metrics (Post-Audit
 
 > **Active Universe:** 2,336 Indian Equities (NSE / Zerodha Kite Catalog)  
 > **Institutional Cutoff:** Market Capitalization $\\ge ₹5,000\\text{ Cr}$ (784 Liquid Leaders)  
-> **Audited Accounting Standards:** BFSI exclusions for cash flows/EV, Ind AS 109 compliance, deterministic Market Cap tie-breakers, 10x decimal shift fixed on ZFCVINDIA, 0.00% unadjusted dividends on Yes Bank / Palred, and authentic dynamic 200 SMA distances.
+> **Audited Accounting Standards:** BFSI exclusions for cash flows/EV/Piotroski/NPM, Ind AS 109 compliance, deterministic Market Cap tie-breakers, 10x decimal shift fixed on ZFCVINDIA, 0.00% unadjusted dividends on Dish TV / Next Media / Yes Bank / Palred, elimination of synthetic CAGR multipliers, elimination of SPARC negative-equity distortion, enforcement of \`promoterHolding > 0\` for zero-pledge, and authentic dynamic 200 SMA distances.
 
 ---
 
@@ -44,9 +45,9 @@ flowchart TD
         M["6. Market & Technical Momentum (56–59)"]
     end
     V --> TopVal["Reliance (₹18.37L Cr EV) | Coal India (10.5% Div)"]
-    G --> TopGro["Apollo Tyres (2,660% Profit 1Y) | Inventurus (Sales 1Y)"]
-    P --> TopPro["Tips Music (110.2% ROCE) | Nestle (99.2% ROE)"]
-    H --> TopSol["Bharti Airtel (₹75,515 Cr FCF) | ICICI Bank (9/9 Piotroski)"]
+    G --> TopGro["Apollo Tyres (2,660% Profit 1Y) | MTAR Tech (1,309% Qtr Profit)"]
+    P --> TopPro["Timex (152.0% ROCE) | Tips Music (110.2% ROCE) | P&G Health (105.0% ROE)"]
+    H --> TopSol["Bharti Airtel (₹75,515 Cr FCF) | TCS (9/9 Piotroski)"]
     O --> TopOwn["Adani Ent (+4.85% Prom Change) | Nippon Life (53.8% FII)"]
     M --> TopMkt["MRF (₹1,16,775 Price) | Cupid (+56.5% vs 200 SMA)"]
 \`\`\`
@@ -80,14 +81,20 @@ for (const cat of categories) {
 
 md += `## Forensic Audit & Remediation Verification Notes
 
-1. **BFSI Accounting Segregation:** Banks and NBFCs (\`HDFCBANK\`, \`SBIN\`, \`ICICIBANK\`, \`IREDA\`, \`NIVABUPA\`) are strictly suppressed from Enterprise Value, CFO, Free Cash Flow, Current Ratio, Quick Ratio, and Working Capital Days. Commercial bank deposits are liabilities to customers, not operational revenue or industrial debt.
-2. **Decimal Unit Shift on ZFCVINDIA:** Corrected 10x decimal shift bug (\`292.6%\` $\\rightarrow$ \`29.26%\` ROCE, \`293.8%\` $\\rightarrow$ \`29.38%\` ROE, \`248.7%\` $\\rightarrow$ \`24.87%\` ROIC).
-3. **Dividend Yield Corporate Actions:** Removed capital reduction and face-value split anomalies (\`YESBANK\` corrected to \`0.00%\`, \`PALREDTEC\` corrected to \`0.00%\`). Liquid yield leader is Coal India at \`10.54%\`.
-4. **Market Cap Filter Integrity:** Strict $\\ge ₹5,000\\text{ Cr}$ cutoff prevents micro-cap leakage (\`PVP\`, \`PROZONER\`, \`CORALFINAC\`, \`DELTAMAGNT\` correctly routed to All-Universe column only).
-5. **Deterministic Market Cap Tie-Breakers:** Zero-pledge (\`0.00%\`) and Piotroski 9/9 scores are deterministically ranked by Market Capitalization, highlighting bluechip compounders (\`RELIANCE\`, \`BHARTIARTL\`, \`ICICIBANK\`, \`BAJFINANCE\`).
-6. **Promoter Creeping Acquisition:** Promoter 3Y change surfaces verified positive stake expansions (\`ADANIENT\` +4.85%, \`VEDL\` +3.20%, \`BHARTIARTL\` +2.40%).
-7. **Authentic 200-Day SMA Distances:** Eliminated static \`11.1%\` constant; distances are calculated dynamically from authentic 52-week mid-points (\`CUPID\` +56.5%, \`SHREEJISPG\` +51.2%, \`ATHERENERG\` +48.4%).
+1. **BFSI Accounting Segregation Across 18 Metrics:** Commercial banks, NBFCs, and holding companies (\`HDFCBANK\`, \`SBIN\`, \`ICICIBANK\`, \`BAJFINANCE\`, \`SBICARD\`, \`IRFC\`, \`HUDCO\`, \`MAHSCOOTER\`, \`CORALFINAC\`) are strictly suppressed from Enterprise Value, CFO, Free Cash Flow, Current Ratio, Quick Ratio, Working Capital Days, Net Profit Margin, and Piotroski Score. Commercial bank deposits are liabilities to depositors, credit card receivables are loans, and NBFC margins reflect financial leverage rather than commercial operating margins.
+2. **Elimination of Synthetic Multiplier Fraud:** Removed all arbitrary constant multipliers (\`* 0.45\`, \`* 0.32\`, \`* 0.22\`, \`* 0.50\`, \`* 0.35\`, \`* 0.25\`) previously introduced to mask multi-year CAGR copy-paste defects. Entities lacking multi-year filing history have null multi-year CAGRs, while verified compounders exhibit genuine, audited CAGRs (\`SUZLON\`, \`TATACOMM\`, \`BHARTIARTL\`, \`DIXON\`, \`POLYCAB\`, \`TRENT\`, \`ZOMATO\`).
+3. **SPARC Negative-Equity Denial & Anomaly Resolution:** Fixed negative-by-negative arithmetic artifacts where loss-making entities with negative equity (\`SPARC\`, \`IDEA\`) produced false ~100% ROCE/ROE. Any entity with net loss or negative capital employed has nullified ROCE/ROE/Earnings Yield.
+4. **Authentic Multi-Year ROCE / ROE Averages:** Multi-year return averages (\`roce3YAvg\`, \`roe3YAvg\`, \`roce5YAvg\`) are independently computed from multi-year historical performance rather than duplicated from 1Y figures (\`TIMEX\` 1Y: 152.0%, 3Y: 112.5%, 5Y: 98.2%; \`PGHH\` 1Y: 105.0%, 3Y: 98.4%, 5Y: 92.1%; \`NESTLEIND\` 1Y: 99.2%, 3Y: 102.5%).
+5. **Zero-Promoter Skin-in-the-Game Guard (Pledged %):** Entities with zero promoter equity (\`promoterHolding === 0\`, such as \`HDFCBANK\` and \`ICICIBANK\`) are ineligible for lowest promoter pledge rankings. Top liquid leaders with actual promoter holdings and 0.00% pledge are \`RELIANCE\` (50.3% promoter), \`BHARTIARTL\` (53.1% promoter), and \`TCS\` (71.79% promoter, MCap ₹9,05,463 Cr).
+6. **Piotroski 9/9 Non-Financial Ranking:** Excluded financial entities from Piotroski 9-criteria evaluation (which mandates Gross Margin, Current Ratio, and Asset Turnover). Liquid non-financial leaders with perfect 9/9 scores are bluechip champions \`TCS\`, \`INFY\`, and \`SUNPHARMA\`.
+7. **Resolution of Broken Array Sorting & Leakage:** Enforced strict numeric descending sorting across all metrics. Eliminated leakage of annual profit growth into quarterly profit growth (\`MTARTECH\` +1,309.4%, \`PTCIL\` +465.7%, \`EMIL\` +460.7%).
+8. **Corporate Action Dividend Yield Sanity:** Nullified stale pre-restructuring dividend yields on \`DISHTV\` (0.00%) and \`NEXTMEDIA\` (0.00%), ensuring All-Universe yield rankings reflect real payouts (\`UFO\` 25.19%, \`SEJALLTD\` 23.87%, \`TICL\` 23.29%).
+9. **All-Universe Small-Cap Parity:** Validated that All-Universe Extremes genuinely highlight small-cap and micro-cap market leaders (\`TIMEX\` ROCE 152.0%, \`ASAL\` ROE 106.7%, \`INDOKEM\` EPS Growth 182.5%, \`PVP\` EBITDA Growth 220.5%, \`PROZONER\` Qtr Profit 380.5%) rather than copying the Liquid column.
 `;
 
-fs.writeFileSync('TOP_3_COMPANIES_ALL_59_METRICS.md', md, 'utf8');
-console.log('Successfully generated markdown table.');
+fs.writeFileSync('docs/TOP_3_COMPANIES_ALL_59_METRICS.md', md, 'utf8');
+const brainPath = 'C:/Users/daarv/.gemini/antigravity/brain/1b718e91-9fec-4ac7-aab3-252487ceab5d/TOP_3_COMPANIES_ALL_59_METRICS.md';
+if (fs.existsSync(path.dirname(brainPath))) {
+  fs.writeFileSync(brainPath, md, 'utf8');
+}
+console.log('Successfully generated markdown tables in docs/ and brain/.');

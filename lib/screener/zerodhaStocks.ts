@@ -414,22 +414,42 @@ export function searchZerodhaStocks(query: string, limit: number = 50): ZerodhaS
   return results.slice(0, limit);
 }
 
-/** Check if entity is a Bank, NBFC, or Investment Holding entity */
+/** Check if entity is a Bank, NBFC, Insurance, Asset Management, or Investment Holding entity */
 export function isFinancialEntity(symbol: string, name: string, sector?: string): boolean {
   const s = symbol.toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
-  if (['JIOFIN', 'MAHSCOOTER', 'JSWHL', 'MASKINVEST', 'BAJFINANCE', 'BAJAJFINSV', 'HDFCBANK', 'ICICIBANK', 'SBIN', 'KOTAKBANK', 'AXISBANK', 'BANDHANBNK', 'FEDERALBNK', 'IDFCFIRSTB', 'PNB', 'CANBK', 'BANKBARODA', 'PFC', 'RECLTD', 'IRFC', 'CHOLAFIN', 'SHRIRAMFIN', 'MUTHOOTFIN', 'MANAPPURAM', 'AUBANK', 'INDUSINDBK', 'YESBANK', 'LICHSGFIN'].includes(s)) {
+  const financialTickers = [
+    'HDFCBANK', 'ICICIBANK', 'SBIN', 'KOTAKBANK', 'AXISBANK', 'BANDHANBNK',
+    'FEDERALBNK', 'IDFCFIRSTB', 'PNB', 'CANBK', 'BANKBARODA', 'INDIANB',
+    'UNIONBANK', 'IOB', 'UCOBANK', 'CENTRALBK', 'BANKINDIA', 'MAHABANK',
+    'PSB', 'RBLBANK', 'CSBBANK', 'CUB', 'KARURVYSYA', 'SOUTHBANK', 'DHANBANK',
+    'UTKARSHBNK', 'ESAFSFB', 'EQUITASBNK', 'UJJIVANSFB', 'SURYODAY',
+    'JIOFIN', 'MAHSCOOTER', 'JSWHL', 'MASKINVEST', 'BAJFINANCE', 'BAJAJFINSV',
+    'CHOLAFIN', 'SHRIRAMFIN', 'MUTHOOTFIN', 'MANAPPURAM', 'MUTHOOTCAP',
+    'PFC', 'RECLTD', 'IRFC', 'IREDA', 'AUBANK', 'INDUSINDBK', 'YESBANK',
+    'CORALFINAC', 'NIVABUPA', 'LICHSGFIN', 'HUDCO', 'LICI', 'GICRE', 'NIACL',
+    'HDFCLIFE', 'SBILIFE', 'ICICIPRULI', 'ICICIGI', 'STARHEALTH', 'POONAWALLA',
+    'SBICARD', 'PIRAMALENT', 'SUNDARMFIN', 'M&MFIN', 'CANFINHOME', 'IBULHSGFIN',
+    'HOMEFIRST', 'AAVAS', 'REPCOHOME', 'CREDITACC', 'SPANDANA', 'ARMANFIN',
+    'FIVESTAR', 'IFCI', 'MOTOGENFIN', 'SBIFUNDS', 'NAM-INDIA', 'HDFCAMC',
+    'ICICIAMC', 'UTIAMC', 'MOTILALOFS', 'ANGELONE', 'GEOJITFSL', '5PAISA',
+    'SHAREINDIA', 'MONARCH', 'ARIHANTCAP', 'IIFL', 'IIFLSEC', 'EMKAY',
+    'JMFINANC', 'EDELWEISS', 'RELIGARE', 'PRUDENT', 'ANANDRATHI', 'GROWW',
+    'CDSL', 'BSE', 'MCX', 'TFCILTD', 'ELCIDIN', 'VARDMNPOLY', 'DSPAMC',
+    'NIPPONAMC', 'ZERODHAAMC'
+  ];
+  if (financialTickers.includes(s)) {
     return true;
   }
   const cleanSector = (sector || '').toUpperCase();
   if (cleanSector.includes('CAPITAL GOODS') || cleanSector.includes('INFRASTRUCTURE') || cleanSector.includes('METALS') || cleanSector.includes('MATERIALS')) {
     return false;
   }
-  if (cleanSector === 'FINANCIAL SERVICES' || cleanSector === 'FINANCE') {
+  if (cleanSector === 'FINANCIAL SERVICES' || cleanSector === 'FINANCE' || cleanSector === 'BANKING') {
     return true;
   }
   const n = `${name} ${s}`.toUpperCase();
   if (/CAPITAL GOODS/.test(n)) return false;
-  return /\b(BANK|FINANCE|FINANCIAL|INSURANCE|SECURITIES|LEASING|INVESTMENT)\b|HOLDING\s*CO|\bNBFC\b/.test(n) || /BANK|FINANC/.test(s);
+  return /\b(BANK|FINANCE|FINANCIAL|INSURANCE|SECURITIES|LEASING|INVESTMENT)\b|HOLDING\s*CO|\bNBFC\b|\bAMC\b/.test(n) || /BANK|FINANC/.test(s);
 }
 
 /** Heuristic sector assignment from company name */
@@ -913,7 +933,7 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
   const roce = cachedFund?.roce != null ? cachedFund.roce : null;
   const roe = cachedFund?.roe != null ? cachedFund.roe : null;
   const opm = isFinancial ? null : (cachedFund?.opm != null ? cachedFund.opm : null);
-  const npm = cachedFund?.npm != null ? cachedFund.npm : null;
+  const npm = isFinancial ? null : (cachedFund?.npm != null ? cachedFund.npm : null);
   const debtToEquity = isFinancial ? null : (cachedFund?.debtToEquity != null ? cachedFund.debtToEquity : null);
   const dividendYield = cachedFund?.dividendYield != null ? cachedFund.dividendYield : null;
   const salesGrowth1Y = cachedFund?.salesGrowth1Y != null ? cachedFund.salesGrowth1Y : null;
@@ -924,7 +944,7 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
   const salesGrowth10Y = cachedFund?.salesGrowth10Y != null ? cachedFund.salesGrowth10Y : null;
   const profitGrowth5Y = cachedFund?.profitGrowth5Y != null ? cachedFund.profitGrowth5Y : null;
   const profitGrowth10Y = cachedFund?.profitGrowth10Y != null ? cachedFund.profitGrowth10Y : null;
-  const epsGrowth = cachedFund?.epsGrowth != null ? cachedFund.epsGrowth : profitGrowth1Y;
+  const epsGrowth = cachedFund?.epsGrowth != null ? cachedFund.epsGrowth : null;
   const ebitdaGrowth = cachedFund?.ebitdaGrowth != null ? cachedFund.ebitdaGrowth : null;
   const qtrSalesGrowthYoY = cachedFund?.qtrSalesGrowthYoY != null ? cachedFund.qtrSalesGrowthYoY : null;
   const qtrProfitGrowthYoY = cachedFund?.qtrProfitGrowthYoY != null ? cachedFund.qtrProfitGrowthYoY : null;
@@ -940,22 +960,30 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
         : (debtToEquity != null && cachedFund?.bookValue ? Math.round(debtToEquity * cachedFund.bookValue) : (debtToEquity != null && knownMcap > 0 ? Math.round(debtToEquity * (knownMcap / Math.max(0.5, pb || 1.8))) : null)));
   const cashAndEquivalents = cachedFund?.cash != null ? cachedFund.cash : (knownMcap > 0 ? Math.round(knownMcap * 0.05) : null);
 
-  // Operating cash flow and capex
-  const cfo = cachedFund?.cfo != null
-    ? cachedFund.cfo
-    : (annualSales && opm ? Math.round(annualSales * (opm / 100) * 0.78) : (knownMcap > 0 ? Math.round(knownMcap * 0.08) : null));
+  // Operating cash flow and capex (strictly null for Banks/NBFCs under Ind AS 109)
+  const cfo = isFinancial
+    ? null
+    : (cachedFund?.cfo != null
+        ? cachedFund.cfo
+        : (annualSales && opm ? Math.round(annualSales * (opm / 100) * 0.78) : (knownMcap > 0 ? Math.round(knownMcap * 0.08) : null)));
 
-  const capex = cachedFund?.capex != null
-    ? cachedFund.capex
-    : (cfo != null ? (isFinancial ? Math.round(cfo * 0.1) : Math.round(cfo * 0.32)) : null);
+  const capex = isFinancial
+    ? null
+    : (cachedFund?.capex != null
+        ? cachedFund.capex
+        : (cfo != null ? Math.round(cfo * 0.32) : null));
 
-  const freeCashFlow = cachedFund?.freeCashFlow != null
-    ? cachedFund.freeCashFlow
-    : (cfo != null && capex != null ? cfo - capex : null);
+  const freeCashFlow = isFinancial
+    ? null
+    : (cachedFund?.freeCashFlow != null
+        ? cachedFund.freeCashFlow
+        : (cfo != null && capex != null ? cfo - capex : null));
 
-  const fcfYield = cachedFund?.fcfYield != null
-    ? cachedFund.fcfYield
-    : (freeCashFlow != null && knownMcap > 0 ? +((freeCashFlow / knownMcap) * 100).toFixed(2) : null);
+  const fcfYield = isFinancial
+    ? null
+    : (cachedFund?.fcfYield != null
+        ? cachedFund.fcfYield
+        : (freeCashFlow != null && knownMcap > 0 ? +((freeCashFlow / knownMcap) * 100).toFixed(2) : null));
 
   // Interest coverage (strictly null for Banks/NBFCs under Ind AS 109)
   let interestCoverage: number | null = null;
@@ -1056,8 +1084,10 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
   const sma200 = (high52W + low52W) / 2;
   const distanceSma200Pct = sma200 > 0 ? Number((((price - sma200) / sma200) * 100).toFixed(1)) : 0.0;
 
-  // Piotroski F-Score (0-9)
-  let piotroskiScore: number | null = cachedFund?.piotroskiScore != null ? cachedFund.piotroskiScore : null;
+  // Piotroski F-Score (0-9, Non-financials only)
+  let piotroskiScore: number | null = isFinancial
+    ? null
+    : (cachedFund?.piotroskiScore != null ? cachedFund.piotroskiScore : null);
   if (piotroskiScore === null) {
     let score = 0;
     if (npm && npm > 0) score++;
@@ -1207,9 +1237,9 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     npm,
     grossMargin: isFinancial ? null : (cachedFund?.grossMargin != null ? cachedFund.grossMargin : 32.5),
     ebitdaMargin: isFinancial ? null : (cachedFund?.ebitdaMargin != null ? cachedFund.ebitdaMargin : (opm != null ? +(opm * 1.15).toFixed(1) : null)),
-    roce3YAvg: cachedFund?.roce3YAvg != null ? cachedFund.roce3YAvg : roce,
-    roe3YAvg: cachedFund?.roe3YAvg != null ? cachedFund.roe3YAvg : roe,
-    roce5YAvg: cachedFund?.roce5YAvg != null ? cachedFund.roce5YAvg : roce,
+    roce3YAvg: cachedFund?.roce3YAvg != null ? cachedFund.roce3YAvg : null,
+    roe3YAvg: cachedFund?.roe3YAvg != null ? cachedFund.roe3YAvg : null,
+    roce5YAvg: cachedFund?.roce5YAvg != null ? cachedFund.roce5YAvg : null,
 
     // Financial Health & Solvency (Manufacturing ratios N/A for Banks/NBFCs under Ind AS 109)
     debtToEquity,
