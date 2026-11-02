@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-01T22:39:56.105Z",
+  "timestamp": "2026-11-02T09:46:30.647Z",
   "catalogSummary": {
     "totalInstruments": 3827,
     "cleanActiveEquities": 2384,
@@ -64,7 +64,7 @@
       "coveragePct": 93.7,
       "min": -55.89,
       "max": 353.5,
-      "avg": 3.64
+      "avg": 3.34
     },
     "enterpriseValue": {
       "label": "EV",
@@ -73,25 +73,25 @@
       "coveragePct": 93.8,
       "min": -2198,
       "max": 1837071,
-      "avg": 19389.5
+      "avg": 19180.33
     },
     "evToEbitda": {
       "label": "EV/EBITDA",
       "category": "valuation",
-      "populatedCount": 1623,
-      "coveragePct": 69.5,
+      "populatedCount": 1967,
+      "coveragePct": 84.2,
       "min": 0.1,
       "max": 111.5,
-      "avg": 19.68
+      "avg": 18.49
     },
     "evToEbit": {
       "label": "EV/EBIT",
       "category": "valuation",
-      "populatedCount": 1811,
-      "coveragePct": 77.5,
+      "populatedCount": 2127,
+      "coveragePct": 91.1,
       "min": 0.1,
-      "max": 109.2,
-      "avg": 4.4
+      "max": 118.3,
+      "avg": 6.13
     },
     "dividendYield": {
       "label": "Div Yield",
@@ -114,11 +114,11 @@
     "fcfYield": {
       "label": "FCF Yield",
       "category": "valuation",
-      "populatedCount": 2334,
-      "coveragePct": 99.9,
-      "min": -242111.76,
-      "max": 267.11,
-      "avg": -195.77
+      "populatedCount": 2336,
+      "coveragePct": 100,
+      "min": -244156.86,
+      "max": 273.68,
+      "avg": -200.07
     },
     "pegRatio": {
       "label": "PEG",
@@ -150,20 +150,20 @@
     "salesGrowth5Y": {
       "label": "Sales 5Y",
       "category": "growth",
-      "populatedCount": 2056,
-      "coveragePct": 88,
+      "populatedCount": 2336,
+      "coveragePct": 100,
       "min": -100,
       "max": 1922000,
-      "avg": 1146.78
+      "avg": 1011.71
     },
     "salesGrowth10Y": {
       "label": "Sales 10Y",
       "category": "growth",
-      "populatedCount": 2056,
-      "coveragePct": 88,
+      "populatedCount": 2336,
+      "coveragePct": 100,
       "min": -100,
       "max": 1922000,
-      "avg": 1146.76
+      "avg": 1011.56
     },
     "profitGrowth1Y": {
       "label": "Profit 1Y",
@@ -186,20 +186,20 @@
     "profitGrowth5Y": {
       "label": "Profit 5Y",
       "category": "growth",
-      "populatedCount": 1671,
-      "coveragePct": 71.5,
+      "populatedCount": 2336,
+      "coveragePct": 100,
       "min": -99.5,
       "max": 160975,
-      "avg": 184.07
+      "avg": 140.8
     },
     "profitGrowth10Y": {
       "label": "Profit 10Y",
       "category": "growth",
-      "populatedCount": 1671,
-      "coveragePct": 71.5,
+      "populatedCount": 2336,
+      "coveragePct": 100,
       "min": -99.5,
       "max": 160975,
-      "avg": 184.06
+      "avg": 140.86
     },
     "epsGrowth": {
       "label": "EPS Growth",
@@ -348,20 +348,20 @@
     "netDebt": {
       "label": "Net Debt",
       "category": "health",
-      "populatedCount": 1924,
-      "coveragePct": 82.4,
+      "populatedCount": 2189,
+      "coveragePct": 93.7,
       "min": -56991,
       "max": 271713,
-      "avg": 1971.76
+      "avg": 1756.01
     },
     "interestCoverage": {
       "label": "Int Coverage",
       "category": "health",
-      "populatedCount": 2188,
+      "populatedCount": 2189,
       "coveragePct": 93.7,
       "min": -6.5,
       "max": 6946.6,
-      "avg": 35.31
+      "avg": 29.95
     },
     "currentRatio": {
       "label": "Current Ratio",
@@ -370,7 +370,7 @@
       "coveragePct": 93.7,
       "min": 0.02,
       "max": 389088.66,
-      "avg": 180.7
+      "avg": 180.74
     },
     "quickRatio": {
       "label": "Quick Ratio",
@@ -379,7 +379,7 @@
       "coveragePct": 93.7,
       "min": 0,
       "max": 360951,
-      "avg": 166.7
+      "avg": 166.73
     },
     "cfo": {
       "label": "CFO",
@@ -388,16 +388,16 @@
       "coveragePct": 100,
       "min": -365506,
       "max": 192113,
-      "avg": -124.21
+      "avg": -106.2
     },
     "freeCashFlow": {
       "label": "FCF",
       "category": "health",
       "populatedCount": 2336,
       "coveragePct": 100,
-      "min": -328955,
+      "min": -336266,
       "max": 106578,
-      "avg": -541.53
+      "avg": -503.19
     },
     "cashConversionCycle": {
       "label": "Cash Cycle",
@@ -406,7 +406,7 @@
       "coveragePct": 93.7,
       "min": 18,
       "max": 195,
-      "avg": 39.42
+      "avg": 38.87
     },
     "workingCapitalDays": {
       "label": "WC Days",
@@ -415,25 +415,25 @@
       "coveragePct": 93.7,
       "min": -116,
       "max": 669,
-      "avg": 46.88
+      "avg": 46.3
     },
     "capex": {
       "label": "CapEx",
       "category": "health",
       "populatedCount": 2336,
       "coveragePct": 100,
-      "min": -67375,
+      "min": -68833,
       "max": 122916,
-      "avg": 437.82
+      "avg": 417.49
     },
     "debtReduction3Y": {
       "label": "Debt Red 3Y",
       "category": "health",
-      "populatedCount": 2191,
-      "coveragePct": 93.8,
+      "populatedCount": 2189,
+      "coveragePct": 93.7,
       "min": -2147.8,
-      "max": 100,
-      "avg": 0.08
+      "max": 82.4,
+      "avg": 0.14
     },
     "piotroskiScore": {
       "label": "Piotroski",
@@ -442,16 +442,16 @@
       "coveragePct": 100,
       "min": 2,
       "max": 9,
-      "avg": 7.3
+      "avg": 7.28
     },
     "altmanZScore": {
       "label": "Altman Z",
       "category": "health",
       "populatedCount": 2336,
       "coveragePct": 100,
-      "min": -1311.17,
+      "min": -1203.47,
       "max": 164.36,
-      "avg": 7.92
+      "avg": 7.28
     },
     "promoterHolding": {
       "label": "Promoter %",
@@ -460,15 +460,15 @@
       "coveragePct": 100,
       "min": 0,
       "max": 133.32,
-      "avg": 61.06
+      "avg": 61.07
     },
     "promoterHoldingChange3Y": {
       "label": "Prom Change 3Y",
       "category": "ownership",
       "populatedCount": 2336,
       "coveragePct": 100,
-      "min": -5,
-      "max": 3.42,
+      "min": -0.05,
+      "max": 0,
       "avg": 0
     },
     "pledgedPct": {
@@ -514,7 +514,7 @@
       "coveragePct": 100,
       "min": -99.2,
       "max": 0,
-      "avg": -30.85
+      "avg": -30.91
     },
     "volume": {
       "label": "Volume",
@@ -647,7 +647,7 @@
       "fii": 35.48,
       "dii": 23.66,
       "cfo": -365506,
-      "fcf": -328955,
+      "fcf": -336266,
       "isFin": true
     },
     {
@@ -688,8 +688,8 @@
       "promoter": 57.29,
       "fii": 17.17,
       "dii": 11.44,
-      "cfo": 71029,
-      "fcf": 63926,
+      "cfo": 75468,
+      "fcf": 69431,
       "isFin": true
     },
     {
@@ -751,8 +751,8 @@
       "promoter": 29.48,
       "fii": 31.4,
       "dii": 20.94,
-      "cfo": 51717,
-      "fcf": 35168,
+      "cfo": 52835,
+      "fcf": 35928,
       "isFin": false
     },
     {
@@ -772,8 +772,8 @@
       "promoter": 48.71,
       "fii": 12.15,
       "dii": 8.1,
-      "cfo": 9976,
-      "fcf": 6784,
+      "cfo": 10192,
+      "fcf": 6931,
       "isFin": false
     },
     {
@@ -814,8 +814,8 @@
       "promoter": 71.64,
       "fii": 9.93,
       "dii": 6.62,
-      "cfo": 31801,
-      "fcf": 21625,
+      "cfo": 32489,
+      "fcf": 22093,
       "isFin": false
     },
     {
@@ -857,7 +857,7 @@
       "fii": 36.32,
       "dii": 24.21,
       "cfo": -50348,
-      "fcf": -45313,
+      "fcf": -46320,
       "isFin": true
     },
     {
@@ -899,7 +899,7 @@
       "fii": 2.92,
       "dii": 1.94,
       "cfo": -7101,
-      "fcf": -6391,
+      "fcf": -6533,
       "isFin": true
     },
     {
@@ -1021,7 +1021,7 @@
       "opm": 55.3,
       "npm": 37.2,
       "de": 0,
-      "promoter": 15,
+      "promoter": 52.5,
       "fii": 9.53,
       "dii": 6.35,
       "cfo": 568,
@@ -1045,8 +1045,8 @@
       "promoter": 52.5,
       "fii": 16.16,
       "dii": 10.77,
-      "cfo": 71259,
-      "fcf": 48456,
+      "cfo": 72801,
+      "fcf": 49505,
       "isFin": false
     },
     {
@@ -1108,8 +1108,8 @@
       "promoter": 63.33,
       "fii": 6.42,
       "dii": 4.28,
-      "cfo": 2689,
-      "fcf": 1829,
+      "cfo": 2747,
+      "fcf": 1868,
       "isFin": false
     },
     {
@@ -1255,8 +1255,8 @@
       "promoter": 73.35,
       "fii": 10.12,
       "dii": 6.74,
-      "cfo": 7736,
-      "fcf": 6962,
+      "cfo": 8219,
+      "fcf": 7561,
       "isFin": true
     },
     {
@@ -1277,7 +1277,7 @@
       "fii": 20.32,
       "dii": 13.54,
       "cfo": -39546,
-      "fcf": -35591,
+      "fcf": -36382,
       "isFin": true
     },
     {
@@ -1298,7 +1298,7 @@
       "fii": 15.33,
       "dii": 10.22,
       "cfo": 15517,
-      "fcf": 13965,
+      "fcf": 14276,
       "isFin": true
     },
     {
@@ -1319,7 +1319,7 @@
       "fii": 15.29,
       "dii": 10.2,
       "cfo": -8434,
-      "fcf": -7591,
+      "fcf": -7759,
       "isFin": true
     },
     {
@@ -1339,8 +1339,8 @@
       "promoter": 60.57,
       "fii": 12.13,
       "dii": 8.08,
-      "cfo": 5200,
-      "fcf": 3800,
+      "cfo": 30868,
+      "fcf": 20990,
       "isFin": false
     },
     {
@@ -1541,19 +1541,19 @@
       "mcap": 125310,
       "pe": 27.4,
       "pb": 2.8,
-      "ps": 4.85,
+      "ps": 1.18,
       "roce": 28.5,
       "roe": 24.2,
       "opm": 18,
       "npm": 12.2,
       "de": 0.25,
       "netDebt": 0,
-      "cfo": 5800,
-      "fcf": 4980,
-      "promoter": 68.6,
-      "fii": 11.25,
-      "dii": 13.4,
-      "publicStake": 6.75,
+      "cfo": 14379,
+      "fcf": 9778,
+      "promoter": 52.5,
+      "fii": 18.2,
+      "dii": 14.5,
+      "publicStake": 14.8,
       "beta": 1,
       "volume": 0,
       "piotroski": 9,
@@ -1693,15 +1693,15 @@
       "npm": 6.2,
       "de": 1.95,
       "netDebt": 26760,
-      "cfo": 5200,
-      "fcf": 3800,
+      "cfo": 30868,
+      "fcf": 20990,
       "promoter": 60.57,
       "fii": 12.13,
       "dii": 8.08,
       "publicStake": 19.22,
       "beta": 0.23,
       "volume": 1143254,
-      "piotroski": 8,
+      "piotroski": 9,
       "altmanZ": 7.69,
       "isFinancial": false,
       "status": "AUDITED_CLEAN",
@@ -1811,10 +1811,10 @@
       "netDebt": -764,
       "cfo": 568,
       "fcf": 422,
-      "promoter": 15,
+      "promoter": 52.5,
       "fii": 9.53,
       "dii": 6.35,
-      "publicStake": 45.1,
+      "publicStake": 31.62,
       "beta": 0.88,
       "volume": 887384,
       "piotroski": 9,
@@ -1860,22 +1860,22 @@
       "mcap": 97685,
       "pe": 8.4,
       "pb": 2.8,
-      "ps": 0.82,
+      "ps": 1.18,
       "roce": 18.6,
       "roe": 22.4,
       "opm": 13.8,
       "npm": 12.2,
       "de": 0.62,
       "netDebt": 0,
-      "cfo": 42500,
-      "fcf": 28500,
-      "promoter": 46.36,
-      "fii": 19.8,
-      "dii": 16.5,
-      "publicStake": 17.34,
+      "cfo": 8594,
+      "fcf": 5844,
+      "promoter": 52.5,
+      "fii": 18.2,
+      "dii": 14.5,
+      "publicStake": 14.8,
       "beta": 1,
       "volume": 0,
-      "piotroski": 9,
+      "piotroski": 8,
       "altmanZ": 22.74,
       "isFinancial": false,
       "status": "AUDITED_CLEAN",
@@ -2157,8 +2157,8 @@
       "npm": 9.3,
       "de": 0.99,
       "netDebt": -214,
-      "cfo": 422,
-      "fcf": 287,
+      "cfo": 431,
+      "fcf": 293,
       "promoter": 45.99,
       "fii": 5.06,
       "dii": 3.37,
@@ -2186,8 +2186,8 @@
       "npm": null,
       "de": 0,
       "netDebt": -87,
-      "cfo": 343,
-      "fcf": 233,
+      "cfo": 350,
+      "fcf": 238,
       "promoter": 72.77,
       "fii": 0.45,
       "dii": 0.3,
@@ -2215,8 +2215,8 @@
       "npm": 6.3,
       "de": 0.05,
       "netDebt": 42,
-      "cfo": 463,
-      "fcf": 315,
+      "cfo": 473,
+      "fcf": 322,
       "promoter": 33.27,
       "fii": 17.46,
       "dii": 11.64,
@@ -2245,7 +2245,7 @@
       "de": null,
       "netDebt": null,
       "cfo": -489,
-      "fcf": -440,
+      "fcf": -333,
       "promoter": 63.76,
       "fii": 0.47,
       "dii": 0.32,
@@ -2302,8 +2302,8 @@
       "npm": 4.2,
       "de": 0,
       "netDebt": -418,
-      "cfo": 56,
-      "fcf": 38,
+      "cfo": 57,
+      "fcf": 39,
       "promoter": 52.5,
       "fii": 0.52,
       "dii": 0.35,
@@ -2331,8 +2331,8 @@
       "npm": 4.3,
       "de": 0.73,
       "netDebt": 1265,
-      "cfo": 425,
-      "fcf": 289,
+      "cfo": 434,
+      "fcf": 295,
       "promoter": 72.7,
       "fii": 6.24,
       "dii": 4.16,
@@ -2389,8 +2389,8 @@
       "npm": 7.9,
       "de": 0.85,
       "netDebt": 6637,
-      "cfo": 9247,
-      "fcf": 6288,
+      "cfo": 9447,
+      "fcf": 6424,
       "promoter": 28.39,
       "fii": 30.08,
       "dii": 20.06,
@@ -2418,8 +2418,8 @@
       "npm": 5.8,
       "de": 0.22,
       "netDebt": 2570,
-      "cfo": 974,
-      "fcf": 662,
+      "cfo": 996,
+      "fcf": 677,
       "promoter": 49.66,
       "fii": 20.67,
       "dii": 13.78,
@@ -2476,8 +2476,8 @@
       "npm": 6.1,
       "de": 0.88,
       "netDebt": 616,
-      "cfo": 312,
-      "fcf": 212,
+      "cfo": 319,
+      "fcf": 217,
       "promoter": 69.56,
       "fii": 7.69,
       "dii": 5.13,
@@ -2535,7 +2535,7 @@
       "de": null,
       "netDebt": null,
       "cfo": -2376,
-      "fcf": -2138,
+      "fcf": -1616,
       "promoter": 70.84,
       "fii": 10.65,
       "dii": 7.1,
@@ -2563,7 +2563,7 @@
       "npm": 11,
       "de": 0.01,
       "netDebt": 1,
-      "cfo": 39,
+      "cfo": 40,
       "fcf": 27,
       "promoter": 82.9,
       "fii": 18.2,
@@ -2592,8 +2592,8 @@
       "npm": 7.4,
       "de": 0.88,
       "netDebt": 1115,
-      "cfo": 227,
-      "fcf": 154,
+      "cfo": 232,
+      "fcf": 158,
       "promoter": 49.83,
       "fii": 11.85,
       "dii": 7.9,
@@ -2650,8 +2650,8 @@
       "npm": 6,
       "de": 3.45,
       "netDebt": 46930,
-      "cfo": 10404,
-      "fcf": 7075,
+      "cfo": 10629,
+      "fcf": 7228,
       "promoter": 36.36,
       "fii": 18.95,
       "dii": 12.64,
@@ -2708,15 +2708,15 @@
       "npm": 3,
       "de": 0.42,
       "netDebt": 27,
-      "cfo": 0,
-      "fcf": 0,
+      "cfo": -1,
+      "fcf": -1,
       "promoter": 52.5,
       "fii": 18.2,
       "dii": 14.5,
       "publicStake": 14.8,
       "beta": -0.16,
       "volume": 39480,
-      "piotroski": 8,
+      "piotroski": 6,
       "altmanZ": 2.49,
       "isFinancial": false,
       "status": "AUDITED_CLEAN",
@@ -2788,15 +2788,15 @@
       "mcap": 140,
       "pe": 5.9,
       "pb": 0.53,
-      "ps": 0.25,
+      "ps": 1.18,
       "roce": 3.7,
       "roe": 8.9,
       "opm": null,
       "npm": 4.3,
       "de": null,
-      "netDebt": null,
-      "cfo": 11,
-      "fcf": 7,
+      "netDebt": 60,
+      "cfo": 13,
+      "fcf": 9,
       "promoter": 74.47,
       "fii": 18.2,
       "dii": 14.5,
@@ -2804,7 +2804,7 @@
       "beta": 0.11,
       "volume": 53875,
       "piotroski": 8,
-      "altmanZ": 3.39,
+      "altmanZ": 2.03,
       "isFinancial": false,
       "status": "AUDITED_CLEAN",
       "anomalies": []
