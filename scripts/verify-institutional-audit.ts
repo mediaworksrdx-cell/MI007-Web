@@ -158,9 +158,13 @@ assert(tcsPiotroski.criteria.length === 9, 'Piotroski evaluates all 9 required f
 assert(tcsPiotroski.score >= 7, `TCS qualifies as Strong Compounder (Score: ${tcsPiotroski.score}/9)`);
 assert(tcsPiotroski.classification === 'Strong Compounder', `TCS classified as Strong Compounder`);
 
-// Verify Altman Z-Score on TCS
+// Verify Altman Z-Score on Manufacturing (RELIANCE: 5 components) and Non-Manufacturing (TCS: 4 components)
+const relComp = MASTER_COMPANIES.find((c) => c.symbol === 'RELIANCE')!;
+const relAltman = calculateAltmanZScore(relComp);
+assert(relAltman.components.length === 5, 'Altman Z Manufacturing contains all 5 weighted solvency components (X1..X5)');
+
 const tcsAltman = calculateAltmanZScore(tcsComp);
-assert(tcsAltman.components.length === 5, 'Altman Z contains all 5 weighted solvency components (X1..X5)');
+assert(tcsAltman.components.length === 4, 'Altman Z Non-Manufacturing (EMS) contains 4 weighted solvency components (X1..X4)');
 assert(tcsAltman.score > 2.99, `TCS Altman Z score (${tcsAltman.score}) qualifies for Safe Zone (> 2.99)`);
 assert(tcsAltman.zone === 'Safe Zone', 'TCS classified in Safe Zone');
 
