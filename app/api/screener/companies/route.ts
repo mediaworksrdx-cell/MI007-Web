@@ -54,6 +54,14 @@ export async function GET(request: NextRequest) {
       roe: c.roe,
       debtToEquity: c.debtToEquity,
       dividendYield: c.dividendYield,
+      opm: c.opm,
+      npm: c.npm,
+      salesGrowth3Y: c.salesGrowth3Y,
+      profitGrowth3Y: c.profitGrowth3Y,
+      piotroskiScore: c.piotroskiScore,
+      altmanZScore: c.altmanZScore,
+      high52W: c.high52W,
+      low52W: c.low52W,
     })),
   });
 }
