@@ -785,14 +785,25 @@ export function getMetricValue(
     return Math.max(22, Math.min(84, Math.round(rsi * 10) / 10));
   }
   if (canonical === 'sma50') {
-    return Math.round(company.currentPrice * (company.priceChangePct >= 0 ? 0.96 : 1.03) * 10) / 10;
+    if (typeof (company as any).sma50 === 'number' && (company as any).sma50 > 0) return (company as any).sma50;
+    const h = company.high52W || (company.currentPrice * 1.15);
+    const l = company.low52W || (company.currentPrice * 0.85);
+    return Math.round((h * 0.35 + l * 0.65) * 10) / 10;
   }
   if (canonical === 'sma200') {
-    return Math.round(company.currentPrice * 0.90 * 10) / 10;
+    if (typeof (company as any).sma200 === 'number' && (company as any).sma200 > 0) return (company as any).sma200;
+    const h = company.high52W || (company.currentPrice * 1.25);
+    const l = company.low52W || (company.currentPrice * 0.75);
+    return Math.round(((h + l) / 2) * 10) / 10;
   }
   if (canonical === 'distanceSma200Pct') {
-    const sma200 = company.currentPrice * 0.90;
-    return Math.round((((company.currentPrice - sma200) / sma200) * 100) * 10) / 10;
+    if (typeof (company as any).distanceSma200Pct === 'number' && !Number.isNaN((company as any).distanceSma200Pct) && (company as any).distanceSma200Pct !== 0) {
+      return (company as any).distanceSma200Pct;
+    }
+    const h = company.high52W || (company.currentPrice * 1.25);
+    const l = company.low52W || (company.currentPrice * 0.75);
+    const sma200 = (h + l) / 2;
+    return sma200 > 0 ? Math.round((((company.currentPrice - sma200) / sma200) * 100) * 10) / 10 : 0.0;
   }
   if (canonical === 'macd') {
     return Math.round(company.currentPrice * 0.007 * 100) / 100;
