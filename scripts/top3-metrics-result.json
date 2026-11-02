@@ -1,0 +1,3601 @@
+[
+  {
+    "num": 1,
+    "key": "marketCap",
+    "label": "Market Cap",
+    "category": "valuation",
+    "unit": "Cr",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 1576398,
+        "formatted": "₹15,76,398 Cr"
+      },
+      {
+        "symbol": "BHARTIARTL",
+        "name": "BHARTI AIRTEL",
+        "sector": "Consumer & Retail",
+        "mcap": 1231324,
+        "value": 1231324,
+        "formatted": "₹12,31,324 Cr"
+      },
+      {
+        "symbol": "HDFCBANK",
+        "name": "HDFC Bank Limited",
+        "sector": "Financial Services",
+        "mcap": 1069149,
+        "value": 1069149,
+        "formatted": "₹10,69,149 Cr"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 1576398,
+        "formatted": "₹15,76,398 Cr"
+      },
+      {
+        "symbol": "BHARTIARTL",
+        "name": "BHARTI AIRTEL",
+        "sector": "Consumer & Retail",
+        "mcap": 1231324,
+        "value": 1231324,
+        "formatted": "₹12,31,324 Cr"
+      },
+      {
+        "symbol": "HDFCBANK",
+        "name": "HDFC Bank Limited",
+        "sector": "Financial Services",
+        "mcap": 1069149,
+        "value": 1069149,
+        "formatted": "₹10,69,149 Cr"
+      }
+    ]
+  },
+  {
+    "num": 2,
+    "key": "currentPrice",
+    "label": "Price",
+    "category": "market",
+    "unit": "₹",
+    "higherIsBetter": false,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "MRF",
+        "name": "MRF",
+        "sector": "Diversified / Industrials",
+        "mcap": 49492,
+        "value": 116775,
+        "formatted": "₹1,16,775.00"
+      },
+      {
+        "symbol": "ELCIDIN",
+        "name": "ELCID INVESTMENTS",
+        "sector": "Financial Services",
+        "mcap": 1968,
+        "value": 99995,
+        "formatted": "₹99,995.00"
+      },
+      {
+        "symbol": "BOSCHLTD",
+        "name": "BOSCH",
+        "sector": "Diversified / Industrials",
+        "mcap": 139222,
+        "value": 47200,
+        "formatted": "₹47,200.00"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "MRF",
+        "name": "MRF",
+        "sector": "Diversified / Industrials",
+        "mcap": 49492,
+        "value": 116775,
+        "formatted": "₹1,16,775.00"
+      },
+      {
+        "symbol": "BOSCHLTD",
+        "name": "BOSCH",
+        "sector": "Diversified / Industrials",
+        "mcap": 139222,
+        "value": 47200,
+        "formatted": "₹47,200.00"
+      },
+      {
+        "symbol": "PAGEIND",
+        "name": "PAGE INDUSTRIES",
+        "sector": "Diversified / Industrials",
+        "mcap": 38481,
+        "value": 34500,
+        "formatted": "₹34,500.00"
+      }
+    ]
+  },
+  {
+    "num": 3,
+    "key": "pe",
+    "label": "P/E",
+    "category": "valuation",
+    "unit": "x",
+    "higherIsBetter": false,
+    "totalPopulated": 2044,
+    "universeTop3": [
+      {
+        "symbol": "MODIRUBBER",
+        "name": "MODI RUBBER",
+        "sector": "Diversified / Industrials",
+        "mcap": 273,
+        "value": 10900,
+        "formatted": "10900.0x"
+      },
+      {
+        "symbol": "GODAVARIB",
+        "name": "GODAVARI BIOREFINERIES L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1029,
+        "value": 6703.3,
+        "formatted": "6703.3x"
+      },
+      {
+        "symbol": "WESTLIFE",
+        "name": "WESTLIFE FOODWORLD",
+        "sector": "FMCG & Food",
+        "mcap": 9297,
+        "value": 4607.7,
+        "formatted": "4607.7x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "WESTLIFE",
+        "name": "WESTLIFE FOODWORLD",
+        "sector": "FMCG & Food",
+        "mcap": 9297,
+        "value": 4607.7,
+        "formatted": "4607.7x"
+      },
+      {
+        "symbol": "PWL",
+        "name": "PHYSICSWALLAH",
+        "sector": "Diversified / Industrials",
+        "mcap": 37667,
+        "value": 1618.8,
+        "formatted": "1618.8x"
+      },
+      {
+        "symbol": "NAZARA",
+        "name": "NAZARA TECHNOLOGIES",
+        "sector": "Information Technology",
+        "mcap": 16286,
+        "value": 1048.9,
+        "formatted": "1048.9x"
+      }
+    ]
+  },
+  {
+    "num": 4,
+    "key": "forwardPe",
+    "label": "Fwd P/E",
+    "category": "valuation",
+    "unit": "x",
+    "higherIsBetter": false,
+    "totalPopulated": 2094,
+    "universeTop3": [
+      {
+        "symbol": "MODIRUBBER",
+        "name": "MODI RUBBER",
+        "sector": "Diversified / Industrials",
+        "mcap": 273,
+        "value": 10900,
+        "formatted": "10900.0x"
+      },
+      {
+        "symbol": "GODAVARIB",
+        "name": "GODAVARI BIOREFINERIES L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1029,
+        "value": 6703.3,
+        "formatted": "6703.3x"
+      },
+      {
+        "symbol": "SUNSHINE",
+        "name": "SUNSHINE PICTURES",
+        "sector": "Diversified / Industrials",
+        "mcap": 1190,
+        "value": 2122.2,
+        "formatted": "2122.2x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "ATHERENERG",
+        "name": "ATHER ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 69664,
+        "value": 1222,
+        "formatted": "1222.0x"
+      },
+      {
+        "symbol": "AEQUS",
+        "name": "AEQUS",
+        "sector": "Diversified / Industrials",
+        "mcap": 13948,
+        "value": 365.1,
+        "formatted": "365.1x"
+      },
+      {
+        "symbol": "CUPID",
+        "name": "CUPID",
+        "sector": "Diversified / Industrials",
+        "mcap": 43675,
+        "value": 292.3,
+        "formatted": "292.3x"
+      }
+    ]
+  },
+  {
+    "num": 5,
+    "key": "pb",
+    "label": "P/B",
+    "category": "valuation",
+    "unit": "x",
+    "higherIsBetter": false,
+    "totalPopulated": 2264,
+    "universeTop3": [
+      {
+        "symbol": "TIPSFILMS",
+        "name": "TIPS FILMS",
+        "sector": "Telecommunications & Media",
+        "mcap": 138,
+        "value": 17777.78,
+        "formatted": "17777.78x"
+      },
+      {
+        "symbol": "BLAL",
+        "name": "BEML LAND ASSETS",
+        "sector": "Real Estate",
+        "mcap": 660,
+        "value": 594.01,
+        "formatted": "594.01x"
+      },
+      {
+        "symbol": "TECHNVISN",
+        "name": "TECHNVISION VENTURES",
+        "sector": "Information Technology",
+        "mcap": 2372,
+        "value": 158.09,
+        "formatted": "158.09x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "CUPID",
+        "name": "CUPID",
+        "sector": "Diversified / Industrials",
+        "mcap": 43675,
+        "value": 96.75,
+        "formatted": "96.75x"
+      },
+      {
+        "symbol": "TIMEX",
+        "name": "TIMEX GROUP INDIA",
+        "sector": "Diversified / Industrials",
+        "mcap": 6097,
+        "value": 80.88,
+        "formatted": "80.88x"
+      },
+      {
+        "symbol": "NYKAA",
+        "name": "FSN E COMMERCE VENTURES",
+        "sector": "Diversified / Industrials",
+        "mcap": 100112,
+        "value": 69.56,
+        "formatted": "69.56x"
+      }
+    ]
+  },
+  {
+    "num": 6,
+    "key": "priceToSales",
+    "label": "P/S",
+    "category": "valuation",
+    "unit": "x",
+    "higherIsBetter": false,
+    "totalPopulated": 2187,
+    "universeTop3": [
+      {
+        "symbol": "UEL",
+        "name": "UJAAS ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 2482,
+        "value": 353.5,
+        "formatted": "353.50x"
+      },
+      {
+        "symbol": "PRABHA",
+        "name": "PRABHA ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 2826,
+        "value": 331.93,
+        "formatted": "331.93x"
+      },
+      {
+        "symbol": "CUPID",
+        "name": "CUPID",
+        "sector": "Diversified / Industrials",
+        "mcap": 43675,
+        "value": 100.04,
+        "formatted": "100.04x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "CUPID",
+        "name": "CUPID",
+        "sector": "Diversified / Industrials",
+        "mcap": 43675,
+        "value": 100.04,
+        "formatted": "100.04x"
+      },
+      {
+        "symbol": "PTCIL",
+        "name": "PTC INDUSTRIES",
+        "sector": "Diversified / Industrials",
+        "mcap": 38176,
+        "value": 51.79,
+        "formatted": "51.79x"
+      },
+      {
+        "symbol": "MCX",
+        "name": "MULTI COMMODITY EXCHANGE",
+        "sector": "Diversified / Industrials",
+        "mcap": 81159,
+        "value": 29.25,
+        "formatted": "29.25x"
+      }
+    ]
+  },
+  {
+    "num": 7,
+    "key": "enterpriseValue",
+    "label": "EV",
+    "category": "valuation",
+    "unit": "Cr",
+    "higherIsBetter": false,
+    "totalPopulated": 2191,
+    "universeTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 1837071,
+        "formatted": "₹18,37,071 Cr"
+      },
+      {
+        "symbol": "BHARTIARTL",
+        "name": "BHARTI AIRTEL",
+        "sector": "Consumer & Retail",
+        "mcap": 1231324,
+        "value": 1413014,
+        "formatted": "₹14,13,014 Cr"
+      },
+      {
+        "symbol": "HDFCBANK",
+        "name": "HDFC Bank Limited",
+        "sector": "Financial Services",
+        "mcap": 1069149,
+        "value": 1358900,
+        "formatted": "₹13,58,900 Cr"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 1837071,
+        "formatted": "₹18,37,071 Cr"
+      },
+      {
+        "symbol": "BHARTIARTL",
+        "name": "BHARTI AIRTEL",
+        "sector": "Consumer & Retail",
+        "mcap": 1231324,
+        "value": 1413014,
+        "formatted": "₹14,13,014 Cr"
+      },
+      {
+        "symbol": "HDFCBANK",
+        "name": "HDFC Bank Limited",
+        "sector": "Financial Services",
+        "mcap": 1069149,
+        "value": 1358900,
+        "formatted": "₹13,58,900 Cr"
+      }
+    ]
+  },
+  {
+    "num": 8,
+    "key": "evToEbitda",
+    "label": "EV/EBITDA",
+    "category": "valuation",
+    "unit": "x",
+    "higherIsBetter": false,
+    "totalPopulated": 1967,
+    "universeTop3": [
+      {
+        "symbol": "PAYTM",
+        "name": "ONE 97 COMMUNICATIONS",
+        "sector": "Telecommunications & Media",
+        "mcap": 104624,
+        "value": 111.5,
+        "formatted": "111.5x"
+      },
+      {
+        "symbol": "VIJSOLX",
+        "name": "VIJAY SOLVEX",
+        "sector": "Diversified / Industrials",
+        "mcap": 230,
+        "value": 110.7,
+        "formatted": "110.7x"
+      },
+      {
+        "symbol": "SHBAJRG",
+        "name": "SHRI BAJRANG ALLIANCE L",
+        "sector": "Diversified / Industrials",
+        "mcap": 144,
+        "value": 92.8,
+        "formatted": "92.8x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "PAYTM",
+        "name": "ONE 97 COMMUNICATIONS",
+        "sector": "Telecommunications & Media",
+        "mcap": 104624,
+        "value": 111.5,
+        "formatted": "111.5x"
+      },
+      {
+        "symbol": "MAXESTATES",
+        "name": "MAX ESTATES",
+        "sector": "Real Estate",
+        "mcap": 8358,
+        "value": 91,
+        "formatted": "91.0x"
+      },
+      {
+        "symbol": "LENSKART",
+        "name": "LENSKART SOLUTIONS",
+        "sector": "Diversified / Industrials",
+        "mcap": 117738,
+        "value": 90.1,
+        "formatted": "90.1x"
+      }
+    ]
+  },
+  {
+    "num": 9,
+    "key": "evToEbit",
+    "label": "EV/EBIT",
+    "category": "valuation",
+    "unit": "x",
+    "higherIsBetter": false,
+    "totalPopulated": 2127,
+    "universeTop3": [
+      {
+        "symbol": "SAMBANDAM",
+        "name": "SAMBANDAM SPINNING MILL L",
+        "sector": "Textiles & Apparel",
+        "mcap": 42,
+        "value": 118.3,
+        "formatted": "118.3x"
+      },
+      {
+        "symbol": "AVANCE",
+        "name": "AVANCE TECHNOLOGIES",
+        "sector": "Information Technology",
+        "mcap": 131,
+        "value": 109.6,
+        "formatted": "109.6x"
+      },
+      {
+        "symbol": "VOGL",
+        "name": "VEDANTA OIL AND GAS",
+        "sector": "Energy & Power",
+        "mcap": 11712,
+        "value": 109.2,
+        "formatted": "109.2x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "VOGL",
+        "name": "VEDANTA OIL AND GAS",
+        "sector": "Energy & Power",
+        "mcap": 11712,
+        "value": 109.2,
+        "formatted": "109.2x"
+      },
+      {
+        "symbol": "NTPCGREEN",
+        "name": "NTPC GREEN ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 69391,
+        "value": 64.4,
+        "formatted": "64.4x"
+      },
+      {
+        "symbol": "TIMEX",
+        "name": "TIMEX GROUP INDIA",
+        "sector": "Diversified / Industrials",
+        "mcap": 6097,
+        "value": 56.7,
+        "formatted": "56.7x"
+      }
+    ]
+  },
+  {
+    "num": 10,
+    "key": "dividendYield",
+    "label": "Div Yield",
+    "category": "valuation",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1700,
+    "universeTop3": [
+      {
+        "symbol": "PALREDTEC",
+        "name": "PALRED TECHNOLOGIES",
+        "sector": "Information Technology",
+        "mcap": 45,
+        "value": 392.85,
+        "formatted": "392.85%"
+      },
+      {
+        "symbol": "AURUM",
+        "name": "AURUM PROPTECH",
+        "sector": "Information Technology",
+        "mcap": 1922,
+        "value": 355.97,
+        "formatted": "355.97%"
+      },
+      {
+        "symbol": "BOHRAIND",
+        "name": "BOHRA INDUSTRIES",
+        "sector": "Diversified / Industrials",
+        "mcap": 28,
+        "value": 75.24,
+        "formatted": "75.24%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "YESBANK",
+        "name": "YES BANK",
+        "sector": "Financial Services",
+        "mcap": 47557,
+        "value": 13.2,
+        "formatted": "13.20%"
+      },
+      {
+        "symbol": "COALINDIA",
+        "name": "COAL INDIA",
+        "sector": "Energy & Power",
+        "mcap": 239730,
+        "value": 10.54,
+        "formatted": "10.54%"
+      },
+      {
+        "symbol": "HINDPETRO",
+        "name": "HINDUSTAN PETROLEUM CORPORATION  - HPCL",
+        "sector": "Energy & Power",
+        "mcap": 72463,
+        "value": 7.12,
+        "formatted": "7.12%"
+      }
+    ]
+  },
+  {
+    "num": 11,
+    "key": "earningsYield",
+    "label": "Earnings Yield",
+    "category": "valuation",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2044,
+    "universeTop3": [
+      {
+        "symbol": "GTL",
+        "name": "GTL",
+        "sector": "Diversified / Industrials",
+        "mcap": 93,
+        "value": 1000,
+        "formatted": "1000.00%"
+      },
+      {
+        "symbol": "SUPREMEINF",
+        "name": "SUPREME INFRA.",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 526,
+        "value": 1000,
+        "formatted": "1000.00%"
+      },
+      {
+        "symbol": "GAYAPROJ",
+        "name": "GAYATRI PROJECTS",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 881,
+        "value": 500,
+        "formatted": "500.00%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 45.45,
+        "formatted": "45.45%"
+      },
+      {
+        "symbol": "IDEA",
+        "name": "VODAFONE IDEA",
+        "sector": "Diversified / Industrials",
+        "mcap": 128170,
+        "value": 29.41,
+        "formatted": "29.41%"
+      },
+      {
+        "symbol": "SPARC",
+        "name": "SUN PHARMA ADV.RES.CO.LTD",
+        "sector": "Healthcare & Pharma",
+        "mcap": 5728,
+        "value": 27.78,
+        "formatted": "27.78%"
+      }
+    ]
+  },
+  {
+    "num": 12,
+    "key": "fcfYield",
+    "label": "FCF Yield",
+    "category": "valuation",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "LPDC",
+        "name": "LANDMARK PR.DEV.CO.LTD",
+        "sector": "Real Estate",
+        "mcap": 76,
+        "value": 273.68,
+        "formatted": "273.68%"
+      },
+      {
+        "symbol": "SETCO",
+        "name": "SETCO AUTOMOTIVE",
+        "sector": "Automotive",
+        "mcap": 209,
+        "value": 109.09,
+        "formatted": "109.09%"
+      },
+      {
+        "symbol": "GNRL",
+        "name": "GUJARAT NATURAL RES L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1473,
+        "value": 74.88,
+        "formatted": "74.88%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "HUDCO",
+        "name": "HSG & URBAN DEV CORPN",
+        "sector": "Diversified / Industrials",
+        "mcap": 28563,
+        "value": 39.28,
+        "formatted": "39.28%"
+      },
+      {
+        "symbol": "BSE",
+        "name": "BSE",
+        "sector": "Diversified / Industrials",
+        "mcap": 142568,
+        "value": 34.72,
+        "formatted": "34.72%"
+      },
+      {
+        "symbol": "SBIFUNDS",
+        "name": "SBI FUNDS MANAGEMENT",
+        "sector": "Diversified / Industrials",
+        "mcap": 95364,
+        "value": 33.34,
+        "formatted": "33.34%"
+      }
+    ]
+  },
+  {
+    "num": 13,
+    "key": "pegRatio",
+    "label": "PEG",
+    "category": "valuation",
+    "unit": "x",
+    "higherIsBetter": false,
+    "totalPopulated": 1258,
+    "universeTop3": [
+      {
+        "symbol": "OBEROIRLTY",
+        "name": "OBEROI REALTY",
+        "sector": "Real Estate",
+        "mcap": 59867,
+        "value": 114,
+        "formatted": "114.00x"
+      },
+      {
+        "symbol": "BIKAJI",
+        "name": "BIKAJI FOODS INTERN",
+        "sector": "FMCG & Food",
+        "mcap": 11357,
+        "value": 110,
+        "formatted": "110.00x"
+      },
+      {
+        "symbol": "CYIENT",
+        "name": "CYIENT",
+        "sector": "Diversified / Industrials",
+        "mcap": 11793,
+        "value": 93.13,
+        "formatted": "93.13x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "OBEROIRLTY",
+        "name": "OBEROI REALTY",
+        "sector": "Real Estate",
+        "mcap": 59867,
+        "value": 114,
+        "formatted": "114.00x"
+      },
+      {
+        "symbol": "BIKAJI",
+        "name": "BIKAJI FOODS INTERN",
+        "sector": "FMCG & Food",
+        "mcap": 11357,
+        "value": 110,
+        "formatted": "110.00x"
+      },
+      {
+        "symbol": "CYIENT",
+        "name": "CYIENT",
+        "sector": "Diversified / Industrials",
+        "mcap": 11793,
+        "value": 93.13,
+        "formatted": "93.13x"
+      }
+    ]
+  },
+  {
+    "num": 14,
+    "key": "salesGrowth1Y",
+    "label": "Sales 1Y",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2232,
+    "universeTop3": [
+      {
+        "symbol": "IBULLSLTD",
+        "name": "INDIABULLS",
+        "sector": "Diversified / Industrials",
+        "mcap": 6870,
+        "value": 1922000,
+        "formatted": "1922000.0%"
+      },
+      {
+        "symbol": "GRANDOAK",
+        "name": "GRAND OAK CANYONS DIST L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1702,
+        "value": 343210,
+        "formatted": "343210.0%"
+      },
+      {
+        "symbol": "AQYLON",
+        "name": "AQYLON NEXUS",
+        "sector": "Diversified / Industrials",
+        "mcap": 340,
+        "value": 24294.8,
+        "formatted": "24294.8%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "IBULLSLTD",
+        "name": "INDIABULLS",
+        "sector": "Diversified / Industrials",
+        "mcap": 6870,
+        "value": 1922000,
+        "formatted": "1922000.0%"
+      },
+      {
+        "symbol": "STARHEALTH",
+        "name": "STAR HEALTH & AL INS CO L",
+        "sector": "Healthcare & Pharma",
+        "mcap": 31232,
+        "value": 5572,
+        "formatted": "5572.0%"
+      },
+      {
+        "symbol": "ABREL",
+        "name": "ADITYA BIRLA REAL EST",
+        "sector": "Diversified / Industrials",
+        "mcap": 11049,
+        "value": 743.2,
+        "formatted": "743.2%"
+      }
+    ]
+  },
+  {
+    "num": 15,
+    "key": "salesGrowth3Y",
+    "label": "Sales 3Y",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2232,
+    "universeTop3": [
+      {
+        "symbol": "IBULLSLTD",
+        "name": "INDIABULLS",
+        "sector": "Diversified / Industrials",
+        "mcap": 6870,
+        "value": 1922000,
+        "formatted": "1922000.0%"
+      },
+      {
+        "symbol": "GRANDOAK",
+        "name": "GRAND OAK CANYONS DIST L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1702,
+        "value": 343210,
+        "formatted": "343210.0%"
+      },
+      {
+        "symbol": "AQYLON",
+        "name": "AQYLON NEXUS",
+        "sector": "Diversified / Industrials",
+        "mcap": 340,
+        "value": 24294.8,
+        "formatted": "24294.8%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "IBULLSLTD",
+        "name": "INDIABULLS",
+        "sector": "Diversified / Industrials",
+        "mcap": 6870,
+        "value": 1922000,
+        "formatted": "1922000.0%"
+      },
+      {
+        "symbol": "STARHEALTH",
+        "name": "STAR HEALTH & AL INS CO L",
+        "sector": "Healthcare & Pharma",
+        "mcap": 31232,
+        "value": 5572,
+        "formatted": "5572.0%"
+      },
+      {
+        "symbol": "ABREL",
+        "name": "ADITYA BIRLA REAL EST",
+        "sector": "Diversified / Industrials",
+        "mcap": 11049,
+        "value": 743.2,
+        "formatted": "743.2%"
+      }
+    ]
+  },
+  {
+    "num": 16,
+    "key": "salesGrowth5Y",
+    "label": "Sales 5Y",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "IBULLSLTD",
+        "name": "INDIABULLS",
+        "sector": "Diversified / Industrials",
+        "mcap": 6870,
+        "value": 1922000,
+        "formatted": "1922000.0%"
+      },
+      {
+        "symbol": "GRANDOAK",
+        "name": "GRAND OAK CANYONS DIST L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1702,
+        "value": 343210,
+        "formatted": "343210.0%"
+      },
+      {
+        "symbol": "AQYLON",
+        "name": "AQYLON NEXUS",
+        "sector": "Diversified / Industrials",
+        "mcap": 340,
+        "value": 24294.8,
+        "formatted": "24294.8%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "IBULLSLTD",
+        "name": "INDIABULLS",
+        "sector": "Diversified / Industrials",
+        "mcap": 6870,
+        "value": 1922000,
+        "formatted": "1922000.0%"
+      },
+      {
+        "symbol": "STARHEALTH",
+        "name": "STAR HEALTH & AL INS CO L",
+        "sector": "Healthcare & Pharma",
+        "mcap": 31232,
+        "value": 5572,
+        "formatted": "5572.0%"
+      },
+      {
+        "symbol": "ABREL",
+        "name": "ADITYA BIRLA REAL EST",
+        "sector": "Diversified / Industrials",
+        "mcap": 11049,
+        "value": 743.2,
+        "formatted": "743.2%"
+      }
+    ]
+  },
+  {
+    "num": 17,
+    "key": "salesGrowth10Y",
+    "label": "Sales 10Y",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "IBULLSLTD",
+        "name": "INDIABULLS",
+        "sector": "Diversified / Industrials",
+        "mcap": 6870,
+        "value": 1922000,
+        "formatted": "1922000.0%"
+      },
+      {
+        "symbol": "GRANDOAK",
+        "name": "GRAND OAK CANYONS DIST L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1702,
+        "value": 343210,
+        "formatted": "343210.0%"
+      },
+      {
+        "symbol": "AQYLON",
+        "name": "AQYLON NEXUS",
+        "sector": "Diversified / Industrials",
+        "mcap": 340,
+        "value": 24294.8,
+        "formatted": "24294.8%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "IBULLSLTD",
+        "name": "INDIABULLS",
+        "sector": "Diversified / Industrials",
+        "mcap": 6870,
+        "value": 1922000,
+        "formatted": "1922000.0%"
+      },
+      {
+        "symbol": "STARHEALTH",
+        "name": "STAR HEALTH & AL INS CO L",
+        "sector": "Healthcare & Pharma",
+        "mcap": 31232,
+        "value": 5572,
+        "formatted": "5572.0%"
+      },
+      {
+        "symbol": "ABREL",
+        "name": "ADITYA BIRLA REAL EST",
+        "sector": "Diversified / Industrials",
+        "mcap": 11049,
+        "value": 743.2,
+        "formatted": "743.2%"
+      }
+    ]
+  },
+  {
+    "num": 18,
+    "key": "profitGrowth1Y",
+    "label": "Profit 1Y",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1816,
+    "universeTop3": [
+      {
+        "symbol": "VARDMNPOLY",
+        "name": "VARDHMAN POLYTEX",
+        "sector": "Diversified / Industrials",
+        "mcap": 241,
+        "value": 160975,
+        "formatted": "160975.0%"
+      },
+      {
+        "symbol": "AXITA",
+        "name": "AXITA COTTON",
+        "sector": "Textiles & Apparel",
+        "mcap": 276,
+        "value": 13928.1,
+        "formatted": "13928.1%"
+      },
+      {
+        "symbol": "EMKAY",
+        "name": "EMKAY GLOBAL FIN SERV",
+        "sector": "Diversified / Industrials",
+        "mcap": 698,
+        "value": 5644.4,
+        "formatted": "5644.4%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "APOLLOTYRE",
+        "name": "APOLLO TYRES",
+        "sector": "Automotive",
+        "mcap": 24025,
+        "value": 2660,
+        "formatted": "2660.0%"
+      },
+      {
+        "symbol": "MFSL",
+        "name": "MAX FINANCIAL SERV",
+        "sector": "Financial Services",
+        "mcap": 41414,
+        "value": 1860.5,
+        "formatted": "1860.5%"
+      },
+      {
+        "symbol": "CENTUM",
+        "name": "CENTUM ELECTRONICS",
+        "sector": "Consumer & Retail",
+        "mcap": 5890,
+        "value": 1718.6,
+        "formatted": "1718.6%"
+      }
+    ]
+  },
+  {
+    "num": 19,
+    "key": "profitGrowth3Y",
+    "label": "Profit 3Y",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1816,
+    "universeTop3": [
+      {
+        "symbol": "VARDMNPOLY",
+        "name": "VARDHMAN POLYTEX",
+        "sector": "Diversified / Industrials",
+        "mcap": 241,
+        "value": 160975,
+        "formatted": "160975.0%"
+      },
+      {
+        "symbol": "AXITA",
+        "name": "AXITA COTTON",
+        "sector": "Textiles & Apparel",
+        "mcap": 276,
+        "value": 13928.1,
+        "formatted": "13928.1%"
+      },
+      {
+        "symbol": "EMKAY",
+        "name": "EMKAY GLOBAL FIN SERV",
+        "sector": "Diversified / Industrials",
+        "mcap": 698,
+        "value": 5644.4,
+        "formatted": "5644.4%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "APOLLOTYRE",
+        "name": "APOLLO TYRES",
+        "sector": "Automotive",
+        "mcap": 24025,
+        "value": 2660,
+        "formatted": "2660.0%"
+      },
+      {
+        "symbol": "MFSL",
+        "name": "MAX FINANCIAL SERV",
+        "sector": "Financial Services",
+        "mcap": 41414,
+        "value": 1860.5,
+        "formatted": "1860.5%"
+      },
+      {
+        "symbol": "CENTUM",
+        "name": "CENTUM ELECTRONICS",
+        "sector": "Consumer & Retail",
+        "mcap": 5890,
+        "value": 1718.6,
+        "formatted": "1718.6%"
+      }
+    ]
+  },
+  {
+    "num": 20,
+    "key": "profitGrowth5Y",
+    "label": "Profit 5Y",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "VARDMNPOLY",
+        "name": "VARDHMAN POLYTEX",
+        "sector": "Diversified / Industrials",
+        "mcap": 241,
+        "value": 160975,
+        "formatted": "160975.0%"
+      },
+      {
+        "symbol": "AXITA",
+        "name": "AXITA COTTON",
+        "sector": "Textiles & Apparel",
+        "mcap": 276,
+        "value": 13928.1,
+        "formatted": "13928.1%"
+      },
+      {
+        "symbol": "EMKAY",
+        "name": "EMKAY GLOBAL FIN SERV",
+        "sector": "Diversified / Industrials",
+        "mcap": 698,
+        "value": 5644.4,
+        "formatted": "5644.4%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "APOLLOTYRE",
+        "name": "APOLLO TYRES",
+        "sector": "Automotive",
+        "mcap": 24025,
+        "value": 2660,
+        "formatted": "2660.0%"
+      },
+      {
+        "symbol": "MFSL",
+        "name": "MAX FINANCIAL SERV",
+        "sector": "Financial Services",
+        "mcap": 41414,
+        "value": 1860.5,
+        "formatted": "1860.5%"
+      },
+      {
+        "symbol": "MTARTECH",
+        "name": "MTAR TECHNOLOGIES",
+        "sector": "Information Technology",
+        "mcap": 20947,
+        "value": 1309.4,
+        "formatted": "1309.4%"
+      }
+    ]
+  },
+  {
+    "num": 21,
+    "key": "profitGrowth10Y",
+    "label": "Profit 10Y",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "VARDMNPOLY",
+        "name": "VARDHMAN POLYTEX",
+        "sector": "Diversified / Industrials",
+        "mcap": 241,
+        "value": 160975,
+        "formatted": "160975.0%"
+      },
+      {
+        "symbol": "AXITA",
+        "name": "AXITA COTTON",
+        "sector": "Textiles & Apparel",
+        "mcap": 276,
+        "value": 13928.1,
+        "formatted": "13928.1%"
+      },
+      {
+        "symbol": "EMKAY",
+        "name": "EMKAY GLOBAL FIN SERV",
+        "sector": "Diversified / Industrials",
+        "mcap": 698,
+        "value": 5644.4,
+        "formatted": "5644.4%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "APOLLOTYRE",
+        "name": "APOLLO TYRES",
+        "sector": "Automotive",
+        "mcap": 24025,
+        "value": 2660,
+        "formatted": "2660.0%"
+      },
+      {
+        "symbol": "MFSL",
+        "name": "MAX FINANCIAL SERV",
+        "sector": "Financial Services",
+        "mcap": 41414,
+        "value": 1860.5,
+        "formatted": "1860.5%"
+      },
+      {
+        "symbol": "CENTUM",
+        "name": "CENTUM ELECTRONICS",
+        "sector": "Consumer & Retail",
+        "mcap": 5890,
+        "value": 1512.4,
+        "formatted": "1512.4%"
+      }
+    ]
+  },
+  {
+    "num": 22,
+    "key": "epsGrowth",
+    "label": "EPS Growth",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1816,
+    "universeTop3": [
+      {
+        "symbol": "VARDMNPOLY",
+        "name": "VARDHMAN POLYTEX",
+        "sector": "Diversified / Industrials",
+        "mcap": 241,
+        "value": 160975,
+        "formatted": "160975.0%"
+      },
+      {
+        "symbol": "AXITA",
+        "name": "AXITA COTTON",
+        "sector": "Textiles & Apparel",
+        "mcap": 276,
+        "value": 13928.1,
+        "formatted": "13928.1%"
+      },
+      {
+        "symbol": "EMKAY",
+        "name": "EMKAY GLOBAL FIN SERV",
+        "sector": "Diversified / Industrials",
+        "mcap": 698,
+        "value": 5644.4,
+        "formatted": "5644.4%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "APOLLOTYRE",
+        "name": "APOLLO TYRES",
+        "sector": "Automotive",
+        "mcap": 24025,
+        "value": 2660,
+        "formatted": "2660.0%"
+      },
+      {
+        "symbol": "MFSL",
+        "name": "MAX FINANCIAL SERV",
+        "sector": "Financial Services",
+        "mcap": 41414,
+        "value": 1860.5,
+        "formatted": "1860.5%"
+      },
+      {
+        "symbol": "CENTUM",
+        "name": "CENTUM ELECTRONICS",
+        "sector": "Consumer & Retail",
+        "mcap": 5890,
+        "value": 1718.6,
+        "formatted": "1718.6%"
+      }
+    ]
+  },
+  {
+    "num": 23,
+    "key": "ebitdaGrowth",
+    "label": "EBITDA Growth",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1701,
+    "universeTop3": [
+      {
+        "symbol": "VARDMNPOLY",
+        "name": "VARDHMAN POLYTEX",
+        "sector": "Diversified / Industrials",
+        "mcap": 241,
+        "value": 160975,
+        "formatted": "160975.0%"
+      },
+      {
+        "symbol": "AXITA",
+        "name": "AXITA COTTON",
+        "sector": "Textiles & Apparel",
+        "mcap": 276,
+        "value": 13928.1,
+        "formatted": "13928.1%"
+      },
+      {
+        "symbol": "EMKAY",
+        "name": "EMKAY GLOBAL FIN SERV",
+        "sector": "Diversified / Industrials",
+        "mcap": 698,
+        "value": 5644.4,
+        "formatted": "5644.4%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "APOLLOTYRE",
+        "name": "APOLLO TYRES",
+        "sector": "Automotive",
+        "mcap": 24025,
+        "value": 2660,
+        "formatted": "2660.0%"
+      },
+      {
+        "symbol": "MFSL",
+        "name": "MAX FINANCIAL SERV",
+        "sector": "Financial Services",
+        "mcap": 41414,
+        "value": 1860.5,
+        "formatted": "1860.5%"
+      },
+      {
+        "symbol": "CENTUM",
+        "name": "CENTUM ELECTRONICS",
+        "sector": "Consumer & Retail",
+        "mcap": 5890,
+        "value": 1718.6,
+        "formatted": "1718.6%"
+      }
+    ]
+  },
+  {
+    "num": 24,
+    "key": "qtrSalesGrowthYoY",
+    "label": "Qtr Sales YoY",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2056,
+    "universeTop3": [
+      {
+        "symbol": "IBULLSLTD",
+        "name": "INDIABULLS",
+        "sector": "Diversified / Industrials",
+        "mcap": 6870,
+        "value": 1922000,
+        "formatted": "1922000.0%"
+      },
+      {
+        "symbol": "GRANDOAK",
+        "name": "GRAND OAK CANYONS DIST L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1702,
+        "value": 343210,
+        "formatted": "343210.0%"
+      },
+      {
+        "symbol": "AQYLON",
+        "name": "AQYLON NEXUS",
+        "sector": "Diversified / Industrials",
+        "mcap": 340,
+        "value": 24294.8,
+        "formatted": "24294.8%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "IBULLSLTD",
+        "name": "INDIABULLS",
+        "sector": "Diversified / Industrials",
+        "mcap": 6870,
+        "value": 1922000,
+        "formatted": "1922000.0%"
+      },
+      {
+        "symbol": "STARHEALTH",
+        "name": "STAR HEALTH & AL INS CO L",
+        "sector": "Healthcare & Pharma",
+        "mcap": 31232,
+        "value": 5572,
+        "formatted": "5572.0%"
+      },
+      {
+        "symbol": "ABREL",
+        "name": "ADITYA BIRLA REAL EST",
+        "sector": "Diversified / Industrials",
+        "mcap": 11049,
+        "value": 743.2,
+        "formatted": "743.2%"
+      }
+    ]
+  },
+  {
+    "num": 25,
+    "key": "qtrProfitGrowthYoY",
+    "label": "Qtr Profit YoY",
+    "category": "growth",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1671,
+    "universeTop3": [
+      {
+        "symbol": "VARDMNPOLY",
+        "name": "VARDHMAN POLYTEX",
+        "sector": "Diversified / Industrials",
+        "mcap": 241,
+        "value": 160975,
+        "formatted": "160975.0%"
+      },
+      {
+        "symbol": "AXITA",
+        "name": "AXITA COTTON",
+        "sector": "Textiles & Apparel",
+        "mcap": 276,
+        "value": 13928.1,
+        "formatted": "13928.1%"
+      },
+      {
+        "symbol": "EMKAY",
+        "name": "EMKAY GLOBAL FIN SERV",
+        "sector": "Diversified / Industrials",
+        "mcap": 698,
+        "value": 5644.4,
+        "formatted": "5644.4%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "APOLLOTYRE",
+        "name": "APOLLO TYRES",
+        "sector": "Automotive",
+        "mcap": 24025,
+        "value": 2660,
+        "formatted": "2660.0%"
+      },
+      {
+        "symbol": "MFSL",
+        "name": "MAX FINANCIAL SERV",
+        "sector": "Financial Services",
+        "mcap": 41414,
+        "value": 1860.5,
+        "formatted": "1860.5%"
+      },
+      {
+        "symbol": "MTARTECH",
+        "name": "MTAR TECHNOLOGIES",
+        "sector": "Information Technology",
+        "mcap": 20947,
+        "value": 1309.4,
+        "formatted": "1309.4%"
+      }
+    ]
+  },
+  {
+    "num": 26,
+    "key": "roce",
+    "label": "ROCE",
+    "category": "profitability",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1941,
+    "universeTop3": [
+      {
+        "symbol": "SUPREMEINF",
+        "name": "SUPREME INFRA.",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 526,
+        "value": 1383.2,
+        "formatted": "1383.2%"
+      },
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 292.6,
+        "formatted": "292.6%"
+      },
+      {
+        "symbol": "NOIDATOLL",
+        "name": "NOIDA TOLL BRIDGE CO",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 64,
+        "value": 172.2,
+        "formatted": "172.2%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 292.6,
+        "formatted": "292.6%"
+      },
+      {
+        "symbol": "OFSS",
+        "name": "ORACLE FIN SERV SOFT",
+        "sector": "Diversified / Industrials",
+        "mcap": 87058,
+        "value": 142.2,
+        "formatted": "142.2%"
+      },
+      {
+        "symbol": "TIPSMUSIC",
+        "name": "TIPS MUSIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 9869,
+        "value": 110.2,
+        "formatted": "110.2%"
+      }
+    ]
+  },
+  {
+    "num": 27,
+    "key": "roe",
+    "label": "ROE",
+    "category": "profitability",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1941,
+    "universeTop3": [
+      {
+        "symbol": "SUPREMEINF",
+        "name": "SUPREME INFRA.",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 526,
+        "value": 3293.3,
+        "formatted": "3293.3%"
+      },
+      {
+        "symbol": "GAYAPROJ",
+        "name": "GAYATRI PROJECTS",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 881,
+        "value": 343.9,
+        "formatted": "343.9%"
+      },
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 293.8,
+        "formatted": "293.8%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 293.8,
+        "formatted": "293.8%"
+      },
+      {
+        "symbol": "SPARC",
+        "name": "SUN PHARMA ADV.RES.CO.LTD",
+        "sector": "Healthcare & Pharma",
+        "mcap": 5728,
+        "value": 118.3,
+        "formatted": "118.3%"
+      },
+      {
+        "symbol": "PGHH",
+        "name": "P&G HYGIENE & HEALTH CARE",
+        "sector": "Healthcare & Pharma",
+        "mcap": 22268,
+        "value": 105,
+        "formatted": "105.0%"
+      }
+    ]
+  },
+  {
+    "num": 28,
+    "key": "roic",
+    "label": "ROIC",
+    "category": "profitability",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1941,
+    "universeTop3": [
+      {
+        "symbol": "SUPREMEINF",
+        "name": "SUPREME INFRA.",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 526,
+        "value": 1175.7,
+        "formatted": "1175.7%"
+      },
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 248.7,
+        "formatted": "248.7%"
+      },
+      {
+        "symbol": "NOIDATOLL",
+        "name": "NOIDA TOLL BRIDGE CO",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 64,
+        "value": 129.2,
+        "formatted": "129.2%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 248.7,
+        "formatted": "248.7%"
+      },
+      {
+        "symbol": "OFSS",
+        "name": "ORACLE FIN SERV SOFT",
+        "sector": "Diversified / Industrials",
+        "mcap": 87058,
+        "value": 120.9,
+        "formatted": "120.9%"
+      },
+      {
+        "symbol": "PGHH",
+        "name": "P&G HYGIENE & HEALTH CARE",
+        "sector": "Healthcare & Pharma",
+        "mcap": 22268,
+        "value": 89.3,
+        "formatted": "89.3%"
+      }
+    ]
+  },
+  {
+    "num": 29,
+    "key": "roa",
+    "label": "ROA",
+    "category": "profitability",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "TIPSMUSIC",
+        "name": "TIPS MUSIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 9869,
+        "value": 59.87,
+        "formatted": "59.9%"
+      },
+      {
+        "symbol": "KSOLVES",
+        "name": "KSOLVES INDIA",
+        "sector": "Diversified / Industrials",
+        "mcap": 475,
+        "value": 49.8,
+        "formatted": "49.8%"
+      },
+      {
+        "symbol": "HINDZINC",
+        "name": "HINDUSTAN ZINC",
+        "sector": "Metals & Mining",
+        "mcap": 213717,
+        "value": 41.2,
+        "formatted": "41.2%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "TIPSMUSIC",
+        "name": "TIPS MUSIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 9869,
+        "value": 59.87,
+        "formatted": "59.9%"
+      },
+      {
+        "symbol": "HINDZINC",
+        "name": "HINDUSTAN ZINC",
+        "sector": "Metals & Mining",
+        "mcap": 213717,
+        "value": 41.2,
+        "formatted": "41.2%"
+      },
+      {
+        "symbol": "COLPAL",
+        "name": "COLGATE PALMOLIVE",
+        "sector": "Diversified / Industrials",
+        "mcap": 43423,
+        "value": 32.4,
+        "formatted": "32.4%"
+      }
+    ]
+  },
+  {
+    "num": 30,
+    "key": "opm",
+    "label": "OPM",
+    "category": "profitability",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2000,
+    "universeTop3": [
+      {
+        "symbol": "LPDC",
+        "name": "LANDMARK PR.DEV.CO.LTD",
+        "sector": "Real Estate",
+        "mcap": 76,
+        "value": 628.3,
+        "formatted": "628.3%"
+      },
+      {
+        "symbol": "GNRL",
+        "name": "GUJARAT NATURAL RES L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1473,
+        "value": 172.7,
+        "formatted": "172.7%"
+      },
+      {
+        "symbol": "ZSARACOM",
+        "name": "SARASWATI COMM (INDIA) L",
+        "sector": "Diversified / Industrials",
+        "mcap": 991,
+        "value": 98.4,
+        "formatted": "98.4%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "NTPCGREEN",
+        "name": "NTPC GREEN ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 69391,
+        "value": 96.4,
+        "formatted": "96.4%"
+      },
+      {
+        "symbol": "ADANIGREEN",
+        "name": "ADANI GREEN ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 213919,
+        "value": 91.1,
+        "formatted": "91.1%"
+      },
+      {
+        "symbol": "IREDA",
+        "name": "INDIAN RENEWABLE ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 27952,
+        "value": 91,
+        "formatted": "91.0%"
+      }
+    ]
+  },
+  {
+    "num": 31,
+    "key": "npm",
+    "label": "NPM",
+    "category": "profitability",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2194,
+    "universeTop3": [
+      {
+        "symbol": "MAHSCOOTER",
+        "name": "MAHARASHTRA SCOOTERS",
+        "sector": "Financial Services",
+        "mcap": 13258,
+        "value": 99.2,
+        "formatted": "99.2%"
+      },
+      {
+        "symbol": "LPDC",
+        "name": "LANDMARK PR.DEV.CO.LTD",
+        "sector": "Real Estate",
+        "mcap": 76,
+        "value": 98.7,
+        "formatted": "98.7%"
+      },
+      {
+        "symbol": "CORALFINAC",
+        "name": "CORAL INDIA FIN & HOUS LT",
+        "sector": "Diversified / Industrials",
+        "mcap": 111,
+        "value": 97.2,
+        "formatted": "97.2%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "MAHSCOOTER",
+        "name": "MAHARASHTRA SCOOTERS",
+        "sector": "Financial Services",
+        "mcap": 13258,
+        "value": 99.2,
+        "formatted": "99.2%"
+      },
+      {
+        "symbol": "IRFC",
+        "name": "INDIAN RAILWAY FIN CORP L",
+        "sector": "Financial Services",
+        "mcap": 95884,
+        "value": 97.1,
+        "formatted": "97.1%"
+      },
+      {
+        "symbol": "HUDCO",
+        "name": "HSG & URBAN DEV CORPN",
+        "sector": "Diversified / Industrials",
+        "mcap": 28563,
+        "value": 90.7,
+        "formatted": "90.7%"
+      }
+    ]
+  },
+  {
+    "num": 32,
+    "key": "grossMargin",
+    "label": "Gross Margin",
+    "category": "profitability",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2189,
+    "universeTop3": [
+      {
+        "symbol": "VOGL",
+        "name": "VEDANTA OIL AND GAS",
+        "sector": "Energy & Power",
+        "mcap": 11712,
+        "value": 531.3,
+        "formatted": "531.3%"
+      },
+      {
+        "symbol": "ARTNIRMAN",
+        "name": "ART NIRMAN",
+        "sector": "Diversified / Industrials",
+        "mcap": 92,
+        "value": 161.7,
+        "formatted": "161.7%"
+      },
+      {
+        "symbol": "ORISSAMINE",
+        "name": "ORISSA MIN DEV CO",
+        "sector": "Diversified / Industrials",
+        "mcap": 1896,
+        "value": 117.3,
+        "formatted": "117.3%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "VOGL",
+        "name": "VEDANTA OIL AND GAS",
+        "sector": "Energy & Power",
+        "mcap": 11712,
+        "value": 531.3,
+        "formatted": "531.3%"
+      },
+      {
+        "symbol": "VISL",
+        "name": "VEDANTA IRON AND STEEL L",
+        "sector": "Metals & Mining",
+        "mcap": 9944,
+        "value": 105.6,
+        "formatted": "105.6%"
+      },
+      {
+        "symbol": "CDSL",
+        "name": "Central Depository Services (India) Limited",
+        "sector": "Financial Capital Markets",
+        "mcap": 26397,
+        "value": 100,
+        "formatted": "100.0%"
+      }
+    ]
+  },
+  {
+    "num": 33,
+    "key": "ebitdaMargin",
+    "label": "EBITDA Margin",
+    "category": "profitability",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2000,
+    "universeTop3": [
+      {
+        "symbol": "LPDC",
+        "name": "LANDMARK PR.DEV.CO.LTD",
+        "sector": "Real Estate",
+        "mcap": 76,
+        "value": 722.5,
+        "formatted": "722.5%"
+      },
+      {
+        "symbol": "GNRL",
+        "name": "GUJARAT NATURAL RES L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1473,
+        "value": 198.6,
+        "formatted": "198.6%"
+      },
+      {
+        "symbol": "ZSARACOM",
+        "name": "SARASWATI COMM (INDIA) L",
+        "sector": "Diversified / Industrials",
+        "mcap": 991,
+        "value": 113.2,
+        "formatted": "113.2%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "ADANIGREEN",
+        "name": "ADANI GREEN ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 213919,
+        "value": 104.8,
+        "formatted": "104.8%"
+      },
+      {
+        "symbol": "IREDA",
+        "name": "INDIAN RENEWABLE ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 27952,
+        "value": 104.6,
+        "formatted": "104.6%"
+      },
+      {
+        "symbol": "HUDCO",
+        "name": "HSG & URBAN DEV CORPN",
+        "sector": "Diversified / Industrials",
+        "mcap": 28563,
+        "value": 104.2,
+        "formatted": "104.2%"
+      }
+    ]
+  },
+  {
+    "num": 34,
+    "key": "roce3YAvg",
+    "label": "3Y ROCE",
+    "category": "profitability",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1941,
+    "universeTop3": [
+      {
+        "symbol": "SUPREMEINF",
+        "name": "SUPREME INFRA.",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 526,
+        "value": 1383.2,
+        "formatted": "1383.2%"
+      },
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 292.6,
+        "formatted": "292.6%"
+      },
+      {
+        "symbol": "NOIDATOLL",
+        "name": "NOIDA TOLL BRIDGE CO",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 64,
+        "value": 172.2,
+        "formatted": "172.2%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 292.6,
+        "formatted": "292.6%"
+      },
+      {
+        "symbol": "OFSS",
+        "name": "ORACLE FIN SERV SOFT",
+        "sector": "Diversified / Industrials",
+        "mcap": 87058,
+        "value": 142.2,
+        "formatted": "142.2%"
+      },
+      {
+        "symbol": "TIPSMUSIC",
+        "name": "TIPS MUSIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 9869,
+        "value": 110.2,
+        "formatted": "110.2%"
+      }
+    ]
+  },
+  {
+    "num": 35,
+    "key": "roe3YAvg",
+    "label": "3Y ROE",
+    "category": "profitability",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1941,
+    "universeTop3": [
+      {
+        "symbol": "SUPREMEINF",
+        "name": "SUPREME INFRA.",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 526,
+        "value": 3293.3,
+        "formatted": "3293.3%"
+      },
+      {
+        "symbol": "GAYAPROJ",
+        "name": "GAYATRI PROJECTS",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 881,
+        "value": 343.9,
+        "formatted": "343.9%"
+      },
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 293.8,
+        "formatted": "293.8%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 293.8,
+        "formatted": "293.8%"
+      },
+      {
+        "symbol": "SPARC",
+        "name": "SUN PHARMA ADV.RES.CO.LTD",
+        "sector": "Healthcare & Pharma",
+        "mcap": 5728,
+        "value": 118.3,
+        "formatted": "118.3%"
+      },
+      {
+        "symbol": "PGHH",
+        "name": "P&G HYGIENE & HEALTH CARE",
+        "sector": "Healthcare & Pharma",
+        "mcap": 22268,
+        "value": 105,
+        "formatted": "105.0%"
+      }
+    ]
+  },
+  {
+    "num": 36,
+    "key": "roce5YAvg",
+    "label": "5Y ROCE",
+    "category": "profitability",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 1941,
+    "universeTop3": [
+      {
+        "symbol": "SUPREMEINF",
+        "name": "SUPREME INFRA.",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 526,
+        "value": 1383.2,
+        "formatted": "1383.2%"
+      },
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 292.6,
+        "formatted": "292.6%"
+      },
+      {
+        "symbol": "NOIDATOLL",
+        "name": "NOIDA TOLL BRIDGE CO",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 64,
+        "value": 172.2,
+        "formatted": "172.2%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "ZFCVINDIA",
+        "name": "ZF COM VE CTR SYS IND",
+        "sector": "Diversified / Industrials",
+        "mcap": 23753,
+        "value": 292.6,
+        "formatted": "292.6%"
+      },
+      {
+        "symbol": "OFSS",
+        "name": "ORACLE FIN SERV SOFT",
+        "sector": "Diversified / Industrials",
+        "mcap": 87058,
+        "value": 142.2,
+        "formatted": "142.2%"
+      },
+      {
+        "symbol": "TIPSMUSIC",
+        "name": "TIPS MUSIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 9869,
+        "value": 110.2,
+        "formatted": "110.2%"
+      }
+    ]
+  },
+  {
+    "num": 37,
+    "key": "debtToEquity",
+    "label": "D/E",
+    "category": "health",
+    "unit": "x",
+    "higherIsBetter": false,
+    "totalPopulated": 1873,
+    "universeTop3": [
+      {
+        "symbol": "TIPSFILMS",
+        "name": "TIPS FILMS",
+        "sector": "Telecommunications & Media",
+        "mcap": 138,
+        "value": 28345.12,
+        "formatted": "28345.12x"
+      },
+      {
+        "symbol": "INDIGO",
+        "name": "INTERGLOBE AVIATION",
+        "sector": "Diversified / Industrials",
+        "mcap": 188600,
+        "value": 17.39,
+        "formatted": "17.39x"
+      },
+      {
+        "symbol": "DELTAMAGNT",
+        "name": "DELTA MANUFACTURING",
+        "sector": "Diversified / Industrials",
+        "mcap": 60,
+        "value": 17.33,
+        "formatted": "17.33x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "INDIGO",
+        "name": "INTERGLOBE AVIATION",
+        "sector": "Diversified / Industrials",
+        "mcap": 188600,
+        "value": 17.39,
+        "formatted": "17.39x"
+      },
+      {
+        "symbol": "WEWORK",
+        "name": "WEWORK INDIA MANAGEMENT L",
+        "sector": "Diversified / Industrials",
+        "mcap": 8843,
+        "value": 16.44,
+        "formatted": "16.44x"
+      },
+      {
+        "symbol": "SMARTWORKS",
+        "name": "SMARTWORKS COWORKING SP L",
+        "sector": "Diversified / Industrials",
+        "mcap": 5542,
+        "value": 10.29,
+        "formatted": "10.29x"
+      }
+    ]
+  },
+  {
+    "num": 38,
+    "key": "netDebt",
+    "label": "Net Debt",
+    "category": "health",
+    "unit": "Cr",
+    "higherIsBetter": false,
+    "totalPopulated": 2189,
+    "universeTop3": [
+      {
+        "symbol": "NTPC",
+        "name": "NTPC",
+        "sector": "Diversified / Industrials",
+        "mcap": 306657,
+        "value": 271713,
+        "formatted": "₹2,71,713 Cr"
+      },
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 260673,
+        "formatted": "₹2,60,673 Cr"
+      },
+      {
+        "symbol": "GRASIM",
+        "name": "GRASIM INDUSTRIES",
+        "sector": "Diversified / Industrials",
+        "mcap": 202225,
+        "value": 206422,
+        "formatted": "₹2,06,422 Cr"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "NTPC",
+        "name": "NTPC",
+        "sector": "Diversified / Industrials",
+        "mcap": 306657,
+        "value": 271713,
+        "formatted": "₹2,71,713 Cr"
+      },
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 260673,
+        "formatted": "₹2,60,673 Cr"
+      },
+      {
+        "symbol": "GRASIM",
+        "name": "GRASIM INDUSTRIES",
+        "sector": "Diversified / Industrials",
+        "mcap": 202225,
+        "value": 206422,
+        "formatted": "₹2,06,422 Cr"
+      }
+    ]
+  },
+  {
+    "num": 39,
+    "key": "interestCoverage",
+    "label": "Int Coverage",
+    "category": "health",
+    "unit": "x",
+    "higherIsBetter": true,
+    "totalPopulated": 2189,
+    "universeTop3": [
+      {
+        "symbol": "NOIDATOLL",
+        "name": "NOIDA TOLL BRIDGE CO",
+        "sector": "Infrastructure & Capital Goods",
+        "mcap": 64,
+        "value": 6946.6,
+        "formatted": "6946.6x"
+      },
+      {
+        "symbol": "GNRL",
+        "name": "GUJARAT NATURAL RES L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1473,
+        "value": 1956.7,
+        "formatted": "1956.7x"
+      },
+      {
+        "symbol": "TIPSMUSIC",
+        "name": "TIPS MUSIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 9869,
+        "value": 1461.8,
+        "formatted": "1461.8x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "TIPSMUSIC",
+        "name": "TIPS MUSIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 9869,
+        "value": 1461.8,
+        "formatted": "1461.8x"
+      },
+      {
+        "symbol": "NESCO",
+        "name": "NESCO",
+        "sector": "Diversified / Industrials",
+        "mcap": 6993,
+        "value": 421.1,
+        "formatted": "421.1x"
+      },
+      {
+        "symbol": "SOLARINDS",
+        "name": "SOLAR INDUSTRIES (I)",
+        "sector": "Energy & Power",
+        "mcap": 170121,
+        "value": 284.7,
+        "formatted": "284.7x"
+      }
+    ]
+  },
+  {
+    "num": 40,
+    "key": "currentRatio",
+    "label": "Current Ratio",
+    "category": "health",
+    "unit": "x",
+    "higherIsBetter": true,
+    "totalPopulated": 2189,
+    "universeTop3": [
+      {
+        "symbol": "GRANDOAK",
+        "name": "GRAND OAK CANYONS DIST L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1702,
+        "value": 389088.66,
+        "formatted": "389088.66x"
+      },
+      {
+        "symbol": "NIVABUPA",
+        "name": "NIVA BUPA HEALTH INS CO L",
+        "sector": "Healthcare & Pharma",
+        "mcap": 13447,
+        "value": 1358.16,
+        "formatted": "1358.16x"
+      },
+      {
+        "symbol": "IREDA",
+        "name": "INDIAN RENEWABLE ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 27952,
+        "value": 932.74,
+        "formatted": "932.74x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "NIVABUPA",
+        "name": "NIVA BUPA HEALTH INS CO L",
+        "sector": "Healthcare & Pharma",
+        "mcap": 13447,
+        "value": 1358.16,
+        "formatted": "1358.16x"
+      },
+      {
+        "symbol": "IREDA",
+        "name": "INDIAN RENEWABLE ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 27952,
+        "value": 932.74,
+        "formatted": "932.74x"
+      },
+      {
+        "symbol": "PAISALO",
+        "name": "PAISALO DIGITAL",
+        "sector": "Information Technology",
+        "mcap": 7253,
+        "value": 99.52,
+        "formatted": "99.52x"
+      }
+    ]
+  },
+  {
+    "num": 41,
+    "key": "quickRatio",
+    "label": "Quick Ratio",
+    "category": "health",
+    "unit": "x",
+    "higherIsBetter": true,
+    "totalPopulated": 2189,
+    "universeTop3": [
+      {
+        "symbol": "GRANDOAK",
+        "name": "GRAND OAK CANYONS DIST L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1702,
+        "value": 360951,
+        "formatted": "360951.00x"
+      },
+      {
+        "symbol": "IREDA",
+        "name": "INDIAN RENEWABLE ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 27952,
+        "value": 932.43,
+        "formatted": "932.43x"
+      },
+      {
+        "symbol": "AFIL",
+        "name": "AKME FINTRADE (INDIA)",
+        "sector": "Diversified / Industrials",
+        "mcap": 307,
+        "value": 124.66,
+        "formatted": "124.66x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "IREDA",
+        "name": "INDIAN RENEWABLE ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 27952,
+        "value": 932.43,
+        "formatted": "932.43x"
+      },
+      {
+        "symbol": "NIVABUPA",
+        "name": "NIVA BUPA HEALTH INS CO L",
+        "sector": "Healthcare & Pharma",
+        "mcap": 13447,
+        "value": 114.67,
+        "formatted": "114.67x"
+      },
+      {
+        "symbol": "PAISALO",
+        "name": "PAISALO DIGITAL",
+        "sector": "Information Technology",
+        "mcap": 7253,
+        "value": 99.52,
+        "formatted": "99.52x"
+      }
+    ]
+  },
+  {
+    "num": 42,
+    "key": "cfo",
+    "label": "CFO",
+    "category": "health",
+    "unit": "Cr",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 192113,
+        "formatted": "₹1,92,113 Cr"
+      },
+      {
+        "symbol": "BHARTIARTL",
+        "name": "BHARTI AIRTEL",
+        "sector": "Consumer & Retail",
+        "mcap": 1231324,
+        "value": 122230,
+        "formatted": "₹1,22,230 Cr"
+      },
+      {
+        "symbol": "HDFCBANK",
+        "name": "HDFC Bank Limited",
+        "sector": "Financial Services",
+        "mcap": 1069149,
+        "value": 111856,
+        "formatted": "₹1,11,856 Cr"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 192113,
+        "formatted": "₹1,92,113 Cr"
+      },
+      {
+        "symbol": "BHARTIARTL",
+        "name": "BHARTI AIRTEL",
+        "sector": "Consumer & Retail",
+        "mcap": 1231324,
+        "value": 122230,
+        "formatted": "₹1,22,230 Cr"
+      },
+      {
+        "symbol": "HDFCBANK",
+        "name": "HDFC Bank Limited",
+        "sector": "Financial Services",
+        "mcap": 1069149,
+        "value": 111856,
+        "formatted": "₹1,11,856 Cr"
+      }
+    ]
+  },
+  {
+    "num": 43,
+    "key": "freeCashFlow",
+    "label": "FCF",
+    "category": "health",
+    "unit": "Cr",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "HDFCBANK",
+        "name": "HDFC Bank Limited",
+        "sector": "Financial Services",
+        "mcap": 1069149,
+        "value": 106578,
+        "formatted": "₹1,06,578 Cr"
+      },
+      {
+        "symbol": "BHARTIARTL",
+        "name": "BHARTI AIRTEL",
+        "sector": "Consumer & Retail",
+        "mcap": 1231324,
+        "value": 75515,
+        "formatted": "₹75,515 Cr"
+      },
+      {
+        "symbol": "SBIN",
+        "name": "STATE BANK OF INDIA",
+        "sector": "Financial Services",
+        "mcap": 887861,
+        "value": 69431,
+        "formatted": "₹69,431 Cr"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "HDFCBANK",
+        "name": "HDFC Bank Limited",
+        "sector": "Financial Services",
+        "mcap": 1069149,
+        "value": 106578,
+        "formatted": "₹1,06,578 Cr"
+      },
+      {
+        "symbol": "BHARTIARTL",
+        "name": "BHARTI AIRTEL",
+        "sector": "Consumer & Retail",
+        "mcap": 1231324,
+        "value": 75515,
+        "formatted": "₹75,515 Cr"
+      },
+      {
+        "symbol": "SBIN",
+        "name": "STATE BANK OF INDIA",
+        "sector": "Financial Services",
+        "mcap": 887861,
+        "value": 69431,
+        "formatted": "₹69,431 Cr"
+      }
+    ]
+  },
+  {
+    "num": 44,
+    "key": "cashConversionCycle",
+    "label": "Cash Cycle",
+    "category": "health",
+    "unit": "days",
+    "higherIsBetter": false,
+    "totalPopulated": 2189,
+    "universeTop3": [
+      {
+        "symbol": "SUNPHARMA",
+        "name": "Sun Pharmaceutical Industries Limited",
+        "sector": "Pharmaceuticals & Healthcare",
+        "mcap": 426530,
+        "value": 195,
+        "formatted": "195"
+      },
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 75,
+        "formatted": "75"
+      },
+      {
+        "symbol": "TCS",
+        "name": "Tata Consultancy Services",
+        "sector": "Information Technology",
+        "mcap": 905463,
+        "value": 75,
+        "formatted": "75"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "SUNPHARMA",
+        "name": "Sun Pharmaceutical Industries Limited",
+        "sector": "Pharmaceuticals & Healthcare",
+        "mcap": 426530,
+        "value": 195,
+        "formatted": "195"
+      },
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 75,
+        "formatted": "75"
+      },
+      {
+        "symbol": "TCS",
+        "name": "Tata Consultancy Services",
+        "sector": "Information Technology",
+        "mcap": 905463,
+        "value": 75,
+        "formatted": "75"
+      }
+    ]
+  },
+  {
+    "num": 45,
+    "key": "workingCapitalDays",
+    "label": "WC Days",
+    "category": "health",
+    "unit": "days",
+    "higherIsBetter": false,
+    "totalPopulated": 2189,
+    "universeTop3": [
+      {
+        "symbol": "TIPSMUSIC",
+        "name": "TIPS MUSIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 9869,
+        "value": 669,
+        "formatted": "669"
+      },
+      {
+        "symbol": "UEL",
+        "name": "UJAAS ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 2482,
+        "value": 355,
+        "formatted": "355"
+      },
+      {
+        "symbol": "SUNPHARMA",
+        "name": "Sun Pharmaceutical Industries Limited",
+        "sector": "Pharmaceuticals & Healthcare",
+        "mcap": 426530,
+        "value": 353,
+        "formatted": "353"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "TIPSMUSIC",
+        "name": "TIPS MUSIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 9869,
+        "value": 669,
+        "formatted": "669"
+      },
+      {
+        "symbol": "SUNPHARMA",
+        "name": "Sun Pharmaceutical Industries Limited",
+        "sector": "Pharmaceuticals & Healthcare",
+        "mcap": 426530,
+        "value": 353,
+        "formatted": "353"
+      },
+      {
+        "symbol": "TCS",
+        "name": "Tata Consultancy Services",
+        "sector": "Information Technology",
+        "mcap": 905463,
+        "value": 270,
+        "formatted": "270"
+      }
+    ]
+  },
+  {
+    "num": 46,
+    "key": "capex",
+    "label": "CapEx",
+    "category": "health",
+    "unit": "Cr",
+    "higherIsBetter": false,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 122916,
+        "formatted": "₹1,22,916 Cr"
+      },
+      {
+        "symbol": "NTPC",
+        "name": "NTPC",
+        "sector": "Diversified / Industrials",
+        "mcap": 306657,
+        "value": 69371,
+        "formatted": "₹69,371 Cr"
+      },
+      {
+        "symbol": "BHARTIARTL",
+        "name": "BHARTI AIRTEL",
+        "sector": "Consumer & Retail",
+        "mcap": 1231324,
+        "value": 46714,
+        "formatted": "₹46,714 Cr"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 122916,
+        "formatted": "₹1,22,916 Cr"
+      },
+      {
+        "symbol": "NTPC",
+        "name": "NTPC",
+        "sector": "Diversified / Industrials",
+        "mcap": 306657,
+        "value": 69371,
+        "formatted": "₹69,371 Cr"
+      },
+      {
+        "symbol": "BHARTIARTL",
+        "name": "BHARTI AIRTEL",
+        "sector": "Consumer & Retail",
+        "mcap": 1231324,
+        "value": 46714,
+        "formatted": "₹46,714 Cr"
+      }
+    ]
+  },
+  {
+    "num": 47,
+    "key": "debtReduction3Y",
+    "label": "Debt Red 3Y",
+    "category": "health",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2189,
+    "universeTop3": [
+      {
+        "symbol": "TIMEX",
+        "name": "TIMEX GROUP INDIA",
+        "sector": "Diversified / Industrials",
+        "mcap": 6097,
+        "value": 82.4,
+        "formatted": "82.4%"
+      },
+      {
+        "symbol": "UEL",
+        "name": "UJAAS ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 2482,
+        "value": 77.3,
+        "formatted": "77.3%"
+      },
+      {
+        "symbol": "CENTUM",
+        "name": "CENTUM ELECTRONICS",
+        "sector": "Consumer & Retail",
+        "mcap": 5890,
+        "value": 59.8,
+        "formatted": "59.8%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "TIMEX",
+        "name": "TIMEX GROUP INDIA",
+        "sector": "Diversified / Industrials",
+        "mcap": 6097,
+        "value": 82.4,
+        "formatted": "82.4%"
+      },
+      {
+        "symbol": "CENTUM",
+        "name": "CENTUM ELECTRONICS",
+        "sector": "Consumer & Retail",
+        "mcap": 5890,
+        "value": 59.8,
+        "formatted": "59.8%"
+      },
+      {
+        "symbol": "TATAMOTORS",
+        "name": "Tata Motors Limited",
+        "sector": "Automobile & EV Mobility",
+        "mcap": 97685,
+        "value": 58.5,
+        "formatted": "58.5%"
+      }
+    ]
+  },
+  {
+    "num": 48,
+    "key": "piotroskiScore",
+    "label": "Piotroski",
+    "category": "health",
+    "unit": "/9",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "LTIM",
+        "name": "LTIMindtree Limited",
+        "sector": "Information Technology",
+        "mcap": 125310,
+        "value": 9,
+        "formatted": "9"
+      },
+      {
+        "symbol": "TITAN",
+        "name": "Titan Company Limited",
+        "sector": "Consumer Discretionary",
+        "mcap": 393656,
+        "value": 9,
+        "formatted": "9"
+      },
+      {
+        "symbol": "POLYCAB",
+        "name": "Polycab India Limited",
+        "sector": "Capital Goods",
+        "mcap": 117347,
+        "value": 9,
+        "formatted": "9"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "LTIM",
+        "name": "LTIMindtree Limited",
+        "sector": "Information Technology",
+        "mcap": 125310,
+        "value": 9,
+        "formatted": "9"
+      },
+      {
+        "symbol": "TITAN",
+        "name": "Titan Company Limited",
+        "sector": "Consumer Discretionary",
+        "mcap": 393656,
+        "value": 9,
+        "formatted": "9"
+      },
+      {
+        "symbol": "POLYCAB",
+        "name": "Polycab India Limited",
+        "sector": "Capital Goods",
+        "mcap": 117347,
+        "value": 9,
+        "formatted": "9"
+      }
+    ]
+  },
+  {
+    "num": 49,
+    "key": "altmanZScore",
+    "label": "Altman Z",
+    "category": "health",
+    "unit": "",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "TIMEX",
+        "name": "TIMEX GROUP INDIA",
+        "sector": "Diversified / Industrials",
+        "mcap": 6097,
+        "value": 164.36,
+        "formatted": "164.36x"
+      },
+      {
+        "symbol": "CUPID",
+        "name": "CUPID",
+        "sector": "Diversified / Industrials",
+        "mcap": 43675,
+        "value": 158.35,
+        "formatted": "158.35x"
+      },
+      {
+        "symbol": "SHUKRAPHAR",
+        "name": "SHUKRA PHARMACEUTICALS L",
+        "sector": "Healthcare & Pharma",
+        "mcap": 3313,
+        "value": 146.84,
+        "formatted": "146.84x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "TIMEX",
+        "name": "TIMEX GROUP INDIA",
+        "sector": "Diversified / Industrials",
+        "mcap": 6097,
+        "value": 164.36,
+        "formatted": "164.36x"
+      },
+      {
+        "symbol": "CUPID",
+        "name": "CUPID",
+        "sector": "Diversified / Industrials",
+        "mcap": 43675,
+        "value": 158.35,
+        "formatted": "158.35x"
+      },
+      {
+        "symbol": "GVT&D",
+        "name": "GE VERNOVA T&D INDIA",
+        "sector": "Diversified / Industrials",
+        "mcap": 102931,
+        "value": 118.25,
+        "formatted": "118.25x"
+      }
+    ]
+  },
+  {
+    "num": 50,
+    "key": "promoterHolding",
+    "label": "Promoter %",
+    "category": "ownership",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "GRANDOAK",
+        "name": "GRAND OAK CANYONS DIST L",
+        "sector": "Diversified / Industrials",
+        "mcap": 1702,
+        "value": 99.28,
+        "formatted": "99.28%"
+      },
+      {
+        "symbol": "KIOCL",
+        "name": "KIOCL",
+        "sector": "Diversified / Industrials",
+        "mcap": 19691,
+        "value": 99.04,
+        "formatted": "99.04%"
+      },
+      {
+        "symbol": "UEL",
+        "name": "UJAAS ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 2482,
+        "value": 98.58,
+        "formatted": "98.58%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "KIOCL",
+        "name": "KIOCL",
+        "sector": "Diversified / Industrials",
+        "mcap": 19691,
+        "value": 99.04,
+        "formatted": "99.04%"
+      },
+      {
+        "symbol": "ITI",
+        "name": "ITI",
+        "sector": "Diversified / Industrials",
+        "mcap": 20716,
+        "value": 97.9,
+        "formatted": "97.90%"
+      },
+      {
+        "symbol": "GALLANTT",
+        "name": "GALLANTT ISPAT",
+        "sector": "Diversified / Industrials",
+        "mcap": 13391,
+        "value": 96.61,
+        "formatted": "96.61%"
+      }
+    ]
+  },
+  {
+    "num": 51,
+    "key": "promoterHoldingChange3Y",
+    "label": "Prom Change 3Y",
+    "category": "ownership",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 0,
+        "formatted": "0.00%"
+      },
+      {
+        "symbol": "TCS",
+        "name": "Tata Consultancy Services",
+        "sector": "Information Technology",
+        "mcap": 905463,
+        "value": 0,
+        "formatted": "0.00%"
+      },
+      {
+        "symbol": "INFY",
+        "name": "Infosys Limited",
+        "sector": "Information Technology",
+        "mcap": 479970,
+        "value": 0,
+        "formatted": "0.00%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 0,
+        "formatted": "0.00%"
+      },
+      {
+        "symbol": "TCS",
+        "name": "Tata Consultancy Services",
+        "sector": "Information Technology",
+        "mcap": 905463,
+        "value": 0,
+        "formatted": "0.00%"
+      },
+      {
+        "symbol": "INFY",
+        "name": "Infosys Limited",
+        "sector": "Information Technology",
+        "mcap": 479970,
+        "value": 0,
+        "formatted": "0.00%"
+      }
+    ]
+  },
+  {
+    "num": 52,
+    "key": "pledgedPct",
+    "label": "Pledged %",
+    "category": "ownership",
+    "unit": "%",
+    "higherIsBetter": false,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 0,
+        "formatted": "0.00%"
+      },
+      {
+        "symbol": "TCS",
+        "name": "Tata Consultancy Services",
+        "sector": "Information Technology",
+        "mcap": 905463,
+        "value": 0,
+        "formatted": "0.00%"
+      },
+      {
+        "symbol": "INFY",
+        "name": "Infosys Limited",
+        "sector": "Information Technology",
+        "mcap": 479970,
+        "value": 0,
+        "formatted": "0.00%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 0,
+        "formatted": "0.00%"
+      },
+      {
+        "symbol": "TCS",
+        "name": "Tata Consultancy Services",
+        "sector": "Information Technology",
+        "mcap": 905463,
+        "value": 0,
+        "formatted": "0.00%"
+      },
+      {
+        "symbol": "INFY",
+        "name": "Infosys Limited",
+        "sector": "Information Technology",
+        "mcap": 479970,
+        "value": 0,
+        "formatted": "0.00%"
+      }
+    ]
+  },
+  {
+    "num": 53,
+    "key": "fiiHolding",
+    "label": "FII %",
+    "category": "ownership",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "NAM-INDIA",
+        "name": "NIPPON L I A M",
+        "sector": "Diversified / Industrials",
+        "mcap": 57924,
+        "value": 53.82,
+        "formatted": "53.82%"
+      },
+      {
+        "symbol": "ICICIGI",
+        "name": "ICICI LOMBARD GIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 78985,
+        "value": 49.82,
+        "formatted": "49.82%"
+      },
+      {
+        "symbol": "MFSL",
+        "name": "MAX FINANCIAL SERV",
+        "sector": "Financial Services",
+        "mcap": 41414,
+        "value": 49.27,
+        "formatted": "49.27%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "NAM-INDIA",
+        "name": "NIPPON L I A M",
+        "sector": "Diversified / Industrials",
+        "mcap": 57924,
+        "value": 53.82,
+        "formatted": "53.82%"
+      },
+      {
+        "symbol": "ICICIGI",
+        "name": "ICICI LOMBARD GIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 78985,
+        "value": 49.82,
+        "formatted": "49.82%"
+      },
+      {
+        "symbol": "MFSL",
+        "name": "MAX FINANCIAL SERV",
+        "sector": "Financial Services",
+        "mcap": 41414,
+        "value": 49.27,
+        "formatted": "49.27%"
+      }
+    ]
+  },
+  {
+    "num": 54,
+    "key": "diiHolding",
+    "label": "DII %",
+    "category": "ownership",
+    "unit": "%",
+    "higherIsBetter": true,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "NAM-INDIA",
+        "name": "NIPPON L I A M",
+        "sector": "Diversified / Industrials",
+        "mcap": 57924,
+        "value": 35.88,
+        "formatted": "35.88%"
+      },
+      {
+        "symbol": "HDFCBANK",
+        "name": "HDFC Bank Limited",
+        "sector": "Financial Services",
+        "mcap": 1069149,
+        "value": 35.35,
+        "formatted": "35.35%"
+      },
+      {
+        "symbol": "ICICIGI",
+        "name": "ICICI LOMBARD GIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 78985,
+        "value": 33.22,
+        "formatted": "33.22%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "NAM-INDIA",
+        "name": "NIPPON L I A M",
+        "sector": "Diversified / Industrials",
+        "mcap": 57924,
+        "value": 35.88,
+        "formatted": "35.88%"
+      },
+      {
+        "symbol": "HDFCBANK",
+        "name": "HDFC Bank Limited",
+        "sector": "Financial Services",
+        "mcap": 1069149,
+        "value": 35.35,
+        "formatted": "35.35%"
+      },
+      {
+        "symbol": "ICICIGI",
+        "name": "ICICI LOMBARD GIC",
+        "sector": "Diversified / Industrials",
+        "mcap": 78985,
+        "value": 33.22,
+        "formatted": "33.22%"
+      }
+    ]
+  },
+  {
+    "num": 55,
+    "key": "publicHolding",
+    "label": "Public %",
+    "category": "ownership",
+    "unit": "%",
+    "higherIsBetter": false,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "SUBEXLTD",
+        "name": "SUBEX",
+        "sector": "Diversified / Industrials",
+        "mcap": 891,
+        "value": 98.1,
+        "formatted": "98.10%"
+      },
+      {
+        "symbol": "JYOTISTRUC",
+        "name": "JYOTI STRUCTURES",
+        "sector": "Diversified / Industrials",
+        "mcap": 1175,
+        "value": 91.38,
+        "formatted": "91.38%"
+      },
+      {
+        "symbol": "AXISCADES",
+        "name": "AXISCADES TECH",
+        "sector": "Information Technology",
+        "mcap": 7975,
+        "value": 85.86,
+        "formatted": "85.86%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "AXISCADES",
+        "name": "AXISCADES TECH",
+        "sector": "Information Technology",
+        "mcap": 7975,
+        "value": 85.86,
+        "formatted": "85.86%"
+      },
+      {
+        "symbol": "ZEEL",
+        "name": "ZEE ENTERTAINMENT ENT",
+        "sector": "Telecommunications & Media",
+        "mcap": 6339,
+        "value": 80.45,
+        "formatted": "80.45%"
+      },
+      {
+        "symbol": "KTKBANK",
+        "name": "KARNATAKA BANK",
+        "sector": "Financial Services",
+        "mcap": 11231,
+        "value": 71.69,
+        "formatted": "71.69%"
+      }
+    ]
+  },
+  {
+    "num": 56,
+    "key": "priceTo52WHighPct",
+    "label": "52W High %",
+    "category": "market",
+    "unit": "%",
+    "higherIsBetter": false,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "LAURUSLABS",
+        "name": "LAURUS LABS",
+        "sector": "Healthcare & Pharma",
+        "mcap": 129972,
+        "value": 0,
+        "formatted": "0.0%"
+      },
+      {
+        "symbol": "KOTAKBANK",
+        "name": "KOTAK MAHINDRA BANK",
+        "sector": "Financial Services",
+        "mcap": 459194,
+        "value": -0.3,
+        "formatted": "-0.3%"
+      },
+      {
+        "symbol": "ZYDUSLIFE",
+        "name": "ZYDUS LIFESCIENCES",
+        "sector": "Diversified / Industrials",
+        "mcap": 124239,
+        "value": -0.3,
+        "formatted": "-0.3%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "LAURUSLABS",
+        "name": "LAURUS LABS",
+        "sector": "Healthcare & Pharma",
+        "mcap": 129972,
+        "value": 0,
+        "formatted": "0.0%"
+      },
+      {
+        "symbol": "KOTAKBANK",
+        "name": "KOTAK MAHINDRA BANK",
+        "sector": "Financial Services",
+        "mcap": 459194,
+        "value": -0.3,
+        "formatted": "-0.3%"
+      },
+      {
+        "symbol": "ZYDUSLIFE",
+        "name": "ZYDUS LIFESCIENCES",
+        "sector": "Diversified / Industrials",
+        "mcap": 124239,
+        "value": -0.3,
+        "formatted": "-0.3%"
+      }
+    ]
+  },
+  {
+    "num": 57,
+    "key": "volume",
+    "label": "Volume",
+    "category": "market",
+    "unit": "shares",
+    "higherIsBetter": false,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "SAGILITY",
+        "name": "SAGILITY",
+        "sector": "Diversified / Industrials",
+        "mcap": 19699,
+        "value": 773318689,
+        "formatted": "77,33,18,689"
+      },
+      {
+        "symbol": "PCJEWELLER",
+        "name": "PC JEWELLER",
+        "sector": "Consumer & Retail",
+        "mcap": 15163,
+        "value": 548222148,
+        "formatted": "54,82,22,148"
+      },
+      {
+        "symbol": "SUZLON",
+        "name": "SUZLON ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 46600,
+        "value": 331296731,
+        "formatted": "33,12,96,731"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "SAGILITY",
+        "name": "SAGILITY",
+        "sector": "Diversified / Industrials",
+        "mcap": 19699,
+        "value": 773318689,
+        "formatted": "77,33,18,689"
+      },
+      {
+        "symbol": "PCJEWELLER",
+        "name": "PC JEWELLER",
+        "sector": "Consumer & Retail",
+        "mcap": 15163,
+        "value": 548222148,
+        "formatted": "54,82,22,148"
+      },
+      {
+        "symbol": "SUZLON",
+        "name": "SUZLON ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 46600,
+        "value": 331296731,
+        "formatted": "33,12,96,731"
+      }
+    ]
+  },
+  {
+    "num": 58,
+    "key": "beta",
+    "label": "Beta",
+    "category": "market",
+    "unit": "",
+    "higherIsBetter": false,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "VLEGOV",
+        "name": "VL E GOV AND IT SOL",
+        "sector": "Diversified / Industrials",
+        "mcap": 87,
+        "value": 2.08,
+        "formatted": "2.08x"
+      },
+      {
+        "symbol": "IDEAFORGE",
+        "name": "IDEAFORGE TECHNO",
+        "sector": "Information Technology",
+        "mcap": 3112,
+        "value": 1.97,
+        "formatted": "1.97x"
+      },
+      {
+        "symbol": "EXICOM",
+        "name": "EXICOM TELE SYSTEMS",
+        "sector": "Information Technology",
+        "mcap": 1741,
+        "value": 1.84,
+        "formatted": "1.84x"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "NETWEB",
+        "name": "NETWEB TECH INDIA",
+        "sector": "Information Technology",
+        "mcap": 24760,
+        "value": 1.77,
+        "formatted": "1.77x"
+      },
+      {
+        "symbol": "ADANIGREEN",
+        "name": "ADANI GREEN ENERGY",
+        "sector": "Energy & Power",
+        "mcap": 213919,
+        "value": 1.67,
+        "formatted": "1.67x"
+      },
+      {
+        "symbol": "JIOFIN",
+        "name": "JIO FIN SERVICES",
+        "sector": "Financial Services",
+        "mcap": 140147,
+        "value": 1.54,
+        "formatted": "1.54x"
+      }
+    ]
+  },
+  {
+    "num": 59,
+    "key": "distanceSma200Pct",
+    "label": "200 SMA %",
+    "category": "market",
+    "unit": "%",
+    "higherIsBetter": false,
+    "totalPopulated": 2336,
+    "universeTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 11.1,
+        "formatted": "11.1%"
+      },
+      {
+        "symbol": "TCS",
+        "name": "Tata Consultancy Services",
+        "sector": "Information Technology",
+        "mcap": 905463,
+        "value": 11.1,
+        "formatted": "11.1%"
+      },
+      {
+        "symbol": "INFY",
+        "name": "Infosys Limited",
+        "sector": "Information Technology",
+        "mcap": 479970,
+        "value": 11.1,
+        "formatted": "11.1%"
+      }
+    ],
+    "liquidTop3": [
+      {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "sector": "Energy & Conglomerate",
+        "mcap": 1576398,
+        "value": 11.1,
+        "formatted": "11.1%"
+      },
+      {
+        "symbol": "TCS",
+        "name": "Tata Consultancy Services",
+        "sector": "Information Technology",
+        "mcap": 905463,
+        "value": 11.1,
+        "formatted": "11.1%"
+      },
+      {
+        "symbol": "INFY",
+        "name": "Infosys Limited",
+        "sector": "Information Technology",
+        "mcap": 479970,
+        "value": 11.1,
+        "formatted": "11.1%"
+      }
+    ]
+  }
+]
