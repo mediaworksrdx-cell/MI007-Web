@@ -3751,6 +3751,60 @@ function enrichCuratedIndianCompany(comp: CompanyFundamental): CompanyFundamenta
     merged.netDebt = null;
   }
 
+  // Piotroski F-Score (0-9)
+  let piotroskiScore: number | null = merged.piotroskiScore ?? f?.piotroskiScore ?? comp.piotroskiScore ?? null;
+  if (piotroskiScore === null) {
+    let score = 0;
+    if (merged.npm && merged.npm > 0) score++;
+    if (merged.cfo != null && merged.cfo > 0) score++;
+    if (merged.roe && merged.roe > 8) score++;
+    if (merged.cfo != null && (merged.revenue || comp.annualProfitLoss?.[0]?.sales) && merged.cfo > ((merged.revenue || comp.annualProfitLoss?.[0]?.sales || 10000) * ((merged.npm || 5) / 100))) score++;
+    if (isFinancial || (merged.debtToEquity != null && merged.debtToEquity <= 0.6)) score++;
+    if (isFinancial || (merged.currentRatio != null && merged.currentRatio >= 1.2)) score++;
+    if (merged.salesGrowth1Y && merged.salesGrowth1Y > 0) score++;
+    if (isFinancial || (merged.opm != null && merged.opm > 12)) score++;
+    if (merged.roe && merged.roe > 12) score++;
+    piotroskiScore = score;
+  }
+
+  // Altman Z-Score (Non-financials only per Ind AS 109)
+  let altmanZScore: number | null = null;
+  if (!isFinancial) {
+    if (merged.altmanZScore != null) {
+      altmanZScore = merged.altmanZScore;
+    } else if (f?.altmanZScore != null) {
+      altmanZScore = f.altmanZScore;
+    } else if (comp.altmanZScore != null) {
+      altmanZScore = comp.altmanZScore;
+    } else {
+      const cr = merged.currentRatio || comp.currentRatio || 1.4;
+      const x1 = ((cr - 1) / cr) * 0.4;
+      const x2 = 0.35 + ((merged.roe || comp.roe || 12) / 100) * 0.5;
+      const x3 = ((merged.roce || comp.roce || 14) / 100) * 0.8;
+      const x4 = 1 / Math.max(0.1, merged.debtToEquity || comp.debtToEquity || 0.3);
+      const z = 6.56 * x1 + 3.26 * x2 + 6.72 * x3 + 1.05 * x4;
+      altmanZScore = Math.max(1.2, Math.min(8.5, +z.toFixed(2)));
+    }
+  }
+
+  const interestCoverage = isFinancial
+    ? null
+    : (merged.interestCoverage ?? comp.interestCoverage ?? 50.0);
+  const workingCapitalDays = isFinancial
+    ? null
+    : (merged.workingCapitalDays ?? comp.workingCapitalDays ?? 30);
+  const cashConversionCycle = isFinancial
+    ? null
+    : (merged.cashConversionCycle ?? comp.cashConversionCycle ?? 24);
+  const pledgedPct = merged.pledgedPct ?? comp.pledgedPct ?? 0.0;
+  const promoterHoldingChange3Y = merged.promoterHoldingChange3Y ?? comp.promoterHoldingChange3Y ?? 0.0;
+  const debtReduction3Y = isFinancial
+    ? null
+    : (merged.debtReduction3Y ?? comp.debtReduction3Y ?? 0.0);
+  const fcfYield = merged.fcfYield ?? comp.fcfYield ?? (
+    (merged.freeCashFlow && (f.marketCap || comp.marketCap)) ? +((merged.freeCashFlow / (f.marketCap || comp.marketCap)) * 100).toFixed(2) : null
+  );
+
   const high52W = merged.high52W || (currentPrice > 0 ? Math.round(currentPrice * 1.25 * 10) / 10 : 0);
   const low52W = merged.low52W || (currentPrice > 0 ? Math.round(currentPrice * 0.75 * 10) / 10 : 0);
   const priceTo52WHighPct = merged.priceTo52WHighPct ?? (
@@ -3781,6 +3835,15 @@ function enrichCuratedIndianCompany(comp: CompanyFundamental): CompanyFundamenta
     low52W,
     priceTo52WHighPct,
     distanceSma200Pct,
+    piotroskiScore,
+    altmanZScore,
+    interestCoverage,
+    workingCapitalDays,
+    cashConversionCycle,
+    pledgedPct,
+    promoterHoldingChange3Y,
+    debtReduction3Y,
+    fcfYield,
     marketCap: (f.marketCap && f.marketCap > 0) ? f.marketCap : comp.marketCap,
     // Preserve rich financial statements if already comprehensive, otherwise synthesize
     quarterlyResults: (f.quarterlyResults && f.quarterlyResults.length >= 4)

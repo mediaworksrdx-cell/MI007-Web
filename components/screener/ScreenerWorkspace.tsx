@@ -98,7 +98,7 @@ export function ScreenerWorkspace() {
 
   // Query State
   const defaultScreen = PREDEFINED_SCREENS[0];
-  const [currentQuery, setCurrentQuery] = useState<string>(defaultScreen.query);
+  const [currentQuery, setCurrentQuery] = useState<string>('');
   const [sectorFilter, setSectorFilter] = useState<string>('ALL');
   const [indexFilter, setIndexFilter] = useState<string>('ALL');
   const [sortColumn, setSortColumn] = useState<string>('marketCap');
