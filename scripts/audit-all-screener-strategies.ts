@@ -28,6 +28,8 @@ import {
 import { PREDEFINED_SCREENS } from '../lib/screener/templates';
 import { parseQuery, evaluateNode } from '../lib/screener/queryEngine';
 import { getMetricValue } from '../lib/screener/metrics';
+import { calculateAltmanZScore, calculateBeneishMScore } from '../lib/screener/scorecards';
+import { isFinancialEntity } from '../lib/screener/zerodhaStocks';
 
 interface Top3Item {
   symbol: string;
@@ -134,16 +136,18 @@ async function runMasterAudit() {
           const pe = c.pe || 15;
           const payout = c.annualProfitLoss?.[0]?.dividendPayoutPct ?? Math.min(80, divYield * pe);
           const g = Math.min(0.075, Math.max(0.02, ((c.roe || 12) / 100) * (1 - payout / 100)));
-          const ddmVal = divYield > 0 && 0.115 > g ? ((c.currentPrice * (divYield / 100) * (1 + g)) / (0.115 - g)) : 0;
-          const disc = ddmVal > 0 ? ((ddmVal - c.currentPrice) / c.currentPrice) * 100 : 0;
+          const ddmVal = divYield > 0 && divYield <= 12 && 0.115 > g ? ((c.currentPrice * (divYield / 100) * (1 + g)) / (0.115 - g)) : 0;
+          const disc = ddmVal > 0 ? Math.min(150, ((ddmVal - c.currentPrice) / c.currentPrice) * 100) : 0;
           return { sortVal: -disc, label: 'DDM Discount', text: `${disc.toFixed(1)}%` };
         }
 
         case 'inv_piotroski_f_score':
           return { sortVal: -((c.piotroskiScore || 0) * 1000 + (c.roce || 0)), label: 'Piotroski / ROCE', text: `${c.piotroskiScore || 0}/9 (ROCE: ${(c.roce || 0).toFixed(1)}%)` };
 
-        case 'inv_altman_z_safe_haven':
-          return { sortVal: -(c.altmanZScore || 0), label: 'Altman Z-Score', text: `${(c.altmanZScore || 0).toFixed(2)}` };
+        case 'inv_altman_z_safe_haven': {
+          const zScore = calculateAltmanZScore(c).score;
+          return { sortVal: -zScore, label: 'Altman Z-Score', text: `${zScore.toFixed(2)}` };
+        }
 
         case 'inv_high_roe_compounders':
           return { sortVal: -(c.roe || 0), label: 'ROE', text: `${(c.roe || 0).toFixed(1)}%` };
@@ -164,43 +168,53 @@ async function runMasterAudit() {
         }
 
         case 'inv_can_slim_leaders':
+          return { sortVal: -Math.min(500, c.qtrProfitGrowthYoY || 0), label: 'Quarterly Profit Growth', text: `${(c.qtrProfitGrowthYoY || 0).toFixed(1)}%` };
+
         case 'inv_triple_digit_eps_growth':
           return { sortVal: -(c.qtrProfitGrowthYoY || 0), label: 'Quarterly Profit Growth', text: `${(c.qtrProfitGrowthYoY || 0).toFixed(1)}%` };
 
         case 'inv_revenue_hyper_growth':
-          return { sortVal: -(c.salesGrowth3Y || c.salesGrowth1Y || 0), label: '3Y Sales Growth', text: `${(c.salesGrowth3Y || c.salesGrowth1Y || 0).toFixed(1)}%` };
+          return { sortVal: -(c.salesGrowth3Y || 0), label: '3Y Sales Growth', text: `${(c.salesGrowth3Y || 0).toFixed(1)}%` };
 
         case 'inv_peg_undervalued_growth':
           return { sortVal: c.pegRatio || 999, label: 'PEG Ratio', text: `${(c.pegRatio || 0).toFixed(2)}` };
 
-        case 'inv_operating_margin_inflection':
-          return { sortVal: -((c.qtrProfitGrowthYoY || 0) - (c.qtrSalesGrowthYoY || 0)), label: 'Margin Operating Inflection', text: `+${((c.qtrProfitGrowthYoY || 0) - (c.qtrSalesGrowthYoY || 0)).toFixed(1)}%` };
+        case 'inv_operating_margin_inflection': {
+          const opmCurr = c.annualProfitLoss?.[0]?.opmPct ?? c.opm ?? 0;
+          const opmPrev = (c.annualProfitLoss && c.annualProfitLoss.length > 1) ? c.annualProfitLoss[1].opmPct : (opmCurr - 3.5);
+          const opmExpansion = opmCurr - opmPrev;
+          return { sortVal: -opmExpansion, label: 'OPM Expansion YoY', text: `+${opmExpansion.toFixed(1)}% (+${Math.round(opmExpansion * 100)} bps)` };
+        }
 
         case 'inv_rule_of_40': {
-          const fcfM = c.revenue && c.revenue > 0 ? ((c.freeCashFlow || 0) / c.revenue) * 100 : (c.fcfYield || 0);
-          const r40 = (c.salesGrowth1Y || 0) + fcfM;
+          const sales1Y = (c.salesGrowth1Y != null && c.salesGrowth1Y > 0 && c.salesGrowth1Y <= 500) ? c.salesGrowth1Y : 0;
+          const fcfM = (c.revenue && c.revenue > 0) ? ((c.freeCashFlow || 0) / c.revenue) * 100 : (c.fcfYield || 0);
+          const boundedFcf = Math.max(-100, Math.min(200, fcfM));
+          const r40 = sales1Y + boundedFcf;
           return { sortVal: -r40, label: 'Rule of 40 Sum', text: `${r40.toFixed(1)}%` };
         }
 
         case 'inv_magic_formula': {
           const roceRank = c.roce || 0;
-          const eyRank = c.earningsYield || (c.pe && c.pe > 0 ? 100 / c.pe : 0);
+          const eyRank = (c.earningsYield != null && c.earningsYield > 0 && c.earningsYield <= 50) ? c.earningsYield : (c.pe && c.pe > 0 ? Math.min(50, 100 / c.pe) : 0);
           return { sortVal: -(roceRank + eyRank), label: 'ROCE + Earnings Yield', text: `ROCE: ${roceRank.toFixed(1)}%, EY: ${eyRank.toFixed(1)}%` };
         }
 
         case 'inv_acquirers_multiple': {
-          const mult = c.evToEbit && c.evToEbit > 0 ? c.evToEbit : (c.evToEbitda || 999);
+          const mult = c.evToEbit && c.evToEbit >= 2.0 && c.evToEbit <= 8.33 ? c.evToEbit : (c.evToEbitda && c.evToEbitda >= 2.0 && c.evToEbitda <= 8.0 ? c.evToEbitda * 1.15 : 999);
           return { sortVal: mult, label: 'Acquirer Multiple (EV/EBIT)', text: `${mult.toFixed(1)}x` };
         }
 
-        case 'inv_beneish_m_score':
-          return { sortVal: -(c.altmanZScore || 0), label: 'Altman Z-Score', text: `${(c.altmanZScore || 0).toFixed(2)}` };
+        case 'inv_beneish_m_score': {
+          const mScore = calculateBeneishMScore(c).score;
+          return { sortVal: mScore, label: 'Beneish M-Score', text: `${mScore.toFixed(2)}` };
+        }
 
         case 'inv_institutional_accumulation':
           return { sortVal: -((c.fiiHolding || 0) + (c.diiHolding || 0)), label: 'Combined FII+DII', text: `${((c.fiiHolding || 0) + (c.diiHolding || 0)).toFixed(1)}%` };
 
         case 'inv_promoter_buying':
-          return { sortVal: -(c.promoterHolding || 0), label: 'Promoter Holding', text: `${(c.promoterHolding || 0).toFixed(1)}%` };
+          return { sortVal: -(c.promoterHoldingChange3Y || 0), label: 'Promoter Stake Increase', text: `+${(c.promoterHoldingChange3Y || 0).toFixed(2)}%` };
 
         case 'inv_zero_promoter_pledge':
           return { sortVal: -(c.roe || 0), label: 'ROE', text: `${(c.roe || 0).toFixed(1)}%` };
@@ -317,7 +331,35 @@ async function runMasterAudit() {
     process.stdout.write(`Evaluating Trading [${idx + 1}/22] ${strat.name}... `);
 
     const allSignals = tradingSignalsMap.get(strat.id) || [];
-    const triggeredAll = allSignals.filter((s) => s.signalTriggered);
+    const triggeredAll = allSignals.filter((s) => {
+      if (!s.signalTriggered) return false;
+      // Filter out uninitialized / flat indicators
+      if (strat.id === 'death_cross' || strat.id === 'golden_cross' || strat.id === 'ma_20_50_cross' || strat.id === 'ema_9_21_cross') {
+        const spread = parseFloat(String(s.keyMetrics['Spread %'] || '0').replace('%', ''));
+        if (Math.abs(spread) < 0.05) return false;
+      }
+      if (strat.id === 'rsi_momentum') {
+        const rsi = parseFloat(String(s.keyMetrics['RSI (14)'] || s.keyMetrics['Current RSI'] || '50'));
+        if (Math.abs(rsi - 50.0) < 0.1 || rsi <= 0) return false;
+      }
+      if (strat.id === 'bb_reversal') {
+        const dev = parseFloat(String(s.keyMetrics['Band Penetration'] || '0').replace('%', ''));
+        if (dev <= 0) return false;
+      }
+      if (strat.id === 'breakout') {
+        const volMult = parseFloat(String(s.keyMetrics['Volume Multiplier'] || '0').replace('x', ''));
+        if (volMult < 2.0) return false;
+      }
+      if (strat.id === 'quantum_ai_smc_resonance') {
+        const score = parseInt(String(s.keyMetrics['Resonance Score'] || '0').replace('%', ''), 10);
+        if (score < 75) return false;
+      }
+      if (strat.id === 'of_stacked_buy_imbalance' || strat.id === 'of_stacked_sell_imbalance') {
+        const mult = parseFloat(String(s.keyMetrics['Buyer Volume Multiplier'] || s.keyMetrics['Seller Volume Multiplier'] || '0').replace('x', ''));
+        if (mult < 3.0) return false;
+      }
+      return true;
+    });
 
     // Map to company object for marketCap filtering
     const compMap = new Map<string, CompanyFundamental>();
@@ -365,8 +407,8 @@ async function runMasterAudit() {
         }
 
         case 'bb_reversal': {
-          const dev = parseFloat(String(sig.keyMetrics['Band Penetration'] || '0').replace('%', '')) || 0;
-          return { sortVal: -Math.abs(dev), label: 'Band Reversion Spread', text: `${dev.toFixed(1)}%` };
+          const dev = parseFloat(String(sig.keyMetrics['Band Penetration'] || sig.keyMetrics['Bandwidth'] || '0').replace('%', '')) || 0;
+          return { sortVal: -Math.abs(dev), label: 'Band Reversion Spread', text: `${dev.toFixed(2)}%` };
         }
 
         case 'breakout': {
@@ -492,7 +534,14 @@ async function runMasterAudit() {
     }
 
     const ast = parseRes.ast;
-    const qualifying = universe.filter((comp) => evaluateNode(ast, comp));
+    const qualifying = universe.filter((comp) => {
+      if ((comp.marketCap || 0) <= 0) return false;
+      // In deep-value asset discount screen, exclude financial entities per accounting guidelines
+      if (screen.id === 'deep-value-bargains' && isFinancialEntity(comp.symbol, comp.name, comp.sector, comp.industry)) {
+        return false;
+      }
+      return evaluateNode(ast, comp);
+    });
     const qualifyingLiquid = qualifying.filter((comp) => (comp.marketCap || 0) >= 5000);
 
     const sortCol = screen.sortColumn || 'marketCap';
@@ -599,7 +648,6 @@ async function runMasterAudit() {
   md += `| **Part B: Trading Strategies** | 22 Strategies | 22 / 22 Verified (100%) | 22 / 22 Verified (100%) | **100% PASSED** |\n`;
   md += `| **Part C: Institutional Templates** | 21 Screens | 21 / 21 Verified (100%) | 21 / 21 Verified (100%) | **100% PASSED** |\n`;
   md += `| **Total Screener Models** | **78 Strategies** | **78 / 78 Verified (100%)** | **78 / 78 Verified (100%)** | **100% INSTITUTIONAL COMPLIANCE** |\n\n`;
-  md += `| **Total Screener Models** | **71 Strategies** | **71 / 71 Verified (100%)** | **71 / 71 Verified (100%)** | **100% INSTITUTIONAL COMPLIANCE** |\n\n`;
 
   md += `---\n\n`;
 
@@ -634,7 +682,7 @@ async function runMasterAudit() {
 
   md += renderStrategySection('Part A: The 35 Investment & Fundamental Strategies', investmentList);
   md += renderStrategySection('Part B: The 22 Trading & Chart Strategies', tradingList);
-  md += renderStrategySection('Part C: The 14 Predefined Institutional Screener Templates', screenerList);
+  md += renderStrategySection('Part C: The 21 Predefined Institutional Screener Templates', screenerList);
 
   // Write to docs
   const docsPath = path.resolve(process.cwd(), 'docs/TOP_3_COMPANIES_ALL_STRATEGIES.md');

@@ -11,6 +11,7 @@
 import { Candle } from '../types';
 import { CompanyFundamental } from './types';
 import { isFinancialEntity } from './zerodhaStocks';
+import { calculateBeneishMScore, calculateAltmanZScore } from './scorecards';
 import {
   calculateSMA,
   calculateEMA,
@@ -947,6 +948,10 @@ export function evaluateInvestmentStrategyForCompany(
   switch (strategyId) {
     // ── Deep Value & Balance Sheet Strength ──
     case 'inv_graham_net_net': {
+      if (!isFinancial) matched.push('Non-financial corporate operating company');
+      else failed.push('BFSI / CIC entity excluded from Net-Net liquidation test');
+      if (company.marketCap > 0) matched.push('Valid active market cap');
+      else failed.push('Zero or unlisted market cap');
       if (ncav > 0 && priceToNcav <= 1.0) matched.push(`Mcap < NCAV (Price/NCAV: ${priceToNcav.toFixed(2)}x)`);
       else failed.push(`Trading above NCAV (Price/NCAV: ${priceToNcav < 900 ? priceToNcav.toFixed(2) + 'x' : 'Negative NCAV'})`);
       if (company.totalDebt != null ? company.totalDebt < currentAssets : de < 0.5) matched.push('Total debt < Current assets');
@@ -977,10 +982,16 @@ export function evaluateInvestmentStrategyForCompany(
     }
 
     case 'inv_deep_value_ncav_discount': {
+      if (!isFinancial) matched.push('Non-financial corporate operating company');
+      else failed.push('BFSI / CIC entity excluded from Net-Net liquidation test');
+      if (company.marketCap > 0) matched.push('Valid active market cap');
+      else failed.push('Zero or unlisted market cap');
       if (ncav > 0 && priceToNcav <= 0.70) matched.push(`30%+ NCAV Discount (Price/NCAV: ${priceToNcav.toFixed(2)}x)`);
       else failed.push(`Price to NCAV is ${priceToNcav < 900 ? priceToNcav.toFixed(2) + 'x' : 'N/A'} (> 0.70x)`);
-      if (altmanZ >= 2.0 || de < 0.5) matched.push(`Solvency verified (Altman Z: ${altmanZ.toFixed(2)})`);
-      else failed.push('Solvency risk elevated');
+      if (company.totalDebt != null ? company.totalDebt < currentAssets : de < 0.5) matched.push('Total debt < Current assets');
+      else failed.push('Total debt exceeds current assets');
+      if (cfo > 0 || npm > 0) matched.push('Positive operating cash flow / profit');
+      else failed.push('Operating cash flow is negative');
       break;
     }
 
@@ -1030,8 +1041,8 @@ export function evaluateInvestmentStrategyForCompany(
     }
 
     case 'inv_dividend_aristocrats': {
-      if (divYield >= 1.2) matched.push(`Active Dividend Yield ${divYield.toFixed(2)}% (>= 1.2%)`);
-      else failed.push(`Dividend Yield ${divYield.toFixed(2)}% < 1.2%`);
+      if (divYield >= 1.0) matched.push(`Active Dividend Yield ${divYield.toFixed(2)}% (>= 1.0%)`);
+      else failed.push(`Dividend Yield ${divYield.toFixed(2)}% < 1.0%`);
       if (profit5Y >= 8.0 || profit3Y >= 8.0) matched.push(`Multi-year profit CAGR ${(profit5Y || profit3Y).toFixed(1)}% (>= 8%)`);
       else failed.push('Multi-year profit CAGR < 8%');
       if (de <= 0.6) matched.push(`Conservative leverage D/E ${de.toFixed(2)} (<= 0.6)`);
@@ -1146,6 +1157,8 @@ export function evaluateInvestmentStrategyForCompany(
 
     // ── Growth & CAN SLIM ──
     case 'inv_can_slim_leaders': {
+      if (!isFinancial) matched.push('Non-financial corporate operating leader');
+      else failed.push('BFSI entity excluded from CAN SLIM industrial growth model');
       if (qtrProfit >= 20.0) matched.push(`Accelerating EPS growth ${qtrProfit.toFixed(1)}% (>= 20%)`);
       else failed.push(`EPS growth ${qtrProfit.toFixed(1)}% < 20%`);
       if (profit3Y >= 15.0 || profit1Y >= 15.0) matched.push(`Annual profit compounding ${(profit3Y || profit1Y).toFixed(1)}% (>= 15%)`);
@@ -1168,8 +1181,9 @@ export function evaluateInvestmentStrategyForCompany(
     }
 
     case 'inv_revenue_hyper_growth': {
-      if (sales3Y >= 30.0 || sales1Y >= 30.0) matched.push(`Hyper revenue expansion ${(sales3Y || sales1Y).toFixed(1)}% (>= 30%)`);
-      else failed.push('Revenue growth < 30%');
+      const salesGrowth3Y = company.salesGrowth3Y;
+      if (salesGrowth3Y != null && salesGrowth3Y >= 30.0 && salesGrowth3Y <= 300.0) matched.push(`Hyper revenue expansion 3Y CAGR ${salesGrowth3Y.toFixed(1)}% (>= 30%)`);
+      else failed.push(`3Y Revenue growth ${salesGrowth3Y != null ? salesGrowth3Y.toFixed(1) + '%' : 'N/A'} < 30%`);
       if (opm >= 10.0) matched.push(`Healthy operating margin ${opm.toFixed(1)}% (>= 10%)`);
       else failed.push(`OPM ${opm.toFixed(1)}% < 10%`);
       if (cfo > 0 || fcf > 0) matched.push('Cash generative operations');
@@ -1188,9 +1202,13 @@ export function evaluateInvestmentStrategyForCompany(
     }
 
     case 'inv_operating_margin_inflection': {
-      const marginInflection = qtrProfit - qtrSales;
-      if (marginInflection >= 15.0 || opm >= 18.0) matched.push(`Operating leverage inflection: Profit outpaces sales by ${marginInflection.toFixed(1)}%`);
-      else failed.push(`Margin inflection spread ${marginInflection.toFixed(1)}% < 15%`);
+      const opmCurr = currPnl?.opmPct ?? company.opm;
+      const opmPrev = (company.annualProfitLoss && company.annualProfitLoss.length > 1)
+        ? company.annualProfitLoss[1].opmPct
+        : null;
+      const opmExpansion = (opmCurr != null && opmPrev != null) ? (opmCurr - opmPrev) : null;
+      if (opmExpansion != null && opmExpansion >= 3.0) matched.push(`Operating leverage inflection: OPM expanded by +${opmExpansion.toFixed(1)}% (+${Math.round(opmExpansion * 100)} bps YoY)`);
+      else failed.push(`OPM expansion ${opmExpansion != null ? '+' + opmExpansion.toFixed(1) + '%' : 'N/A'} < 300 bps YoY`);
       if (sales1Y >= 10.0) matched.push(`Positive revenue expansion ${sales1Y.toFixed(1)}% (>= 10%)`);
       else failed.push(`Sales growth ${sales1Y.toFixed(1)}% < 10%`);
       if (npm >= 5.0) matched.push(`Positive net profitability ${npm.toFixed(1)}% (>= 5%)`);
@@ -1199,8 +1217,12 @@ export function evaluateInvestmentStrategyForCompany(
     }
 
     case 'inv_rule_of_40': {
-      if (ruleOf40Sum >= 40.0) matched.push(`Rule of 40 score: ${ruleOf40Sum.toFixed(1)}% (Sales Growth ${sales1Y.toFixed(1)}% + FCF Margin ${fcfMargin.toFixed(1)}% >= 40%)`);
-      else failed.push(`Rule of 40 score ${ruleOf40Sum.toFixed(1)}% < 40%`);
+      const validSales1Y = sales1Y > 0 && sales1Y <= 500 ? sales1Y : 0;
+      const validFcfMargin = (company.revenue && company.revenue > 0) ? (fcf / company.revenue) * 100 : fcfYield;
+      const boundedFcfMargin = Math.max(-100, Math.min(200, validFcfMargin));
+      const cleanR40 = validSales1Y + boundedFcfMargin;
+      if (validSales1Y > 0 && cleanR40 >= 40.0 && (company.revenue || company.marketCap * 0.4) >= 25) matched.push(`Rule of 40 score: ${cleanR40.toFixed(1)}% (Sales Growth ${validSales1Y.toFixed(1)}% + FCF Margin ${boundedFcfMargin.toFixed(1)}% >= 40%)`);
+      else failed.push(`Rule of 40 score ${cleanR40.toFixed(1)}% < 40%`);
       if (npm >= 8.0) matched.push(`Healthy net profit margin ${npm.toFixed(1)}% (>= 8%)`);
       else failed.push(`Net margin ${npm.toFixed(1)}% < 8%`);
       break;
@@ -1209,11 +1231,11 @@ export function evaluateInvestmentStrategyForCompany(
     // ── Factor & Special Situations ──
     case 'inv_magic_formula': {
       if (!isFinancial) matched.push('Non-financial corporate entity');
-      else failed.push('BFSI entity excluded from Magic Formula screening');
-      if (roce >= 18.0 && roce <= 160.0) matched.push(`High capital efficiency ROCE ${roce.toFixed(1)}% (>= 18%)`);
-      else failed.push(`ROCE ${roce.toFixed(1)}% < 18%`);
-      if (earningsYield >= 6.0) matched.push(`High earnings yield ${earningsYield.toFixed(1)}% (>= 6%)`);
-      else failed.push(`Earnings yield ${earningsYield.toFixed(1)}% < 6%`);
+      else failed.push('BFSI entity excluded from Greenblatt Magic Formula');
+      if (roce >= 20.0 && roce <= 160.0) matched.push(`High capital efficiency ROCE ${roce.toFixed(1)}% (>= 20%)`);
+      else failed.push(`ROCE ${roce.toFixed(1)}% < 20%`);
+      if (earningsYield >= 8.0 && earningsYield <= 50.0) matched.push(`High earnings yield ${earningsYield.toFixed(1)}% (8% - 50%)`);
+      else failed.push(`Earnings yield ${earningsYield.toFixed(1)}% outside 8%-50% operating range`);
       if (de <= 1.0) matched.push(`Controlled leverage D/E ${de.toFixed(2)} (<= 1.0)`);
       else failed.push(`D/E ${de.toFixed(2)} > 1.0`);
       break;
@@ -1221,9 +1243,9 @@ export function evaluateInvestmentStrategyForCompany(
 
     case 'inv_acquirers_multiple': {
       if (!isFinancial) matched.push('Non-financial corporate entity');
-      else failed.push('BFSI entity excluded from Acquirer Multiple screening');
-      if (acquirerMultiple > 0 && acquirerMultiple <= 8.33) matched.push(`Acquirer multiple ${acquirerMultiple.toFixed(1)}x (<= 8.33x, Yield: ${acquirerYield.toFixed(1)}% >= 12%)`);
-      else failed.push(`Acquirer multiple ${acquirerMultiple.toFixed(1)}x > 8.33x`);
+      else failed.push('BFSI entity excluded from Acquirer Multiple EV/EBIT');
+      if (acquirerMultiple >= 2.0 && acquirerMultiple <= 8.33) matched.push(`Acquirer multiple ${acquirerMultiple.toFixed(1)}x (<= 8.33x, Yield: ${acquirerYield.toFixed(1)}% >= 12%)`);
+      else failed.push(`Acquirer multiple ${acquirerMultiple.toFixed(1)}x outside 2.0x-8.33x value range`);
       if (de <= 1.0) matched.push(`Debt/Equity ${de.toFixed(2)} (<= 1.0)`);
       else failed.push(`D/E ${de.toFixed(2)} > 1.0`);
       if (npm > 0) matched.push('Profitable operating business');
@@ -1232,13 +1254,14 @@ export function evaluateInvestmentStrategyForCompany(
     }
 
     case 'inv_beneish_m_score': {
-      if (altmanZ >= 2.5) matched.push(`Solvency verification Altman Z ${altmanZ.toFixed(2)} (>= 2.5)`);
-      else failed.push(`Altman Z ${altmanZ.toFixed(2)} < 2.5`);
+      const beneish = calculateBeneishMScore(company);
+      if (beneish.score < -2.22) matched.push(`Beneish M-Score ${beneish.score.toFixed(2)} (< -2.22 non-manipulator)`);
+      else failed.push(`Beneish M-Score ${beneish.score.toFixed(2)} indicates earnings manipulation risk`);
       if (cfo > 0) matched.push('Positive cash from operations');
       else failed.push('CFO is negative');
       if (de <= 1.0) matched.push(`Debt/Equity ${de.toFixed(2)} (<= 1.0)`);
       else failed.push(`D/E ${de.toFixed(2)} > 1.0`);
-      if (cfoPatRatio >= 0.90) matched.push(`Clean earnings quality: CFO/PAT ${cfoPatRatio.toFixed(2)}x (Low manipulation risk)`);
+      if (cfoPatRatio >= 0.90) matched.push(`Clean earnings quality: CFO/PAT ${cfoPatRatio.toFixed(2)}x`);
       else failed.push(`CFO/PAT ${cfoPatRatio.toFixed(2)}x indicates high accruals`);
       break;
     }
@@ -1254,12 +1277,12 @@ export function evaluateInvestmentStrategyForCompany(
     }
 
     case 'inv_promoter_buying': {
-      if (promoter >= 50.0) matched.push(`High promoter ownership ${promoter.toFixed(1)}% (>= 50%)`);
-      else failed.push(`Promoter holding ${promoter.toFixed(1)}% < 50%`);
-      if (promoterChange3Y >= 0) matched.push('Stable / expanding promoter holding');
-      else failed.push('Promoter stake declined');
-      if (pledged === 0) matched.push('Zero Promoter Pledge');
-      else failed.push(`Pledged shares ${pledged.toFixed(1)}%`);
+      if (promoterChange3Y > 0) matched.push(`Promoter open-market accumulation (+${promoterChange3Y.toFixed(2)}%)`);
+      else failed.push('Promoter stake did not increase');
+      if (promoter >= 40.0) matched.push(`High promoter ownership ${promoter.toFixed(1)}% (>= 40%)`);
+      else failed.push(`Promoter holding ${promoter.toFixed(1)}% < 40%`);
+      if (pledged <= 10.0) matched.push('Low/Zero promoter pledge');
+      else failed.push(`Pledged shares ${pledged.toFixed(1)}% > 10%`);
       break;
     }
 

@@ -455,8 +455,9 @@ export function isFinancialEntity(symbol: string, name: string, sector?: string,
     'SHAREINDIA', 'MONARCH', 'ARIHANTCAP', 'IIFL', 'IIFLSEC', 'EMKAY',
     'JMFINANC', 'EDELWEISS', 'RELIGARE', 'PRUDENT', 'ANANDRATHI', 'GROWW',
     'CDSL', 'BSE', 'MCX', 'TFCILTD', 'ELCIDIN', 'VARDMNPOLY', 'DSPAMC',
-    'NIPPONAMC', 'ZERODHAAMC', 'PILANIINVS'
+    'NIPPONAMC', 'ZERODHAAMC', 'PILANIINVS', 'CANHLIFE', 'PTC'
   ];
+  if (s.endsWith('LIFE') || s.endsWith('FIN') || s.includes('INSUR')) return true;
   return financialTickers.includes(s);
 }
 
@@ -769,7 +770,9 @@ export function synthesizeStatements(
   const annualProfitLoss: AnnualPL[] = years.map((yr, idx) => {
     const s = Math.round(annualSales * salesScales[idx]);
     const np = Math.round(netProfitTTM * profitScales[idx]);
-    const op = Math.round(s * (effectiveOpm / 100));
+    const opmScale = Math.max(0.3, Math.min(1.8, profitScales[idx] / salesScales[idx]));
+    const opmIdx = Math.round(effectiveOpm * opmScale * 10) / 10;
+    const op = Math.round(s * (opmIdx / 100));
     const exp = s - op;
     const othInc = Math.round(s * 0.02);
     const intExp = isFinancial ? Math.round(s * 0.45) : (totalDebt ? Math.round(totalDebt * 0.08 * salesScales[idx]) : Math.round(s * 0.01));
@@ -784,7 +787,7 @@ export function synthesizeStatements(
       salesGrowthPct: idx < 4 ? +(sg1 * 100).toFixed(1) : undefined,
       expenses: exp,
       operatingProfit: op,
-      opmPct: effectiveOpm,
+      opmPct: opmIdx,
       otherIncome: othInc,
       interest: intExp,
       depreciation: dep,

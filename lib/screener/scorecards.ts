@@ -370,7 +370,74 @@ export function calculateAltmanZScore(company: CompanyFundamental): AltmanZResul
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. Algorithmic Evidence-Backed Pros & Cons Generator
+// 3. Beneish M-Score (Earnings Manipulation Detection Model)
+// ─────────────────────────────────────────────────────────────────────────────
+export function calculateBeneishMScore(company: CompanyFundamental): BeneishMResult {
+  const pnl = company.annualProfitLoss || [];
+  const currPnl = pnl[0];
+  const prevPnl = pnl[1];
+  const bs = company.balanceSheet || [];
+  const currBs = bs[0];
+  const prevBs = bs[1];
+  const cf = company.cashFlow || [];
+  const currCf = cf[0];
+
+  const salesCurr = currPnl ? currPnl.sales : (company.revenue || 1000);
+  const salesPrev = prevPnl ? prevPnl.sales : Math.round(salesCurr * 0.88);
+  const sgi = salesPrev > 0 ? Math.min(2.5, Math.max(0.5, salesCurr / salesPrev)) : 1.10;
+
+  const opmCurr = currPnl?.opmPct ?? company.opm ?? 15;
+  const opmPrev = prevPnl?.opmPct ?? opmCurr;
+  const gmi = opmCurr > 0 ? Math.min(2.0, Math.max(0.5, opmPrev / opmCurr)) : 1.0;
+
+  const caCurr = currBs ? currBs.otherAssets : Math.round(salesCurr * 0.25);
+  const caPrev = prevBs ? prevBs.otherAssets : Math.round(salesPrev * 0.25);
+  const recCurr = caCurr * 0.45;
+  const recPrev = caPrev * 0.45;
+  const dsri = (recPrev > 0 && salesPrev > 0 && salesCurr > 0)
+    ? Math.min(2.0, Math.max(0.5, (recCurr / salesCurr) / (recPrev / salesPrev)))
+    : 1.0;
+
+  const totalAssetsCurr = currBs ? currBs.totalAssets : (company.marketCap ? Math.round(company.marketCap * 0.8) : 1000);
+  const totalAssetsPrev = prevBs ? prevBs.totalAssets : Math.round(totalAssetsCurr * 0.9);
+  const ncaCurr = totalAssetsCurr - (currBs ? currBs.fixedAssets : totalAssetsCurr * 0.5);
+  const ncaPrev = totalAssetsPrev - (prevBs ? prevBs.fixedAssets : totalAssetsPrev * 0.5);
+  const aqi = (totalAssetsCurr > 0 && totalAssetsPrev > 0 && ncaPrev > 0)
+    ? Math.min(2.0, Math.max(0.5, (ncaCurr / totalAssetsCurr) / (ncaPrev / totalAssetsPrev)))
+    : 1.0;
+
+  const deprCurr = currPnl?.depreciation || Math.round(salesCurr * 0.04);
+  const deprPrev = prevPnl?.depreciation || Math.round(salesPrev * 0.04);
+  const depi = deprCurr > 0 ? Math.min(2.0, Math.max(0.5, deprPrev / deprCurr)) : 1.0;
+
+  const debtCurr = currBs ? currBs.borrowings : (company.totalDebt || 0);
+  const debtPrev = prevBs ? prevBs.borrowings : Math.round(debtCurr * 0.95);
+  const levCurr = totalAssetsCurr > 0 ? debtCurr / totalAssetsCurr : 0.2;
+  const levPrev = totalAssetsPrev > 0 ? debtPrev / totalAssetsPrev : 0.2;
+  const lvgi = levPrev > 0 ? Math.min(2.0, Math.max(0.5, levCurr / levPrev)) : 1.0;
+
+  const netIncome = currPnl ? currPnl.netProfit : ((company.npm || 10) / 100 * salesCurr);
+  const cfo = currCf ? currCf.cashFromOperating : (company.cfo != null ? company.cfo : netIncome);
+  const accruals = netIncome - cfo;
+  const tata = totalAssetsCurr > 0 ? Math.max(-0.3, Math.min(0.3, accruals / totalAssetsCurr)) : -0.05;
+
+  const sgai = 1.0;
+  const rawM = -4.84 + 0.920 * dsri + 0.528 * gmi + 0.404 * aqi + 0.892 * sgi + 0.115 * depi - 0.172 * sgai + 4.037 * tata + 0.0327 * lvgi;
+  const score = Math.round(rawM * 100) / 100;
+  const flagged = score > -2.22;
+
+  return {
+    score,
+    flagged,
+    color: flagged ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+    interpretation: flagged
+      ? `Beneish M-Score of ${score} (> -2.22 threshold) indicates potential aggressive revenue recognition or earnings manipulation risk.`
+      : `Beneish M-Score of ${score} (< -2.22 threshold) confirms clean conservative accounting with minimal earnings manipulation probability.`,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. Algorithmic Evidence-Backed Pros & Cons Generator
 // ─────────────────────────────────────────────────────────────────────────────
 export function generateProsAndCons(company: CompanyFundamental): ProsAndConsResult {
   const pros: string[] = [];

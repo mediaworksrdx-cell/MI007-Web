@@ -569,8 +569,31 @@ export function evaluateAllStrategiesForStock(
     historicalWinRate: 72.1,
   });
 
-  // 3. Death Cross
-  const isDeathCross = currSma50 < currSma200 && currentPrice < currSma200;
+  // 3. Death Cross (50 SMA crosses below 200 SMA within last 25 candles)
+  let deathCrossTriggered = false;
+  let deathCrossPrice = currentPrice;
+  let deathCrossDate = dateStr;
+  if (currSma50 > 0 && currSma200 > 0) {
+    for (let i = Math.max(1, n - 25); i < n; i++) {
+      const s50Prev = sma50[i - 1];
+      const s200Prev = sma200[i - 1];
+      const s50Curr = sma50[i];
+      const s200Curr = sma200[i];
+      if (s50Prev && s200Prev && s50Curr && s200Curr && s50Prev > 0 && s200Prev > 0) {
+        if (s50Prev >= s200Prev && s50Curr < s200Curr) {
+          deathCrossTriggered = true;
+          deathCrossPrice = data[i].close;
+          deathCrossDate = data[i].time || new Date(data[i].openTime).toISOString().slice(0, 10);
+          break;
+        }
+      }
+    }
+  }
+  const deathSpreadPct = currSma200 > 0 && currSma50 > 0
+    ? ((currSma50 - currSma200) / currSma200) * 100
+    : 0;
+  // Trigger only if an authentic 50/200 death cross occurred within the lookback window
+  const isDeathCross = deathCrossTriggered && currentPrice < currSma200;
   results.push({
     symbol,
     companyName,
@@ -579,22 +602,24 @@ export function evaluateAllStrategiesForStock(
     strategyName: 'Death Cross (50/200)',
     direction: 'bearish',
     signalTriggered: isDeathCross,
-    signalDate: dateStr,
+    signalDate: deathCrossTriggered ? deathCrossDate : 'Active Bear Regime',
     currentPrice,
     triggerPrice: currSma200,
     keyMetrics: {
       'SMA 50': `${currency}${currSma50.toFixed(1)}`,
       'SMA 200': `${currency}${currSma200.toFixed(1)}`,
+      'Spread %': `${deathSpreadPct.toFixed(2)}%`,
     },
     status: 'Confirmed',
     explanation: isDeathCross
-      ? 'SMA 50 has crossed below SMA 200, signalling multi-month institutional liquidation.'
+      ? `SMA 50 has crossed below SMA 200 (${deathSpreadPct.toFixed(2)}% spread), signalling multi-month institutional liquidation.`
       : 'No active death cross: stock remains protected above major moving averages.',
     historicalWinRate: 64.8,
   });
 
   // 4. 20/50 Moving Average Crossover
-  const is2050Bull = currSma20 > currSma50;
+  const ma2050Spread = currSma50 > 0 ? ((currSma20 - currSma50) / currSma50) * 100 : 0;
+  const is2050Bull = currSma20 > currSma50 && currSma50 > 0 && Math.abs(ma2050Spread) >= 0.10;
   results.push({
     symbol,
     companyName,
@@ -609,16 +634,18 @@ export function evaluateAllStrategiesForStock(
     keyMetrics: {
       'SMA 20': `${currency}${currSma20.toFixed(1)}`,
       'SMA 50': `${currency}${currSma50.toFixed(1)}`,
+      'Spread %': `${ma2050Spread.toFixed(2)}%`,
     },
     status: 'Confirmed',
     explanation: is2050Bull
-      ? `20-day trend average (${currency}${currSma20.toFixed(1)}) is actively outperforming the 50-day average, establishing short-to-medium swing momentum.`
+      ? `20-day trend average (${currency}${currSma20.toFixed(1)}) leads 50-day average by ${ma2050Spread.toFixed(2)}%, establishing short-to-medium swing momentum.`
       : '20-day average is trailing beneath 50-day average.',
     historicalWinRate: 63.5,
   });
 
   // 5. EMA 9/21 Crossover
-  const isEmaBull = currEma9 > currEma21;
+  const emaSpread = currEma21 > 0 ? ((currEma9 - currEma21) / currEma21) * 100 : 0;
+  const isEmaBull = currEma9 > currEma21 && currEma21 > 0 && Math.abs(emaSpread) >= 0.10;
   results.push({
     symbol,
     companyName,
@@ -633,19 +660,22 @@ export function evaluateAllStrategiesForStock(
     keyMetrics: {
       'EMA 9': `${currency}${currEma9.toFixed(1)}`,
       'EMA 21': `${currency}${currEma21.toFixed(1)}`,
+      'Spread %': `${emaSpread.toFixed(2)}%`,
     },
     status: 'Confirmed',
     explanation: isEmaBull
-      ? `Fast 9 EMA (${currency}${currEma9.toFixed(1)}) maintains a positive slope above 21 EMA (${currency}${currEma21.toFixed(1)}), confirming active buyer aggression.`
+      ? `Fast 9 EMA (${currency}${currEma9.toFixed(1)}) maintains a +${emaSpread.toFixed(2)}% slope above 21 EMA (${currency}${currEma21.toFixed(1)}), confirming active buyer aggression.`
       : 'Fast 9 EMA is below 21 EMA baseline.',
     historicalWinRate: 59.8,
   });
 
   // 6. RSI Momentum Strategy
-  const rsiOversold = currRsi < 35;
+  const rsiOversold = currRsi < 32 && currRsi > 10;
   const rsiBullRecovery = prevRsi <= 32 && currRsi > 32;
-  const rsiOverbought = currRsi > 70;
-  const rsiTriggered = rsiOversold || rsiBullRecovery || (currRsi >= 55 && currRsi <= 68);
+  const rsiOverbought = currRsi > 70 && currRsi < 95;
+  const rsiMarkup = currRsi >= 58 && currRsi <= 72;
+  const isValidRsi = currRsi > 0 && Math.abs(currRsi - 50.0) >= 0.5;
+  const rsiTriggered = isValidRsi && (rsiOversold || rsiBullRecovery || rsiOverbought || rsiMarkup);
   results.push({
     symbol,
     companyName,
@@ -658,15 +688,16 @@ export function evaluateAllStrategiesForStock(
     currentPrice,
     triggerPrice: currentPrice,
     keyMetrics: {
+      'RSI (14)': currRsi.toFixed(1),
       'Current RSI': currRsi.toFixed(1),
-      'Zone': currRsi > 70 ? 'Overbought' : currRsi < 30 ? 'Oversold' : 'Bullish Markup Corridor',
+      'Zone': currRsi > 70 ? 'Overbought' : currRsi < 32 ? 'Oversold' : 'Bullish Markup Corridor',
     },
     status: 'Confirmed',
     explanation: currRsi > 70
       ? `RSI at ${currRsi.toFixed(1)} is in the overbought zone, signaling potential mean-reversion pullbacks.`
-      : currRsi < 35
+      : currRsi < 32
       ? `RSI at ${currRsi.toFixed(1)} has compressed into oversold territory, setting up a high-probability value reversal.`
-      : `RSI at ${currRsi.toFixed(1)} is accelerating in the institutional markup zone (50–68).`,
+      : `RSI at ${currRsi.toFixed(1)} is accelerating in the institutional markup zone (58–72).`,
     historicalWinRate: 67.2,
   });
 
@@ -698,6 +729,13 @@ export function evaluateAllStrategiesForStock(
   // 8. Bollinger Band Reversal
   const touchedLower = last.low <= currBBLower && last.close > currBBLower;
   const touchedUpper = last.high >= currBBUpper;
+  const bbBandwidth = currBBLower > 0 ? (((currBBUpper - currBBLower) / ((currBBUpper + currBBLower) / 2)) * 100) : 0;
+  const bandPenetration = touchedLower
+    ? Math.abs((currBBLower - last.low) / currBBLower) * 100
+    : touchedUpper
+    ? Math.abs((last.high - currBBUpper) / currBBUpper) * 100
+    : 0;
+  const bbTriggered = (touchedLower || touchedUpper) && bandPenetration >= 0.1 && bbBandwidth > 0;
   results.push({
     symbol,
     companyName,
@@ -705,38 +743,41 @@ export function evaluateAllStrategiesForStock(
     strategyId: 'bb_reversal',
     strategyName: 'Bollinger Band Mean Reversion',
     direction: touchedLower ? 'bullish' : touchedUpper ? 'bearish' : 'neutral',
-    signalTriggered: touchedLower || touchedUpper,
+    signalTriggered: bbTriggered,
     signalDate: dateStr,
     currentPrice,
     triggerPrice: touchedLower ? currBBLower : currBBUpper,
     keyMetrics: {
       'Upper Band': `${currency}${currBBUpper.toFixed(1)}`,
       'Lower Band': `${currency}${currBBLower.toFixed(1)}`,
-      'Bandwidth': `${(((currBBUpper - currBBLower) / ((currBBUpper + currBBLower) / 2)) * 100).toFixed(1)}%`,
+      'Bandwidth': `${bbBandwidth.toFixed(1)}%`,
+      'Band Penetration': `${bandPenetration.toFixed(2)}%`,
     },
     status: 'Confirmed',
     explanation: touchedLower
-      ? `Price tested the lower 2-std-dev band (${currency}${currBBLower.toFixed(1)}) and closed inside, confirming responsive buyer absorption.`
+      ? `Price swept below lower Bollinger band (${currency}${currBBLower.toFixed(1)}) and closed inside, completing oversold mean-reversion absorption.`
       : touchedUpper
       ? `Price pierced the upper volatility band (${currency}${currBBUpper.toFixed(1)}), reaching short-term exhaustion.`
       : 'Price oscillates normally within standard volatility bands.',
     historicalWinRate: 65.4,
   });
 
-  // 9. Historical High Breakout (50-Day / 52-Week High)
+  // 9. Historical High Breakout (50-Day / 52-Week High with Volume > 200%)
   const recentHigh50 = Math.max(...data.slice(Math.max(0, n - 51), n - 1).map(c => c.high));
-  const isBreakout = currentPrice >= recentHigh50 * 0.985;
+  const isHighBreakout = currentPrice >= recentHigh50 * 0.985;
   const volSlice20 = data.slice(Math.max(0, n - 21), n - 1);
   const avgVol20 = volSlice20.length > 0
     ? volSlice20.reduce((sum, c) => sum + (c.volume || 0), 0) / volSlice20.length
     : (last.volume || 1);
-  const volSurgePct = avgVol20 > 0 ? Math.round(((last.volume || avgVol20) / avgVol20) * 100) : 100;
+  const volMult = avgVol20 > 0 ? (last.volume || avgVol20) / avgVol20 : 1.0;
+  const volSurgePct = Math.round(volMult * 100);
+  const isBreakout = isHighBreakout && volMult >= 2.0; // Rule requires Volume > 200% (2.0x) of 20D avg
   results.push({
     symbol,
     companyName,
     market,
     strategyId: 'breakout',
-    strategyName: '50-Day High Breakout',
+    strategyName: '50-Day High Breakout (Volume > 200%)',
     direction: 'bullish',
     signalTriggered: isBreakout,
     signalDate: dateStr,
@@ -746,6 +787,7 @@ export function evaluateAllStrategiesForStock(
       '50-Day Resistance': `${currency}${recentHigh50.toFixed(1)}`,
       'Distance to Peak': `${(((currentPrice - recentHigh50) / recentHigh50) * 100).toFixed(1)}%`,
       'Volume Surge': `${volSurgePct}% vs 20D MA`,
+      'Volume Multiplier': `${volMult.toFixed(2)}x`,
     },
     status: 'Confirmed',
     explanation: isBreakout
@@ -937,9 +979,10 @@ export function evaluateSmcConfluenceStrategiesForStock(
 
   // ── 1. Smart Money Concepts (SMC) Master Strategy (Combined all SMC into one) ──
   const activeConfirmedSetups = analysis.allSetups.filter(
-    (s) => s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED'
+    (s) => (s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED') &&
+           s.candleIndex >= n - 10
   );
-  const bestSetup = activeConfirmedSetups.sort((a, b) => b.candleIndex - a.candleIndex)[0] || analysis.allSetups[0];
+  const bestSetup = activeConfirmedSetups.sort((a, b) => b.candleIndex - a.candleIndex)[0];
 
   if (bestSetup && (bestSetup.status === 'CONFIRMED' || bestSetup.status === 'RETESTING' || bestSetup.status === 'ENTRY_ZONE_REACHED')) {
     const direction = bestSetup.direction.toLowerCase() as 'bullish' | 'bearish';
@@ -1341,7 +1384,7 @@ export function evaluateQuantumSmcStrategyForStock(
   const dateStr = last.time || (last.openTime ? new Date(last.openTime).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
 
   const qRes = evaluateQuantumSmcResonance(symbol, companyName, market, data, currentPrice);
-  const isConfirmed = qRes.resonanceScore >= 65 || qRes.status === 'CONFIRMED' || qRes.grade === 'A+' || qRes.grade === 'A';
+  const isConfirmed = qRes.resonanceScore >= 75 && (qRes.grade === 'A+' || qRes.grade === 'A' || qRes.grade === 'B');
 
   return [
     {
@@ -1455,8 +1498,8 @@ export function evaluateOrderFlowStrategiesForStock(
   });
 
   // 3. of_stacked_buy_imbalance
-  const consecutiveBull = n >= 3 && data[n - 1].close > data[n - 1].open && data[n - 2].close > data[n - 2].open && data[n - 3].close > data[n - 3].open;
-  const isStackedBuy = consecutiveBull || (last.close > last.open && (last.high - last.close) / lastRange <= 0.20 && last.volume >= vol20 * 1.3);
+  const buyerVolumeMult = vol20 > 0 ? last.volume / vol20 : 1.0;
+  const isStackedBuy = buyerVolumeMult >= 3.0 && last.close > last.open && (last.high - last.close) / Math.max(0.01, lastRange) <= 0.25;
   results.push({
     symbol,
     companyName,
@@ -1470,19 +1513,19 @@ export function evaluateOrderFlowStrategiesForStock(
     triggerPrice: (last.open + last.low) / 2,
     keyMetrics: {
       'Imbalance Level': `${currSym}${((last.open + last.low) / 2).toFixed(2)}`,
-      'Buyer Volume Multiplier': `${(last.volume / vol20).toFixed(2)}x`,
-      'Close Proximity to High': `${(((last.high - last.close) / lastRange) * 100).toFixed(1)}%`,
+      'Buyer Volume Multiplier': `${buyerVolumeMult.toFixed(2)}x`,
+      'Close Proximity to High': `${(((last.high - last.close) / Math.max(0.01, lastRange)) * 100).toFixed(1)}%`,
     },
     status: isStackedBuy ? 'Confirmed' : 'Provisional',
     explanation: isStackedBuy
-      ? `Aggressive buyer market order imbalance confirmed with ${(last.volume / vol20).toFixed(1)}x average volume.`
+      ? `Aggressive buyer market order imbalance confirmed with ${buyerVolumeMult.toFixed(2)}x average volume (>= 3.0x threshold).`
       : 'Awaiting stacked buy imbalance print.',
     historicalWinRate: 73.2,
   });
 
   // 4. of_stacked_sell_imbalance
-  const consecutiveBear = n >= 3 && data[n - 1].close < data[n - 1].open && data[n - 2].close < data[n - 2].open && data[n - 3].close < data[n - 3].open;
-  const isStackedSell = consecutiveBear || (last.close < last.open && (last.close - last.low) / lastRange <= 0.20 && last.volume >= vol20 * 1.3);
+  const sellerVolumeMult = vol20 > 0 ? last.volume / vol20 : 1.0;
+  const isStackedSell = sellerVolumeMult >= 3.0 && last.close < last.open && (last.close - last.low) / Math.max(0.01, lastRange) <= 0.25;
   results.push({
     symbol,
     companyName,
@@ -1496,12 +1539,12 @@ export function evaluateOrderFlowStrategiesForStock(
     triggerPrice: (last.open + last.high) / 2,
     keyMetrics: {
       'Imbalance Level': `${currSym}${((last.open + last.high) / 2).toFixed(2)}`,
-      'Seller Volume Multiplier': `${(last.volume / vol20).toFixed(2)}x`,
-      'Close Proximity to Low': `${(((last.close - last.low) / lastRange) * 100).toFixed(1)}%`,
+      'Seller Volume Multiplier': `${sellerVolumeMult.toFixed(2)}x`,
+      'Close Proximity to Low': `${(((last.close - last.low) / Math.max(0.01, lastRange)) * 100).toFixed(1)}%`,
     },
     status: isStackedSell ? 'Confirmed' : 'Provisional',
     explanation: isStackedSell
-      ? `Aggressive seller market order imbalance confirmed with ${(last.volume / vol20).toFixed(1)}x average volume.`
+      ? `Aggressive seller market order imbalance confirmed with ${sellerVolumeMult.toFixed(2)}x average volume (>= 3.0x threshold).`
       : 'Awaiting stacked sell imbalance print.',
     historicalWinRate: 70.4,
   });

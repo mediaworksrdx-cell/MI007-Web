@@ -2,7 +2,7 @@
 // Exhaustive catalog of institutional fundamental metrics for screening, analysis, and custom queries.
 
 import { MetricDefinition, CompanyFundamental } from './types';
-import { calculatePiotroskiScore, calculateAltmanZScore } from './scorecards';
+import { calculatePiotroskiScore, calculateAltmanZScore, calculateBeneishMScore } from './scorecards';
 
 export const METRIC_DEFINITIONS: MetricDefinition[] = [
   // ── Valuation Metrics ──────────────────────────────────────────────────────
@@ -779,6 +779,9 @@ export function getMetricValue(
   }
   if (canonical === 'altmanZScore') {
     return calculateAltmanZScore(company).score;
+  }
+  if (canonical === 'beneishMScore') {
+    return calculateBeneishMScore(company).score;
   }
   if (canonical === 'rsi14') {
     const seed = company.symbol.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
