@@ -415,8 +415,28 @@ export function searchZerodhaStocks(query: string, limit: number = 50): ZerodhaS
 }
 
 /** Check if entity is a Bank, NBFC, Insurance, Asset Management, or Investment Holding entity */
-export function isFinancialEntity(symbol: string, name: string, sector?: string): boolean {
+export function isFinancialEntity(symbol: string, name: string, sector?: string, industry?: string): boolean {
   const s = symbol.toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
+
+  // 1. Generic Sector & Industry classification (future-proof across any new NBFC, Bank, or Insurance listing)
+  const meta = `${sector || ''} ${industry || ''}`.toUpperCase();
+  if (meta.includes('CAPITAL GOODS') || meta.includes('INFRASTRUCTURE') || meta.includes('METALS') || meta.includes('MATERIALS')) {
+    if (!/FINANCE|FINANCIAL|NBFC|BANK|LENDING|CREDIT/.test(meta)) {
+      return false;
+    }
+  }
+  if (/(BANK|NBFC|FINANC|INSUR|LENDING|CREDIT|HOUSING\s*FIN|INVESTMENT|BROKING|CAPITAL\s*MARKET|ASSET\s*MANAGEMENT|HOLDING)/i.test(meta)) {
+    return true;
+  }
+
+  // 2. Name & Corporate identity regex matching
+  const n = `${name} ${s}`.toUpperCase();
+  if (/CAPITAL GOODS/.test(n) && !/FINANCE|FINANCIAL|NBFC|BANK/.test(n)) return false;
+  if (/\b(BANK|FINANCE|FINANCIAL|INSURANCE|SECURITIES|LEASING|INVESTMENT|CREDIT|BROKING|HOUSING\s*FINANCE)\b|HOLDING\s*CO|\bNBFC\b|\bAMC\b/i.test(n) || /BANK|FINANC/.test(s)) {
+    return true;
+  }
+
+  // 3. Known historical Indian BFSI institutional index tickers (fallback fast lookup)
   const financialTickers = [
     'HDFCBANK', 'ICICIBANK', 'SBIN', 'KOTAKBANK', 'AXISBANK', 'BANDHANBNK',
     'FEDERALBNK', 'IDFCFIRSTB', 'PNB', 'CANBK', 'BANKBARODA', 'INDIANB',
@@ -435,21 +455,9 @@ export function isFinancialEntity(symbol: string, name: string, sector?: string)
     'SHAREINDIA', 'MONARCH', 'ARIHANTCAP', 'IIFL', 'IIFLSEC', 'EMKAY',
     'JMFINANC', 'EDELWEISS', 'RELIGARE', 'PRUDENT', 'ANANDRATHI', 'GROWW',
     'CDSL', 'BSE', 'MCX', 'TFCILTD', 'ELCIDIN', 'VARDMNPOLY', 'DSPAMC',
-    'NIPPONAMC', 'ZERODHAAMC'
+    'NIPPONAMC', 'ZERODHAAMC', 'PILANIINVS'
   ];
-  if (financialTickers.includes(s)) {
-    return true;
-  }
-  const cleanSector = (sector || '').toUpperCase();
-  if (cleanSector.includes('CAPITAL GOODS') || cleanSector.includes('INFRASTRUCTURE') || cleanSector.includes('METALS') || cleanSector.includes('MATERIALS')) {
-    return false;
-  }
-  if (cleanSector === 'FINANCIAL SERVICES' || cleanSector === 'FINANCE' || cleanSector === 'BANKING') {
-    return true;
-  }
-  const n = `${name} ${s}`.toUpperCase();
-  if (/CAPITAL GOODS/.test(n)) return false;
-  return /\b(BANK|FINANCE|FINANCIAL|INSURANCE|SECURITIES|LEASING|INVESTMENT)\b|HOLDING\s*CO|\bNBFC\b|\bAMC\b/.test(n) || /BANK|FINANC/.test(s);
+  return financialTickers.includes(s);
 }
 
 /** Heuristic sector assignment from company name */
