@@ -123,11 +123,10 @@ async function run() {
         if (comp.promoterHolding == null || comp.promoterHolding <= 0) continue;
       }
 
-      // Institutional Liquid Leaders require distinct quarterly disclosures (not duplicated from annual 1Y)
+      // Institutional Liquid Leaders require distinct quarterly disclosures for quarterly sales (not duplicated from annual 1Y)
       let isLiquidEligible = comp.marketCap != null && comp.marketCap >= 5000;
-      if (isLiquidEligible && ['qtrSalesGrowthYoY', 'qtrProfitGrowthYoY'].includes(def.key)) {
-        const annualKey = def.key === 'qtrSalesGrowthYoY' ? 'salesGrowth1Y' : 'profitGrowth1Y';
-        const annualVal = getMetricValue(comp, annualKey);
+      if (isLiquidEligible && def.key === 'qtrSalesGrowthYoY') {
+        const annualVal = getMetricValue(comp, 'salesGrowth1Y');
         if (annualVal != null && Math.abs(val - annualVal) < 0.01) {
           isLiquidEligible = false;
         }
