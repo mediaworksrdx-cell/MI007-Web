@@ -75,7 +75,7 @@ for (const sym of symbols) {
   if (!isFin) {
     if (item.workingCapitalDays != null) {
       workingCapitalDays = item.workingCapitalDays;
-      cashConversionCycle = item.cashConversionCycle != null ? item.cashConversionCycle : Math.max(5, workingCapitalDays - 6);
+      cashConversionCycle = item.cashConversionCycle != null ? item.cashConversionCycle : Math.max(5, (workingCapitalDays ?? 40) - 6);
     } else {
       const sec = (item.sector || guessSectorFromName(item.name || '', sym)).toUpperCase();
       if (sec.includes('TECH') || sec.includes('SOFTWARE')) {

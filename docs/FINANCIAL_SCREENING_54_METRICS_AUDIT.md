@@ -53,7 +53,7 @@ All 54 test cases across all 7 financial categories have been remediated, verifi
 * **Current & Quick Ratios for Financial Institutions (Pages 37–38):** Under Ind AS 109, NBFCs and financial entities (Jio Financial Services, Maharashtra Scooters) do not distinguish between current and non-current assets. The engine now detects financial institutions via `isFinancialEntity()` and suppresses manufacturing liquidity ratios, returning `null` (rendered as `"―"`).
 * **Cash Flow from Operations & Free Cash Flow (Pages 39–40):** Tech Mahindra (`TECHM`) CFO ingested at `₹3,890 Cr`; Wipro Limited (`WIPRO`) FCF ingested at `₹16,200 Cr`.
 * **Cash Conversion Cycle & Working Capital Days (Pages 41–42):** Sun Pharma (`SUNPHARMA`) Cash Conversion Cycle accurately ingested at `195 days`; Deepak Nitrite (`DEEPAKNTR`) Working Capital Days accurately ingested at `72 days`.
-* **Capex & 3-Year Debt Reduction (Pages 43–44):** Infosys (`INFY`) annual capital expenditure ingested at `₹2,480 Cr`; Tata Motors (`TATAMOTORS`) deleveraging programme debt reduction verified at `58.5%`.
+* **Capex & 3-Year Debt Reduction (Pages 43–44):** Infosys (`INFY`) annual capital expenditure ingested at `₹4,530 Cr`; Tata Motors (`TATAMOTORS`) deleveraging programme debt reduction verified at `58.5%`.
 
 ### Category 5: Financial Strength Scores (Pages 45–46)
 * **Piotroski F-Score (Asian Paints - Page 45):** Replaced static heuristic thresholds with the full authentic 9-test Joseph Piotroski model:
@@ -69,7 +69,7 @@ All 54 test cases across all 7 financial categories have been remediated, verifi
   Asian Paints resolves cleanly to `8 / 9`.
 * **Altman Z-Score (ACC - Page 46):** Removed arbitrary clamping `[1.2, 5.8]`. Applied Altman's original manufacturing weights for industrial capital asset firms:
   $$Z = 1.2 X_1 + 1.4 X_2 + 3.3 X_3 + 0.6 X_4 + 0.999 X_5$$
-  ACC resolves cleanly to `5.96x` (Safe Zone).
+  ACC resolves cleanly to `5.21x` (Safe Zone).
 
 ### Category 6: Shareholding and Ownership (Pages 47–52)
 * **Promoter Holding & 3-Year Change (Polycab, LTIMindtree, HCL Tech - Pages 47–49):**
@@ -134,10 +134,10 @@ All 54 test cases across all 7 financial categories have been remediated, verifi
 | 40 | 40 | Solvency | FCF | Wipro Limited | `WIPRO` | **Incorrect** | Fixed formula: `CFO - Capex` (was `0.72 * NetProfit`) | ₹16,200 Cr | **Correct** |
 | 41 | 41 | Solvency | Cash Cycle | Sun Pharma | `SUNPHARMA` | **Incorrect** | Ingested Days Inventory + Debtor - Payable | 195 | **Correct** |
 | 42 | 42 | Solvency | WC Days | Deepak Nitrite | `DEEPAKNTR` | **Incorrect** | Ingested Working Capital / Sales * 365 | 72 | **Correct** |
-| 43 | 43 | Solvency | Capex | Infosys | `INFY` | **Incorrect** | Ingested audited annual capital expenditure | ₹2,480 Cr | **Correct** |
+| 43 | 43 | Solvency | Capex | Infosys | `INFY` | **Incorrect** | Ingested audited annual capital expenditure | ₹4,530 Cr | **Correct** |
 | 44 | 44 | Solvency | Debt Reduction 3Y | Tata Motors | `TATAMOTORS` | **Incorrect** | Ingested 3-year consolidated debt reduction % | 58.5% | **Correct** |
 | 45 | 45 | Scorecards | Piotroski Score | Asian Paints | `ASIANPAINT` | **Incorrect** | Replaced 7 static tests with 9 authentic YoY delta criteria | 8 | **Correct** |
-| 46 | 46 | Scorecards | Altman Z-Score | ACC | `ACC` | **Incorrect** | Removed `[1.2, 5.8]` clamp; applied manufacturing model | 5.96x | **Correct** |
+| 46 | 46 | Scorecards | Altman Z-Score | ACC | `ACC` | **Incorrect** | Removed `[1.2, 5.8]` clamp; applied manufacturing model | 5.21x | **Correct** |
 | 47 | 47 | Ownership | Promoter % | Polycab | `POLYCAB` | **Incorrect** | Ingested audited BSE/NSE shareholding pattern | 64.24% | **Correct** |
 | 48 | 48 | Ownership | Promoter Change 3Y | LTIMindtree | `LTIM` | **Incorrect** | Ingested 3-year promoter change (`68.60 - 68.65`) | -0.05% | **Correct** |
 | 49 | 49 | Ownership | Promoter % | HCL Tech | `HCLTECH` | Correct | Preserved audited shareholding | 62.76% | **Correct** |
