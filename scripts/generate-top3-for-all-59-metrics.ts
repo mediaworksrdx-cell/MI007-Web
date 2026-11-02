@@ -98,14 +98,9 @@ async function run() {
         continue;
       }
 
-      // Multi-year CAGR: Exclude newly listed or newly incorporated entities without multi-year operating history
-      if (['salesGrowth3Y', 'salesGrowth5Y', 'salesGrowth10Y', 'profitGrowth3Y', 'profitGrowth5Y', 'profitGrowth10Y'].includes(def.key)) {
-        if (comp.symbol === 'JIOFIN' || comp.symbol === 'NTPCGREEN') continue;
-      }
-
-      // ROCE / ROE / ROIC realistic limits for active operating companies (allow Timex at 152.0%)
+      // ROCE / ROE / ROIC realistic limits: Filter out penny stubs with negative/eroded equity (> 160%)
       if (['roce', 'roe', 'roic', 'roce3YAvg', 'roe3YAvg', 'roce5YAvg'].includes(def.key)) {
-        if (val <= 0 || (val > 160 && comp.symbol !== 'TIMEX' && comp.symbol !== 'NESTLEIND')) continue;
+        if (val <= 0 || val > 160) continue;
       }
 
       // Dividend Yield cannot exceed 30% under normal operations
@@ -128,15 +123,19 @@ async function run() {
         if (comp.promoterHolding == null || comp.promoterHolding <= 0) continue;
       }
 
-      validComps.push({ comp, val });
-
-      // Strict Liquid Cutoff: Market Cap >= ₹5,000 Cr
-      if (comp.marketCap != null && comp.marketCap >= 5000) {
-        if (def.key === 'qtrSalesGrowthYoY' && comp.symbol === 'CUPID') {
-          // Cupid is small-cap in quarterly retail sales; liquid leaders are SWIGGY, ZOMATO, KALYANKJIL
-        } else {
-          liquidComps.push({ comp, val });
+      // Institutional Liquid Leaders require distinct quarterly disclosures (not duplicated from annual 1Y)
+      let isLiquidEligible = comp.marketCap != null && comp.marketCap >= 5000;
+      if (isLiquidEligible && ['qtrSalesGrowthYoY', 'qtrProfitGrowthYoY'].includes(def.key)) {
+        const annualKey = def.key === 'qtrSalesGrowthYoY' ? 'salesGrowth1Y' : 'profitGrowth1Y';
+        const annualVal = getMetricValue(comp, annualKey);
+        if (annualVal != null && Math.abs(val - annualVal) < 0.01) {
+          isLiquidEligible = false;
         }
+      }
+
+      validComps.push({ comp, val });
+      if (isLiquidEligible) {
+        liquidComps.push({ comp, val });
       }
     }
 
