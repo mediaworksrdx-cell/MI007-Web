@@ -1,6 +1,7 @@
 import { generateFundamentalFromZerodha } from '../lib/screener/zerodhaStocks';
 import { getMetricValue } from '../lib/screener/metrics';
 import { calculateAltmanZScore } from '../lib/screener/scorecards';
+import { getCompanyBySymbol } from '../lib/screener/data';
 
 interface TestItem {
   id: number;
@@ -258,6 +259,7 @@ let passCount = 0;
 let failCount = 0;
 
 for (const item of auditList) {
+  // 1. Test via dynamic Zerodha / Cache generation pipeline
   const fund = generateFundamentalFromZerodha({
     symbol: item.symbol,
     name: item.name,
@@ -266,8 +268,11 @@ for (const item of auditList) {
     token: 1000 + item.id,
   });
 
-  const val = getMetricValue(fund, item.metricKey);
-  const result = item.validator(val, fund);
+  // 2. Test via API lookup resolver getCompanyBySymbol
+  const compFromApi = getCompanyBySymbol(item.symbol) || fund;
+
+  const val = getMetricValue(compFromApi, item.metricKey);
+  const result = item.validator(val, compFromApi);
 
   if (result.pass) {
     passCount++;

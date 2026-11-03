@@ -3749,20 +3749,27 @@ function enrichCuratedIndianCompany(comp: CompanyFundamental): CompanyFundamenta
     merged.debtToEquity = null;
     merged.totalDebt = null;
     merged.netDebt = null;
+    merged.cfo = null;
+    merged.freeCashFlow = null;
+    merged.fcfYield = null;
+    merged.capex = null;
+    merged.altmanZScore = null;
   }
 
-  // Piotroski F-Score (0-9)
-  let piotroskiScore: number | null = merged.piotroskiScore ?? f?.piotroskiScore ?? comp.piotroskiScore ?? null;
-  if (piotroskiScore === null) {
+  // Piotroski F-Score (0-9, Non-financials only)
+  let piotroskiScore: number | null = isFinancial
+    ? null
+    : (merged.piotroskiScore ?? f?.piotroskiScore ?? comp.piotroskiScore ?? null);
+  if (!isFinancial && piotroskiScore === null) {
     let score = 0;
     if (merged.npm && merged.npm > 0) score++;
     if (merged.cfo != null && merged.cfo > 0) score++;
     if (merged.roe && merged.roe > 8) score++;
     if (merged.cfo != null && (merged.revenue || comp.annualProfitLoss?.[0]?.sales) && merged.cfo > ((merged.revenue || comp.annualProfitLoss?.[0]?.sales || 10000) * ((merged.npm || 5) / 100))) score++;
-    if (isFinancial || (merged.debtToEquity != null && merged.debtToEquity <= 0.6)) score++;
-    if (isFinancial || (merged.currentRatio != null && merged.currentRatio >= 1.2)) score++;
+    if (merged.debtToEquity != null && merged.debtToEquity <= 0.6) score++;
+    if (merged.currentRatio != null && merged.currentRatio >= 1.2) score++;
     if (merged.salesGrowth1Y && merged.salesGrowth1Y > 0) score++;
-    if (isFinancial || (merged.opm != null && merged.opm > 12)) score++;
+    if (merged.opm != null && merged.opm > 12) score++;
     if (merged.roe && merged.roe > 12) score++;
     piotroskiScore = score;
   }
