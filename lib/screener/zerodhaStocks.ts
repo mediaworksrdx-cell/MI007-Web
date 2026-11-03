@@ -946,7 +946,11 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
   const opm = isFinancial ? null : (cachedFund?.opm != null ? cachedFund.opm : null);
   const npm = isFinancial ? null : (cachedFund?.npm != null ? cachedFund.npm : null);
   const debtToEquity = isFinancial ? null : (cachedFund?.debtToEquity != null ? cachedFund.debtToEquity : null);
-  const dividendYield = cachedFund?.dividendYield != null ? cachedFund.dividendYield : null;
+  // Sanitize corporate action distortion (e.g. NCLT restructuring, penny capital reduction where historical dividend / penny LTP creates fake 40%+ yield)
+  let dividendYield = cachedFund?.dividendYield != null ? cachedFund.dividendYield : null;
+  if (dividendYield != null && dividendYield > 20.0 && (price < 25.0 || (knownMcap > 0 && knownMcap < 500))) {
+    dividendYield = 0.0;
+  }
   const salesGrowth1Y = cachedFund?.salesGrowth1Y != null ? cachedFund.salesGrowth1Y : null;
   const salesGrowth3Y = cachedFund?.salesGrowth3Y != null ? cachedFund.salesGrowth3Y : null;
   const profitGrowth1Y = cachedFund?.profitGrowth1Y != null ? cachedFund.profitGrowth1Y : null;
@@ -1037,7 +1041,7 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
   if (!isFinancial) {
     if (cachedFund?.workingCapitalDays != null) {
       workingCapitalDays = cachedFund.workingCapitalDays;
-      cashConversionCycle = cachedFund.cashConversionCycle != null ? cachedFund.cashConversionCycle : Math.max(5, Number(workingCapitalDays) - 6);
+      cashConversionCycle = cachedFund.cashConversionCycle != null ? cachedFund.cashConversionCycle : Number(workingCapitalDays) - 6;
     } else {
       const sec = sector.toUpperCase();
       if (sec.includes('TECHNOLOGY') || sec.includes('SOFTWARE')) {
@@ -1050,8 +1054,8 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
         workingCapitalDays = 72;
         cashConversionCycle = 65;
       } else if (sec.includes('AUTO')) {
-        workingCapitalDays = 38;
-        cashConversionCycle = 30;
+        workingCapitalDays = 15;
+        cashConversionCycle = -28; // Auto OEMs operate on negative CCC working capital float
       } else if (sec.includes('INFRA') || sec.includes('CAPITAL GOODS')) {
         workingCapitalDays = 78;
         cashConversionCycle = 68;
@@ -1246,7 +1250,16 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     roa: cachedFund?.roa != null ? cachedFund.roa : (isFinancial ? 1.8 : 8.5),
     opm,
     npm,
-    grossMargin: isFinancial ? null : (cachedFund?.grossMargin != null ? cachedFund.grossMargin : 32.5),
+    grossMargin: isFinancial ? null : (cachedFund?.grossMargin != null ? cachedFund.grossMargin : (
+      (() => {
+        const sec = (sector || '').toUpperCase();
+        if (sec.includes('PHARMA') || sec.includes('HEALTH')) return opm != null ? Math.min(85, Math.max(65, Math.round((opm + 48) * 10) / 10)) : 72.5;
+        if (sec.includes('TECH') || sec.includes('SOFTWARE') || sec.includes('IT')) return opm != null ? Math.min(80, Math.max(45, Math.round((opm + 25) * 10) / 10)) : 58.0;
+        if (sec.includes('FMCG') || sec.includes('FOOD') || sec.includes('CONSUMER')) return opm != null ? Math.min(75, Math.max(40, Math.round((opm + 28) * 10) / 10)) : 48.0;
+        if (sec.includes('AUTO')) return opm != null ? Math.min(50, Math.max(28, Math.round((opm + 22) * 10) / 10)) : 36.5;
+        return opm != null ? Math.min(65, Math.max(25, Math.round((opm + 18) * 10) / 10)) : 35.0;
+      })()
+    )),
     ebitdaMargin: isFinancial ? null : (cachedFund?.ebitdaMargin != null ? cachedFund.ebitdaMargin : (opm != null ? +(opm * 1.15).toFixed(1) : null)),
     roce3YAvg: cachedFund?.roce3YAvg != null ? cachedFund.roce3YAvg : null,
     roe3YAvg: cachedFund?.roe3YAvg != null ? cachedFund.roe3YAvg : null,

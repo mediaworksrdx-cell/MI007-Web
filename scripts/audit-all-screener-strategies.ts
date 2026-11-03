@@ -145,7 +145,7 @@ async function runMasterAudit() {
           return { sortVal: -((c.piotroskiScore || 0) * 1000 + (c.roce || 0)), label: 'Piotroski / ROCE', text: `${c.piotroskiScore || 0}/9 (ROCE: ${(c.roce || 0).toFixed(1)}%)` };
 
         case 'inv_altman_z_safe_haven': {
-          const zScore = calculateAltmanZScore(c).score;
+          const zScore = calculateAltmanZScore(c).score ?? 0;
           return { sortVal: -zScore, label: 'Altman Z-Score', text: `${zScore.toFixed(2)}` };
         }
 

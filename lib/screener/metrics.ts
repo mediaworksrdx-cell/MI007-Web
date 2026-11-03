@@ -3,6 +3,7 @@
 
 import { MetricDefinition, CompanyFundamental } from './types';
 import { calculatePiotroskiScore, calculateAltmanZScore, calculateBeneishMScore } from './scorecards';
+import { isFinancialEntity } from './zerodhaStocks';
 
 export const METRIC_DEFINITIONS: MetricDefinition[] = [
   // ── Valuation Metrics ──────────────────────────────────────────────────────
@@ -772,12 +773,41 @@ export function getMetricValue(
 ): number | null {
   const canonical = resolveMetricKey(metricKey) || metricKey;
 
+  const isFin = isFinancialEntity(company.symbol, company.name, company.sector, company.industry);
+
+  // Structural BFSI exclusions: Banks, NBFCs, and financial entities do not report standard
+  // industrial working capital, operating cash flows, or Altman Z bankruptcy metrics under Ind AS 109 / RBI regulations.
+  if (isFin) {
+    if (
+      canonical === 'altmanZScore' ||
+      canonical === 'workingCapitalDays' ||
+      canonical === 'cashConversionCycle' ||
+      canonical === 'currentRatio' ||
+      canonical === 'quickRatio' ||
+      canonical === 'cfo' ||
+      canonical === 'freeCashFlow' ||
+      canonical === 'fcfYield' ||
+      canonical === 'debtToEquity' ||
+      canonical === 'interestCoverage' ||
+      canonical === 'grossMargin' ||
+      canonical === 'ebitdaMargin' ||
+      canonical === 'evToEbitda' ||
+      canonical === 'evToEbit' ||
+      canonical === 'capex'
+    ) {
+      return null;
+    }
+  }
+
   // On-the-fly evaluation of institutional scorecards & technical indicators
   if (canonical === 'piotroskiScore') {
+    if (isFin) return null;
     if (typeof company.piotroskiScore === 'number') return company.piotroskiScore;
     return calculatePiotroskiScore(company).score;
   }
   if (canonical === 'altmanZScore') {
+    if (isFin) return null;
+    if (typeof company.altmanZScore === 'number') return company.altmanZScore;
     return calculateAltmanZScore(company).score;
   }
   if (canonical === 'beneishMScore') {

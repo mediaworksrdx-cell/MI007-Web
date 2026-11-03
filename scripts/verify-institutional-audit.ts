@@ -165,8 +165,14 @@ assert(relAltman.components.length === 5, 'Altman Z Manufacturing contains all 5
 
 const tcsAltman = calculateAltmanZScore(tcsComp);
 assert(tcsAltman.components.length === 4, 'Altman Z Non-Manufacturing (EMS) contains 4 weighted solvency components (X1..X4)');
-assert(tcsAltman.score > 2.99, `TCS Altman Z score (${tcsAltman.score}) qualifies for Safe Zone (> 2.99)`);
+assert(tcsAltman.score !== null && tcsAltman.score > 2.99, `TCS Altman Z score (${tcsAltman.score}) qualifies for Safe Zone (> 2.99)`);
 assert(tcsAltman.zone === 'Safe Zone', 'TCS classified in Safe Zone');
+
+// Verify Altman Z-Score on Financial Institution (HDFCBANK: null / Not Applicable)
+const hdfcComp = MASTER_COMPANIES.find((c) => c.symbol === 'HDFCBANK')!;
+const hdfcAltman = calculateAltmanZScore(hdfcComp);
+assert(hdfcAltman.score === null, 'Altman Z score is null for commercial banks (HDFCBANK)');
+assert(hdfcAltman.zone === 'Not Applicable (Financial Institution)', 'Altman Z zone is Not Applicable for commercial banks');
 
 // Test SWOT Analysis
 const tcsSWOT = generateSWOTAnalysis(tcsComp);

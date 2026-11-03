@@ -3,6 +3,7 @@
 // Beneish M-Score, Algorithmic Pros & Cons, and 4-Box SWOT Analysis.
 
 import { CompanyFundamental } from './types';
+import { isFinancialEntity } from './zerodhaStocks';
 
 export interface PiotroskiResult {
   score: number; // 0 to 9
@@ -18,10 +19,10 @@ export interface PiotroskiResult {
 }
 
 export interface AltmanZResult {
-  score: number;
-  zone: 'Safe Zone' | 'Grey / Caution Zone' | 'Distress Zone';
+  score: number | null;
+  zone: 'Safe Zone' | 'Grey / Caution Zone' | 'Distress Zone' | 'Not Applicable (Financial Institution)';
   color: string;
-  formulaVersion: 'Manufacturing (Original)' | 'Non-Manufacturing (EMS)';
+  formulaVersion: 'Manufacturing (Original)' | 'Non-Manufacturing (EMS)' | 'Not Applicable';
   explanation: string;
   components: { label: string; value: number; weight: number }[];
 }
@@ -237,13 +238,24 @@ export function calculatePiotroskiScore(company: CompanyFundamental): PiotroskiR
 // 2. Altman Z-Score (Solvency & Bankruptcy Risk Model)
 // ─────────────────────────────────────────────────────────────────────────────
 export function calculateAltmanZScore(company: CompanyFundamental): AltmanZResult {
+  const isFinancial = isFinancialEntity(company.symbol, company.name, company.sector, company.industry);
+  if (isFinancial) {
+    return {
+      score: null,
+      zone: 'Not Applicable (Financial Institution)',
+      color: 'text-neutral-400 bg-neutral-500/10 border-neutral-500/30',
+      formulaVersion: 'Not Applicable',
+      explanation: 'Altman Z-Score is not applicable to commercial banks, NBFCs, and financial entities due to customer deposits and statutory leverage structures.',
+      components: [],
+    };
+  }
+
   const pnl = company.annualProfitLoss || [];
   const currPnl = pnl[0];
   const bs = company.balanceSheet || [];
   const currBs = bs[0];
 
   const mcap = company.marketCap || 1000;
-  const isFinancial = company.sector === 'Financial Services';
 
   // Compute Total Assets
   let totalAssets = currBs ? currBs.totalAssets : 0;
@@ -306,7 +318,7 @@ export function calculateAltmanZScore(company: CompanyFundamental): AltmanZResul
   const E = sales / Math.max(1, totalAssets);
 
   // Determine if Manufacturing (Original 5-factor) or Non-Manufacturing / EMS (4-factor Z'')
-  const isNonMfg = isFinancial ||
+  const isNonMfg =
     company.sector === 'Information Technology' ||
     company.sector === 'Telecommunications & Media' ||
     company.sector === 'Consumer & Retail';
