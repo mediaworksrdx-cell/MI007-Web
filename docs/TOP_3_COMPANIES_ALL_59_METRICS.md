@@ -41,7 +41,7 @@ flowchart TD
 | **7** | **EV** (`enterpriseValue`) | 1. **RELIANCE** (₹18,37,071 Cr)<br>2. **BHARTIARTL** (₹14,13,014 Cr)<br>3. **TCS** (₹9,10,341 Cr) | 1. **RELIANCE** (₹18,37,071 Cr)<br>2. **BHARTIARTL** (₹14,13,014 Cr)<br>3. **TCS** (₹9,10,341 Cr) |
 | **8** | **EV/EBITDA** (`evToEbitda`) | 1. **PAYTM** (111.5x)<br>2. **MAXESTATES** (91.0x)<br>3. **BDL** (88.3x) | 1. **PAYTM** (111.5x)<br>2. **VIJSOLX** (110.7x)<br>3. **SHBAJRG** (92.8x) |
 | **9** | **EV/EBIT** (`evToEbit`) | 1. **VOGL** (109.2x)<br>2. **NTPCGREEN** (64.4x)<br>3. **TIMEX** (56.7x) | 1. **SAMBANDAM** (118.3x)<br>2. **AVANCE** (109.6x)<br>3. **VOGL** (109.2x) |
-| **10** | **Div Yield** (`dividendYield`) | 1. **COALINDIA** (10.54%)<br>2. **HINDPETRO** (7.12%)<br>3. **BPCL** (7.02%) | 1. **UFO** (25.19%)<br>2. **SEJALLTD** (23.87%)<br>3. **TICL** (23.29%) |
+| **10** | **Div Yield** (`dividendYield`) | 1. **COALINDIA** (10.54%)<br>2. **HINDPETRO** (7.12%)<br>3. **BPCL** (7.02%) | 1. **ASMS** (18.15%)<br>2. **GTL** (16.95%)<br>3. **CELEBRITY** (16.64%) |
 | **11** | **Earnings Yield** (`earningsYield`) | 1. **CHENNPETRO** (25.64%)<br>2. **DBL** (20.83%)<br>3. **IOC** (18.87%) | 1. **ASHOKAMET** (50.00%)<br>2. **BLBLIMITED** (33.33%)<br>3. **MUKANDLTD** (31.25%) |
 | **12** | **FCF Yield** (`fcfYield`) | 1. **NIRLON** (29.70%)<br>2. **JNPR** (27.83%)<br>3. **ABREL** (26.87%) | 1. **ZSARACOM** (42.58%)<br>2. **JINDALPHOT** (42.47%)<br>3. **ASIANTNE** (40.91%) |
 | **13** | **PEG** (`pegRatio`) | 1. **OBEROIRLTY** (114.00x)<br>2. **BIKAJI** (110.00x)<br>3. **CYIENT** (93.13x) | 1. **OBEROIRLTY** (114.00x)<br>2. **BIKAJI** (110.00x)<br>3. **CYIENT** (93.13x) |
@@ -55,11 +55,11 @@ flowchart TD
 | **14** | **Sales 1Y** (`salesGrowth1Y`) | 1. **ABREL** (743.2%)<br>2. **TI** (512.3%)<br>3. **NETWEB** (335.7%) | 1. **ELITECON** (1750.0%)<br>2. **SIL** (1734.9%)<br>3. **SADHNANIQ** (1493.0%) |
 | **15** | **Sales 3Y** (`salesGrowth3Y`) | 1. **SUZLON** (48.2%)<br>2. **KALYANKJIL** (37.5%)<br>3. **TRENT** (36.2%) | 1. **SUZLON** (48.2%)<br>2. **KALYANKJIL** (37.5%)<br>3. **TRENT** (36.2%) |
 | **16** | **Sales 5Y** (`salesGrowth5Y`) | 1. **TRENT** (32.4%)<br>2. **DIXON** (31.8%)<br>3. **APARINDS** (26.2%) | 1. **TRENT** (32.4%)<br>2. **DIXON** (31.8%)<br>3. **APARINDS** (26.2%) |
-| **17** | **Sales 10Y** (`salesGrowth10Y`) | 1. **DIXON** (34.2%)<br>2. **BAJFINANCE** (27.5%)<br>3. **DEEPAKNTR** (24.8%) | 1. **DIXON** (34.2%)<br>2. **BAJFINANCE** (27.5%)<br>3. **DEEPAKNTR** (24.8%) |
+| **17** | **Sales 10Y** (`salesGrowth10Y`) | 1. **DIXON** (34.2%)<br>2. **TRENT** (28.0%)<br>3. **BAJFINANCE** (27.5%) | 1. **DIXON** (34.2%)<br>2. **TRENT** (28.0%)<br>3. **BAJFINANCE** (27.5%) |
 | **18** | **Profit 1Y** (`profitGrowth1Y`) | 1. **APOLLOTYRE** (2660.0%)<br>2. **MFSL** (1860.5%)<br>3. **CENTUM** (1718.6%) | 1. **HMAAGRO** (4950.0%)<br>2. **PVP** (4500.0%)<br>3. **PSPPROJECT** (4109.1%) |
 | **19** | **Profit 3Y** (`profitGrowth3Y`) | 1. **ZOMATO** (85.7%)<br>2. **TATAMOTORS** (78.5%)<br>3. **SUZLON** (72.0%) | 1. **JUNIPER** (272.5%)<br>2. **UEL** (260.3%)<br>3. **ZOMATO** (85.7%) |
 | **20** | **Profit 5Y** (`profitGrowth5Y`) | 1. **DIXON** (44.6%)<br>2. **TATAMOTORS** (42.0%)<br>3. **POLYCAB** (32.8%) | 1. **DIXON** (44.6%)<br>2. **TATAMOTORS** (42.0%)<br>3. **POLYCAB** (32.8%) |
-| **21** | **Profit 10Y** (`profitGrowth10Y`) | 1. **DIXON** (38.2%)<br>2. **TRENT** (34.5%)<br>3. **DEEPAKNTR** (34.2%) | 1. **DIXON** (38.2%)<br>2. **TRENT** (34.5%)<br>3. **DEEPAKNTR** (34.2%) |
+| **21** | **Profit 10Y** (`profitGrowth10Y`) | 1. **DIXON** (57.2%)<br>2. **TRENT** (34.5%)<br>3. **DEEPAKNTR** (34.2%) | 1. **DIXON** (57.2%)<br>2. **TRENT** (34.5%)<br>3. **DEEPAKNTR** (34.2%) |
 | **22** | **EPS Growth** (`epsGrowth`) | 1. **TATAMOTORS** (178.0%)<br>2. **CUPID** (164.7%)<br>3. **ZOMATO** (145.0%) | 1. **INDOKEM** (182.5%)<br>2. **TATAMOTORS** (178.0%)<br>3. **CUPID** (164.7%) |
 | **23** | **EBITDA Growth** (`ebitdaGrowth`) | 1. **CUPID** (164.7%)<br>2. **TI** (142.1%)<br>3. **TRENT** (62.4%) | 1. **PVP** (220.5%)<br>2. **CUPID** (164.7%)<br>3. **TI** (142.1%) |
 | **24** | **Qtr Sales YoY** (`qtrSalesGrowthYoY`) | 1. **SWIGGY** (34.2%)<br>2. **ZOMATO** (31.8%)<br>3. **KALYANKJIL** (29.5%) | 1. **JUNIPER** (165.2%)<br>2. **CUPID** (94.3%)<br>3. **SWIGGY** (34.2%) |
@@ -77,7 +77,7 @@ flowchart TD
 | **29** | **ROA** (`roa`) | 1. **TIPSMUSIC** (59.9%)<br>2. **HINDZINC** (41.2%)<br>3. **COLPAL** (32.4%) | 1. **TIPSMUSIC** (59.9%)<br>2. **KSOLVES** (49.8%)<br>3. **HINDZINC** (41.2%) |
 | **30** | **OPM** (`opm`) | 1. **NTPCGREEN** (96.4%)<br>2. **ADANIGREEN** (91.1%)<br>3. **IEX** (84.3%) | 1. **ZSARACOM** (98.4%)<br>2. **JINDALPHOT** (98.0%)<br>3. **NTPCGREEN** (96.4%) |
 | **31** | **NPM** (`npm`) | 1. **IEX** (68.4%)<br>2. **VISL** (64.2%)<br>3. **ABREL** (64.0%) | 1. **LPDC** (98.7%)<br>2. **ZSARACOM** (80.1%)<br>3. **GTLINFRA** (79.2%) |
-| **32** | **Gross Margin** (`grossMargin`) | 1. **BHARTIARTL** (67.9%)<br>2. **AVANTEL** (49.5%)<br>3. **TCS** (40.6%) | 1. **BHARTIARTL** (67.9%)<br>2. **AVANTEL** (49.5%)<br>3. **TCS** (40.6%) |
+| **32** | **Gross Margin** (`grossMargin`) | 1. **NTPCGREEN** (96.4%)<br>2. **ADANIGREEN** (91.1%)<br>3. **SANOFICONR** (85.5%) | 1. **ZSARACOM** (98.4%)<br>2. **JINDALPHOT** (98.0%)<br>3. **NTPCGREEN** (96.4%) |
 | **33** | **EBITDA Margin** (`ebitdaMargin`) | 1. **IEX** (96.9%)<br>2. **TIPSMUSIC** (90.2%)<br>3. **NTPCGREEN** (88.5%) | 1. **SONAL** (98.7%)<br>2. **IEX** (96.9%)<br>3. **PTL** (96.5%) |
 | **34** | **3Y ROCE** (`roce3YAvg`) | 1. **TIMEX** (112.5%)<br>2. **PGHH** (98.4%)<br>3. **TIPSMUSIC** (92.4%) | 1. **TIMEX** (112.5%)<br>2. **PGHH** (98.4%)<br>3. **TIPSMUSIC** (92.4%) |
 | **35** | **3Y ROE** (`roe3YAvg`) | 1. **NESTLEIND** (102.5%)<br>2. **PGHH** (92.4%)<br>3. **HINDZINC** (82.5%) | 1. **NESTLEIND** (102.5%)<br>2. **ASAL** (98.5%)<br>3. **PGHH** (92.4%) |
@@ -92,16 +92,16 @@ flowchart TD
 | **37** | **D/E** (`debtToEquity`) | 1. **INDIGO** (17.39x)<br>2. **WEWORK** (16.44x)<br>3. **SMARTWORKS** (10.29x) | 1. **INDIGO** (17.39x)<br>2. **DELTAMAGNT** (17.33x)<br>3. **WEWORK** (16.44x) |
 | **38** | **Net Debt** (`netDebt`) | 1. **NTPC** (₹2,71,713 Cr)<br>2. **RELIANCE** (₹2,60,673 Cr)<br>3. **GRASIM** (₹2,06,422 Cr) | 1. **NTPC** (₹2,71,713 Cr)<br>2. **RELIANCE** (₹2,60,673 Cr)<br>3. **GRASIM** (₹2,06,422 Cr) |
 | **39** | **Int Coverage** (`interestCoverage`) | 1. **TIPSMUSIC** (1461.8x)<br>2. **NESCO** (421.1x)<br>3. **SOLARINDS** (284.7x) | 1. **NOIDATOLL** (6946.6x)<br>2. **GNRL** (1956.7x)<br>3. **TIPSMUSIC** (1461.8x) |
-| **40** | **Current Ratio** (`currentRatio`) | 1. **PCJEWELLER** (19.82x)<br>2. **JUSTDIAL** (9.35x)<br>3. **SUNTV** (7.94x) | 1. **RAMBHAJO** (26.36x)<br>2. **INDOBORAX** (20.85x)<br>3. **PCJEWELLER** (19.82x) |
+| **40** | **Current Ratio** (`currentRatio`) | 1. **JUSTDIAL** (9.35x)<br>2. **SUNTV** (7.94x)<br>3. **PCJEWELLER** (7.05x) | 1. **RAMBHAJO** (26.36x)<br>2. **INDOBORAX** (20.85x)<br>3. **MKEXIM** (16.66x) |
 | **41** | **Quick Ratio** (`quickRatio`) | 1. **JUSTDIAL** (9.23x)<br>2. **SUNTV** (7.40x)<br>3. **ELANTAS** (5.09x) | 1. **INDOBORAX** (14.24x)<br>2. **JUSTDIAL** (9.23x)<br>3. **MKEXIM** (8.72x) |
 | **42** | **CFO** (`cfo`) | 1. **RELIANCE** (₹1,92,113 Cr)<br>2. **BHARTIARTL** (₹1,22,230 Cr)<br>3. **POWERGRID** (₹87,517 Cr) | 1. **RELIANCE** (₹1,92,113 Cr)<br>2. **BHARTIARTL** (₹1,22,230 Cr)<br>3. **POWERGRID** (₹87,517 Cr) |
 | **43** | **FCF** (`freeCashFlow`) | 1. **BHARTIARTL** (₹75,515 Cr)<br>2. **RELIANCE** (₹69,197 Cr)<br>3. **POWERGRID** (₹59,512 Cr) | 1. **BHARTIARTL** (₹75,515 Cr)<br>2. **RELIANCE** (₹69,197 Cr)<br>3. **POWERGRID** (₹59,512 Cr) |
-| **44** | **Cash Cycle** (`cashConversionCycle`) | 1. **SUNPHARMA** (195)<br>2. **RELIANCE** (75)<br>3. **BHARTIARTL** (75) | 1. **SUNPHARMA** (195)<br>2. **RELIANCE** (75)<br>3. **BHARTIARTL** (75) |
+| **44** | **Cash Cycle** (`cashConversionCycle`) | 1. **ADANIENT** (242)<br>2. **SUNPHARMA** (195)<br>3. **RELIANCE** (75) | 1. **ADANIENT** (242)<br>2. **SUNPHARMA** (195)<br>3. **RELIANCE** (75) |
 | **45** | **WC Days** (`workingCapitalDays`) | 1. **TIPSMUSIC** (669)<br>2. **SUNPHARMA** (353)<br>3. **TCS** (270) | 1. **TIPSMUSIC** (669)<br>2. **UEL** (355)<br>3. **SUNPHARMA** (353) |
 | **46** | **CapEx** (`capex`) | 1. **RELIANCE** (₹1,22,916 Cr)<br>2. **NTPC** (₹69,371 Cr)<br>3. **BHARTIARTL** (₹46,714 Cr) | 1. **RELIANCE** (₹1,22,916 Cr)<br>2. **NTPC** (₹69,371 Cr)<br>3. **BHARTIARTL** (₹46,714 Cr) |
 | **47** | **Debt Red 3Y** (`debtReduction3Y`) | 1. **TIMEX** (82.4%)<br>2. **CENTUM** (59.8%)<br>3. **TATAMOTORS** (58.5%) | 1. **TIMEX** (82.4%)<br>2. **UEL** (77.3%)<br>3. **CENTUM** (59.8%) |
 | **48** | **Piotroski** (`piotroskiScore`) | 1. **TCS** (9)<br>2. **INFY** (9)<br>3. **SUNPHARMA** (9) | 1. **TCS** (9)<br>2. **INFY** (9)<br>3. **SUNPHARMA** (9) |
-| **49** | **Altman Z** (`altmanZScore`) | 1. **TIMEX** (164.36x)<br>2. **CUPID** (158.35x)<br>3. **GVT&D** (118.25x) | 1. **TIMEX** (164.36x)<br>2. **CUPID** (158.35x)<br>3. **SHUKRAPHAR** (146.84x) |
+| **49** | **Altman Z** (`altmanZScore`) | 1. **TIMEX** (22.28x)<br>2. **TIPSMUSIC** (21.07x)<br>3. **JSWDULUX** (18.41x) | 1. **TIMEX** (22.28x)<br>2. **TIPSMUSIC** (21.07x)<br>3. **KSOLVES** (20.38x) |
 
 ---
 
@@ -112,8 +112,8 @@ flowchart TD
 | **50** | **Promoter %** (`promoterHolding`) | 1. **KIOCL** (99.04%)<br>2. **ITI** (97.90%)<br>3. **GALLANTT** (96.61%) | 1. **GRANDOAK** (99.28%)<br>2. **KIOCL** (99.04%)<br>3. **UEL** (98.58%) |
 | **51** | **Prom Change 3Y** (`promoterHoldingChange3Y`) | 1. **ADANIENT** (4.85%)<br>2. **VEDL** (3.20%)<br>3. **BHARTIARTL** (2.40%) | 1. **ADANIENT** (4.85%)<br>2. **VEDL** (3.20%)<br>3. **BHARTIARTL** (2.40%) |
 | **52** | **Pledged %** (`pledgedPct`) | 1. **RELIANCE** (0.00%)<br>2. **BHARTIARTL** (0.00%)<br>3. **TCS** (0.00%) | 1. **RELIANCE** (0.00%)<br>2. **BHARTIARTL** (0.00%)<br>3. **TCS** (0.00%) |
-| **53** | **FII %** (`fiiHolding`) | 1. **NAM-INDIA** (53.82%)<br>2. **ICICIGI** (49.82%)<br>3. **MFSL** (49.27%) | 1. **NAM-INDIA** (53.82%)<br>2. **ICICIGI** (49.82%)<br>3. **MFSL** (49.27%) |
-| **54** | **DII %** (`diiHolding`) | 1. **NAM-INDIA** (35.88%)<br>2. **HDFCBANK** (35.35%)<br>3. **ICICIGI** (33.22%) | 1. **NAM-INDIA** (35.88%)<br>2. **HDFCBANK** (35.35%)<br>3. **ICICIGI** (33.22%) |
+| **53** | **FII %** (`fiiHolding`) | 1. **ICICIGI** (49.82%)<br>2. **MFSL** (49.27%)<br>3. **HDFCBANK** (47.20%) | 1. **ICICIGI** (49.82%)<br>2. **MFSL** (49.27%)<br>3. **HDFCBANK** (47.20%) |
+| **54** | **DII %** (`diiHolding`) | 1. **YESBANK** (41.37%)<br>2. **HDFCBANK** (35.35%)<br>3. **ICICIGI** (33.22%) | 1. **YESBANK** (41.37%)<br>2. **HDFCBANK** (35.35%)<br>3. **ICICIGI** (33.22%) |
 | **55** | **Public %** (`publicHolding`) | 1. **AXISCADES** (85.86%)<br>2. **ZEEL** (80.45%)<br>3. **KTKBANK** (71.69%) | 1. **SUBEXLTD** (98.10%)<br>2. **JYOTISTRUC** (91.38%)<br>3. **AXISCADES** (85.86%) |
 
 ---

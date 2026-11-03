@@ -371,8 +371,8 @@
       "Positive Net Profit Margin > 8%",
       "Debt to Equity < 0.8"
     ],
-    "totalQualifyingAllUniverse": 201,
-    "totalQualifyingLiquid": 91,
+    "totalQualifyingAllUniverse": 200,
+    "totalQualifyingLiquid": 90,
     "liquidTop3": [
       {
         "symbol": "ABREL",
@@ -473,7 +473,7 @@
         }
       }
     ],
-    "auditNotes": "Total qualifying stocks: 201 (91 liquid)."
+    "auditNotes": "Total qualifying stocks: 200 (90 liquid)."
   },
   {
     "strategyNumber": 6,
@@ -831,7 +831,7 @@
       "5-year Profit Growth > 8%",
       "Debt to Equity < 0.6"
     ],
-    "totalQualifyingAllUniverse": 259,
+    "totalQualifyingAllUniverse": 257,
     "totalQualifyingLiquid": 103,
     "liquidTop3": [
       {
@@ -855,7 +855,7 @@
         "name": "NESTLE INDIA",
         "marketCap": 225034,
         "rankMetricName": "5Y Profit CAGR",
-        "rankMetricValue": "23.1%",
+        "rankMetricValue": "11.7%",
         "supportingMetrics": {
           "Price": "₹1167.00",
           "Market Cap": "₹2,25,034 Cr",
@@ -905,7 +905,7 @@
         "name": "NESTLE INDIA",
         "marketCap": 225034,
         "rankMetricName": "5Y Profit CAGR",
-        "rankMetricValue": "23.1%",
+        "rankMetricValue": "11.7%",
         "supportingMetrics": {
           "Price": "₹1167.00",
           "Market Cap": "₹2,25,034 Cr",
@@ -933,7 +933,7 @@
         }
       }
     ],
-    "auditNotes": "Total qualifying stocks: 259 (103 liquid)."
+    "auditNotes": "Total qualifying stocks: 257 (103 liquid)."
   },
   {
     "strategyNumber": 10,
@@ -946,7 +946,7 @@
       "Sales Growth 3Y > 10%",
       "ROE > 18%"
     ],
-    "totalQualifyingAllUniverse": 70,
+    "totalQualifyingAllUniverse": 69,
     "totalQualifyingLiquid": 43,
     "liquidTop3": [
       {
@@ -1048,7 +1048,7 @@
         }
       }
     ],
-    "auditNotes": "Total qualifying stocks: 70 (43 liquid)."
+    "auditNotes": "Total qualifying stocks: 69 (43 liquid)."
   },
   {
     "strategyNumber": 11,
@@ -1175,7 +1175,7 @@
       "DDM Intrinsic Value > 1.25 * Current Price",
       "Dividend Yield > 3.0%"
     ],
-    "totalQualifyingAllUniverse": 21,
+    "totalQualifyingAllUniverse": 20,
     "totalQualifyingLiquid": 10,
     "liquidTop3": [
       {
@@ -1277,7 +1277,7 @@
         }
       }
     ],
-    "auditNotes": "Total qualifying stocks: 21 (10 liquid)."
+    "auditNotes": "Total qualifying stocks: 20 (10 liquid)."
   },
   {
     "strategyNumber": 13,
@@ -1290,8 +1290,8 @@
       "Positive Operating Cash Flow",
       "ROCE > 18%"
     ],
-    "totalQualifyingAllUniverse": 281,
-    "totalQualifyingLiquid": 172,
+    "totalQualifyingAllUniverse": 279,
+    "totalQualifyingLiquid": 170,
     "liquidTop3": [
       {
         "symbol": "TIMEX",
@@ -1310,22 +1310,6 @@
         }
       },
       {
-        "symbol": "COALINDIA",
-        "name": "COAL INDIA",
-        "marketCap": 239730,
-        "rankMetricName": "Piotroski / ROCE",
-        "rankMetricValue": "9/9 (ROCE: 68.5%)",
-        "supportingMetrics": {
-          "Price": "₹389.00",
-          "Market Cap": "₹2,39,730 Cr",
-          "P/E": "7.2",
-          "P/B": "1.88",
-          "ROE %": "28.3%",
-          "ROCE %": "68.5%",
-          "D/E": "0.12"
-        }
-      },
-      {
         "symbol": "TCS",
         "name": "Tata Consultancy Services",
         "marketCap": 905463,
@@ -1339,6 +1323,22 @@
           "ROE %": "51.8%",
           "ROCE %": "63.0%",
           "D/E": "0.10"
+        }
+      },
+      {
+        "symbol": "TENNIND",
+        "name": "TENNECO CLEAN AIR INDIA L",
+        "marketCap": 17496,
+        "rankMetricName": "Piotroski / ROCE",
+        "rankMetricValue": "9/9 (ROCE: 49.4%)",
+        "supportingMetrics": {
+          "Price": "₹431.70",
+          "Market Cap": "₹17,496 Cr",
+          "P/E": "29.1",
+          "P/B": "14.60",
+          "ROE %": "50.2%",
+          "ROCE %": "49.4%",
+          "D/E": "0.04"
         }
       }
     ],
@@ -1360,22 +1360,6 @@
         }
       },
       {
-        "symbol": "COALINDIA",
-        "name": "COAL INDIA",
-        "marketCap": 239730,
-        "rankMetricName": "Piotroski / ROCE",
-        "rankMetricValue": "9/9 (ROCE: 68.5%)",
-        "supportingMetrics": {
-          "Price": "₹389.00",
-          "Market Cap": "₹2,39,730 Cr",
-          "P/E": "7.2",
-          "P/B": "1.88",
-          "ROE %": "28.3%",
-          "ROCE %": "68.5%",
-          "D/E": "0.12"
-        }
-      },
-      {
         "symbol": "TCS",
         "name": "Tata Consultancy Services",
         "marketCap": 905463,
@@ -1390,9 +1374,25 @@
           "ROCE %": "63.0%",
           "D/E": "0.10"
         }
+      },
+      {
+        "symbol": "BYKE",
+        "name": "THE BYKE HOSPITALITY",
+        "marketCap": 148,
+        "rankMetricName": "Piotroski / ROCE",
+        "rankMetricValue": "9/9 (ROCE: 59.3%)",
+        "supportingMetrics": {
+          "Price": "₹28.66",
+          "Market Cap": "₹148 Cr",
+          "P/E": "0.9",
+          "P/B": "0.64",
+          "ROE %": "70.2%",
+          "ROCE %": "59.3%",
+          "D/E": "0.46"
+        }
       }
     ],
-    "auditNotes": "Total qualifying stocks: 281 (172 liquid)."
+    "auditNotes": "Total qualifying stocks: 279 (170 liquid)."
   },
   {
     "strategyNumber": 14,
@@ -1750,9 +1750,25 @@
       "Gross Margin > 35%",
       "Free Cash Flow > 0"
     ],
-    "totalQualifyingAllUniverse": 93,
-    "totalQualifyingLiquid": 60,
+    "totalQualifyingAllUniverse": 105,
+    "totalQualifyingLiquid": 68,
     "liquidTop3": [
+      {
+        "symbol": "OFSS",
+        "name": "ORACLE FIN SERV SOFT",
+        "marketCap": 87058,
+        "rankMetricName": "ROIC",
+        "rankMetricValue": "120.9%",
+        "supportingMetrics": {
+          "Price": "₹9995.00",
+          "Market Cap": "₹87,058 Cr",
+          "P/E": "24.5",
+          "P/B": "11.32",
+          "ROE %": "47.4%",
+          "ROCE %": "142.2%",
+          "D/E": "N/A"
+        }
+      },
       {
         "symbol": "TIPSMUSIC",
         "name": "TIPS MUSIC",
@@ -1783,22 +1799,6 @@
           "ROE %": "105.0%",
           "ROCE %": "105.0%",
           "D/E": "0.00"
-        }
-      },
-      {
-        "symbol": "HINDZINC",
-        "name": "HINDUSTAN ZINC",
-        "marketCap": 213717,
-        "rankMetricName": "ROIC",
-        "rankMetricValue": "74.5%",
-        "supportingMetrics": {
-          "Price": "₹505.80",
-          "Market Cap": "₹2,13,717 Cr",
-          "P/E": "10.3",
-          "P/B": "7.13",
-          "ROE %": "95.4%",
-          "ROCE %": "87.7%",
-          "D/E": "0.22"
         }
       }
     ],
@@ -1820,6 +1820,22 @@
         }
       },
       {
+        "symbol": "OFSS",
+        "name": "ORACLE FIN SERV SOFT",
+        "marketCap": 87058,
+        "rankMetricName": "ROIC",
+        "rankMetricValue": "120.9%",
+        "supportingMetrics": {
+          "Price": "₹9995.00",
+          "Market Cap": "₹87,058 Cr",
+          "P/E": "24.5",
+          "P/B": "11.32",
+          "ROE %": "47.4%",
+          "ROCE %": "142.2%",
+          "D/E": "N/A"
+        }
+      },
+      {
         "symbol": "TIPSMUSIC",
         "name": "TIPS MUSIC",
         "marketCap": 9869,
@@ -1834,25 +1850,9 @@
           "ROCE %": "110.2%",
           "D/E": "0.02"
         }
-      },
-      {
-        "symbol": "PGHH",
-        "name": "P&G HYGIENE & HEALTH CARE",
-        "marketCap": 22268,
-        "rankMetricName": "ROIC",
-        "rankMetricValue": "89.3%",
-        "supportingMetrics": {
-          "Price": "₹6851.00",
-          "Market Cap": "₹22,268 Cr",
-          "P/E": "28.2",
-          "P/B": "29.56",
-          "ROE %": "105.0%",
-          "ROCE %": "105.0%",
-          "D/E": "0.00"
-        }
       }
     ],
-    "auditNotes": "Total qualifying stocks: 93 (60 liquid)."
+    "auditNotes": "Total qualifying stocks: 105 (68 liquid)."
   },
   {
     "strategyNumber": 18,
@@ -1979,8 +1979,8 @@
       "Cash From Operations (CFO) > 1.2 * Net Profit",
       "Positive Free Cash Flow"
     ],
-    "totalQualifyingAllUniverse": 1038,
-    "totalQualifyingLiquid": 450,
+    "totalQualifyingAllUniverse": 1037,
+    "totalQualifyingLiquid": 449,
     "liquidTop3": [
       {
         "symbol": "HINDPETRO",
@@ -2081,7 +2081,7 @@
         }
       }
     ],
-    "auditNotes": "Total qualifying stocks: 1038 (450 liquid)."
+    "auditNotes": "Total qualifying stocks: 1037 (449 liquid)."
   },
   {
     "strategyNumber": 20,
@@ -2668,8 +2668,8 @@
       "Sales Growth % + FCF Margin % >= 40%",
       "Net Profit Margin > 10%"
     ],
-    "totalQualifyingAllUniverse": 205,
-    "totalQualifyingLiquid": 93,
+    "totalQualifyingAllUniverse": 204,
+    "totalQualifyingLiquid": 92,
     "liquidTop3": [
       {
         "symbol": "NETWEB",
@@ -2770,7 +2770,7 @@
         }
       }
     ],
-    "auditNotes": "Total qualifying stocks: 205 (93 liquid)."
+    "auditNotes": "Total qualifying stocks: 204 (92 liquid)."
   },
   {
     "strategyNumber": 26,
@@ -3010,8 +3010,8 @@
       "Auditor integrity verified",
       "CFO > 0"
     ],
-    "totalQualifyingAllUniverse": 545,
-    "totalQualifyingLiquid": 288,
+    "totalQualifyingAllUniverse": 544,
+    "totalQualifyingLiquid": 287,
     "liquidTop3": [
       {
         "symbol": "SANOFI",
@@ -3112,7 +3112,7 @@
         }
       }
     ],
-    "auditNotes": "Total qualifying stocks: 545 (288 liquid)."
+    "auditNotes": "Total qualifying stocks: 544 (287 liquid)."
   },
   {
     "strategyNumber": 29,
@@ -3814,8 +3814,8 @@
       "FCF Yield > 5%",
       "ROIC > 15%"
     ],
-    "totalQualifyingAllUniverse": 128,
-    "totalQualifyingLiquid": 72,
+    "totalQualifyingAllUniverse": 127,
+    "totalQualifyingLiquid": 71,
     "liquidTop3": [
       {
         "symbol": "KMEW",
@@ -3916,7 +3916,7 @@
         }
       }
     ],
-    "auditNotes": "Total qualifying stocks: 128 (72 liquid)."
+    "auditNotes": "Total qualifying stocks: 127 (71 liquid)."
   },
   {
     "strategyNumber": 36,
@@ -5736,8 +5736,8 @@
       "AND Debt to Equity < 0.5",
       "AND Profit Growth 3Y > 12"
     ],
-    "totalQualifyingAllUniverse": 10,
-    "totalQualifyingLiquid": 10,
+    "totalQualifyingAllUniverse": 9,
+    "totalQualifyingLiquid": 9,
     "liquidTop3": [
       {
         "symbol": "TIMEX",
@@ -5770,18 +5770,18 @@
         }
       },
       {
-        "symbol": "NESTLEIND",
-        "name": "NESTLE INDIA",
-        "marketCap": 225034,
+        "symbol": "DIXON",
+        "name": "Dixon Technologies (India) Limited",
+        "marketCap": 67288,
         "rankMetricName": "roce",
-        "rankMetricValue": "85.2",
+        "rankMetricValue": "34.1",
         "supportingMetrics": {
-          "Price": "₹1167",
-          "Market Cap": "₹2.25 Lakh Cr",
-          "P/E": "55.2x",
-          "ROCE": "85.2%",
-          "ROE": "99.2%",
-          "D/E": "0.29x"
+          "Price": "₹11000",
+          "Market Cap": "₹67,288 Cr",
+          "P/E": "38.4x",
+          "ROCE": "34.1%",
+          "ROE": "37.4%",
+          "D/E": "0.21x"
         }
       }
     ],
@@ -5817,22 +5817,22 @@
         }
       },
       {
-        "symbol": "NESTLEIND",
-        "name": "NESTLE INDIA",
-        "marketCap": 225034,
+        "symbol": "DIXON",
+        "name": "Dixon Technologies (India) Limited",
+        "marketCap": 67288,
         "rankMetricName": "roce",
-        "rankMetricValue": "85.2",
+        "rankMetricValue": "34.1",
         "supportingMetrics": {
-          "Price": "₹1167",
-          "Market Cap": "₹2.25 Lakh Cr",
-          "P/E": "55.2x",
-          "ROCE": "85.2%",
-          "ROE": "99.2%",
-          "D/E": "0.29x"
+          "Price": "₹11000",
+          "Market Cap": "₹67,288 Cr",
+          "P/E": "38.4x",
+          "ROCE": "34.1%",
+          "ROE": "37.4%",
+          "D/E": "0.21x"
         }
       }
     ],
-    "auditNotes": "AST Query Filter passed: 10 total stocks (10 liquid)."
+    "auditNotes": "AST Query Filter passed: 9 total stocks (9 liquid)."
   },
   {
     "strategyNumber": 59,
@@ -6098,18 +6098,18 @@
         }
       },
       {
-        "symbol": "ITC",
-        "name": "ITC",
-        "marketCap": 332848,
+        "symbol": "INFY",
+        "name": "Infosys Limited",
+        "marketCap": 479970,
         "rankMetricName": "freeCashFlow",
-        "rankMetricValue": "35928",
+        "rankMetricValue": "24120",
         "supportingMetrics": {
-          "Price": "₹265.6",
-          "Market Cap": "₹3.33 Lakh Cr",
-          "P/E": "16.8x",
-          "ROCE": "27.1%",
-          "ROE": "27.4%",
-          "D/E": "0.03x"
+          "Price": "₹1185",
+          "Market Cap": "₹4.80 Lakh Cr",
+          "P/E": "15.2x",
+          "ROCE": "40.0%",
+          "ROE": "31.9%",
+          "D/E": "0.09x"
         }
       }
     ],
@@ -6145,18 +6145,18 @@
         }
       },
       {
-        "symbol": "ITC",
-        "name": "ITC",
-        "marketCap": 332848,
+        "symbol": "INFY",
+        "name": "Infosys Limited",
+        "marketCap": 479970,
         "rankMetricName": "freeCashFlow",
-        "rankMetricValue": "35928",
+        "rankMetricValue": "24120",
         "supportingMetrics": {
-          "Price": "₹265.6",
-          "Market Cap": "₹3.33 Lakh Cr",
-          "P/E": "16.8x",
-          "ROCE": "27.1%",
-          "ROE": "27.4%",
-          "D/E": "0.03x"
+          "Price": "₹1185",
+          "Market Cap": "₹4.80 Lakh Cr",
+          "P/E": "15.2x",
+          "ROCE": "40.0%",
+          "ROE": "31.9%",
+          "D/E": "0.09x"
         }
       }
     ],
@@ -6936,8 +6936,8 @@
       "AND ROCE > 15",
       "AND Debt to Equity < 0.6"
     ],
-    "totalQualifyingAllUniverse": 352,
-    "totalQualifyingLiquid": 210,
+    "totalQualifyingAllUniverse": 351,
+    "totalQualifyingLiquid": 209,
     "liquidTop3": [
       {
         "symbol": "TCS",
@@ -7032,7 +7032,7 @@
         }
       }
     ],
-    "auditNotes": "AST Query Filter passed: 352 total stocks (210 liquid)."
+    "auditNotes": "AST Query Filter passed: 351 total stocks (209 liquid)."
   },
   {
     "strategyNumber": 70,
@@ -7045,15 +7045,15 @@
       "AND Debt to Equity < 0.4",
       "AND ROCE > 14"
     ],
-    "totalQualifyingAllUniverse": 373,
-    "totalQualifyingLiquid": 222,
+    "totalQualifyingAllUniverse": 377,
+    "totalQualifyingLiquid": 223,
     "liquidTop3": [
       {
         "symbol": "TIMEX",
         "name": "TIMEX GROUP INDIA",
         "marketCap": 6097,
         "rankMetricName": "altmanZScore",
-        "rankMetricValue": "164.36",
+        "rankMetricValue": "22.28",
         "supportingMetrics": {
           "Price": "₹604",
           "Market Cap": "₹6,097 Cr",
@@ -7064,33 +7064,33 @@
         }
       },
       {
-        "symbol": "CUPID",
-        "name": "CUPID",
-        "marketCap": 43675,
+        "symbol": "TIPSMUSIC",
+        "name": "TIPS MUSIC",
+        "marketCap": 9869,
         "rankMetricName": "altmanZScore",
-        "rankMetricValue": "158.35",
+        "rankMetricValue": "21.07",
         "supportingMetrics": {
-          "Price": "₹324.8",
-          "Market Cap": "₹43,675 Cr",
-          "P/E": "324.8x",
-          "ROCE": "30.8%",
-          "ROE": "27.3%",
-          "D/E": "0.13x"
+          "Price": "₹776.15",
+          "Market Cap": "₹9,869 Cr",
+          "P/E": "43.7x",
+          "ROCE": "110.2%",
+          "ROE": "88.5%",
+          "D/E": "0.02x"
         }
       },
       {
-        "symbol": "GVT&D",
-        "name": "GE VERNOVA T&D INDIA",
-        "marketCap": 102931,
+        "symbol": "JSWDULUX",
+        "name": "JSW DULUX",
+        "marketCap": 12068,
         "rankMetricName": "altmanZScore",
-        "rankMetricValue": "118.25",
+        "rankMetricValue": "18.41",
         "supportingMetrics": {
-          "Price": "₹4020",
-          "Market Cap": "₹1.03 Lakh Cr",
-          "P/E": "78.5x",
-          "ROCE": "53.2%",
-          "ROE": "53.4%",
-          "D/E": "0.01x"
+          "Price": "₹264.4",
+          "Market Cap": "₹12,068 Cr",
+          "P/E": "6.1x",
+          "ROCE": "79.2%",
+          "ROE": "80.1%",
+          "D/E": "0.03x"
         }
       }
     ],
@@ -7100,7 +7100,7 @@
         "name": "TIMEX GROUP INDIA",
         "marketCap": 6097,
         "rankMetricName": "altmanZScore",
-        "rankMetricValue": "164.36",
+        "rankMetricValue": "22.28",
         "supportingMetrics": {
           "Price": "₹604",
           "Market Cap": "₹6,097 Cr",
@@ -7111,37 +7111,37 @@
         }
       },
       {
-        "symbol": "CUPID",
-        "name": "CUPID",
-        "marketCap": 43675,
+        "symbol": "TIPSMUSIC",
+        "name": "TIPS MUSIC",
+        "marketCap": 9869,
         "rankMetricName": "altmanZScore",
-        "rankMetricValue": "158.35",
+        "rankMetricValue": "21.07",
         "supportingMetrics": {
-          "Price": "₹324.8",
-          "Market Cap": "₹43,675 Cr",
-          "P/E": "324.8x",
-          "ROCE": "30.8%",
-          "ROE": "27.3%",
-          "D/E": "0.13x"
+          "Price": "₹776.15",
+          "Market Cap": "₹9,869 Cr",
+          "P/E": "43.7x",
+          "ROCE": "110.2%",
+          "ROE": "88.5%",
+          "D/E": "0.02x"
         }
       },
       {
-        "symbol": "GVT&D",
-        "name": "GE VERNOVA T&D INDIA",
-        "marketCap": 102931,
+        "symbol": "KSOLVES",
+        "name": "KSOLVES INDIA",
+        "marketCap": 475,
         "rankMetricName": "altmanZScore",
-        "rankMetricValue": "118.25",
+        "rankMetricValue": "20.38",
         "supportingMetrics": {
-          "Price": "₹4020",
-          "Market Cap": "₹1.03 Lakh Cr",
-          "P/E": "78.5x",
-          "ROCE": "53.2%",
-          "ROE": "53.4%",
-          "D/E": "0.01x"
+          "Price": "₹199.69",
+          "Market Cap": "₹475.0 Cr",
+          "P/E": "13.2x",
+          "ROCE": "98.4%",
+          "ROE": "84.2%",
+          "D/E": "0.08x"
         }
       }
     ],
-    "auditNotes": "AST Query Filter passed: 373 total stocks (222 liquid)."
+    "auditNotes": "AST Query Filter passed: 377 total stocks (223 liquid)."
   },
   {
     "strategyNumber": 71,
@@ -7188,18 +7188,18 @@
         }
       },
       {
-        "symbol": "HINDZINC",
-        "name": "HINDUSTAN ZINC",
-        "marketCap": 213717,
+        "symbol": "COLPAL",
+        "name": "COLGATE PALMOLIVE",
+        "marketCap": 43423,
         "rankMetricName": "roic",
-        "rankMetricValue": "74.5",
+        "rankMetricValue": "83.7",
         "supportingMetrics": {
-          "Price": "₹505.8",
-          "Market Cap": "₹2.14 Lakh Cr",
-          "P/E": "10.3x",
-          "ROCE": "87.7%",
-          "ROE": "95.4%",
-          "D/E": "0.22x"
+          "Price": "₹1596.5",
+          "Market Cap": "₹43,423 Cr",
+          "P/E": "31.9x",
+          "ROCE": "88.4%",
+          "ROE": "74.2%",
+          "D/E": "0.03x"
         }
       }
     ],

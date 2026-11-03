@@ -3808,9 +3808,11 @@ function enrichCuratedIndianCompany(comp: CompanyFundamental): CompanyFundamenta
   const debtReduction3Y = isFinancial
     ? null
     : (merged.debtReduction3Y ?? comp.debtReduction3Y ?? 0.0);
-  const fcfYield = merged.fcfYield ?? comp.fcfYield ?? (
-    (merged.freeCashFlow && (f.marketCap || comp.marketCap)) ? +((merged.freeCashFlow / (f.marketCap || comp.marketCap)) * 100).toFixed(2) : null
-  );
+  const fcfYield = isFinancial
+    ? null
+    : (merged.fcfYield ?? comp.fcfYield ?? (
+      (merged.freeCashFlow && (f.marketCap || comp.marketCap)) ? +((merged.freeCashFlow / (f.marketCap || comp.marketCap)) * 100).toFixed(2) : null
+    ));
 
   const high52W = merged.high52W || (currentPrice > 0 ? Math.round(currentPrice * 1.25 * 10) / 10 : 0);
   const low52W = merged.low52W || (currentPrice > 0 ? Math.round(currentPrice * 0.75 * 10) / 10 : 0);

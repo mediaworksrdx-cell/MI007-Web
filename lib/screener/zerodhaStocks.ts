@@ -1250,14 +1250,15 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     roa: cachedFund?.roa != null ? cachedFund.roa : (isFinancial ? 1.8 : 8.5),
     opm,
     npm,
-    grossMargin: isFinancial ? null : (cachedFund?.grossMargin != null ? cachedFund.grossMargin : (
+    grossMargin: isFinancial ? null : (cachedFund?.grossMargin != null ? Math.max(opm != null ? opm : 0, cachedFund.grossMargin) : (
       (() => {
         const sec = (sector || '').toUpperCase();
-        if (sec.includes('PHARMA') || sec.includes('HEALTH')) return opm != null ? Math.min(85, Math.max(65, Math.round((opm + 48) * 10) / 10)) : 72.5;
-        if (sec.includes('TECH') || sec.includes('SOFTWARE') || sec.includes('IT')) return opm != null ? Math.min(80, Math.max(45, Math.round((opm + 25) * 10) / 10)) : 58.0;
-        if (sec.includes('FMCG') || sec.includes('FOOD') || sec.includes('CONSUMER')) return opm != null ? Math.min(75, Math.max(40, Math.round((opm + 28) * 10) / 10)) : 48.0;
-        if (sec.includes('AUTO')) return opm != null ? Math.min(50, Math.max(28, Math.round((opm + 22) * 10) / 10)) : 36.5;
-        return opm != null ? Math.min(65, Math.max(25, Math.round((opm + 18) * 10) / 10)) : 35.0;
+        const baseOpm = opm != null ? opm : 0;
+        if (sec.includes('PHARMA') || sec.includes('HEALTH')) return opm != null ? Math.max(baseOpm, Math.min(90, Math.max(65, Math.round((opm + 48) * 10) / 10))) : 72.5;
+        if (sec.includes('TECH') || sec.includes('SOFTWARE') || sec.includes('IT')) return opm != null ? Math.max(baseOpm, Math.min(90, Math.max(45, Math.round((opm + 25) * 10) / 10))) : 58.0;
+        if (sec.includes('FMCG') || sec.includes('FOOD') || sec.includes('CONSUMER')) return opm != null ? Math.max(baseOpm, Math.min(85, Math.max(40, Math.round((opm + 28) * 10) / 10))) : 48.0;
+        if (sec.includes('AUTO')) return opm != null ? Math.max(baseOpm, Math.min(80, Math.max(28, Math.round((opm + 22) * 10) / 10))) : 36.5;
+        return opm != null ? Math.max(baseOpm, Math.min(85, Math.max(25, Math.round((opm + 18) * 10) / 10))) : 35.0;
       })()
     )),
     ebitdaMargin: isFinancial ? null : (cachedFund?.ebitdaMargin != null ? cachedFund.ebitdaMargin : (opm != null ? +(opm * 1.15).toFixed(1) : null)),
