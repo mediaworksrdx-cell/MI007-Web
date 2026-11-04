@@ -1544,10 +1544,15 @@ export function CandlestickCanvas({
     const allBlocks = [...(smc.orderBlocks || []), ...(smc.breakers || [])];
     for (const ob of allBlocks) {
       if (ob.endIndex < startIdx || ob.startIndex > endIdx) continue;
-      if (ob.isBullish && (!isBullishMaster || smcConfig?.showBullishOb === false)) continue;
-      if (!ob.isBullish && (!isBearishMaster || smcConfig?.showBearishOb === false)) continue;
+      if (ob.isBreaker) {
+        if (smcConfig?.showBreakers === false) continue;
+        if (ob.isBullish && (!isBullishMaster || smcConfig?.showBullishBreakers === false)) continue;
+        if (!ob.isBullish && (!isBearishMaster || smcConfig?.showBearishBreakers === false)) continue;
+      } else {
+        if (ob.isBullish && (!isBullishMaster || smcConfig?.showBullishOb === false)) continue;
+        if (!ob.isBullish && (!isBearishMaster || smcConfig?.showBearishOb === false)) continue;
+      }
       if (ob.isMitigated && smcConfig?.showMitigatedOb === false) continue;
-      if (ob.isBreaker && smcConfig?.showBreakers === false) continue;
 
       const lx = Math.max(0, ob.startIndex - startIdx) * candleW;
       const rx = Math.min(visCnt, ob.endIndex - startIdx) * candleW + candleW;
@@ -1560,7 +1565,7 @@ export function CandlestickCanvas({
         const timeStr = d ? new Date(d.openTime).toLocaleString() : 'Recent';
         return {
           title: ob.isBreaker
-            ? (ob.isBullish ? 'Bullish Breaker Block' : 'Bearish Breaker Block')
+            ? (ob.isBullish ? 'Bullish Breaker Block (+BRK)' : 'Bearish Breaker Block (-BRK)')
             : (ob.isBullish ? 'Bullish Demand Order Block' : 'Bearish Supply Order Block'),
           type: ob.isBreaker ? 'Breaker Block (Flipped)' : 'Institutional Order Block',
           timeframe,
@@ -1570,7 +1575,7 @@ export function CandlestickCanvas({
             ? `Bearish candle before violent impulse breaking swing high (${ob.volumeRatio.toFixed(1)}x Vol MA)`
             : `Bullish candle before violent impulse breaking swing low (${ob.volumeRatio.toFixed(1)}x Vol MA)`,
           currentStatus: ob.isBreaker
-            ? 'Violated Demand -> Flipped Resistance'
+            ? (ob.isBullish ? 'Failed Supply -> Flipped Support' : 'Failed Demand -> Flipped Resistance')
             : ob.isMitigated
             ? 'Mitigated (Tested by Price)'
             : 'Active (Unmitigated Liquidity)',
@@ -1583,12 +1588,19 @@ export function CandlestickCanvas({
       }
     }
 
-    // 2. Fair Value Gaps
+    // 2. Fair Value Gaps & Inverse FVGs
     for (const fvg of smc.fvgs) {
       if (fvg.endIndex < startIdx || fvg.startIndex > endIdx) continue;
-      if (fvg.isBullish && (!isBullishMaster || smcConfig?.showBullishFvg === false)) continue;
-      if (!fvg.isBullish && (!isBearishMaster || smcConfig?.showBearishFvg === false)) continue;
-      if (fvg.isMitigated && smcConfig?.showMitigatedFvg === false) continue;
+      if (fvg.isInverse) {
+        if (fvg.isBullish && (!isBullishMaster || smcConfig?.showBullishIfvg === false)) continue;
+        if (!fvg.isBullish && (!isBearishMaster || smcConfig?.showBearishIfvg === false)) continue;
+        if (fvg.isInvalidated && smcConfig?.showMitigatedFvg === false) continue;
+      } else {
+        if (fvg.isBullish && (!isBullishMaster || smcConfig?.showBullishFvg === false)) continue;
+        if (!fvg.isBullish && (!isBearishMaster || smcConfig?.showBearishFvg === false)) continue;
+        if (fvg.isMitigated && smcConfig?.showMitigatedFvg === false) continue;
+        if (fvg.isInvalidated && smcConfig?.showMitigatedFvg === false) continue;
+      }
 
       const lx = Math.max(0, fvg.startIndex - startIdx) * candleW;
       const rx = Math.min(visCnt, fvg.endIndex - startIdx) * candleW + candleW;
@@ -1600,18 +1612,24 @@ export function CandlestickCanvas({
         const d = cleanCandles[fvg.startIndex];
         const timeStr = d ? new Date(d.openTime).toLocaleString() : 'Recent';
         return {
-          title: fvg.isBullish ? 'Bullish Fair Value Gap (+FVG)' : 'Bearish Fair Value Gap (-FVG)',
-          type: 'Imbalance (Inefficiency)',
+          title: fvg.isInverse
+            ? (fvg.isBullish ? 'Bullish Inverse FVG (+IFVG)' : 'Bearish Inverse FVG (-IFVG)')
+            : (fvg.isBullish ? 'Bullish Fair Value Gap (+FVG)' : 'Bearish Fair Value Gap (-FVG)'),
+          type: fvg.isInverse ? 'Inverse FVG (Support/Resistance Flip)' : 'Imbalance (Inefficiency)',
           timeframe,
           formationTime: timeStr,
           priceBoundaries: `${formatPrice(fvg.bottomPrice)} – ${formatPrice(fvg.topPrice)} (CE: ${formatPrice(fvg.cePrice)})`,
-          detectionRule: '3-candle liquidity gap displacement leaving unfilled order flow',
-          currentStatus: fvg.isMitigated
+          detectionRule: fvg.isInverse
+            ? 'Failed FVG flipped polarity into new support/resistance zone'
+            : '3-candle liquidity gap displacement leaving unfilled order flow',
+          currentStatus: fvg.isInvalidated
+            ? 'Invalidated (Breached)'
+            : fvg.isMitigated
             ? 'Fully Filled (Mitigated)'
             : fvg.mitigationPercent > 0
             ? `Partially Tapped (${fvg.mitigationPercent}%)`
             : 'Active Unfilled Imbalance',
-          invalidation: `Price trading completely through ${formatPrice(fvg.isBullish ? fvg.bottomPrice : fvg.topPrice)} fully mitigates gap`,
+          invalidation: `Price trading completely through ${formatPrice(fvg.isBullish ? fvg.bottomPrice : fvg.topPrice)} invalidates structure`,
           target: formatPrice(fvg.cePrice),
           riskReward: '50% Consequent Encroachment',
         };
@@ -1641,6 +1659,35 @@ export function CandlestickCanvas({
           currentStatus: 'Confirmed by Candle Close',
           invalidation: `Opposite structural shift below recent swing invalidates bias`,
         };
+      }
+    }
+
+    // 3.5. Liquidity Sweeps
+    if (smcConfig?.showSweeps !== false && smc.sweeps) {
+      for (const sw of smc.sweeps) {
+        if (sw.candleIndex < startIdx || sw.candleIndex > endIdx) continue;
+        if (sw.isHighSweep && (!isBearishMaster || smcConfig?.showBslSweeps === false)) continue;
+        if (!sw.isHighSweep && (!isBullishMaster || smcConfig?.showSslSweeps === false)) continue;
+
+        const li = sw.candleIndex - startIdx;
+        const sweepX = li * candleW + candleW / 2;
+        const wickY = priceToY(sw.price);
+        const levelY = sw.sweptLevelPrice ? priceToY(sw.sweptLevelPrice) : wickY;
+
+        if (Math.abs(x - sweepX) <= candleW * 1.5 && (Math.abs(y - wickY) <= 18 || Math.abs(y - levelY) <= 10)) {
+          return {
+            title: sw.isHighSweep ? 'Buy-Side Liquidity (BSL) Sweep' : 'Sell-Side Liquidity (SSL) Sweep',
+            type: `${sw.isHighSweep ? 'Bearish' : 'Bullish'} Liquidity Sweep`,
+            timeframe,
+            formationTime: new Date(sw.time).toLocaleString(),
+            priceBoundaries: `Swept Level: ${formatPrice(sw.sweptLevelPrice)} | Wick Peak: ${formatPrice(sw.price)}`,
+            detectionRule: sw.isHighSweep
+              ? `Upper rejection wick piercing key high (${Math.round((sw.wickRatio || 0.3) * 100)}% wick ratio)`
+              : `Lower rejection wick piercing key low (${Math.round((sw.wickRatio || 0.3) * 100)}% wick ratio)`,
+            currentStatus: 'Confirmed Liquidity Grab',
+            invalidation: 'Sustained candle close beyond wick invalidates sweep rejection',
+          };
+        }
       }
     }
 

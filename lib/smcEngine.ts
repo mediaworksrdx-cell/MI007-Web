@@ -1012,12 +1012,12 @@ export function detectFairValueGaps(candles: Candle[], minGapThreshold?: number)
               break;
             }
             if (sub.high >= bottomPrice) {
-              ifvg.isMitigated = true;
-              ifvg.mitigationIndex = m;
-              ifvg.endIndex = m;
-              ifvg.mitigationPercent = 100;
-              ifvg.state = 'MITIGATED';
-              break;
+              if (!ifvg.isMitigated) {
+                ifvg.mitigationIndex = m;
+                const pen = (sub.high - bottomPrice) / Math.max(0.0001, topPrice - bottomPrice);
+                ifvg.mitigationPercent = Math.min(100, Math.round(pen * 100));
+                ifvg.state = 'PARTIALLY_MITIGATED';
+              }
             }
           }
           fvgs.push(ifvg);
@@ -1107,12 +1107,12 @@ export function detectFairValueGaps(candles: Candle[], minGapThreshold?: number)
               break;
             }
             if (sub.low <= topPrice) {
-              ifvg.isMitigated = true;
-              ifvg.mitigationIndex = m;
-              ifvg.endIndex = m;
-              ifvg.mitigationPercent = 100;
-              ifvg.state = 'MITIGATED';
-              break;
+              if (!ifvg.isMitigated) {
+                ifvg.mitigationIndex = m;
+                const pen = (topPrice - sub.low) / Math.max(0.0001, topPrice - bottomPrice);
+                ifvg.mitigationPercent = Math.min(100, Math.round(pen * 100));
+                ifvg.state = 'PARTIALLY_MITIGATED';
+              }
             }
           }
           fvgs.push(ifvg);

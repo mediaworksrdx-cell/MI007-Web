@@ -1293,34 +1293,48 @@ export function renderChart(
       ctx.restore();
     }
 
-    // 4. Order Blocks & Breakers (Demand, Supply, Breakers) — Institutional Proximity Sorting
+    // 4. Order Blocks & Breakers (Demand, Supply, Breakers) — Viewport & Proximity Sorting
     const lastPrice = candles[candles.length - 1]?.close || (pMin + pMax) / 2;
-    const perSideZoneLimit = Math.max(1, Math.floor((smcCfg.maxVisibleZones || 6) / 2));
+    const maxZonesPerType = Math.max(3, Math.floor((smcCfg.maxVisibleZones || 8) / 2));
+
+    const sortZonesByProximity = <T extends { topPrice: number; bottomPrice: number; startIndex: number }>(zones: T[]): T[] => {
+      return zones.slice().sort((a, b) => {
+        const aInPrice = a.bottomPrice <= pMax && a.topPrice >= pMin;
+        const bInPrice = b.bottomPrice <= pMax && b.topPrice >= pMin;
+        if (aInPrice && !bInPrice) return -1;
+        if (!aInPrice && bInPrice) return 1;
+        const aDist = Math.abs((a.topPrice + a.bottomPrice) / 2 - lastPrice);
+        const bDist = Math.abs((b.topPrice + b.bottomPrice) / 2 - lastPrice);
+        if (Math.abs(aDist - bDist) > (pMax - pMin) * 0.05) return aDist - bDist;
+        return b.startIndex - a.startIndex;
+      });
+    };
 
     // Pure Order Blocks (Demand & Supply)
-    const demandBlocks = (smcCfg.showBullishOb && isBullishMaster ? smcData.orderBlocks : [])
-      .filter((ob) => !ob.isBreaker && ob.isBullish)
-      .filter((ob) => (!ob.isMitigated || smcCfg.showMitigatedOb) && (ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated)))
-      .sort((a, b) => b.topPrice - a.topPrice)
-      .slice(0, perSideZoneLimit);
+    const demandBlocks = sortZonesByProximity(
+      (smcCfg.showBullishOb && isBullishMaster ? smcData.orderBlocks : [])
+        .filter((ob) => (!ob.isBreaker || smcCfg.showMitigatedOb) && ob.isBullish)
+        .filter((ob) => (!ob.isMitigated || smcCfg.showMitigatedOb) && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated))
+    ).slice(0, maxZonesPerType);
 
-    const supplyBlocks = (smcCfg.showBearishOb && isBearishMaster ? smcData.orderBlocks : [])
-      .filter((ob) => !ob.isBreaker && !ob.isBullish)
-      .filter((ob) => (!ob.isMitigated || smcCfg.showMitigatedOb) && (ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated)))
-      .sort((a, b) => a.bottomPrice - b.bottomPrice)
-      .slice(0, perSideZoneLimit);
+    const supplyBlocks = sortZonesByProximity(
+      (smcCfg.showBearishOb && isBearishMaster ? smcData.orderBlocks : [])
+        .filter((ob) => (!ob.isBreaker || smcCfg.showMitigatedOb) && !ob.isBullish)
+        .filter((ob) => (!ob.isMitigated || smcCfg.showMitigatedOb) && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated))
+    ).slice(0, maxZonesPerType);
 
     // Breaker Blocks (+BRK Support & -BRK Resistance)
-    const breakerBlocks = (smcCfg.showBreakers ? smcData.breakers : [])
-      .filter((brk) => {
-        if (brk.isBullish && (!smcCfg.showBullishBreakers || !isBullishMaster)) return false;
-        if (!brk.isBullish && (!smcCfg.showBearishBreakers || !isBearishMaster)) return false;
-        if (brk.isMitigated && !smcCfg.showMitigatedOb) return false;
-        if (brk.startIndex > endIdx) return false;
-        if (brk.isMitigated && brk.endIndex < startIdx) return false;
-        return true;
-      })
-      .slice(-perSideZoneLimit);
+    const breakerBlocks = sortZonesByProximity(
+      (smcCfg.showBreakers ? smcData.breakers : [])
+        .filter((brk) => {
+          if (brk.isBullish && (!smcCfg.showBullishBreakers || !isBullishMaster)) return false;
+          if (!brk.isBullish && (!smcCfg.showBearishBreakers || !isBearishMaster)) return false;
+          if (brk.isMitigated && !smcCfg.showMitigatedOb) return false;
+          if (brk.startIndex > endIdx) return false;
+          if (brk.isMitigated && brk.endIndex < startIdx) return false;
+          return true;
+        })
+    ).slice(0, maxZonesPerType * 2);
 
     const blocksToRender = [...demandBlocks, ...supplyBlocks, ...breakerBlocks];
 
@@ -1346,16 +1360,42 @@ export function renderChart(
       }
 
       ctx.save();
-      ctx.fillStyle = ob.isMitigated ? (ob.isBullish ? 'rgba(2, 132, 199, 0.08)' : 'rgba(234, 88, 12, 0.08)') : obBg;
+      ctx.fillStyle = ob.isMitigated ? (ob.isBullish ? 'rgba(2, 132, 199, 0.12)' : 'rgba(234, 88, 12, 0.12)') : obBg;
       ctx.fillRect(lx, bTop, bw, bH);
       if (ob.isBreaker || ob.isMitigated) {
         ctx.setLineDash([5 * dpr, 3 * dpr]);
       }
-      ctx.strokeStyle = ob.isMitigated ? (ob.isBullish ? 'rgba(2, 132, 199, 0.45)' : 'rgba(234, 88, 12, 0.45)') : obBorder;
+      ctx.strokeStyle = ob.isMitigated ? (ob.isBullish ? 'rgba(2, 132, 199, 0.55)' : 'rgba(234, 88, 12, 0.55)') : obBorder;
       ctx.lineWidth = 1.3 * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
       if (ob.isBreaker || ob.isMitigated) {
         ctx.setLineDash([]);
+      }
+
+      // Mean Threshold (50% MT / CE) — Midpoint magnet midline when Consequent Encroachment is enabled
+      const mtPrice = (ob.topPrice + ob.bottomPrice) / 2;
+      if (smcCfg.showFvgMidpoint && mtPrice >= pMin && mtPrice <= pMax) {
+        const yMt = priceToY(mtPrice);
+        ctx.setLineDash([4 * dpr, 3 * dpr]);
+        ctx.strokeStyle = ob.isBreaker ? (ob.isBullish ? '#10B981' : '#EF4444') : (ob.isBullish ? '#0284C7' : '#F97316');
+        ctx.lineWidth = 1.1 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(lx, yMt);
+        ctx.lineTo(lx + bw, yMt);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        if (bw >= 15 * dpr) {
+          const mtText = `50% MT: ${formatPrice(mtPrice)}`;
+          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          const mtTm = ctx.measureText(mtText);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.80)';
+          ctx.fillRect(lx + bw - mtTm.width - 6 * dpr, yMt - 6 * dpr, mtTm.width + 5 * dpr, 12 * dpr);
+          ctx.fillStyle = ob.isBreaker ? (ob.isBullish ? '#34D399' : '#F87171') : (ob.isBullish ? '#38BDF8' : '#FB923C');
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(mtText, lx + bw - 3 * dpr, yMt);
+        }
       }
 
       if (bw > 25 * dpr) {
@@ -1385,40 +1425,45 @@ export function renderChart(
       ctx.restore();
     }
 
-    // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG) — Institutional Proximity Sorting
+    // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG) — Viewport & Proximity Sorting
     const inWindowFvgs = smcData.fvgs.filter((fvg) => {
       if (fvg.isInverse) {
         if (fvg.isBullish && (!smcCfg.showBullishIfvg || !isBullishMaster)) return false;
         if (!fvg.isBullish && (!smcCfg.showBearishIfvg || !isBearishMaster)) return false;
+        if (fvg.isInvalidated && !smcCfg.showMitigatedFvg) return false;
       } else {
         if (fvg.isBullish && (!smcCfg.showBullishFvg || !isBullishMaster)) return false;
         if (!fvg.isBullish && (!smcCfg.showBearishFvg || !isBearishMaster)) return false;
+        if (fvg.isMitigated && !smcCfg.showMitigatedFvg) return false;
+        if (fvg.isInvalidated && !smcCfg.showMitigatedFvg) return false;
       }
-      if (fvg.isMitigated && !smcCfg.showMitigatedFvg) return false;
-      if (fvg.isInvalidated && !smcCfg.showMitigatedFvg) return false;
       if (fvg.startIndex > endIdx) return false;
-      if (fvg.isMitigated && fvg.endIndex < startIdx) return false;
+      if ((fvg.isMitigated || fvg.isInvalidated) && fvg.endIndex < startIdx) return false;
       return true;
     });
 
-    // Proximity sorting: respect maxVisibleZones per side
-    const bullishFvgs = inWindowFvgs
-      .filter((f) => f.isBullish && !f.isInverse)
-      .sort((a, b) => b.topPrice - a.topPrice)
-      .slice(0, perSideZoneLimit);
-    const bearishFvgs = inWindowFvgs
-      .filter((f) => !f.isBullish && !f.isInverse)
-      .sort((a, b) => a.bottomPrice - b.bottomPrice)
-      .slice(0, perSideZoneLimit);
-    const inverseFvgs = inWindowFvgs
-      .filter((f) => f.isInverse)
-      .slice(-perSideZoneLimit);
+    const bullishFvgs = sortZonesByProximity(
+      inWindowFvgs.filter((f) => f.isBullish && !f.isInverse)
+    ).slice(0, maxZonesPerType);
 
-    const fvgsToRender = [...bullishFvgs, ...bearishFvgs, ...inverseFvgs];
+    const bearishFvgs = sortZonesByProximity(
+      inWindowFvgs.filter((f) => !f.isBullish && !f.isInverse)
+    ).slice(0, maxZonesPerType);
+
+    const bullishIfvgs = sortZonesByProximity(
+      inWindowFvgs.filter((f) => f.isBullish && f.isInverse)
+    ).slice(0, maxZonesPerType);
+
+    const bearishIfvgs = sortZonesByProximity(
+      inWindowFvgs.filter((f) => !f.isBullish && f.isInverse)
+    ).slice(0, maxZonesPerType);
+
+    const fvgsToRender = [...bullishFvgs, ...bearishFvgs, ...bullishIfvgs, ...bearishIfvgs];
 
     for (const fvg of fvgsToRender) {
       const ls = Math.max(0, fvg.startIndex - startIdx);
-      const le = fvg.isMitigated ? Math.min(visCnt, fvg.endIndex - startIdx) : visCnt;
+      const isMit = fvg.isMitigated || fvg.isInvalidated;
+      const le = isMit ? Math.min(visCnt, fvg.endIndex - startIdx) : visCnt;
       const lx = ls * candleW;
       const rx = le * candleW + candleW;
       const bw = Math.max(rx - lx, candleW);
@@ -1429,19 +1474,19 @@ export function renderChart(
       const base = fvg.isBullish
         ? (fvg.isInverse ? [6, 182, 212] : [16, 185, 129])
         : (fvg.isInverse ? [168, 85, 247] : [244, 63, 94]);
-      const fa = fvg.isMitigated ? 0.08 : (fvg.isInverse ? 0.22 : 0.20);
-      const ba = fvg.isMitigated ? 0.35 : (fvg.isInverse ? 0.85 : 0.80);
+      const fa = isMit ? 0.14 : (fvg.isInverse ? 0.24 : 0.20);
+      const ba = isMit ? 0.60 : (fvg.isInverse ? 0.90 : 0.85);
 
       ctx.save();
       ctx.fillStyle = `rgba(${base},${fa})`;
       ctx.fillRect(lx, bTop, bw, bH);
-      if (fvg.isInverse || fvg.isMitigated) {
+      if (fvg.isInverse || isMit) {
         ctx.setLineDash([4 * dpr, 3 * dpr]);
       }
       ctx.strokeStyle = `rgba(${base},${ba})`;
       ctx.lineWidth = (fvg.isInverse ? 1.3 : 1.1) * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
-      if (fvg.isInverse || fvg.isMitigated) {
+      if (fvg.isInverse || isMit) {
         ctx.setLineDash([]);
       }
 
@@ -1457,7 +1502,7 @@ export function renderChart(
         ctx.stroke();
         ctx.setLineDash([]);
 
-        if (bw > 35 * dpr) {
+        if (bw >= 15 * dpr) {
           const ceText = `50% CE: ${formatPrice(fvg.cePrice)}`;
           ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
           const ceTm = ctx.measureText(ceText);
@@ -1470,8 +1515,7 @@ export function renderChart(
         }
       }
 
-      if (bw > 20 * dpr) {
-        const isMit = fvg.isMitigated || fvg.isInvalidated;
+      if (bw > 18 * dpr) {
         let tag = fvg.isInverse
           ? (fvg.isBullish ? '+IFVG (Support)' : '-IFVG (Resistance)')
           : (fvg.isBullish ? '+FVG' : '-FVG');
@@ -1483,9 +1527,9 @@ export function renderChart(
         const tw = tm.width + 6 * dpr;
         const th = 12 * dpr;
 
-        ctx.fillStyle = `rgba(${base},${isMit ? 0.12 : 0.28})`;
+        ctx.fillStyle = `rgba(${base},${isMit ? 0.20 : 0.28})`;
         ctx.fillRect(lx + 2 * dpr, bTop + 2 * dpr, tw, th);
-        ctx.strokeStyle = `rgba(${base},${isMit ? 0.40 : 0.85})`;
+        ctx.strokeStyle = `rgba(${base},${isMit ? 0.50 : 0.85})`;
         ctx.lineWidth = 0.8 * dpr;
         if (isMit) {
           ctx.setLineDash([2 * dpr, 2 * dpr]);
@@ -1496,7 +1540,7 @@ export function renderChart(
         }
 
         ctx.fillStyle = isMit
-          ? (fvg.isBullish ? 'rgba(4, 120, 87, 0.70)' : 'rgba(190, 18, 60, 0.70)')
+          ? (fvg.isBullish ? '#047857' : '#BE123C')
           : (fvg.isBullish ? '#047857' : '#BE123C');
         if (fvg.isInverse) {
           ctx.fillStyle = fvg.isBullish ? '#0E7490' : '#7C3AED';
@@ -1516,15 +1560,20 @@ export function renderChart(
       if (isChoch && !smcCfg.showChoch) return false;
       if (sb.isBullish && (!smcCfg.showBullishStructure || !isBullishMaster)) return false;
       if (!sb.isBullish && (!smcCfg.showBearishStructure || !isBearishMaster)) return false;
-      if (sb.candleIndex < Math.max(0, startIdx - 30)) return false;
+      // Break must intersect visible horizontal viewport
+      if (sb.candleIndex < startIdx && sb.swingIndex < startIdx) return false;
+      if (sb.swingIndex > endIdx) return false;
+      // Price must be reasonably close to visible price bounds
+      const pMargin = (pMax - pMin) * 0.25;
+      if (sb.price < pMin - pMargin || sb.price > pMax + pMargin) return false;
       return true;
     });
 
-    // Render only the most recent 8 breaks to prevent horizontal line congestion
-    const breaksToRender = inWindowBreaks.slice(-8);
+    // Render up to 10 most recent visible breaks
+    const breaksToRender = inWindowBreaks.slice(-10);
 
     for (const sb of breaksToRender) {
-      const y = Math.max(12 * dpr, Math.min(chartH - 12 * dpr, priceToY(sb.price)));
+      const y = Math.max(14 * dpr, Math.min(chartH - 14 * dpr, priceToY(sb.price)));
       const color = sb.isBullish ? BULL : BEAR;
 
       // Start at the broken swing point; terminate at breakout candle
@@ -1680,36 +1729,63 @@ export function renderChart(
       const visibleSweeps = smcData.sweeps.filter((sw) => {
         if (sw.isHighSweep && (!smcCfg.showBslSweeps || !isBearishMaster)) return false;
         if (!sw.isHighSweep && (!smcCfg.showSslSweeps || !isBullishMaster)) return false;
-        return sw.candleIndex >= startIdx && sw.candleIndex < endIdx;
+        return sw.candleIndex >= startIdx - 5 && sw.candleIndex <= endIdx;
       });
-      // Limit to the 6 most recent visible sweeps to avoid text crowding
-      const sweepsToRender = visibleSweeps.slice(-6);
+      // Limit to the 10 most recent visible sweeps to avoid text crowding
+      const sweepsToRender = visibleSweeps.slice(-10);
 
       for (const sw of sweepsToRender) {
         const li = sw.candleIndex - startIdx;
-        const x = li * candleW + candleW / 2;
-        const y = priceToY(sw.price);
+        const xSweep = li * candleW + candleW / 2;
+        const yWick = priceToY(sw.price);
+        const yLevel = sw.sweptLevelPrice ? priceToY(sw.sweptLevelPrice) : yWick;
         const isHigh = sw.isHighSweep;
+        const color = isHigh ? BEAR : BULL;
         const label = isHigh ? '▼ BSL SWEEP' : '▲ SSL SWEEP';
 
         ctx.save();
+
+        // 1. Swept level horizontal line anchoring back 16 bars
+        const originBar = Math.max(0, li - 16);
+        const xOrigin = originBar * candleW;
+        ctx.setLineDash([3 * dpr, 3 * dpr]);
+        ctx.strokeStyle = isHigh ? 'rgba(244, 63, 94, 0.70)' : 'rgba(16, 185, 129, 0.70)';
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(xOrigin, yLevel);
+        ctx.lineTo(xSweep, yLevel);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Small cross marker at swept point on the level
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5 * dpr;
+        const crossSize = 3 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(xSweep - crossSize, yLevel - crossSize);
+        ctx.lineTo(xSweep + crossSize, yLevel + crossSize);
+        ctx.moveTo(xSweep - crossSize, yLevel + crossSize);
+        ctx.lineTo(xSweep + crossSize, yLevel - crossSize);
+        ctx.stroke();
+
+        // 2. Clear sweep badge near the rejection wick
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(label);
         const tw = tm.width + 8 * dpr;
         const th = 13 * dpr;
-        const rawBadgeY = isHigh ? y - th - 5 * dpr : y + 5 * dpr;
-        const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, rawBadgeY));
+        const rawBadgeY = isHigh ? yWick - th - 6 * dpr : yWick + 6 * dpr;
+        const badgeY = Math.max(26 * dpr, Math.min(chartH - th - 6 * dpr, rawBadgeY));
 
         ctx.fillStyle = isHigh ? 'rgba(244, 63, 94, 0.25)' : 'rgba(16, 185, 129, 0.25)';
-        ctx.fillRect(x - tw / 2, badgeY, tw, th);
-        ctx.strokeStyle = isHigh ? BEAR : BULL;
+        ctx.fillRect(xSweep - tw / 2, badgeY, tw, th);
+        ctx.strokeStyle = color;
         ctx.lineWidth = 1 * dpr;
-        ctx.strokeRect(x - tw / 2, badgeY, tw, th);
+        ctx.strokeRect(xSweep - tw / 2, badgeY, tw, th);
 
-        ctx.fillStyle = isHigh ? BEAR : BULL;
+        ctx.fillStyle = color;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(label, x, badgeY + th / 2);
+        ctx.fillText(label, xSweep, badgeY + th / 2);
         ctx.restore();
       }
     }
