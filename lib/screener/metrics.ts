@@ -1,7 +1,7 @@
 // ─── Centralized Financial Metrics Library ──────────────────────────────────
 // Exhaustive catalog of institutional fundamental metrics for screening, analysis, and custom queries.
 
-import { MetricDefinition, CompanyFundamental } from './types';
+import { MetricDefinition, CompanyFundamental, QueryNode } from './types';
 import { calculatePiotroskiScore, calculateAltmanZScore, calculateBeneishMScore } from './scorecards';
 import { isFinancialEntity } from './zerodhaStocks';
 
@@ -764,6 +764,47 @@ export function resolveMetricKey(nameOrAlias: string): string | null {
 export function getMetricDefinition(key: string): MetricDefinition | undefined {
   const canonical = resolveMetricKey(key) || key;
   return METRIC_MAP.get(canonical.toLowerCase());
+}
+
+/**
+ * Metrics explicitly excluded from interactive Query Builder interfaces:
+ * - 3Y ROCE (roce3YAvg)
+ * - 5Y ROCE (roce5YAvg)
+ * - 52W High % (priceTo52WHighPct)
+ * - 200 SMA % (distanceSma200Pct)
+ */
+export const QUERY_BUILDER_EXCLUDED_KEYS = new Set<string>([
+  'roce3YAvg',
+  'roce5YAvg',
+  'priceTo52WHighPct',
+  'distanceSma200Pct',
+]);
+
+/**
+ * Metric definitions available for interactive Query Builder interfaces
+ */
+export const QUERY_BUILDER_METRICS: MetricDefinition[] = METRIC_DEFINITIONS.filter(
+  (m) => !QUERY_BUILDER_EXCLUDED_KEYS.has(m.key)
+);
+
+/**
+ * Identifies if any query node in the AST uses an excluded Query Builder metric.
+ */
+export function findExcludedQueryBuilderMetrics(node: QueryNode): string[] {
+  if (node.type === 'CONDITION') {
+    const canonical = resolveMetricKey(node.metricKey) || node.metricKey;
+    if (QUERY_BUILDER_EXCLUDED_KEYS.has(canonical)) {
+      const def = getMetricDefinition(canonical);
+      return [def ? def.label : node.metricKey];
+    }
+    return [];
+  }
+  if (node.type === 'LOGICAL') {
+    const left = findExcludedQueryBuilderMetrics(node.left);
+    const right = findExcludedQueryBuilderMetrics(node.right);
+    return Array.from(new Set([...left, ...right]));
+  }
+  return [];
 }
 
 /** Get value of a metric from a company object safely */

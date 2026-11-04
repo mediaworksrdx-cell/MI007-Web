@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { METRIC_DEFINITIONS } from '@/lib/screener/metrics';
+import { QUERY_BUILDER_METRICS, findExcludedQueryBuilderMetrics } from '@/lib/screener/metrics';
 import { parseQuery } from '@/lib/screener/queryEngine';
 import { QueryParseResult } from '@/lib/screener/types';
 
@@ -50,6 +50,16 @@ export function QueryEditor({
       return;
     }
     const result = parseQuery(query);
+    if (result.valid && result.ast) {
+      const excluded = findExcludedQueryBuilderMetrics(result.ast);
+      if (excluded.length > 0) {
+        setParseResult({
+          valid: false,
+          error: `Metric "${excluded[0]}" has been removed from Query Builder. Please use standard ROCE or other supported metrics.`,
+        });
+        return;
+      }
+    }
     setParseResult(result);
   }, [query]);
 
@@ -117,7 +127,7 @@ export function QueryEditor({
   };
 
   // Filter metrics for the optional helper panel
-  const filteredMetrics = METRIC_DEFINITIONS.filter((m) => {
+  const filteredMetrics = QUERY_BUILDER_METRICS.filter((m) => {
     if (!helperSearch.trim()) return true;
     const s = helperSearch.toLowerCase();
     return (

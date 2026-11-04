@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { METRIC_DEFINITIONS } from '@/lib/screener/metrics';
+import { QUERY_BUILDER_METRICS, findExcludedQueryBuilderMetrics } from '@/lib/screener/metrics';
 import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
 import { MASTER_COMPANIES } from '@/lib/screener/data';
 import { CompanyFundamental, SavedScreen, MarketRegion } from '@/lib/screener/types';
@@ -60,7 +60,18 @@ export function CustomQueryBuilderView({
   }, [initialQuery]);
 
   const parseResult = useMemo(() => {
-    return parseQuery(queryText);
+    const res = parseQuery(queryText);
+    if (!res.valid) return res;
+    if (res.ast) {
+      const excluded = findExcludedQueryBuilderMetrics(res.ast);
+      if (excluded.length > 0) {
+        return {
+          valid: false,
+          error: `Metric "${excluded[0]}" has been removed from Query Builder. Please use standard ROCE or other supported metrics.`,
+        };
+      }
+    }
+    return res;
   }, [queryText]);
 
   // Execute test in this tab function
@@ -68,6 +79,14 @@ export function CustomQueryBuilderView({
     const textToTest = overrideQuery !== undefined ? overrideQuery : queryText;
     const res = parseQuery(textToTest);
     if (!res.valid || !res.ast || companies.length === 0) {
+      setTestResults([]);
+      setHasExecutedTest(true);
+      setTestDurationMs(0);
+      return;
+    }
+
+    const excluded = findExcludedQueryBuilderMetrics(res.ast);
+    if (excluded.length > 0) {
       setTestResults([]);
       setHasExecutedTest(true);
       setTestDurationMs(0);
@@ -105,7 +124,7 @@ export function CustomQueryBuilderView({
     return cleanSavedScreens.find((s) => s.id === selectedScreenId && !s.isPredefined);
   }, [cleanSavedScreens, selectedScreenId]);
 
-  const filteredMetrics = METRIC_DEFINITIONS.filter((m) => {
+  const filteredMetrics = QUERY_BUILDER_METRICS.filter((m) => {
     if (!metricFilter) return true;
     const f = metricFilter.toLowerCase();
     return (

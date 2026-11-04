@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { VisualFilter, ComparisonOperator } from '@/lib/screener/types';
-import { METRIC_DEFINITIONS, getMetricDefinition } from '@/lib/screener/metrics';
+import { QUERY_BUILDER_METRICS, getMetricDefinition } from '@/lib/screener/metrics';
 
 interface VisualFilterBuilderProps {
   filters: VisualFilter[];
@@ -102,7 +102,7 @@ export function VisualFilterBuilder({
                   onChange={(e) => updateFilter(index, { metricKey: e.target.value })}
                   className="px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] mono text-[13px] font-bold focus:outline-none focus:border-emerald-500 min-w-44 flex-1"
                 >
-                  {METRIC_DEFINITIONS.map((m) => (
+                  {QUERY_BUILDER_METRICS.map((m) => (
                     <option key={m.key} value={m.key}>
                       {m.label} ({m.unit || m.dataType})
                     </option>
