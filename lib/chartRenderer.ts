@@ -1071,44 +1071,54 @@ export function renderChart(
       const yEq = Math.max(0, Math.min(chartH, priceToY(dr.equilibriumPrice)));
 
       ctx.save();
-      // Premium Zone (>50% to High) - Clear structural auction boundary
+      // Premium Zone (>50% to High) - Subtle non-obtrusive auction boundary
       if (yEq > yHigh) {
-        ctx.fillStyle = 'rgba(244, 63, 94, 0.07)';
+        ctx.fillStyle = isDark ? 'rgba(244, 63, 94, 0.02)' : 'rgba(244, 63, 94, 0.015)';
         ctx.fillRect(0, yHigh, chartW, yEq - yHigh);
-        ctx.strokeStyle = 'rgba(244, 63, 94, 0.30)';
-        ctx.lineWidth = 1 * dpr;
-        ctx.strokeRect(0, yHigh, chartW, yEq - yHigh);
 
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        // Compact right-docked micro badge
+        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        const pBadge = 'PREMIUM';
+        const ptm = ctx.measureText(pBadge);
+        const pbw = ptm.width + 6 * dpr;
+        const pbh = 11 * dpr;
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.12)';
+        ctx.fillRect(chartW - pbw - 6 * dpr, yHigh + 3 * dpr, pbw, pbh);
         ctx.fillStyle = '#E11D48';
         ctx.textAlign = 'right';
-        ctx.fillText(`PREMIUM ZONE (Sell Zone) [${formatPrice(dr.equilibriumPrice)} – ${formatPrice(dr.highPrice)}]`, chartW - 10 * dpr, yHigh + 14 * dpr);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pBadge, chartW - 9 * dpr, yHigh + 3 * dpr + pbh / 2);
       }
 
-      // Discount Zone (<50% to Low) - Clear structural auction boundary
+      // Discount Zone (<50% to Low) - Subtle non-obtrusive auction boundary
       if (yLow > yEq) {
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.07)';
+        ctx.fillStyle = isDark ? 'rgba(16, 185, 129, 0.02)' : 'rgba(16, 185, 129, 0.015)';
         ctx.fillRect(0, yEq, chartW, yLow - yEq);
-        ctx.strokeStyle = 'rgba(16, 185, 129, 0.30)';
-        ctx.lineWidth = 1 * dpr;
-        ctx.strokeRect(0, yEq, chartW, yLow - yEq);
 
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        // Compact right-docked micro badge
+        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        const dBadge = 'DISCOUNT';
+        const dtm = ctx.measureText(dBadge);
+        const dbw = dtm.width + 6 * dpr;
+        const dbh = 11 * dpr;
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+        ctx.fillRect(chartW - dbw - 6 * dpr, yLow - dbh - 3 * dpr, dbw, dbh);
         ctx.fillStyle = '#059669';
         ctx.textAlign = 'right';
-        ctx.fillText(`DISCOUNT ZONE (Buy Zone) [${formatPrice(dr.lowPrice)} – ${formatPrice(dr.equilibriumPrice)}]`, chartW - 10 * dpr, yLow - 6 * dpr);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(dBadge, chartW - 9 * dpr, yLow - 3 * dpr - dbh / 2);
       }
 
-      // Range Boundary Lines (High and Low)
+      // Subtle dashed range boundaries at High and Low
       ctx.setLineDash([4 * dpr, 4 * dpr]);
-      ctx.lineWidth = 1 * dpr;
-      ctx.strokeStyle = 'rgba(244, 63, 94, 0.50)';
+      ctx.lineWidth = 0.8 * dpr;
+      ctx.strokeStyle = 'rgba(244, 63, 94, 0.35)';
       ctx.beginPath();
       ctx.moveTo(0, yHigh);
       ctx.lineTo(chartW, yHigh);
       ctx.stroke();
 
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.50)';
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
       ctx.beginPath();
       ctx.moveTo(0, yLow);
       ctx.lineTo(chartW, yLow);
@@ -1125,16 +1135,24 @@ export function renderChart(
         const yOte1 = priceToY(dr.discountOteRange[0]);
         const yOte2 = priceToY(dr.discountOteRange[1]);
         const oteTop = Math.max(0, Math.min(chartH - 2 * dpr, Math.min(yOte1, yOte2)));
-        const oteH = Math.max(Math.abs(yOte1 - yOte2), 3 * dpr);
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+        const oteH = Math.max(Math.abs(yOte1 - yOte2), 2 * dpr);
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.035)';
         ctx.fillRect(0, oteTop, chartW, oteH);
-        ctx.strokeStyle = 'rgba(16, 185, 129, 0.60)';
-        ctx.lineWidth = 1.2 * dpr;
-        ctx.strokeRect(0, oteTop, chartW, oteH);
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = '#059669';
+        ctx.setLineDash([3 * dpr, 3 * dpr]);
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+        ctx.lineWidth = 0.8 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(0, oteTop);
+        ctx.lineTo(chartW, oteTop);
+        ctx.moveTo(0, oteTop + oteH);
+        ctx.lineTo(chartW, oteTop + oteH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = 'rgba(5, 150, 105, 0.85)';
         ctx.textAlign = 'left';
-        ctx.fillText(`OTE Discount (61.8% - 78.6% Long Retrace) [${formatPrice(dr.discountOteRange[0])} - ${formatPrice(dr.discountOteRange[1])}]`, 10 * dpr, oteTop + oteH / 2 + 3 * dpr);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`OTE [61.8% - 78.6%]`, 8 * dpr, oteTop + oteH / 2);
       }
 
       // Bearish Premium OTE: rendered in Premium zone (Short retracement)
@@ -1144,16 +1162,24 @@ export function renderChart(
           const yOte1 = priceToY(premOte[0]);
           const yOte2 = priceToY(premOte[1]);
           const oteTop = Math.max(0, Math.min(chartH - 2 * dpr, Math.min(yOte1, yOte2)));
-          const oteH = Math.max(Math.abs(yOte1 - yOte2), 3 * dpr);
-          ctx.fillStyle = 'rgba(244, 63, 94, 0.12)';
+          const oteH = Math.max(Math.abs(yOte1 - yOte2), 2 * dpr);
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.035)';
           ctx.fillRect(0, oteTop, chartW, oteH);
-          ctx.strokeStyle = 'rgba(244, 63, 94, 0.60)';
-          ctx.lineWidth = 1.2 * dpr;
-          ctx.strokeRect(0, oteTop, chartW, oteH);
-          ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-          ctx.fillStyle = '#E11D48';
+          ctx.setLineDash([3 * dpr, 3 * dpr]);
+          ctx.strokeStyle = 'rgba(244, 63, 94, 0.35)';
+          ctx.lineWidth = 0.8 * dpr;
+          ctx.beginPath();
+          ctx.moveTo(0, oteTop);
+          ctx.lineTo(chartW, oteTop);
+          ctx.moveTo(0, oteTop + oteH);
+          ctx.lineTo(chartW, oteTop + oteH);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          ctx.fillStyle = 'rgba(225, 29, 72, 0.85)';
           ctx.textAlign = 'left';
-          ctx.fillText(`OTE Premium (61.8% - 78.6% Short Retrace) [${formatPrice(premOte[0])} - ${formatPrice(premOte[1])}]`, 10 * dpr, oteTop + oteH / 2 + 3 * dpr);
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`OTE [61.8% - 78.6%]`, 8 * dpr, oteTop + oteH / 2);
         }
       }
       ctx.restore();
@@ -1163,52 +1189,32 @@ export function renderChart(
     if (smcCfg.showEquilibrium && smcData.equilibriumPrice > 0 && smcData.equilibriumPrice >= pMin && smcData.equilibriumPrice <= pMax) {
       const eqY = priceToY(smcData.equilibriumPrice);
       ctx.save();
-      ctx.setLineDash([8 * dpr, 5 * dpr]);
-      ctx.strokeStyle = 'rgba(217, 119, 6, 0.90)';
-      ctx.lineWidth = 1.5 * dpr;
+      ctx.setLineDash([6 * dpr, 4 * dpr]);
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.65)';
+      ctx.lineWidth = 1 * dpr;
       ctx.beginPath();
       ctx.moveTo(0, eqY);
       ctx.lineTo(chartW, eqY);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      const lastBar = candles[Math.min(endIdx - 1, candles.length - 1)];
-      const activePrice = options.currentPriceOverride && options.currentPriceOverride > 0
-        ? options.currentPriceOverride
-        : (lastBar ? lastBar.close : smcData.equilibriumPrice);
-      const isAboveEq = activePrice >= smcData.equilibriumPrice;
-      const zoneTag = isAboveEq ? '▲ PREMIUM' : '▼ DISCOUNT';
-      
-      // Explicit Midpoint Label on line (clearly identifying 50% midpoint value)
-      const eqText = `50% Equilibrium (Midpoint): ${formatPrice(smcData.equilibriumPrice)}`;
-      ctx.font = `bold ${9 * dpr}px "JetBrains Mono",monospace`;
+      // Single minimalist midpoint pill docked on the left margin
+      const eqText = `50% EQ: ${formatPrice(smcData.equilibriumPrice)}`;
+      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
       const tm = ctx.measureText(eqText);
-      const tw = tm.width + 10 * dpr;
-      const th = 15 * dpr;
+      const tw = tm.width + 8 * dpr;
+      const th = 13 * dpr;
 
-      ctx.fillStyle = 'rgba(217, 119, 6, 0.20)';
-      ctx.fillRect(8 * dpr, eqY - th - 3 * dpr, tw, th);
-      ctx.strokeStyle = 'rgba(217, 119, 6, 0.75)';
-      ctx.lineWidth = 1 * dpr;
-      ctx.strokeRect(8 * dpr, eqY - th - 3 * dpr, tw, th);
+      ctx.fillStyle = 'rgba(217, 119, 6, 0.15)';
+      ctx.fillRect(8 * dpr, eqY - th - 2 * dpr, tw, th);
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.50)';
+      ctx.lineWidth = 0.8 * dpr;
+      ctx.strokeRect(8 * dpr, eqY - th - 2 * dpr, tw, th);
 
-      ctx.fillStyle = '#B45309';
+      ctx.fillStyle = '#D97706';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(eqText, 13 * dpr, eqY - th / 2 - 3 * dpr);
-
-      // Separate Current Price Context Badge on the right
-      const priceBadgeText = `Current: ${formatPrice(activePrice)} in ${zoneTag} Zone`;
-      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-      const ptm = ctx.measureText(priceBadgeText);
-      const ptw = ptm.width + 10 * dpr;
-      ctx.fillStyle = isAboveEq ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)';
-      ctx.fillRect(chartW - ptw - 10 * dpr, eqY - th - 3 * dpr, ptw, th);
-      ctx.strokeStyle = isAboveEq ? 'rgba(244, 63, 94, 0.65)' : 'rgba(16, 185, 129, 0.65)';
-      ctx.strokeRect(chartW - ptw - 10 * dpr, eqY - th - 3 * dpr, ptw, th);
-      ctx.fillStyle = isAboveEq ? '#E11D48' : '#059669';
-      ctx.textAlign = 'left';
-      ctx.fillText(priceBadgeText, chartW - ptw - 5 * dpr, eqY - th / 2 - 3 * dpr);
+      ctx.fillText(eqText, 12 * dpr, eqY - th / 2 - 2 * dpr);
       ctx.restore();
     }
 
@@ -1227,9 +1233,9 @@ export function renderChart(
         return true;
       });
 
-      // Density control: if viewport is dense (candleW < 14 * dpr), enforce min bar spacing
-      const minBarSpacing = candleW < 8 * dpr ? 5 : candleW < 14 * dpr ? 3 : 2;
-      const minPixelSpacing = 28 * dpr;
+      // Density control: institutional pivot spacing
+      const minBarSpacing = candleW < 8 * dpr ? 6 : candleW < 14 * dpr ? 4 : 3;
+      const minPixelSpacing = 36 * dpr;
 
       interface RenderedSwingPill {
         x: number;
@@ -1281,11 +1287,11 @@ export function renderChart(
         // Clamp yBox within chart viewport
         yBox = Math.max(2 * dpr, Math.min(chartH - th - 2 * dpr, yBox));
 
-        // Badge pill behind swing label for high contrast
-        ctx.fillStyle = isH ? 'rgba(244, 63, 94, 0.18)' : 'rgba(16, 185, 129, 0.18)';
+        // Badge pill behind swing label for clean readability
+        ctx.fillStyle = isH ? 'rgba(244, 63, 94, 0.12)' : 'rgba(16, 185, 129, 0.12)';
         ctx.fillRect(x - tw / 2, yBox, tw, th);
-        ctx.strokeStyle = isH ? 'rgba(244, 63, 94, 0.75)' : 'rgba(16, 185, 129, 0.75)';
-        ctx.lineWidth = 1 * dpr;
+        ctx.strokeStyle = isH ? 'rgba(244, 63, 94, 0.45)' : 'rgba(16, 185, 129, 0.45)';
+        ctx.lineWidth = 0.8 * dpr;
         ctx.strokeRect(x - tw / 2, yBox, tw, th);
 
         ctx.fillStyle = isH ? '#E11D48' : '#059669';
@@ -1300,7 +1306,8 @@ export function renderChart(
 
     // 4. Order Blocks & Breakers (Demand, Supply, Breakers) — Viewport & Proximity Sorting
     const lastPrice = candles[candles.length - 1]?.close || (pMin + pMax) / 2;
-    const maxZonesPerType = Math.max(3, Math.floor((smcCfg.maxVisibleZones || 8) / 2));
+    const isTargetedMode = Boolean(options.targetSetupId);
+    const maxZonesPerType = isTargetedMode ? 1 : Math.max(2, Math.floor((smcCfg.maxVisibleZones || 6) / 3));
 
     const sortZonesByProximity = <T extends { topPrice: number; bottomPrice: number; startIndex: number }>(zones: T[]): T[] => {
       return zones.slice().sort((a, b) => {
@@ -1313,6 +1320,18 @@ export function renderChart(
         if (Math.abs(aDist - bDist) > (pMax - pMin) * 0.05) return aDist - bDist;
         return b.startIndex - a.startIndex;
       });
+    };
+
+    // Helper to identify targeted OB or setup focus
+    const isTargetZone = (zone: { id?: string; startIndex: number; topPrice: number; bottomPrice: number }) => {
+      if (!options.targetSetupId) return false;
+      if (zone.id && options.targetSetupId.includes(zone.id)) return true;
+      const targetedSetup = smcData.confirmedSetups.find(s => s.id === options.targetSetupId);
+      if (targetedSetup) {
+        if (Math.abs(targetedSetup.candleIndex - zone.startIndex) <= 2) return true;
+        if (targetedSetup.entryPrice >= Math.min(zone.bottomPrice, zone.topPrice) && targetedSetup.entryPrice <= Math.max(zone.bottomPrice, zone.topPrice)) return true;
+      }
+      return false;
     };
 
     // Pure Order Blocks (Demand & Supply)
@@ -1339,9 +1358,18 @@ export function renderChart(
           if (brk.isMitigated && brk.endIndex < startIdx) return false;
           return true;
         })
-    ).slice(0, maxZonesPerType * 2);
+    ).slice(0, maxZonesPerType);
 
     const blocksToRender = [...demandBlocks, ...supplyBlocks, ...breakerBlocks];
+
+    // Track right-margin badge vertical positions to avoid collisions
+    const renderedRightBadgesY: { y: number; h: number }[] = [];
+    const canPlaceRightBadge = (y: number, h: number): boolean => {
+      for (const b of renderedRightBadgesY) {
+        if (Math.abs(b.y - y) < Math.max(b.h, h) + 4 * dpr) return false;
+      }
+      return true;
+    };
 
     for (const ob of blocksToRender) {
       const ls = Math.max(0, ob.startIndex - startIdx);
@@ -1354,52 +1382,63 @@ export function renderChart(
       const bTop = Math.min(yT, yB);
       const bH = Math.max(Math.abs(yT - yB), 3 * dpr);
 
+      const isTarget = isTargetZone(ob);
       let obColor = ob.isBullish ? '#0284C7' : '#EA580C';
-      let obBg = ob.isBullish ? 'rgba(2, 132, 199, 0.18)' : 'rgba(234, 88, 12, 0.18)';
-      let obBorder = ob.isBullish ? 'rgba(2, 132, 199, 0.85)' : 'rgba(234, 88, 12, 0.85)';
+      let obBg = isTarget
+        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.14)' : 'rgba(234, 88, 12, 0.14)')
+        : (ob.isBullish ? 'rgba(2, 132, 199, 0.05)' : 'rgba(234, 88, 12, 0.05)');
+      let obBorder = isTarget
+        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.85)' : 'rgba(234, 88, 12, 0.85)')
+        : (ob.isBullish ? 'rgba(2, 132, 199, 0.35)' : 'rgba(234, 88, 12, 0.35)');
 
       if (ob.isBreaker) {
         obColor = ob.isBullish ? '#059669' : '#DC2626';
-        obBg = ob.isBullish ? 'rgba(16, 185, 129, 0.20)' : 'rgba(239, 68, 68, 0.20)';
-        obBorder = ob.isBullish ? 'rgba(16, 185, 129, 0.90)' : 'rgba(239, 68, 68, 0.90)';
+        obBg = isTarget
+          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.16)' : 'rgba(239, 68, 68, 0.16)')
+          : (ob.isBullish ? 'rgba(16, 185, 129, 0.06)' : 'rgba(239, 68, 68, 0.06)');
+        obBorder = isTarget
+          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.90)' : 'rgba(239, 68, 68, 0.90)')
+          : (ob.isBullish ? 'rgba(16, 185, 129, 0.40)' : 'rgba(239, 68, 68, 0.40)');
       }
 
       ctx.save();
-      ctx.fillStyle = ob.isMitigated ? (ob.isBullish ? 'rgba(2, 132, 199, 0.12)' : 'rgba(234, 88, 12, 0.12)') : obBg;
+      ctx.fillStyle = ob.isMitigated ? (ob.isBullish ? 'rgba(2, 132, 199, 0.04)' : 'rgba(234, 88, 12, 0.04)') : obBg;
       ctx.fillRect(lx, bTop, bw, bH);
       if (ob.isBreaker || ob.isMitigated) {
         ctx.setLineDash([5 * dpr, 3 * dpr]);
       }
-      ctx.strokeStyle = ob.isMitigated ? (ob.isBullish ? 'rgba(2, 132, 199, 0.55)' : 'rgba(234, 88, 12, 0.55)') : obBorder;
-      ctx.lineWidth = 1.3 * dpr;
+      ctx.strokeStyle = ob.isMitigated ? (ob.isBullish ? 'rgba(2, 132, 199, 0.25)' : 'rgba(234, 88, 12, 0.25)') : obBorder;
+      ctx.lineWidth = isTarget ? 1.5 * dpr : 1.0 * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
       if (ob.isBreaker || ob.isMitigated) {
         ctx.setLineDash([]);
       }
 
-      // Mean Threshold (50% MT / CE) — Midpoint magnet midline when Consequent Encroachment is enabled
+      // Mean Threshold (50% MT / CE) — Midpoint magnet midline
       const mtPrice = (ob.topPrice + ob.bottomPrice) / 2;
       if (smcCfg.showFvgMidpoint && mtPrice >= pMin && mtPrice <= pMax) {
         const yMt = priceToY(mtPrice);
         ctx.setLineDash([4 * dpr, 3 * dpr]);
-        ctx.strokeStyle = ob.isBreaker ? (ob.isBullish ? '#10B981' : '#EF4444') : (ob.isBullish ? '#0284C7' : '#F97316');
-        ctx.lineWidth = 1.1 * dpr;
+        ctx.strokeStyle = ob.isBreaker ? (ob.isBullish ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)') : (ob.isBullish ? 'rgba(2, 132, 199, 0.6)' : 'rgba(249, 115, 22, 0.6)');
+        ctx.lineWidth = 0.9 * dpr;
         ctx.beginPath();
         ctx.moveTo(lx, yMt);
         ctx.lineTo(lx + bw, yMt);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        if (bw >= 15 * dpr) {
+        if (bw >= 30 * dpr && (isTarget || !isTargetedMode) && canPlaceRightBadge(yMt, 12 * dpr)) {
           const mtText = `50% MT: ${formatPrice(mtPrice)}`;
           ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
           const mtTm = ctx.measureText(mtText);
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.80)';
-          ctx.fillRect(lx + bw - mtTm.width - 6 * dpr, yMt - 6 * dpr, mtTm.width + 5 * dpr, 12 * dpr);
+          const mth = 12 * dpr;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.fillRect(lx + bw - mtTm.width - 6 * dpr, yMt - mth / 2, mtTm.width + 5 * dpr, mth);
           ctx.fillStyle = ob.isBreaker ? (ob.isBullish ? '#34D399' : '#F87171') : (ob.isBullish ? '#38BDF8' : '#FB923C');
           ctx.textAlign = 'right';
           ctx.textBaseline = 'middle';
           ctx.fillText(mtText, lx + bw - 3 * dpr, yMt);
+          renderedRightBadgesY.push({ y: yMt, h: mth });
         }
       }
 
@@ -1410,13 +1449,13 @@ export function renderChart(
         if (ob.isMitigated) {
           text += ' [MITIGATED]';
         }
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(text);
         const tw = tm.width + 8 * dpr;
         const th = 13 * dpr;
 
         // Clean label badge at top-left inside the OB
-        ctx.fillStyle = ob.isBullish ? 'rgba(2, 132, 199, 0.30)' : (ob.isBreaker ? 'rgba(239, 68, 68, 0.30)' : 'rgba(234, 88, 12, 0.30)');
+        ctx.fillStyle = ob.isBullish ? 'rgba(2, 132, 199, 0.20)' : (ob.isBreaker ? 'rgba(239, 68, 68, 0.20)' : 'rgba(234, 88, 12, 0.20)');
         ctx.fillRect(lx + 3 * dpr, bTop + 3 * dpr, tw, th);
         ctx.strokeStyle = obBorder;
         ctx.lineWidth = 0.8 * dpr;
@@ -1427,8 +1466,8 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(text, lx + 7 * dpr, bTop + 3 * dpr + th / 2);
 
-        // Visible Price Numbers Tag on Order Block
-        if (bw > 60 * dpr && bH >= 12 * dpr) {
+        // Visible Price Numbers Tag on Order Block (Only for targeted OB or closest unmitigated)
+        if (bw > 60 * dpr && bH >= 12 * dpr && (isTarget || !isTargetedMode)) {
           const topPriceStr = formatPrice(ob.topPrice);
           const bottomPriceStr = formatPrice(ob.bottomPrice);
           const spreadPts = Math.abs(ob.topPrice - ob.bottomPrice);
@@ -1442,7 +1481,7 @@ export function renderChart(
           const pBadgeX = lx + bw - pBadgeW - 3 * dpr;
           const pBadgeY = bTop + 3 * dpr;
 
-          if (pBadgeX > lx + tw + 6 * dpr) {
+          if (pBadgeX > lx + tw + 6 * dpr && canPlaceRightBadge(pBadgeY, pBadgeH)) {
             ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.90)';
             ctx.fillRect(pBadgeX, pBadgeY, pBadgeW, pBadgeH);
             ctx.strokeStyle = obBorder;
@@ -1455,6 +1494,7 @@ export function renderChart(
             ctx.textAlign = 'right';
             ctx.textBaseline = 'middle';
             ctx.fillText(priceNumText, pBadgeX + pBadgeW - 4 * dpr, pBadgeY + pBadgeH / 2);
+            renderedRightBadgesY.push({ y: pBadgeY, h: pBadgeH });
           }
         }
       }
@@ -1510,8 +1550,8 @@ export function renderChart(
       const base = fvg.isBullish
         ? (fvg.isInverse ? [6, 182, 212] : [16, 185, 129])
         : (fvg.isInverse ? [168, 85, 247] : [244, 63, 94]);
-      const fa = isMit ? 0.14 : (fvg.isInverse ? 0.24 : 0.20);
-      const ba = isMit ? 0.60 : (fvg.isInverse ? 0.90 : 0.85);
+      const fa = isMit ? 0.04 : (fvg.isInverse ? 0.08 : 0.06);
+      const ba = isMit ? 0.30 : (fvg.isInverse ? 0.60 : 0.50);
 
       ctx.save();
       ctx.fillStyle = `rgba(${base},${fa})`;
@@ -1520,7 +1560,7 @@ export function renderChart(
         ctx.setLineDash([4 * dpr, 3 * dpr]);
       }
       ctx.strokeStyle = `rgba(${base},${ba})`;
-      ctx.lineWidth = (fvg.isInverse ? 1.3 : 1.1) * dpr;
+      ctx.lineWidth = (fvg.isInverse ? 1.2 : 0.9) * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
       if (fvg.isInverse || isMit) {
         ctx.setLineDash([]);
@@ -1531,23 +1571,25 @@ export function renderChart(
         const yCe = priceToY(fvg.cePrice);
         ctx.setLineDash([4 * dpr, 3 * dpr]);
         ctx.strokeStyle = fvg.isInverse ? (fvg.isBullish ? '#06B6D4' : '#A855F7') : '#F59E0B';
-        ctx.lineWidth = 1.2 * dpr;
+        ctx.lineWidth = 1.0 * dpr;
         ctx.beginPath();
         ctx.moveTo(lx, yCe);
         ctx.lineTo(lx + bw, yCe);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        if (bw >= 15 * dpr) {
+        if (bw >= 30 * dpr && canPlaceRightBadge(yCe, 12 * dpr)) {
           const ceText = `50% CE: ${formatPrice(fvg.cePrice)}`;
           ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
           const ceTm = ctx.measureText(ceText);
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-          ctx.fillRect(lx + bw - ceTm.width - 6 * dpr, yCe - 6 * dpr, ceTm.width + 5 * dpr, 12 * dpr);
+          const ceH = 12 * dpr;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.fillRect(lx + bw - ceTm.width - 6 * dpr, yCe - ceH / 2, ceTm.width + 5 * dpr, ceH);
           ctx.fillStyle = fvg.isInverse ? (fvg.isBullish ? '#22D3EE' : '#C084FC') : '#FBBF24';
           ctx.textAlign = 'right';
           ctx.textBaseline = 'middle';
           ctx.fillText(ceText, lx + bw - 3 * dpr, yCe);
+          renderedRightBadgesY.push({ y: yCe, h: ceH });
         }
       }
 
@@ -1981,9 +2023,9 @@ export function renderChart(
         // 1. Take Profit (Reward) Zone (Entry to TP1)
         const tpTop = Math.min(yEntry, yTP);
         const tpH = Math.max(Math.abs(yEntry - yTP), 2 * dpr);
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.06)';
         ctx.fillRect(x, tpTop, boxW, tpH);
-        ctx.strokeStyle = 'rgba(16, 185, 129, 0.75)';
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.50)';
         ctx.lineWidth = 1 * dpr;
         ctx.setLineDash([4 * dpr, 3 * dpr]);
         ctx.strokeRect(x, tpTop, boxW, tpH);
@@ -1992,9 +2034,9 @@ export function renderChart(
         // 2. Stop Loss (Risk) Zone (Entry to SL)
         const slTop = Math.min(yEntry, ySL);
         const slH = Math.max(Math.abs(yEntry - ySL), 2 * dpr);
-        ctx.fillStyle = 'rgba(244, 63, 94, 0.12)';
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.06)';
         ctx.fillRect(x, slTop, boxW, slH);
-        ctx.strokeStyle = 'rgba(244, 63, 94, 0.75)';
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.50)';
         ctx.lineWidth = 1 * dpr;
         ctx.setLineDash([4 * dpr, 3 * dpr]);
         ctx.strokeRect(x, slTop, boxW, slH);

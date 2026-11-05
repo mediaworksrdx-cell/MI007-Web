@@ -258,7 +258,7 @@ export interface SmcConfig {
 
 export const DEFAULT_SMC_CONFIG: SmcConfig = {
   enabled: true,
-  swingLength: 3,                   // Institutional pivot standard (3-bar lookback for responsive non-repainting structure)
+  swingLength: 5,                   // Institutional pivot standard (5-bar lookback for high-conviction structural swings)
 
   // Master Direction Controls
   showBullishSetups: true,

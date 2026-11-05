@@ -480,17 +480,31 @@ export function CandlestickCanvas({
     }
 
     const navKey = `${targetCandleTime}_${targetSetupId || ''}`;
-    const exactIdx = cleanCandles.findIndex(c => c.openTime === targetCandleTime);
+    const barDurationMs = cleanCandles.length > 1
+      ? Math.abs(cleanCandles[cleanCandles.length - 1].openTime - cleanCandles[0].openTime) / (cleanCandles.length - 1)
+      : 3600000;
+
+    // Check 1: Exact timestamp match
+    let matchedIdx = cleanCandles.findIndex(c => c.openTime === targetCandleTime);
+
+    // Check 2: Timestamp falls within candle duration [c.openTime, nextBar.openTime)
+    if (matchedIdx === -1) {
+      matchedIdx = cleanCandles.findIndex((c, i) => {
+        const nextOpen = i < cleanCandles.length - 1 ? cleanCandles[i + 1].openTime : c.openTime + barDurationMs;
+        return targetCandleTime >= c.openTime && targetCandleTime < nextOpen;
+      });
+    }
+
     const half = Math.ceil(visibleCount / 2);
 
-    if (exactIdx !== -1) {
-      setTargetBeaconIndex(exactIdx);
+    if (matchedIdx !== -1) {
+      setTargetBeaconIndex(matchedIdx);
       setIsSurrogateBeacon(false);
       setAlignmentWarning(null);
 
       if (lastNavigatedTargetRef.current !== navKey) {
         lastNavigatedTargetRef.current = navKey;
-        const targetScroll = cleanCandles.length + RIGHT_BUFFER_BARS - exactIdx - half;
+        const targetScroll = cleanCandles.length + RIGHT_BUFFER_BARS - matchedIdx - half;
         setScrollOffset(Math.max(minScrollOffset, Math.min(maxScrollOffset, targetScroll)));
       }
     } else {
@@ -504,17 +518,22 @@ export function CandlestickCanvas({
         }
       }
 
-      // Exact anchor candle is not present in loaded dataset.
-      // Do NOT place a misleading setup marker on a surrogate candle.
-      // Retain viewport positioning near the timestamp, and display the authoritative alignment warning.
-      setTargetBeaconIndex(null);
-      setIsSurrogateBeacon(false);
-      const offsetMin = Math.round(minDiff / 60000);
-      setAlignmentWarning({
-        requestedTime: targetCandleTime,
-        nearestTime: cleanCandles[nearestIdx].openTime,
-        offsetMinutes: offsetMin,
-      });
+      // If nearest candle is within 1.5 bars tolerance, cleanly snap without warning
+      if (minDiff <= barDurationMs * 1.5) {
+        setTargetBeaconIndex(nearestIdx);
+        setIsSurrogateBeacon(false);
+        setAlignmentWarning(null);
+      } else {
+        // Only if truly outside loaded historical dataset (> 1.5 bars away)
+        setTargetBeaconIndex(null);
+        setIsSurrogateBeacon(false);
+        const offsetMin = Math.round(minDiff / 60000);
+        setAlignmentWarning({
+          requestedTime: targetCandleTime,
+          nearestTime: cleanCandles[nearestIdx].openTime,
+          offsetMinutes: offsetMin,
+        });
+      }
 
       if (lastNavigatedTargetRef.current !== navKey) {
         lastNavigatedTargetRef.current = navKey;
@@ -523,6 +542,15 @@ export function CandlestickCanvas({
       }
     }
   }, [targetCandleTime, targetSetupId, cleanCandles, visibleCount, maxScrollOffset, minScrollOffset]);
+
+  // Auto-dismiss alignment warning after 4s to prevent viewport clutter
+  useEffect(() => {
+    if (!alignmentWarning) return;
+    const timer = setTimeout(() => {
+      setAlignmentWarning(null);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [alignmentWarning]);
 
   // Helper to map mouse coordinate to price and candle with Smart Magnet & Axis Scale support
   const getPointFromEvent = useCallback((clientX: number, clientY: number, snapMagnet = true) => {
@@ -2477,23 +2505,23 @@ export function CandlestickCanvas({
         className="chart-overlay absolute inset-0 block w-full h-full pointer-events-none select-none z-30"
       />
 
-      {/* SMC Historical Bar Alignment Warning Banner */}
+      {/* SMC Historical Bar Alignment Warning Toast (Compact, Non-Obtrusive Top-Right Alert) */}
       {alignmentWarning && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 max-w-[90%] sm:max-w-xl flex items-center justify-between gap-3 px-3.5 py-1.5 rounded-lg bg-amber-500/95 dark:bg-amber-600/95 border border-amber-300 dark:border-amber-400 text-slate-950 shadow-xl backdrop-blur-md animate-in fade-in duration-200">
+        <div className="absolute top-3 right-4 z-40 max-w-sm flex items-center justify-between gap-2.5 px-3 py-1.5 rounded-lg bg-slate-900/95 dark:bg-slate-900/95 border border-amber-500/50 text-amber-200 shadow-xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-200 pointer-events-auto">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-sm select-none">⚠️</span>
-            <div className="text-[11px] font-mono leading-tight">
-              <span className="font-bold">Missing Exact Historical Bar:</span>{' '}
-              Formation candle ({new Date(alignmentWarning.requestedTime).toLocaleString()}) is outside loaded history. Displaying nearest available candle (offset: {alignmentWarning.offsetMinutes}m).
+            <span className="text-xs select-none">ℹ️</span>
+            <div className="text-[10px] font-mono leading-tight">
+              <span className="font-semibold text-amber-300">Aligned to nearest bar:</span>{' '}
+              {new Date(alignmentWarning.requestedTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({alignmentWarning.offsetMinutes}m offset)
             </div>
           </div>
           <button
             type="button"
             onClick={() => setAlignmentWarning(null)}
-            className="flex-shrink-0 px-2 py-0.5 rounded bg-black/20 hover:bg-black/30 text-slate-950 font-mono text-[10px] font-bold transition-colors cursor-pointer"
+            className="flex-shrink-0 px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-mono text-[9px] font-medium transition-colors cursor-pointer"
             title="Dismiss notification"
           >
-            DISMISS
+            ✕
           </button>
         </div>
       )}
