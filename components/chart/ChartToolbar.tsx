@@ -56,6 +56,9 @@ interface ChartToolbarProps {
   onQuantumAiConfigChange?: (config: Partial<QuantumAiConfig>) => void;
   onOpenQuantumAiModal?: (subTab?: QuantumAiSubTab) => void;
   showVolumeProfile: boolean;
+  showMagnifier?: boolean;
+  onToggleMagnifier?: () => void;
+  cursorMode?: import('./DrawingToolbar').CursorMode;
   activeIndicators: IndicatorType[];
   indicators?: IndicatorConfig[];
   engineStatus?: string;
@@ -165,6 +168,9 @@ export function ChartToolbar({
   onQuantumAiConfigChange,
   onOpenQuantumAiModal,
   showVolumeProfile,
+  showMagnifier = false,
+  onToggleMagnifier,
+  cursorMode = 'crosshair',
   activeIndicators,
   indicators,
   engineStatus,
@@ -1221,6 +1227,23 @@ export function ChartToolbar({
           >
             VPVR
           </button>
+
+          {/* Magnifier / Loupe Toggle */}
+          {onToggleMagnifier && (
+            <button
+              type="button"
+              onClick={onToggleMagnifier}
+              title="Magnifying Glass (Loupe) — Zoom in on Order Blocks and price levels (Hotkey: M)"
+              className={`h-7 px-2 rounded-md text-[11px] font-bold font-mono border transition-colors flex items-center gap-1 cursor-pointer ${
+                showMagnifier || cursorMode === 'magnifier'
+                  ? 'bg-sky-50 dark:bg-sky-500/20 border-sky-400 dark:border-sky-500 text-sky-700 dark:text-sky-400 font-bold'
+                  : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
+              }`}
+            >
+              <span>🔍</span>
+              <span className="hidden sm:inline">Loupe</span>
+            </button>
+          )}
         </div>
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />

@@ -34,6 +34,8 @@ interface CandlestickCanvasProps {
   indicatorResults: Map<string, unknown>;
   currentPriceOverride?: number;
   timeframe: string;
+  showMagnifier?: boolean;
+  onToggleMagnifier?: () => void;
   targetCandleTime?: number;
   targetSetupId?: string;
   className?: string;
@@ -161,7 +163,7 @@ export function CandlestickCanvas({
   showQuantumAi = false, quantumAiConfig, quantumAiData,
   showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
-  currentPriceOverride, timeframe, targetCandleTime, targetSetupId, className = '',
+  currentPriceOverride, timeframe, showMagnifier = false, onToggleMagnifier, targetCandleTime, targetSetupId, className = '',
   activeDrawingTool = 'NONE',
   cursorMode = 'crosshair',
   drawings = [],
@@ -846,6 +848,11 @@ export function CandlestickCanvas({
   const endIdxRef = useRef(endIdx);
   const dprRef = useRef(dpr);
   const sizeRef = useRef(size);
+  const showMagnifierRef = useRef(showMagnifier);
+  const smcDataRef = useRef<import('@/lib/smcEngine').SmcAnalysis | null>(null);
+  const quantumAiDataRef = useRef(quantumAiData);
+  const quantumAiConfigRef = useRef(quantumAiConfig);
+
   // Keep latest-value refs in sync before paint (avoids writing refs during render)
   useLayoutEffect(() => {
     cleanCandlesRef.current = cleanCandles;
@@ -860,6 +867,14 @@ export function CandlestickCanvas({
     currentPriceOverrideRef.current = currentPriceOverride;
     timeframeRef.current = timeframe;
     cursorModeRef.current = cursorMode;
+    showMagnifierRef.current = showMagnifier;
+    quantumAiDataRef.current = quantumAiData;
+    quantumAiConfigRef.current = quantumAiConfig;
+    if (smcConfigRef.current?.enabled || showSmcOverlayRef.current) {
+      smcDataRef.current = calculateSMC(cleanCandles, smcConfigRef.current, undefined, timeframeRef.current);
+    } else {
+      smcDataRef.current = null;
+    }
     drawingsRef.current = drawings;
     drawingInProgressRef.current = drawingInProgress;
     selectedDrawingIdRef.current = selectedDrawingId;
@@ -893,12 +908,17 @@ export function CandlestickCanvas({
         showVolumePanel: showVolumePanelRef.current,
         showSmcOverlay: smcConfigRef.current ? smcConfigRef.current.enabled : showSmcOverlayRef.current,
         smcConfig: smcConfigRef.current,
+        smcData: smcDataRef.current,
         showVolumeProfile: showVolumeProfileRef.current,
         indicators: indicatorsRef.current,
         indicatorResults: indicatorResultsRef.current,
         currentPriceOverride: currentPriceOverrideRef.current,
         timeframe: timeframeRef.current,
         cursorMode: cursorModeRef.current,
+        showMagnifier: showMagnifierRef.current || cursorModeRef.current === 'magnifier',
+        mainCanvas: canvasRef.current,
+        quantumAiConfig: quantumAiConfigRef.current,
+        quantumAiData: quantumAiDataRef.current,
         drawings: isAllDrawingsHiddenRef.current ? [] : drawingsRef.current,
         activeDrawing: isAllDrawingsHiddenRef.current ? null : drawingInProgressRef.current,
         selectedDrawingId: isAllDrawingsHiddenRef.current ? null : selectedDrawingIdRef.current,
@@ -2259,11 +2279,14 @@ export function CandlestickCanvas({
       } else if (e.key === ' ') {
         e.preventDefault();
         setScrollOffset(0);
+      } else if (!e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'm' || e.key === 'M')) {
+        e.preventDefault();
+        onToggleMagnifier?.();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeDrawingTool, drawingInProgress, drawings, isAllDrawingsLocked, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, onUndoDrawing, onDeleteDrawing, onSelectDrawing, selectedDrawingId, onExportSnapshot]);
+  }, [activeDrawingTool, drawingInProgress, drawings, isAllDrawingsLocked, isDrawingModeLocked, onAddDrawing, onDrawingToolChange, onUndoDrawing, onDeleteDrawing, onSelectDrawing, selectedDrawingId, onExportSnapshot, onToggleMagnifier]);
 
   // Wheel zoom + scroll attached to foreground overlay canvas (rAF-coalesced for 120 FPS trackpads)
   const handleWheel = useCallback((e: WheelEvent) => {

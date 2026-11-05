@@ -943,6 +943,10 @@ export function renderChart(
   const tf = options.timeframe.toUpperCase();
   const isDailyOrHigher = ['1D','D','1W','W','1M','M'].includes(tf) || avgDur >= 20 * 3600000;
 
+  const isDark = typeof document !== 'undefined'
+    ? (document.documentElement.getAttribute('data-theme') !== 'ivory' && document.documentElement.getAttribute('data-theme') !== 'excel')
+    : true;
+
   // ── LAYER 1: Grid & Axes (Light Mode with Institutional Nice Numbers) ──
   ctx.save();
   const tvFontStack = TV_FONT_STACK;
@@ -1422,6 +1426,37 @@ export function renderChart(
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(text, lx + 7 * dpr, bTop + 3 * dpr + th / 2);
+
+        // Visible Price Numbers Tag on Order Block
+        if (bw > 60 * dpr && bH >= 12 * dpr) {
+          const topPriceStr = formatPrice(ob.topPrice);
+          const bottomPriceStr = formatPrice(ob.bottomPrice);
+          const spreadPts = Math.abs(ob.topPrice - ob.bottomPrice);
+          const spreadStr = `${formatPrice(spreadPts)} pts`;
+          const priceNumText = `${topPriceStr} - ${bottomPriceStr} (${spreadStr})`;
+
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          const ptm = ctx.measureText(priceNumText);
+          const pBadgeW = ptm.width + 8 * dpr;
+          const pBadgeH = 13 * dpr;
+          const pBadgeX = lx + bw - pBadgeW - 3 * dpr;
+          const pBadgeY = bTop + 3 * dpr;
+
+          if (pBadgeX > lx + tw + 6 * dpr) {
+            ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.90)';
+            ctx.fillRect(pBadgeX, pBadgeY, pBadgeW, pBadgeH);
+            ctx.strokeStyle = obBorder;
+            ctx.lineWidth = 0.8 * dpr;
+            ctx.strokeRect(pBadgeX, pBadgeY, pBadgeW, pBadgeH);
+
+            ctx.fillStyle = ob.isBullish
+              ? (isDark ? '#38BDF8' : '#0284C7')
+              : (isDark ? '#FB923C' : '#EA580C');
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(priceNumText, pBadgeX + pBadgeW - 4 * dpr, pBadgeY + pBadgeH / 2);
+          }
+        }
       }
       ctx.restore();
     }
@@ -2119,10 +2154,6 @@ export function renderChart(
       }
     }
   }
-
-  const isDark = typeof document !== 'undefined'
-    ? (document.documentElement.getAttribute('data-theme') !== 'ivory' && document.documentElement.getAttribute('data-theme') !== 'excel')
-    : true;
 
   // ── LAYER 4.5: Order Flow Footprint Canvas ───────────────────────────
   const isOrderFlowActive = Boolean(
@@ -4474,5 +4505,309 @@ export function renderOverlay(
       ctx.fillText(tStr, tLX + tLW / 2, chartH + BM / 2);
     }
     ctx.restore();
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // 5. INTERACTIVE ORDER BLOCK MAGNIFYING GLASS & NUMBERS HUD (120 FPS)
+    // ═════════════════════════════════════════════════════════════════════════
+    interface HoveredOrderBlockInfo {
+      type: 'BULL_OB' | 'BEAR_OB' | 'BULL_BRK' | 'BEAR_BRK' | 'QUANTUM_OB';
+      title: string;
+      topPrice: number;
+      bottomPrice: number;
+      midpointPrice: number;
+      spread: number;
+      spreadPct: number;
+      volumeRatio?: number;
+      status: string;
+      isMitigated: boolean;
+      barTime?: number;
+    }
+
+    let hoveredOB: HoveredOrderBlockInfo | null = null;
+
+    // Check SMC Order Blocks and Breakers
+    const smcData = options.smcData || (options.showSmcOverlay && options.smcConfig ? calculateSMC(candles, options.smcConfig) : null);
+    if (smcData) {
+      const allBlocks = [...(smcData.orderBlocks || []), ...(smcData.breakers || [])];
+      for (const ob of allBlocks) {
+        if (ob.endIndex < startIdx || ob.startIndex > endIdx) continue;
+        const lx = Math.max(0, ob.startIndex - startIdx) * candleW;
+        const rx = ob.isMitigated
+          ? Math.min(visCnt, ob.endIndex - startIdx) * candleW + candleW
+          : chartW;
+        const yT = priceToY(ob.topPrice);
+        const yB = priceToY(ob.bottomPrice);
+        const topY = Math.min(yT, yB);
+        const botY = Math.max(yT, yB);
+
+        // Hover range with generous 8px dpr padding
+        if (cx >= lx - 8 * dpr && cx <= rx + 8 * dpr && cy >= topY - 8 * dpr && cy <= botY + 8 * dpr) {
+          const midPrice = (ob.topPrice + ob.bottomPrice) / 2;
+          const spread = Math.abs(ob.topPrice - ob.bottomPrice);
+          const spreadPct = midPrice > 0 ? (spread / midPrice) * 100 : 0;
+          const d = candles[ob.startIndex];
+          hoveredOB = {
+            type: ob.isBreaker
+              ? (ob.isBullish ? 'BULL_BRK' : 'BEAR_BRK')
+              : (ob.isBullish ? 'BULL_OB' : 'BEAR_OB'),
+            title: ob.isBreaker
+              ? (ob.isBullish ? '+BRK Bullish Breaker' : '-BRK Bearish Breaker')
+              : (ob.isBullish ? 'Bullish Demand Order Block' : 'Bearish Supply Order Block'),
+            topPrice: ob.topPrice,
+            bottomPrice: ob.bottomPrice,
+            midpointPrice: midPrice,
+            spread,
+            spreadPct,
+            volumeRatio: ob.volumeRatio,
+            status: ob.isMitigated ? 'Mitigated (Tested)' : 'Active (Unmitigated Liquidity)',
+            isMitigated: ob.isMitigated,
+            barTime: d?.openTime,
+          };
+          break;
+        }
+      }
+    }
+
+    // Check Quantum AI Order Blocks if not matched in SMC
+    if (!hoveredOB && options.quantumAiData?.orderBlocks) {
+      for (const qob of options.quantumAiData.orderBlocks) {
+        if (qob.endIndex < startIdx || qob.startIndex > endIdx) continue;
+        const lx = Math.max(0, qob.startIndex - startIdx) * candleW;
+        const rx = Math.min(visCnt, qob.endIndex - startIdx) * candleW + candleW;
+        const yT = priceToY(qob.top);
+        const yB = priceToY(qob.bottom);
+        const topY = Math.min(yT, yB);
+        const botY = Math.max(yT, yB);
+
+        if (cx >= lx - 8 * dpr && cx <= rx + 8 * dpr && cy >= topY - 8 * dpr && cy <= botY + 8 * dpr) {
+          const midPrice = (qob.top + qob.bottom) / 2;
+          const spread = Math.abs(qob.top - qob.bottom);
+          const spreadPct = midPrice > 0 ? (spread / midPrice) * 100 : 0;
+          hoveredOB = {
+            type: 'QUANTUM_OB',
+            title: qob.isBullish ? 'Quantum AI Bullish Demand OB' : 'Quantum AI Bearish Supply OB',
+            topPrice: qob.top,
+            bottomPrice: qob.bottom,
+            midpointPrice: midPrice,
+            spread,
+            spreadPct,
+            status: qob.isInvalidated ? 'Invalidated' : qob.isMitigated ? 'Mitigated / Tested' : 'Active Institutional Zone',
+            isMitigated: qob.isMitigated,
+            barTime: qob.time,
+          };
+          break;
+        }
+      }
+    }
+
+    const shouldShowMagnifier = !!hoveredOB || options.showMagnifier || options.cursorMode === 'magnifier';
+
+    if (shouldShowMagnifier && cy <= chartH) {
+      const lensRadius = Math.round(65 * dpr);
+      const zoom = 2.25;
+
+      // Position lens centered at cursor (clamped within chart canvas)
+      const lensX = Math.max(lensRadius + 4 * dpr, Math.min(chartW - lensRadius - 4 * dpr, cx));
+      const lensY = Math.max(lensRadius + 4 * dpr, Math.min(chartH - lensRadius - 4 * dpr, cy));
+
+      ctx.save();
+
+      // Outer bezel drop shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+      ctx.shadowBlur = 14 * dpr;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 4 * dpr;
+      ctx.beginPath();
+      ctx.arc(lensX, lensY, lensRadius, 0, Math.PI * 2);
+      ctx.fillStyle = '#0F172A';
+      ctx.fill();
+      ctx.restore();
+
+      // Optical Magnification from mainCanvas
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(lensX, lensY, lensRadius - 1.5 * dpr, 0, Math.PI * 2);
+      ctx.clip();
+
+      if (options.mainCanvas) {
+        const sDim = (lensRadius * 2) / zoom;
+        const sx = Math.max(0, Math.min(options.mainCanvas.width - sDim, cx - sDim / 2));
+        const sy = Math.max(0, Math.min(options.mainCanvas.height - sDim, cy - sDim / 2));
+        ctx.drawImage(
+          options.mainCanvas,
+          sx, sy, sDim, sDim,
+          lensX - lensRadius, lensY - lensRadius, lensRadius * 2, lensRadius * 2
+        );
+      } else {
+        const bgGrad = ctx.createRadialGradient(lensX, lensY, 0, lensX, lensY, lensRadius);
+        bgGrad.addColorStop(0, '#1E293B');
+        bgGrad.addColorStop(1, '#0F172A');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(lensX - lensRadius, lensY - lensRadius, lensRadius * 2, lensRadius * 2);
+      }
+
+      // Convex Glass Gradient Overlay (light vignette)
+      const glassGrad = ctx.createRadialGradient(lensX, lensY, 0, lensX, lensY, lensRadius);
+      glassGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+      glassGrad.addColorStop(0.75, 'rgba(255, 255, 255, 0.01)');
+      glassGrad.addColorStop(1, 'rgba(0, 0, 0, 0.32)');
+      ctx.fillStyle = glassGrad;
+      ctx.fillRect(lensX - lensRadius, lensY - lensRadius, lensRadius * 2, lensRadius * 2);
+
+      // Glass specular reflection highlight (upper reflection crescent arc)
+      ctx.beginPath();
+      ctx.ellipse(lensX, lensY - lensRadius * 0.45, lensRadius * 0.65, lensRadius * 0.25, 0, Math.PI, 0);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.fill();
+
+      // Precision Reticle / Crosshair inside the lens
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
+      ctx.lineWidth = 1 * dpr;
+      ctx.setLineDash([3 * dpr, 3 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(lensX - 22 * dpr, lensY); ctx.lineTo(lensX + 22 * dpr, lensY);
+      ctx.moveTo(lensX, lensY - 22 * dpr); ctx.lineTo(lensX, lensY + 22 * dpr);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.beginPath();
+      ctx.arc(lensX, lensY, 3.5 * dpr, 0, Math.PI * 2);
+      ctx.strokeStyle = '#38BDF8';
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Metallic / Cyan Bezel Frame
+      ctx.save();
+      const bezelGrad = ctx.createLinearGradient(lensX - lensRadius, lensY - lensRadius, lensX + lensRadius, lensY + lensRadius);
+      bezelGrad.addColorStop(0, '#60A5FA');
+      bezelGrad.addColorStop(0.5, '#3B82F6');
+      bezelGrad.addColorStop(1, '#1D4ED8');
+      ctx.strokeStyle = bezelGrad;
+      ctx.lineWidth = 3.5 * dpr;
+      ctx.beginPath();
+      ctx.arc(lensX, lensY, lensRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Loupe Badge Tag
+      const zoomPill = '🔍 2.25× LOUPE';
+      ctx.font = `bold ${8 * dpr}px "JetBrains Mono", monospace`;
+      const zm = ctx.measureText(zoomPill);
+      const zpw = zm.width + 10 * dpr;
+      const zph = 14 * dpr;
+      const zpx = lensX - zpw / 2;
+      const zpy = lensY + lensRadius - zph / 2;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+      ctx.fillRect(zpx, zpy, zpw, zph);
+      ctx.strokeStyle = '#3B82F6';
+      ctx.lineWidth = 1 * dpr;
+      ctx.strokeRect(zpx, zpy, zpw, zph);
+      ctx.fillStyle = '#60A5FA';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(zoomPill, lensX, zpy + zph / 2);
+      ctx.restore();
+
+      // ── Magnified Numbers HUD Card ──────────────────────────────────────
+      if (hoveredOB) {
+        ctx.save();
+        const cardW = 240 * dpr;
+        const cardH = 126 * dpr;
+
+        // Position HUD card to the right or flip to the left
+        let cardX = lensX + lensRadius + 14 * dpr;
+        if (cardX + cardW > chartW - 10 * dpr) {
+          cardX = lensX - lensRadius - cardW - 14 * dpr;
+        }
+        if (cardX < 10 * dpr) cardX = 10 * dpr;
+        const cardY = Math.max(10 * dpr, Math.min(chartH - cardH - 10 * dpr, lensY - cardH / 2));
+
+        // Card Drop Shadow & Background
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+        ctx.shadowBlur = 16 * dpr;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4 * dpr;
+
+        const isBull = hoveredOB.type.includes('BULL');
+        const accentCol = isBull ? '#10B981' : '#EF4444';
+        const accentBg = isBull ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(cardX, cardY, cardW, cardH, 8 * dpr);
+        } else {
+          ctx.rect(cardX, cardY, cardW, cardH);
+        }
+        ctx.fill();
+        ctx.restore();
+
+        // Card Border with Accent
+        ctx.save();
+        ctx.strokeStyle = accentCol;
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(cardX, cardY, cardW, cardH, 8 * dpr);
+        } else {
+          ctx.rect(cardX, cardY, cardW, cardH);
+        }
+        ctx.stroke();
+
+        // Card Header
+        ctx.fillStyle = accentBg;
+        ctx.fillRect(cardX + 1, cardY + 1, cardW - 2, 24 * dpr);
+
+        ctx.font = `bold ${9 * dpr}px "JetBrains Mono", monospace`;
+        ctx.fillStyle = accentCol;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`● ${hoveredOB.title}`, cardX + 10 * dpr, cardY + 12 * dpr);
+
+        // Status Badge at top right
+        const statLabel = hoveredOB.isMitigated ? 'MITIGATED' : 'ACTIVE';
+        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono", monospace`;
+        const stm = ctx.measureText(statLabel);
+        const sbw = stm.width + 8 * dpr;
+        const sbh = 13 * dpr;
+        const sbx = cardX + cardW - sbw - 8 * dpr;
+        const sby = cardY + 5.5 * dpr;
+        ctx.fillStyle = hoveredOB.isMitigated ? 'rgba(245, 158, 11, 0.25)' : 'rgba(16, 185, 129, 0.25)';
+        ctx.fillRect(sbx, sby, sbw, sbh);
+        ctx.fillStyle = hoveredOB.isMitigated ? '#FBBF24' : '#34D399';
+        ctx.textAlign = 'center';
+        ctx.fillText(statLabel, sbx + sbw / 2, sby + sbh / 2);
+
+        // Card Grid Rows
+        const rowY0 = cardY + 38 * dpr;
+        const rowSpacing = 17 * dpr;
+
+        const drawMetricRow = (label: string, value: string, valCol: string, rowIdx: number) => {
+          const ry = rowY0 + rowIdx * rowSpacing;
+          ctx.font = `600 ${8.5 * dpr}px "JetBrains Mono", monospace`;
+          ctx.fillStyle = '#94A3B8';
+          ctx.textAlign = 'left';
+          ctx.fillText(label, cardX + 10 * dpr, ry);
+
+          ctx.font = `bold ${10.5 * dpr}px "JetBrains Mono", monospace`;
+          ctx.fillStyle = valCol;
+          ctx.textAlign = 'right';
+          ctx.fillText(value, cardX + cardW - 10 * dpr, ry);
+        };
+
+        drawMetricRow('TOP PRICE:', `₹ ${formatPrice(hoveredOB.topPrice)}`, isBull ? '#34D399' : '#F87171', 0);
+        drawMetricRow('BOTTOM PRICE:', `₹ ${formatPrice(hoveredOB.bottomPrice)}`, isBull ? '#6EE7B7' : '#FCA5A5', 1);
+        drawMetricRow('50% MT / CE:', `₹ ${formatPrice(hoveredOB.midpointPrice)}`, '#FBBF24', 2);
+        drawMetricRow('ZONE SPREAD:', `${formatPrice(hoveredOB.spread)} pts (${hoveredOB.spreadPct.toFixed(2)}%)`, '#38BDF8', 3);
+        if (hoveredOB.volumeRatio) {
+          drawMetricRow('VOLUME RATIO:', `${hoveredOB.volumeRatio.toFixed(1)}× Vol MA`, '#C084FC', 4);
+        } else {
+          drawMetricRow('LIQUIDITY:', hoveredOB.isMitigated ? 'Tested / Mitigated' : 'Fresh Unmitigated Pool', '#CBD5E1', 4);
+        }
+
+        ctx.restore();
+      }
+    }
   }
 }

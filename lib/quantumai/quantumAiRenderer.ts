@@ -123,13 +123,25 @@ export function renderQuantumAiOverlays(options: QuantumAiRenderOptions): void {
       ctx.strokeRect(x1, obY, x2 - x1, obH);
       ctx.setLineDash([]);
 
-      // Label inside OB
-      if (x2 - x1 > 40 * dpr && obH >= 9 * dpr) {
+      // Label and numbers inside Order Block
+      if (x2 - x1 > 35 * dpr && obH >= 9 * dpr) {
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono", monospace`;
         ctx.fillStyle = borderCol;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
-        ctx.fillText(ob.isBullish ? 'BULL OB' : 'BEAR OB', x1 + 3 * dpr, obY + 2 * dpr);
+        const label = ob.isBullish ? 'BULL OB' : 'BEAR OB';
+        ctx.fillText(label, x1 + 3 * dpr, obY + 2 * dpr);
+
+        // Visible price numbers directly on the right side of the block
+        if (x2 - x1 > 85 * dpr && obH >= 11 * dpr) {
+          const topStr = ob.top.toFixed(2);
+          const btmStr = ob.bottom.toFixed(2);
+          const spreadStr = (ob.top - ob.bottom).toFixed(2);
+          const priceText = `${topStr} - ${btmStr} (${spreadStr} pts)`;
+          ctx.textAlign = 'right';
+          ctx.fillStyle = isDark ? '#E2E8F0' : '#1E293B';
+          ctx.fillText(priceText, x2 - 4 * dpr, obY + 2 * dpr);
+        }
       }
     }
   }

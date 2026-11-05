@@ -201,6 +201,9 @@ export interface ChartOptions {
   scaleState?: ScaleState;
   magnetReticle?: MagnetReticle | null;
   skipCrosshair?: boolean;
+  showMagnifier?: boolean;
+  mainCanvas?: HTMLCanvasElement | null;
+  smcData?: import('./smcEngine').SmcAnalysis | null;
 }
 
 export const CHART_RIGHT_MARGIN = 90;

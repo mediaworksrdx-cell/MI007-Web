@@ -214,6 +214,7 @@ export function ChartContainer({
   const [isDrawingModeLocked, setIsDrawingModeLocked] = useState(false);
   const [isAllDrawingsLocked, setIsAllDrawingsLocked] = useState(false);
   const [isAllDrawingsHidden, setIsAllDrawingsHidden] = useState(false);
+  const [isMagnifierActive, setIsMagnifierActive] = useState(false);
   const chartWrapperRef = useRef<HTMLDivElement>(null);
   const drawingHistoryRef = useRef<DrawingItem[][]>([]);
   const lastUsedDrawingToolRef = useRef<DrawingToolType>('TRENDLINE');
@@ -1611,6 +1612,9 @@ export function ChartContainer({
         onQuantumAiConfigChange={handleQuantumAiConfigChange}
         onOpenQuantumAiModal={handleOpenQuantumAiModal}
         showVolumeProfile={showVolumeProfile}
+        showMagnifier={isMagnifierActive}
+        onToggleMagnifier={() => setIsMagnifierActive(v => !v)}
+        cursorMode={cursorMode}
         activeIndicators={activeIndicators}
         indicators={indicatorConfigs}
         engineStatus={status}
@@ -1707,6 +1711,8 @@ export function ChartContainer({
             indicatorResults={indicatorResults}
             currentPriceOverride={displayPrice}
             timeframe={timeframe}
+            showMagnifier={isMagnifierActive}
+            onToggleMagnifier={() => setIsMagnifierActive(v => !v)}
             targetCandleTime={targetCandleTime}
             targetSetupId={targetSetupId}
             activeDrawingTool={activeDrawingTool}

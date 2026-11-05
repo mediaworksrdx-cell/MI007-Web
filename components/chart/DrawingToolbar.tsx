@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { DrawingToolType } from '@/lib/drawingTypes';
 
-export type CursorMode = 'crosshair' | 'pan' | 'dot' | 'arrow' | 'eraser';
+export type CursorMode = 'crosshair' | 'pan' | 'dot' | 'arrow' | 'eraser' | 'magnifier';
 
 interface DrawingToolbarProps {
   activeDrawingTool: DrawingToolType;
@@ -95,6 +95,7 @@ const CURSOR_OPTIONS: { id: CursorMode; label: string; desc: string; icon: strin
   { id: 'pan', label: 'Pan / Hand', desc: 'Drag chart freely to scroll history & prices', icon: '✋' },
   { id: 'dot', label: 'Dot', desc: 'Minimalist point reticle with coordinates', icon: '•' },
   { id: 'eraser', label: 'Eraser', desc: 'Click any drawing on the chart to delete it', icon: '⌫' },
+  { id: 'magnifier', label: 'Magnifier / Loupe', desc: 'Interactive magnifying glass with zoom & order block metrics', icon: '🔍' },
 ];
 
 export function DrawingToolbar({
