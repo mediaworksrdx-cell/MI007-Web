@@ -1,7 +1,7 @@
 // ─── Centralized Financial Metrics Library ──────────────────────────────────
 // Exhaustive catalog of institutional fundamental metrics for screening, analysis, and custom queries.
 
-import { MetricDefinition, CompanyFundamental, QueryNode } from './types';
+import { MetricDefinition, CompanyFundamental, QueryNode, ComparisonOperator } from './types';
 import { calculatePiotroskiScore, calculateAltmanZScore, calculateBeneishMScore } from './scorecards';
 import { isFinancialEntity } from './zerodhaStocks';
 
@@ -993,4 +993,198 @@ export function formatMetricValue(
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
+}
+
+/**
+ * Institutional Default Condition Provider for Custom Queries & Visual Filters.
+ * Tailors operator and value to each specific metric's real-world financial domain.
+ */
+export function getDefaultConditionForMetric(metricKeyOrDef: string | MetricDefinition): {
+  operator: ComparisonOperator;
+  value: number;
+  formattedValue: string;
+} {
+  const def = typeof metricKeyOrDef === 'string' ? getMetricDefinition(metricKeyOrDef) : metricKeyOrDef;
+  if (!def) {
+    return { operator: '>', value: 15, formattedValue: '15' };
+  }
+
+  // 1. Specific institutional benchmarks tailored to each financial domain
+  switch (def.key) {
+    // Valuation
+    case 'marketCap':
+      return { operator: '>', value: 1000, formattedValue: '1000' };
+    case 'currentPrice':
+      return { operator: '>', value: 100, formattedValue: '100' };
+    case 'pe':
+      return { operator: '<', value: 25, formattedValue: '25' };
+    case 'forwardPe':
+      return { operator: '<', value: 20, formattedValue: '20' };
+    case 'pb':
+      return { operator: '<', value: 3.0, formattedValue: '3.0' };
+    case 'priceToSales':
+      return { operator: '<', value: 3.0, formattedValue: '3.0' };
+    case 'evToEbitda':
+      return { operator: '<', value: 15, formattedValue: '15' };
+    case 'evToEbit':
+      return { operator: '<', value: 20, formattedValue: '20' };
+    case 'enterpriseValue':
+      return { operator: '>', value: 1000, formattedValue: '1000' };
+    case 'earningsYield':
+      return { operator: '>', value: 5.0, formattedValue: '5.0' };
+    case 'dividendYield':
+      return { operator: '>', value: 1.5, formattedValue: '1.5' };
+    case 'fcfYield':
+      return { operator: '>', value: 3.0, formattedValue: '3.0' };
+    case 'pegRatio':
+      return { operator: '<', value: 1.5, formattedValue: '1.5' };
+
+    // Solvency & Financial Health
+    case 'debtToEquity':
+      return { operator: '<', value: 0.5, formattedValue: '0.5' };
+    case 'totalDebt':
+      return { operator: '<', value: 500, formattedValue: '500' };
+    case 'netDebt':
+      return { operator: '<', value: 0, formattedValue: '0' };
+    case 'interestCoverage':
+      return { operator: '>', value: 5.0, formattedValue: '5.0' };
+    case 'currentRatio':
+      return { operator: '>', value: 1.33, formattedValue: '1.33' };
+    case 'quickRatio':
+      return { operator: '>', value: 1.0, formattedValue: '1.0' };
+    case 'cfo':
+      return { operator: '>', value: 100, formattedValue: '100' };
+    case 'freeCashFlow':
+      return { operator: '>', value: 50, formattedValue: '50' };
+    case 'capex':
+      return { operator: '>', value: 20, formattedValue: '20' };
+    case 'workingCapitalDays':
+      return { operator: '<', value: 60, formattedValue: '60' };
+    case 'cashConversionCycle':
+      return { operator: '<', value: 60, formattedValue: '60' };
+    case 'debtReduction3Y':
+      return { operator: '>', value: 10, formattedValue: '10' };
+    case 'piotroskiScore':
+      return { operator: '>=', value: 7, formattedValue: '7' };
+    case 'altmanZScore':
+      return { operator: '>', value: 3.0, formattedValue: '3.0' };
+    case 'beneishMScore':
+      return { operator: '<', value: -2.22, formattedValue: '-2.22' };
+
+    // Profitability & Quality
+    case 'roce':
+      return { operator: '>', value: 20, formattedValue: '20' };
+    case 'roe':
+      return { operator: '>', value: 18, formattedValue: '18' };
+    case 'roic':
+      return { operator: '>', value: 18, formattedValue: '18' };
+    case 'roa':
+      return { operator: '>', value: 8, formattedValue: '8' };
+    case 'opm':
+      return { operator: '>', value: 15, formattedValue: '15' };
+    case 'npm':
+      return { operator: '>', value: 10, formattedValue: '10' };
+    case 'grossMargin':
+      return { operator: '>', value: 30, formattedValue: '30' };
+    case 'ebitdaMargin':
+      return { operator: '>', value: 18, formattedValue: '18' };
+    case 'roce3YAvg':
+      return { operator: '>', value: 20, formattedValue: '20' };
+    case 'roe3YAvg':
+      return { operator: '>', value: 18, formattedValue: '18' };
+    case 'roce5YAvg':
+      return { operator: '>', value: 18, formattedValue: '18' };
+
+    // Growth
+    case 'salesGrowth1Y':
+      return { operator: '>', value: 12, formattedValue: '12' };
+    case 'salesGrowth3Y':
+      return { operator: '>', value: 15, formattedValue: '15' };
+    case 'salesGrowth5Y':
+      return { operator: '>', value: 15, formattedValue: '15' };
+    case 'salesGrowth10Y':
+      return { operator: '>', value: 12, formattedValue: '12' };
+    case 'profitGrowth1Y':
+      return { operator: '>', value: 15, formattedValue: '15' };
+    case 'profitGrowth3Y':
+      return { operator: '>', value: 18, formattedValue: '18' };
+    case 'profitGrowth5Y':
+      return { operator: '>', value: 18, formattedValue: '18' };
+    case 'profitGrowth10Y':
+      return { operator: '>', value: 15, formattedValue: '15' };
+    case 'epsGrowth':
+      return { operator: '>', value: 15, formattedValue: '15' };
+    case 'ebitdaGrowth':
+      return { operator: '>', value: 15, formattedValue: '15' };
+    case 'qtrSalesGrowthYoY':
+      return { operator: '>', value: 10, formattedValue: '10' };
+    case 'qtrProfitGrowthYoY':
+      return { operator: '>', value: 15, formattedValue: '15' };
+
+    // Ownership & Shareholding
+    case 'promoterHolding':
+      return { operator: '>', value: 50, formattedValue: '50' };
+    case 'pledgedPct':
+      return { operator: '<', value: 5, formattedValue: '5' };
+    case 'fiiHolding':
+      return { operator: '>', value: 5, formattedValue: '5' };
+    case 'diiHolding':
+      return { operator: '>', value: 5, formattedValue: '5' };
+    case 'promoterHoldingChange3Y':
+      return { operator: '>', value: 0, formattedValue: '0' };
+    case 'publicHolding':
+      return { operator: '<', value: 40, formattedValue: '40' };
+
+    // Market & Technicals
+    case 'beta':
+      return { operator: '<', value: 1.2, formattedValue: '1.2' };
+    case 'rsi14':
+      return { operator: '<', value: 70, formattedValue: '70' };
+    case 'distanceSma200Pct':
+      return { operator: '>', value: 0, formattedValue: '0' };
+    case 'priceTo52WHighPct':
+      return { operator: '>', value: -20, formattedValue: '-20' };
+    case 'priceReturn1M':
+      return { operator: '>', value: 0, formattedValue: '0' };
+    case 'priceReturn1Y':
+      return { operator: '>', value: 15, formattedValue: '15' };
+    case 'volume':
+      return { operator: '>', value: 100000, formattedValue: '100000' };
+    case 'high52W':
+      return { operator: '>', value: 100, formattedValue: '100' };
+    case 'low52W':
+      return { operator: '>', value: 50, formattedValue: '50' };
+    case 'sma50':
+      return { operator: '>', value: 100, formattedValue: '100' };
+    case 'sma200':
+      return { operator: '>', value: 100, formattedValue: '100' };
+    case 'macd':
+      return { operator: '>', value: 0, formattedValue: '0' };
+  }
+
+  // 2. Parse benchmarkGood if available (e.g. "> 18%", "< 3.5x", ">= 7")
+  if (def.benchmarkGood) {
+    const m = def.benchmarkGood.match(/([><=]+)\s*([\d\.,]+)/);
+    if (m) {
+      const op = m[1] as ComparisonOperator;
+      const cleanNum = m[2].replace(/,/g, '');
+      const parsedNum = parseFloat(cleanNum);
+      if (!Number.isNaN(parsedNum)) {
+        return { operator: op, value: parsedNum, formattedValue: cleanNum };
+      }
+    }
+  }
+
+  // 3. Fallback based on data type and higherIsBetter
+  const op: ComparisonOperator = def.higherIsBetter === false ? '<' : '>';
+  if (def.dataType === 'percent') {
+    return { operator: op, value: 15, formattedValue: '15' };
+  }
+  if (def.dataType === 'ratio') {
+    return { operator: op, value: 1.5, formattedValue: '1.5' };
+  }
+  if (def.dataType === 'currency') {
+    return { operator: op, value: 500, formattedValue: '500' };
+  }
+  return { operator: op, value: 10, formattedValue: '10' };
 }

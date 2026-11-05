@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { QUERY_BUILDER_METRICS, findExcludedQueryBuilderMetrics } from '@/lib/screener/metrics';
+import { QUERY_BUILDER_METRICS, findExcludedQueryBuilderMetrics, getDefaultConditionForMetric } from '@/lib/screener/metrics';
 import { parseQuery } from '@/lib/screener/queryEngine';
 import { QueryParseResult } from '@/lib/screener/types';
 
@@ -122,8 +122,8 @@ export function QueryEditor({
   };
 
   const insertMetric = (m: (typeof QUERY_BUILDER_METRICS)[number]) => {
-    const op = m.higherIsBetter === false ? '< ' : '> ';
-    insertSnippet(`${m.label} ${op}`);
+    const defaults = getDefaultConditionForMetric(m);
+    insertSnippet(`${m.label} ${defaults.operator} ${defaults.formattedValue}`);
     setMetricHelperOpen(false);
   };
 

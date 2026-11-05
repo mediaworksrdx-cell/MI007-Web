@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { QUERY_BUILDER_METRICS, findExcludedQueryBuilderMetrics } from '@/lib/screener/metrics';
+import { QUERY_BUILDER_METRICS, findExcludedQueryBuilderMetrics, getDefaultConditionForMetric } from '@/lib/screener/metrics';
 import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
 import { MASTER_COMPANIES } from '@/lib/screener/data';
 import { CompanyFundamental, SavedScreen, MarketRegion } from '@/lib/screener/types';
@@ -140,18 +140,7 @@ export function CustomQueryBuilderView({
     setQueryText(nextQuery);
   };
 
-  const getMetricDefaultCondition = (m: (typeof QUERY_BUILDER_METRICS)[number]): { op: string; val: string } => {
-    if (m.key === 'debtToEquity') return { op: '<', val: '0.5' };
-    if (m.key === 'pe') return { op: '<', val: '25' };
-    if (m.key === 'pb') return { op: '<', val: '3' };
-    if (m.key === 'netDebt') return { op: '<', val: '0' };
-    if (m.key === 'totalDebt') return { op: '<', val: '500' };
-    if (m.higherIsBetter === false) return { op: '<', val: '1' };
-    if (m.key === 'marketCap') return { op: '>', val: '1000' };
-    if (m.key === 'currentPrice') return { op: '>', val: '100' };
-    if (m.dataType === 'percent') return { op: '>', val: '15' };
-    return { op: '>', val: '15' };
-  };
+
 
   const handleOpenSaveModal = () => {
     if (!parseResult.valid || !queryText.trim()) return;
@@ -539,8 +528,8 @@ export function CustomQueryBuilderView({
                 <button
                   type="button"
                   onClick={() => {
-                    const { op, val } = getMetricDefaultCondition(m);
-                    appendCondition(m.label, op, val);
+                    const defaults = getDefaultConditionForMetric(m);
+                    appendCondition(m.label, defaults.operator, defaults.formattedValue);
                   }}
                   className="px-2.5 py-1 rounded-lg border border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 mono text-[11.5px] font-black hover:bg-emerald-500 hover:text-slate-950 transition-all shrink-0 cursor-pointer"
                   title="Append to query"

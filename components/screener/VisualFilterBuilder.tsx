@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { VisualFilter, ComparisonOperator } from '@/lib/screener/types';
-import { QUERY_BUILDER_METRICS, getMetricDefinition } from '@/lib/screener/metrics';
+import { QUERY_BUILDER_METRICS, getMetricDefinition, getDefaultConditionForMetric } from '@/lib/screener/metrics';
 
 interface VisualFilterBuilderProps {
   filters: VisualFilter[];
@@ -29,11 +29,12 @@ export function VisualFilterBuilder({
   onClearFilters,
 }: VisualFilterBuilderProps) {
   const addFilter = () => {
+    const defaults = getDefaultConditionForMetric('roce');
     const newFilter: VisualFilter = {
       id: `vf-${Date.now()}`,
       metricKey: 'roce',
-      operator: '>',
-      value: 15,
+      operator: defaults.operator,
+      value: defaults.value,
     };
     onChangeFilters([...filters, newFilter]);
   };
@@ -99,7 +100,16 @@ export function VisualFilterBuilder({
                 {/* Metric Selector */}
                 <select
                   value={filter.metricKey}
-                  onChange={(e) => updateFilter(index, { metricKey: e.target.value })}
+                  onChange={(e) => {
+                    const newKey = e.target.value;
+                    const defaults = getDefaultConditionForMetric(newKey);
+                    updateFilter(index, {
+                      metricKey: newKey,
+                      operator: defaults.operator,
+                      value: defaults.value,
+                      value2: undefined,
+                    });
+                  }}
                   className="px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] mono text-[13px] font-bold focus:outline-none focus:border-emerald-500 min-w-44 flex-1"
                 >
                   {QUERY_BUILDER_METRICS.map((m) => (
