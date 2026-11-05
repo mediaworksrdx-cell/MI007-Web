@@ -140,6 +140,19 @@ export function CustomQueryBuilderView({
     setQueryText(nextQuery);
   };
 
+  const getMetricDefaultCondition = (m: (typeof QUERY_BUILDER_METRICS)[number]): { op: string; val: string } => {
+    if (m.key === 'debtToEquity') return { op: '<', val: '0.5' };
+    if (m.key === 'pe') return { op: '<', val: '25' };
+    if (m.key === 'pb') return { op: '<', val: '3' };
+    if (m.key === 'netDebt') return { op: '<', val: '0' };
+    if (m.key === 'totalDebt') return { op: '<', val: '500' };
+    if (m.higherIsBetter === false) return { op: '<', val: '1' };
+    if (m.key === 'marketCap') return { op: '>', val: '1000' };
+    if (m.key === 'currentPrice') return { op: '>', val: '100' };
+    if (m.dataType === 'percent') return { op: '>', val: '15' };
+    return { op: '>', val: '15' };
+  };
+
   const handleOpenSaveModal = () => {
     if (!parseResult.valid || !queryText.trim()) return;
     if (currentlyLoadedUserScreen) {
@@ -525,7 +538,10 @@ export function CustomQueryBuilderView({
 
                 <button
                   type="button"
-                  onClick={() => appendCondition(m.label, '>', '15')}
+                  onClick={() => {
+                    const { op, val } = getMetricDefaultCondition(m);
+                    appendCondition(m.label, op, val);
+                  }}
                   className="px-2.5 py-1 rounded-lg border border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 mono text-[11.5px] font-black hover:bg-emerald-500 hover:text-slate-950 transition-all shrink-0 cursor-pointer"
                   title="Append to query"
                 >
@@ -692,7 +708,7 @@ export function CustomQueryBuilderView({
                       {c.roe ? `${c.roe.toFixed(1)}%` : '—'}
                     </td>
                     <td className="py-1.5 px-2.5 text-right font-mono text-[var(--theme-card-text-muted)]">
-                      {c.debtToEquity != null ? c.debtToEquity.toFixed(2) : '0.00'}
+                      {c.debtToEquity != null ? `${c.debtToEquity.toFixed(2)}x` : '—'}
                     </td>
                     <td className="py-1.5 px-2.5 text-center">
                       {onSelectCompany && (

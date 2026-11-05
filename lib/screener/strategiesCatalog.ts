@@ -866,7 +866,8 @@ export function evaluateInvestmentStrategyForCompany(
   const roe = company.roe ?? 0;
   const roce = company.roce ?? 0;
   const roic = company.roic ?? 0;
-  const de = company.debtToEquity ?? 999;
+  const isDebtFreeOrNetCash = (company.totalDebt === 0) || (company.netDebt != null && company.netDebt <= 0 && (!company.totalDebt || company.totalDebt === 0));
+  const de = company.debtToEquity ?? (isDebtFreeOrNetCash ? 0.0 : (company.totalDebt && company.marketCap && pb > 0 && pb < 900 ? +(company.totalDebt / (company.marketCap / pb)).toFixed(2) : 999));
   const divYield = company.dividendYield ?? 0;
   const fcfYield = company.fcfYield ?? 0;
   const interestCoverage = company.interestCoverage ?? 0;

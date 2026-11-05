@@ -121,8 +121,9 @@ export function QueryEditor({
     }, 50);
   };
 
-  const insertMetric = (metricLabel: string) => {
-    insertSnippet(`${metricLabel} > `);
+  const insertMetric = (m: (typeof QUERY_BUILDER_METRICS)[number]) => {
+    const op = m.higherIsBetter === false ? '< ' : '> ';
+    insertSnippet(`${m.label} ${op}`);
     setMetricHelperOpen(false);
   };
 
@@ -261,7 +262,7 @@ export function QueryEditor({
                 <button
                   key={m.key}
                   type="button"
-                  onClick={() => insertMetric(m.label)}
+                  onClick={() => insertMetric(m)}
                   className="p-2 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] hover:border-emerald-500 hover:bg-emerald-500/10 transition-all text-left flex flex-col gap-0.5 cursor-pointer group"
                 >
                   <div className="flex items-center justify-between">

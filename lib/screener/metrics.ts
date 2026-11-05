@@ -452,7 +452,23 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
   {
     key: 'debtToEquity',
     label: 'D/E',
-    aliases: ['Debt to Equity', 'Debt to Equity Ratio', 'Debt / Equity', 'DE Ratio'],
+    aliases: [
+      'Debt to Equity',
+      'Debt to Equity Ratio',
+      'Debt / Equity',
+      'Debt/Equity',
+      'DE Ratio',
+      'D/E Ratio',
+      'D/E',
+      'Debt-to-Equity',
+      'Debt to Net Worth',
+      'Debt / Net Worth',
+      'Debt/Net Worth',
+      'Total Debt to Equity',
+      'Total Debt / Equity',
+      'Total Debt to Net Worth',
+      'Total Debt / Net Worth',
+    ],
     category: 'health',
     dataType: 'ratio',
     unit: 'x',
@@ -460,6 +476,18 @@ export const METRIC_DEFINITIONS: MetricDefinition[] = [
     formulaDescription: 'Total Debt / Total Shareholder Equity',
     benchmarkGood: '< 0.5x',
     decimals: 2,
+    higherIsBetter: false,
+  },
+  {
+    key: 'totalDebt',
+    label: 'Total Debt',
+    aliases: ['Borrowings', 'Total Borrowings', 'Debt Cr', 'Total Debt Cr', 'Debt'],
+    category: 'health',
+    dataType: 'currency',
+    unit: 'Cr',
+    description: 'Total short-term and long-term borrowings from banks and financial institutions.',
+    formulaDescription: 'Short Term Borrowings + Long Term Borrowings',
+    decimals: 0,
     higherIsBetter: false,
   },
   {
@@ -882,6 +910,30 @@ export function getMetricValue(
   }
   if (canonical === 'macd') {
     return Math.round(company.currentPrice * 0.007 * 100) / 100;
+  }
+  if (canonical === 'debtToEquity') {
+    if (isFin) return null;
+    if (typeof company.debtToEquity === 'number' && !Number.isNaN(company.debtToEquity)) {
+      return company.debtToEquity;
+    }
+    const totalDebt = (company as any).totalDebt;
+    const netDebt = company.netDebt;
+    if (totalDebt === 0 || (netDebt != null && netDebt <= 0 && (!totalDebt || totalDebt === 0))) {
+      return 0.0;
+    }
+    if (typeof totalDebt === 'number' && totalDebt > 0 && company.marketCap > 0) {
+      const pb = company.pb && company.pb > 0 ? company.pb : 2.0;
+      const equity = company.marketCap / pb;
+      return +(totalDebt / equity).toFixed(2);
+    }
+    return null;
+  }
+  if (canonical === 'totalDebt') {
+    if (isFin) return null;
+    const debt = (company as any).totalDebt;
+    if (typeof debt === 'number') return debt;
+    if (company.netDebt != null && company.netDebt <= 0 && (!debt || debt === 0)) return 0;
+    return null;
   }
 
   const raw = (company as any)[canonical];

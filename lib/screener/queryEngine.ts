@@ -25,6 +25,7 @@ export type TokenType =
 export interface Token {
   type: TokenType;
   value: string;
+  unitSuffix?: string;
   start: number;
   end: number;
   canonicalKey?: string;
@@ -71,23 +72,36 @@ export function tokenize(queryText: string): { tokens: Token[]; error?: string; 
       continue;
     }
 
-    // Numbers (positive or negative, integers or floating point)
+    // Numbers (positive or negative, integers or floating point, with optional leading dot or unit suffix)
     // Note: Do not treat leading digits as a number if the upcoming phrase matches a registered metric (e.g. "200 SMA %", "3Y ROCE")
     const toComparator = text.slice(i).split(/([><=!]|(?:\s+BETWEEN\s+))/i)[0].trim();
     const isUpcomingMetric = Boolean(toComparator && resolveMetricKey(toComparator));
 
-    const numMatch = text.slice(i).match(/^-?\d+(\.\d+)?/);
+    const numMatch = text.slice(i).match(/^-?(\d+(\.\d+)?|\.\d+)/);
     if (!isUpcomingMetric && numMatch && (i === 0 || /[\s(>=<!=]/.test(text[i - 1]))) {
       const numStr = numMatch[0];
-      const charAfter = text[i + numStr.length];
+      let endIdx = i + numStr.length;
+
+      // Check for optional unit suffix (e.g. "0.5x", "0.5 x", "50%", "50 %", "1000 Cr", "5000Cr", "10B")
+      const remainder = text.slice(endIdx);
+      const unitMatch = remainder.match(/^(\s*)(%|x\b|X\b|cr\b|Cr\b|CR\b|crores?\b|lakhs?\b|Lakhs?\b|b\b|B\b|bn\b|Bn\b|billions?\b|m\b|M\b|mn\b|Mn\b|millions?\b|t\b|T\b|trillions?\b|times\b|Times\b|pct\b|percent\b)/i);
+
+      let unitSuffix: string | undefined;
+      if (unitMatch) {
+        unitSuffix = unitMatch[2];
+        endIdx += unitMatch[0].length;
+      }
+
+      const charAfter = text[endIdx];
       if (!charAfter || !/[a-zA-Z_]/.test(charAfter)) {
         tokens.push({
           type: 'NUMBER',
           value: numStr,
+          unitSuffix,
           start: i,
-          end: i + numStr.length,
+          end: endIdx,
         });
-        i += numStr.length;
+        i = endIdx;
         continue;
       }
     }
@@ -330,7 +344,12 @@ class Parser {
         err.position = this.peek().start;
         throw err;
       }
-      const val1 = parseFloat(this.previous().value);
+      const num1 = this.previous();
+      let val1 = parseFloat(num1.value);
+      if (num1.unitSuffix === '%') {
+        const def = METRIC_DEFINITIONS.find((m) => m.key === metricKey);
+        if (def?.dataType === 'ratio' && val1 > 1) val1 = val1 / 100;
+      }
 
       if (!this.match('LOGICAL') || this.previous().value !== 'AND') {
         const err: any = new Error("Expected 'AND' between range values in BETWEEN clause");
@@ -343,7 +362,12 @@ class Parser {
         err.position = this.peek().start;
         throw err;
       }
-      const val2 = parseFloat(this.previous().value);
+      const num2 = this.previous();
+      let val2 = parseFloat(num2.value);
+      if (num2.unitSuffix === '%') {
+        const def = METRIC_DEFINITIONS.find((m) => m.key === metricKey);
+        if (def?.dataType === 'ratio' && val2 > 1) val2 = val2 / 100;
+      }
 
       return {
         type: 'CONDITION',
@@ -375,7 +399,17 @@ class Parser {
       throw err;
     }
 
-    const val = parseFloat(this.previous().value);
+    const numToken = this.previous();
+    let val = parseFloat(numToken.value);
+
+    // If unit suffix was %, and the metric is a ratio (like Debt to Equity, P/E, P/B) where standard numbers are 0.5x, 1x
+    // e.g. "Debt to Equity < 50%" -> 50% = 0.5
+    if (numToken.unitSuffix === '%') {
+      const def = METRIC_DEFINITIONS.find((m) => m.key === metricKey);
+      if (def?.dataType === 'ratio' && val > 1) {
+        val = val / 100;
+      }
+    }
 
     return {
       type: 'CONDITION',

@@ -418,6 +418,10 @@ export function searchZerodhaStocks(query: string, limit: number = 50): ZerodhaS
 export function isFinancialEntity(symbol: string, name: string, sector?: string, industry?: string): boolean {
   const s = symbol.toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
 
+  // Market infrastructure, tech platforms, rating agencies, depositories & exchanges have normal corporate balance sheets (not banks/lenders)
+  const EXEMPT_ENTITIES = ['CDSL', 'BSE', 'MCX', 'CAMS', 'KFINTECH', 'CRISIL', 'ICRA', 'CAREERP', 'PTC', 'VARDMNPOLY'];
+  if (EXEMPT_ENTITIES.includes(s)) return false;
+
   // 1. Generic Sector & Industry classification (future-proof across any new NBFC, Bank, or Insurance listing)
   const meta = `${sector || ''} ${industry || ''}`.toUpperCase();
   if (meta.includes('CAPITAL GOODS') || meta.includes('INFRASTRUCTURE') || meta.includes('METALS') || meta.includes('MATERIALS')) {
@@ -454,8 +458,7 @@ export function isFinancialEntity(symbol: string, name: string, sector?: string,
     'ICICIAMC', 'UTIAMC', 'MOTILALOFS', 'ANGELONE', 'GEOJITFSL', '5PAISA',
     'SHAREINDIA', 'MONARCH', 'ARIHANTCAP', 'IIFL', 'IIFLSEC', 'EMKAY',
     'JMFINANC', 'EDELWEISS', 'RELIGARE', 'PRUDENT', 'ANANDRATHI', 'GROWW',
-    'CDSL', 'BSE', 'MCX', 'TFCILTD', 'ELCIDIN', 'VARDMNPOLY', 'DSPAMC',
-    'NIPPONAMC', 'ZERODHAAMC', 'PILANIINVS', 'CANHLIFE', 'PTC'
+    'TFCILTD', 'ELCIDIN', 'DSPAMC', 'NIPPONAMC', 'ZERODHAAMC', 'PILANIINVS', 'CANHLIFE'
   ];
   if (s.endsWith('LIFE') || s.endsWith('FIN') || s.includes('INSUR')) return true;
   return financialTickers.includes(s);
@@ -945,7 +948,6 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
   const roe = cachedFund?.roe != null ? cachedFund.roe : null;
   const opm = isFinancial ? null : (cachedFund?.opm != null ? cachedFund.opm : null);
   const npm = isFinancial ? null : (cachedFund?.npm != null ? cachedFund.npm : null);
-  const debtToEquity = isFinancial ? null : (cachedFund?.debtToEquity != null ? cachedFund.debtToEquity : null);
   // Sanitize corporate action distortion (e.g. NCLT restructuring, penny capital reduction where historical dividend / penny LTP creates fake 40%+ yield)
   let dividendYield = cachedFund?.dividendYield != null ? cachedFund.dividendYield : null;
   if (dividendYield != null && dividendYield > 20.0 && (price < 25.0 || (knownMcap > 0 && knownMcap < 500))) {
@@ -972,7 +974,23 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     ? null
     : (cachedFund?.totalDebt != null
         ? cachedFund.totalDebt
-        : (debtToEquity != null && cachedFund?.bookValue ? Math.round(debtToEquity * cachedFund.bookValue) : (debtToEquity != null && knownMcap > 0 ? Math.round(debtToEquity * (knownMcap / Math.max(0.5, pb || 1.8))) : null)));
+        : (cachedFund?.debtToEquity != null && cachedFund?.bookValue
+            ? Math.round(cachedFund.debtToEquity * cachedFund.bookValue)
+            : (cachedFund?.debtToEquity != null && knownMcap > 0
+                ? Math.round(cachedFund.debtToEquity * (knownMcap / Math.max(0.5, pb || 1.8)))
+                : null)));
+
+  let debtToEquity: number | null = null;
+  if (!isFinancial) {
+    if (cachedFund?.debtToEquity != null) {
+      debtToEquity = cachedFund.debtToEquity;
+    } else if (totalDebt === 0 || (cachedFund?.netDebt != null && cachedFund.netDebt <= 0 && (!totalDebt || totalDebt === 0))) {
+      debtToEquity = 0.0;
+    } else if (totalDebt != null && totalDebt > 0 && knownMcap > 0) {
+      const estEquity = knownMcap / Math.max(0.3, pb || 2.0);
+      debtToEquity = +(totalDebt / estEquity).toFixed(2);
+    }
+  }
   const cashAndEquivalents = cachedFund?.cash != null ? cachedFund.cash : (knownMcap > 0 ? Math.round(knownMcap * 0.05) : null);
 
   // Operating cash flow and capex (strictly null for Banks/NBFCs under Ind AS 109)
@@ -1267,6 +1285,7 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
     roce5YAvg: cachedFund?.roce5YAvg != null ? cachedFund.roce5YAvg : null,
 
     // Financial Health & Solvency (Manufacturing ratios N/A for Banks/NBFCs under Ind AS 109)
+    totalDebt,
     debtToEquity,
     netDebt,
     interestCoverage,
