@@ -4642,11 +4642,17 @@ export function renderOverlay(
       }
     }
 
-    const shouldShowMagnifier = !!hoveredOB || options.showMagnifier || options.cursorMode === 'magnifier';
+    const isOrderFlowHover = Boolean(
+      options.showOrderFlow &&
+      cx >= 0 && cx <= chartW &&
+      cy >= 0 && cy <= chartH
+    );
+
+    const shouldShowMagnifier = isOrderFlowHover || !!hoveredOB || options.showMagnifier || options.cursorMode === 'magnifier';
 
     if (shouldShowMagnifier && cy <= chartH) {
-      const lensRadius = Math.round(65 * dpr);
-      const zoom = 2.25;
+      const lensRadius = isOrderFlowHover ? Math.round(72 * dpr) : Math.round(65 * dpr);
+      const zoom = isOrderFlowHover ? 2.4 : 2.25;
 
       // Position lens centered at cursor (clamped within chart canvas)
       const lensX = Math.max(lensRadius + 4 * dpr, Math.min(chartW - lensRadius - 4 * dpr, cx));
@@ -4672,6 +4678,8 @@ export function renderOverlay(
       ctx.clip();
 
       if (options.mainCanvas) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         const sDim = (lensRadius * 2) / zoom;
         const sx = Math.max(0, Math.min(options.mainCanvas.width - sDim, cx - sDim / 2));
         const sy = Math.max(0, Math.min(options.mainCanvas.height - sDim, cy - sDim / 2));
@@ -4733,7 +4741,7 @@ export function renderOverlay(
       ctx.stroke();
 
       // Loupe Badge Tag
-      const zoomPill = '🔍 2.25× LOUPE';
+      const zoomPill = isOrderFlowHover ? '🔍 2.4× ORDER FLOW' : '🔍 2.25× LOUPE';
       ctx.font = `bold ${8 * dpr}px "JetBrains Mono", monospace`;
       const zm = ctx.measureText(zoomPill);
       const zpw = zm.width + 10 * dpr;
@@ -4846,6 +4854,153 @@ export function renderOverlay(
           drawMetricRow('VOLUME RATIO:', `${hoveredOB.volumeRatio.toFixed(1)}× Vol MA`, '#C084FC', 4);
         } else {
           drawMetricRow('LIQUIDITY:', hoveredOB.isMitigated ? 'Tested / Mitigated' : 'Fresh Unmitigated Pool', '#CBD5E1', 4);
+        }
+
+        ctx.restore();
+      } else if (isOrderFlowHover) {
+        ctx.save();
+        const candleIndex = startIdx + Math.floor(cx / candleW);
+        const hoveredCandle = (candleIndex >= 0 && candleIndex < candles.length) ? candles[candleIndex] : null;
+        let hoveredFp = options.orderFlowData?.footprints ? (options.orderFlowData.footprints[candleIndex] || null) : null;
+        if (!hoveredFp && options.orderFlowData?.footprints) {
+          hoveredFp = options.orderFlowData.footprints.find(f => f.candleIndex === candleIndex) || null;
+        }
+        const cursorPrice = pMin + Math.max(0, Math.min(1, (chartH - cy) / chartH)) * pRange;
+
+        let closestLvl: import('./orderflow/types').PriceLevelFootprint | null = null;
+        if (hoveredFp?.sortedLevels && hoveredFp.sortedLevels.length > 0) {
+          let minD = Infinity;
+          for (const lvl of hoveredFp.sortedLevels) {
+            const d = Math.abs(lvl.price - cursorPrice);
+            if (d < minD) {
+              minD = d;
+              closestLvl = lvl;
+            }
+          }
+        }
+
+        const cardW = 250 * dpr;
+        const cardH = 132 * dpr;
+
+        // Position HUD card to the right or flip to the left
+        let cardX = lensX + lensRadius + 14 * dpr;
+        if (cardX + cardW > chartW - 10 * dpr) {
+          cardX = lensX - lensRadius - cardW - 14 * dpr;
+        }
+        if (cardX < 10 * dpr) cardX = 10 * dpr;
+        const cardY = Math.max(10 * dpr, Math.min(chartH - cardH - 10 * dpr, lensY - cardH / 2));
+
+        const isPositiveDelta = hoveredFp
+          ? hoveredFp.totalDelta >= 0
+          : (hoveredCandle ? hoveredCandle.close >= hoveredCandle.open : true);
+        const accentCol = isPositiveDelta ? '#10B981' : '#EF4444';
+        const accentBg = isPositiveDelta ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+
+        // Card Drop Shadow & Background
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+        ctx.shadowBlur = 16 * dpr;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4 * dpr;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(cardX, cardY, cardW, cardH, 8 * dpr);
+        } else {
+          ctx.rect(cardX, cardY, cardW, cardH);
+        }
+        ctx.fill();
+        ctx.restore();
+
+        // Card Border with Accent
+        ctx.save();
+        ctx.strokeStyle = accentCol;
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(cardX, cardY, cardW, cardH, 8 * dpr);
+        } else {
+          ctx.rect(cardX, cardY, cardW, cardH);
+        }
+        ctx.stroke();
+
+        // Card Header Bar
+        ctx.fillStyle = accentBg;
+        ctx.fillRect(cardX + 1, cardY + 1, cardW - 2, 24 * dpr);
+
+        ctx.font = `bold ${9 * dpr}px "JetBrains Mono", monospace`;
+        ctx.fillStyle = accentCol;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('● ORDER FLOW FOOTPRINT', cardX + 10 * dpr, cardY + 12 * dpr);
+
+        // Delta Badge at top right
+        const deltaVal = hoveredFp?.totalDelta ?? 0;
+        const deltaLabel = `DELTA: ${deltaVal >= 0 ? '+' : ''}${deltaVal.toLocaleString()}`;
+        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono", monospace`;
+        const dtm = ctx.measureText(deltaLabel);
+        const dbw = dtm.width + 8 * dpr;
+        const dbh = 13 * dpr;
+        const dbx = cardX + cardW - dbw - 8 * dpr;
+        const dby = cardY + 5.5 * dpr;
+        ctx.fillStyle = deltaVal >= 0 ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)';
+        ctx.fillRect(dbx, dby, dbw, dbh);
+        ctx.fillStyle = deltaVal >= 0 ? '#34D399' : '#F87171';
+        ctx.textAlign = 'center';
+        ctx.fillText(deltaLabel, dbx + dbw / 2, dby + dbh / 2);
+
+        // Metric Rows
+        const rowY0 = cardY + 38 * dpr;
+        const rowSpacing = 17 * dpr;
+
+        const drawOfRow = (label: string, value: string, valCol: string, rowIdx: number) => {
+          const ry = rowY0 + rowIdx * rowSpacing;
+          ctx.font = `600 ${8.5 * dpr}px "JetBrains Mono", monospace`;
+          ctx.fillStyle = '#94A3B8';
+          ctx.textAlign = 'left';
+          ctx.fillText(label, cardX + 10 * dpr, ry);
+
+          ctx.font = `bold ${10 * dpr}px "JetBrains Mono", monospace`;
+          ctx.fillStyle = valCol;
+          ctx.textAlign = 'right';
+          ctx.fillText(value, cardX + cardW - 10 * dpr, ry);
+        };
+
+        const tickPrice = closestLvl ? closestLvl.price : cursorPrice;
+        drawOfRow('HOVERED LEVEL:', `₹ ${formatPrice(tickPrice)}`, '#38BDF8', 0);
+
+        if (closestLvl) {
+          drawOfRow('BID × ASK VOL:', `${closestLvl.bidVolume.toLocaleString()} × ${closestLvl.askVolume.toLocaleString()}`, '#E2E8F0', 1);
+          const lvlDeltaStr = `${closestLvl.delta >= 0 ? '+' : ''}${closestLvl.delta.toLocaleString()}`;
+          drawOfRow('LEVEL DELTA:', lvlDeltaStr, closestLvl.delta >= 0 ? '#34D399' : '#F87171', 2);
+        } else if (hoveredCandle) {
+          drawOfRow('CANDLE CLOSE:', `₹ ${formatPrice(hoveredCandle.close)}`, isPositiveDelta ? '#34D399' : '#F87171', 1);
+          drawOfRow('VOLUME:', `${hoveredCandle.volume.toLocaleString()} shares`, '#E2E8F0', 2);
+        }
+
+        if (hoveredFp) {
+          drawOfRow('POC PRICE:', `₹ ${formatPrice(hoveredFp.pocPrice)}`, '#FBBF24', 3);
+          let dynLabel = 'Standard Order Flow';
+          let dynCol = '#94A3B8';
+          if (closestLvl?.hasBuyImbalance) {
+            dynLabel = `BUY IMBALANCE (${closestLvl.imbalanceRatio.toFixed(1)}×)`;
+            dynCol = '#34D399';
+          } else if (closestLvl?.hasSellImbalance) {
+            dynLabel = `SELL IMBALANCE (${closestLvl.imbalanceRatio.toFixed(1)}×)`;
+            dynCol = '#F87171';
+          } else if (hoveredFp.absorption) {
+            dynLabel = `${hoveredFp.absorption.isBullish ? 'BULL' : 'BEAR'} ABSORPTION`;
+            dynCol = '#FBBF24';
+          } else if (closestLvl?.isPoc) {
+            dynLabel = 'POINT OF CONTROL (POC)';
+            dynCol = '#FBBF24';
+          } else if (hoveredFp.cumDelta) {
+            dynLabel = `CVD: ${hoveredFp.cumDelta >= 0 ? '+' : ''}${hoveredFp.cumDelta.toLocaleString()}`;
+            dynCol = hoveredFp.cumDelta >= 0 ? '#34D399' : '#F87171';
+          }
+          drawOfRow('FLOW STATUS:', dynLabel, dynCol, 4);
+        } else {
+          drawOfRow('FLOW STATUS:', 'Analyzing Flow...', '#94A3B8', 3);
         }
 
         ctx.restore();

@@ -880,6 +880,9 @@ export function CandlestickCanvas({
   const smcDataRef = useRef<import('@/lib/smcEngine').SmcAnalysis | null>(null);
   const quantumAiDataRef = useRef(quantumAiData);
   const quantumAiConfigRef = useRef(quantumAiConfig);
+  const showOrderFlowRef = useRef(showOrderFlow);
+  const orderFlowConfigRef = useRef(orderFlowConfig);
+  const orderFlowDataRef = useRef(orderFlowData);
 
   // Keep latest-value refs in sync before paint (avoids writing refs during render)
   useLayoutEffect(() => {
@@ -898,6 +901,9 @@ export function CandlestickCanvas({
     showMagnifierRef.current = showMagnifier;
     quantumAiDataRef.current = quantumAiData;
     quantumAiConfigRef.current = quantumAiConfig;
+    showOrderFlowRef.current = showOrderFlow;
+    orderFlowConfigRef.current = orderFlowConfig;
+    orderFlowDataRef.current = orderFlowData;
     if (smcConfigRef.current?.enabled || showSmcOverlayRef.current) {
       smcDataRef.current = calculateSMC(cleanCandles, smcConfigRef.current, undefined, timeframeRef.current);
     } else {
@@ -937,6 +943,9 @@ export function CandlestickCanvas({
         showSmcOverlay: smcConfigRef.current ? smcConfigRef.current.enabled : showSmcOverlayRef.current,
         smcConfig: smcConfigRef.current,
         smcData: smcDataRef.current,
+        showOrderFlow: showOrderFlowRef.current,
+        orderFlowConfig: orderFlowConfigRef.current,
+        orderFlowData: orderFlowDataRef.current,
         showVolumeProfile: showVolumeProfileRef.current,
         indicators: indicatorsRef.current,
         indicatorResults: indicatorResultsRef.current,
