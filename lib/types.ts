@@ -137,6 +137,20 @@ export type {
 } from './orderflow/types';
 export { DEFAULT_ORDER_FLOW_CONFIG } from './orderflow/types';
 
+export type {
+  QuantumAiConfig,
+  QuantumAiAnalysisResult,
+  QuantumAiSubTab,
+  QuantumTradeSetup,
+  QuantumOrderBlock,
+  QuantumStructureBreak,
+  QuantumLiquidityPool,
+  QuantumDealingRange,
+  QuantumStrategyDashboard,
+  QuantumBacktestMetrics,
+} from './quantumai/types';
+export { DEFAULT_QUANTUM_AI_CONFIG } from './quantumai/types';
+
 export interface FnoOverlayLevels {
   callWall?: number;
   putWall?: number;
@@ -169,6 +183,9 @@ export interface ChartOptions {
   showOrderFlow?: boolean;
   orderFlowConfig?: import('./orderflow/types').OrderFlowConfig;
   orderFlowData?: import('./orderflow/types').OrderFlowAnalysisResult;
+  showQuantumAi?: boolean;
+  quantumAiConfig?: import('./quantumai/types').QuantumAiConfig;
+  quantumAiData?: import('./quantumai/types').QuantumAiAnalysisResult;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;

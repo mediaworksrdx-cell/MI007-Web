@@ -17,6 +17,7 @@ import {
 } from './types';
 import { calculateSMC, DEFAULT_SMC_CONFIG, type SmcConfig } from './smcEngine';
 import { renderOrderFlowFootprint } from './orderflow/orderFlowRenderer';
+import { renderQuantumAiOverlays } from './quantumai/quantumAiRenderer';
 import {
   calculateSMA as calcSMA,
   calculateEMA as calcEMA,
@@ -3787,6 +3788,25 @@ export function renderChart(
       ctx.fillText(`STRATEGY: ${strat.strategyName.toUpperCase()}`, 12 * dpr, 28 * dpr);
       ctx.restore();
     }
+  }
+
+  // ── LAYER 7.6: Quantum AI — SMC & Resonance Strategy Overlay ─────────────
+  if (options.showQuantumAi && options.quantumAiConfig?.enabled && options.quantumAiData) {
+    renderQuantumAiOverlays({
+      ctx,
+      candles,
+      analysis: options.quantumAiData,
+      config: options.quantumAiConfig,
+      priceToY,
+      safeStart,
+      safeEnd,
+      startIdx,
+      candleW,
+      chartW,
+      chartH,
+      dpr,
+      isDark,
+    });
   }
 
 

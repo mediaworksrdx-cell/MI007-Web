@@ -38,6 +38,20 @@ const TERMINAL_NAV_LINKS = [
   { href: '/news',              label: 'News' },
 ];
 
+const QUANTUM_AI_SUB_LINKS = [
+  { tab: 'smc', label: 'SMC Analysis', icon: '🏛️', treePrefix: '├──', badge: 'Zones' },
+  { tab: 'structure', label: 'Market Structure', icon: '📈', treePrefix: '├──', badge: 'BOS/CHoCH' },
+  { tab: 'orderblocks', label: 'Order Blocks', icon: '🧱', treePrefix: '├──', badge: 'Demand/Supply' },
+  { tab: 'liquidity', label: 'Liquidity Analysis', icon: '💧', treePrefix: '├──', badge: 'BSL/SSL' },
+  { tab: 'premium-discount', label: 'Premium / Discount', icon: '⚖️', treePrefix: '├──', badge: 'EQ Range' },
+  { tab: 'volatility-momentum', label: 'Volatility & Momentum', icon: '⚡', treePrefix: '├──', badge: 'Squeeze' },
+  { tab: 'resonance', label: 'Multi-Timeframe Resonance', icon: '🔄', treePrefix: '├──', badge: 'HTF/LTF' },
+  { tab: 'confluence', label: 'Confluence Engine', icon: '🎯', treePrefix: '├──', badge: '9.5 Score' },
+  { tab: 'signals', label: 'Trading Signals', icon: '🔔', treePrefix: '├──', badge: 'Buy/Sell' },
+  { tab: 'risk-mgmt', label: 'Entry / SL / TP Management', icon: '🛡️', treePrefix: '├──', badge: '1:4.0 R:R' },
+  { tab: 'backtesting', label: 'Strategy Backtesting', icon: '📊', treePrefix: '└──', badge: 'Analytics' },
+];
+
 export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange }: NavbarProps) {
   const pathname = usePathname();
   const context = useMarket();
@@ -59,6 +73,8 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
+  const [chartsDropdownOpen, setChartsDropdownOpen] = useState(false);
+  const [mobileQuantumOpen, setMobileQuantumOpen] = useState(false);
 
   // ── Unified Notification Centre State (Real-Time News, Calendar, Signals) ──
   const [notifications, setNotifications] = useState<AppNotification[]>(BASELINE_SIGNALS);
@@ -73,6 +89,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
+  const chartsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Load real-time aggregated notifications from API
   const loadNotifications = useCallback(async (silent = false) => {
@@ -187,7 +204,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
     } catch {}
   }, []);
 
-  // Click outside & Escape key handler to close Account/Settings & Notification dropdowns
+  // Click outside & Escape key handler to close Account/Settings, Notification & Charts dropdowns
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
@@ -196,15 +213,19 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       if (notificationMenuRef.current && !notificationMenuRef.current.contains(e.target as Node)) {
         setNotificationMenuOpen(false);
       }
+      if (chartsDropdownRef.current && !chartsDropdownRef.current.contains(e.target as Node)) {
+        setChartsDropdownOpen(false);
+      }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setAccountMenuOpen(false);
         setNotificationMenuOpen(false);
+        setChartsDropdownOpen(false);
       }
     };
 
-    if (accountMenuOpen || notificationMenuOpen) {
+    if (accountMenuOpen || notificationMenuOpen || chartsDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleKeyDown);
     }
@@ -212,7 +233,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [accountMenuOpen, notificationMenuOpen]);
+  }, [accountMenuOpen, notificationMenuOpen, chartsDropdownOpen]);
 
   const handleMarketChange = (m: MarketType) => {
     if (propOnMarketChange) {
@@ -278,6 +299,106 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               (href === '/academy' && (pathname.startsWith('/academy') || pathname.startsWith('/terminal/academy'))) ||
               (href === '/calendar' && pathname.startsWith('/calendar')) ||
               (href === '/news' && pathname.startsWith('/news'));
+            if (label === 'Charts') {
+              return (
+                <div
+                  key={href}
+                  className="relative"
+                  ref={chartsDropdownRef}
+                  onMouseEnter={() => setChartsDropdownOpen(true)}
+                  onMouseLeave={() => setChartsDropdownOpen(false)}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setChartsDropdownOpen((v) => !v)}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-lg text-[13px] sm:text-[13.5px] font-bold transition-all duration-150 cursor-pointer ${
+                      isActive ? 'nav-link-active' : 'nav-link-inactive'
+                    }`}
+                  >
+                    <span>{label}</span>
+                    <span className="text-[9px] opacity-70 transition-transform">
+                      {chartsDropdownOpen ? '▲' : '▼'}
+                    </span>
+                  </button>
+
+                  {chartsDropdownOpen && (
+                    <div
+                      className="absolute top-full left-0 mt-1 w-84 sm:w-96 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B0F19] shadow-2xl p-2.5 z-[100] animate-in fade-in duration-100"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Top standard charts navigation */}
+                      <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-slate-800/80 mb-1">
+                        <Link
+                          href="/chart/NIFTY"
+                          onClick={() => setChartsDropdownOpen(false)}
+                          className="flex items-center gap-2 group w-full"
+                        >
+                          <span className="text-sm">📊</span>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              Interactive Candlestick Chart
+                            </div>
+                            <div className="text-[10px] text-slate-400 truncate">
+                              Multi-Asset, Multi-Timeframe, SMC &amp; Indicators
+                            </div>
+                          </div>
+                        </Link>
+                      </div>
+
+                      {/* Quantum AI – SMC & Resonance Section */}
+                      <div className="px-2.5 pt-2 pb-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-black text-[10px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400">
+                              Q-AI
+                            </span>
+                            <span className="text-xs font-extrabold text-purple-700 dark:text-purple-300">
+                              Quantum AI – SMC &amp; Resonance
+                            </span>
+                          </div>
+                          <Link
+                            href="/chart/NIFTY?module=quantum-ai"
+                            onClick={() => setChartsDropdownOpen(false)}
+                            className="text-[10px] font-mono font-bold text-purple-600 dark:text-purple-400 hover:underline"
+                          >
+                            Open →
+                          </Link>
+                        </div>
+                        <div className="text-[9px] text-slate-400 mt-0.5">
+                          Multi-Timeframe SMC, Momentum &amp; Resonance Engine
+                        </div>
+                      </div>
+
+                      {/* 11 Sub-Module Links matching dropdown structure */}
+                      <div className="space-y-0.5 pt-1 max-h-[360px] overflow-y-auto">
+                        {QUANTUM_AI_SUB_LINKS.map((sub) => (
+                          <Link
+                            key={sub.tab}
+                            href={`/chart/NIFTY?module=quantum-ai&tab=${sub.tab}`}
+                            onClick={() => setChartsDropdownOpen(false)}
+                            className="flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-purple-50/60 dark:hover:bg-purple-950/20 border border-transparent hover:border-purple-200 dark:hover:border-purple-800/40 transition-colors group"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-mono text-[11px] text-slate-400 group-hover:text-purple-500 shrink-0">
+                                {sub.treePrefix}
+                              </span>
+                              <span className="text-xs shrink-0">{sub.icon}</span>
+                              <span className="text-xs font-medium text-slate-700 dark:text-slate-300 group-hover:text-purple-700 dark:group-hover:text-purple-300 truncate">
+                                {sub.label}
+                              </span>
+                            </div>
+                            <span className="text-[9px] font-mono font-bold text-slate-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 shrink-0">
+                              {sub.badge}
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={href}
@@ -745,6 +866,54 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               (href === '/academy' && (pathname.startsWith('/academy') || pathname.startsWith('/terminal/academy'))) ||
               (href === '/calendar' && pathname.startsWith('/calendar')) ||
               (href === '/news' && pathname.startsWith('/news'));
+            if (label === 'Charts') {
+              return (
+                <div key={href} className="flex flex-col">
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={href}
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex-1 px-3.5 py-3 rounded-xl text-[16px] font-bold min-h-[44px] flex items-center transition-colors ${
+                        isActive ? 'nav-link-active' : 'nav-link-inactive'
+                      }`}
+                    >
+                      {label}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setMobileQuantumOpen(v => !v)}
+                      className="px-3 py-2 text-xs font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 rounded-lg mr-2 border border-purple-200 dark:border-purple-800/40"
+                    >
+                      {mobileQuantumOpen ? '▲ Close Q-AI' : '▼ Quantum AI'}
+                    </button>
+                  </div>
+
+                  {mobileQuantumOpen && (
+                    <div className="pl-4 pr-2 py-2 space-y-1 bg-purple-50/20 dark:bg-purple-950/20 rounded-xl border border-purple-200/40 dark:border-purple-800/40 my-1">
+                      <div className="text-[11px] font-bold text-purple-600 dark:text-purple-400 font-mono px-2 py-1">
+                        Quantum AI – SMC &amp; Resonance
+                      </div>
+                      {QUANTUM_AI_SUB_LINKS.map((sub) => (
+                        <Link
+                          key={sub.tab}
+                          href={`/chart/NIFTY?module=quantum-ai&tab=${sub.tab}`}
+                          onClick={() => setMenuOpen(false)}
+                          className="flex items-center justify-between px-2.5 py-2 text-xs text-slate-700 dark:text-slate-300 hover:text-purple-600"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[10px] text-slate-400">{sub.treePrefix}</span>
+                            <span>{sub.icon}</span>
+                            <span>{sub.label}</span>
+                          </div>
+                          <span className="text-[9px] font-mono font-bold text-purple-500">{sub.badge}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={href}

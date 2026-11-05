@@ -7,6 +7,8 @@ import { ChartTemplate } from '@/lib/chartTemplates';
 import { SmcConfig, DEFAULT_SMC_CONFIG } from '@/lib/smcEngine';
 import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG } from '@/lib/orderflow/types';
 import { OrderFlowToolbarMenu } from './OrderFlowToolbarMenu';
+import { QuantumAiConfig, DEFAULT_QUANTUM_AI_CONFIG, QuantumAiAnalysisResult, QuantumAiSubTab } from '@/lib/quantumai/types';
+import { QuantumAiToolbarMenu } from './QuantumAiToolbarMenu';
 
 const TIMEFRAMES: { value: Timeframe; label: string }[] = [
   { value: '1m',  label: '1m (1 Min)' },
@@ -47,6 +49,12 @@ interface ChartToolbarProps {
   onOrderFlowConfigChange?: (config: OrderFlowConfig) => void;
   orderFlowSignalsCount?: number;
   onOpenOrderFlowSignals?: () => void;
+  showQuantumAi?: boolean;
+  quantumAiConfig?: QuantumAiConfig;
+  quantumAiAnalysis?: QuantumAiAnalysisResult;
+  onToggleQuantumAi?: () => void;
+  onQuantumAiConfigChange?: (config: Partial<QuantumAiConfig>) => void;
+  onOpenQuantumAiModal?: (subTab?: QuantumAiSubTab) => void;
   showVolumeProfile: boolean;
   activeIndicators: IndicatorType[];
   indicators?: IndicatorConfig[];
@@ -150,6 +158,12 @@ export function ChartToolbar({
   onOrderFlowConfigChange,
   orderFlowSignalsCount = 0,
   onOpenOrderFlowSignals,
+  showQuantumAi = false,
+  quantumAiConfig,
+  quantumAiAnalysis,
+  onToggleQuantumAi: _onToggleQuantumAi,
+  onQuantumAiConfigChange,
+  onOpenQuantumAiModal,
   showVolumeProfile,
   activeIndicators,
   indicators,
@@ -181,10 +195,15 @@ export function ChartToolbar({
   isFullscreen,
   onToggleFullscreen,
 }: ChartToolbarProps) {
-  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | 'SMC' | 'ORDER_FLOW' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | 'SMC' | 'ORDER_FLOW' | 'QUANTUM_AI' | null>(null);
   const [indicatorSearch, setIndicatorSearch] = useState('');
   const [recentlyAddedType, setRecentlyAddedType] = useState<string | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+
+  const activeQuantumAiConfig: QuantumAiConfig = quantumAiConfig || {
+    ...DEFAULT_QUANTUM_AI_CONFIG,
+    enabled: showQuantumAi,
+  };
 
   const activeOfConfig: OrderFlowConfig = orderFlowConfig || {
     ...DEFAULT_ORDER_FLOW_CONFIG,
@@ -1134,6 +1153,43 @@ export function ChartToolbar({
             }}
             onOpenSignalsModal={onOpenOrderFlowSignals}
             signalsCount={orderFlowSignalsCount}
+          />
+        </div>
+
+        <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
+
+        {/* 4.6 Quantum AI — SMC & Resonance Strategy Engine Dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setOpenMenu(openMenu === 'QUANTUM_AI' ? null : 'QUANTUM_AI')}
+            title="Quantum AI — Multi-Timeframe SMC & Resonance Strategy Engine"
+            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+              openMenu === 'QUANTUM_AI'
+                ? 'border-purple-500 bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 font-bold'
+                : 'border-slate-200 dark:border-slate-700 hover:border-purple-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
+            }`}
+          >
+            <span className="font-mono font-black text-xs px-1 rounded bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400">
+              Q-AI
+            </span>
+            <span className="hidden sm:inline">Quantum AI</span>
+            {activeQuantumAiConfig.enabled && (
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+            )}
+            <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
+          </button>
+
+          <QuantumAiToolbarMenu
+            isOpen={openMenu === 'QUANTUM_AI'}
+            onClose={() => setOpenMenu(null)}
+            config={activeQuantumAiConfig}
+            onChangeConfig={(updates) => {
+              const updated = { ...activeQuantumAiConfig, ...updates };
+              onQuantumAiConfigChange?.(updated);
+            }}
+            onOpenModal={(tab) => onOpenQuantumAiModal?.(tab)}
+            analysis={quantumAiAnalysis}
           />
         </div>
 
