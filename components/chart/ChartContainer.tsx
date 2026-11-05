@@ -29,7 +29,7 @@ import {
   setActiveTemplateId,
 } from '@/lib/chartTemplates';
 import { SmcConfig, DEFAULT_SMC_CONFIG, getStoredSmcConfig, saveStoredSmcConfig } from '@/lib/smcEngine';
-import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG } from '@/lib/orderflow/types';
+import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG, ExchangeTradeTick } from '@/lib/orderflow/types';
 import { analyzeOrderFlow } from '@/lib/orderflow/orderFlowEngine';
 import { OrderFlowSignalsModal } from './OrderFlowSignalsModal';
 import { ChartToolbar } from './ChartToolbar';
@@ -283,7 +283,6 @@ export function ChartContainer({
           return {
             ...DEFAULT_ORDER_FLOW_CONFIG,
             ...parsed,
-            dataSource: 'SIMULATED_MICROSTRUCTURE',
           };
         }
       } catch (e) {}
@@ -589,10 +588,11 @@ export function ChartContainer({
   }, [indicatorConfigs]);
 
   const [candles, setCandles] = useState<Candle[]>([]);
+  const ticksPerCandleRef = useRef<Map<number, ExchangeTradeTick[]>>(new Map());
 
   const orderFlowData = useMemo(() => {
     if (!orderFlowConfig.enabled || candles.length === 0) return undefined;
-    return analyzeOrderFlow(candles, orderFlowConfig);
+    return analyzeOrderFlow(candles, orderFlowConfig, ticksPerCandleRef.current);
   }, [candles, orderFlowConfig]);
   const [currentPrice, setCurrentPrice] = useState<number | undefined>();
   const [isLoadingCandles, setIsLoadingCandles] = useState(true);
@@ -690,6 +690,7 @@ export function ChartContainer({
     setIsLoadingCandles(true);
     setCandles([]);
     setCurrentPrice(undefined);
+    ticksPerCandleRef.current.clear();
 
     async function loadCandles() {
       try {
@@ -862,6 +863,18 @@ export function ChartContainer({
           }
 
           let next: Candle[];
+          const targetOpenTime = isSameBucket
+            ? currentLast.openTime
+            : (timeframe === '1D' ? currentLast.openTime + tfMs : Math.floor(now / tfMs) * tfMs);
+
+          // Buffer incoming exchange trade tick for order flow footprint aggregation
+          const tickList = ticksPerCandleRef.current.get(targetOpenTime) || [];
+          tickList.push({
+            price: tick.price,
+            volume: tick.volume > 0 ? tick.volume : 1,
+            timestamp: now,
+          });
+          ticksPerCandleRef.current.set(targetOpenTime, tickList);
 
           if (isSameBucket) {
             // Case 1: Update active candle in place

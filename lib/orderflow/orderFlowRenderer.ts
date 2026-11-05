@@ -3,11 +3,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // High-performance HTML5 Canvas renderer for:
 // - Multi-LOD Footprint (Bid x Ask text, split volume profile, delta heatmap)
-// - Point of Control (POC) & 70% Value Area Highlights
+// - Point of Control (POC) & Configurable Value Area (VAH / VAL) Highlights
 // - Diagonal Buy / Sell Imbalance Highlighting (Pill markers)
+// - Passive Absorption Target Halos & Exhaustion Extreme Markers
 // - Stacked Imbalance & Absorption Order Flow Zones with Retest tracking
-// - Delta Summary Footers (Total Volume, Bar Delta, Min/Max Delta)
+// - Delta Summary Footers (Total Volume, Bar Delta, Min/Max Delta, Cumulative Delta + Session Resets)
 // - Order Flow Signal Badges with Target & Invalidation lines
+// - Data Source Integrity Watermark (Verified L2 vs Inferred Microstructure)
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { Candle } from '../types';
@@ -87,7 +89,6 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
   const showSplitBars =
     (viewMode === 'PROFILE' && effectiveW >= 10) ||
     ((viewMode === 'BID_ASK' || viewMode === 'DELTA') && !showBidAskText && !showDeltaText && effectiveW >= 12);
-  // Otherwise: Heatmap mode
 
   // Palette definitions
   const buyImbalanceBg = isDark ? 'rgba(16, 185, 129, 0.40)' : 'rgba(5, 150, 105, 0.35)';
@@ -100,7 +101,7 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
 
   const pocBorder = '#F59E0B'; // Vivid Amber
   const pocBg = isDark ? 'rgba(245, 158, 11, 0.18)' : 'rgba(245, 158, 11, 0.15)';
-  const valueAreaTint = isDark ? 'rgba(255, 255, 255, 0.035)' : 'rgba(0, 0, 0, 0.025)';
+  const valueAreaTint = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)';
 
   // ── 1. Render Order Flow Zones (Stacked Imbalances) ────────
   const shouldShowZones = config.showStackedImbalances ?? config.showOrderFlowZones;
@@ -172,8 +173,6 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
     // A. Render Candle High/Low Wicks
     const yHigh = priceToY(fp.high);
     const yLow = priceToY(fp.low);
-    const yOpen = priceToY(fp.open);
-    const yClose = priceToY(fp.close);
 
     ctx.strokeStyle = fp.close >= fp.open
       ? isDark ? '#34D399' : '#059669'
@@ -300,15 +299,61 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
       }
     }
 
-    // B2. Render Passive Absorption Marker when enabled
+    // B2. Render Passive Absorption Marker (Target Halo / Concentric Rings)
     if (config.showAbsorption && fp.absorption) {
       const absY = priceToY(fp.absorption.price);
-      const absCol = fp.absorption.isBullish ? '#06B6D4' : '#A855F7';
+      const isBull = fp.absorption.isBullish;
+      const absCol = isBull ? '#06B6D4' : '#A855F7'; // Cyan (Bull) / Violet (Bear)
+
+      // Outer Halo Ring
       ctx.strokeStyle = absCol;
+      ctx.lineWidth = 1.8 * dpr;
+      ctx.beginPath();
+      ctx.arc(barMidX, absY, 5.5 * dpr, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Inner Target Dot
+      ctx.fillStyle = absCol;
+      ctx.beginPath();
+      ctx.arc(barMidX, absY, 2.2 * dpr, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Small 'ABS' tag if wide enough
+      if (effectiveW >= 36) {
+        ctx.font = `bold ${7 * dpr}px "JetBrains Mono", monospace`;
+        ctx.fillStyle = absCol;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = isBull ? 'top' : 'bottom';
+        ctx.fillText('ABS', barMidX, isBull ? absY + 7 * dpr : absY - 7 * dpr);
+      }
+    }
+
+    // B3. Render Exhaustion Marker (Drying up of aggressive orders at extremes)
+    if (config.showExhaustion && fp.exhaustion) {
+      const exhY = priceToY(fp.exhaustion.price);
+      const isBull = fp.exhaustion.isBullish;
+      const exhCol = isBull ? '#38BDF8' : '#FB923C'; // Sky Blue (Low) / Orange (High)
+
+      // Hollow Diamond Marker
+      const dSize = 4 * dpr;
+      ctx.strokeStyle = exhCol;
       ctx.lineWidth = 1.6 * dpr;
       ctx.beginPath();
-      ctx.arc(barMidX, absY, 4 * dpr, 0, Math.PI * 2);
+      ctx.moveTo(barMidX, exhY - dSize);
+      ctx.lineTo(barMidX + dSize, exhY);
+      ctx.lineTo(barMidX, exhY + dSize);
+      ctx.lineTo(barMidX - dSize, exhY);
+      ctx.closePath();
       ctx.stroke();
+
+      // Small 'EXH' tag if wide enough
+      if (effectiveW >= 36) {
+        ctx.font = `bold ${7 * dpr}px "JetBrains Mono", monospace`;
+        ctx.fillStyle = exhCol;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = isBull ? 'top' : 'bottom';
+        ctx.fillText('EXH', barMidX, isBull ? exhY + 6 * dpr : exhY - 6 * dpr);
+      }
     }
 
     // C. Render Unfinished Business markers
@@ -327,7 +372,7 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
 
     // D. Render Delta Footer Metrics below candle
     if (config.showDeltaSummary) {
-      const footerY = chartH - 32 * dpr;
+      const footerY = chartH - 42 * dpr;
       ctx.font = `bold ${8 * dpr}px "JetBrains Mono", monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
@@ -340,11 +385,19 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
       ctx.fillStyle = fp.totalDelta >= 0 ? '#10B981' : '#EF4444';
       ctx.fillText(formatDelta(fp.totalDelta), barMidX, footerY + 10 * dpr);
 
-      // Min / Max Delta (only if candle width permits)
+      // Cumulative Volume Delta (CVD) with session reset flag
       if (effectiveW >= 24) {
         ctx.font = `${7 * dpr}px "JetBrains Mono", monospace`;
+        ctx.fillStyle = fp.cumDelta >= 0 ? (isDark ? '#34D399' : '#059669') : (isDark ? '#F87171' : '#DC2626');
+        const cvdText = `${fp.isNewSession ? '↺ ' : ''}${formatDelta(fp.cumDelta)}`;
+        ctx.fillText(cvdText, barMidX, footerY + 20 * dpr);
+      }
+
+      // Min / Max Delta (only if candle width permits)
+      if (effectiveW >= 32) {
+        ctx.font = `${6.5 * dpr}px "JetBrains Mono", monospace`;
         ctx.fillStyle = isDark ? '#64748B' : '#94A3B8';
-        ctx.fillText(`${formatDelta(fp.minDelta)}/${formatDelta(fp.maxDelta)}`, barMidX, footerY + 20 * dpr);
+        ctx.fillText(`${formatDelta(fp.minDelta)}/${formatDelta(fp.maxDelta)}`, barMidX, footerY + 30 * dpr);
       }
     }
   }
@@ -363,9 +416,23 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
       const isBull = sig.isBullish;
       const badgeY = isBull ? priceToY(sigCandle.low) + 14 * dpr : priceToY(sigCandle.high) - 14 * dpr;
 
-      // Signal Pill Badge
-      const bgCol = isBull ? '#10B981' : '#EF4444';
-      const badgeText = isBull ? '▲ OF BUY' : '▼ OF SELL';
+      // Color and Title by Signal Type
+      let bgCol = isBull ? '#10B981' : '#EF4444';
+      let badgeText = isBull ? '▲ OF BUY' : '▼ OF SELL';
+
+      if (sig.type === 'BULLISH_ABSORPTION') {
+        bgCol = '#06B6D4';
+        badgeText = '▲ ABSORPTION';
+      } else if (sig.type === 'BEARISH_ABSORPTION') {
+        bgCol = '#A855F7';
+        badgeText = '▼ ABSORPTION';
+      } else if (sig.type === 'BULLISH_EXHAUSTION') {
+        bgCol = '#38BDF8';
+        badgeText = '▲ EXHAUSTION';
+      } else if (sig.type === 'BEARISH_EXHAUSTION') {
+        bgCol = '#FB923C';
+        badgeText = '▼ EXHAUSTION';
+      }
 
       ctx.font = `bold ${8 * dpr}px "JetBrains Mono", monospace`;
       const textW = ctx.measureText(badgeText).width;
@@ -373,7 +440,6 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
 
       ctx.fillStyle = bgCol;
       ctx.beginPath();
-      // Rounded pill rect
       const rx = x - textW / 2 - padX;
       const ry = badgeY - 6 * dpr;
       const rw = textW + padX * 2;
@@ -397,16 +463,19 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
   }
 
   // ── 4. Footprint Data Source Watermark Badge ──────────────────────────────
-  const badgeText = config.dataSource === 'VERIFIED_L2'
-    ? '● ORDER FLOW: L2 VERIFIED TRADES'
-    : '◌ ORDER FLOW: OHLCV ESTIMATED FOOTPRINT';
+  // Critical requirement: Distinguish verified exchange L2 vs inferred microstructure
+  const isVerified = config.dataSource === 'VERIFIED_L2';
+  const badgeText = isVerified
+    ? '● ORDER FLOW: L2 VERIFIED TRADES (EXCHANGE AGGRESSOR)'
+    : '◌ ORDER FLOW: INFERRED MICROSTRUCTURE (ESTIMATED — NO L2 AGGRESSOR FEED)';
+
   ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono", monospace`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
-  ctx.fillStyle = config.dataSource === 'VERIFIED_L2'
-    ? isDark ? 'rgba(16, 185, 129, 0.7)' : 'rgba(5, 150, 105, 0.8)'
-    : isDark ? 'rgba(245, 158, 11, 0.7)' : 'rgba(217, 119, 6, 0.8)';
-  ctx.fillText(badgeText, 14 * dpr, chartH - 4 * dpr);
+  ctx.fillStyle = isVerified
+    ? isDark ? 'rgba(16, 185, 129, 0.85)' : 'rgba(5, 150, 105, 0.9)'
+    : isDark ? 'rgba(245, 158, 11, 0.85)' : 'rgba(217, 119, 6, 0.9)';
+  ctx.fillText(badgeText, 14 * dpr, chartH - 6 * dpr);
 
   ctx.restore();
 }

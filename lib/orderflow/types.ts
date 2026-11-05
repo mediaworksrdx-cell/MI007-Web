@@ -4,7 +4,31 @@
 
 export type FootprintViewMode = 'BID_ASK' | 'DELTA' | 'PROFILE' | 'HEATMAP';
 
-export type FootprintDataSource = 'VERIFIED_L2' | 'SIMULATED_MICROSTRUCTURE';
+export type FootprintDataSource =
+  | 'VERIFIED_L2'
+  | 'INFERRED_MICROSTRUCTURE'
+  | 'SIMULATED_MICROSTRUCTURE'; // Backward compatibility alias
+
+export type AggressorSide = 'BUY' | 'SELL';
+
+export type TradeClassificationMethod =
+  | 'EXCHANGE_FLAG'
+  | 'QUOTE_MIDPOINT'
+  | 'TICK_RULE'
+  | 'INFERRED';
+
+export type FeedClassification =
+  | 'VERIFIED_EXCHANGE_DATA'
+  | 'INFERRED_ESTIMATE';
+
+export interface ExchangeTradeTick {
+  price: number;
+  volume: number;
+  timestamp: number; // Unix timestamp in ms
+  side?: AggressorSide; // Explicit exchange aggressor flag if provided
+  bid?: number; // Top of book bid price at execution
+  ask?: number; // Top of book ask price at execution
+}
 
 export interface PriceLevelFootprint {
   price: number;
@@ -40,7 +64,30 @@ export interface AbsorptionEvent {
   isBullish: boolean;
   volume: number;
   delta: number;
+  aggressiveVolume: number;
+  displacementRatio: number; // Price travel / aggressive volume (near 0 indicates strong absorption)
+  absorptionRatio: number;   // Quantitative score
   description: string;
+}
+
+export interface ExhaustionEvent {
+  candleIndex: number;
+  time: number;
+  price: number;
+  isBullish: boolean;        // Bullish exhaustion (sellers dried up at low) or Bearish exhaustion (buyers dried up at high)
+  extremeVolume: number;
+  avgLevelVolume: number;
+  volumeDropPct: number;
+  description: string;
+}
+
+export interface FootprintDataValidation {
+  reconciled: boolean;
+  exchangeVolume: number;
+  footprintVolume: number;
+  discrepancy: number;
+  discrepancyPct: number;
+  classification: FeedClassification;
 }
 
 export interface CandleFootprint {
@@ -64,6 +111,11 @@ export interface CandleFootprint {
   sellImbalancePrices: number[];
   stackedZones: StackedImbalanceZone[];
   absorption: AbsorptionEvent | null;
+  exhaustion: ExhaustionEvent | null;
+  validation: FootprintDataValidation;
+  isNewSession: boolean;
+  sessionDate: string;
+  classification: FeedClassification;
   unfinishedBusiness: {
     high: boolean; // non-zero bid at candle high
     low: boolean;  // non-zero ask at candle low
@@ -73,6 +125,8 @@ export interface CandleFootprint {
 export type OrderFlowSignalType =
   | 'BULLISH_ABSORPTION'
   | 'BEARISH_ABSORPTION'
+  | 'BULLISH_EXHAUSTION'
+  | 'BEARISH_EXHAUSTION'
   | 'BULLISH_STACKED_IMBALANCE'
   | 'BEARISH_STACKED_IMBALANCE'
   | 'CVD_DIVERGENCE_BULL'
@@ -100,13 +154,16 @@ export interface OrderFlowConfig {
   minImbalanceVolume: number;         // e.g. 5
   stackedImbalanceThreshold: number;  // e.g. 3 consecutive levels
   tickSize: number | 'auto';
+  valueAreaPct: number;               // Configurable Value Area %: default 70
+  sessionReset: 'DAILY' | 'NONE';     // Session cumulative delta reset mode
   showPoc: boolean;
-  showValueArea: boolean;             // 70% Value Area
+  showValueArea: boolean;             // Value Area (VAH / VAL)
   showImbalances: boolean;
   showStackedImbalances: boolean;
   showAbsorption: boolean;
+  showExhaustion: boolean;
   showOrderFlowZones: boolean;
-  showDeltaSummary: boolean;          // Bar footer: Total Vol, Delta, Min/Max
+  showDeltaSummary: boolean;          // Bar footer: Total Vol, Delta, Min/Max, CVD
   showSignals: boolean;
   dataSource: FootprintDataSource;
 }
@@ -118,15 +175,18 @@ export const DEFAULT_ORDER_FLOW_CONFIG: OrderFlowConfig = {
   minImbalanceVolume: 5,
   stackedImbalanceThreshold: 3,
   tickSize: 'auto',
+  valueAreaPct: 70,
+  sessionReset: 'DAILY',
   showPoc: true,
   showValueArea: true,
   showImbalances: true,
   showStackedImbalances: true,
   showAbsorption: true,
+  showExhaustion: true,
   showOrderFlowZones: true,
   showDeltaSummary: true,
   showSignals: true,
-  dataSource: 'SIMULATED_MICROSTRUCTURE',
+  dataSource: 'INFERRED_MICROSTRUCTURE',
 };
 
 export interface OrderFlowAnalysisResult {
@@ -135,4 +195,5 @@ export interface OrderFlowAnalysisResult {
   signals: OrderFlowSignal[];
   dataSource: FootprintDataSource;
   tickSizeUsed: number;
+  feedClassification: FeedClassification;
 }

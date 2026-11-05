@@ -43,7 +43,7 @@ export function OrderFlowSignalsModal({
                 <span className="text-xs font-mono font-medium text-slate-400">({symbol})</span>
               </h2>
               <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                Validated setups with Entry, Invalidation (SL), Target (TP) &amp; R:R
+                Validated institutional setups: Absorption, Exhaustion, Imbalances &amp; Divergences
               </p>
             </div>
           </div>
@@ -68,6 +68,27 @@ export function OrderFlowSignalsModal({
               const isBull = sig.isBullish;
               const dateStr = new Date(sig.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+              // Microstructure setup type pill
+              let typeBadge = 'IMBALANCE';
+              let typeCol = isBull
+                ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400'
+                : 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400';
+
+              if (sig.type.includes('ABSORPTION')) {
+                typeBadge = 'ABSORPTION';
+                typeCol = isBull
+                  ? 'bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-400'
+                  : 'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400';
+              } else if (sig.type.includes('EXHAUSTION')) {
+                typeBadge = 'EXHAUSTION';
+                typeCol = isBull
+                  ? 'bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400'
+                  : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400';
+              } else if (sig.type.includes('DIVERGENCE')) {
+                typeBadge = 'CVD DIVERGENCE';
+                typeCol = 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-400';
+              }
+
               return (
                 <div
                   key={sig.id}
@@ -79,7 +100,7 @@ export function OrderFlowSignalsModal({
                 >
                   {/* Top Bar: Title, Badge, Time */}
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span
                         className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${
                           isBull
@@ -88,6 +109,9 @@ export function OrderFlowSignalsModal({
                         }`}
                       >
                         {isBull ? 'LONG' : 'SHORT'}
+                      </span>
+                      <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${typeCol}`}>
+                        {typeBadge}
                       </span>
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                         {sig.title}

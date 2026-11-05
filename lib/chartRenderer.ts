@@ -2138,7 +2138,10 @@ export function renderChart(
       footprints: options.orderFlowData.footprints,
       activeZones: options.orderFlowData.activeZones,
       signals: options.orderFlowData.signals,
-      config: options.orderFlowConfig,
+      config: {
+        ...options.orderFlowConfig,
+        dataSource: options.orderFlowData.dataSource,
+      },
       priceToY,
       safeStart,
       safeEnd,

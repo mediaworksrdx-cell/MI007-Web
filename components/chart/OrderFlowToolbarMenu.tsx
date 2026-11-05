@@ -30,9 +30,11 @@ export function OrderFlowToolbarMenu({
 }: OrderFlowToolbarMenuProps) {
   if (!isOpen) return null;
 
+  const isVerified = config.dataSource === 'VERIFIED_L2';
+
   return (
     <div
-      className="absolute top-full left-0 mt-1 w-80 sm:w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[540px] flex flex-col animate-in fade-in duration-75 overflow-hidden"
+      className="absolute top-full left-0 mt-1 w-84 sm:w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[560px] flex flex-col animate-in fade-in duration-75 overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
       {/* ── 1. Header ── */}
@@ -82,20 +84,20 @@ export function OrderFlowToolbarMenu({
 
       {/* ── 3. Data Integrity Indicator ── */}
       <div className="px-3.5 py-1.5 bg-slate-50/50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px]">
-        <span className="text-slate-500 dark:text-slate-400 font-medium">Data Source:</span>
+        <span className="text-slate-500 dark:text-slate-400 font-medium">Data Classification:</span>
         <span
           className={`font-mono font-bold flex items-center gap-1 ${
-            config.dataSource === 'VERIFIED_L2'
+            isVerified
               ? 'text-emerald-600 dark:text-emerald-400'
               : 'text-amber-600 dark:text-amber-400'
           }`}
         >
           <span
             className={`w-1.5 h-1.5 rounded-full ${
-              config.dataSource === 'VERIFIED_L2' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              isVerified ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
             }`}
           />
-          {config.dataSource === 'VERIFIED_L2' ? 'L2 Real-Time Trades' : 'OHLCV Estimated Footprint'}
+          {isVerified ? 'L2 Verified Trades' : 'Inferred Microstructure (Estimated)'}
         </span>
       </div>
 
@@ -178,7 +180,57 @@ export function OrderFlowToolbarMenu({
           </div>
         </div>
 
-        {/* C. Cluster & Microstructure Toggles */}
+        {/* C. Value Area & Session Reset Settings */}
+        <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+          <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            Value Area &amp; Session Resets
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-slate-700 dark:text-slate-300">Value Area %:</span>
+            <div className="flex items-center gap-1 font-mono text-[10px]">
+              {[68, 70, 80].map((pct) => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => onChangeConfig({ valueAreaPct: pct })}
+                  className={`px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                    config.valueAreaPct === pct
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {pct}%
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-slate-700 dark:text-slate-300">CVD Session Reset:</span>
+            <div className="flex items-center gap-1 font-mono text-[10px]">
+              {[
+                { id: 'DAILY', label: 'Daily (09:15 IST)' },
+                { id: 'NONE', label: 'None' },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => onChangeConfig({ sessionReset: s.id as 'DAILY' | 'NONE' })}
+                  className={`px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                    config.sessionReset === s.id
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* D. Microstructure & Indicator Toggles */}
         <div className="space-y-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/80">
           <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
             Display Elements
@@ -191,8 +243,8 @@ export function OrderFlowToolbarMenu({
             onChange={(v) => onChangeConfig({ showPoc: v })}
           />
           <ToggleRow
-            label="70% Value Area (VAH / VAL)"
-            sublabel="Institutional fair value boundary shading"
+            label="Value Area Shading (VAH / VAL)"
+            sublabel={`${config.valueAreaPct || 70}% fair value distribution boundary`}
             checked={config.showValueArea}
             onChange={(v) => onChangeConfig({ showValueArea: v })}
           />
@@ -210,13 +262,19 @@ export function OrderFlowToolbarMenu({
           />
           <ToggleRow
             label="Passive Absorption Detection"
-            sublabel="Flag institutional absorption at candle extremes"
+            sublabel="Aggressive flow absorbed against price displacement"
             checked={config.showAbsorption}
             onChange={(v) => onChangeConfig({ showAbsorption: v })}
           />
           <ToggleRow
+            label="Exhaustion Detection"
+            sublabel="Identify drying up of aggressive flow at extremes"
+            checked={config.showExhaustion}
+            onChange={(v) => onChangeConfig({ showExhaustion: v })}
+          />
+          <ToggleRow
             label="Delta Summary Footer"
-            sublabel="Show Total Volume, Bar Delta & Min/Max Delta"
+            sublabel="Bar Volume, Delta, CVD with session resets, Min/Max"
             checked={config.showDeltaSummary}
             onChange={(v) => onChangeConfig({ showDeltaSummary: v })}
           />
