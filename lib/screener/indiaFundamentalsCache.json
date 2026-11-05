@@ -1019,7 +1019,7 @@
     "evToEbitda": 4.4,
     "evToEbit": 0.7,
     "earningsYield": 15.38,
-    "fcfYield": 1.26,
+    "fcfYield": 26.69,
     "pegRatio": 0.3,
     "salesGrowth1Y": 25.7,
     "salesGrowth3Y": null,
@@ -1051,11 +1051,11 @@
     "interestCoverage": 0.5,
     "currentRatio": 1.45,
     "quickRatio": 1.1,
-    "cfo": 5242,
-    "freeCashFlow": 3565,
+    "cfo": 112719,
+    "freeCashFlow": 75677,
     "cashConversionCycle": 38,
     "workingCapitalDays": 45,
-    "capex": 1677,
+    "capex": 37042,
     "debtReduction3Y": 12.5,
     "promoterHolding": 69.21,
     "promoterHoldingChange3Y": 0,
@@ -1071,7 +1071,7 @@
     "priceTo52WHighPct": -26.7,
     "distanceSma200Pct": -14.3,
     "piotroskiScore": 6,
-    "altmanZScore": 5.13
+    "altmanZScore": 2.05
   },
   "KOTAKBANK": {
     "symbol": "KOTAKBANK",
@@ -1591,7 +1591,7 @@
     "beta": 0.02,
     "priceTo52WHighPct": -20.8,
     "distanceSma200Pct": -9.6,
-    "piotroskiScore": 6
+    "piotroskiScore": 5
   },
   "WIPRO": {
     "symbol": "WIPRO",
@@ -7651,7 +7651,7 @@
     "priceTo52WHighPct": -5.8,
     "distanceSma200Pct": 15.8,
     "piotroskiScore": 4,
-    "altmanZScore": 1.2
+    "altmanZScore": null
   },
   "LEMONTREE": {
     "symbol": "LEMONTREE",
@@ -9728,7 +9728,7 @@
     "priceTo52WHighPct": -31.4,
     "distanceSma200Pct": -17.6,
     "piotroskiScore": 7,
-    "altmanZScore": 5.88
+    "altmanZScore": null
   },
   "UNIDT": {
     "symbol": "UNIDT",
@@ -16488,7 +16488,7 @@
     "priceTo52WHighPct": -34.5,
     "distanceSma200Pct": -20.7,
     "piotroskiScore": 6,
-    "altmanZScore": 5.24
+    "altmanZScore": null
   },
   "GHCL": {
     "symbol": "GHCL",
@@ -49117,7 +49117,8 @@
     "beta": 0.15,
     "priceTo52WHighPct": -29.1,
     "distanceSma200Pct": -15.1,
-    "piotroskiScore": 5
+    "piotroskiScore": 5,
+    "altmanZScore": null
   },
   "CROWN": {
     "symbol": "CROWN",
@@ -49707,7 +49708,7 @@
     "priceTo52WHighPct": -0.3,
     "distanceSma200Pct": 19.5,
     "piotroskiScore": 8,
-    "altmanZScore": 5.5
+    "altmanZScore": null
   },
   "RAMCOSYS": {
     "symbol": "RAMCOSYS",
@@ -56252,7 +56253,7 @@
     "priceTo52WHighPct": -47.4,
     "distanceSma200Pct": -29.9,
     "piotroskiScore": 6,
-    "altmanZScore": 7.93
+    "altmanZScore": null
   },
   "NEOGEN": {
     "symbol": "NEOGEN",
@@ -63209,7 +63210,8 @@
     "beta": 0.26,
     "priceTo52WHighPct": -29,
     "distanceSma200Pct": -15.1,
-    "piotroskiScore": 6
+    "piotroskiScore": 6,
+    "altmanZScore": null
   },
   "SALZERELEC": {
     "symbol": "SALZERELEC",
@@ -67087,7 +67089,7 @@
     "priceTo52WHighPct": -54,
     "distanceSma200Pct": -35,
     "piotroskiScore": 3,
-    "altmanZScore": 5.04
+    "altmanZScore": null
   },
   "AURIONPRO": {
     "symbol": "AURIONPRO",
@@ -69850,7 +69852,7 @@
     "priceTo52WHighPct": -40.7,
     "distanceSma200Pct": -22.9,
     "piotroskiScore": 6,
-    "altmanZScore": 5.18
+    "altmanZScore": null
   },
   "PRECAM": {
     "symbol": "PRECAM",
@@ -75693,7 +75695,7 @@
     "priceTo52WHighPct": -26,
     "distanceSma200Pct": -11.8,
     "piotroskiScore": 5,
-    "altmanZScore": 5.23
+    "altmanZScore": null
   },
   "GESHIP": {
     "symbol": "GESHIP",
@@ -88941,7 +88943,8 @@
     "beta": null,
     "priceTo52WHighPct": -18.6,
     "distanceSma200Pct": 4.7,
-    "piotroskiScore": 8
+    "piotroskiScore": 8,
+    "altmanZScore": null
   },
   "SICAGEN": {
     "symbol": "SICAGEN",
@@ -98910,7 +98913,7 @@
     "priceTo52WHighPct": -32.8,
     "distanceSma200Pct": -15.4,
     "piotroskiScore": 6,
-    "altmanZScore": 4.97
+    "altmanZScore": null
   },
   "IMFA": {
     "symbol": "IMFA",
@@ -100944,7 +100947,7 @@
     "priceTo52WHighPct": -8.1,
     "distanceSma200Pct": 10.7,
     "piotroskiScore": 6,
-    "altmanZScore": 5.2
+    "altmanZScore": null
   },
   "HONASA": {
     "symbol": "HONASA",
@@ -120106,7 +120109,8 @@
     "beta": null,
     "priceTo52WHighPct": -8,
     "distanceSma200Pct": 25.8,
-    "piotroskiScore": 8
+    "piotroskiScore": 8,
+    "altmanZScore": null
   },
   "INNOVANA": {
     "symbol": "INNOVANA",
@@ -127122,7 +127126,7 @@
     "priceTo52WHighPct": -8,
     "distanceSma200Pct": 28.2,
     "piotroskiScore": 7,
-    "altmanZScore": 6.7
+    "altmanZScore": null
   },
   "RAYMONDREL": {
     "symbol": "RAYMONDREL",
@@ -128433,7 +128437,7 @@
     "priceTo52WHighPct": -21.7,
     "distanceSma200Pct": 7,
     "piotroskiScore": 8,
-    "altmanZScore": 5.38
+    "altmanZScore": null
   },
   "VIKRAN": {
     "symbol": "VIKRAN",
@@ -130342,7 +130346,8 @@
     "beta": null,
     "priceTo52WHighPct": -27.4,
     "distanceSma200Pct": -14,
-    "piotroskiScore": 6
+    "piotroskiScore": 6,
+    "altmanZScore": null
   },
   "UTLSOLAR": {
     "symbol": "UTLSOLAR",
@@ -131786,7 +131791,7 @@
     "priceTo52WHighPct": -21.7,
     "distanceSma200Pct": 1.6,
     "piotroskiScore": 5,
-    "altmanZScore": 5.47
+    "altmanZScore": null
   },
   "CLEANMAX": {
     "symbol": "CLEANMAX",
@@ -146435,7 +146440,8 @@
     "fiiHolding": 18.2,
     "diiHolding": 14.5,
     "publicHolding": 14.8,
-    "enterpriseValue": null
+    "enterpriseValue": null,
+    "altmanZScore": null
   },
   "LAKSHMIMIL": {
     "symbol": "LAKSHMIMIL",
@@ -146636,7 +146642,7 @@
     "cash": 6,
     "debtReduction3Y": 0,
     "piotroskiScore": 8,
-    "altmanZScore": 5.9,
+    "altmanZScore": null,
     "salesGrowth5Y": null,
     "salesGrowth10Y": null,
     "profitGrowth5Y": null,

@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental } from '@/lib/screener/types';
 import { getMetricDefinition, formatMetricValue, getMetricValue } from '@/lib/screener/metrics';
+import { isFinancialEntity } from '@/lib/screener/zerodhaStocks';
 
 export type TableViewPreset =
   | 'overview'
@@ -497,20 +498,35 @@ export function ResultsTable({
                       }
 
                       // Specialized in-cell widget: Altman Z-Score
-                      if (colKey === 'altmanZScore' && rawVal !== null) {
-                        const z = rawVal;
-                        const zZone = z >= 2.99
-                          ? { label: 'Safe', color: 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400' }
-                          : z >= 1.81
-                          ? { label: 'Grey', color: 'border-amber-500/50 bg-amber-500/15 text-amber-400' }
-                          : { label: 'Distress', color: 'border-rose-500/50 bg-rose-500/15 text-rose-400' };
-                        return (
-                          <td key={colKey} className="px-2 py-1.5 whitespace-nowrap text-right">
-                            <span className={`px-1.5 py-0.5 rounded-full border text-[10.5px] font-black mono ${zZone.color}`}>
-                              {z.toFixed(2)} · {zZone.label}
-                            </span>
-                          </td>
-                        );
+                      if (colKey === 'altmanZScore') {
+                        const isFin = isFinancialEntity(comp.symbol, comp.name, comp.sector, comp.industry);
+                        if (isFin) {
+                          return (
+                            <td key={colKey} className="px-2 py-1.5 whitespace-nowrap text-right">
+                              <span
+                                className="px-1.5 py-0.5 rounded-full border border-neutral-700/60 bg-neutral-800/40 text-neutral-400 text-[10.5px] font-bold mono"
+                                title="Altman Z-Score model is mathematically invalid for deposit-taking commercial banks and financial institutions per Ind AS 109 / RBI regulations"
+                              >
+                                N/A · BFSI
+                              </span>
+                            </td>
+                          );
+                        }
+                        if (rawVal !== null) {
+                          const z = rawVal;
+                          const zZone = z >= 2.99
+                            ? { label: 'Safe', color: 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400' }
+                            : z >= 1.81
+                            ? { label: 'Grey', color: 'border-amber-500/50 bg-amber-500/15 text-amber-400' }
+                            : { label: 'Distress', color: 'border-rose-500/50 bg-rose-500/15 text-rose-400' };
+                          return (
+                            <td key={colKey} className="px-2 py-1.5 whitespace-nowrap text-right">
+                              <span className={`px-1.5 py-0.5 rounded-full border text-[10.5px] font-black mono ${zZone.color}`}>
+                                {z.toFixed(2)} · {zZone.label}
+                              </span>
+                            </td>
+                          );
+                        }
                       }
 
                       // Specialized in-cell widget: RSI (14) Momentum

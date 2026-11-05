@@ -54,6 +54,9 @@ const symbolMap = new Map<string, ZerodhaStockItem>();
 
 // Common retail / Kite alias mappings
 export const ZERODHA_ALIASES: Record<string, string> = {
+  'BAJAJAUTO': 'BAJAJ-AUTO',
+  'BAJAJ_AUTO': 'BAJAJ-AUTO',
+  'BAJAJ AUTO': 'BAJAJ-AUTO',
   'TATAMOTORS': 'TATAMOTORS',
   'TATA MOTORS': 'TATAMOTORS',
   'TMPV': 'TATAMOTORS',
@@ -869,10 +872,12 @@ export function synthesizeStatements(
   // 4. Cash Flow (3 Years: Mar 2026, Mar 2025, Mar 2024)
   const cashFlow: CashFlowYear[] = bsYears.map((yr, idx) => {
     const sc = bsScales[idx];
-    const cfoYr = Math.round(cfo * sc);
-    const capexYr = Math.round(capex * sc);
+    const cfoYr = isFinancial
+      ? (cfo < 0 ? Math.round(cfo * sc) : -Math.round(annualSales * 0.65 * sc))
+      : Math.round(cfo * sc);
+    const capexYr = isFinancial ? Math.round(annualSales * 0.02 * sc) : Math.round(capex * sc);
     const cfi = -capexYr;
-    const cff = isFinancial ? Math.round(cfoYr * 0.15) : -Math.round(capexYr * 0.5);
+    const cff = isFinancial ? Math.round(Math.abs(cfoYr) * 1.08) : -Math.round(capexYr * 0.5);
     const netCf = cfoYr + cfi + cff;
 
     return {
@@ -1071,7 +1076,7 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
       } else if (sec.includes('PHARMA') || sec.includes('HEALTH')) {
         workingCapitalDays = 72;
         cashConversionCycle = 65;
-      } else if (sec.includes('AUTO')) {
+      } else if (sec.includes('AUTO') || item.symbol === 'M&M' || /MAHINDRA/i.test(item.name || '')) {
         workingCapitalDays = 15;
         cashConversionCycle = -28; // Auto OEMs operate on negative CCC working capital float
       } else if (sec.includes('INFRA') || sec.includes('CAPITAL GOODS')) {
@@ -1186,9 +1191,9 @@ export function generateFundamentalFromZerodha(item: ZerodhaStockItem, basePrice
         profitGrowth3Y,
         annualSales || 2500,
         totalDebt,
-        cfo || Math.round(knownMcap * 0.08),
-        capex || Math.round((cfo || 100) * 0.3),
-        freeCashFlow || Math.round((cfo || 100) * 0.7),
+        cfo || (isFinancial ? -Math.round((annualSales || 2500) * 0.65) : Math.round(knownMcap * 0.08)),
+        capex || (isFinancial ? Math.round((annualSales || 2500) * 0.02) : Math.round((cfo || 100) * 0.3)),
+        freeCashFlow || (isFinancial ? -Math.round((annualSales || 2500) * 0.67) : Math.round((cfo || 100) * 0.7)),
         workingCapitalDays,
         cashConversionCycle,
         promoterHolding,
