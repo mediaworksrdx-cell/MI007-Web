@@ -16,7 +16,7 @@ import {
   CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN, calculateDynamicPanelHeight,
 } from './types';
 import { calculateSMC, DEFAULT_SMC_CONFIG, type SmcConfig } from './smcEngine';
-import { renderOrderFlowFootprint } from './orderflow/orderFlowRenderer';
+import { renderOrderFlowFootprint, formatVol } from './orderflow/orderFlowRenderer';
 import { renderQuantumAiOverlays } from './quantumai/quantumAiRenderer';
 import {
   calculateSMA as calcSMA,
@@ -2199,8 +2199,7 @@ export function renderChart(
 
   // ── LAYER 4.5: Order Flow Footprint Canvas ───────────────────────────
   const isOrderFlowActive = Boolean(
-    options.showOrderFlow &&
-    options.orderFlowConfig?.enabled &&
+    (options.showOrderFlow || options.orderFlowConfig?.enabled) &&
     options.orderFlowData &&
     options.orderFlowData.footprints.length > 0
   );
@@ -4643,7 +4642,7 @@ export function renderOverlay(
     }
 
     const isOrderFlowHover = Boolean(
-      options.showOrderFlow &&
+      (options.showOrderFlow || options.orderFlowConfig?.enabled) &&
       cx >= 0 && cx <= chartW &&
       cy >= 0 && cy <= chartH
     );
@@ -4651,8 +4650,8 @@ export function renderOverlay(
     const shouldShowMagnifier = isOrderFlowHover || !!hoveredOB || options.showMagnifier || options.cursorMode === 'magnifier';
 
     if (shouldShowMagnifier && cy <= chartH) {
-      const lensRadius = isOrderFlowHover ? Math.round(72 * dpr) : Math.round(65 * dpr);
-      const zoom = isOrderFlowHover ? 2.4 : 2.25;
+      const lensRadius = isOrderFlowHover ? Math.round(80 * dpr) : Math.round(65 * dpr);
+      const zoom = isOrderFlowHover ? 2.6 : 2.25;
 
       // Position lens centered at cursor (clamped within chart canvas)
       const lensX = Math.max(lensRadius + 4 * dpr, Math.min(chartW - lensRadius - 4 * dpr, cx));
@@ -4694,6 +4693,108 @@ export function renderOverlay(
         bgGrad.addColorStop(1, '#0F172A');
         ctx.fillStyle = bgGrad;
         ctx.fillRect(lensX - lensRadius, lensY - lensRadius, lensRadius * 2, lensRadius * 2);
+      }
+
+      // ── High-Contrast Vector Footprint Overlay Inside Loupe ─────────────
+      if (isOrderFlowHover && options.orderFlowData && options.orderFlowData.footprints.length > 0) {
+        const ofData = options.orderFlowData;
+        const tickSize = ofData.tickSizeUsed || 1.0;
+        const minChartX = cx - lensRadius / zoom;
+        const maxChartX = cx + lensRadius / zoom;
+        const cStart = Math.max(0, startIdx + Math.floor(minChartX / candleW));
+        const cEnd = Math.min(candles.length - 1, startIdx + Math.ceil(maxChartX / candleW));
+
+        for (let ci = cStart; ci <= cEnd; ci++) {
+          const fp = ofData.footprints[ci] || ofData.footprints.find(f => f.candleIndex === ci);
+          if (!fp || !fp.sortedLevels || fp.sortedLevels.length === 0) continue;
+
+          const candleCenterX = (ci - startIdx) * candleW + candleW / 2;
+          const mMidX = lensX + (candleCenterX - cx) * zoom;
+          const mCandleW = Math.max(54 * dpr, (candleW - 2 * dpr) * zoom);
+          const mHalfW = mCandleW / 2;
+          const mBarLeft = mMidX - mHalfW;
+
+          for (let li = 0; li < fp.sortedLevels.length; li++) {
+            const lvl = fp.sortedLevels[li];
+            const lvlY = priceToY(lvl.price);
+            const mLvlY = lensY + (lvlY - cy) * zoom;
+
+            // Clip levels outside lens vertically
+            if (mLvlY < lensY - lensRadius - 10 * dpr || mLvlY > lensY + lensRadius + 10 * dpr) continue;
+
+            const topY = priceToY(lvl.price + tickSize / 2);
+            const botY = priceToY(lvl.price - tickSize / 2);
+            const rawH = Math.abs(botY - topY);
+            const mCellH = Math.max(14 * dpr, rawH * zoom);
+            const mCellY = mLvlY - mCellH / 2;
+
+            // Row background pill
+            if (lvl.isPoc) {
+              ctx.fillStyle = 'rgba(245, 158, 11, 0.42)';
+              ctx.fillRect(mBarLeft, mCellY, mCandleW, mCellH);
+              ctx.strokeStyle = '#F59E0B';
+              ctx.lineWidth = 1.2 * dpr;
+              ctx.strokeRect(mBarLeft, mCellY, mCandleW, mCellH);
+            } else if (lvl.hasBuyImbalance) {
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+              ctx.fillRect(mBarLeft, mCellY, mHalfW, mCellH);
+              ctx.fillStyle = 'rgba(16, 185, 129, 0.50)';
+              ctx.fillRect(mMidX, mCellY, mHalfW, mCellH);
+            } else if (lvl.hasSellImbalance) {
+              ctx.fillStyle = 'rgba(239, 68, 68, 0.50)';
+              ctx.fillRect(mBarLeft, mCellY, mHalfW, mCellH);
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+              ctx.fillRect(mMidX, mCellY, mHalfW, mCellH);
+            } else {
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.86)';
+              ctx.fillRect(mBarLeft, mCellY, mCandleW, mCellH);
+            }
+
+            // Cell border divider
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 0.6 * dpr;
+            ctx.strokeRect(mBarLeft, mCellY, mCandleW, mCellH);
+
+            // Center vertical divider
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+            ctx.beginPath();
+            ctx.moveTo(mMidX, mCellY);
+            ctx.lineTo(mMidX, mCellY + mCellH);
+            ctx.stroke();
+
+            // Font for bid/ask
+            const fontPx = Math.max(8.5 * dpr, Math.min(10.5 * dpr, mCellH * 0.70));
+            ctx.font = `bold ${fontPx}px "JetBrains Mono", monospace`;
+            ctx.textBaseline = 'middle';
+
+            // Bid text (left side)
+            ctx.textAlign = 'right';
+            ctx.fillStyle = lvl.hasSellImbalance ? '#FF6B6B' : '#FCA5A5';
+            ctx.fillText(formatVol(lvl.bidVolume), mMidX - 4 * dpr, mLvlY);
+
+            // Ask text (right side)
+            ctx.textAlign = 'left';
+            ctx.fillStyle = lvl.hasBuyImbalance ? '#34D399' : '#86EFAC';
+            ctx.fillText(formatVol(lvl.askVolume), mMidX + 4 * dpr, mLvlY);
+          }
+
+          // Delta header pill at candle top
+          const mHighY = lensY + (priceToY(fp.high) - cy) * zoom;
+          if (mHighY >= lensY - lensRadius + 8 * dpr && mHighY <= lensY + lensRadius - 8 * dpr) {
+            const isPos = fp.totalDelta >= 0;
+            const deltaStr = `Δ ${isPos ? '+' : ''}${formatVol(fp.totalDelta)}`;
+            ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono", monospace`;
+            const mText = ctx.measureText(deltaStr);
+            const pillW = mText.width + 8 * dpr;
+            const pillH = 13 * dpr;
+            ctx.fillStyle = isPos ? 'rgba(16, 185, 129, 0.92)' : 'rgba(239, 68, 68, 0.92)';
+            ctx.fillRect(mMidX - pillW / 2, mHighY - pillH - 2 * dpr, pillW, pillH);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(deltaStr, mMidX, mHighY - pillH / 2 - 2 * dpr);
+          }
+        }
       }
 
       // Convex Glass Gradient Overlay (light vignette)
@@ -4741,7 +4842,7 @@ export function renderOverlay(
       ctx.stroke();
 
       // Loupe Badge Tag
-      const zoomPill = isOrderFlowHover ? '🔍 2.4× ORDER FLOW' : '🔍 2.25× LOUPE';
+      const zoomPill = isOrderFlowHover ? '🔍 2.6× ORDER FLOW' : '🔍 2.25× LOUPE';
       ctx.font = `bold ${8 * dpr}px "JetBrains Mono", monospace`;
       const zm = ctx.measureText(zoomPill);
       const zpw = zm.width + 10 * dpr;

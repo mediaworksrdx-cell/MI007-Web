@@ -42,17 +42,18 @@ export interface OrderFlowRenderOptions {
 
 // ── Number Formatter Utility ───────────────────────────────────────────────
 
-function formatVol(n: number): string {
+export function formatVol(n: number, compact = false): string {
   if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(n >= 10_000 ? 0 : 1) + 'k';
-  return n.toString();
+  if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(compact || n >= 10_000 ? 0 : 1) + 'k';
+  if (compact && n >= 100) return Math.round(n).toString();
+  return Math.round(n).toString();
 }
 
-function formatDelta(n: number): string {
+export function formatDelta(n: number, compact = false): string {
   const sign = n > 0 ? '+' : '';
   if (Math.abs(n) >= 1_000_000) return sign + (n / 1_000_000).toFixed(1) + 'M';
-  if (Math.abs(n) >= 1_000) return sign + (n / 1_000).toFixed(n >= 10_000 ? 0 : 1) + 'k';
-  return sign + n.toString();
+  if (Math.abs(n) >= 1_000) return sign + (n / 1_000).toFixed(compact || n >= 10_000 ? 0 : 1) + 'k';
+  return sign + Math.round(n).toString();
 }
 
 // ── Master Footprint Render Function ──────────────────────────────────────
@@ -84,11 +85,13 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
   // Determine Level of Detail (LOD) based on horizontal candle width and selected viewMode
   const effectiveW = candleW / dpr;
   const viewMode = config.viewMode || 'BID_ASK';
-  const showBidAskText = viewMode === 'BID_ASK' && effectiveW >= 32;
-  const showDeltaText = viewMode === 'DELTA' && effectiveW >= 24;
+  // Allow Bid × Ask numbers whenever candle width is >= 18px!
+  const showBidAskText = viewMode === 'BID_ASK' && effectiveW >= 18;
+  // If narrower than 18px down to 10px, or if viewMode is DELTA, show clear delta numbers!
+  const showDeltaText = (viewMode === 'DELTA' || (viewMode === 'BID_ASK' && !showBidAskText)) && effectiveW >= 10;
   const showSplitBars =
-    (viewMode === 'PROFILE' && effectiveW >= 10) ||
-    ((viewMode === 'BID_ASK' || viewMode === 'DELTA') && !showBidAskText && !showDeltaText && effectiveW >= 12);
+    (viewMode === 'PROFILE' && effectiveW >= 8) ||
+    (!showBidAskText && !showDeltaText && effectiveW >= 6);
 
   // Palette definitions
   const buyImbalanceBg = isDark ? 'rgba(16, 185, 129, 0.40)' : 'rgba(5, 150, 105, 0.35)';
@@ -193,7 +196,11 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
       if (lvl.totalVolume > maxLevelVol) maxLevelVol = lvl.totalVolume;
     }
 
-    for (const lvl of levels) {
+    const sampleH = Math.max(1 * dpr, Math.abs(priceToY(levels[0].price + tickSize / 2) - priceToY(levels[0].price - tickSize / 2)) - 0.5 * dpr);
+    const cellStride = Math.max(1, Math.ceil(9 * dpr / Math.max(1, sampleH)));
+
+    for (let lvlIdx = 0; lvlIdx < levels.length; lvlIdx++) {
+      const lvl = levels[lvlIdx];
       const topY = priceToY(lvl.price + tickSize / 2);
       const bottomY = priceToY(lvl.price - tickSize / 2);
       const cellY = Math.min(topY, bottomY);
@@ -214,6 +221,8 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
         ctx.strokeRect(barLeft + 1 * dpr, cellY, barBodyW, cellH);
       }
 
+      const shouldDrawText = lvl.isPoc || lvl.hasBuyImbalance || lvl.hasSellImbalance || (lvlIdx % cellStride === 0);
+
       // --- Mode A1: Detailed Bid × Ask Numeric Text ---
       if (showBidAskText) {
         const halfW = barBodyW / 2;
@@ -230,22 +239,24 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
           ctx.fillRect(barMidX, cellY, halfW, cellH);
         }
 
-        // Font calculation based on available cell height and width
-        const fontSize = Math.max(7, Math.min(10.5, Math.floor(cellH * 0.78 / dpr))) * dpr;
-        ctx.font = `bold ${fontSize}px "JetBrains Mono", monospace`;
-        ctx.textBaseline = 'middle';
+        if (shouldDrawText) {
+          const isCompact = effectiveW < 28;
+          const fontSize = Math.max(7 * dpr, Math.min(10.5 * dpr, Math.max(cellH * 0.75, 7.5 * dpr)));
+          ctx.font = `bold ${fontSize}px "JetBrains Mono", monospace`;
+          ctx.textBaseline = 'middle';
 
-        // Render Bid Text
-        ctx.fillStyle = lvl.hasSellImbalance ? sellImbalanceText : neutralBidText;
-        ctx.textAlign = 'right';
-        const bidStr = formatVol(lvl.bidVolume);
-        ctx.fillText(bidStr, barMidX - 3 * dpr, cellY + cellH / 2);
+          // Render Bid Text
+          ctx.fillStyle = lvl.hasSellImbalance ? sellImbalanceText : neutralBidText;
+          ctx.textAlign = 'right';
+          const bidStr = formatVol(lvl.bidVolume, isCompact);
+          ctx.fillText(bidStr, barMidX - 2 * dpr, cellY + cellH / 2);
 
-        // Render Ask Text
-        ctx.fillStyle = lvl.hasBuyImbalance ? buyImbalanceText : neutralAskText;
-        ctx.textAlign = 'left';
-        const askStr = formatVol(lvl.askVolume);
-        ctx.fillText(askStr, barMidX + 3 * dpr, cellY + cellH / 2);
+          // Render Ask Text
+          ctx.fillStyle = lvl.hasBuyImbalance ? buyImbalanceText : neutralAskText;
+          ctx.textAlign = 'left';
+          const askStr = formatVol(lvl.askVolume, isCompact);
+          ctx.fillText(askStr, barMidX + 2 * dpr, cellY + cellH / 2);
+        }
 
         // Center separator divider
         ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)';
@@ -265,12 +276,14 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
           : `rgba(239, 68, 68, ${alpha})`;
         ctx.fillRect(barLeft + 1 * dpr, cellY, barBodyW, cellH);
 
-        const fontSize = Math.max(7, Math.min(10, Math.floor(cellH * 0.76 / dpr))) * dpr;
-        ctx.font = `bold ${fontSize}px "JetBrains Mono", monospace`;
-        ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = lvl.delta >= 0 ? buyImbalanceText : sellImbalanceText;
-        ctx.fillText(formatDelta(lvl.delta), barMidX, cellY + cellH / 2);
+        if (shouldDrawText) {
+          const fontSize = Math.max(7 * dpr, Math.min(10 * dpr, Math.max(cellH * 0.75, 7.5 * dpr)));
+          ctx.font = `bold ${fontSize}px "JetBrains Mono", monospace`;
+          ctx.textBaseline = 'middle';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = lvl.delta >= 0 ? buyImbalanceText : sellImbalanceText;
+          ctx.fillText(formatDelta(lvl.delta, true), barMidX, cellY + cellH / 2);
+        }
       }
       // --- Mode B: Dual Split Volume Profile Bars (Medium Zoom or PROFILE mode) ---
       else if (showSplitBars) {

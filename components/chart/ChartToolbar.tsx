@@ -1127,26 +1127,44 @@ export function ChartToolbar({
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
-        {/* 4.5 Order Flow Footprint Dropdown */}
-        <div className="relative">
+        {/* 4.5 Order Flow Footprint Toggle & Dropdown */}
+        <div className="relative flex items-center">
           <button
             type="button"
-            onClick={() => setOpenMenu(openMenu === 'ORDER_FLOW' ? null : 'ORDER_FLOW')}
-            title="Order Flow Footprint Analysis Mode"
-            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
-              openMenu === 'ORDER_FLOW'
+            onClick={() => {
+              const nextEnabled = !activeOfConfig.enabled;
+              onOrderFlowConfigChange?.({ ...activeOfConfig, enabled: nextEnabled });
+            }}
+            title={activeOfConfig.enabled ? "Disable Order Flow Footprints" : "Enable Order Flow Footprints (Show Bid × Ask Volume Numbers)"}
+            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-l-lg border-y border-l text-xs font-medium transition-colors cursor-pointer ${
+              activeOfConfig.enabled
                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 font-bold'
                 : 'border-slate-200 dark:border-slate-700 hover:border-blue-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
-            <span className="font-mono font-black text-xs px-1 rounded bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400">
+            <span className={`font-mono font-black text-xs px-1 rounded ${
+              activeOfConfig.enabled
+                ? 'bg-blue-500 text-white'
+                : 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400'
+            }`}>
               OF
             </span>
             <span className="hidden sm:inline">Order Flow</span>
             {activeOfConfig.enabled && (
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             )}
-            <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpenMenu(openMenu === 'ORDER_FLOW' ? null : 'ORDER_FLOW')}
+            title="Order Flow Settings & Imbalance Thresholds"
+            className={`h-7 px-1.5 rounded-r-lg border text-xs transition-colors cursor-pointer flex items-center justify-center ${
+              activeOfConfig.enabled
+                ? 'border-blue-500 bg-blue-100/60 dark:bg-blue-500/30 text-blue-700 dark:text-blue-400 font-bold'
+                : 'border-slate-200 dark:border-slate-700 hover:border-blue-500/60 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            <span className="text-[9px]">▼</span>
           </button>
 
           <OrderFlowToolbarMenu

@@ -13,6 +13,8 @@ interface ChartPageProps {
     strategies?: string;
     indicators?: string;
     smc?: string;
+    of?: string;
+    orderflow?: string;
     setupId?: string;
     tf?: string;
   }>;

@@ -382,6 +382,16 @@ export function ChartContainer({
         }
       }
 
+      // Detect Order Flow Footprint URL query parameters (e.g. ?of=1 or ?orderflow=1)
+      const ofParam = sp.get('of') || sp.get('orderflow') || sp.get('orderFlow');
+      if (ofParam === '1' || ofParam === 'true') {
+        setOrderFlowConfig(prev => {
+          const next = { ...prev, enabled: true };
+          try { localStorage.setItem('mi007_orderflow_config', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
+      }
+
       const tfParam = sp.get('tf') as Timeframe;
       if (tfParam && ['1m', '5m', '15m', '30m', '1H', '4H', '1D', '1W', '1M'].includes(tfParam)) {
         setTimeframe(tfParam);
@@ -642,7 +652,7 @@ export function ChartContainer({
   const ticksPerCandleRef = useRef<Map<number, ExchangeTradeTick[]>>(new Map());
 
   const orderFlowData = useMemo(() => {
-    if (!orderFlowConfig.enabled || candles.length === 0) return undefined;
+    if (candles.length === 0) return undefined;
     return analyzeOrderFlow(candles, orderFlowConfig, ticksPerCandleRef.current);
   }, [candles, orderFlowConfig]);
 
