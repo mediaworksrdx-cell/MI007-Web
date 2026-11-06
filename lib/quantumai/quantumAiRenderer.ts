@@ -85,13 +85,14 @@ export function renderQuantumAiOverlays(options: QuantumAiRenderOptions): void {
   // ── 2. Render Order Block Zones ──────────────────────────────────────────
   if (config.showOrderBlocks && analysis.orderBlocks.length > 0) {
     for (const ob of analysis.orderBlocks) {
-      if (ob.endIndex < safeStart || ob.startIndex >= safeEnd) continue;
+      if (ob.endIndex < safeStart && ob.isMitigated) continue;
+      if (ob.startIndex >= safeEnd) continue;
 
       const zStartLi = Math.max(0, ob.startIndex - startIdx);
-      const zEndLi = Math.min(safeEnd - startIdx, ob.endIndex - startIdx);
+      const zEndLi = ob.isMitigated ? Math.min(safeEnd - startIdx, ob.endIndex - startIdx) : (safeEnd - startIdx);
 
       const x1 = zStartLi * candleW;
-      const x2 = (zEndLi + 1) * candleW;
+      const x2 = ob.isMitigated ? (zEndLi + 1) * candleW : chartW;
       const yTop = priceToY(ob.top);
       const yBottom = priceToY(ob.bottom);
 
@@ -124,23 +125,42 @@ export function renderQuantumAiOverlays(options: QuantumAiRenderOptions): void {
       ctx.setLineDash([]);
 
       // Label and numbers inside Order Block
-      if (x2 - x1 > 35 * dpr && obH >= 9 * dpr) {
+      const blockW = x2 - x1;
+      if (blockW > 25 * dpr) {
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono", monospace`;
         ctx.fillStyle = borderCol;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         const label = ob.isBullish ? 'BULL OB' : 'BEAR OB';
-        ctx.fillText(label, x1 + 3 * dpr, obY + 2 * dpr);
+        if (obH >= 8 * dpr) {
+          ctx.fillText(label, x1 + 3 * dpr, obY + 2 * dpr);
+        }
 
-        // Visible price numbers directly on the right side of the block
-        if (x2 - x1 > 85 * dpr && obH >= 11 * dpr) {
-          const topStr = ob.top.toFixed(2);
-          const btmStr = ob.bottom.toFixed(2);
-          const spreadStr = (ob.top - ob.bottom).toFixed(2);
-          const priceText = `${topStr} - ${btmStr} (${spreadStr} pts)`;
+        // Visible price numbers directly on the block
+        const topStr = ob.top.toFixed(1);
+        const btmStr = ob.bottom.toFixed(1);
+        const spreadStr = Math.abs(ob.top - ob.bottom).toFixed(1);
+        const priceText = `${topStr} - ${btmStr} (${spreadStr} pts)`;
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono", monospace`;
+
+        if (blockW > 80 * dpr && obH >= 9 * dpr) {
           ctx.textAlign = 'right';
           ctx.fillStyle = isDark ? '#E2E8F0' : '#1E293B';
           ctx.fillText(priceText, x2 - 4 * dpr, obY + 2 * dpr);
+        } else if (!ob.isMitigated && x2 >= chartW - 10 * dpr) {
+          // Draw neat badge pinned at the right edge for live institutional order blocks
+          const badgeW = 94 * dpr;
+          const badgeH = Math.max(12 * dpr, Math.min(obH - 2 * dpr, 16 * dpr));
+          const badgeX = chartW - badgeW - 4 * dpr;
+          const badgeY = obY + (obH - badgeH) / 2;
+          ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.92)';
+          ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+          ctx.strokeStyle = borderCol;
+          ctx.strokeRect(badgeX, badgeY, badgeW, badgeH);
+          ctx.fillStyle = borderCol;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`₹${topStr} - ₹${btmStr}`, badgeX + badgeW / 2, badgeY + badgeH / 2);
         }
       }
     }

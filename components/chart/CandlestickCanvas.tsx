@@ -878,6 +878,7 @@ export function CandlestickCanvas({
   const sizeRef = useRef(size);
   const showMagnifierRef = useRef(showMagnifier);
   const smcDataRef = useRef<import('@/lib/smcEngine').SmcAnalysis | null>(null);
+  const showQuantumAiRef = useRef(showQuantumAi);
   const quantumAiDataRef = useRef(quantumAiData);
   const quantumAiConfigRef = useRef(quantumAiConfig);
   const showOrderFlowRef = useRef(showOrderFlow);
@@ -899,6 +900,7 @@ export function CandlestickCanvas({
     timeframeRef.current = timeframe;
     cursorModeRef.current = cursorMode;
     showMagnifierRef.current = showMagnifier;
+    showQuantumAiRef.current = showQuantumAi;
     quantumAiDataRef.current = quantumAiData;
     quantumAiConfigRef.current = quantumAiConfig;
     showOrderFlowRef.current = showOrderFlow;
@@ -954,6 +956,7 @@ export function CandlestickCanvas({
         cursorMode: cursorModeRef.current,
         showMagnifier: showMagnifierRef.current || cursorModeRef.current === 'magnifier',
         mainCanvas: canvasRef.current,
+        showQuantumAi: showQuantumAiRef.current,
         quantumAiConfig: quantumAiConfigRef.current,
         quantumAiData: quantumAiDataRef.current,
         drawings: isAllDrawingsHiddenRef.current ? [] : drawingsRef.current,
