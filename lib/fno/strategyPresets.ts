@@ -340,6 +340,23 @@ export const INSTITUTIONAL_STRATEGY_PRESETS: OptionStrategyPreset[] = [
       { action: 'BUY', instrument: 'PE', strikeOffset: -1, lots: 1 },
     ],
   },
+  {
+    id: 'covered-put',
+    name: 'Covered Put',
+    category: 'BEARISH',
+    contractComposition: 'OTM / ATM',
+    compositionVariants: [
+      { label: 'OTM Put', offsets: [0, -2], description: 'Short Future (0) + Sell OTM Put (-2)' },
+      { label: 'ATM Put', offsets: [0, 0], description: 'Short Future (0) + Sell ATM Put (0)' },
+    ],
+    description: 'Income generation on short inventory: Short Future covered by selling an OTM Put against it. Generates premium credit with uncapped upside risk.',
+    outlook: 'Mildly Bearish to Neutral. Earns put premium while capping downside profit.',
+    payoffSvgPath: 'M 6 12 L 22 12 L 54 34',
+    legsTemplate: [
+      { action: 'SELL', instrument: 'FUT', strikeOffset: 0, lots: 1 },
+      { action: 'SELL', instrument: 'PE', strikeOffset: -2, lots: 1 },
+    ],
+  },
 
   // ─────────────────────────────────────────────────────────────────────────────
   // ── 3. NON-DIRECTIONAL STRATEGIES ──
@@ -400,16 +417,18 @@ export const INSTITUTIONAL_STRATEGY_PRESETS: OptionStrategyPreset[] = [
     category: 'NEUTRAL',
     contractComposition: 'ATM & OTM',
     compositionVariants: [
-      { label: 'ATM & OTM', offsets: [0, 0, 2, -2], description: 'Sell ATM CE (0) & ATM PE (0) + Buy OTM CE (+2) & OTM PE (-2)' },
+      { label: 'Standard Wings (±4)', offsets: [0, 0, 4, -4], description: 'Sell ATM CE (0) & ATM PE (0) + Buy OTM CE (+4) & OTM PE (-4)' },
+      { label: 'Narrow Wings (±3)', offsets: [0, 0, 3, -3], description: 'Sell ATM CE (0) & ATM PE (0) + Buy OTM CE (+3) & OTM PE (-3)' },
+      { label: 'Wide Wings (±6)', offsets: [0, 0, 6, -6], description: 'Sell ATM CE (0) & ATM PE (0) + Buy OTM CE (+6) & OTM PE (-6)' },
     ],
-    description: 'Wing-protected straddle: Sell ATM Call & Put, hedged by buying wings at OTM strikes. High return on risk.',
-    outlook: 'Pinning at ATM strike with predefined catastrophic protection.',
+    description: 'Wing-protected straddle: Sell ATM Call & Put, hedged by buying wings at OTM strikes. High return on risk with defined catastrophic protection.',
+    outlook: 'Pinning at ATM strike with predefined catastrophic protection and zero tail-risk.',
     payoffSvgPath: 'M 6 28 L 18 28 L 30 10 L 42 28 L 54 28',
     legsTemplate: [
       { action: 'SELL', instrument: 'CE', strikeOffset: 0, lots: 1 },
       { action: 'SELL', instrument: 'PE', strikeOffset: 0, lots: 1 },
-      { action: 'BUY', instrument: 'CE', strikeOffset: 2, lots: 1 },
-      { action: 'BUY', instrument: 'PE', strikeOffset: -2, lots: 1 },
+      { action: 'BUY', instrument: 'CE', strikeOffset: 4, lots: 1 },
+      { action: 'BUY', instrument: 'PE', strikeOffset: -4, lots: 1 },
     ],
   },
   {
@@ -521,7 +540,7 @@ export function buildLegsFromPreset(
 
     if (tmpl.instrument === 'FUT') {
       entryPrice = spotPrice;
-      greeks = { delta: 1.0, gamma: 0, theta: 0, vega: 0, vanna: 0, charm: 0, vomma: 0 };
+      greeks = { delta: tmpl.action === 'BUY' ? 1.0 : -1.0, gamma: 0, theta: 0, vega: 0, vanna: 0, charm: 0, vomma: 0 };
     } else {
       const moneyness = (strike - spotPrice) / spotPrice;
       const skew = -moneyness * 0.12;

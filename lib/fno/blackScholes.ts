@@ -56,17 +56,17 @@ export function calculateBSPrice(
     return 0;
   }
 
-  if (T <= 0.0001) {
-    // At expiration intrinsic value
-    return type === 'CE' ? Math.max(0, S - K) : Math.max(0, K - S);
+  const dfS = Math.exp(-q * T);
+  const dfK = Math.exp(-r * T);
+
+  if (T <= 0.0001 || sigma <= 0.0001) {
+    // At expiration or zero volatility: discounted intrinsic boundary value
+    return type === 'CE' ? Math.max(0, S * dfS - K * dfK) : Math.max(0, K * dfK - S * dfS);
   }
 
   const sqrtT = Math.sqrt(T);
   const d1 = (Math.log(S / K) + (r - q + 0.5 * sigma * sigma) * T) / (sigma * sqrtT);
   const d2 = d1 - sigma * sqrtT;
-
-  const dfS = Math.exp(-q * T);
-  const dfK = Math.exp(-r * T);
 
   if (type === 'CE') {
     return S * dfS * cdfNormal(d1) - K * dfK * cdfNormal(d2);
@@ -208,11 +208,11 @@ export function solveImpliedVolatility(
   timeYears: number,
   rate = 0.068
 ): number {
-  if (marketPrice <= 0 || timeYears <= 0.0001) return 0.15; // default 15%
+  if (marketPrice <= 0 || timeYears <= 0.0001) return 0.145; // default ~14.5%
 
   const intrinsic = type === 'CE' ? Math.max(0, spot - strike) : Math.max(0, strike - spot);
-  if (marketPrice < intrinsic) {
-    return 0.12; // deep below intrinsic
+  if (marketPrice <= intrinsic) {
+    return 0.05; // at or below intrinsic lower boundary
   }
 
   let vol = 0.20; // Initial guess: 20%
@@ -229,7 +229,7 @@ export function solveImpliedVolatility(
     });
     const diff = p - marketPrice;
     if (Math.abs(diff) < precision) {
-      return Math.max(0.01, Math.min(vol, 3.0));
+      return Math.max(0.01, Math.min(vol, 3.5));
     }
 
     // Vega derivative
@@ -250,8 +250,9 @@ export function solveImpliedVolatility(
   // Bisection Fallback
   let low = 0.01;
   let high = 3.5;
+  let mid = (low + high) / 2;
   for (let i = 0; i < 40; i++) {
-    const mid = (low + high) / 2;
+    mid = (low + high) / 2;
     const p = calculateBSPrice(type, {
       spot,
       strike,
@@ -260,7 +261,7 @@ export function solveImpliedVolatility(
       volatility: mid,
     });
     if (Math.abs(p - marketPrice) < precision) {
-      return mid;
+      return Math.round(mid * 1000) / 1000;
     }
     if (p > marketPrice) {
       high = mid;
@@ -269,5 +270,5 @@ export function solveImpliedVolatility(
     }
   }
 
-  return 0.18;
+  return Math.round(mid * 1000) / 1000;
 }

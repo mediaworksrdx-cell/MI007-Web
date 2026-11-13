@@ -370,9 +370,14 @@ export function StrategyBuilderTab({
 
   const handleSaveStrategy = () => {
     if (activeLegs.length === 0) return;
+    const cleanName = strategyName.trim();
+    const formattedName = cleanName.startsWith(instrument.symbol)
+      ? cleanName
+      : `${instrument.symbol} ${cleanName}`;
+
     const tracked: TrackedStrategy = {
       id: `tracked-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      name: `${instrument.symbol} ${strategyName}`,
+      name: formattedName,
       category: strategyCategory,
       underlyingSymbol: instrument.symbol,
       spotPriceAtCreation: spotPrice,
@@ -386,6 +391,9 @@ export function StrategyBuilderTab({
       maxProfit: payoff.maxProfit,
       maxLoss: payoff.maxLoss,
       breakevens: payoff.breakevens,
+      isUnlimitedRisk: payoff.isUnlimitedRisk,
+      unlimitedRiskSide: payoff.unlimitedRiskSide,
+      riskClassification: payoff.riskClassification,
     };
 
     saveTrackedStrategy(tracked);

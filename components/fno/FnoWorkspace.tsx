@@ -12,9 +12,11 @@ import {
   StrategyLeg,
   TradeAction,
   Greeks,
+  TrackedStrategy,
 } from '@/lib/fno/fnoTypes';
 import {
   SUPPORTED_FNO_INSTRUMENTS,
+  findFnoInstrument,
   generateOptionChain,
   getFuturesTermStructure,
   getWeeklyAndMonthlyExpiries,
@@ -200,9 +202,20 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
     setActiveLegs((prev) => [...prev, newLeg]);
   };
 
-  // Load a saved strategy into builder
-  const handleLoadSavedStrategy = (legs: StrategyLeg[]) => {
-    setActiveLegs(legs);
+  // Load a saved strategy into builder with full underlying, expiry and legs synchronization
+  const handleLoadSavedStrategy = (target: TrackedStrategy | StrategyLeg[]) => {
+    if (Array.isArray(target)) {
+      setActiveLegs(target);
+    } else {
+      if (target.underlyingSymbol) {
+        const inst = findFnoInstrument(target.underlyingSymbol);
+        setSelectedInstrument(inst);
+      }
+      if (target.expiry) {
+        setSelectedExpiry(target.expiry);
+      }
+      setActiveLegs(target.legs || []);
+    }
     setActiveTab('builder');
   };
 

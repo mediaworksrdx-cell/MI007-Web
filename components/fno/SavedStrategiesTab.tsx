@@ -7,10 +7,12 @@ import { findFnoInstrument } from '@/lib/fno/fnoDataService';
 import {
   getTrackedStrategies,
   deleteTrackedStrategy,
+  clearAllTrackedStrategies,
+  subscribeToStrategiesUpdates,
 } from '@/lib/fno/savedStrategiesService';
 
 interface SavedStrategiesTabProps {
-  onLoadStrategy: (legs: StrategyLeg[], name: string) => void;
+  onLoadStrategy: (strat: TrackedStrategy | StrategyLeg[], name?: string) => void;
   onOpenBuilderTab?: () => void;
 }
 
@@ -21,7 +23,15 @@ export function SavedStrategiesTab({
   const [strategies, setStrategies] = useState<TrackedStrategy[]>([]);
 
   useEffect(() => {
+    // Initial fetch
     setStrategies(getTrackedStrategies());
+
+    // Subscribe to real-time additions, updates and deletions
+    const unsubscribe = subscribeToStrategiesUpdates((updated) => {
+      setStrategies(updated);
+    });
+
+    return unsubscribe;
   }, []);
 
   const handleDelete = (id: string) => {
@@ -29,8 +39,15 @@ export function SavedStrategiesTab({
     setStrategies(updated);
   };
 
+  const handleClearAll = () => {
+    if (typeof window !== 'undefined' && window.confirm('Clear all saved strategies?')) {
+      const updated = clearAllTrackedStrategies();
+      setStrategies(updated);
+    }
+  };
+
   const handleLoad = (strat: TrackedStrategy) => {
-    onLoadStrategy(strat.legs, strat.name);
+    onLoadStrategy(strat, strat.name);
     if (onOpenBuilderTab) {
       onOpenBuilderTab();
     }
@@ -51,6 +68,14 @@ export function SavedStrategiesTab({
               Live tracking of custom-built multi-leg option strategies with real-time simulated P&L, delta risk, and expiry countdown.
             </p>
           </div>
+          {strategies.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              className="px-2.5 py-1 rounded text-[10px] mono font-bold text-rose-400 hover:bg-rose-500/10 border border-rose-500/30 transition-colors cursor-pointer"
+            >
+              Clear All Strategies
+            </button>
+          )}
         </div>
 
         {/* Strategies Cards Grid */}
@@ -90,6 +115,11 @@ export function SavedStrategiesTab({
                         <span className="mono text-[10px] text-[var(--theme-card-subtitle)]">
                           Expiry: {strat.expiry}
                         </span>
+                        {(strat.isUnlimitedRisk || strat.maxLoss === 'UNLIMITED') && (
+                          <span className="text-[9px] mono font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/50">
+                            ⚠️ UNLIMITED RISK ({strat.unlimitedRiskSide || 'UNHEDGED'})
+                          </span>
+                        )}
                       </div>
                       <h4 className="mono text-[14px] font-black text-[var(--theme-card-text)] mt-1">
                         {strat.name}

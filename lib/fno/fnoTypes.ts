@@ -178,6 +178,9 @@ export interface StrategyPayoff {
   marginRequired: number;
   expiryPoints: PayoffPoint[];
   todayPoints: PayoffPoint[];
+  isUnlimitedRisk?: boolean;
+  riskClassification?: 'DEFINED_RISK' | 'UNLIMITED_RISK';
+  unlimitedRiskSide?: 'UPSIDE' | 'DOWNSIDE' | 'BOTH' | 'NONE';
 }
 
 export interface OptionStrategyPreset {
@@ -228,4 +231,7 @@ export interface TrackedStrategy {
   maxProfit: number | 'UNLIMITED';
   maxLoss: number | 'UNLIMITED';
   breakevens: number[];
+  isUnlimitedRisk?: boolean;
+  riskClassification?: 'DEFINED_RISK' | 'UNLIMITED_RISK';
+  unlimitedRiskSide?: 'UPSIDE' | 'DOWNSIDE' | 'BOTH' | 'NONE';
 }

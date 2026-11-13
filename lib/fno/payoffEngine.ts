@@ -194,6 +194,9 @@ export function calculateStrategyPayoff(
       netGreeks: { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0, vanna: 0, charm: 0, vomma: 0 },
       capitalRequired: 0,
       marginRequired: 0,
+      isUnlimitedRisk: false,
+      unlimitedRiskSide: 'NONE',
+      riskClassification: 'DEFINED_RISK',
       expiryPoints: [],
       todayPoints: [],
     };
@@ -225,14 +228,21 @@ export function calculateStrategyPayoff(
   let marginRequired = 0;
 
   for (const leg of activeLegs) {
-    const totalLegCost = leg.entryPrice * leg.lots * leg.lotSize;
-    if (leg.action === 'BUY') {
-      netCashFlow -= totalLegCost;
-      capitalRequired += totalLegCost;
+    const notional = (leg.instrument === 'FUT' ? spotPrice : leg.strike) * leg.lots * leg.lotSize;
+    if (leg.instrument === 'FUT') {
+      // Futures require initial margin (~12% of notional) but generate zero upfront option cash flow
+      marginRequired += notional * 0.12;
     } else {
-      netCashFlow += totalLegCost;
-      // Short leg margin: ~15% of notional minus premium received
-      marginRequired += Math.max(25000, leg.strike * leg.lots * leg.lotSize * 0.12);
+      // Options cash flow: premium paid or received
+      const totalPremium = leg.entryPrice * leg.lots * leg.lotSize;
+      if (leg.action === 'BUY') {
+        netCashFlow -= totalPremium;
+        capitalRequired += totalPremium;
+      } else {
+        netCashFlow += totalPremium;
+        // Short option margin: SPAN + Exposure margin approx 12% of notional (minimum ₹25,000)
+        marginRequired += Math.max(25000, notional * 0.12);
+      }
     }
   }
 
@@ -273,43 +283,103 @@ export function calculateStrategyPayoff(
     });
   }
 
-  // Find Breakevens (Points where expiry P&L crosses zero)
-  const breakevens: number[] = [];
-  for (let i = 0; i < expiryPoints.length - 1; i++) {
-    const p1 = expiryPoints[i];
-    const p2 = expiryPoints[i + 1];
-    if ((p1.pnl <= 0 && p2.pnl > 0) || (p1.pnl >= 0 && p2.pnl < 0)) {
-      // Linear interpolation for exact crossing
-      const fraction = Math.abs(p1.pnl) / (Math.abs(p1.pnl) + Math.abs(p2.pnl));
-      const crossingPrice = p1.price + fraction * (p2.price - p1.price);
-      breakevens.push(Math.round(crossingPrice * 10) / 10);
-    }
-  }
+  // Helper for pure unshocked expiration P&L at any arbitrary spot price
+  const evalExpiryAtSpot = (s: number): number => {
+    return evaluatePortfolioAtScenario({
+      legs: activeLegs,
+      candidateSpot: s,
+      referenceSpot: anchorSpot,
+      timeShiftDays: 0,
+      ivShiftPct: 0,
+      frontDaysToExpiry: daysToExpiry,
+      volSurfaceConfig: options.volSurfaceConfig,
+    }).expiryPnl;
+  };
 
-  // Detect Unlimited Profit / Loss via exact asymptotic net slope above max strike
-  const midPoint = expiryPoints[Math.floor(expiryPoints.length / 2)];
-  const minPnlVal = Math.min(...expiryPoints.map((p) => p.pnl));
-  const maxPnlVal = Math.max(...expiryPoints.map((p) => p.pnl));
-
-  let upsideSlope = 0;
-  let downsideSlope = 0;
+  // Asymptotic net slopes:
+  // slopeAboveMaxK = d(ExpiryPnL)/dS as S -> infinity
+  // slopeBelowMinK = d(ExpiryPnL)/dS as S -> 0
+  let slopeAboveMaxK = 0;
+  let slopeBelowMinK = 0;
   for (const leg of activeLegs) {
     const mult = (leg.action === 'BUY' ? 1 : -1) * leg.lots * leg.lotSize;
-    if (leg.instrument === 'CE' || leg.instrument === 'FUT') {
-      upsideSlope += mult;
-    }
-    if (leg.instrument === 'PE') {
-      downsideSlope += mult;
-    } else if (leg.instrument === 'FUT') {
-      downsideSlope -= mult;
+    if (leg.instrument === 'FUT') {
+      slopeAboveMaxK += mult;
+      slopeBelowMinK += mult;
+    } else if (leg.instrument === 'CE') {
+      slopeAboveMaxK += mult;
+    } else if (leg.instrument === 'PE') {
+      slopeBelowMinK -= mult;
     }
   }
 
-  const hasUnlimitedProfit = upsideSlope > 0;
-  const hasUnlimitedLoss = upsideSlope < 0 || downsideSlope < 0;
+  const hasUnlimitedProfit = slopeAboveMaxK > 0;
+  const hasUnlimitedLoss = slopeAboveMaxK < 0;
 
-  const maxProfit = hasUnlimitedProfit ? 'UNLIMITED' : maxPnlVal;
-  const maxLoss = hasUnlimitedLoss ? 'UNLIMITED' : minPnlVal;
+  // Unhedged risk classification
+  const hasShortPut = activeLegs.some((l) => l.action === 'SELL' && l.instrument === 'PE');
+  const hasShortFut = activeLegs.some((l) => l.action === 'SELL' && l.instrument === 'FUT');
+  const hasHeavyDownsideRisk = slopeBelowMinK > 0 && (hasShortPut || hasShortFut);
+
+  const isUnlimitedRisk = hasUnlimitedLoss || hasHeavyDownsideRisk;
+  let unlimitedRiskSide: 'UPSIDE' | 'DOWNSIDE' | 'BOTH' | 'NONE' = 'NONE';
+  if (hasUnlimitedLoss && hasHeavyDownsideRisk) {
+    unlimitedRiskSide = 'BOTH';
+  } else if (hasUnlimitedLoss) {
+    unlimitedRiskSide = 'UPSIDE';
+  } else if (hasHeavyDownsideRisk) {
+    unlimitedRiskSide = 'DOWNSIDE';
+  }
+  const riskClassification: 'DEFINED_RISK' | 'UNLIMITED_RISK' = isUnlimitedRisk
+    ? 'UNLIMITED_RISK'
+    : 'DEFINED_RISK';
+
+  // Analytical Extrema Evaluation across all strike kinks, spot, and boundary points
+  const criticalStrikes = Array.from(
+    new Set([0, ...strikes, anchorSpot, spotPrice])
+  )
+    .filter((p) => p >= 0)
+    .sort((a, b) => a - b);
+
+  const criticalPnls = criticalStrikes.map((s) => evalExpiryAtSpot(s));
+  const maxAnalyticalPnl = Math.round(Math.max(...criticalPnls));
+  const minAnalyticalPnl = Math.round(Math.min(...criticalPnls));
+
+  const maxProfit = hasUnlimitedProfit ? 'UNLIMITED' : maxAnalyticalPnl;
+  const maxLoss = hasUnlimitedLoss ? 'UNLIMITED' : minAnalyticalPnl;
+
+  // Analytical Piecewise Linear Breakeven Solver
+  const rawBreakevens: number[] = [];
+
+  // 1. Between critical points
+  for (let i = 0; i < criticalStrikes.length - 1; i++) {
+    const s1 = criticalStrikes[i];
+    const s2 = criticalStrikes[i + 1];
+    const p1 = criticalPnls[i];
+    const p2 = criticalPnls[i + 1];
+
+    if (Math.abs(p1) < 1e-4) {
+      rawBreakevens.push(s1);
+    } else if (Math.abs(p2) < 1e-4) {
+      rawBreakevens.push(s2);
+    } else if ((p1 < 0 && p2 > 0) || (p1 > 0 && p2 < 0)) {
+      const root = s1 + (-p1 / (p2 - p1)) * (s2 - s1);
+      rawBreakevens.push(Math.round(root * 10) / 10);
+    }
+  }
+
+  // 2. Beyond highest strike kink
+  const highestK = criticalStrikes[criticalStrikes.length - 1];
+  const pAtHighestK = criticalPnls[criticalPnls.length - 1];
+  if (Math.abs(slopeAboveMaxK) > 1e-4) {
+    const rootAbove = highestK - pAtHighestK / slopeAboveMaxK;
+    if (rootAbove > highestK + 0.1) {
+      rawBreakevens.push(Math.round(rootAbove * 10) / 10);
+    }
+  }
+
+  // Deduplicate and filter out non-positive roots
+  const breakevens = Array.from(new Set(rawBreakevens.filter((b) => b > 0))).sort((a, b) => a - b);
 
   // Aggregate Portfolio Greeks (1st & 2nd order) dynamically evaluated at simulated spot, shifted IV, and remaining DTE
   const currentScenarioEval = evaluatePortfolioAtScenario({
@@ -334,28 +404,51 @@ export function calculateStrategyPayoff(
     riskRewardRatio = 'Unlimited Risk';
   }
 
-  // Probability of Profit (POP)
+  // Probability of Profit (POP) via Institutional Black-Scholes Risk-Neutral Probabilities
+  let totalIvWeight = 0;
+  let weightedIvSum = 0;
+  for (const leg of activeLegs) {
+    if (leg.instrument !== 'FUT' && leg.iv > 0) {
+      const w = leg.lots * leg.lotSize;
+      weightedIvSum += (leg.iv / 100.0) * w;
+      totalIvWeight += w;
+    }
+  }
+  const effectiveSigma = totalIvWeight > 0 ? weightedIvSum / totalIvWeight : 0.145;
+  const tYears = Math.max(0.002, daysToExpiry / 365.0);
+  const r = 0.068;
+
+  const probSpotAbove = (k: number): number => {
+    if (k <= 0) return 1.0;
+    const d2 =
+      (Math.log(spotPrice / k) + (r - 0.5 * effectiveSigma * effectiveSigma) * tYears) /
+      (effectiveSigma * Math.sqrt(tYears));
+    return cdfNormal(d2);
+  };
+
   let probabilityOfProfit = 50;
-  if (breakevens.length === 1) {
+  if (breakevens.length === 0) {
+    const pnlAtSpot = evalExpiryAtSpot(spotPrice);
+    probabilityOfProfit = pnlAtSpot >= 0 ? 99 : 1;
+  } else if (breakevens.length === 1) {
     const be = breakevens[0];
-    const stdDev = spotPrice * 0.15 * Math.sqrt(daysToExpiry / 365.0);
-    const z = (be - spotPrice) / stdDev;
-    if (category === 'BULLISH') {
-      probabilityOfProfit = Math.round((1 - cdfNormal(z)) * 100);
+    const pnlAbove = evalExpiryAtSpot(be + 5);
+    if (pnlAbove > 0) {
+      probabilityOfProfit = Math.round(probSpotAbove(be) * 100);
     } else {
-      probabilityOfProfit = Math.round(cdfNormal(z) * 100);
+      probabilityOfProfit = Math.round((1 - probSpotAbove(be)) * 100);
     }
   } else if (breakevens.length >= 2) {
-    const beLow = Math.min(...breakevens);
-    const beHigh = Math.max(...breakevens);
-    const stdDev = spotPrice * 0.15 * Math.sqrt(daysToExpiry / 365.0);
-    const zHigh = (beHigh - spotPrice) / stdDev;
-    const zLow = (beLow - spotPrice) / stdDev;
-    const betweenProb = cdfNormal(zHigh) - cdfNormal(zLow);
-    const isProfitableInside = midPoint.pnl >= 0 && category !== 'VOLATILE';
-    probabilityOfProfit = Math.round((isProfitableInside ? betweenProb : 1 - betweenProb) * 100);
+    const beLow = breakevens[0];
+    const beHigh = breakevens[breakevens.length - 1];
+    const probBetween = Math.max(0, probSpotAbove(beLow) - probSpotAbove(beHigh));
+    const midPrice = (beLow + beHigh) / 2;
+    const pnlAtMid = evalExpiryAtSpot(midPrice);
+    const isProfitableInside = pnlAtMid >= 0;
+
+    probabilityOfProfit = Math.round((isProfitableInside ? probBetween : 1 - probBetween) * 100);
   }
-  probabilityOfProfit = Math.max(10, Math.min(92, probabilityOfProfit));
+  probabilityOfProfit = Math.max(1, Math.min(99, probabilityOfProfit));
 
   return {
     strategyName,
@@ -367,6 +460,9 @@ export function calculateStrategyPayoff(
     probabilityOfProfit,
     netDebitCredit: Math.round(netCashFlow),
     riskRewardRatio,
+    isUnlimitedRisk,
+    unlimitedRiskSide,
+    riskClassification,
     netGreeks: {
       delta: Math.round(rawGreeks.delta * 10) / 10,
       gamma: Math.round(rawGreeks.gamma * 1000000) / 1000000,

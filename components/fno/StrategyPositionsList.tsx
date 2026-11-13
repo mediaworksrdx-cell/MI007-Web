@@ -207,7 +207,16 @@ export function StrategyPositionsList({
       </div>
 
       {/* ── 2. Financial Metrics & Second-Order Greeks Table ── */}
-      <div className="bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] rounded-xl p-4 shadow-xs">
+      <div className="bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] rounded-xl p-4 shadow-xs space-y-2">
+        {hasLegs && (payoff.isUnlimitedRisk || payoff.maxLoss === 'UNLIMITED') && (
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-rose-500/15 border border-rose-500/40 text-rose-400 text-[11px] font-sans font-bold">
+            <span className="shrink-0 text-sm">⚠️</span>
+            <span>
+              UNLIMITED RISK STRATEGY ({payoff.unlimitedRiskSide || 'UNHEDGED'}): Unhedged tail exposure to severe market moves.
+            </span>
+          </div>
+        )}
+
         <div className="space-y-2 text-[12.5px] font-mono tabular-nums">
           {/* Prob. of Profit */}
           <div className="flex items-center justify-between py-1 border-b border-[var(--theme-card-border)]/60">
@@ -237,7 +246,7 @@ export function StrategyPositionsList({
                 ? '-'
                 : typeof payoff.maxLoss === 'number'
                 ? `-${curr}${Math.abs(payoff.maxLoss).toLocaleString(loc)} (-${maxLossPct.toFixed(1)}%)`
-                : 'Unlimited Risk'}
+                : `⚠️ Unlimited Risk (${payoff.unlimitedRiskSide || 'Unhedged'})`}
             </span>
           </div>
 

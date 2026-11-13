@@ -75,6 +75,9 @@ const DEFAULT_SEEDED_STRATEGIES: TrackedStrategy[] = [
     maxProfit: 4810,
     maxLoss: -4940,
     breakevens: [22426, 22924],
+    isUnlimitedRisk: false,
+    riskClassification: 'DEFINED_RISK',
+    unlimitedRiskSide: 'NONE',
   },
   {
     id: 'strat-seed-2',
@@ -119,8 +122,50 @@ const DEFAULT_SEEDED_STRATEGIES: TrackedStrategy[] = [
     maxProfit: 6450,
     maxLoss: -5550,
     breakevens: [55085],
+    isUnlimitedRisk: false,
+    riskClassification: 'DEFINED_RISK',
+    unlimitedRiskSide: 'NONE',
   },
 ];
+
+export const FNO_STRATEGIES_UPDATE_EVENT = 'mi007_fno_strategies_updated';
+
+function broadcastStrategiesUpdated(strategies: TrackedStrategy[]): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(FNO_STRATEGIES_UPDATE_EVENT, { detail: strategies })
+    );
+  }
+}
+
+export function subscribeToStrategiesUpdates(
+  callback: (strategies: TrackedStrategy[]) => void
+): () => void {
+  if (typeof window === 'undefined') return () => {};
+
+  const handleCustom = (e: Event) => {
+    const detail = (e as CustomEvent<TrackedStrategy[]>).detail;
+    if (Array.isArray(detail)) {
+      callback(detail);
+    } else {
+      callback(getTrackedStrategies());
+    }
+  };
+
+  const handleStorage = (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY) {
+      callback(getTrackedStrategies());
+    }
+  };
+
+  window.addEventListener(FNO_STRATEGIES_UPDATE_EVENT, handleCustom);
+  window.addEventListener('storage', handleStorage);
+
+  return () => {
+    window.removeEventListener(FNO_STRATEGIES_UPDATE_EVENT, handleCustom);
+    window.removeEventListener('storage', handleStorage);
+  };
+}
 
 export function getTrackedStrategies(): TrackedStrategy[] {
   if (typeof window === 'undefined') return DEFAULT_SEEDED_STRATEGIES;
@@ -131,7 +176,7 @@ export function getTrackedStrategies(): TrackedStrategy[] {
       return DEFAULT_SEEDED_STRATEGIES;
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : DEFAULT_SEEDED_STRATEGIES;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return DEFAULT_SEEDED_STRATEGIES;
   }
@@ -140,9 +185,14 @@ export function getTrackedStrategies(): TrackedStrategy[] {
 export function saveTrackedStrategy(strat: TrackedStrategy): TrackedStrategy[] {
   if (typeof window === 'undefined') return [];
   const current = getTrackedStrategies();
-  const updated = [strat, ...current.filter((s) => s.id !== strat.id)];
+  const exists = current.some((s) => s.id === strat.id);
+  const updated = exists
+    ? current.map((s) => (s.id === strat.id ? strat : s))
+    : [strat, ...current];
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    broadcastStrategiesUpdated(updated);
   } catch {
     // ignore
   }
@@ -155,6 +205,19 @@ export function deleteTrackedStrategy(id: string): TrackedStrategy[] {
   const updated = current.filter((s) => s.id !== id);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    broadcastStrategiesUpdated(updated);
+  } catch {
+    // ignore
+  }
+  return updated;
+}
+
+export function clearAllTrackedStrategies(): TrackedStrategy[] {
+  if (typeof window === 'undefined') return [];
+  const updated: TrackedStrategy[] = [];
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    broadcastStrategiesUpdated(updated);
   } catch {
     // ignore
   }
