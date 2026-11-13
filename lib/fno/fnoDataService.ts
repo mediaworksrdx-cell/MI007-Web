@@ -11,6 +11,7 @@ import {
   BuildupRecord,
   BuildupType,
   MarketRegimeType,
+  Greeks,
 } from './fnoTypes';
 import { calculateBSPrice, calculateBSGreeks } from './blackScholes';
 import { MarketType } from '@/lib/types';
@@ -36,8 +37,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -201.25,
     changePct: -0.88,
     sector: 'Broad Market Index',
-    expiries: ['29 OCT 2026', '05 NOV 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['19 NOV 2026', '26 NOV 2026', '03 DEC 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'BANKNIFTY',
@@ -51,8 +52,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -562.40,
     changePct: -1.01,
     sector: 'Banking Index',
-    expiries: ['29 OCT 2026', '05 NOV 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['19 NOV 2026', '26 NOV 2026', '03 DEC 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'FINNIFTY',
@@ -66,8 +67,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -188.50,
     changePct: -0.76,
     sector: 'Financial Index',
-    expiries: ['27 OCT 2026', '03 NOV 2026', '24 NOV 2026', '29 DEC 2026'],
-    currentExpiry: '27 OCT 2026',
+    expiries: ['17 NOV 2026', '24 NOV 2026', '01 DEC 2026', '29 DEC 2026'],
+    currentExpiry: '24 NOV 2026',
   },
   {
     symbol: 'MIDCPNIFTY',
@@ -81,8 +82,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -42.10,
     changePct: -0.33,
     sector: 'Midcap Index',
-    expiries: ['26 OCT 2026', '02 NOV 2026', '23 NOV 2026', '28 DEC 2026'],
-    currentExpiry: '26 OCT 2026',
+    expiries: ['16 NOV 2026', '23 NOV 2026', '30 NOV 2026', '28 DEC 2026'],
+    currentExpiry: '23 NOV 2026',
   },
   {
     symbol: 'SENSEX',
@@ -96,8 +97,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -870.61,
     changePct: -1.17,
     sector: 'Broad Market Index',
-    expiries: ['30 OCT 2026', '06 NOV 2026', '27 NOV 2026', '25 DEC 2026'],
-    currentExpiry: '30 OCT 2026',
+    expiries: ['20 NOV 2026', '27 NOV 2026', '04 DEC 2026', '25 DEC 2026'],
+    currentExpiry: '27 NOV 2026',
   },
   {
     symbol: 'BANKEX',
@@ -111,8 +112,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 110.20,
     changePct: 0.18,
     sector: 'Banking Index',
-    expiries: ['30 OCT 2026', '06 NOV 2026', '27 NOV 2026', '25 DEC 2026'],
-    currentExpiry: '30 OCT 2026',
+    expiries: ['20 NOV 2026', '27 NOV 2026', '04 DEC 2026', '25 DEC 2026'],
+    currentExpiry: '27 NOV 2026',
   },
 
   // ── Indian Heavyweight F&O Equities ──
@@ -128,8 +129,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -19.50,
     changePct: -1.62,
     sector: 'Oil & Gas / Energy',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'HDFCBANK',
@@ -143,8 +144,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -12.90,
     changePct: -1.82,
     sector: 'Banking - Private',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'TCS',
@@ -158,8 +159,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 22.40,
     changePct: 0.90,
     sector: 'Information Technology',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'INFY',
@@ -173,8 +174,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -15.80,
     changePct: -1.35,
     sector: 'Information Technology',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'ICICIBANK',
@@ -188,8 +189,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 14.20,
     changePct: 1.03,
     sector: 'Banking - Private',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'SBIN',
@@ -203,8 +204,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 8.50,
     changePct: 0.88,
     sector: 'Banking - PSU',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'TATAMOTORS',
@@ -218,8 +219,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -4.80,
     changePct: -1.75,
     sector: 'Automobile',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'BHARTIARTL',
@@ -233,8 +234,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 12.20,
     changePct: 0.65,
     sector: 'Telecommunication',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'AXISBANK',
@@ -248,8 +249,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 14.20,
     changePct: 1.21,
     sector: 'Banking - Private',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'KOTAKBANK',
@@ -263,8 +264,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 8.40,
     changePct: 0.47,
     sector: 'Banking - Private',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'LT',
@@ -278,8 +279,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 28.50,
     changePct: 0.79,
     sector: 'Infrastructure & Capital Goods',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'BAJFINANCE',
@@ -293,8 +294,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -32.20,
     changePct: -0.45,
     sector: 'Financial Services - NBFC',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'TITAN',
@@ -308,8 +309,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 72.00,
     changePct: 2.10,
     sector: 'Consumer & Jewelry',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'ZOMATO',
@@ -323,8 +324,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 5.65,
     changePct: 2.15,
     sector: 'Consumer Internet / Quick Commerce',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'TATASTEEL',
@@ -338,8 +339,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 1.30,
     changePct: 0.85,
     sector: 'Metals & Mining',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'ADANIENT',
@@ -353,8 +354,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -19.50,
     changePct: -0.65,
     sector: 'Diversified Conglomerate',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'BEL',
@@ -368,8 +369,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 5.20,
     changePct: 1.80,
     sector: 'Aerospace & Defense',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'HAL',
@@ -383,8 +384,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 41.50,
     changePct: 0.95,
     sector: 'Aerospace & Defense',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
 
   // ── Global & US Derivatives ──
@@ -400,8 +401,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -103.80,
     changePct: -1.34,
     sector: 'US Broad Market',
-    expiries: ['29 OCT 2026', '05 NOV 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['20 NOV 2026', '27 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
   {
     symbol: 'NDX',
@@ -415,8 +416,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 238.10,
     changePct: 1.17,
     sector: 'US Technology',
-    expiries: ['29 OCT 2026', '05 NOV 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['20 NOV 2026', '27 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
   {
     symbol: 'NVDA',
@@ -430,8 +431,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 3.10,
     changePct: 2.22,
     sector: 'Semiconductors',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'AAPL',
@@ -445,8 +446,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -1.20,
     changePct: -0.51,
     sector: 'Consumer Electronics',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'MSFT',
@@ -460,8 +461,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 4.85,
     changePct: 1.15,
     sector: 'Enterprise Software & Cloud',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'TSLA',
@@ -475,8 +476,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 8.70,
     changePct: 3.45,
     sector: 'Automotive & AI',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'AMZN',
@@ -490,8 +491,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 1.60,
     changePct: 0.85,
     sector: 'E-Commerce & Cloud Computing',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'GOOGL',
@@ -505,8 +506,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -2.10,
     changePct: -1.25,
     sector: 'Search & Digital Media',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'META',
@@ -520,8 +521,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 10.50,
     changePct: 1.80,
     sector: 'Social Media & AI',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'AMD',
@@ -535,8 +536,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -2.95,
     changePct: -1.85,
     sector: 'Semiconductors',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'NFLX',
@@ -550,8 +551,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 4.90,
     changePct: 0.65,
     sector: 'Digital Entertainment',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'JPM',
@@ -565,8 +566,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -0.90,
     changePct: -0.40,
     sector: 'Investment Banking & Finance',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
 
   // ── UAE & Middle East Derivatives ──
@@ -582,8 +583,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 18.90,
     changePct: 0.42,
     sector: 'UAE Broad Market',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'EMAAR',
@@ -597,8 +598,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 0.12,
     changePct: 1.39,
     sector: 'Real Estate',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'FAB',
@@ -612,8 +613,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -0.10,
     changePct: -0.74,
     sector: 'Banking - UAE',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'DEWA',
@@ -627,8 +628,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 0.01,
     changePct: 0.40,
     sector: 'Utilities & Infrastructure',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'ALDAR',
@@ -642,8 +643,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 0.11,
     changePct: 1.63,
     sector: 'Real Estate & Development',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'AIRARABIA',
@@ -657,8 +658,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -0.02,
     changePct: -0.68,
     sector: 'Aviation & Travel',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'ETISALAT',
@@ -672,8 +673,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 0.10,
     changePct: 0.55,
     sector: 'Telecommunications & Tech',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
   {
     symbol: 'EMIRATESNBD',
@@ -687,8 +688,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -0.20,
     changePct: -1.02,
     sector: 'Banking & Financials',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
   },
 ];
 
@@ -785,8 +786,8 @@ export function convertZerodhaToFnoInstrument(
     change,
     changePct,
     sector: item.sector || 'Indian Equity',
-    expiries: ['29 OCT 2026', '26 NOV 2026', '31 DEC 2026'],
-    currentExpiry: '29 OCT 2026',
+    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
+    currentExpiry: '26 NOV 2026',
     isZerodha: true,
     token: item.token,
   };
@@ -884,25 +885,36 @@ export function getWeeklyAndMonthlyExpiries(expiries: string[]): { weeklyExpiry:
     return { weeklyExpiry: '', monthlyExpiry: '' };
   }
   const weeklyExpiry = expiries[0];
-  const monthlyExpiry = expiries.length >= 3 ? expiries[2] : (expiries[1] || expiries[0]);
+  const monthlyMatch = expiries.find((e) =>
+    e.includes('26 NOV') || e.includes('24 NOV') || e.includes('27 NOV') || e.includes('23 NOV')
+  );
+  const monthlyExpiry = monthlyMatch || (expiries.length >= 2 ? expiries[1] : expiries[0]);
   return { weeklyExpiry, monthlyExpiry };
 }
 
 /**
  * Deterministic helper to resolve calendar days to expiry from an expiry date string
- * (e.g. '29 OCT 2026', '05 NOV 2026', '12 NOV 2026', '26 NOV 2026', '31 DEC 2026').
+ * (e.g. '19 NOV 2026', '26 NOV 2026', '03 DEC 2026', '31 DEC 2026', '28 JAN 2027').
+ * Calculates precise days relative to current time or an optional reference date.
  */
-export function parseExpiryDaysToExpiry(expiry: string): number {
-  const parsedExpiry = Date.parse(expiry);
-  let daysToExpiry = expiry.includes('OCT') ? 7 : expiry.includes('NOV') ? 28 : 63;
+export function parseExpiryDaysToExpiry(expiry: string, referenceDate?: Date | number): number {
+  if (!expiry) return 13;
+  const clean = expiry.trim();
+  const parsedExpiry = Date.parse(clean.includes(':') ? clean : `${clean} 15:30:00 GMT+0530`);
+  const refNow = referenceDate
+    ? (typeof referenceDate === 'number' ? referenceDate : referenceDate.getTime())
+    : Date.now();
+
   if (!Number.isNaN(parsedExpiry)) {
-    const refNow = new Date('2026-10-22T09:15:00+05:30').getTime();
-    const diffDays = Math.round((parsedExpiry - refNow) / (1000 * 60 * 60 * 24));
-    if (diffDays > 0 && diffDays <= 365) {
-      daysToExpiry = diffDays;
-    }
+    const diffDays = Math.ceil((parsedExpiry - refNow) / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
   }
-  return daysToExpiry;
+
+  // Fallbacks for standard monthly cycles
+  if (clean.includes('NOV')) return 13;
+  if (clean.includes('DEC')) return 48;
+  if (clean.includes('JAN')) return 76;
+  return 7;
 }
 
 /**
@@ -921,10 +933,11 @@ export function generateOptionChain(
   const atmStrike = Math.round(spot / step) * step;
 
   const daysToExpiry = parseExpiryDaysToExpiry(expiry);
-  const timeYears = Math.max(0.002, daysToExpiry / 365.0);
+  const isExpired = daysToExpiry <= 0;
+  const timeYears = isExpired ? 0.00001 : Math.max(0.002, daysToExpiry / 365.0);
 
-  // Generate 27 strikes around ATM (-13 to +13 steps)
-  const strikeCount = 13;
+  // Generate 51 strikes around ATM (-25 to +25 steps) for deep market visibility across custom ranges
+  const strikeCount = 25;
   const strikes: OptionChainStrikeRow[] = [];
 
   let totalCallOI = 0;
@@ -937,74 +950,119 @@ export function generateOptionChain(
     const isATM = strike === atmStrike;
     const moneyness = (strike - spot) / spot; // negative = strike below spot
 
-    // Realistic volatility smile / skew
-    // Puts have higher IV due to downside crash protection demand (skew)
-    const baseIV = 0.145; // 14.5% base
-    const skew = -moneyness * 0.12; // lower strikes have higher IV
-    const smile = moneyness * moneyness * 0.45;
-    const callIV = Math.max(0.08, baseIV + skew * 0.5 + smile);
-    const putIV = Math.max(0.08, baseIV - skew * 1.2 + smile);
+    let callLtp: number;
+    let putLtp: number;
+    let callIV: number;
+    let putIV: number;
+    let callGreeks: Greeks;
+    let putGreeks: Greeks;
+    let callOI = 0;
+    let putOI = 0;
+    let callChgOI = 0;
+    let putChgOI = 0;
+    let callVol = 0;
+    let putVol = 0;
+    let callSpread = 0.05;
+    let putSpread = 0.05;
 
-    // Theoretical prices
-    const callLtpRaw = calculateBSPrice('CE', {
-      spot,
-      strike,
-      timeYears,
-      volatility: callIV,
-    });
-    const putLtpRaw = calculateBSPrice('PE', {
-      spot,
-      strike,
-      timeYears,
-      volatility: putIV,
-    });
+    if (isExpired) {
+      // Historical/expired contract settled at intrinsic value; liquidity is restricted
+      callLtp = Math.max(0, Math.round((spot - strike) * 20) / 20);
+      putLtp = Math.max(0, Math.round((strike - spot) * 20) / 20);
+      callIV = 0;
+      putIV = 0;
+      callGreeks = {
+        delta: strike < spot ? 1 : 0,
+        gamma: 0,
+        theta: 0,
+        vega: 0,
+        rho: 0,
+        vanna: 0,
+        charm: 0,
+        vomma: 0,
+        speed: 0,
+        zomma: 0,
+        color: 0,
+      };
+      putGreeks = {
+        delta: strike > spot ? -1 : 0,
+        gamma: 0,
+        theta: 0,
+        vega: 0,
+        rho: 0,
+        vanna: 0,
+        charm: 0,
+        vomma: 0,
+        speed: 0,
+        zomma: 0,
+        color: 0,
+      };
+      callSpread = 0;
+      putSpread = 0;
+    } else {
+      // Realistic volatility smile / skew
+      // Puts have higher IV due to downside crash protection demand (skew)
+      const baseIV = 0.145; // 14.5% base
+      const skew = -moneyness * 0.12; // lower strikes have higher IV
+      const smile = moneyness * moneyness * 0.45;
+      callIV = Math.max(0.08, baseIV + skew * 0.5 + smile);
+      putIV = Math.max(0.08, baseIV - skew * 1.2 + smile);
 
-    const callLtp = Math.max(0.05, Math.round(callLtpRaw * 20) / 20);
-    const putLtp = Math.max(0.05, Math.round(putLtpRaw * 20) / 20);
+      // Theoretical prices
+      const callLtpRaw = calculateBSPrice('CE', {
+        spot,
+        strike,
+        timeYears,
+        volatility: callIV,
+      });
+      const putLtpRaw = calculateBSPrice('PE', {
+        spot,
+        strike,
+        timeYears,
+        volatility: putIV,
+      });
 
-    // Greeks
-    const callGreeks = calculateBSGreeks('CE', {
-      spot,
-      strike,
-      timeYears,
-      volatility: callIV,
-    });
-    const putGreeks = calculateBSGreeks('PE', {
-      spot,
-      strike,
-      timeYears,
-      volatility: putIV,
-    });
+      callLtp = Math.max(0.05, Math.round(callLtpRaw * 20) / 20);
+      putLtp = Math.max(0.05, Math.round(putLtpRaw * 20) / 20);
 
-    // Realistic OI distribution: Higher concentration near round ATM/OTM strikes
-    const strikeRoundFactor = strike % (step * 2) === 0 ? 1.4 : 1.0;
-    const distFromAtm = Math.abs(i);
-    const decayFactor = Math.exp(-0.15 * distFromAtm);
+      // Greeks
+      callGreeks = calculateBSGreeks('CE', {
+        spot,
+        strike,
+        timeYears,
+        volatility: callIV,
+      });
+      putGreeks = calculateBSGreeks('PE', {
+        spot,
+        strike,
+        timeYears,
+        volatility: putIV,
+      });
 
-    // Differentiate Weekly vs Monthly OI volume & structure
-    const isMonthly = daysToExpiry > 14;
-    const oiScale = isMonthly ? 2.6 : 1.0;
+      // Realistic OI distribution: Higher concentration near round ATM/OTM strikes
+      const strikeRoundFactor = strike % (step * 2) === 0 ? 1.4 : 1.0;
+      const distFromAtm = Math.abs(i);
+      const decayFactor = Math.exp(-0.15 * distFromAtm);
 
-    // Call OI peaks at resistance (OTM Calls: strike > spot)
-    const callOIWeight = isMonthly ? (i >= 1 ? 1.35 : 0.65) : (i >= 0 ? 1.2 : 0.6);
-    const callOI = Math.round((120000 * oiScale * decayFactor * strikeRoundFactor * callOIWeight) / 100) * 100;
-    const callChgOI = Math.round((callOI * 0.08 * (i >= 0 ? 1 : -0.5)) / 50) * 50;
-    const callVol = Math.round(callOI * (isMonthly ? 0.35 : 0.45));
+      // Differentiate Weekly vs Monthly OI volume & structure
+      const isMonthly = daysToExpiry > 14;
+      const oiScale = isMonthly ? 2.6 : 1.0;
 
-    // Put OI peaks at support (OTM Puts: strike < spot)
-    const putOIWeight = isMonthly ? (i <= -1 ? 1.4 : 0.55) : (i <= 0 ? 1.3 : 0.5);
-    const putOI = Math.round((140000 * oiScale * decayFactor * strikeRoundFactor * putOIWeight) / 100) * 100;
-    const putChgOI = Math.round((putOI * 0.07 * (i <= 0 ? 1 : -0.4)) / 50) * 50;
-    const putVol = Math.round(putOI * (isMonthly ? 0.32 : 0.42));
+      // Call OI peaks at resistance (OTM Calls: strike > spot)
+      const callOIWeight = isMonthly ? (i >= 1 ? 1.35 : 0.65) : (i >= 0 ? 1.2 : 0.6);
+      callOI = Math.round((120000 * oiScale * decayFactor * strikeRoundFactor * callOIWeight) / 100) * 100;
+      callChgOI = Math.round((callOI * 0.08 * (i >= 0 ? 1 : -0.5)) / 50) * 50;
+      callVol = Math.round(callOI * (isMonthly ? 0.35 : 0.45));
 
-    totalCallOI += callOI;
-    totalPutOI += putOI;
-    totalCallVolume += callVol;
-    totalPutVolume += putVol;
+      // Put OI peaks at support (OTM Puts: strike < spot)
+      const putOIWeight = isMonthly ? (i <= -1 ? 1.4 : 0.55) : (i <= 0 ? 1.3 : 0.5);
+      putOI = Math.round((140000 * oiScale * decayFactor * strikeRoundFactor * putOIWeight) / 100) * 100;
+      putChgOI = Math.round((putOI * 0.07 * (i <= 0 ? 1 : -0.4)) / 50) * 50;
+      putVol = Math.round(putOI * (isMonthly ? 0.32 : 0.42));
 
-    // Spreads
-    const callSpread = Math.max(0.05, Math.round(callLtp * 0.005 * 20) / 20);
-    const putSpread = Math.max(0.05, Math.round(putLtp * 0.005 * 20) / 20);
+      callSpread = Math.max(0.05, Math.round(callLtp * 0.005 * 20) / 20);
+      putSpread = Math.max(0.05, Math.round(putLtp * 0.005 * 20) / 20);
+    }
 
     const callContract: OptionContract = {
       strike,
@@ -1151,7 +1209,7 @@ export function getFuturesTermStructure(
 
   const contracts: FutureContract[] = [
     {
-      expiry: '29 OCT 2026',
+      expiry: '26 NOV 2026',
       ltp: Math.round((spot * 1.0022) * 20) / 20,
       change: Math.round(change * 100) / 100,
       changePct: Math.round(changePct * 100) / 100,
@@ -1162,7 +1220,7 @@ export function getFuturesTermStructure(
       vwap: Math.round((spot * 1.0018) * 20) / 20,
     },
     {
-      expiry: '26 NOV 2026',
+      expiry: '31 DEC 2026',
       ltp: Math.round((spot * 1.0055) * 20) / 20,
       change: Math.round(change * 1.02 * 100) / 100,
       changePct: Math.round((changePct + 0.04) * 100) / 100,
@@ -1173,7 +1231,7 @@ export function getFuturesTermStructure(
       vwap: Math.round((spot * 1.0048) * 20) / 20,
     },
     {
-      expiry: '31 DEC 2026',
+      expiry: '28 JAN 2027',
       ltp: Math.round((spot * 1.0095) * 20) / 20,
       change: Math.round(change * 1.05 * 100) / 100,
       changePct: Math.round((changePct + 0.08) * 100) / 100,

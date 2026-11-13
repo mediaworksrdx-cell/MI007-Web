@@ -73,11 +73,23 @@ export function OptionChainTab({
   // Filter strikes based on range and search
   const visibleRows = useMemo(() => {
     let rows = [...chainData.strikes];
+    const liveSpot = chainData.spotPrice;
 
     if (searchStrike.trim()) {
       rows = rows.filter((r) => r.strike.toString().includes(searchStrike.trim()));
     } else {
-      const atmIndex = rows.findIndex((r) => r.isATM);
+      let atmIndex = rows.findIndex((r) => r.isATM);
+      if (atmIndex === -1 && rows.length > 0) {
+        // Fallback: accurately locate strike with minimum distance to spot price
+        let minDiff = Infinity;
+        rows.forEach((r, idx) => {
+          const diff = Math.abs(r.strike - liveSpot);
+          if (diff < minDiff) {
+            minDiff = diff;
+            atmIndex = idx;
+          }
+        });
+      }
       if (atmIndex !== -1) {
         if (strikeRange === 'NEAR_ATM') {
           rows = rows.slice(Math.max(0, atmIndex - 4), Math.min(rows.length, atmIndex + 5));
@@ -90,7 +102,7 @@ export function OptionChainTab({
     }
 
     return rows;
-  }, [chainData.strikes, strikeRange, searchStrike]);
+  }, [chainData.strikes, strikeRange, searchStrike, chainData.spotPrice]);
 
   const handleQuickAdd = (
     action: TradeAction,
@@ -267,8 +279,6 @@ export function OptionChainTab({
             <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/60 tabular-nums">
               {visibleRows.map((row) => {
                 const liveSpot = chainData.spotPrice;
-                const callOIBarWidth = Math.min(100, Math.round((row.call.openInterest / maxOI) * 100));
-                const putOIBarWidth = Math.min(100, Math.round((row.put.openInterest / maxOI) * 100));
                 
                 // Dynamic moneyness calculation based on live spot
                 const minStrikeDiff = Math.min(...chainData.strikes.map(s => Math.abs(s.strike - liveSpot)));
@@ -330,15 +340,9 @@ export function OptionChainTab({
                       </div>
                     </td>
 
-                    {/* ── Call OI & Depth Bar ── */}
-                    <td className={`py-1.5 px-2 text-right relative font-bold text-slate-800 dark:text-slate-200 ${callBgClass}`}>
-                      <div className="relative z-10">
-                        {formatNumber(row.call.openInterest)}
-                      </div>
-                      <div
-                        className="absolute inset-y-1 right-0 bg-rose-500/10 rounded-l pointer-events-none"
-                        style={{ width: `${callOIBarWidth}%` }}
-                      />
+                    {/* ── Call OI (Raw Numerical Value Only - No Overlay Bars) ── */}
+                    <td className={`py-1.5 px-2 text-right font-bold text-slate-800 dark:text-slate-200 ${callBgClass}`}>
+                      {formatNumber(row.call.openInterest)}
                     </td>
 
                     {/* ── Call Change in OI ── */}
@@ -490,15 +494,9 @@ export function OptionChainTab({
                       {formatOiChange(row.put.changeInOI)}
                     </td>
 
-                    {/* ── Put OI & Depth Bar ── */}
-                    <td className={`py-1.5 px-2 text-left relative font-bold text-slate-800 dark:text-slate-200 ${putBgClass}`}>
-                      <div className="relative z-10">
-                        {formatNumber(row.put.openInterest)}
-                      </div>
-                      <div
-                        className="absolute inset-y-1 left-0 bg-emerald-500/10 rounded-r pointer-events-none"
-                        style={{ width: `${putOIBarWidth}%` }}
-                      />
+                    {/* ── Put OI (Raw Numerical Value Only - No Overlay Bars) ── */}
+                    <td className={`py-1.5 px-2 text-left font-bold text-slate-800 dark:text-slate-200 ${putBgClass}`}>
+                      {formatNumber(row.put.openInterest)}
                     </td>
 
                     {/* ── Put Action Buttons ── */}

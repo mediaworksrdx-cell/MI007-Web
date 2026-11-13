@@ -74,6 +74,13 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
     }
   }, [market, selectedInstrument.market]);
 
+  // Guard against invalid/mismatched expiry date when instrument or market changes
+  useEffect(() => {
+    if (selectedInstrument && !selectedInstrument.expiries.includes(selectedExpiry)) {
+      setSelectedExpiry(selectedInstrument.currentExpiry || selectedInstrument.expiries[0]);
+    }
+  }, [selectedInstrument, selectedExpiry]);
+
   // Connect to dedicated Twelve Data F&O Engine (isolated from general trade engine)
   const fnoFeed = useFnoDataFeed({
     symbol: selectedInstrument.symbol,

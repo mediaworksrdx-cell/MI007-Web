@@ -27,7 +27,7 @@ export function resolveLegExpiries(
   if (!legs || legs.length === 0) {
     return { frontDte: overrideFrontDte ?? 7, legExtraDays: [] };
   }
-  const parsedDtes = legs.map((l) => parseExpiryDaysToExpiry(l.expiry || '29 OCT 2026'));
+  const parsedDtes = legs.map((l) => parseExpiryDaysToExpiry(l.expiry || '26 NOV 2026'));
   const minParsedDte = Math.min(...parsedDtes);
   const frontDte = overrideFrontDte ?? minParsedDte;
   const legExtraDays = parsedDtes.map((d) => Math.max(0, d - minParsedDte));

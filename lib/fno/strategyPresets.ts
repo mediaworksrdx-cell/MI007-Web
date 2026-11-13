@@ -517,7 +517,7 @@ export function buildLegsFromPreset(
   const baseIV = 0.145;
   const defaultExpiries = availableExpiries && availableExpiries.length > 0
     ? availableExpiries
-    : ['29 OCT 2026', '05 NOV 2026', '26 NOV 2026', '31 DEC 2026'];
+    : ['19 NOV 2026', '26 NOV 2026', '03 DEC 2026', '31 DEC 2026'];
   const baseExpiryIdx = Math.max(0, defaultExpiries.indexOf(expiry));
 
   return preset.legsTemplate.map((tmpl, index) => {

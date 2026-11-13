@@ -169,7 +169,7 @@ console.log('\n================================================================'
 console.log('🧪 PHASE 1B: DEALER GAMMA EXPOSURE & ZERO-GAMMA FLIP VALIDATION');
 console.log('================================================================');
 
-const niftyChain = generateOptionChain('NIFTY', '29 OCT 2026', 22150);
+const niftyChain = generateOptionChain('NIFTY', '26 NOV 2026', 22150);
 assert(
   Boolean(niftyChain.provenance && niftyChain.provenance.chainSource === 'MODEL_SYNTHESIZED_BSM'),
   'OptionChainData carries explicit DataProvenance metadata'
@@ -233,7 +233,7 @@ const calendarLegs = buildLegsFromPreset(
   calendarPreset,
   niftyChain.spotPrice,
   50,
-  '29 OCT 2026',
+  '26 NOV 2026',
   75,
   undefined,
   1,
@@ -263,7 +263,7 @@ const condorLegs = buildLegsFromPreset(
   condorPreset,
   niftyChain.spotPrice,
   50,
-  '29 OCT 2026',
+  '26 NOV 2026',
   75
 );
 const matrixSpotTime = computeScenarioMatrix({
@@ -385,7 +385,7 @@ const strangleLegs = buildLegsFromPreset(
   stranglePreset,
   niftyChain.spotPrice,
   50,
-  '29 OCT 2026',
+  '26 NOV 2026',
   75,
   undefined,
   2 // 2 lots so a spot move creates > 1 lot of Delta
