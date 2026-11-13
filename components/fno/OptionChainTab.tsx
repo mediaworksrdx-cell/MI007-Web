@@ -141,10 +141,10 @@ export function OptionChainTab({
       )}
 
       {/* ── Toolbar: View Modes, Strike Range & Search ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl p-3 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl p-2.5 sm:p-3 shadow-sm">
         {/* View Mode Toggle */}
-        <div className="flex items-center gap-1 bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] p-1 rounded-lg">
-          <span className="mono text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase px-1.5 hidden sm:inline">
+        <div className="flex items-center gap-1 bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full">
+          <span className="mono text-[10px] font-bold text-[var(--theme-card-subtitle)] uppercase px-1.5 hidden sm:inline shrink-0">
             MODE:
           </span>
           {(
@@ -158,7 +158,7 @@ export function OptionChainTab({
               key={m.id}
               type="button"
               onClick={() => setViewMode(m.id)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] mono font-bold transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10.5px] sm:text-[11px] mono font-bold transition-all shrink-0 cursor-pointer ${
                 viewMode === m.id
                   ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
                   : 'text-[var(--theme-card-text)] hover:text-emerald-400 hover:bg-[var(--theme-card-border)]/40'
@@ -170,9 +170,9 @@ export function OptionChainTab({
         </div>
 
         {/* Strike Range & Search */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           {/* Range Selector */}
-          <div className="flex items-center gap-1 bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] p-1 rounded-lg">
+          <div className="flex items-center gap-1 bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full">
             {(
               [
                 { id: 'ALL', label: '🌐 All' },
@@ -188,7 +188,7 @@ export function OptionChainTab({
                   setStrikeRange(r.id);
                   setSearchStrike('');
                 }}
-                className={`px-2.5 py-1 rounded-lg text-[10.5px] mono font-bold transition-all cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-[10.5px] mono font-bold transition-all shrink-0 cursor-pointer ${
                   strikeRange === r.id && !searchStrike
                     ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
                     : 'text-[var(--theme-card-subtitle)] hover:text-[var(--theme-card-text)]'
@@ -205,37 +205,42 @@ export function OptionChainTab({
             placeholder="Strike..."
             value={searchStrike}
             onChange={(e) => setSearchStrike(e.target.value)}
-            className="w-24 px-2 py-1 rounded-lg bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] text-[11px] mono text-[var(--theme-card-text)] focus:outline-hidden focus:border-emerald-500"
+            className="w-20 sm:w-24 px-2 py-1 rounded-lg bg-[var(--theme-card-subsurface)] border border-[var(--theme-card-border)] text-[11px] mono text-[var(--theme-card-text)] focus:outline-hidden focus:border-emerald-500"
           />
         </div>
       </div>
 
       {/* ── Option Chain Table (Reference: NSE Institutional Layout) ── */}
       <div className="bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] rounded-xl overflow-hidden shadow-sm">
-        {/* Table Master Header (Deep Purple / Indigo) */}
-        <div className="grid grid-cols-[1fr_auto_1fr] text-center mono font-extrabold text-[12px] bg-[#2a2254] dark:bg-[#1c1638] text-white border-b border-indigo-900/60">
-          <div className="py-2 px-3 flex items-center justify-center gap-2 border-r border-indigo-900/60">
-            <span className="tracking-widest font-black uppercase text-[12.5px] text-white">CALLS</span>
-            <span className="text-[10px] text-indigo-200/70 font-normal hidden md:inline">
-              (Resistance & Call Writing)
-            </span>
-          </div>
-          <div className="py-2 px-6 font-black tracking-widest text-[12.5px] text-amber-300 border-x border-indigo-900/60 bg-[#221a46] dark:bg-[#15102c] min-w-[90px]">
-            STRIKE
-          </div>
-          <div className="py-2 px-3 flex items-center justify-center gap-2 border-l border-indigo-900/60">
-            <span className="tracking-widest font-black uppercase text-[12.5px] text-white">PUTS</span>
-            <span className="text-[10px] text-indigo-200/70 font-normal hidden md:inline">
-              (Support & Put Writing)
-            </span>
-          </div>
-        </div>
-
-        {/* Dense Table Body */}
+        {/* Dense Responsive Table Container */}
         <div className="overflow-x-auto max-h-[660px] overflow-y-auto no-scrollbar">
-          <table className="w-full text-center mono text-[11px] border-collapse">
-            <thead className="sticky top-0 z-20 bg-[#31275f] dark:bg-[#231c46] text-white border-b border-indigo-900/60 shadow-xs">
-              <tr className="text-[9.5px] uppercase tracking-wider text-indigo-100 font-extrabold">
+          <table className="w-full text-center mono text-[11px] border-collapse min-w-[880px]">
+            <thead className="sticky top-0 z-20 shadow-xs">
+              {/* Table Master Category Header Row (Calls, Strike, Puts) */}
+              <tr className="mono font-extrabold text-[12px] bg-[#2a2254] dark:bg-[#1c1638] text-white border-b border-indigo-900/60">
+                <th colSpan={viewMode === 'GREEKS' ? 9 : 7} className="py-2 px-3 text-center border-r border-indigo-900/60">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="tracking-widest font-black uppercase text-[12px] sm:text-[12.5px] text-white">CALLS</span>
+                    <span className="text-[10px] text-indigo-200/70 font-normal hidden md:inline">
+                      (Resistance &amp; Call Writing)
+                    </span>
+                  </div>
+                </th>
+                <th className="py-2 px-4 text-center font-black tracking-widest text-[12px] sm:text-[12.5px] text-amber-300 border-x border-indigo-900/60 bg-[#221a46] dark:bg-[#15102c] min-w-[130px]">
+                  STRIKE
+                </th>
+                <th colSpan={viewMode === 'GREEKS' ? 9 : 7} className="py-2 px-3 text-center border-l border-indigo-900/60">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="tracking-widest font-black uppercase text-[12px] sm:text-[12.5px] text-white">PUTS</span>
+                    <span className="text-[10px] text-indigo-200/70 font-normal hidden md:inline">
+                      (Support &amp; Put Writing)
+                    </span>
+                  </div>
+                </th>
+              </tr>
+
+              {/* Column Attribute Sub-Headers */}
+              <tr className="text-[9.5px] uppercase tracking-wider text-indigo-100 font-extrabold bg-[#31275f] dark:bg-[#231c46] border-b border-indigo-900/60">
                 {/* ── Call Columns ── */}
                 <th className="py-2.5 px-1 text-center font-bold w-10">Action</th>
                 <th className="py-2.5 px-2 text-right font-bold min-w-[70px]">OI</th>

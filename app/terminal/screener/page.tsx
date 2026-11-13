@@ -26,46 +26,47 @@ export default function ScreenerTerminalPage() {
             <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 pointer-events-none" />
 
             {/* ── Outer Bezel Header ── */}
-            <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-[var(--theme-card-border)] relative z-[100]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-[var(--theme-card-border)] relative z-[100]">
               <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
                 <Link
                   href="/terminal"
-                  className="px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-2 mono text-[12px] font-bold shadow-xs shrink-0 group"
+                  className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-1.5 sm:gap-2 mono text-[11px] sm:text-[12px] font-bold shadow-xs shrink-0 group"
                   title="Return to Dashboard"
                 >
                   <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
-                  <span className="font-black">BACK TO DASHBOARD</span>
+                  <span className="font-black hidden xs:inline">BACK TO DASHBOARD</span>
+                  <span className="font-black xs:hidden">DASHBOARD</span>
                 </Link>
 
-                <div className="flex h-[47px] w-[47px] sm:h-[55px] sm:w-[55px] items-center justify-center flex-shrink-0 overflow-visible">
+                <div className="flex h-[42px] w-[42px] sm:h-[55px] sm:w-[55px] items-center justify-center flex-shrink-0 overflow-visible">
                   <Falcon3DLogo
                     src="/images/logo-falcon-transparent.png"
                     alt="MARKET INTELLIGENCE MI-007"
-                    width={55}
-                    height={55}
+                    width={50}
+                    height={50}
                     className="w-full h-full object-contain"
                     disable3d
                   />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-[16px] xs:text-[18px] sm:text-[21px] md:text-[23px] font-caveat font-bold inst-card-text whitespace-nowrap flex items-center gap-1.5 sm:gap-2">
+                  <h1 className="text-[16px] xs:text-[18px] sm:text-[21px] md:text-[23px] font-caveat font-bold inst-card-text whitespace-nowrap flex items-center gap-1.5 sm:gap-2 truncate">
                     <span className="brand-title-dark font-caveat">Market Intelligence</span>
                     <span className="brand-accent-green font-caveat">MI-007</span>
                   </h1>
-                  <p className="text-[12px] sm:text-[14px] inst-card-text-muted font-medium mt-0.5 truncate">
+                  <p className="text-[11px] sm:text-[13px] inst-card-text-muted font-medium mt-0.5 truncate">
                     Intelligence Beyond the Noise · Equity Screeners
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
                 <MarketToggle selected={market} onChange={setMarket} />
               </div>
             </div>
 
             {/* ── Terminal Suite Module Tabs: Centered segmented bar ── */}
-            <div className="flex justify-center mb-6">
-              <div className="w-full sm:w-fit inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-xs">
+            <div className="flex justify-center mb-6 overflow-x-auto no-scrollbar max-w-full">
+              <div className="w-full sm:w-fit inline-flex flex-wrap sm:flex-nowrap items-center justify-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-xs">
                 <Link
                   href="/terminal"
                   className="px-4 py-2 rounded-lg mono text-[13px] font-bold tracking-wide text-center transition-all text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] hover:bg-slate-200/50 dark:hover:bg-white/5 flex items-center justify-center gap-2"

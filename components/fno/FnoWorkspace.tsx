@@ -242,44 +242,45 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
         <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-emerald-500 via-cyan-500 to-emerald-600 pointer-events-none" />
 
         {/* ── Outer Bezel Header ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-[var(--theme-card-border)] relative z-[100]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-[var(--theme-card-border)] relative z-[100]">
           <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
             <Link
               href="/terminal"
-              className="px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-2 mono text-[12px] font-bold shadow-xs shrink-0 group cursor-pointer"
+              className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] hover:border-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-1.5 sm:gap-2 mono text-[11px] sm:text-[12px] font-bold shadow-xs shrink-0 group cursor-pointer"
               title="Return to Dashboard"
             >
               <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
-              <span className="font-black">BACK TO DASHBOARD</span>
+              <span className="font-black hidden xs:inline">BACK TO DASHBOARD</span>
+              <span className="font-black xs:hidden">DASHBOARD</span>
             </Link>
 
-            <div className="flex h-[47px] w-[47px] sm:h-[55px] sm:w-[55px] items-center justify-center flex-shrink-0 overflow-visible">
+            <div className="flex h-[42px] w-[42px] sm:h-[55px] sm:w-[55px] items-center justify-center flex-shrink-0 overflow-visible">
               <Falcon3DLogo
                 src="/images/logo-falcon-transparent.png"
                 alt="MARKET INTELLIGENCE MI-007"
-                width={55}
-                height={55}
+                width={50}
+                height={50}
                 className="w-full h-full object-contain"
               />
             </div>
             <div className="min-w-0">
-              <h1 className="mono text-[17px] sm:text-[23px] font-black inst-card-text tracking-wider uppercase whitespace-nowrap">
+              <h1 className="mono text-[16px] sm:text-[21px] md:text-[23px] font-black inst-card-text tracking-wider uppercase truncate">
                 F&amp;O INTELLIGENCE HUB
               </h1>
-              <p className="mono text-[10.5px] sm:text-[12px] font-bold text-[var(--theme-card-subtitle)] tracking-wide uppercase truncate">
+              <p className="mono text-[10px] sm:text-[12px] font-bold text-[var(--theme-card-subtitle)] tracking-wide uppercase truncate">
                 Institutional Derivatives Terminal · Options Analytics &amp; Strategy Architect
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 shrink-0">
             <MarketToggle selected={market} onChange={setMarket} market={market} onMarketChange={setMarket} />
           </div>
         </div>
 
         {/* ── Centered Segmented Module Tabs (Institutional Style) ── */}
-        <div className="flex justify-center mb-6">
-          <div className="w-full sm:w-fit inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-xs">
+        <div className="flex justify-center mb-6 overflow-x-auto no-scrollbar max-w-full">
+          <div className="w-full sm:w-fit inline-flex flex-wrap sm:flex-nowrap items-center justify-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-xs">
             {WORKSPACE_TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -287,14 +288,14 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg mono text-[11px] sm:text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 cursor-pointer ${
                     isActive
                       ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
                       : 'font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
                   }`}
                 >
-                  <span>{tab.icon}</span>
-                  <span>{tab.label}</span>
+                  <span className="text-[12px] sm:text-[14px]">{tab.icon}</span>
+                  <span className="whitespace-nowrap">{tab.label}</span>
                 </button>
               );
             })}
