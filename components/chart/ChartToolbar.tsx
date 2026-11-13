@@ -9,6 +9,7 @@ import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG } from '@/lib/orderflow/type
 import { OrderFlowToolbarMenu } from './OrderFlowToolbarMenu';
 import { QuantumAiConfig, DEFAULT_QUANTUM_AI_CONFIG, QuantumAiAnalysisResult, QuantumAiSubTab } from '@/lib/quantumai/types';
 import { QuantumAiToolbarMenu } from './QuantumAiToolbarMenu';
+import { STRATEGY_INDICATOR_MAP } from '@/lib/screener/strategyIndicatorMap';
 
 const TIMEFRAMES: { value: Timeframe; label: string }[] = [
   { value: '1m',  label: '1m (1 Min)' },
@@ -70,6 +71,7 @@ interface ChartToolbarProps {
   templates: ChartTemplate[];
   activeTemplateId: string;
   saveStatus?: 'idle' | 'saved';
+  snapshotStatus?: 'idle' | 'captured';
   onTimeframeChange: (tf: Timeframe) => void;
   onChartTypeChange: (type: ChartType) => void;
   onToggleVolume: () => void;
@@ -89,6 +91,7 @@ interface ChartToolbarProps {
   onSaveChartLayout: () => void;
   onClearAllIndicators?: () => void;
   onExportSnapshot?: (mode: 'download' | 'clipboard') => void;
+  onApplyStrategy?: (strategyId: string) => void;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
 }
@@ -182,6 +185,7 @@ export function ChartToolbar({
   templates,
   activeTemplateId,
   saveStatus = 'idle',
+  snapshotStatus = 'idle',
   onTimeframeChange,
   onChartTypeChange,
   onToggleVolume,
@@ -198,12 +202,16 @@ export function ChartToolbar({
   onClearAllIndicators,
   onExportSnapshot,
   onSelectTemplate,
+  onApplyStrategy,
   isFullscreen,
   onToggleFullscreen,
 }: ChartToolbarProps) {
   const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | 'SMC' | 'ORDER_FLOW' | 'QUANTUM_AI' | null>(null);
+  const [fxTab, setFxTab] = useState<'indicators' | 'strategies'>('indicators');
   const [indicatorSearch, setIndicatorSearch] = useState('');
+  const [strategySearch, setStrategySearch] = useState('');
   const [recentlyAddedType, setRecentlyAddedType] = useState<string | null>(null);
+  const [recentlyAppliedStrategy, setRecentlyAppliedStrategy] = useState<string | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   const activeQuantumAiConfig: QuantumAiConfig = quantumAiConfig || {
@@ -531,7 +539,7 @@ export function ChartToolbar({
             }`}
           >
             <span className="font-mono font-black text-xs px-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">ƒx</span>
-            <span className="hidden xs:inline">Indicators</span>
+            <span className="hidden xs:inline">Indicators & Strategies</span>
             {((indicators && indicators.length > 0) || activeIndicators.length > 0) && (
               <span className="h-4 px-1.5 rounded-full bg-emerald-600 text-white font-mono text-[10px] font-bold flex items-center justify-center">
                 {indicators ? indicators.length : activeIndicators.length}
@@ -542,7 +550,7 @@ export function ChartToolbar({
 
           {openMenu === 'INDICATORS' && (
             <div
-              className="absolute top-full left-0 mt-1 w-80 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[480px] flex flex-col animate-in fade-in duration-75 overflow-hidden"
+              className="absolute top-full left-0 mt-1 w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[520px] flex flex-col animate-in fade-in duration-75 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header with Close (×) Icon */}
@@ -564,162 +572,297 @@ export function ChartToolbar({
                 </button>
               </div>
 
-              {/* Search Bar */}
-              <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={indicatorSearch}
-                    onChange={(e) => setIndicatorSearch(e.target.value)}
-                    placeholder="Search indicators (e.g. EMA, RSI)..."
-                    className="w-full pl-7 pr-7 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-emerald-500"
-                  />
-                  <span className="absolute left-2 top-2 text-slate-400 text-xs">🔍</span>
-                  {indicatorSearch && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIndicatorSearch('');
-                      }}
-                      title="Clear search"
-                      className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
+              {/* Sub-Tab Switcher: Indicators vs Strategies */}
+              <div className="flex border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 shrink-0 p-1 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setFxTab('indicators')}
+                  className={`flex-1 py-1 text-center text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                    fxTab === 'indicators'
+                      ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Indicators ({ALL_INDICATOR_TYPES.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFxTab('strategies')}
+                  className={`flex-1 py-1 text-center text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                    fxTab === 'strategies'
+                      ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Strategies ({Object.keys(STRATEGY_INDICATOR_MAP).length})
+                </button>
               </div>
 
-              {/* Active Indicators on Chart (with Eye, Settings, Delete) */}
-              {indicators && indicators.length > 0 && (
-                <div className="px-3 py-2 bg-slate-50/80 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                    <span>Active on Chart</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[9px] font-bold">{indicators.length}</span>
+              {/* ── TAB A: INDICATORS ── */}
+              {fxTab === 'indicators' && (
+                <>
+                  {/* Search Bar */}
+                  <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={indicatorSearch}
+                        onChange={(e) => setIndicatorSearch(e.target.value)}
+                        placeholder="Search indicators (e.g. EMA, RSI)..."
+                        className="w-full pl-7 pr-7 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-emerald-500"
+                      />
+                      <span className="absolute left-2 top-2 text-slate-400 text-xs">🔍</span>
+                      {indicatorSearch && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIndicatorSearch('');
+                          }}
+                          title="Clear search"
+                          className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
-                    {indicators.map((cfg, idx) => {
-                      const id = cfg.id || cfg.type;
+
+                  {/* Active Indicators on Chart (with Eye, Settings, Delete) */}
+                  {indicators && indicators.length > 0 && (
+                    <div className="px-3 py-2 bg-slate-50/80 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                      <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Active on Chart</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[9px] font-bold">{indicators.length}</span>
+                      </div>
+                      <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                        {indicators.map((cfg, idx) => {
+                          const id = cfg.id || cfg.type;
+                          return (
+                            <div
+                              key={`${id}-${idx}`}
+                              className="flex items-center justify-between px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs"
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cfg.color }} />
+                                <span className={`font-mono text-xs truncate ${cfg.enabled !== false ? 'font-bold text-slate-800 dark:text-slate-100' : 'text-slate-400 line-through'}`}>
+                                  {INDICATOR_DEFAULTS[cfg.type]?.label || cfg.type} ({cfg.period})
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleIndicatorVisibility?.(id);
+                                  }}
+                                  title={cfg.enabled !== false ? "Hide Indicator" : "Show Indicator"}
+                                  className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] cursor-pointer"
+                                >
+                                  {cfg.enabled !== false ? '👁' : '👁‍🗨'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onOpenIndicatorSettings?.(id);
+                                    setOpenMenu(null);
+                                  }}
+                                  title="Configure Settings"
+                                  className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] cursor-pointer"
+                                >
+                                  ⚙
+                                </button>
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onRemoveIndicator?.(id);
+                                  }}
+                                  title="Remove indicator from chart"
+                                  className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/15 font-bold text-xs cursor-pointer"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Indicators Library (Click to Add multiple times) */}
+                  <div className="flex-1 overflow-y-auto py-1">
+                    <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                      <span>Indicators Library</span>
+                      <span className="text-[9px] text-slate-400">Click + to add again & again</span>
+                    </div>
+                    {ALL_INDICATOR_TYPES.filter(type => {
+                      if (!indicatorSearch.trim()) return true;
+                      const query = indicatorSearch.toLowerCase();
+                      const meta = INDICATOR_DEFAULTS[type];
+                      return meta.label.toLowerCase().includes(query) || type.toLowerCase().includes(query);
+                    }).map((type) => {
+                      const meta = INDICATOR_DEFAULTS[type];
+                      const count = indicators ? indicators.filter(c => c.type === type).length : (isIndicatorActive(type) ? 1 : 0);
+                      const isJustAdded = recentlyAddedType === type;
+
+                      const handleAdd = () => {
+                        if (onAddIndicator) {
+                          onAddIndicator(type);
+                        } else {
+                          onToggleIndicator(type);
+                        }
+                        setRecentlyAddedType(type);
+                        setTimeout(() => setRecentlyAddedType(null), 1000);
+                      };
+
                       return (
                         <div
-                          key={`${id}-${idx}`}
-                          className="flex items-center justify-between px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs"
+                          key={type}
+                          className="flex items-center justify-between px-3 py-1.5 transition-colors cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-200 group"
+                          onClick={handleAdd}
                         >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cfg.color }} />
-                            <span className={`font-mono text-xs truncate ${cfg.enabled !== false ? 'font-bold text-slate-800 dark:text-slate-100' : 'text-slate-400 line-through'}`}>
-                              {INDICATOR_DEFAULTS[cfg.type]?.label || cfg.type} ({cfg.period})
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
+                            <span className="text-xs font-medium truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                              {meta.label}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+
+                          <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            {count > 0 && (
+                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                                {count} active
+                              </span>
+                            )}
                             <button
                               type="button"
-                              onPointerDown={(e) => e.stopPropagation()}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onToggleIndicatorVisibility?.(id);
-                              }}
-                              title={cfg.enabled !== false ? "Hide Indicator" : "Show Indicator"}
-                              className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] cursor-pointer"
+                              onClick={handleAdd}
+                              title={`Add ${meta.label} (can add again and again for multiple periods)`}
+                              className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
+                                isJustAdded
+                                  ? 'bg-emerald-600 text-white scale-105 shadow-xs'
+                                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-600 dark:text-slate-300'
+                              }`}
                             >
-                              {cfg.enabled !== false ? '👁' : '👁‍🗨'}
-                            </button>
-                            <button
-                              type="button"
-                              onPointerDown={(e) => e.stopPropagation()}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onOpenIndicatorSettings?.(id);
-                                setOpenMenu(null);
-                              }}
-                              title="Configure Settings"
-                              className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 text-[10px] cursor-pointer"
-                            >
-                              ⚙
-                            </button>
-                            <button
-                              type="button"
-                              onPointerDown={(e) => e.stopPropagation()}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRemoveIndicator?.(id);
-                              }}
-                              title="Remove indicator from chart"
-                              className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/15 font-bold text-xs cursor-pointer"
-                            >
-                              ✕
+                              {isJustAdded ? '✓ Added' : '+ Add'}
                             </button>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                </div>
+                </>
               )}
 
-              {/* Indicators Library (Click to Add multiple times) */}
-              <div className="flex-1 overflow-y-auto py-1">
-                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                  <span>Indicators Library</span>
-                  <span className="text-[9px] text-slate-400">Click + to add again & again</span>
-                </div>
-                {ALL_INDICATOR_TYPES.filter(type => {
-                  if (!indicatorSearch.trim()) return true;
-                  const query = indicatorSearch.toLowerCase();
-                  const meta = INDICATOR_DEFAULTS[type];
-                  return meta.label.toLowerCase().includes(query) || type.toLowerCase().includes(query);
-                }).map((type) => {
-                  const meta = INDICATOR_DEFAULTS[type];
-                  const count = indicators ? indicators.filter(c => c.type === type).length : (isIndicatorActive(type) ? 1 : 0);
-                  const isJustAdded = recentlyAddedType === type;
-
-                  const handleAdd = () => {
-                    if (onAddIndicator) {
-                      onAddIndicator(type);
-                    } else {
-                      onToggleIndicator(type);
-                    }
-                    setRecentlyAddedType(type);
-                    setTimeout(() => setRecentlyAddedType(null), 1000);
-                  };
-
-                  return (
-                    <div
-                      key={type}
-                      className="flex items-center justify-between px-3 py-1.5 transition-colors cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-200 group"
-                      onClick={handleAdd}
-                    >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }} />
-                        <span className="text-xs font-medium truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                          {meta.label}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                        {count > 0 && (
-                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-                            {count} active
-                          </span>
-                        )}
+              {/* ── TAB B: STRATEGIES MASTER LIBRARY ── */}
+              {fxTab === 'strategies' && (
+                <>
+                  {/* Search Bar for Strategies */}
+                  <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={strategySearch}
+                        onChange={(e) => setStrategySearch(e.target.value)}
+                        placeholder="Search strategies (e.g. SMC, Golden Cross, Momentum)..."
+                        className="w-full pl-7 pr-7 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-emerald-500"
+                      />
+                      <span className="absolute left-2 top-2 text-slate-400 text-xs">🔍</span>
+                      {strategySearch && (
                         <button
                           type="button"
-                          onClick={handleAdd}
-                          title={`Add ${meta.label} (can add again and again for multiple periods)`}
-                          className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${
-                            isJustAdded
-                              ? 'bg-emerald-600 text-white scale-105 shadow-xs'
-                              : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-600 dark:text-slate-300'
-                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStrategySearch('');
+                          }}
+                          title="Clear search"
+                          className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
                         >
-                          {isJustAdded ? '✓ Added' : '+ Add'}
+                          ×
                         </button>
-                      </div>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+
+                  {/* Strategies Master List */}
+                  <div className="flex-1 overflow-y-auto py-1 divide-y divide-slate-100 dark:divide-slate-800/60">
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center justify-between sticky top-0 bg-white dark:bg-[#0B0F19] z-10 border-b border-slate-100 dark:border-slate-800">
+                      <span>Trading Strategies Master Library</span>
+                      <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">
+                        Click to add setup
+                      </span>
+                    </div>
+
+                    {Object.values(STRATEGY_INDICATOR_MAP)
+                      .filter((s) => {
+                        if (!strategySearch.trim()) return true;
+                        const q = strategySearch.toLowerCase();
+                        return (
+                          s.strategyName.toLowerCase().includes(q) ||
+                          s.category.toLowerCase().includes(q) ||
+                          s.correspondingIndicators.some((ind) => ind.toLowerCase().includes(q))
+                        );
+                      })
+                      .map((strat) => {
+                        const isRecentlyApplied = recentlyAppliedStrategy === strat.strategyId;
+                        return (
+                          <div
+                            key={strat.strategyId}
+                            className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex flex-col gap-1.5 text-left"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                                    {strat.strategyName}
+                                  </span>
+                                  <span className="px-1.5 py-0.2 rounded text-[9.5px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                    {strat.category}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onApplyStrategy?.(strat.strategyId);
+                                  setRecentlyAppliedStrategy(strat.strategyId);
+                                  setTimeout(() => setRecentlyAppliedStrategy(null), 1800);
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                                  isRecentlyApplied
+                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    : 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/30'
+                                }`}
+                              >
+                                {isRecentlyApplied ? '✓ Added' : '+ Add Setup'}
+                              </button>
+                            </div>
+
+                            {/* Corresponding Indicators Badges */}
+                            <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                              <span className="text-[9.5px] font-mono font-bold text-slate-400 uppercase">ƒx Indicators:</span>
+                              {strat.correspondingIndicators.map((ind, i) => (
+                                <span
+                                  key={i}
+                                  className="px-1.5 py-0.5 rounded text-[9.5px] font-mono font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
+                                >
+                                  {ind}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </>
+              )}
 
               {((indicators && indicators.length > 0) || activeIndicators.length > 0) && onClearAllIndicators && (
                 <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 shrink-0">
@@ -1251,11 +1394,11 @@ export function ChartToolbar({
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
-        {/* 6. SAVE BUTTON */}
+        {/* 6. SAVE BUTTON (PERSIST CHART LAYOUT & WORKSPACE) */}
         <button
           type="button"
           onClick={onSaveChartLayout}
-          title="Save current chart layout and settings"
+          title="Save Layout: Persist indicators, drawings & chart settings to browser storage"
           className={`h-7 px-2 sm:px-3 rounded-lg border font-bold text-xs font-mono flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
             saveStatus === 'saved'
               ? 'border-emerald-500 bg-emerald-600 text-white font-black'
@@ -1263,19 +1406,23 @@ export function ChartToolbar({
           }`}
         >
           <span>{saveStatus === 'saved' ? '✓' : '💾'}</span>
-          <span className="hidden sm:inline">{saveStatus === 'saved' ? 'SAVED' : 'SAVE'}</span>
+          <span className="hidden sm:inline">{saveStatus === 'saved' ? 'LAYOUT SAVED' : 'SAVE'}</span>
         </button>
 
-        {/* 7. SNAPSHOT CAMERA TOOL */}
+        {/* 7. SNAPSHOT CAMERA TOOL (EXPORT PNG IMAGE) */}
         {onExportSnapshot && (
           <button
             type="button"
             onClick={() => onExportSnapshot('download')}
-            title="Download High-Resolution Chart Image"
-            className="h-7 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-slate-800 font-bold text-xs font-mono flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+            title="Export Image: Download high-resolution PNG chart image to your device (Hotkey: S)"
+            className={`h-7 px-2.5 rounded-lg border font-bold text-xs font-mono flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+              snapshotStatus === 'captured'
+                ? 'border-blue-500 bg-blue-600 text-white font-black'
+                : 'border-slate-200 dark:border-slate-700 hover:border-blue-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800'
+            }`}
           >
-            <span className="text-sm leading-none">📷</span>
-            <span className="hidden md:inline">SNAPSHOT</span>
+            <span className="text-sm leading-none">{snapshotStatus === 'captured' ? '✓' : '📷'}</span>
+            <span className="hidden md:inline">{snapshotStatus === 'captured' ? 'IMAGE DOWNLOADED' : 'SNAPSHOT'}</span>
           </button>
         )}
 

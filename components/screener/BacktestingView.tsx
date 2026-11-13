@@ -10,6 +10,7 @@ import { CompanyFundamental } from '@/lib/screener/types';
 import { COMBINED_STRATEGY_DEFINITIONS, StrategyId, generateCandlesForSymbol } from '@/lib/screener/technicalStrategies';
 import { runBacktest, BacktestResult, BacktestTrade } from '@/lib/screener/backtesting';
 import { searchZerodhaStocks } from '@/lib/screener/zerodhaStocks';
+import { buildChartUrlForStrategy } from '@/lib/screener/strategyIndicatorMap';
 
 export interface SavedPortfolio {
   id: string;
@@ -189,28 +190,7 @@ export function BacktestingView({
 
   // Strategy-specific chart link ensuring only this strategy's corresponding indicators/SMC state render
   const strategyChartHref = useMemo(() => {
-    const isSmc = strategyId.startsWith('smc_');
-    const indList: string[] = [];
-    if (strategyId === 'ma_alignment' || strategyId === 'golden_cross' || strategyId === 'death_cross') {
-      indList.push('sma50', 'sma200');
-    } else if (strategyId === 'ma_20_50_cross') {
-      indList.push('sma20', 'sma50');
-    } else if (strategyId === 'ema_9_21_cross') {
-      indList.push('ema9', 'ema21');
-    } else if (strategyId === 'rsi_momentum') {
-      indList.push('rsi');
-    } else if (strategyId === 'macd_cross') {
-      indList.push('macd');
-    } else if (strategyId === 'bb_reversal') {
-      indList.push('bollinger');
-    } else if (strategyId === 'breakout') {
-      indList.push('donchian');
-    } else if (strategyId === 'adx_trend') {
-      indList.push('adx', 'ema9', 'ema21');
-    }
-    const stratParam = encodeURIComponent(strategyId);
-    const indParam = encodeURIComponent(indList.join(','));
-    return `/chart/${activeCompany.symbol}?market=${activeCompany.market}&tf=1D&smc=${isSmc ? `1&setupId=${strategyId}` : '0'}&strategies=${stratParam}&indicators=${indParam}&from=screener`;
+    return buildChartUrlForStrategy(activeCompany.symbol, activeCompany.market, strategyId);
   }, [activeCompany.symbol, activeCompany.market, strategyId]);
 
   // Adjusted trades with any manual user exits applied

@@ -16,6 +16,7 @@ import {
   evaluateCombinedStrategiesForStock,
 } from '@/lib/screener/technicalStrategies';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
+import { buildChartUrlForStrategy } from '@/lib/screener/strategyIndicatorMap';
 
 interface TechnicalStrategyScreenerViewProps {
   companies: CompanyFundamental[];
@@ -385,31 +386,8 @@ export function TechnicalStrategyScreenerView({
                   const isBear = res.direction === 'bearish';
 
                   // Strategy-specific chart indicator isolation
-                  // Only plot indicators corresponding strictly to this specific strategy row so the user clearly interprets the setup
-                  const isSmc = res.strategyId.startsWith('smc_');
-                  const indicatorsToEnable: string[] = [];
-
-                  if (res.strategyId === 'ma_alignment' || res.strategyId === 'golden_cross' || res.strategyId === 'death_cross') {
-                    indicatorsToEnable.push('sma50', 'sma200');
-                  } else if (res.strategyId === 'ma_20_50_cross') {
-                    indicatorsToEnable.push('sma20', 'sma50');
-                  } else if (res.strategyId === 'ema_9_21_cross') {
-                    indicatorsToEnable.push('ema9', 'ema21');
-                  } else if (res.strategyId === 'rsi_momentum') {
-                    indicatorsToEnable.push('rsi');
-                  } else if (res.strategyId === 'macd_cross') {
-                    indicatorsToEnable.push('macd');
-                  } else if (res.strategyId === 'bb_reversal') {
-                    indicatorsToEnable.push('bollinger');
-                  } else if (res.strategyId === 'breakout') {
-                    indicatorsToEnable.push('donchian');
-                  } else if (res.strategyId === 'adx_trend') {
-                    indicatorsToEnable.push('adx', 'ema9', 'ema21');
-                  }
-
-                  const stratParam = encodeURIComponent(res.strategyId);
-                  const indParam = encodeURIComponent(indicatorsToEnable.join(','));
-                  const chartHref = `/chart/${res.symbol}?market=${res.market}&tf=1D&smc=${isSmc ? `1&setupId=${res.strategyId}` : '0'}&strategies=${stratParam}&indicators=${indParam}&from=screener`;
+                  // Automatically load exact indicators & overlays corresponding to this strategy
+                  const chartHref = buildChartUrlForStrategy(res.symbol, res.market, res.strategyId);
 
                   return (
                     <tr key={`${res.symbol}-${res.strategyId}-${i}`} className="hover:bg-emerald-500/5 transition-colors group">

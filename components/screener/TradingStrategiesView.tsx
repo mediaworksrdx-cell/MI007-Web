@@ -16,6 +16,10 @@ import {
   StrategySignalResult,
 } from '@/lib/screener/technicalStrategies';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
+import {
+  STRATEGY_INDICATOR_MAP,
+  buildChartUrlForStrategy,
+} from '@/lib/screener/strategyIndicatorMap';
 
 interface TradingStrategiesViewProps {
   companies: CompanyFundamental[];
@@ -247,6 +251,28 @@ export function TradingStrategiesView({
                   ))}
                 </ul>
               </div>
+
+              {/* Corresponding Indicators & Overlays */}
+              <div className="mt-3.5 pt-3 border-t border-emerald-500/20 flex flex-col gap-1.5">
+                <span className="mono text-[10.5px] font-bold uppercase text-emerald-400 flex items-center gap-1.5">
+                  <span className="px-1 rounded bg-emerald-500/20 text-emerald-400 font-mono font-black text-[10px]">ƒx</span>
+                  <span>Corresponding Indicators & Chart Overlays:</span>
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {(activeStrategy.correspondingIndicators && activeStrategy.correspondingIndicators.length > 0
+                    ? activeStrategy.correspondingIndicators
+                    : ['Standard Chart OHLCV']
+                  ).map((ind, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-0.5 rounded-md mono text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span>{ind}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -293,6 +319,26 @@ export function TradingStrategiesView({
                 <p className="text-[11px] text-[var(--theme-card-text-muted)] mt-1 line-clamp-2">
                   {strat.description}
                 </p>
+
+                {/* Corresponding Indicators Badges */}
+                {strat.correspondingIndicators && strat.correspondingIndicators.length > 0 && (
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1">
+                    {strat.correspondingIndicators.slice(0, 2).map((ind, i) => (
+                      <span
+                        key={i}
+                        className="px-1.5 py-0.5 rounded text-[9.5px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 truncate max-w-[170px]"
+                        title={ind}
+                      >
+                        {ind}
+                      </span>
+                    ))}
+                    {strat.correspondingIndicators.length > 2 && (
+                      <span className="text-[9px] font-mono text-slate-400 font-bold">
+                        +{strat.correspondingIndicators.length - 2}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="mt-3 pt-2 border-t border-[var(--theme-card-border)]/50 flex items-center justify-between text-[10.5px] mono">
@@ -356,7 +402,17 @@ export function TradingStrategiesView({
                     <div className="text-[10px] text-[var(--theme-card-text-muted)]">{r.companyName}</div>
                   </td>
                   <td className="py-1.5 px-2.5 font-semibold text-[var(--theme-card-text)]">
-                    {r.strategyName}
+                    <div>{r.strategyName}</div>
+                    {STRATEGY_INDICATOR_MAP[r.strategyId]?.correspondingIndicators && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span
+                          className="text-[9.5px] font-mono font-bold text-emerald-400/90 truncate max-w-[220px]"
+                          title={STRATEGY_INDICATOR_MAP[r.strategyId].correspondingIndicators.join(' • ')}
+                        >
+                          ƒx {STRATEGY_INDICATOR_MAP[r.strategyId].correspondingIndicators.slice(0, 2).join(' • ')}
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="py-1.5 px-2.5">
                     <span
@@ -389,9 +445,9 @@ export function TradingStrategiesView({
                         </button>
                       )}
                       <Link
-                        href={`/chart/${r.symbol}?market=${market}&smc=1&from=screener`}
+                        href={buildChartUrlForStrategy(r.symbol, market, r.strategyId)}
                         className="px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-slate-950 font-bold transition-colors text-[10.5px] cursor-pointer inline-flex items-center gap-1"
-                        title={`Open ${r.symbol} Chart with SMC and Indicators`}
+                        title={`Open ${r.symbol} Chart with corresponding ${r.strategyName} indicators & setup`}
                       >
                         <span>Chart</span>
                         <span>↗</span>

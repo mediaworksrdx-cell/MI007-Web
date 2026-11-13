@@ -482,17 +482,19 @@ export function detectStructureBreaks(
   }
 
   let trendDirection = 0; // 1 = Bullish, -1 = Bearish
-  let activeHigh: SmcSwingPoint | null = null;
-  let activeLow: SmcSwingPoint | null = null;
+  const activeHighs: SmcSwingPoint[] = [];
+  const activeLows: SmcSwingPoint[] = [];
   let swingPtr = 0;
 
   for (let i = 0; i < candles.length; i++) {
     while (swingPtr < swings.length && swings[swingPtr].index + confirmBars <= i) {
       const sw = swings[swingPtr];
       if (sw.isHigh) {
-        activeHigh = sw;
+        activeHighs.push(sw);
+        if (activeHighs.length > 5) activeHighs.shift();
       } else {
-        activeLow = sw;
+        activeLows.push(sw);
+        if (activeLows.length > 5) activeLows.shift();
       }
       swingPtr++;
     }
@@ -510,50 +512,64 @@ export function detectStructureBreaks(
       if (cur.volume < volMult * volSmaValues[i]) passFilters = false;
     }
 
-    // Break Above Active High
-    if (activeHigh && cur.close > activeHigh.price && prev.close <= activeHigh.price && passFilters) {
-      const isReversal = trendDirection === -1;
-      const breakType: SmcBreakType = isReversal ? 'CHoCH' : 'BOS';
-      const label = `${breakType} ↑`;
+    // Break Above Active Highs (Bullish BOS / CHoCH)
+    if (activeHighs.length > 0 && passFilters) {
+      const brokenHighIdx = activeHighs.findIndex(
+        (h) => cur.close > h.price && (prev.close <= h.price || i === h.index + confirmBars)
+      );
+      if (brokenHighIdx !== -1) {
+        const brokenHigh = activeHighs[brokenHighIdx];
+        const isReversal = trendDirection === -1;
+        const breakType: SmcBreakType = isReversal ? 'CHoCH' : 'BOS';
+        const label = `${breakType} ↑`;
+        const lastLow = activeLows[activeLows.length - 1];
 
-      breaks.push({
-        candleIndex: i,
-        time: cur.openTime,
-        price: activeHigh.price,
-        isBullish: true,
-        type: label,
-        breakType,
-        swingIndex: activeHigh.index,
-        brokenSwingPrice: activeHigh.price,
-        protectedSwingPrice: activeLow?.price,
-        confirmationTime: cur.openTime,
-      });
+        breaks.push({
+          candleIndex: i,
+          time: cur.openTime,
+          price: brokenHigh.price,
+          isBullish: true,
+          type: label,
+          breakType,
+          swingIndex: brokenHigh.index,
+          brokenSwingPrice: brokenHigh.price,
+          protectedSwingPrice: lastLow?.price,
+          confirmationTime: cur.openTime,
+        });
 
-      trendDirection = 1;
-      activeHigh = null;
+        trendDirection = 1;
+        activeHighs.splice(brokenHighIdx, 1);
+      }
     }
 
-    // Break Below Active Low
-    if (activeLow && cur.close < activeLow.price && prev.close >= activeLow.price && passFilters) {
-      const isReversal = trendDirection === 1;
-      const breakType: SmcBreakType = isReversal ? 'CHoCH' : 'BOS';
-      const label = `${breakType} ↓`;
+    // Break Below Active Lows (Bearish BOS / CHoCH)
+    if (activeLows.length > 0 && passFilters) {
+      const brokenLowIdx = activeLows.findIndex(
+        (l) => cur.close < l.price && (prev.close >= l.price || i === l.index + confirmBars)
+      );
+      if (brokenLowIdx !== -1) {
+        const brokenLow = activeLows[brokenLowIdx];
+        const isReversal = trendDirection === 1;
+        const breakType: SmcBreakType = isReversal ? 'CHoCH' : 'BOS';
+        const label = `${breakType} ↓`;
+        const lastHigh = activeHighs[activeHighs.length - 1];
 
-      breaks.push({
-        candleIndex: i,
-        time: cur.openTime,
-        price: activeLow.price,
-        isBullish: false,
-        type: label,
-        breakType,
-        swingIndex: activeLow.index,
-        brokenSwingPrice: activeLow.price,
-        protectedSwingPrice: activeHigh?.price,
-        confirmationTime: cur.openTime,
-      });
+        breaks.push({
+          candleIndex: i,
+          time: cur.openTime,
+          price: brokenLow.price,
+          isBullish: false,
+          type: label,
+          breakType,
+          swingIndex: brokenLow.index,
+          brokenSwingPrice: brokenLow.price,
+          protectedSwingPrice: lastHigh?.price,
+          confirmationTime: cur.openTime,
+        });
 
-      trendDirection = -1;
-      activeLow = null;
+        trendDirection = -1;
+        activeLows.splice(brokenLowIdx, 1);
+      }
     }
   }
 
@@ -789,12 +805,12 @@ export function detectOrderBlocksAndBreakers(
           }
           breakers.push(brk);
           break;
-        } else if (candles[k].low <= mtPrice) {
+        } else if (!ob.isMitigated && candles[k].low <= mtPrice) {
           // Mitigated when price trades deep into the 50% mean threshold
           ob.isMitigated = true;
           ob.endIndex = k;
           ob.mitigationIndex = k;
-          break;
+          // Continue loop to allow subsequent violation to spawn Breaker Block
         }
       }
       orderBlocks.push(ob);
@@ -864,12 +880,12 @@ export function detectOrderBlocksAndBreakers(
           }
           breakers.push(brk);
           break;
-        } else if (candles[k].high >= mtPrice) {
+        } else if (!ob.isMitigated && candles[k].high >= mtPrice) {
           // Mitigated when price trades deep into the 50% mean threshold
           ob.isMitigated = true;
           ob.endIndex = k;
           ob.mitigationIndex = k;
-          break;
+          // Continue loop to allow subsequent violation to spawn Breaker Block
         }
       }
       orderBlocks.push(ob);

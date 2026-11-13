@@ -11,6 +11,7 @@ import { evaluateQuantumSmcResonance } from '@/lib/screener/smcResonanceEngine';
 import { runBacktest } from '@/lib/screener/backtesting';
 import { calculateBollinger, calculateEMA, calculateRSI } from '@/lib/indicators';
 import { Candle } from '@/lib/types';
+import { buildChartUrlForStrategy } from '@/lib/screener/strategyIndicatorMap';
 
 interface MI007StrategiesViewProps {
   companies: CompanyFundamental[];
@@ -579,7 +580,17 @@ export function MI007StrategiesView({
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <Link
-                      href={`/chart/${topSignal.symbol}`}
+                      href={buildChartUrlForStrategy(
+                        topSignal.symbol,
+                        market,
+                        selectedStrategyId === 'quantum_smc'
+                          ? 'quantum_ai_smc_resonance'
+                          : selectedStrategyId === 'order_flow'
+                          ? 'of_bullish_absorption'
+                          : selectedStrategyId === 'volatility_squeeze'
+                          ? 'bb_reversal'
+                          : 'adx_trend'
+                      )}
                       className="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition-all shadow-xs cursor-pointer text-xs"
                     >
                       Chart ↗
@@ -698,7 +709,17 @@ export function MI007StrategiesView({
                         </td>
                         <td className="py-1.5 px-2.5 text-center">
                           <Link
-                            href={`/chart/${s.symbol}`}
+                            href={buildChartUrlForStrategy(
+                              s.symbol,
+                              market,
+                              selectedStrategyId === 'quantum_smc'
+                                ? 'quantum_ai_smc_resonance'
+                                : selectedStrategyId === 'order_flow'
+                                ? 'of_bullish_absorption'
+                                : selectedStrategyId === 'volatility_squeeze'
+                                ? 'bb_reversal'
+                                : 'adx_trend'
+                            )}
                             className="px-2 py-0.5 rounded bg-black text-white dark:bg-white dark:text-black font-bold text-[10.5px] hover:opacity-90 transition-opacity"
                           >
                             Chart ↗

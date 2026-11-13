@@ -1568,15 +1568,15 @@ export function CandlestickCanvas({
     const isBearishMaster = smcConfig?.showBearishSetups !== false;
 
     // 0. Confirmed Directional SMC Setups (Position Brackets)
-    if (smc.confirmedSetups && smc.confirmedSetups.length > 0) {
-      for (const st of smc.confirmedSetups) {
-        if (st.candleIndex < startIdx || st.candleIndex > endIdx) continue;
+    const allSetupList = [...(smc.confirmedSetups || []), ...(smc.allSetups || [])];
+    if (allSetupList.length > 0) {
+      for (const st of allSetupList) {
         const isBull = st.direction === 'BULLISH';
         if (isBull && (!isBullishMaster || smcConfig?.showBullishConfluence === false)) continue;
         if (!isBull && (!isBearishMaster || smcConfig?.showBearishConfluence === false)) continue;
 
         const li = st.candleIndex - startIdx;
-        const sx = li * candleW + candleW / 2;
+        const sx = Math.max(5, li * candleW + candleW / 2);
         const boxW = Math.min(chartW - sx - 5, Math.max(candleW * 3.5, 95));
         const yEntry = priceToY(st.entryPrice);
         const ySL = priceToY(st.stopLoss);

@@ -27,6 +27,7 @@ import {
   evaluateCombinedStrategiesForStock,
   StrategySignalResult,
 } from './technicalStrategies';
+import { STRATEGY_INDICATOR_MAP } from './strategyIndicatorMap';
 
 // ── 1. Strategy Types ────────────────────────────────────────────────────────
 
@@ -61,11 +62,12 @@ export interface StrategyItem {
   supportedDirections: ('bullish' | 'bearish')[];
   icon?: string;
   isFlagship?: boolean;
+  correspondingIndicators?: string[];
 }
 
 // ── 2. Part A: The 34 Trading & Chart Strategies ─────────────────────────────
 
-export const TRADING_STRATEGIES: StrategyItem[] = [
+const RAW_TRADING_STRATEGIES: StrategyItem[] = [
   // 1. Flagship Quantum AI SMC & Resonance
   {
     id: 'quantum_ai_smc_resonance',
@@ -384,6 +386,11 @@ export const TRADING_STRATEGIES: StrategyItem[] = [
     supportedDirections: ['bullish', 'bearish'],
   },
 ];
+
+export const TRADING_STRATEGIES: StrategyItem[] = RAW_TRADING_STRATEGIES.map((s) => ({
+  ...s,
+  correspondingIndicators: STRATEGY_INDICATOR_MAP[s.id]?.correspondingIndicators || s.correspondingIndicators || [],
+}));
 
 // ── 3. Part B: The 35 Investment & Fundamental Strategies ──────────────────
 

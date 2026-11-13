@@ -43,6 +43,7 @@ import { DrawingToolbar, type CursorMode } from './DrawingToolbar';
 import { DrawingsManagerModal } from './DrawingsManagerModal';
 import { ChartHotkeysModal } from './ChartHotkeysModal';
 import { ChartSymbolSearch, type ChartInstrumentItem } from './ChartSymbolSearch';
+import { getStrategyIndicatorSetup } from '@/lib/screener/strategyIndicatorMap';
 
 function rescaleCandleArray(candles: Candle[], ratio: number, targetPrice: number): Candle[] {
   const decimals = targetPrice < 0.01 ? 6 : targetPrice < 2 ? 4 : targetPrice < 10 ? 3 : 2;
@@ -392,6 +393,12 @@ export function ChartContainer({
         });
       }
 
+      // Detect Volume Profile URL query parameters (e.g. ?vp=1 or ?volumeprofile=1)
+      const vpParam = sp.get('vp') || sp.get('volumeprofile') || sp.get('volumeProfile');
+      if (vpParam === '1' || vpParam === 'true') {
+        setShowVolumeProfile(true);
+      }
+
       const tfParam = sp.get('tf') as Timeframe;
       if (tfParam && ['1m', '5m', '15m', '30m', '1H', '4H', '1D', '1W', '1M'].includes(tfParam)) {
         setTimeframe(tfParam);
@@ -415,38 +422,44 @@ export function ChartContainer({
       if (hasStrategyOrIndParams) {
         const activeTypes: { type: IndicatorType; period?: number; color?: string }[] = [];
 
-        // Parse strategiesParam
+        // Parse strategiesParam using master strategy-to-indicator engine
         if (strategiesParam) {
           const strats = decodeURIComponent(strategiesParam).split(',');
-          if (strats.includes('ma_alignment') || strats.includes('golden_cross') || strats.includes('death_cross')) {
-            activeTypes.push({ type: 'SMA', period: 50, color: '#38BDF8' });
-            activeTypes.push({ type: 'SMA', period: 200, color: '#F59E0B' });
-          }
-          if (strats.includes('ma_20_50_cross')) {
-            activeTypes.push({ type: 'SMA', period: 20, color: '#10B981' });
-            activeTypes.push({ type: 'SMA', period: 50, color: '#38BDF8' });
-          }
-          if (strats.includes('ema_9_21_cross')) {
-            activeTypes.push({ type: 'EMA', period: 9, color: '#A855F7' });
-            activeTypes.push({ type: 'EMA', period: 21, color: '#EC4899' });
-          }
-          if (strats.includes('rsi_momentum')) {
-            activeTypes.push({ type: 'RSI', period: 14, color: '#818CF8' });
-          }
-          if (strats.includes('macd_cross')) {
-            activeTypes.push({ type: 'MACD', color: '#38BDF8' });
-          }
-          if (strats.includes('bb_reversal')) {
-            activeTypes.push({ type: 'BOLLINGER_BANDS', period: 20, color: '#6366F1' });
-          }
-          if (strats.includes('breakout')) {
-            activeTypes.push({ type: 'DONCHIAN', period: 20, color: '#F97316' });
-          }
-          if (strats.includes('adx_trend')) {
-            activeTypes.push({ type: 'ADX', period: 14, color: '#EAB308' });
-            activeTypes.push({ type: 'EMA', period: 9, color: '#A855F7' });
-            activeTypes.push({ type: 'EMA', period: 21, color: '#EC4899' });
-          }
+          strats.forEach((sId) => {
+            const cleanId = sId.trim();
+            const setup = getStrategyIndicatorSetup(cleanId);
+
+            if (setup.indicatorConfigs && setup.indicatorConfigs.length > 0) {
+              setup.indicatorConfigs.forEach((cfg) => {
+                if (!activeTypes.some((t) => t.type === cfg.type && t.period === cfg.period)) {
+                  activeTypes.push({ type: cfg.type, period: cfg.period, color: cfg.color });
+                }
+              });
+            }
+
+            if (setup.isSmc) {
+              setSmcConfig((prev) => {
+                const next = { ...prev, enabled: true };
+                saveStoredSmcConfig(next);
+                return next;
+              });
+              if (setup.smcSetupId) {
+                setTargetSetupId(setup.smcSetupId);
+              }
+            }
+
+            if (setup.isVolumeProfile) {
+              setShowVolumeProfile(true);
+            }
+
+            if (setup.isOrderFlow) {
+              setOrderFlowConfig((prev) => ({ ...prev, enabled: true }));
+            }
+
+            if (setup.isQuantumAi) {
+              setQuantumAiConfig((prev) => ({ ...prev, enabled: true }));
+            }
+          });
         }
 
         // Parse direct indicatorsParam
@@ -642,6 +655,7 @@ export function ChartContainer({
   const [templates, setTemplates] = useState<ChartTemplate[]>(() => getStoredTemplates());
   const [activeTemplateId, setActiveTemplateIdState] = useState<string>(() => getActiveTemplateId());
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+  const [snapshotStatus, setSnapshotStatus] = useState<'idle' | 'captured'>('idle');
 
   // Active indicator types set (for backward compatibility)
   const activeIndicators = useMemo(() => {
@@ -1355,6 +1369,58 @@ export function ChartContainer({
     }
   }, []);
 
+  // Apply trading strategy corresponding indicators and overlays
+  const handleApplyStrategy = useCallback((strategyId: string) => {
+    const setup = getStrategyIndicatorSetup(strategyId);
+
+    // Apply indicators
+    if (setup.indicatorConfigs && setup.indicatorConfigs.length > 0) {
+      setIndicatorConfigs(setup.indicatorConfigs);
+      try {
+        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(setup.indicatorConfigs));
+      } catch {}
+    } else {
+      setIndicatorConfigs([]);
+      try {
+        localStorage.removeItem('mi007_chart_indicators_v2');
+      } catch {}
+    }
+
+    // Apply overlays
+    if (setup.isSmc) {
+      setSmcConfig((prev) => {
+        const next = { ...prev, enabled: true };
+        saveStoredSmcConfig(next);
+        return next;
+      });
+      if (setup.smcSetupId) {
+        setTargetSetupId(setup.smcSetupId);
+      }
+    } else {
+      setSmcConfig((prev) => {
+        const next = { ...prev, enabled: false };
+        saveStoredSmcConfig(next);
+        return next;
+      });
+    }
+
+    if (setup.isVolumeProfile) {
+      setShowVolumeProfile(true);
+    }
+
+    if (setup.isOrderFlow) {
+      setOrderFlowConfig((prev) => ({ ...prev, enabled: true }));
+    }
+
+    if (setup.isQuantumAi) {
+      setQuantumAiConfig((prev) => ({ ...prev, enabled: true }));
+    }
+
+    if (setup.timeframe && ['1m', '5m', '15m', '30m', '1H', '4H', '1D', '1W', '1M'].includes(setup.timeframe)) {
+      setTimeframe(setup.timeframe as Timeframe);
+    }
+  }, []);
+
   const handleSaveToTemplate = useCallback((slotId: string) => {
     const existing = templates.find(t => t.id === slotId);
     const slotNum = existing?.slotNumber || parseInt(slotId.replace('tpl_', ''), 10) || 1;
@@ -1551,11 +1617,15 @@ export function ChartContainer({
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      setSnapshotStatus('captured');
+      setTimeout(() => setSnapshotStatus('idle'), 2500);
     } else if (mode === 'clipboard') {
       exportCanvas.toBlob(async (blob) => {
         if (blob && navigator.clipboard && window.ClipboardItem) {
           try {
             await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            setSnapshotStatus('captured');
+            setTimeout(() => setSnapshotStatus('idle'), 2500);
           } catch (e) {
             console.warn('Clipboard write failed, downloading instead:', e);
             const dataUrl = exportCanvas.toDataURL('image/png');
@@ -1563,6 +1633,8 @@ export function ChartContainer({
             a.href = dataUrl;
             a.download = `${selectedSymbol}_${timeframe}.png`;
             a.click();
+            setSnapshotStatus('captured');
+            setTimeout(() => setSnapshotStatus('idle'), 2500);
           }
         }
       }, 'image/png');
@@ -1636,6 +1708,7 @@ export function ChartContainer({
         templates={templates}
         activeTemplateId={activeTemplateId}
         saveStatus={saveStatus}
+        snapshotStatus={snapshotStatus}
         isFullscreen={isFullscreen}
         onToggleFullscreen={handleToggleFullscreen}
         onTimeframeChange={setTimeframe}
@@ -1656,6 +1729,7 @@ export function ChartContainer({
         onSaveChartLayout={handleSaveChartLayout}
         onClearAllIndicators={handleClearAllIndicators}
         onExportSnapshot={handleExportSnapshot}
+        onApplyStrategy={handleApplyStrategy}
       />
 
       {/* ── OHLCV Bar with Symbol context ── */}
