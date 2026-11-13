@@ -29,21 +29,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               try {
                 var saved = localStorage.getItem('mi007_active_theme');
-                var theme = 'arctic';
-                if (saved === 'arctic' || saved === 'ivory' || saved === 'graphite' || saved === 'capital' || saved === 'ocean' || saved === 'violet' || saved === 'cream' || saved === 'sky') {
+                var theme = 'ocean';
+                if (saved === 'ocean' || saved === 'violet' || saved === 'falcon' || saved === 'cyberpunk' || saved === 'cream' || saved === 'sky') {
                   theme = saved;
-                } else if (saved === 'azure') {
-                  theme = 'capital';
-                } else if (saved === 'lightblue' || saved === 'quartz') {
-                  theme = 'arctic';
-                } else if (saved === 'champagne' || saved === 'falcon') {
-                  theme = 'ivory';
-                } else if (saved === 'metallic' || saved === 'obsidian') {
-                  theme = 'graphite';
-                } else if (saved === 'techno' || saved === 'cyberpunk') {
-                  theme = 'capital';
+                } else if (saved === 'arctic' || saved === 'lightblue' || saved === 'quartz') {
+                  theme = 'sky';
+                } else if (saved === 'ivory' || saved === 'champagne' || saved === 'excel') {
+                  theme = 'cream';
+                } else if (saved === 'graphite' || saved === 'metallic' || saved === 'obsidian') {
+                  theme = 'ocean';
+                } else if (saved === 'capital' || saved === 'azure' || saved === 'techno') {
+                  theme = 'violet';
                 }
                 document.documentElement.setAttribute('data-theme', theme);
+                if (theme !== 'cream' && theme !== 'sky') {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
               } catch (e) {}
             `,
           }}

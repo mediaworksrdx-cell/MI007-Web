@@ -40,7 +40,132 @@ export type {
 export { INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay, formatIndicatorBadgeLabel };
 
 
-// ── Color Constants (Soft Institutional Theme) ──────────────────────────
+// ── Dynamic Theme Colors System ──────────────────────────────────────────
+export interface ChartThemeColors {
+  isDark: boolean;
+  bg: string;
+  panelBg: string;
+  panelSep: string;
+  gridColor: string;
+  axisTextColor: string;
+  separatorColor: string;
+  bull: string;
+  bear: string;
+  strokeBull: string;
+  strokeBear: string;
+  crosshairColor: string;
+}
+
+export function getChartThemeColors(): ChartThemeColors {
+  const themeAttr = typeof document !== 'undefined'
+    ? (document.documentElement.getAttribute('data-theme') || 'ocean')
+    : 'ocean';
+
+  const isLight = themeAttr === 'cream' || themeAttr === 'sky' || themeAttr === 'ivory' || themeAttr === 'excel' || themeAttr === 'arctic' || themeAttr === 'lightblue' || themeAttr === 'quartz';
+  const isDark = !isLight;
+
+  if (themeAttr === 'violet') {
+    return {
+      isDark: true,
+      bg: '#120A24',
+      panelBg: '#0F081D',
+      panelSep: 'rgba(168, 85, 247, 0.22)',
+      gridColor: 'rgba(168, 85, 247, 0.08)',
+      axisTextColor: '#C084FC',
+      separatorColor: '#3B1F6A',
+      bull: '#22E555',
+      bear: '#FF4D6D',
+      strokeBull: '#16A34A',
+      strokeBear: '#DC2626',
+      crosshairColor: 'rgba(192, 132, 252, 0.65)',
+    };
+  }
+
+  if (themeAttr === 'falcon') {
+    return {
+      isDark: true,
+      bg: '#0A1424',
+      panelBg: '#070D18',
+      panelSep: 'rgba(245, 158, 11, 0.18)',
+      gridColor: 'rgba(255, 255, 255, 0.05)',
+      axisTextColor: '#FCD34D',
+      separatorColor: '#2A3C59',
+      bull: '#10B981',
+      bear: '#EF4444',
+      strokeBull: '#059669',
+      strokeBear: '#B91C1C',
+      crosshairColor: 'rgba(245, 158, 11, 0.6)',
+    };
+  }
+
+  if (themeAttr === 'cyberpunk') {
+    return {
+      isDark: true,
+      bg: '#08080E',
+      panelBg: '#050508',
+      panelSep: 'rgba(236, 72, 153, 0.22)',
+      gridColor: 'rgba(236, 72, 153, 0.07)',
+      axisTextColor: '#F472B6',
+      separatorColor: '#3D1B4D',
+      bull: '#10B981',
+      bear: '#F43F5E',
+      strokeBull: '#059669',
+      strokeBear: '#BE123C',
+      crosshairColor: 'rgba(236, 72, 153, 0.6)',
+    };
+  }
+
+  if (themeAttr === 'cream' || themeAttr === 'ivory' || themeAttr === 'excel') {
+    return {
+      isDark: false,
+      bg: '#FFFFFF',
+      panelBg: '#F9F7F2',
+      panelSep: '#E5E0D8',
+      gridColor: 'rgba(0, 0, 0, 0.05)',
+      axisTextColor: '#52525B',
+      separatorColor: '#E5E0D8',
+      bull: '#107C41',
+      bear: '#DC2626',
+      strokeBull: '#0B592E',
+      strokeBear: '#991B1B',
+      crosshairColor: 'rgba(71, 85, 105, 0.55)',
+    };
+  }
+
+  if (themeAttr === 'sky' || themeAttr === 'arctic' || themeAttr === 'lightblue' || themeAttr === 'quartz') {
+    return {
+      isDark: false,
+      bg: '#FFFFFF',
+      panelBg: '#E8F3FA',
+      panelSep: '#BAE6FD',
+      gridColor: 'rgba(2, 132, 199, 0.07)',
+      axisTextColor: '#0369A1',
+      separatorColor: '#BAE6FD',
+      bull: '#059669',
+      bear: '#DC2626',
+      strokeBull: '#047857',
+      strokeBear: '#991B1B',
+      crosshairColor: 'rgba(2, 132, 199, 0.55)',
+    };
+  }
+
+  // Default: Ocean
+  return {
+    isDark: true,
+    bg: '#0A192F',
+    panelBg: '#071322',
+    panelSep: '#1B3B60',
+    gridColor: 'rgba(255, 255, 255, 0.06)',
+    axisTextColor: '#7DD3FC',
+    separatorColor: '#1B3B60',
+    bull: '#00F59B',
+    bear: '#FF4D4D',
+    strokeBull: '#059669',
+    strokeBear: '#DC2626',
+    crosshairColor: 'rgba(0, 229, 255, 0.6)',
+  };
+}
+
 const BULL  = '#089981';
 const BEAR  = '#F23645';
 const LINE_COLOR = '#2563EB';
@@ -931,9 +1056,12 @@ export function renderChart(
 
   function priceToY(p: number): number { return chartH - ((p - pMin) / pRange * chartH); }
 
-  // Clear canvas with crisp white background
+  const themeColors = getChartThemeColors();
+  const isDark = themeColors.isDark;
+
+  // Clear canvas with theme background
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#FFFFFF';
+  ctx.fillStyle = themeColors.bg;
   ctx.fillRect(0, 0, W, H);
 
   // Timeframe detection
@@ -943,19 +1071,15 @@ export function renderChart(
   const tf = options.timeframe.toUpperCase();
   const isDailyOrHigher = ['1D','D','1W','W','1M','M'].includes(tf) || avgDur >= 20 * 3600000;
 
-  const isDark = typeof document !== 'undefined'
-    ? (document.documentElement.getAttribute('data-theme') !== 'ivory' && document.documentElement.getAttribute('data-theme') !== 'excel')
-    : true;
-
-  // ── LAYER 1: Grid & Axes (Light Mode with Institutional Nice Numbers) ──
+  // ── LAYER 1: Grid & Axes (Theme-Aware with Institutional Nice Numbers) ──
   ctx.save();
   const tvFontStack = TV_FONT_STACK;
   const gridDash = [Math.max(1, 1.5 * dpr), Math.max(1.5, 2 * dpr)];
   ctx.setLineDash(gridDash);
   ctx.lineWidth = 1 * dpr;
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+  ctx.strokeStyle = themeColors.gridColor;
   ctx.font = `500 ${11 * dpr}px ${tvFontStack}`;
-  ctx.fillStyle = '#787B86';
+  ctx.fillStyle = themeColors.axisTextColor;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
 
@@ -975,7 +1099,7 @@ export function renderChart(
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (const tick of timeTicks) {
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)';
+    ctx.strokeStyle = themeColors.gridColor;
     ctx.beginPath();
     ctx.moveTo(tick.x, 0);
     ctx.lineTo(tick.x, chartH);
@@ -984,10 +1108,10 @@ export function renderChart(
     ctx.save();
     if (tick.isYear) {
       ctx.font = `bold ${11 * dpr}px ${tvFontStack}`;
-      ctx.fillStyle = '#1E293B';
+      ctx.fillStyle = isDark ? '#FFFFFF' : '#1E293B';
     } else {
       ctx.font = `500 ${11 * dpr}px ${tvFontStack}`;
-      ctx.fillStyle = '#787B86';
+      ctx.fillStyle = themeColors.axisTextColor;
     }
     ctx.fillText(tick.label, tick.x, chartH + BM / 2);
     ctx.restore();
@@ -995,7 +1119,7 @@ export function renderChart(
 
   // Solid separators for right price scale and bottom time scale
   ctx.setLineDash([]);
-  ctx.strokeStyle = '#E2E8F0';
+  ctx.strokeStyle = themeColors.separatorColor;
   ctx.lineWidth = 1 * dpr;
   ctx.beginPath(); ctx.moveTo(chartW, 0); ctx.lineTo(chartW, chartH + BM); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(0, chartH); ctx.lineTo(W, chartH); ctx.stroke();
@@ -2381,8 +2505,8 @@ export function renderChart(
 
       const isOriginalBear = (c.close < c.open);
       const bull = isOriginalBear ? false : (barClose >= barOpen);
-      const color = bull ? BULL : BEAR;
-      const strokeColor = bull ? '#067A67' : '#CF2232';
+      const color = bull ? themeColors.bull : themeColors.bear;
+      const strokeColor = bull ? themeColors.strokeBull : themeColors.strokeBear;
       const cx = li * candleW + candleW / 2;
       const hY = priceToY(barHigh), lY = priceToY(barLow);
       const oY = priceToY(barOpen), cY = priceToY(barClose);
@@ -2408,7 +2532,7 @@ export function renderChart(
       const bWidth = Math.max(1, Math.round(bodyW));
       const bHeight = Math.max(1, Math.round(bH));
       if (isHollow && bull) {
-        ctx.fillStyle = '#FFFFFF';
+        ctx.fillStyle = themeColors.bg;
         ctx.fillRect(bLeft, rTop, bWidth, bHeight);
         ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.2 * dpr, 1);
         ctx.strokeRect(bLeft, rTop, bWidth, bHeight);
@@ -2463,7 +2587,7 @@ export function renderChart(
     const lastC = candles[Math.min(endIdx-1, candles.length-1)];
     const curPrice = options.currentPriceOverride && options.currentPriceOverride > 0 ? options.currentPriceOverride : lastC.close;
     const bull = curPrice >= lastC.open;
-    const accent = bull ? BULL : BEAR;
+    const accent = bull ? themeColors.bull : themeColors.bear;
     const rawY = priceToY(curPrice);
     const clY = Math.max(2, Math.min(chartH - 2, rawY));
 
@@ -2471,7 +2595,7 @@ export function renderChart(
     ctx.save();
     const lineY = Math.floor(clY) + 0.5;
     ctx.setLineDash([2 * dpr, 4 * dpr]);
-    ctx.strokeStyle = bull ? 'rgba(8, 153, 129, 0.65)' : 'rgba(242, 54, 69, 0.65)';
+    ctx.strokeStyle = bull ? themeColors.bull : themeColors.bear;
     ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
     ctx.moveTo(0, lineY);
@@ -3985,9 +4109,9 @@ export function renderChart(
   // Volume Panel
   if (hasVolPanel) {
     // Bg
-    ctx.fillStyle = PANEL_BG; ctx.fillRect(0, panelOffset, chartW+RM, pH);
+    ctx.fillStyle = themeColors.panelBg; ctx.fillRect(0, panelOffset, chartW+RM, pH);
     // Separator
-    ctx.strokeStyle = PANEL_SEP; ctx.lineWidth = 1*dpr;
+    ctx.strokeStyle = themeColors.panelSep; ctx.lineWidth = 1*dpr;
     ctx.beginPath(); ctx.moveTo(0, panelOffset); ctx.lineTo(chartW+RM, panelOffset); ctx.stroke();
 
     // 20-period Volume MA calculation with adaptive warmup
@@ -4064,8 +4188,8 @@ export function renderChart(
   for (const cfg of panelInds) {
     const result = options.indicatorResults.get(cfg.id || cfg.type);
     // Panel bg + separator
-    ctx.fillStyle = PANEL_BG; ctx.fillRect(0, panelOffset, chartW+RM, pH);
-    ctx.strokeStyle = PANEL_SEP; ctx.lineWidth = 1*dpr;
+    ctx.fillStyle = themeColors.panelBg; ctx.fillRect(0, panelOffset, chartW+RM, pH);
+    ctx.strokeStyle = themeColors.panelSep; ctx.lineWidth = 1*dpr;
     ctx.beginPath(); ctx.moveTo(0, panelOffset); ctx.lineTo(chartW+RM, panelOffset); ctx.stroke();
     // Label with live value
     const baseLabel = formatIndicatorBadgeLabel(cfg);
@@ -4582,11 +4706,12 @@ export function renderOverlay(
 
   // 4. Draw Crosshair & Coordinate Badges
   if (crosshair) {
+    const themeColors = getChartThemeColors();
     const cx = Math.max(0, Math.min(chartW, crosshair.x));
     const cy = Math.max(0, Math.min(H, crosshair.y));
     ctx.save();
     ctx.setLineDash([4 * dpr, 3 * dpr]);
-    ctx.strokeStyle = options.cursorMode === 'arrow' ? 'rgba(51, 65, 85, 0.45)' : CROSSHAIR_COLOR;
+    ctx.strokeStyle = options.cursorMode === 'arrow' ? 'rgba(128, 128, 128, 0.35)' : themeColors.crosshairColor;
     ctx.lineWidth = 1 * dpr;
     ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(chartW, cy); ctx.stroke();

@@ -7,10 +7,12 @@ export function ThemeSwitcher() {
   const { theme, setTheme } = useAppTheme();
   const [isOpen, setIsOpen] = useState(true);
 
-  // Four Distinct Premium Themes (2 Dark & 2 Light)
+  // Six Distinct Premium Themes (4 Dark & 2 Light)
   const themeList = [
     THEMES.ocean,
     THEMES.violet,
+    THEMES.falcon,
+    THEMES.cyberpunk,
     THEMES.cream,
     THEMES.sky,
   ];
@@ -24,7 +26,7 @@ export function ThemeSwitcher() {
     >
       {/* Expanded Theme Selection Card */}
       {isOpen ? (
-        <div className="w-[330px] sm:w-[370px] rounded-2xl p-4 backdrop-blur-2xl shadow-2xl transition-all duration-300 theme-switcher-panel animate-in fade-in slide-in-from-bottom-3 border border-white/10">
+        <div className="w-[330px] sm:w-[380px] max-h-[85vh] overflow-y-auto rounded-2xl p-4 backdrop-blur-2xl shadow-2xl transition-all duration-300 theme-switcher-panel animate-in fade-in slide-in-from-bottom-3 border border-white/10">
           {/* Header */}
           <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/10 theme-switcher-border">
             <div className="flex items-center gap-2">
@@ -40,7 +42,7 @@ export function ThemeSwitcher() {
                 MI007 Palette Studio
               </span>
               <span className="px-1.5 py-0.5 rounded text-[9px] mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                4 DISTINCT THEMES
+                6 DISTINCT THEMES
               </span>
             </div>
             <button

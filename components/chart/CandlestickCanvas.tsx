@@ -12,6 +12,7 @@ import type { CursorMode } from './DrawingToolbar';
 import type { SmcConfig } from '@/lib/smcEngine';
 import { calculateSMC } from '@/lib/smcEngine';
 import { SmcInspectorModal, type SmcInspectorData } from './SmcInspectorModal';
+import { useAppTheme } from '@/lib/themeContext';
 
 interface CandlestickCanvasProps {
   candles: Candle[];
@@ -206,6 +207,7 @@ export function CandlestickCanvas({
   const isBrushingRef = useRef(false);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [clockTick, setClockTick] = useState(0);
+  const { theme } = useAppTheme();
 
   // ── In-Chart Text Annotation Inline Editor ──
   interface InlineTextEditorState {
@@ -1191,7 +1193,7 @@ export function CandlestickCanvas({
       showQuantumAi, quantumAiConfig, quantumAiData, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
-      drawings, isAllDrawingsHidden, startIdx, endIdx, priceScaleRatio, priceOffset, size, dpr, clockTick]);
+      drawings, isAllDrawingsHidden, startIdx, endIdx, priceScaleRatio, priceOffset, size, dpr, clockTick, theme]);
 
   // Global cleanup of all animation frames on unmount
   useEffect(() => {

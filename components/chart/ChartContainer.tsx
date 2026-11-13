@@ -1644,12 +1644,12 @@ export function ChartContainer({
   return (
     <div
       ref={fullscreenContainerRef}
-      className={`flex flex-col h-full bg-white dark:bg-[#0B0F19] overflow-hidden relative transition-all ${
+      className={`flex flex-col h-full bg-[var(--color-chart-bg)] text-[var(--theme-card-text)] overflow-hidden relative transition-all ${
         isFullscreen
           ? 'fixed inset-0 z-[9999] rounded-none border-none shadow-none w-screen h-screen'
           : isStandalone
           ? 'w-full h-full rounded-none border-none shadow-none'
-          : 'rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs'
+          : 'rounded-xl border border-[var(--theme-card-border)] shadow-xs'
       }`}
     >
       {/* ── Top Instrument Search Bar ── */}
@@ -1742,7 +1742,7 @@ export function ChartContainer({
       />
 
       {/* ── Main Chart Workspace: Left Institutional Drawing Toolbar + Canvas Area ── */}
-      <div className="flex-1 min-h-0 flex flex-row relative bg-white">
+      <div className="flex-1 min-h-0 flex flex-row relative bg-[var(--color-chart-bg)]">
         {/* Left Vertical Institutional Drawing Toolbar */}
         <DrawingToolbar
           activeDrawingTool={activeDrawingTool}
@@ -1764,7 +1764,7 @@ export function ChartContainer({
         />
 
         {/* Chart Canvas Area */}
-        <div ref={chartWrapperRef} className="flex-1 min-h-0 relative bg-white overflow-hidden">
+        <div ref={chartWrapperRef} className="flex-1 min-h-0 relative bg-[var(--color-chart-bg)] overflow-hidden">
           {isLoadingCandles && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-xs pointer-events-none">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-[12px] mono font-bold shadow-md">

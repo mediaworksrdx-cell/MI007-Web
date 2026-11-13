@@ -56,6 +56,10 @@ export function Falcon3DLogo({
       ? '#22E555' // vivid parrot green glow 🦜
       : theme === 'ocean'
       ? '#00E5FF' // electric turquoise glow
+      : theme === 'falcon'
+      ? '#F59E0B' // champagne gold glow 🦅
+      : theme === 'cyberpunk'
+      ? '#EC4899' // hot cyber pink glow ⚡
       : theme === 'cream'
       ? '#107C41' // excel icon green glow
       : '#0284C7'; // sky blue breeze glow

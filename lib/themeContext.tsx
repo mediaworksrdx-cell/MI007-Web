@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { workspaceSync } from './workspaceSync';
 
-export type AppTheme = 'ocean' | 'violet' | 'cream' | 'sky';
+export type AppTheme = 'ocean' | 'violet' | 'falcon' | 'cyberpunk' | 'cream' | 'sky';
 
 export interface ThemeConfig {
   id: AppTheme;
@@ -28,78 +28,116 @@ export interface ThemeConfig {
 export const THEMES: Record<AppTheme, ThemeConfig> = {
   ocean: {
     id: 'ocean',
-    name: 'Institutional Navy (Dark)',
-    tagline: 'Deep Institutional Slate · Crisp White Type · Emerald & Blue Accents',
-    badge: 'Pro Navy',
+    name: 'Deep Ocean & Turquoise',
+    tagline: 'Deep Ocean Abyss · Navy Cards · Luminous Turquoise Glow',
+    badge: 'Ocean Turquoise',
     mode: 'dark',
     palette: {
-      bg: '#080E1A',
-      card: '#0F172A',
-      surface: '#1E293B',
-      accent: '#3B82F6',
-      accentSecondary: '#10B981',
-      text: '#F8FAFC',
-      textMuted: '#94A3B8',
-      bull: '#10B981',
-      bear: '#EF4444',
-      border: '#1E293B',
+      bg: '#071322',
+      card: '#0E233D',
+      surface: '#142F50',
+      accent: '#00E5FF',
+      accentSecondary: '#38BDF8',
+      text: '#F0FDF4',
+      textMuted: '#7DD3FC',
+      bull: '#00F59B',
+      bear: '#FF4D4D',
+      border: '#1B3B60',
     },
   },
   violet: {
     id: 'violet',
-    name: 'Obsidian Terminal (Dark)',
-    tagline: 'Carbon Obsidian · Neutral Slate Hierarchy · Institutional Emerald',
-    badge: 'Pro Obsidian',
+    name: 'Royal Violet & Parrot Green',
+    tagline: 'Royal Violet Obsidian · Amethyst Cards · Neon Parrot Green 🦜',
+    badge: 'Violet & Parrot 🦜',
     mode: 'dark',
     palette: {
-      bg: '#090B10',
-      card: '#11151F',
-      surface: '#181E2C',
-      accent: '#10B981',
-      accentSecondary: '#6366F1',
-      text: '#F8FAFC',
-      textMuted: '#94A3B8',
+      bg: '#0F081D',
+      card: '#1A0F30',
+      surface: '#251644',
+      accent: '#22E555',
+      accentSecondary: '#A855F7',
+      text: '#FAF5FF',
+      textMuted: '#C084FC',
+      bull: '#22E555',
+      bear: '#FF4D6D',
+      border: '#3B1F6A',
+    },
+  },
+  falcon: {
+    id: 'falcon',
+    name: 'Royal Falcon & Champagne Gold',
+    tagline: 'Midnight Navy · Deep Obsidian Cards · Champagne Gold & Amber 🦅',
+    badge: 'Falcon Gold 🦅',
+    mode: 'dark',
+    palette: {
+      bg: '#070D18',
+      card: '#0F1A2E',
+      surface: '#18263E',
+      accent: '#F59E0B',
+      accentSecondary: '#FFD600',
+      text: '#FBFBFB',
+      textMuted: '#FCD34D',
+      bull: '#10B981',
+      bear: '#EF4444',
+      border: '#2A3C59',
+    },
+  },
+  cyberpunk: {
+    id: 'cyberpunk',
+    name: 'Cyberpunk Matrix Neon',
+    tagline: 'Pitch Carbon Black · Neon DeFi Cards · Hot Cyber Pink ⚡',
+    badge: 'Cyberpunk ⚡',
+    mode: 'dark',
+    palette: {
+      bg: '#050508',
+      card: '#0E0E17',
+      surface: '#181828',
+      accent: '#EC4899',
+      accentSecondary: '#8B5CF6',
+      text: '#FDF2F8',
+      textMuted: '#F472B6',
       bull: '#10B981',
       bear: '#F43F5E',
-      border: '#22293A',
+      border: '#3D1B4D',
     },
   },
   cream: {
     id: 'cream',
-    name: 'Institutional Ivory (Light)',
-    tagline: 'Warm Paper Canvas · Pure White Cards · Deep Forest & Slate Type',
-    badge: 'Pro Ivory',
+    name: 'Executive Ivory (Excel Green)',
+    tagline: 'Warm Paper Canvas · Pure White Cards · Excel Icon Green 📊',
+    badge: 'Excel Ivory 📊',
     mode: 'light',
     palette: {
-      bg: '#F8F7F4',
+      bg: '#F9F7F2',
       card: '#FFFFFF',
-      surface: '#F1EFEA',
-      accent: '#059669',
-      accentSecondary: '#047857',
+      surface: '#F2EEE4',
+      accent: '#107C41',
+      accentSecondary: '#15803D',
       text: '#0F172A',
-      textMuted: '#475569',
-      bull: '#059669',
+      textMuted: '#52525B',
+      bull: '#107C41',
       bear: '#DC2626',
-      border: '#E2E8F0',
+      border: '#E5E0D8',
     },
   },
   sky: {
     id: 'sky',
-    name: 'Ice Slate Daylight (Light)',
-    tagline: 'Cool Daylight Slate · Pure White Cards · Crisp Royal Blue & Emerald',
-    badge: 'Pro Daylight',
+    name: 'Sky Blue & Turquoise Breeze',
+    tagline: 'Visible Sky Blue Mist · Pure White Cards · Sky Blue & Turquoise 🌤️',
+    badge: 'Sky Breeze 🌤️',
     mode: 'light',
     palette: {
-      bg: '#F1F5F9',
+      bg: '#E8F3FA',
       card: '#FFFFFF',
-      surface: '#F8FAFC',
-      accent: '#2563EB',
-      accentSecondary: '#0284C7',
+      surface: '#DDF0FA',
+      accent: '#0284C7',
+      accentSecondary: '#00B4D8',
       text: '#0F172A',
       textMuted: '#475569',
-      bull: '#059669',
+      bull: '#22C55E',
       bear: '#DC2626',
-      border: '#CBD5E1',
+      border: '#BAE6FD',
     },
   },
 };
@@ -115,6 +153,14 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'mi007_active_theme';
 
+function applyThemeToDOM(themeId: AppTheme) {
+  if (typeof document === 'undefined') return;
+  const config = THEMES[themeId] || THEMES.ocean;
+  document.documentElement.setAttribute('data-theme', themeId);
+  const isDark = config.mode === 'dark';
+  document.documentElement.classList.toggle('dark', isDark);
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<AppTheme>('ocean');
   const [mounted, setMounted] = useState(false);
@@ -127,16 +173,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       initialTheme = stored as AppTheme;
     } else if (stored === 'arctic' || stored === 'lightblue' || stored === 'quartz') {
       initialTheme = 'sky';
-    } else if (stored === 'ivory' || stored === 'champagne' || stored === 'falcon') {
+    } else if (stored === 'ivory' || stored === 'champagne' || stored === 'excel') {
       initialTheme = 'cream';
     } else if (stored === 'graphite' || stored === 'metallic' || stored === 'obsidian') {
       initialTheme = 'ocean';
-    } else if (stored === 'capital' || stored === 'azure' || stored === 'techno' || stored === 'cyberpunk') {
+    } else if (stored === 'capital' || stored === 'azure' || stored === 'techno') {
       initialTheme = 'violet';
     }
 
     setThemeState(initialTheme);
-    document.documentElement.setAttribute('data-theme', initialTheme);
+    applyThemeToDOM(initialTheme);
     setMounted(true);
 
     // Subscribe to multi-tab theme synchronization
@@ -144,7 +190,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (event.type === 'THEME_CHANGED' && (THEMES as Record<string, ThemeConfig>)[event.theme]) {
         const synced = event.theme as AppTheme;
         setThemeState(synced);
-        document.documentElement.setAttribute('data-theme', synced);
+        applyThemeToDOM(synced);
       }
     });
 
@@ -152,7 +198,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (e.key === STORAGE_KEY && e.newValue && (THEMES as Record<string, ThemeConfig>)[e.newValue]) {
         const synced = e.newValue as AppTheme;
         setThemeState(synced);
-        document.documentElement.setAttribute('data-theme', synced);
+        applyThemeToDOM(synced);
       }
     };
     window.addEventListener('storage', handleStorage);
@@ -167,7 +213,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(newTheme);
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, newTheme);
-      document.documentElement.setAttribute('data-theme', newTheme);
+      applyThemeToDOM(newTheme);
       workspaceSync.broadcast({ type: 'THEME_CHANGED', theme: newTheme, timestamp: Date.now() });
     }
   };

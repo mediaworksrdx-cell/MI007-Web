@@ -225,6 +225,10 @@ export default function MarketTerminalSection() {
         ? '#0E233D' // navy card (Deep Ocean & Turquoise)
         : theme === 'violet'
         ? '#1A0F30' // amethyst card (Royal Violet & Parrot Green)
+        : theme === 'falcon'
+        ? '#0F1A2E' // midnight navy card (Falcon Gold)
+        : theme === 'cyberpunk'
+        ? '#0E0E17' // pitch carbon card (Cyberpunk Neon)
         : theme === 'cream'
         ? '#FFFFFF' // pure white card (Light & White Cream)
         : '#FFFFFF'; // pure white card (Sky Blue & Turquoise Breeze)
@@ -386,11 +390,15 @@ export default function MarketTerminalSection() {
         ? '#142F50'
         : theme === 'violet'
         ? '#251644'
+        : theme === 'falcon'
+        ? '#18263E'
+        : theme === 'cyberpunk'
+        ? '#181828'
         : theme === 'cream'
         ? '#F2EEE4'
         : '#DDF0FA';
     const subBorder = cardIsLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-    const textSub = cardIsLight ? '#0F172A' : (theme === 'violet' ? '#C084FC' : '#7DD3FC');
+    const textSub = cardIsLight ? '#0F172A' : (theme === 'violet' ? '#C084FC' : theme === 'cyberpunk' ? '#F472B6' : theme === 'falcon' ? '#FCD34D' : '#7DD3FC');
 
     if (showRsi) {
       ctx.fillStyle = subBg;
@@ -506,7 +514,7 @@ export default function MarketTerminalSection() {
     }
 
     // ── 9. Right Price Axis Labels ──
-    ctx.fillStyle = cardIsLight ? '#0F172A' : (theme === 'violet' ? '#C084FC' : '#7DD3FC');
+    ctx.fillStyle = cardIsLight ? '#0F172A' : (theme === 'violet' ? '#C084FC' : theme === 'cyberpunk' ? '#F472B6' : theme === 'falcon' ? '#FCD34D' : '#7DD3FC');
     ctx.font = '12px monospace';
     ctx.textAlign = 'left';
     for (let step = 0; step <= 5; step++) {
