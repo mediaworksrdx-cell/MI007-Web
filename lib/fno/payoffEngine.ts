@@ -75,6 +75,9 @@ export function evaluatePortfolioAtScenario(params: {
   let netVanna = 0;
   let netCharm = 0;
   let netVomma = 0;
+  let netSpeed = 0;
+  let netZomma = 0;
+  let netColor = 0;
 
   for (let idx = 0; idx < activeLegs.length; idx++) {
     const leg = activeLegs[idx];
@@ -150,6 +153,9 @@ export function evaluatePortfolioAtScenario(params: {
     netVanna += g.vanna * signedQty;
     netCharm += g.charm * signedQty;
     netVomma += g.vomma * signedQty;
+    netSpeed += g.speed * signedQty;
+    netZomma += g.zomma * signedQty;
+    netColor += g.color * signedQty;
   }
 
   return {
@@ -164,6 +170,9 @@ export function evaluatePortfolioAtScenario(params: {
       vanna: netVanna,
       charm: netCharm,
       vomma: netVomma,
+      speed: netSpeed,
+      zomma: netZomma,
+      color: netColor,
     },
   };
 }
@@ -191,7 +200,7 @@ export function calculateStrategyPayoff(
       probabilityOfProfit: 50,
       netDebitCredit: 0,
       riskRewardRatio: '1 : 1',
-      netGreeks: { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0, vanna: 0, charm: 0, vomma: 0 },
+      netGreeks: { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0, vanna: 0, charm: 0, vomma: 0, speed: 0, zomma: 0, color: 0 },
       capitalRequired: 0,
       marginRequired: 0,
       isUnlimitedRisk: false,
@@ -472,6 +481,9 @@ export function calculateStrategyPayoff(
       vanna: Math.round(rawGreeks.vanna * 100) / 100,
       charm: Math.round(rawGreeks.charm * 100) / 100,
       vomma: Math.round(rawGreeks.vomma * 100) / 100,
+      speed: Math.round(rawGreeks.speed * 10000000) / 10000000,
+      zomma: Math.round(rawGreeks.zomma * 10000) / 10000,
+      color: Math.round(rawGreeks.color * 10000) / 10000,
     },
     capitalRequired: Math.round(capitalRequired),
     marginRequired: Math.round(marginRequired),

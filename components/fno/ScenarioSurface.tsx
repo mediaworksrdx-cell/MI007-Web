@@ -289,6 +289,14 @@ export default function ScenarioSurface({
               </span>
             </div>
             <div className="px-2.5 py-1 rounded-lg bg-[var(--theme-card-bg)] border border-[var(--theme-card-border)]">
+              <span className="text-slate-400 text-[9px] uppercase block">
+                Speed / Zomma
+              </span>
+              <span className="font-bold text-cyan-400">
+                {(activeCell.netGreeks.speed ?? 0).toExponential(2)} / {(activeCell.netGreeks.zomma ?? 0).toFixed(4)}
+              </span>
+            </div>
+            <div className="px-2.5 py-1 rounded-lg bg-[var(--theme-card-bg)] border border-[var(--theme-card-border)]">
               <span className="text-slate-400 text-[9px] uppercase block">θ/Γ Carry Ratio</span>
               <span
                 className={`font-extrabold ${

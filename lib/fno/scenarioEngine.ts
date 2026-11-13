@@ -61,15 +61,17 @@ export function computeDeployedCapital(legs: StrategyLeg[]): number {
   let marginRequired = 0;
 
   for (const leg of activeLegs) {
-    const legCost = leg.entryPrice * leg.lots * leg.lotSize;
-    if (leg.action === 'BUY') {
-      capitalRequired += legCost;
+    const notional = (leg.instrument === 'FUT' ? leg.entryPrice : leg.strike) * leg.lots * leg.lotSize;
+    if (leg.instrument === 'FUT') {
+      marginRequired += notional * 0.12;
+    } else if (leg.action === 'BUY') {
+      capitalRequired += leg.entryPrice * leg.lots * leg.lotSize;
     } else {
-      marginRequired += Math.max(25000, leg.strike * leg.lots * leg.lotSize * 0.12);
+      marginRequired += Math.max(25000, notional * 0.12);
     }
   }
 
-  return Math.max(1, marginRequired > 0 ? marginRequired : capitalRequired);
+  return Math.max(1, capitalRequired + marginRequired);
 }
 
 /**
@@ -232,6 +234,9 @@ export function computeScenarioMatrix(params: {
           vanna: Math.round(evalRes.netGreeks.vanna * 1000) / 1000,
           charm: Math.round(evalRes.netGreeks.charm * 1000) / 1000,
           vomma: Math.round(evalRes.netGreeks.vomma * 1000) / 1000,
+          speed: Math.round(evalRes.netGreeks.speed * 10000000) / 10000000,
+          zomma: Math.round(evalRes.netGreeks.zomma * 10000) / 10000,
+          color: Math.round(evalRes.netGreeks.color * 10000) / 10000,
         },
         thetaGammaRatio,
         isThetaSweetSpot,

@@ -98,7 +98,7 @@ export function calculateBSGreeksUnrounded(
   const q = params.dividendYield ?? 0.0;
 
   if (S <= 0 || K <= 0) {
-    return { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0, vanna: 0, charm: 0, vomma: 0 };
+    return { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0, vanna: 0, charm: 0, vomma: 0, speed: 0, zomma: 0, color: 0 };
   }
 
   if (T <= 0.0001 || sigma <= 0.0001) {
@@ -112,6 +112,9 @@ export function calculateBSGreeksUnrounded(
       vanna: 0,
       charm: 0,
       vomma: 0,
+      speed: 0,
+      zomma: 0,
+      color: 0,
     };
   }
 
@@ -164,6 +167,20 @@ export function calculateBSGreeksUnrounded(
   // Vomma (Volga): dVega / dSigma per 1% (+0.01) change in IV
   const vomma = (vega * d1 * d2) / (100.0 * sigma);
 
+  // Speed: dGamma / dSpot
+  const speed = -(gamma / S) * (d1 / (sigma * sqrtT) + 1.0);
+
+  // Zomma: dGamma / dSigma per 1% (+0.01) change in IV
+  const zomma = (gamma * (d1 * d2 - 1.0)) / (100.0 * sigma);
+
+  // Color: -dGamma / dT per 1 calendar day passage of time
+  const colorAnnual = -gamma * (
+    q +
+    ((r - q) * d1) / (sigma * sqrtT) +
+    (1.0 - d1 * d2) / (2.0 * T)
+  );
+  const color = colorAnnual / 365.0;
+
   return {
     delta,
     gamma,
@@ -173,6 +190,9 @@ export function calculateBSGreeksUnrounded(
     vanna,
     charm,
     vomma,
+    speed,
+    zomma,
+    color,
   };
 }
 
@@ -194,6 +214,9 @@ export function calculateBSGreeks(
     vanna: Math.round(raw.vanna * 10000) / 10000,
     charm: Math.round(raw.charm * 10000) / 10000,
     vomma: Math.round(raw.vomma * 10000) / 10000,
+    speed: Math.round(raw.speed * 1000000000) / 1000000000,
+    zomma: Math.round(raw.zomma * 1000000) / 1000000,
+    color: Math.round(raw.color * 1000000) / 1000000,
   };
 }
 

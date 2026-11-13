@@ -31,6 +31,12 @@ export interface Greeks {
   charm?: number;
   /** Second-order Greek: dVega / dVol (Volga, scaled per 1% IV change) */
   vomma?: number;
+  /** Second-order Greek: dGamma / dSpot */
+  speed?: number;
+  /** Second-order Greek: dGamma / dVol (scaled per 1% IV change) */
+  zomma?: number;
+  /** Second-order Greek: -dGamma / dTime (scaled per 1 calendar day decay) */
+  color?: number;
 }
 
 export interface DataProvenance {
