@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
     if (!query || typeof query !== 'string' || !query.trim()) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
-    if (query.length > 2000) {
-      return NextResponse.json({ error: 'Query exceeds maximum length of 2000 characters' }, { status: 400 });
+    if (query.length > 5000) {
+      return NextResponse.json({ error: 'Query exceeds maximum length of 5000 characters' }, { status: 400 });
     }
 
     const upstreamRes = await fetch(`${AARKAAI_BASE_URL}/prompt/stream`, {
@@ -29,8 +29,11 @@ export async function POST(req: NextRequest) {
         query: query.trim(),
         session_id: sessionId,
         mode: 'production',
+        max_tokens: 4096,
+        max_new_tokens: 4096,
+        max_length: 4096,
       }),
-      signal: AbortSignal.timeout(60000),
+      signal: AbortSignal.timeout(90000),
     });
 
     if (!upstreamRes.ok || !upstreamRes.body) {

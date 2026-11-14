@@ -183,26 +183,46 @@ ${spotText}`;
 function generateTechnicalsAnalysis(query: string, spotText: string): string {
   const lower = query.toLowerCase();
 
-  if (lower.includes('smc') || lower.includes('order block') || lower.includes('fvg') || lower.includes('liquidity') || lower.includes('bos') || lower.includes('choch')) {
+  if (lower.includes('smc') || lower.includes('order block') || lower.includes('fvg') || lower.includes('liquidity') || lower.includes('bos') || lower.includes('choch') || lower.includes('smart money')) {
     return `### Smart Money Concepts (SMC) & Institutional Market Structure
 
-**1. Order Block (OB) Identification & Mitigation**
+**1. Institutional Order Flow & Liquidity Delivery**
+Institutional market participants (hedge funds, central banks, quantitative desks) operate under inventory constraints and cannot enter large positions at market price without causing adverse price drift. They utilize **Liquidity Engineering**—steering price toward clusters of resting retail stop-loss orders to accumulate or distribute inventory:
+- **Buy-Side Liquidity (BSL)**: Stop-loss buy orders clustered above old swing highs, equal highs, or session extremes.
+- **Sell-Side Liquidity (SSL)**: Stop-loss sell orders clustered below old swing lows, equal lows, or session extremes.
+
+**2. Order Block (OB) Identification & Mitigation**
 An institutional Order Block is the final opposing candle before aggressive displacement that breaches structural swing points:
-- **Bullish OB**: The lowest down-close candle prior to an impulsive upside displacement breaking structure (BOS). Limit bids cluster at the 50% equilibrium (Mean Threshold) of the candle body.
-- **Bearish OB**: The highest up-close candle before impulsive downside expansion. Invalidation occurs if candle bodies close beyond the OB extreme.
+- **Bullish Order Block (+OB)**: The lowest down-close candle prior to an impulsive upside displacement breaking structure (BOS). Limit bids cluster at the 50% equilibrium (Mean Threshold) of the candle body.
+- **Bearish Order Block (-OB)**: The highest up-close candle before impulsive downside expansion. Invalidation occurs if candle bodies close beyond the OB extreme.
 
-**2. Fair Value Gaps (FVG) & Imbalance Inefficiencies**
+**3. Fair Value Gaps (FVG) & Volume Imbalances**
 Formed across a 3-candle sequence where Candle 1 High and Candle 3 Low do not overlap, leaving an inefficient void:
-- Price acts like a vacuum, seeking to rebalance the imbalance (Balanced Price Range / BPR) before resuming the macro trend.
+- **BISI (Buy-Side Imbalance, Sell-Side Inefficiency)**: Bullish FVG where price displaced upward too quickly, leaving resting demand bids unfilled.
+- **SIBI (Sell-Side Imbalance, Buy-Side Inefficiency)**: Bearish FVG where price displaced downward too quickly, leaving resting supply asks unfilled.
+- Price acts like an auction vacuum, seeking to rebalance the 50% Consequent Encroachment (CE) of the FVG before continuing the dominant macro trend.
 
-**3. Liquidity Engineering & Sweeps (BSL / SSL)**
-- **Buy-Side Liquidity (BSL)**: Clustered stop-buys above equal highs.
-- **Sell-Side Liquidity (SSL)**: Stop-loss clusters below equal lows.
-- *Institutional Signature*: Algorithms trigger stops to accumulate counterparty liquidity before reversing aggressively in the true directional intent.
+**4. Market Structure Transitions: BOS vs. CHoCH / MSS**
+- **BOS (Break of Structure)**: Confirms trend continuation along the dominant institutional order flow. A valid BOS requires a full candle body close beyond the prior swing point.
+- **CHoCH (Change of Character / MSS)**: The first structural failure of a counter-trend swing point, signaling potential trend exhaustion and phase shift between accumulation and distribution.
 
-**4. Market Structure Transition: BOS vs CHoCH**
-- **BOS (Break of Structure)**: Confirms trend continuation along the dominant institutional order flow.
-- **CHoCH (Change of Character)**: First structural failure of a swing point, signaling potential trend exhaustion and phase shift.
+**5. Premium vs. Discount Dealing Ranges & Equilibrium (EQ)**
+Using the active impulse dealing range from Swing Low to Swing High:
+- **Equilibrium (EQ)**: Exactly 50% of the dealing range: $$\\text{EQ} = \\frac{P_{\\max} + P_{\\min}}{2}$$
+- **Discount Zone (< 50%)**: Institutional accumulation zone. Execute **Longs strictly in Discount**.
+- **Premium Zone (> 50%)**: Institutional distribution zone. Execute **Shorts strictly in Premium**.
+
+**6. Optimal Trade Entry (OTE) Fibonacci Confluence**
+High-probability institutional execution aligns with deep Fibonacci discount retracements:
+- **OTE Zone**: 61.8% to 78.6% retracement of the impulse leg.
+- Peak confluence occurs when the 61.8% - 70.5% "Golden Pocket" overlaps with an unmitigated Order Block or FVG.
+
+**7. Systematic Algorithmic SMC Execution Checklist**
+1. Determine higher-timeframe (Daily/4H) directional bias and nearest untriggered liquidity pool.
+2. Wait for a lower-timeframe liquidity sweep of BSL or SSL.
+3. Confirm a Market Structure Shift (CHoCH / MSS) with aggressive displacement leaving a clear FVG.
+4. Place a limit entry order at the Order Block Mean Threshold or FVG Consequent Encroachment in Discount (for Longs) or Premium (for Shorts).
+5. Anchor Stop Loss beyond the structural displacement origin and target opposing external liquidity with minimum **1:2.5 to 1:3.0 Risk-to-Reward**.
 
 ${spotText}`;
   }
@@ -439,3 +459,66 @@ export function generateMentorResponse(
   // Default comprehensive finance response
   return generateFinanceAnalysis(query, spotText);
 }
+
+/**
+ * Validates, repairs, and completes potentially truncated mentor streaming responses.
+ * Detects abrupt cut-offs, dangling markdown fences, or trailing headings and seamlessly
+ * appends the necessary structural knowledge so the learner always receives a full answer.
+ */
+export function completeOrRepairTruncatedAnswer(
+  text: string,
+  query: string,
+  context?: { spot?: number; market?: string }
+): string {
+  let cleaned = (text || '').trim();
+
+  // If text is empty or trivially short (<30 chars), provide the full curriculum response
+  if (!cleaned || cleaned.length < 30) {
+    return generateMentorResponse(query, context);
+  }
+
+  // 1. Unwrap accidental outer markdown code fence (e.g. `markdown or ```markdown)
+  cleaned = cleaned.replace(/^`{1,3}(?:markdown)?\s*\n?/i, '');
+  cleaned = cleaned.replace(/\n?`{1,3}\s*$/i, '');
+
+  // 2. Detect if text had a trailing dangling code block or heading cut off
+  const hadDanglingBlock =
+    /\n+`{1,3}(?:markdown)?\s*\n*(?:#+[^\n]*\n*)*$/i.test(cleaned) ||
+    /\n+#{1,6}\s+[^\n]+$/g.test(cleaned);
+
+  cleaned = cleaned.replace(/\n+`{1,3}(?:markdown)?\s*\n*(?:#+[^\n]*\n*)*$/i, '');
+  cleaned = cleaned.replace(/\n+#{1,6}\s+[^\n]+$/g, '').trim();
+
+  // 3. If text ends with an unclosed backtick fence, close it
+  const codeBlockCount = (cleaned.match(/```/g) || []).length;
+  if (codeBlockCount % 2 !== 0) {
+    cleaned += '\n```';
+  }
+
+  // 4. Intelligent topic continuation if response stopped prematurely or had a cut-off heading
+  const lower = query.toLowerCase();
+  const textLower = cleaned.toLowerCase();
+  const isSmcQuery =
+    lower.includes('smc') ||
+    lower.includes('smart money') ||
+    lower.includes('order block') ||
+    lower.includes('fvg') ||
+    lower.includes('liquidity');
+
+  if (
+    isSmcQuery &&
+    (hadDanglingBlock ||
+      !textLower.includes('order block (+ob)') ||
+      !textLower.includes('bisi') ||
+      cleaned.length < 800)
+  ) {
+    const fullSmc = generateTechnicalsAnalysis('smc', '');
+    cleaned += `\n\n---\n\n${fullSmc}`;
+  } else if ((hadDanglingBlock || cleaned.length < 350) && isFinancialQuery(query)) {
+    const fallbackAnswer = generateMentorResponse(query, context);
+    cleaned += `\n\n---\n\n${fallbackAnswer}`;
+  }
+
+  return cleaned;
+}
+
