@@ -764,6 +764,107 @@ function getDeterministicDailyChange(
   return { change, changePct: pct };
 }
 
+const MONTH_NAMES_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] as const;
+
+/**
+ * Calculates the monthly expiry date for a given year and month (last Thursday of the month).
+ */
+export function calculateNSEMonthlyExpiryDate(year: number, month: number, targetDayOfWeek: number = 4): string {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  for (let d = lastDay; d >= 1; d--) {
+    const dt = new Date(year, month, d);
+    if (dt.getDay() === targetDayOfWeek) {
+      return `${String(d).padStart(2, '0')} ${MONTH_NAMES_SHORT[month]} ${year}`;
+    }
+  }
+  return `26 ${MONTH_NAMES_SHORT[month]} ${year}`;
+}
+
+/**
+ * Calculates the next upcoming weekly Thursday expiry date relative to refDate.
+ */
+export function calculateNSEWeeklyExpiryDate(refDate: Date = new Date(), targetDayOfWeek: number = 4): string | null {
+  const dt = new Date(refDate);
+  for (let i = 0; i < 7; i++) {
+    const candidate = new Date(dt.getTime() + i * 24 * 60 * 60 * 1000);
+    if (candidate.getDay() === targetDayOfWeek) {
+      const expTime = new Date(candidate.getFullYear(), candidate.getMonth(), candidate.getDate(), 15, 30, 0).getTime();
+      if (candidate.getTime() <= expTime) {
+        return `${String(candidate.getDate()).padStart(2, '0')} ${MONTH_NAMES_SHORT[candidate.getMonth()]} ${candidate.getFullYear()}`;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Automatically derives the dynamic 3-month contract cycle (Near, Next, Far)
+ * and active weekly contract (for NIFTY 50) based on current calendar date.
+ * Fully automatic: rolls forward the moment a contract passes 15:30 on expiry day!
+ */
+export function getAutoExpiriesForInstrument(
+  symbol: string,
+  market: MarketType = 'INDIA',
+  refDate: Date = new Date()
+): { expiries: string[]; currentExpiry: string } {
+  if (market !== 'INDIA') {
+    const curMonth = refDate.getMonth();
+    const curYear = refDate.getFullYear();
+    const usExpiries: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const totalMonth = curMonth + i;
+      const y = curYear + Math.floor(totalMonth / 12);
+      const m = totalMonth % 12;
+      let fridayCount = 0;
+      for (let d = 1; d <= 28; d++) {
+        if (new Date(y, m, d).getDay() === 5) {
+          fridayCount++;
+          if (fridayCount === 3) {
+            usExpiries.push(`${String(d).padStart(2, '0')} ${MONTH_NAMES_SHORT[m]} ${y}`);
+            break;
+          }
+        }
+      }
+    }
+    return {
+      expiries: usExpiries.length >= 3 ? usExpiries : ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+      currentExpiry: usExpiries[0] || '20 NOV 2026',
+    };
+  }
+
+  const isNifty = symbol.toUpperCase().includes('NIFTY 50') || symbol.toUpperCase() === 'NIFTY';
+  const currentMonth = refDate.getMonth();
+  const currentYear = refDate.getFullYear();
+
+  const nearExpiryStr = calculateNSEMonthlyExpiryDate(currentYear, currentMonth);
+  const nearExpiryTime = Date.parse(`${nearExpiryStr} 15:30:00 GMT+0530`);
+  const hasExpired = !Number.isNaN(nearExpiryTime) && refDate.getTime() > nearExpiryTime;
+  const startOffset = hasExpired ? 1 : 0;
+
+  const monthlyExpiries: string[] = [];
+  for (let i = 0; i < 3; i++) {
+    const totalMonth = currentMonth + startOffset + i;
+    const y = currentYear + Math.floor(totalMonth / 12);
+    const m = totalMonth % 12;
+    monthlyExpiries.push(calculateNSEMonthlyExpiryDate(y, m));
+  }
+
+  if (isNifty) {
+    const weeklyExpiry = calculateNSEWeeklyExpiryDate(refDate);
+    if (weeklyExpiry && weeklyExpiry !== monthlyExpiries[0]) {
+      return {
+        expiries: [weeklyExpiry, ...monthlyExpiries],
+        currentExpiry: monthlyExpiries[0],
+      };
+    }
+  }
+
+  return {
+    expiries: monthlyExpiries,
+    currentExpiry: monthlyExpiries[0],
+  };
+}
+
 /** Convert a Zerodha catalog stock into an institutional FnoInstrument */
 export function convertZerodhaToFnoInstrument(
   item: ZerodhaStockItem,
@@ -773,6 +874,7 @@ export function convertZerodhaToFnoInstrument(
   const strikeStep = calculateRealisticStrikeStep(spot);
   const lotSize = calculateRealisticLotSize(spot);
   const { change, changePct } = getDeterministicDailyChange(item, spot);
+  const autoExp = getAutoExpiriesForInstrument(item.symbol, 'INDIA');
 
   return {
     symbol: item.symbol.toUpperCase(),
@@ -786,8 +888,8 @@ export function convertZerodhaToFnoInstrument(
     change,
     changePct,
     sector: item.sector || 'Indian Equity',
-    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
-    currentExpiry: '26 NOV 2026',
+    expiries: autoExp.expiries,
+    currentExpiry: autoExp.currentExpiry,
     isZerodha: true,
     token: item.token,
   };
@@ -800,7 +902,17 @@ export function findFnoInstrument(symbol: string): FnoInstrument {
 
   // 1. Direct match in curated instruments
   const exact = SUPPORTED_FNO_INSTRUMENTS.find((i) => i.symbol.toUpperCase() === norm);
-  if (exact) return exact;
+  if (exact) {
+    if (exact.market === 'INDIA') {
+      const autoExp = getAutoExpiriesForInstrument(exact.symbol, 'INDIA');
+      return {
+        ...exact,
+        expiries: autoExp.expiries,
+        currentExpiry: autoExp.currentExpiry,
+      };
+    }
+    return exact;
+  }
 
   // 2. Direct Zerodha catalog lookup (prevents partial match collision where LTIM/LTTS matched LT)
   const zItem = findZerodhaStockBySymbol(norm);
@@ -814,7 +926,17 @@ export function findFnoInstrument(symbol: string): FnoInstrument {
       i.name.toUpperCase().includes(norm) ||
       (i.symbol.length >= 4 && norm.includes(i.symbol.toUpperCase()))
   );
-  if (partial) return partial;
+  if (partial) {
+    if (partial.market === 'INDIA') {
+      const autoExp = getAutoExpiriesForInstrument(partial.symbol, 'INDIA');
+      return {
+        ...partial,
+        expiries: autoExp.expiries,
+        currentExpiry: autoExp.currentExpiry,
+      };
+    }
+    return partial;
+  }
 
   return SUPPORTED_FNO_INSTRUMENTS[0]; // fallback to NIFTY 50
 }
