@@ -174,6 +174,26 @@ export function FnoCandlestickChartTab({
   const [showEma21, setShowEma21] = useState(true);
   const [showVwap, setShowVwap] = useState(true);
   const [showVolume, setShowVolume] = useState(true);
+  const [showMagnifier, setShowMagnifier] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('mi007_chart_magnifier_active') === 'true';
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
+
+  const handleToggleMagnifier = useCallback(() => {
+    setShowMagnifier((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('mi007_chart_magnifier_active', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
   // Active strike selection
   const liveSpot = chainData.spotPrice;
@@ -595,6 +615,19 @@ export function FnoCandlestickChartTab({
             >
               VWAP
             </button>
+            <button
+              type="button"
+              onClick={handleToggleMagnifier}
+              className={`px-2 py-1 rounded-lg text-[10px] mono font-bold border transition cursor-pointer flex items-center gap-1 ${
+                showMagnifier
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-xs'
+                  : 'bg-[var(--theme-card-subsurface)] text-[var(--theme-card-subtitle)] border-[var(--theme-card-border)] opacity-60'
+              }`}
+              title={showMagnifier ? 'Disable Magnifier Loupe (Hotkey: M)' : 'Enable Magnifier Loupe: 2.25x Optical Zoom Lens (Hotkey: M)'}
+            >
+              <span>🔍</span>
+              <span>MAGNIFY</span>
+            </button>
           </div>
         </div>
       </div>
@@ -759,6 +792,8 @@ export function FnoCandlestickChartTab({
               indicatorResults={indicatorResults}
               currentPriceOverride={activeDisplayPrice}
               timeframe={timeframe}
+              showMagnifier={showMagnifier}
+              onToggleMagnifier={handleToggleMagnifier}
               onHoverCandle={setHoveredCandle}
             />
           </div>
@@ -796,6 +831,8 @@ export function FnoCandlestickChartTab({
                 indicatorResults={futuresIndicatorResults}
                 currentPriceOverride={currentFuture?.ltp || liveSpot}
                 timeframe={timeframe}
+                showMagnifier={showMagnifier}
+                onToggleMagnifier={handleToggleMagnifier}
                 onHoverCandle={setHoveredFuturesCandle}
               />
             </div>
@@ -834,6 +871,8 @@ export function FnoCandlestickChartTab({
                 indicatorResults={indicatorResults}
                 currentPriceOverride={activeOptionContract?.ltp || 0}
                 timeframe={timeframe}
+                showMagnifier={showMagnifier}
+                onToggleMagnifier={handleToggleMagnifier}
                 onHoverCandle={setHoveredCandle}
               />
             </div>

@@ -215,7 +215,26 @@ export function ChartContainer({
   const [isDrawingModeLocked, setIsDrawingModeLocked] = useState(false);
   const [isAllDrawingsLocked, setIsAllDrawingsLocked] = useState(false);
   const [isAllDrawingsHidden, setIsAllDrawingsHidden] = useState(false);
-  const [isMagnifierActive, setIsMagnifierActive] = useState(false);
+  const [isMagnifierActive, setIsMagnifierActive] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('mi007_chart_magnifier_active') === 'true';
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
+
+  const handleToggleMagnifier = useCallback(() => {
+    setIsMagnifierActive(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('mi007_chart_magnifier_active', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
   const chartWrapperRef = useRef<HTMLDivElement>(null);
   const drawingHistoryRef = useRef<DrawingItem[][]>([]);
   const lastUsedDrawingToolRef = useRef<DrawingToolType>('TRENDLINE');
@@ -1695,7 +1714,7 @@ export function ChartContainer({
         onOpenQuantumAiModal={handleOpenQuantumAiModal}
         showVolumeProfile={showVolumeProfile}
         showMagnifier={isMagnifierActive}
-        onToggleMagnifier={() => setIsMagnifierActive(v => !v)}
+        onToggleMagnifier={handleToggleMagnifier}
         cursorMode={cursorMode}
         activeIndicators={activeIndicators}
         indicators={indicatorConfigs}
@@ -1754,6 +1773,8 @@ export function ChartContainer({
           onOpenObjectsTree={() => setIsDrawingsManagerOpen(true)}
           isMagnetActive={isMagnetActive}
           onToggleMagnet={() => setIsMagnetActive(m => !m)}
+          isMagnifierActive={isMagnifierActive}
+          onToggleMagnifier={handleToggleMagnifier}
           isDrawingModeLocked={isDrawingModeLocked}
           onToggleDrawingModeLock={handleToggleDrawingModeLock}
           isAllDrawingsLocked={isAllDrawingsLocked}
@@ -1796,7 +1817,7 @@ export function ChartContainer({
             currentPriceOverride={displayPrice}
             timeframe={timeframe}
             showMagnifier={isMagnifierActive}
-            onToggleMagnifier={() => setIsMagnifierActive(v => !v)}
+            onToggleMagnifier={handleToggleMagnifier}
             targetCandleTime={targetCandleTime}
             targetSetupId={targetSetupId}
             activeDrawingTool={activeDrawingTool}

@@ -4877,10 +4877,11 @@ export function renderOverlay(
     );
     const isCursorOnChart = cx >= 0 && cx <= chartW && cy >= 0 && cy <= chartH;
 
-    const shouldShowMagnifier = (isCursorOnChart && (isQuantumAiActive || isOrderFlowActive || isSmcActive)) ||
-      !!hoveredOB ||
+    const isMagnifierEnabled = Boolean(
       options.showMagnifier ||
-      options.cursorMode === 'magnifier';
+      options.cursorMode === 'magnifier'
+    );
+    const shouldShowMagnifier = isMagnifierEnabled && isCursorOnChart;
 
     const isOrderFlowHover = isOrderFlowActive && isCursorOnChart;
     const isQuantumHover = isQuantumAiActive && isCursorOnChart;

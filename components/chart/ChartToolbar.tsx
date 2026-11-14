@@ -171,8 +171,8 @@ export function ChartToolbar({
   onQuantumAiConfigChange,
   onOpenQuantumAiModal,
   showVolumeProfile,
-  showMagnifier: _showMagnifier = false,
-  onToggleMagnifier: _onToggleMagnifier,
+  showMagnifier = false,
+  onToggleMagnifier,
   cursorMode = 'crosshair',
   activeIndicators,
   indicators,
@@ -1388,6 +1388,21 @@ export function ChartToolbar({
           >
             VPVR
           </button>
+          {onToggleMagnifier && (
+            <button
+              type="button"
+              onClick={onToggleMagnifier}
+              title={showMagnifier ? 'Disable Magnifier Loupe (Hotkey: M)' : 'Enable Magnifier Loupe: 2.25x-2.5x Optical Zoom Lens & Cluster Inspection (Hotkey: M)'}
+              className={`h-7 px-2 rounded-md text-[11px] font-bold font-mono border transition-colors cursor-pointer flex items-center gap-1 ${
+                showMagnifier
+                  ? 'bg-amber-50 dark:bg-amber-500/20 border-amber-400 dark:border-amber-500 text-amber-700 dark:text-amber-400 font-bold shadow-xs'
+                  : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
+              }`}
+            >
+              <span>🔍</span>
+              <span>MAGNIFY</span>
+            </button>
+          )}
 
 
         </div>
