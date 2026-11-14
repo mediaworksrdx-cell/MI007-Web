@@ -9,34 +9,34 @@ export function Footer() {
 
   return (
     <footer className="border-t footer-panel mt-auto">
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-6 sm:py-8">
-        {/* Responsive Grid: Stacks cleanly on mobile, 2 cols on tablet, 12 cols on desktop */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 items-start">
-          {/* 1. Brand Column: Spans 5 cols on lg for logo branding & identity */}
-          <div className="sm:col-span-2 lg:col-span-5 flex flex-col gap-3">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-4 sm:py-5">
+        {/* Responsive Grid: Stacks cleanly on mobile, 4 aligned columns on desktop */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-12 lg:gap-7 items-start">
+          {/* 1. Brand Column: Spans 4 cols on lg for logo branding & identity */}
+          <div className="sm:col-span-2 lg:col-span-4 flex flex-col gap-2.5">
             <Link
               href="/"
-              className="group flex items-center gap-3.5 flex-shrink-0 select-none min-w-0"
+              className="group flex items-center gap-3 sm:gap-4 flex-shrink-0 select-none min-w-0"
               onMouseEnter={() => setBrandHovered(true)}
               onMouseLeave={() => setBrandHovered(false)}
             >
-              {/* Scaled Falcon Emblem Logo with 3D Pop-Up Animation */}
+              {/* Scaled Falcon Emblem Logo (84px) with 3D Pop-Up Animation */}
               <div
                 className="relative z-10 flex-shrink-0 flex items-center justify-center overflow-visible"
                 style={{
-                  width: '72px',
-                  height: '72px',
-                  minWidth: '72px',
-                  minHeight: '72px',
+                  width: '87px',
+                  height: '87px',
+                  minWidth: '87px',
+                  minHeight: '87px',
                 }}
               >
                 <Falcon3DLogo
                   src="/images/logo-falcon-transparent.png"
                   alt="MARKET INTELLIGENCE MI-007"
-                  width={72}
-                  height={72}
+                  width={87}
+                  height={87}
                   priority
-                  className="w-full h-full object-contain drop-shadow-[0_4px_20px_rgba(16,185,129,0.35)]"
+                  className="w-full h-full object-contain drop-shadow-[0_4px_20px_rgba(16,185,129,0.4)]"
                   popoutScale={1.12}
                   isNavbar={false}
                   isHoveredExternal={brandHovered}
@@ -45,7 +45,7 @@ export function Footer() {
               <div className="min-w-0 flex flex-col justify-center">
                 <div className="leading-tight">
                   <span
-                    className="text-[17px] sm:text-[18px] md:text-[20px] font-bold font-caveat footer-brand-title text-white whitespace-nowrap flex items-center gap-1.5 group-hover:text-emerald-400 transition-colors"
+                    className="text-[16px] sm:text-[17px] md:text-[18px] font-bold font-caveat footer-brand-title text-white whitespace-nowrap flex items-center gap-1.5 group-hover:text-emerald-400 transition-colors"
                     style={{ color: '#FFFFFF' }}
                   >
                     <span className="text-white font-caveat">Market Intelligence</span>
@@ -54,14 +54,14 @@ export function Footer() {
                 </div>
 
                 <div
-                  className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase font-extrabold font-mono mt-0.5 footer-brand-subtitle text-slate-300"
+                  className="text-[10px] sm:text-[11px] tracking-[0.16em] uppercase font-extrabold font-mono mt-1 footer-brand-subtitle text-slate-300"
                   style={{ color: '#CBD5E1' }}
                 >
                   <span>Intelligence Beyond the Noise</span>
                 </div>
 
                 <div
-                  className="text-[9.5px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-wider mono mt-0.5"
+                  className="text-[9.5px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-wider mono mt-1"
                   style={{ color: '#34D399' }}
                 >
                   <span>A Synthetix Analytics Product</span>
@@ -69,211 +69,214 @@ export function Footer() {
               </div>
             </Link>
 
-            <p className="text-[11.5px] sm:text-[12px] text-slate-400 max-w-md leading-relaxed">
-              Institutional quantitative telemetry, options microstructure analytics, and algorithmic execution intelligence across Indian, US, and Middle Eastern financial markets.
-            </p>
-
             {/* Market Regional Chips */}
-            <div className="flex flex-wrap items-center gap-2 mt-1">
+            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
               <span
-                className="footer-chip rounded-md px-2.5 py-1 text-[10px] font-bold font-mono tracking-wide shadow-2xs border text-white flex items-center gap-1.5"
+                className="footer-chip rounded-md px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide shadow-2xs border text-white"
                 style={{ color: '#FFFFFF' }}
               >
-                <span>🇮🇳</span>
-                <span>NSE / BSE (Primary HQ)</span>
+                🇺🇸 NYSE/NASDAQ
               </span>
               <span
-                className="footer-chip rounded-md px-2.5 py-1 text-[10px] font-bold font-mono tracking-wide shadow-2xs border text-white flex items-center gap-1.5"
+                className="footer-chip rounded-md px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide shadow-2xs border text-white"
                 style={{ color: '#FFFFFF' }}
               >
-                <span>🇺🇸</span>
-                <span>NYSE / NASDAQ</span>
+                🇮🇳 NSE/BSE (HQ)
               </span>
               <span
-                className="footer-chip rounded-md px-2.5 py-1 text-[10px] font-bold font-mono tracking-wide shadow-2xs border text-white flex items-center gap-1.5"
+                className="footer-chip rounded-md px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide shadow-2xs border text-white"
                 style={{ color: '#FFFFFF' }}
               >
-                <span>🇦🇪</span>
-                <span>DFM / ADX</span>
+                🇦🇪 DFM/ADX
               </span>
             </div>
           </div>
 
-          {/* 2. Platform & Derivatives Intelligence (Spans 3 cols on lg) */}
-          <div className="sm:col-span-1 lg:col-span-3 flex flex-col">
-            <h4
-              className="text-[12px] font-black tracking-widest uppercase mb-3 footer-heading text-white"
-              style={{ color: '#FFFFFF' }}
-            >
-              Platform &amp; Terminal
-            </h4>
-            <ul className="flex flex-col gap-2">
-              <li>
-                <Link
-                  href="/terminal"
-                  className="text-[12.5px] sm:text-[13px] font-semibold footer-link text-white/90 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
-                >
-                  <span>⚡</span>
-                  <span>Dashboard (Fingen IQ)</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/terminal/fno"
-                  className="text-[12.5px] sm:text-[13px] font-semibold footer-link text-white/90 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
-                >
-                  <span>⛓️</span>
-                  <span>F&amp;O Intelligence Terminal</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/chart/NIFTY"
-                  className="text-[12.5px] sm:text-[13px] font-semibold footer-link text-white/90 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
-                >
-                  <span>📊</span>
-                  <span>Interactive Charts &amp; SMC</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/terminal/screener"
-                  className="text-[12.5px] sm:text-[13px] font-semibold footer-link text-white/90 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
-                >
-                  <span>📡</span>
-                  <span>Institutional Stock Screener</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/academy"
-                  className="text-[12.5px] sm:text-[13px] font-semibold footer-link text-white/90 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
-                >
-                  <span>🧠</span>
-                  <span>Aarka AI &amp; Academy</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* 3. Resources & Platform (Spans 2 cols on lg) */}
+          {/* 2. Platform Column */}
           <div className="sm:col-span-1 lg:col-span-2 flex flex-col">
             <h4
-              className="text-[12px] font-black tracking-widest uppercase mb-3 footer-heading text-white"
+              className="text-[12.5px] font-black tracking-widest uppercase mb-2 footer-heading text-white"
               style={{ color: '#FFFFFF' }}
             >
-              Resources
+              Platform
             </h4>
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-1.5">
               <li>
                 <Link
-                  href="/calendar"
-                  className="text-[12.5px] sm:text-[13px] font-semibold footer-link text-white/90 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                  href="/"
+                  className="text-[13px] sm:text-[13.5px] font-semibold footer-link text-white transition-colors"
+                  style={{ color: '#FFFFFF' }}
                 >
-                  <span>📅</span>
-                  <span>Economic Calendar</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/news"
-                  className="text-[12.5px] sm:text-[13px] font-semibold footer-link text-white/90 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
-                >
-                  <span>📰</span>
-                  <span>Global Market News</span>
+                  Home
                 </Link>
               </li>
               <li>
                 <Link
                   href="/about"
-                  className="text-[12.5px] sm:text-[13px] font-semibold footer-link text-white/90 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                  className="text-[13px] sm:text-[13.5px] font-semibold footer-link text-white transition-colors"
+                  style={{ color: '#FFFFFF' }}
                 >
-                  <span>ℹ️</span>
-                  <span>About Us</span>
+                  About Us
                 </Link>
               </li>
               <li>
                 <Link
                   href="/contact"
-                  className="text-[12.5px] sm:text-[13px] font-semibold footer-link text-white/90 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                  className="text-[13px] sm:text-[13.5px] font-semibold footer-link text-white transition-colors"
+                  style={{ color: '#FFFFFF' }}
                 >
-                  <span>✉️</span>
-                  <span>Contact Desk</span>
+                  Contact
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* 4. Connect / Socials Column (Spans 2 cols on lg) */}
+          {/* 3. Our Products Column */}
+          <div className="sm:col-span-1 lg:col-span-2 flex flex-col">
+            <h4
+              className="text-[12.5px] font-black tracking-widest uppercase mb-2 footer-heading text-white"
+              style={{ color: '#FFFFFF' }}
+            >
+              Our Products
+            </h4>
+            <ul className="flex flex-col gap-1.5">
+              <li>
+                <Link
+                  href="/terminal"
+                  className="text-[13px] sm:text-[13.5px] font-semibold footer-link text-white transition-colors"
+                  style={{ color: '#FFFFFF' }}
+                >
+                  Fingen IQ
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/academy"
+                  className="text-[13px] sm:text-[13.5px] font-semibold footer-link text-white transition-colors"
+                  style={{ color: '#FFFFFF' }}
+                >
+                  Aarka AI
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* 4. Coverage Column */}
+          <div className="sm:col-span-1 lg:col-span-2 flex flex-col">
+            <h4
+              className="text-[12.5px] font-black tracking-widest uppercase mb-2 footer-heading text-white"
+              style={{ color: '#FFFFFF' }}
+            >
+              Coverage
+            </h4>
+            <ul className="flex flex-col gap-1.5 text-[12.5px] sm:text-[13px] font-semibold footer-list text-white">
+              <li>
+                <span style={{ color: '#F1F5F9' }}>🇺🇸 S&P 500 · NASDAQ 100 · DOW JONES</span>
+              </li>
+              <li>
+                <span style={{ color: '#F1F5F9' }}>🇮🇳 NIFTY 50 · BANKNIFTY · SENSEX</span>
+              </li>
+              <li>
+                <span style={{ color: '#F1F5F9' }}>🇦🇪 DFMGI · ADXGI · FTSE ADX 15</span>
+              </li>
+              <li className="flex items-center gap-2 flex-wrap">
+                <span style={{ color: '#F1F5F9' }}>🇪🇺 DAX · FTSE 100 · CAC 40</span>
+                <span
+                  className="footer-coming-soon text-[9.5px] mono font-bold px-1.5 py-0.2 rounded"
+                  style={{ color: '#FBBF24' }}
+                >
+                  COMING SOON
+                </span>
+              </li>
+              <li className="flex items-center gap-2 flex-wrap">
+                <span style={{ color: '#F1F5F9' }}>🇦🇺 ASX 200 · SPI 200</span>
+                <span
+                  className="footer-coming-soon text-[9.5px] mono font-bold px-1.5 py-0.2 rounded"
+                  style={{ color: '#FBBF24' }}
+                >
+                  COMING SOON
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          {/* 5. Connect / Socials Column */}
           <div className="sm:col-span-2 lg:col-span-2 flex flex-col sm:items-start lg:items-end">
             <h4
-              className="text-[12px] font-black tracking-widest uppercase mb-3 footer-heading text-white"
+              className="text-[12.5px] font-black tracking-widest uppercase mb-2 footer-heading text-white"
               style={{ color: '#FFFFFF' }}
             >
               Connect
             </h4>
-            <div className="flex items-center gap-2.5">
-              {/* LinkedIn */}
+            <div className="flex items-center gap-2">
+              {/* 1. LinkedIn */}
               <a
                 href="https://www.linkedin.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 title="LinkedIn"
                 aria-label="LinkedIn"
-                className="w-9 h-9 rounded-xl bg-white/[0.06] hover:bg-[#0A66C2] text-slate-300 hover:text-white border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs"
+                className="w-8.5 h-8.5 rounded-lg bg-white/[0.06] hover:bg-[#0A66C2] text-slate-300 hover:text-white border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 8.76a1.65 1.65 0 0 0 1.66-1.66 1.66 1.66 0 0 0-1.66-1.66 1.65 1.65 0 0 0-1.66 1.66c0 .92.74 1.66 1.66 1.66m1.4 9.74v-8.37H5.06v8.37h2.8z" />
                 </svg>
               </a>
 
-              {/* X (Twitter) */}
+              {/* 2. X (Twitter) */}
               <a
                 href="https://x.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 title="X"
                 aria-label="X"
-                className="w-9 h-9 rounded-xl bg-white/[0.06] hover:bg-white text-slate-300 hover:text-black border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs"
+                className="w-8.5 h-8.5 rounded-lg bg-white/[0.06] hover:bg-white text-slate-300 hover:text-black border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
               </a>
 
-              {/* GitHub */}
+              {/* 3. Facebook */}
               <a
-                href="https://github.com/mediaworksrdx-cell/MI007-Web"
+                href="https://www.facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                title="GitHub Repository"
-                aria-label="GitHub"
-                className="w-9 h-9 rounded-xl bg-white/[0.06] hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs"
+                title="Facebook"
+                aria-label="Facebook"
+                className="w-8.5 h-8.5 rounded-lg bg-white/[0.06] hover:bg-[#1877F2] text-slate-300 hover:text-white border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z" />
                 </svg>
               </a>
-            </div>
 
-            <div className="mt-3 text-[11px] mono text-slate-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Real-Time Telemetry Active</span>
+              {/* 4. Instagram */}
+              <a
+                href="https://www.instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Instagram"
+                aria-label="Instagram"
+                className="w-8.5 h-8.5 rounded-lg bg-white/[0.06] hover:bg-gradient-to-tr hover:from-[#F58529] hover:via-[#DD2A7B] hover:to-[#8134AF] text-slate-300 hover:text-white border border-white/10 hover:border-transparent flex items-center justify-center transition-all duration-200 cursor-pointer"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                </svg>
+              </a>
             </div>
           </div>
         </div>
 
         {/* Bottom Bar: Responsive Stacking */}
         <div
-          className="text-[11.5px] sm:text-[12px] font-semibold text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-4 mt-6 border-t border-white/10"
+          className="text-[12px] font-semibold text-center sm:text-left footer-copy text-slate-300 flex items-center justify-between flex-wrap gap-2 pt-4 mt-4 border-t border-white/10"
           style={{ color: '#CBD5E1' }}
         >
           <span>© 2026 Synthetix Analytics. All Rights Reserved.</span>
-          <div className="flex items-center gap-3 text-[10.5px] font-mono">
-            <span className="text-emerald-400">● Systems Nominal</span>
-            <span className="opacity-60">·</span>
-            <span className="opacity-80">MI-007 v2.5 Institutional</span>
-          </div>
+          <span className="text-[11px] font-mono opacity-80">MI-007 Platform v2.4</span>
         </div>
       </div>
     </footer>
