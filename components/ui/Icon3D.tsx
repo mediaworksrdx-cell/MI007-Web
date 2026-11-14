@@ -43,12 +43,11 @@ export function Icon3D({ name, size = 'md', className = '' }: Icon3DProps) {
   return (
     <div
       className={`relative inline-flex items-center justify-center shrink-0 ${radius} select-none transition-all duration-300 hover:scale-105 hover:-translate-y-0.5
-        bg-white/80 dark:bg-slate-900/60
-        border border-black/[0.08] dark:border-white/[0.12]
-        shadow-[0_2px_8px_-1px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.85)]
-        dark:shadow-[0_4px_16px_-2px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.15)]
+        bg-[var(--theme-card-surface,rgba(255,255,255,0.08))]
+        border border-[var(--theme-card-border,rgba(255,255,255,0.15))]
+        shadow-[0_4px_16px_-2px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.15)]
         backdrop-blur-md
-        hover:border-emerald-500/40 dark:hover:border-emerald-400/40
+        hover:border-emerald-500/40
         hover:shadow-md
         ${className}`}
       style={{

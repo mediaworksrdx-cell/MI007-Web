@@ -9,22 +9,25 @@ import { useMarket } from '@/lib/marketContext';
 import { Icon3D, Icon3DName } from '@/components/ui/Icon3D';
 
 const WHAT_WE_DO: {
-  icon3d: Icon3DName;
+  imageSrc?: string;
+  icon3d?: Icon3DName;
   glowColor: string;
   title: string;
   tag: string;
   desc: string;
 }[] = [
   {
+    imageSrc: '/images/icons/global_coverage_3d.jpg',
     icon3d: 'globe',
-    glowColor: 'rgba(6, 182, 212, 0.4)',
+    glowColor: 'rgba(6, 182, 212, 0.45)',
     title: 'Global-Market Coverage',
     tag: 'Worldwide Traded Instruments',
     desc: 'Seamless analysis across traded instruments around the globe.',
   },
   {
+    imageSrc: '/images/icons/ai_analytics_3d.jpg',
     icon3d: 'robot',
-    glowColor: 'rgba(16, 185, 129, 0.4)',
+    glowColor: 'rgba(16, 185, 129, 0.45)',
     title: 'AI-Driven Analytics',
     tag: 'Machine Learning',
     desc: 'Advanced machine learning algorithms that spot anomalies, chart patterns, and sentiment shifts before they become mainstream news.',
@@ -253,14 +256,32 @@ export default function AboutPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {WHAT_WE_DO.map(({ icon3d, glowColor, title, tag, desc }) => (
+            {WHAT_WE_DO.map(({ imageSrc, icon3d, glowColor, title, tag, desc }) => (
               <div
                 key={title}
-                className="rounded-2xl border-2 inst-card p-7 hover:shadow-xl transition-all flex flex-col justify-between"
+                className="rounded-2xl border-2 inst-card p-7 hover:shadow-xl transition-all flex flex-col justify-between group"
               >
                 <div>
                   <div className="flex items-center justify-between mb-5">
-                    <Icon3D name={icon3d} size="lg" glowColor={glowColor} />
+                    {imageSrc ? (
+                      <div
+                        className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl overflow-hidden shrink-0 select-none shadow-lg transition-transform duration-300 group-hover:scale-105 border border-white/20 p-1 bg-white/10 dark:bg-white/5 backdrop-blur-md"
+                        style={{
+                          boxShadow: `0 8px 24px -4px ${glowColor}`,
+                        }}
+                      >
+                        <Image
+                          src={imageSrc}
+                          alt={title}
+                          width={72}
+                          height={72}
+                          className="w-full h-full object-cover rounded-xl"
+                          priority
+                        />
+                      </div>
+                    ) : (
+                      <Icon3D name={icon3d!} size="lg" glowColor={glowColor} />
+                    )}
                     <span className="text-[11px] mono font-bold px-3 py-1 rounded-full border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] inst-card-text shadow-2xs">
                       {tag}
                     </span>
