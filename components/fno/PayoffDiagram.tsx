@@ -48,7 +48,9 @@ interface PayoffDiagramProps {
   payoff?: StrategyPayoff;
   iv?: number;
   symbol?: string;
+  strategyName?: string;
   onSaveStrategy?: () => void;
+  onRenameStrategy?: () => void;
   // Next-Gen Derivatives Desk Extensions
   chainData?: OptionChainData;
   volSurfaceConfig?: VolSurfaceConfig;
@@ -171,7 +173,9 @@ export function PayoffDiagram({
   payoff,
   iv = 15.87,
   symbol = 'NIFTY',
+  strategyName,
   onSaveStrategy,
+  onRenameStrategy,
   chainData,
   volSurfaceConfig,
   onChangeVolSurfaceConfig,
@@ -534,13 +538,36 @@ export function PayoffDiagram({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={onSaveStrategy}
-          className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] uppercase tracking-wider px-4 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs"
-        >
-          SAVE STRATEGY
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {strategyName && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--theme-card-bg)] border border-[var(--theme-card-border)] text-[11px] font-mono shadow-xs">
+              <span className="text-[10px] text-slate-400 font-semibold">STRATEGY:</span>
+              <span className="font-black text-[var(--theme-card-text)] max-w-[130px] sm:max-w-[200px] truncate" title={strategyName}>
+                {strategyName}
+              </span>
+              {onRenameStrategy && (
+                <button
+                  type="button"
+                  onClick={onRenameStrategy}
+                  className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-500/10 hover:bg-emerald-500/20 text-slate-300 hover:text-emerald-400 border border-[var(--theme-card-border)] hover:border-emerald-500/40 transition-all cursor-pointer flex items-center gap-1"
+                  title="Rename active strategy"
+                >
+                  <span>✏️</span>
+                  <span>Rename</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onSaveStrategy}
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] uppercase tracking-wider px-4 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
+          >
+            <span>💾</span>
+            <span>SAVE STRATEGY</span>
+          </button>
+        </div>
       </div>
 
       {/* ── 2. Multi-Engine Desk Tabs Bar ── */}

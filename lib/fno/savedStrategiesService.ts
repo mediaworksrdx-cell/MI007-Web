@@ -199,6 +199,21 @@ export function saveTrackedStrategy(strat: TrackedStrategy): TrackedStrategy[] {
   return updated;
 }
 
+export function renameTrackedStrategy(id: string, newName: string): TrackedStrategy[] {
+  if (typeof window === 'undefined') return [];
+  const trimmed = newName.trim();
+  if (!trimmed) return getTrackedStrategies();
+  const current = getTrackedStrategies();
+  const updated = current.map((s) => (s.id === id ? { ...s, name: trimmed } : s));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    broadcastStrategiesUpdated(updated);
+  } catch {
+    // ignore
+  }
+  return updated;
+}
+
 export function deleteTrackedStrategy(id: string): TrackedStrategy[] {
   if (typeof window === 'undefined') return [];
   const current = getTrackedStrategies();

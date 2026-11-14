@@ -12,6 +12,8 @@ interface StrategyPositionsListProps {
   onRemoveLeg: (id: string) => void;
   onClearAll: () => void;
   onToggleAll: (enable: boolean) => void;
+  strategyName?: string;
+  onRenameStrategy?: () => void;
 }
 
 export function StrategyPositionsList({
@@ -22,6 +24,8 @@ export function StrategyPositionsList({
   onRemoveLeg,
   onClearAll,
   onToggleAll,
+  strategyName,
+  onRenameStrategy,
 }: StrategyPositionsListProps) {
   const allEnabled = legs.length > 0 && legs.every((l) => !l.disabled);
   const curr = instrument.market === 'USA' ? '$' : instrument.market === 'UAE' ? 'AED ' : '₹';
@@ -58,15 +62,34 @@ export function StrategyPositionsList({
       {/* ── 1. Strategy Positions Container ── */}
       <div className="bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] border border-[var(--theme-card-border)] rounded-xl p-4 shadow-xs">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)]">
-          <h4 className="text-[14px] font-bold text-[var(--theme-card-text)]">
-            Strategy Positions
-          </h4>
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--theme-card-border)] gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <h4 className="text-[14px] font-bold text-[var(--theme-card-text)] shrink-0">
+              Strategy Positions
+            </h4>
+            {strategyName && (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] text-[10.5px] font-mono text-emerald-400 font-bold min-w-0 max-w-[150px] sm:max-w-[200px]">
+                <span className="truncate" title={strategyName}>
+                  {strategyName}
+                </span>
+                {onRenameStrategy && (
+                  <button
+                    type="button"
+                    onClick={onRenameStrategy}
+                    className="text-slate-400 hover:text-emerald-400 p-0.5 cursor-pointer text-xs shrink-0"
+                    title="Rename strategy"
+                  >
+                    ✏️
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             onClick={onClearAll}
             disabled={legs.length === 0}
-            className="px-3 py-1 rounded-lg text-[11px] font-semibold text-[var(--theme-card-text)] bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] hover:border-blue-500/50 transition-colors cursor-pointer disabled:opacity-40"
+            className="px-3 py-1 rounded-lg text-[11px] font-semibold text-[var(--theme-card-text)] bg-[var(--theme-card-surface)] border border-[var(--theme-card-border)] hover:border-blue-500/50 transition-colors cursor-pointer disabled:opacity-40 shrink-0"
           >
             RESET
           </button>

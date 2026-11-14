@@ -151,6 +151,7 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
 
   // Active Strategy Legs (Starts clean and empty until user adds legs or selects a preset)
   const [activeLegs, setActiveLegs] = useState<StrategyLeg[]>([]);
+  const [loadedStrategy, setLoadedStrategy] = useState<{ id: string; name: string } | null>(null);
 
   // Synchronize active strategy legs' live option prices, IV & Greeks whenever chainData updates
   useEffect(() => {
@@ -213,6 +214,7 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
   const handleLoadSavedStrategy = (target: TrackedStrategy | StrategyLeg[]) => {
     if (Array.isArray(target)) {
       setActiveLegs(target);
+      setLoadedStrategy(null);
     } else {
       if (target.underlyingSymbol) {
         const inst = findFnoInstrument(target.underlyingSymbol);
@@ -222,6 +224,7 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
         setSelectedExpiry(target.expiry);
       }
       setActiveLegs(target.legs || []);
+      setLoadedStrategy({ id: target.id, name: target.name });
     }
     setActiveTab('builder');
   };
@@ -384,6 +387,8 @@ export function FnoWorkspace({ initialTab = 'overview' }: FnoWorkspaceProps) {
               onOpenSavedTab={() => setActiveTab('strategies')}
               chainData={chainData}
               termStructure={termStructure}
+              initialStrategyName={loadedStrategy?.name}
+              initialStrategyId={loadedStrategy?.id}
             />
           )}
 

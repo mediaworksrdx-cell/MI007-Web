@@ -7,6 +7,7 @@ import { findFnoInstrument } from '@/lib/fno/fnoDataService';
 import {
   getTrackedStrategies,
   deleteTrackedStrategy,
+  renameTrackedStrategy,
   clearAllTrackedStrategies,
   subscribeToStrategiesUpdates,
 } from '@/lib/fno/savedStrategiesService';
@@ -21,6 +22,8 @@ export function SavedStrategiesTab({
   onOpenBuilderTab,
 }: SavedStrategiesTabProps) {
   const [strategies, setStrategies] = useState<TrackedStrategy[]>([]);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameInput, setRenameInput] = useState<string>('');
 
   useEffect(() => {
     // Initial fetch
@@ -33,6 +36,25 @@ export function SavedStrategiesTab({
 
     return unsubscribe;
   }, []);
+
+  const handleStartRename = (strat: TrackedStrategy) => {
+    setRenamingId(strat.id);
+    setRenameInput(strat.name);
+  };
+
+  const handleSaveRename = (id: string) => {
+    const clean = renameInput.trim();
+    if (!clean) return;
+    const updated = renameTrackedStrategy(id, clean);
+    setStrategies(updated);
+    setRenamingId(null);
+    setRenameInput('');
+  };
+
+  const handleCancelRename = () => {
+    setRenamingId(null);
+    setRenameInput('');
+  };
 
   const handleDelete = (id: string) => {
     const updated = deleteTrackedStrategy(id);
@@ -121,9 +143,50 @@ export function SavedStrategiesTab({
                           </span>
                         )}
                       </div>
-                      <h4 className="mono text-[14px] font-black text-[var(--theme-card-text)] mt-1">
-                        {strat.name}
-                      </h4>
+                      {renamingId === strat.id ? (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <input
+                            type="text"
+                            value={renameInput}
+                            onChange={(e) => setRenameInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveRename(strat.id);
+                              if (e.key === 'Escape') handleCancelRename();
+                            }}
+                            autoFocus
+                            className="px-2.5 py-1 text-xs mono font-bold bg-[var(--theme-card-bg)] border border-emerald-500 rounded-lg text-[var(--theme-card-text)] focus:outline-emerald-500 w-full max-w-[260px]"
+                            placeholder="Enter custom strategy name..."
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveRename(strat.id)}
+                            className="px-2.5 py-1 text-[10px] mono font-bold bg-emerald-500 text-slate-950 rounded-md hover:bg-emerald-400 cursor-pointer shadow-xs"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelRename}
+                            className="px-2 py-1 text-[10px] mono font-bold bg-slate-500/20 text-slate-300 rounded-md hover:bg-slate-500/30 cursor-pointer"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 group mt-1">
+                          <h4 className="mono text-[14px] font-black text-[var(--theme-card-text)]">
+                            {strat.name}
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => handleStartRename(strat)}
+                            className="text-slate-400 hover:text-emerald-400 opacity-70 group-hover:opacity-100 transition-opacity p-0.5 cursor-pointer text-xs"
+                            title="Rename strategy"
+                          >
+                            ✏️
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Simulated PnL */}
@@ -191,12 +254,23 @@ export function SavedStrategiesTab({
                   {/* Action Buttons */}
                   <div className="flex items-center justify-end gap-2 pt-1">
                     <button
+                      type="button"
+                      onClick={() => handleStartRename(strat)}
+                      className="px-2.5 py-1 rounded text-[10px] mono font-bold text-slate-300 hover:text-emerald-400 hover:bg-emerald-500/10 border border-[var(--theme-card-border)] hover:border-emerald-500/30 transition-colors cursor-pointer flex items-center gap-1"
+                      title="Rename this strategy"
+                    >
+                      <span>✏️</span>
+                      <span>Rename</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleDelete(strat.id)}
-                      className="px-2.5 py-1 rounded text-[10px] mono font-bold text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 rounded text-[10px] mono font-bold text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 hover:border-rose-500/40 transition-colors cursor-pointer"
                     >
                       Delete
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleLoad(strat)}
                       className="px-3 py-1 rounded-lg text-[10.5px] mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500 hover:text-slate-950 transition-colors cursor-pointer"
                     >

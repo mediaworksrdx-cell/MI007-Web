@@ -1,7 +1,7 @@
 // ─── Institutional Derivatives Strategy Builder & Analytics Hub ──────────────
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   FnoInstrument,
   StrategyLeg,
@@ -21,7 +21,8 @@ import { CollapsibleOptionChain } from './CollapsibleOptionChain';
 import { StrategyPositionsList } from './StrategyPositionsList';
 import StrategyOptimizer from './StrategyOptimizer';
 import PositionRepairPanel from './PositionRepairPanel';
-import { saveTrackedStrategy } from '@/lib/fno/savedStrategiesService';
+import { StrategyNameModal } from './StrategyNameModal';
+import { saveTrackedStrategy, renameTrackedStrategy } from '@/lib/fno/savedStrategiesService';
 import { calculateBSPrice, calculateBSGreeks } from '@/lib/fno/blackScholes';
 import {
   generateOptionChain,
@@ -45,6 +46,8 @@ interface StrategyBuilderTabProps {
   onOpenSavedTab?: () => void;
   chainData?: OptionChainData;
   termStructure?: FuturesTermStructure;
+  initialStrategyName?: string;
+  initialStrategyId?: string;
 }
 
 export function StrategyBuilderTab({
@@ -56,16 +59,31 @@ export function StrategyBuilderTab({
   onOpenSavedTab,
   chainData,
   termStructure,
+  initialStrategyName,
+  initialStrategyId,
 }: StrategyBuilderTabProps) {
   const [selectedPresetForModal, setSelectedPresetForModal] =
     useState<OptionStrategyPreset | null>(null);
-  const [strategyName, setStrategyName] = useState<string>('Custom Strategy');
+  const [strategyName, setStrategyName] = useState<string>(initialStrategyName || 'Custom Strategy');
   const [strategyCategory, setStrategyCategory] =
     useState<StrategyCategory>('BULLISH');
   const [timeShiftDays, setTimeShiftDays] = useState<number>(0);
   const [ivShiftPct, setIvShiftPct] = useState<number>(0);
   const [spotShockPct, setSpotShockPct] = useState<number>(0);
   const [savedToast, setSavedToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string>('Strategy Saved to Tracked Portfolio!');
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [activeSavedStrategyId, setActiveSavedStrategyId] = useState<string | null>(initialStrategyId || null);
+
+  useEffect(() => {
+    if (initialStrategyName) {
+      setStrategyName(initialStrategyName);
+    }
+    if (initialStrategyId) {
+      setActiveSavedStrategyId(initialStrategyId);
+    }
+  }, [initialStrategyName, initialStrategyId]);
 
   // Next-Gen Desk State: Volatility Surface, Dealer Assumption, AI Optimizer & Position Repair
   const [volSurfaceConfig, setVolSurfaceConfig] = useState<VolSurfaceConfig>(
@@ -368,17 +386,24 @@ export function StrategyBuilderTab({
     setPreviewGhost(null);
   };
 
-  const handleSaveStrategy = () => {
+  const handleOpenSaveModal = () => {
     if (activeLegs.length === 0) return;
-    const cleanName = strategyName.trim();
-    const formattedName = cleanName.startsWith(instrument.symbol)
-      ? cleanName
-      : `${instrument.symbol} ${cleanName}`;
+    setIsSaveModalOpen(true);
+  };
+
+  const handleConfirmSave = (customName: string, category: StrategyCategory) => {
+    if (activeLegs.length === 0) return;
+    const cleanName = customName.trim();
+    setStrategyName(cleanName);
+    setStrategyCategory(category);
+
+    const stratId = activeSavedStrategyId || `tracked-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    setActiveSavedStrategyId(stratId);
 
     const tracked: TrackedStrategy = {
-      id: `tracked-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      name: formattedName,
-      category: strategyCategory,
+      id: stratId,
+      name: cleanName,
+      category: category,
       underlyingSymbol: instrument.symbol,
       spotPriceAtCreation: spotPrice,
       currentSpotPrice: spotPrice,
@@ -397,6 +422,27 @@ export function StrategyBuilderTab({
     };
 
     saveTrackedStrategy(tracked);
+    setIsSaveModalOpen(false);
+    setToastMessage(`Strategy "${cleanName}" Saved to Tracked Portfolio!`);
+    setSavedToast(true);
+    setTimeout(() => setSavedToast(false), 3500);
+  };
+
+  const handleOpenRenameModal = () => {
+    setIsRenameModalOpen(true);
+  };
+
+  const handleConfirmRename = (newName: string, category: StrategyCategory) => {
+    const cleanName = newName.trim();
+    if (!cleanName) return;
+    setStrategyName(cleanName);
+    setStrategyCategory(category);
+
+    if (activeSavedStrategyId) {
+      renameTrackedStrategy(activeSavedStrategyId, cleanName);
+    }
+    setIsRenameModalOpen(false);
+    setToastMessage(`Strategy renamed to "${cleanName}"`);
     setSavedToast(true);
     setTimeout(() => setSavedToast(false), 3000);
   };
@@ -410,7 +456,7 @@ export function StrategyBuilderTab({
       {savedToast && (
         <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-4 py-2.5 rounded-lg shadow-2xl text-[12px] font-bold flex items-center gap-2">
           <span>✓</span>
-          <span>Strategy Saved to Tracked Portfolio!</span>
+          <span>{toastMessage}</span>
           {onOpenSavedTab && (
             <button
               onClick={onOpenSavedTab}
@@ -639,6 +685,8 @@ export function StrategyBuilderTab({
             legs={simulatedLegs}
             payoff={payoff}
             instrument={instrument}
+            strategyName={strategyName}
+            onRenameStrategy={handleOpenRenameModal}
             onUpdateLeg={handleUpdateLeg}
             onRemoveLeg={handleRemoveLeg}
             onClearAll={handleClearAll}
@@ -665,7 +713,9 @@ export function StrategyBuilderTab({
             payoff={payoff}
             iv={ivValue}
             symbol={instrument.symbol}
-            onSaveStrategy={handleSaveStrategy}
+            strategyName={strategyName}
+            onSaveStrategy={handleOpenSaveModal}
+            onRenameStrategy={handleOpenRenameModal}
             chainData={effectiveChain}
             volSurfaceConfig={volSurfaceConfig}
             onChangeVolSurfaceConfig={setVolSurfaceConfig}
@@ -684,6 +734,36 @@ export function StrategyBuilderTab({
           />
         </div>
       </div>
+
+      {/* ── Save Strategy with Custom Name Modal ── */}
+      <StrategyNameModal
+        isOpen={isSaveModalOpen}
+        mode="SAVE"
+        initialName={strategyName || `${instrument.symbol} Custom Strategy`}
+        initialCategory={strategyCategory}
+        symbol={instrument.symbol}
+        expiry={selectedExpiry}
+        legsCount={activeLegs.length}
+        netDebitCredit={payoff.netDebitCredit}
+        currencySymbol={curr}
+        onClose={() => setIsSaveModalOpen(false)}
+        onConfirm={handleConfirmSave}
+      />
+
+      {/* ── Rename Strategy Modal ── */}
+      <StrategyNameModal
+        isOpen={isRenameModalOpen}
+        mode="RENAME"
+        initialName={strategyName}
+        initialCategory={strategyCategory}
+        symbol={instrument.symbol}
+        expiry={selectedExpiry}
+        legsCount={activeLegs.length}
+        netDebitCredit={payoff.netDebitCredit}
+        currencySymbol={curr}
+        onClose={() => setIsRenameModalOpen(false)}
+        onConfirm={handleConfirmRename}
+      />
 
       {/* ── Preset Configuration Popover Modal ── */}
       {selectedPresetForModal && (
