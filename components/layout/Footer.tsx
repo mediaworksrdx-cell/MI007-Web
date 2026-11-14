@@ -263,15 +263,9 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Regulatory & Risk Disclosure */}
-        <div className="h-[1px] w-full border-t border-white/10 mt-6 mb-4" />
-        <p className="text-[10px] sm:text-[10.5px] leading-relaxed text-slate-400 mb-3">
-          <strong className="text-slate-300">Regulatory &amp; Risk Disclosure:</strong> Market Intelligence MI-007 is an analytical and quantitative telemetry platform and is not a SEBI-registered investment adviser or broker-dealer. Financial derivatives (Futures &amp; Options) involve substantial risk of capital loss. Per SEBI disclosures, 9 out of 10 individual traders in equity F&amp;O incur net losses. Content provided is strictly for educational and market research purposes and does not constitute personalized investment advice.
-        </p>
-
         {/* Bottom Bar: Responsive Stacking */}
         <div
-          className="text-[11.5px] sm:text-[12px] font-semibold text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-2 border-t border-white/5"
+          className="text-[11.5px] sm:text-[12px] font-semibold text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-4 mt-6 border-t border-white/10"
           style={{ color: '#CBD5E1' }}
         >
           <span>© 2026 Synthetix Analytics. All Rights Reserved.</span>
