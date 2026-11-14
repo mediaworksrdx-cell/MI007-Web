@@ -431,8 +431,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 3.10,
     changePct: 2.22,
     sector: 'Semiconductors',
-    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
-    currentExpiry: '26 NOV 2026',
+    expiries: ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
   {
     symbol: 'AAPL',
@@ -446,8 +446,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -1.20,
     changePct: -0.51,
     sector: 'Consumer Electronics',
-    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
-    currentExpiry: '26 NOV 2026',
+    expiries: ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
   {
     symbol: 'MSFT',
@@ -461,8 +461,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 4.85,
     changePct: 1.15,
     sector: 'Enterprise Software & Cloud',
-    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
-    currentExpiry: '26 NOV 2026',
+    expiries: ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
   {
     symbol: 'TSLA',
@@ -476,8 +476,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 8.70,
     changePct: 3.45,
     sector: 'Automotive & AI',
-    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
-    currentExpiry: '26 NOV 2026',
+    expiries: ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
   {
     symbol: 'AMZN',
@@ -491,8 +491,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 1.60,
     changePct: 0.85,
     sector: 'E-Commerce & Cloud Computing',
-    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
-    currentExpiry: '26 NOV 2026',
+    expiries: ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
   {
     symbol: 'GOOGL',
@@ -506,8 +506,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -2.10,
     changePct: -1.25,
     sector: 'Search & Digital Media',
-    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
-    currentExpiry: '26 NOV 2026',
+    expiries: ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
   {
     symbol: 'META',
@@ -521,8 +521,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 10.50,
     changePct: 1.80,
     sector: 'Social Media & AI',
-    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
-    currentExpiry: '26 NOV 2026',
+    expiries: ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
   {
     symbol: 'AMD',
@@ -536,8 +536,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -2.95,
     changePct: -1.85,
     sector: 'Semiconductors',
-    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
-    currentExpiry: '26 NOV 2026',
+    expiries: ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
   {
     symbol: 'NFLX',
@@ -551,8 +551,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: 4.90,
     changePct: 0.65,
     sector: 'Digital Entertainment',
-    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
-    currentExpiry: '26 NOV 2026',
+    expiries: ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
   {
     symbol: 'JPM',
@@ -566,8 +566,8 @@ export const SUPPORTED_FNO_INSTRUMENTS: FnoInstrument[] = [
     change: -0.90,
     changePct: -0.40,
     sector: 'Investment Banking & Finance',
-    expiries: ['26 NOV 2026', '31 DEC 2026', '28 JAN 2027'],
-    currentExpiry: '26 NOV 2026',
+    expiries: ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+    currentExpiry: '20 NOV 2026',
   },
 
   // ── UAE & Middle East Derivatives ──
@@ -798,37 +798,88 @@ export function calculateNSEWeeklyExpiryDate(refDate: Date = new Date(), targetD
 }
 
 /**
+ * Calculates the standard US monthly expiry date (3rd Friday of the month per OCC / CBOE rules).
+ */
+export function calculateUSMonthlyExpiryDate(year: number, month: number): string {
+  let fridayCount = 0;
+  for (let d = 1; d <= 31; d++) {
+    const dt = new Date(year, month, d);
+    if (dt.getMonth() !== month) break;
+    if (dt.getDay() === 5) {
+      fridayCount++;
+      if (fridayCount === 3) {
+        return `${String(d).padStart(2, '0')} ${MONTH_NAMES_SHORT[month]} ${year}`;
+      }
+    }
+  }
+  return `20 ${MONTH_NAMES_SHORT[month]} ${year}`;
+}
+
+/**
+ * Calculates the next upcoming weekly Friday expiry date for US index options (SPX / NDX).
+ */
+export function calculateUSWeeklyExpiryDate(refDate: Date = new Date()): string | null {
+  const dt = new Date(refDate);
+  for (let i = 0; i < 7; i++) {
+    const candidate = new Date(dt.getTime() + i * 24 * 60 * 60 * 1000);
+    if (candidate.getDay() === 5) {
+      const expTime = new Date(candidate.getFullYear(), candidate.getMonth(), candidate.getDate(), 16, 0, 0).getTime();
+      if (candidate.getTime() <= expTime) {
+        return `${String(candidate.getDate()).padStart(2, '0')} ${MONTH_NAMES_SHORT[candidate.getMonth()]} ${candidate.getFullYear()}`;
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Automatically derives the dynamic 3-month contract cycle (Near, Next, Far)
- * and active weekly contract (for NIFTY 50) based on current calendar date.
- * Fully automatic: rolls forward the moment a contract passes 15:30 on expiry day!
+ * and active weekly contract (for NIFTY 50 and SPX/NDX) based on current calendar date.
+ * Fully automatic: rolls forward the moment a contract passes 15:30 IST / 16:00 EST on expiry day!
  */
 export function getAutoExpiriesForInstrument(
   symbol: string,
   market: MarketType = 'INDIA',
   refDate: Date = new Date()
 ): { expiries: string[]; currentExpiry: string } {
-  if (market !== 'INDIA') {
+  if (market === 'USA') {
+    const isUSIndex = symbol.toUpperCase() === 'SPX' || symbol.toUpperCase() === 'NDX' || symbol.toUpperCase() === 'DJI';
     const curMonth = refDate.getMonth();
     const curYear = refDate.getFullYear();
-    const usExpiries: string[] = [];
+
+    const nearExpiryStr = calculateUSMonthlyExpiryDate(curYear, curMonth);
+    const nearExpiryTime = Date.parse(`${nearExpiryStr} 16:00:00 GMT-0500`);
+    const hasExpired = !Number.isNaN(nearExpiryTime) && refDate.getTime() > nearExpiryTime;
+    const startOffset = hasExpired ? 1 : 0;
+
+    const monthlyExpiries: string[] = [];
     for (let i = 0; i < 3; i++) {
-      const totalMonth = curMonth + i;
+      const totalMonth = curMonth + startOffset + i;
       const y = curYear + Math.floor(totalMonth / 12);
       const m = totalMonth % 12;
-      let fridayCount = 0;
-      for (let d = 1; d <= 28; d++) {
-        if (new Date(y, m, d).getDay() === 5) {
-          fridayCount++;
-          if (fridayCount === 3) {
-            usExpiries.push(`${String(d).padStart(2, '0')} ${MONTH_NAMES_SHORT[m]} ${y}`);
-            break;
-          }
-        }
+      monthlyExpiries.push(calculateUSMonthlyExpiryDate(y, m));
+    }
+
+    if (isUSIndex) {
+      const weeklyExp = calculateUSWeeklyExpiryDate(refDate);
+      if (weeklyExp && weeklyExp !== monthlyExpiries[0]) {
+        return {
+          expiries: [weeklyExp, ...monthlyExpiries],
+          currentExpiry: monthlyExpiries[0],
+        };
       }
     }
+
     return {
-      expiries: usExpiries.length >= 3 ? usExpiries : ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
-      currentExpiry: usExpiries[0] || '20 NOV 2026',
+      expiries: monthlyExpiries,
+      currentExpiry: monthlyExpiries[0],
+    };
+  }
+
+  if (market !== 'INDIA') {
+    return {
+      expiries: ['20 NOV 2026', '18 DEC 2026', '15 JAN 2027'],
+      currentExpiry: '20 NOV 2026',
     };
   }
 
@@ -903,8 +954,8 @@ export function findFnoInstrument(symbol: string): FnoInstrument {
   // 1. Direct match in curated instruments
   const exact = SUPPORTED_FNO_INSTRUMENTS.find((i) => i.symbol.toUpperCase() === norm);
   if (exact) {
-    if (exact.market === 'INDIA') {
-      const autoExp = getAutoExpiriesForInstrument(exact.symbol, 'INDIA');
+    if (exact.market === 'INDIA' || exact.market === 'USA') {
+      const autoExp = getAutoExpiriesForInstrument(exact.symbol, exact.market);
       return {
         ...exact,
         expiries: autoExp.expiries,
@@ -927,8 +978,8 @@ export function findFnoInstrument(symbol: string): FnoInstrument {
       (i.symbol.length >= 4 && norm.includes(i.symbol.toUpperCase()))
   );
   if (partial) {
-    if (partial.market === 'INDIA') {
-      const autoExp = getAutoExpiriesForInstrument(partial.symbol, 'INDIA');
+    if (partial.market === 'INDIA' || partial.market === 'USA') {
+      const autoExp = getAutoExpiriesForInstrument(partial.symbol, partial.market);
       return {
         ...partial,
         expiries: autoExp.expiries,
