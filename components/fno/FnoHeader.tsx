@@ -81,7 +81,7 @@ export function FnoHeader({
   }, [selectedInstrument.sector, selectedInstrument.symbol]);
 
   const wkExp = weeklyExpiry || selectedInstrument.expiries[0] || selectedExpiry;
-  const moExp = monthlyExpiry || (selectedInstrument.expiries.length >= 3 ? selectedInstrument.expiries[2] : (selectedInstrument.expiries[1] || selectedInstrument.expiries[0] || selectedExpiry));
+  const moExp = monthlyExpiry || selectedInstrument.currentExpiry || selectedInstrument.expiries[0] || selectedExpiry;
 
   const wkData = weeklyChainData || chainData;
   const moData = monthlyChainData || chainData;
@@ -282,9 +282,16 @@ export function FnoHeader({
               ACTIVE EXPIRY
             </label>
             <span className="text-[8.5px] mono font-bold text-emerald-400">
-              {isIndex
-                ? (selectedExpiry === wkExp ? 'WK' : selectedExpiry === moExp ? 'MO' : 'CYCLE')
-                : (selectedExpiry === selectedInstrument.expiries[0] ? 'NEAR MO' : selectedExpiry === selectedInstrument.expiries[1] ? 'NEXT MO' : 'FAR MO')}
+              {(() => {
+                const hasWeekly = selectedInstrument.symbol === 'NIFTY 50' || selectedInstrument.symbol === 'SENSEX' || selectedInstrument.symbol === 'SPX' || selectedInstrument.symbol === 'NDX';
+                const idx = selectedInstrument.expiries.indexOf(selectedExpiry);
+                if (hasWeekly && idx === 0) return 'WK';
+                const moIndex = hasWeekly ? idx - 1 : idx;
+                if (moIndex === 0) return 'NEAR MO';
+                if (moIndex === 1) return 'NEXT MO';
+                if (moIndex === 2) return 'FAR MO';
+                return 'MO';
+              })()}
             </span>
           </div>
           <select
@@ -294,10 +301,15 @@ export function FnoHeader({
           >
             {selectedInstrument.expiries.map((exp, idx) => {
               let tag = '';
-              if (isIndex) {
-                tag = exp === wkExp ? ' • Weekly' : exp === moExp ? ' • Monthly' : '';
+              const hasWeekly = selectedInstrument.symbol === 'NIFTY 50' || selectedInstrument.symbol === 'SENSEX' || selectedInstrument.symbol === 'SPX' || selectedInstrument.symbol === 'NDX';
+              if (hasWeekly && idx === 0) {
+                tag = ' • Weekly';
               } else {
-                tag = idx === 0 ? ' • Monthly (Near)' : idx === 1 ? ' • Monthly (Next)' : ' • Monthly (Far)';
+                const moIndex = hasWeekly ? idx - 1 : idx;
+                if (moIndex === 0) tag = ' • Monthly (Near)';
+                else if (moIndex === 1) tag = ' • Monthly (Next)';
+                else if (moIndex === 2) tag = ' • Monthly (Far)';
+                else tag = ` • Month ${moIndex + 1}`;
               }
               return (
                 <option key={exp} value={exp} className="bg-[var(--theme-card-surface)] text-[var(--theme-card-text)]">
