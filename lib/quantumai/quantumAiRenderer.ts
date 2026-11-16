@@ -232,7 +232,7 @@ export function renderQuantumAiOverlays(options: QuantumAiRenderOptions): void {
     }
   }
 
-  // ── 5. Render Trade Setups & Execution Targets ───────────────────────────
+  // ── 5. Render Trade Setups (Signal Badges) ───────────────────────────
   if (config.showSignals && analysis.setups.length > 0) {
     for (const setup of analysis.setups) {
       if (setup.candleIndex < safeStart || setup.candleIndex >= safeEnd) continue;
@@ -272,38 +272,81 @@ export function renderQuantumAiOverlays(options: QuantumAiRenderOptions): void {
       ctx.moveTo(x, badgeY + (isBull ? -6 * dpr : 6 * dpr));
       ctx.lineTo(x, priceToY(setup.entryPrice));
       ctx.stroke();
+    }
+  }
 
-      // Render Execution Horizontal Target Rays if active & enabled
-      if (config.showExecutionLevels && setup.status === 'ACTIVE') {
-        const xExtend = Math.min(chartW, x + 80 * dpr);
+  // ── 5b. Automated Risk & Execution Levels (Entry, SL, TP1, TP2, TP3) ────────
+  if (config.showExecutionLevels && analysis.setups.length > 0) {
+    // Pick the most relevant setup (active setup first, or latest completed setup)
+    const activeSetup = analysis.setups.find((s) => s.status === 'ACTIVE') || analysis.setups[analysis.setups.length - 1];
+    if (activeSetup) {
+      const isBull = activeSetup.isBullish;
+      const li = activeSetup.candleIndex - startIdx;
+      const rawX = li * candleW + candleW / 2;
+      const xStart = Math.max(10 * dpr, Math.min(chartW - 120 * dpr, rawX));
+      const xEnd = chartW - 5 * dpr;
 
-        // Entry
-        const yEntry = priceToY(setup.entryPrice);
-        ctx.strokeStyle = '#3B82F6';
-        ctx.lineWidth = 1 * dpr;
-        ctx.setLineDash([3 * dpr, 2 * dpr]);
+      ctx.save();
+      const levels = [
+        { label: 'ENTRY', price: activeSetup.entryPrice, color: '#3B82F6', dash: [4 * dpr, 3 * dpr] },
+        { label: 'STOP LOSS', price: activeSetup.stopLossPrice, color: '#EF4444', dash: [4 * dpr, 2 * dpr] },
+        { label: 'TP1 (1.5R)', price: activeSetup.tp1Price, color: '#10B981', dash: [3 * dpr, 3 * dpr] },
+        { label: 'TP2 (2.5R)', price: activeSetup.tp2Price, color: '#14B8A6', dash: [3 * dpr, 3 * dpr] },
+        { label: 'TP3 (4.0R)', price: activeSetup.tp3Price, color: '#06B6D4', dash: [3 * dpr, 3 * dpr] },
+      ];
+
+      for (const lvl of levels) {
+        if (!lvl.price || lvl.price <= 0) continue;
+        const y = priceToY(lvl.price);
+        if (y < 0 || y > chartH) continue;
+
+        // Draw horizontal execution ray
+        ctx.strokeStyle = lvl.color;
+        ctx.lineWidth = 1.3 * dpr;
+        ctx.setLineDash(lvl.dash);
         ctx.beginPath();
-        ctx.moveTo(x, yEntry);
-        ctx.lineTo(xExtend, yEntry);
-        ctx.stroke();
-
-        // SL
-        const ySl = priceToY(setup.stopLossPrice);
-        ctx.strokeStyle = '#EF4444';
-        ctx.beginPath();
-        ctx.moveTo(x, ySl);
-        ctx.lineTo(xExtend, ySl);
-        ctx.stroke();
-
-        // TP1
-        const yTp1 = priceToY(setup.tp1Price);
-        ctx.strokeStyle = '#10B981';
-        ctx.beginPath();
-        ctx.moveTo(x, yTp1);
-        ctx.lineTo(xExtend, yTp1);
+        ctx.moveTo(xStart, y);
+        ctx.lineTo(xEnd, y);
         ctx.stroke();
         ctx.setLineDash([]);
+
+        // Right margin pill badge with exact price
+        const txt = `${lvl.label}: ${lvl.price.toFixed(2)}`;
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono", monospace`;
+        const tw = ctx.measureText(txt).width;
+        const bw = tw + 8 * dpr;
+        const bh = 14 * dpr;
+        const bx = xEnd - bw;
+        const by = y - bh / 2;
+
+        ctx.fillStyle = isDark ? 'rgba(11, 15, 25, 0.90)' : 'rgba(255, 255, 255, 0.92)';
+        ctx.fillRect(bx, by, bw, bh);
+        ctx.strokeStyle = lvl.color;
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeRect(bx, by, bw, bh);
+
+        ctx.fillStyle = lvl.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(txt, bx + bw / 2, y);
       }
+
+      // Risk/Reward Bracket shaded box between Entry and SL
+      const yE = priceToY(activeSetup.entryPrice);
+      const yS = priceToY(activeSetup.stopLossPrice);
+      const yT = priceToY(activeSetup.tp1Price);
+      const riskH = Math.abs(yE - yS);
+      const rewardH = Math.abs(yE - yT);
+
+      // Shaded Risk Box
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.08)';
+      ctx.fillRect(xStart, Math.min(yE, yS), xEnd - xStart, riskH);
+
+      // Shaded Reward Box
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+      ctx.fillRect(xStart, Math.min(yE, yT), xEnd - xStart, rewardH);
+
+      ctx.restore();
     }
   }
 

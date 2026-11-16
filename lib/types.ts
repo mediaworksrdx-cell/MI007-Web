@@ -180,6 +180,7 @@ export interface ChartOptions {
   showSmcOverlay: boolean;
   smcConfig?: import('./smcEngine').SmcConfig;
   targetSetupId?: string;
+  targetSmcSetup?: any;
   showOrderFlow?: boolean;
   orderFlowConfig?: import('./orderflow/types').OrderFlowConfig;
   orderFlowData?: import('./orderflow/types').OrderFlowAnalysisResult;

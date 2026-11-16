@@ -39,6 +39,7 @@ interface CandlestickCanvasProps {
   onToggleMagnifier?: () => void;
   targetCandleTime?: number;
   targetSetupId?: string;
+  targetSmcSetup?: any;
   className?: string;
   activeDrawingTool?: DrawingToolType;
   cursorMode?: CursorMode;
@@ -164,7 +165,7 @@ export function CandlestickCanvas({
   showQuantumAi = false, quantumAiConfig, quantumAiData,
   showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
-  currentPriceOverride, timeframe, showMagnifier = false, onToggleMagnifier, targetCandleTime, targetSetupId, className = '',
+  currentPriceOverride, timeframe, showMagnifier = false, onToggleMagnifier, targetCandleTime, targetSetupId, targetSmcSetup, className = '',
   activeDrawingTool = 'NONE',
   cursorMode = 'crosshair',
   drawings = [],
@@ -956,7 +957,7 @@ export function CandlestickCanvas({
         currentPriceOverride: currentPriceOverrideRef.current,
         timeframe: timeframeRef.current,
         cursorMode: cursorModeRef.current,
-        showMagnifier: showMagnifierRef.current || cursorModeRef.current === 'magnifier',
+        showMagnifier: Boolean(showMagnifierRef.current),
         mainCanvas: canvasRef.current,
         showQuantumAi: showQuantumAiRef.current,
         quantumAiConfig: quantumAiConfigRef.current,
@@ -1160,6 +1161,7 @@ export function CandlestickCanvas({
           showSmcOverlay: smcConfig ? smcConfig.enabled : showSmcOverlay,
           smcConfig,
           targetSetupId: targetSetupIdRef.current || targetSetupId,
+          targetSmcSetup,
           showOrderFlow,
           orderFlowConfig,
           orderFlowData,
@@ -1616,12 +1618,12 @@ export function CandlestickCanvas({
     for (const ob of allBlocks) {
       if (ob.endIndex < startIdx || ob.startIndex > endIdx) continue;
       if (ob.isBreaker) {
-        if (smcConfig?.showBreakers === false) continue;
-        if (ob.isBullish && (!isBullishMaster || smcConfig?.showBullishBreakers === false)) continue;
-        if (!ob.isBullish && (!isBearishMaster || smcConfig?.showBearishBreakers === false)) continue;
+        if (smcConfig?.showBreakers === false && smcConfig?.showBullishBreakers === false && smcConfig?.showBearishBreakers === false) continue;
+        if (ob.isBullish && smcConfig?.showBullishBreakers === false) continue;
+        if (!ob.isBullish && smcConfig?.showBearishBreakers === false) continue;
       } else {
-        if (ob.isBullish && (!isBullishMaster || smcConfig?.showBullishOb === false)) continue;
-        if (!ob.isBullish && (!isBearishMaster || smcConfig?.showBearishOb === false)) continue;
+        if (ob.isBullish && smcConfig?.showBullishOb === false) continue;
+        if (!ob.isBullish && smcConfig?.showBearishOb === false) continue;
       }
       if (ob.isMitigated && smcConfig?.showMitigatedOb === false) continue;
 
@@ -1663,12 +1665,12 @@ export function CandlestickCanvas({
     for (const fvg of smc.fvgs) {
       if (fvg.endIndex < startIdx || fvg.startIndex > endIdx) continue;
       if (fvg.isInverse) {
-        if (fvg.isBullish && (!isBullishMaster || smcConfig?.showBullishIfvg === false)) continue;
-        if (!fvg.isBullish && (!isBearishMaster || smcConfig?.showBearishIfvg === false)) continue;
+        if (fvg.isBullish && smcConfig?.showBullishIfvg === false) continue;
+        if (!fvg.isBullish && smcConfig?.showBearishIfvg === false) continue;
         if (fvg.isInvalidated && smcConfig?.showMitigatedFvg === false) continue;
       } else {
-        if (fvg.isBullish && (!isBullishMaster || smcConfig?.showBullishFvg === false)) continue;
-        if (!fvg.isBullish && (!isBearishMaster || smcConfig?.showBearishFvg === false)) continue;
+        if (fvg.isBullish && smcConfig?.showBullishFvg === false) continue;
+        if (!fvg.isBullish && smcConfig?.showBearishFvg === false) continue;
         if (fvg.isMitigated && smcConfig?.showMitigatedFvg === false) continue;
         if (fvg.isInvalidated && smcConfig?.showMitigatedFvg === false) continue;
       }
@@ -1709,8 +1711,8 @@ export function CandlestickCanvas({
 
     // 3. Structure Breaks (BOS / CHoCH)
     for (const sb of smc.structureBreaks) {
-      if (sb.isBullish && (!isBullishMaster || smcConfig?.showBullishStructure === false)) continue;
-      if (!sb.isBullish && (!isBearishMaster || smcConfig?.showBearishStructure === false)) continue;
+      if (sb.isBullish && smcConfig?.showBullishStructure === false) continue;
+      if (!sb.isBullish && smcConfig?.showBearishStructure === false) continue;
       if (sb.breakType === 'BOS' && smcConfig?.showBos === false) continue;
       if (sb.breakType === 'CHoCH' && smcConfig?.showChoch === false) continue;
 
@@ -1734,11 +1736,12 @@ export function CandlestickCanvas({
     }
 
     // 3.5. Liquidity Sweeps
-    if (smcConfig?.showSweeps !== false && smc.sweeps) {
+    const shouldCheckSweeps = (smcConfig?.showSweeps ?? true) || smcConfig?.showBslSweeps || smcConfig?.showSslSweeps;
+    if (shouldCheckSweeps && smc.sweeps) {
       for (const sw of smc.sweeps) {
         if (sw.candleIndex < startIdx || sw.candleIndex > endIdx) continue;
-        if (sw.isHighSweep && (!isBearishMaster || smcConfig?.showBslSweeps === false)) continue;
-        if (!sw.isHighSweep && (!isBullishMaster || smcConfig?.showSslSweeps === false)) continue;
+        if (sw.isHighSweep && smcConfig?.showBslSweeps === false) continue;
+        if (!sw.isHighSweep && smcConfig?.showSslSweeps === false) continue;
 
         const li = sw.candleIndex - startIdx;
         const sweepX = li * candleW + candleW / 2;

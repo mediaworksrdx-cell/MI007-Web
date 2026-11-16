@@ -34,7 +34,7 @@ export function OrderFlowToolbarMenu({
 
   return (
     <div
-      className="absolute top-full left-0 mt-1 w-84 sm:w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[560px] flex flex-col animate-in fade-in duration-75 overflow-hidden"
+      className="absolute top-full left-0 mt-1 w-84 sm:w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[min(480px,calc(100vh-140px))] flex flex-col animate-in fade-in duration-75 overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
       {/* ── 1. Header ── */}
@@ -102,7 +102,7 @@ export function OrderFlowToolbarMenu({
       </div>
 
       {/* ── 4. Scrollable Controls Body ── */}
-      <div className="p-3.5 space-y-3.5 overflow-y-auto text-xs flex-1">
+      <div className="p-3.5 space-y-3.5 min-h-0 overflow-y-auto text-xs flex-1">
         {/* A. View Mode Selector */}
         <div>
           <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">

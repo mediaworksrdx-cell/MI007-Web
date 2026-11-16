@@ -906,7 +906,7 @@ export function ChartToolbar({
 
           {openMenu === 'SMC' && (
             <div
-              className="absolute top-full left-0 mt-1 w-80 sm:w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[520px] flex flex-col animate-in fade-in duration-75 overflow-hidden"
+              className="absolute top-full left-0 mt-1 w-80 sm:w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[min(480px,calc(100vh-140px))] flex flex-col animate-in fade-in duration-75 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -992,7 +992,7 @@ export function ChartToolbar({
               </div>
 
               {/* Toggles Container */}
-              <div className={`flex-1 overflow-y-auto px-2 py-2 space-y-3 text-xs ${!activeSmcConfig.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
+              <div className={`flex-1 min-h-0 overflow-y-auto px-2 py-2 space-y-3 text-xs ${!activeSmcConfig.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
                 {/* 1. Setup Direction */}
                 <div>
                   <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
@@ -1434,7 +1434,7 @@ export function ChartToolbar({
             }`}
           >
             <span className="text-sm leading-none">{snapshotStatus === 'captured' ? '✓' : '📷'}</span>
-            <span className="hidden md:inline">{snapshotStatus === 'captured' ? 'IMAGE DOWNLOADED' : 'SNAPSHOT'}</span>
+            <span className="text-[11px] font-bold">{snapshotStatus === 'captured' ? 'DOWNLOADED' : 'SNAPSHOT'}</span>
           </button>
         )}
 

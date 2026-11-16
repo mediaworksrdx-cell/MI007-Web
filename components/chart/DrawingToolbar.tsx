@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { DrawingToolType } from '@/lib/drawingTypes';
 
-export type CursorMode = 'crosshair' | 'pan' | 'dot' | 'arrow' | 'eraser' | 'magnifier';
+export type CursorMode = 'crosshair' | 'pan' | 'dot' | 'arrow' | 'eraser';
 
 export interface DrawingToolbarProps {
   activeDrawingTool: DrawingToolType;
@@ -93,18 +93,6 @@ export const TOOL_GROUPS: ToolGroup[] = [
     ],
   },
   {
-    id: 'patterns',
-    title: 'Patterns & Waves',
-    defaultTool: 'HEAD_AND_SHOULDERS',
-    tools: [
-      { id: 'HEAD_AND_SHOULDERS', label: 'Head & Shoulders', desc: '7 points: Left Shoulder, Head, Right Shoulder + Neckline', icon: '👤' },
-      { id: 'ELLIOTT_IMPULSE', label: 'Elliott Impulse (1-2-3-4-5)', desc: '5 wave motive impulse cycle', icon: '❺' },
-      { id: 'ELLIOTT_CORRECTION', label: 'Elliott Correction (A-B-C)', desc: '3 wave corrective counter-trend', icon: '🅒' },
-      { id: 'XABCD_PATTERN', label: 'Harmonic XABCD Pattern', desc: 'Bat, Gartley, Butterfly, Crab reversal', icon: '⧖' },
-      { id: 'ABCD_PATTERN', label: 'Harmonic ABCD Pattern', desc: 'Lightning bolt harmonic confluence', icon: '⚡' },
-    ],
-  },
-  {
     id: 'prediction',
     title: 'Risk & Forecasting',
     defaultTool: 'RISK_REWARD_LONG',
@@ -139,7 +127,6 @@ export const CURSOR_OPTIONS: { id: CursorMode; label: string; desc: string; icon
   { id: 'pan', label: 'Pan / Hand', desc: 'Drag chart freely to scroll history & prices', icon: '✋' },
   { id: 'dot', label: 'Dot', desc: 'Minimalist point reticle with coordinates', icon: '•' },
   { id: 'eraser', label: 'Eraser', desc: 'Click any drawing on the chart to delete it', icon: '⌫' },
-  { id: 'magnifier', label: 'Magnifier / Loupe', desc: 'Interactive magnifying glass with zoom & order block metrics', icon: '🔍' },
 ];
 
 export function DrawingToolbar({
@@ -176,7 +163,6 @@ export function DrawingToolbar({
     lines: 'TRENDLINE',
     fib: 'FIBONACCI',
     shapes: 'RECTANGLE',
-    patterns: 'HEAD_AND_SHOULDERS',
     prediction: 'RISK_REWARD_LONG',
     annotations: 'TEXT',
   });
@@ -301,7 +287,7 @@ export function DrawingToolbar({
           <button
             type="button"
             onClick={(e) => {
-              if (isCursorActive && (cursorMode === 'crosshair' || cursorMode === 'dot' || cursorMode === 'eraser' || cursorMode === 'magnifier')) {
+              if (isCursorActive && (cursorMode === 'crosshair' || cursorMode === 'dot' || cursorMode === 'eraser')) {
                 openGroupMenu('cursor', e.currentTarget);
               } else {
                 onDrawingToolChange('NONE');
@@ -315,7 +301,7 @@ export function DrawingToolbar({
             title="Crosshair Tool (Inspect prices & time coordinates) - Click to activate, click again or ▾ for cursor options"
             aria-label="Crosshair tool"
             className={`w-full h-full rounded-lg flex items-center justify-center transition-all cursor-pointer ${
-              isCursorActive && (cursorMode === 'crosshair' || cursorMode === 'dot' || cursorMode === 'eraser' || cursorMode === 'magnifier')
+              isCursorActive && (cursorMode === 'crosshair' || cursorMode === 'dot' || cursorMode === 'eraser')
                 ? 'bg-[#089981] text-white shadow-md font-bold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
@@ -324,8 +310,6 @@ export function DrawingToolbar({
               <span className="w-2.5 h-2.5 rounded-full bg-current" />
             ) : cursorMode === 'eraser' ? (
               <span className="text-xs font-mono font-bold">⌫</span>
-            ) : cursorMode === 'magnifier' ? (
-              <span className="text-xs">🔍</span>
             ) : (
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="9" />
@@ -347,7 +331,7 @@ export function DrawingToolbar({
             title="Crosshair & Cursor modes"
             aria-label="Crosshair modes"
             className={`absolute bottom-0 right-0 w-3 h-3 flex items-center justify-center text-[8px] font-bold rounded-tl transition-colors cursor-pointer select-none ${
-              isCursorActive && (cursorMode === 'crosshair' || cursorMode === 'dot' || cursorMode === 'eraser' || cursorMode === 'magnifier')
+              isCursorActive && (cursorMode === 'crosshair' || cursorMode === 'dot' || cursorMode === 'eraser')
                 ? 'text-white/80 hover:text-white hover:bg-white/20'
                 : 'text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}

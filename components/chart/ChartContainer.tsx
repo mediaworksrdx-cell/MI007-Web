@@ -214,25 +214,10 @@ export function ChartContainer({
   const [isDrawingModeLocked, setIsDrawingModeLocked] = useState(false);
   const [isAllDrawingsLocked, setIsAllDrawingsLocked] = useState(false);
   const [isAllDrawingsHidden, setIsAllDrawingsHidden] = useState(false);
-  const [isMagnifierActive, setIsMagnifierActive] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return localStorage.getItem('mi007_chart_magnifier_active') === 'true';
-      } catch {
-        return false;
-      }
-    }
-    return false;
-  });
+  const [isMagnifierActive, setIsMagnifierActive] = useState(false);
 
   const handleToggleMagnifier = useCallback(() => {
-    setIsMagnifierActive(prev => {
-      const next = !prev;
-      try {
-        localStorage.setItem('mi007_chart_magnifier_active', String(next));
-      } catch {}
-      return next;
-    });
+    setIsMagnifierActive(prev => !prev);
   }, []);
   const chartWrapperRef = useRef<HTMLDivElement>(null);
   const drawingHistoryRef = useRef<DrawingItem[][]>([]);
@@ -354,6 +339,7 @@ export function ChartContainer({
 
   const [targetCandleTime, setTargetCandleTime] = useState<number | undefined>();
   const [targetSetupId, setTargetSetupId] = useState<string | undefined>();
+  const [targetSmcSetup, setTargetSmcSetup] = useState<any | undefined>();
 
   // Detect URL parameter for initial SMC mode activation (e.g. from SMC scanner or screener)
   useEffect(() => {
@@ -418,6 +404,29 @@ export function ChartContainer({
       const setupIdParam = sp.get('setupId');
       if (setupIdParam) {
         setTargetSetupId(setupIdParam);
+      }
+      const entryParam = sp.get('entry');
+      const slParam = sp.get('sl');
+      const tpParam = sp.get('tp');
+      const dirParam = sp.get('dir') as 'BULLISH' | 'BEARISH' | null;
+      const setupNameParam = sp.get('setupName');
+      if (entryParam && slParam && tpParam && dirParam) {
+        setTargetSmcSetup({
+          id: setupIdParam || 'screener-setup',
+          name: setupNameParam ? decodeURIComponent(setupNameParam) : 'SMC Setup',
+          setupType: 'CONFLUENCE_EXPANSION',
+          direction: dirParam,
+          entryPrice: Number(entryParam),
+          stopLoss: Number(slParam),
+          targetPrice: Number(tpParam),
+          target2Price: Number(tpParam),
+          riskReward: Math.abs(Number(tpParam) - Number(entryParam)) / Math.max(0.01, Math.abs(Number(entryParam) - Number(slParam))),
+          candleIndex: 0,
+          time: timeParam ? Number(timeParam) : Date.now(),
+          status: 'CONFIRMED',
+          confidence: 0.9,
+          reason: 'SMC Scanner verified setup',
+        });
       }
 
       // Read indicators and strategies from URL parameters (e.g. from Screener Actions)
@@ -1805,6 +1814,7 @@ export function ChartContainer({
             onToggleMagnifier={handleToggleMagnifier}
             targetCandleTime={targetCandleTime}
             targetSetupId={targetSetupId}
+            targetSmcSetup={targetSmcSetup}
             activeDrawingTool={activeDrawingTool}
             cursorMode={cursorMode}
             drawings={drawings}

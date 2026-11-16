@@ -681,7 +681,7 @@ export function SmcScannerView({
                       {/* Action Button -> Direct Chart Launch with SMC Auto-enabled */}
                       <td className="py-2 px-2.5 text-center">
                         <Link
-                          href={`/chart/${item.symbol}?market=${item.market}&tf=${timeframe}&smc=1&setupId=${item.setup.id}&time=${item.setup.time}&from=screener`}
+                          href={`/chart/${item.symbol}?market=${item.market}&tf=${timeframe}&smc=1&setupId=${item.setup.id}&time=${item.setup.time}&entry=${item.setup.entryPrice}&sl=${item.setup.stopLoss}&tp=${item.setup.targetPrice}&dir=${item.setup.direction}&setupName=${encodeURIComponent(item.setup.name || item.setup.setupType)}&from=screener`}
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all shadow-xs cursor-pointer active:scale-95"
                           title={`Open ${item.symbol} Candlestick Chart with SMC Overlays Enabled`}
                         >
