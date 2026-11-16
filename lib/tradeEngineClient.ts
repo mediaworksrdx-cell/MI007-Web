@@ -143,13 +143,27 @@ export function areSymbolsEqual(symA: string, symB: string): boolean {
 // ── API Fetchers ─────────────────────────────────────────────────────────────
 
 function getApiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_TRADE_ENGINE_URL || process.env.TRADE_ENGINE_URL || 'https://synthetixanalytics.com';
+  if (typeof window !== 'undefined') {
+    return '/api';
+  }
+  const ext = process.env.NEXT_PUBLIC_TRADE_ENGINE_URL || process.env.TRADE_ENGINE_URL;
+  return ext ? ext.replace(/\/$/, '') : '/api';
+}
+
+function getFetchSignal(timeoutMs: number = 3500): AbortSignal | undefined {
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(timeoutMs);
+  }
+  return undefined;
 }
 
 /** Fetch current live prices for Indian stocks, indices, and active tickers */
 export async function fetchLivePrices(): Promise<TradeEngineLivePrice[]> {
   try {
-    const res = await fetch(`${getApiBaseUrl()}/live-prices`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBaseUrl()}/live-prices`, { 
+      cache: 'no-store',
+      signal: getFetchSignal(4000)
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (Array.isArray(data)) return data;
@@ -164,7 +178,10 @@ export async function fetchLivePrices(): Promise<TradeEngineLivePrice[]> {
 export async function fetchQuote(symbol: string): Promise<TradeEngineLivePrice | null> {
   if (!symbol) return null;
   try {
-    const res = await fetch(`${getApiBaseUrl()}/quote?symbol=${encodeURIComponent(symbol)}`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBaseUrl()}/quote?symbol=${encodeURIComponent(symbol)}`, { 
+      cache: 'no-store',
+      signal: getFetchSignal(3000)
+    });
     if (!res.ok) return null;
     const data = await res.json();
     if (data && typeof data.ltp === 'number') return data;
@@ -188,7 +205,10 @@ export async function fetchCandles(
     if (from) params.set('from', String(from));
     if (to) params.set('to', String(to));
 
-    const res = await fetch(`${getApiBaseUrl()}/candles?${params.toString()}`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBaseUrl()}/candles?${params.toString()}`, { 
+      cache: 'no-store',
+      signal: getFetchSignal(3500)
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const raw = await res.json();
 
@@ -211,7 +231,10 @@ export async function fetchCandles(
 /** Fetch live crypto prices from CoinGecko via Trade Engine */
 export async function fetchCryptoPrices(): Promise<TradeEngineCrypto[]> {
   try {
-    const res = await fetch(`${getApiBaseUrl()}/crypto-prices`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBaseUrl()}/crypto-prices`, { 
+      cache: 'no-store',
+      signal: getFetchSignal(4000)
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (Array.isArray(data)) return data;
@@ -225,7 +248,10 @@ export async function fetchCryptoPrices(): Promise<TradeEngineCrypto[]> {
 /** Fetch macro benchmark indicators (DXY, XAU/USD, US10Y, BRENT, VIX) */
 export async function fetchMacroData(): Promise<TradeEngineMacro[]> {
   try {
-    const res = await fetch(`${getApiBaseUrl()}/macro-data`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBaseUrl()}/macro-data`, { 
+      cache: 'no-store',
+      signal: getFetchSignal(4000)
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (Array.isArray(data)) return data;

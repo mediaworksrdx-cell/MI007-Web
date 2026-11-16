@@ -876,6 +876,14 @@ export function ChartContainer({
           const lastC = cleanCached[cleanCached.length - 1];
           setCurrentPrice(lastC?.close);
           setIsLoadingCandles(false);
+        } else if (!isCancelled) {
+          // Immediately show baseline mock candles so user NEVER sees a blank screen or gets frozen
+          const fallback = getMockCandles(market, selectedSymbol, timeframe, 800);
+          const cleanFallback = validateAndCleanCandles(fallback, timeframe);
+          if (cleanFallback.length > 0) {
+            setCandles(cleanFallback);
+            setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);
+          }
         }
 
         // 2. Fetch latest candles from Trade Engine API

@@ -420,7 +420,8 @@ function roundSmcPrice(price: number): number {
 
 export function detectSwingPoints(
   candles: Candle[],
-  lookback = 3
+  lookback = 3,
+  isMajor = true
 ): SmcSwingPoint[] {
   const rawSwings: SmcSwingPoint[] = [];
   if (candles.length < lookback * 2 + 1) return rawSwings;
@@ -448,6 +449,7 @@ export function detectSwingPoints(
         isHigh: true,
         formationTime: cur.openTime,
         confirmationTime,
+        significance: isMajor ? 'MAJOR' : 'MINOR',
       });
     }
 
@@ -460,6 +462,7 @@ export function detectSwingPoints(
         isHigh: false,
         formationTime: cur.openTime,
         confirmationTime,
+        significance: isMajor ? 'MAJOR' : 'MINOR',
       });
     }
   }
@@ -495,7 +498,7 @@ export function detectSwingPoints(
       sw.type = !prevLow || sw.price <= prevLow.price ? 'LL' : 'HL';
       prevLow = sw;
     }
-    sw.significance = 'MAJOR';
+    sw.significance = isMajor ? 'MAJOR' : 'MINOR';
   }
 
   return swings;
@@ -598,6 +601,7 @@ export function detectStructureBreaks(
           brokenSwingPrice: brokenHigh.price,
           protectedSwingPrice: lastLow?.price,
           confirmationTime: cur.openTime,
+          significance: brokenHigh.significance || 'MAJOR',
         });
 
         trendDirection = 1;
@@ -628,6 +632,7 @@ export function detectStructureBreaks(
           brokenSwingPrice: brokenLow.price,
           protectedSwingPrice: lastHigh?.price,
           confirmationTime: cur.openTime,
+          significance: brokenLow.significance || 'MAJOR',
         });
 
         trendDirection = -1;
@@ -2586,9 +2591,20 @@ export function calculateSMC(
   const swingLen: number = (config?.swingLength ?? DEFAULT_SMC_CONFIG.swingLength) ?? 5;
 
   // 1. Detect Swings (Major External Swings & Sub-Structure Internal Swings)
-  const swings = detectSwingPoints(candles, swingLen);
-  const internalSwingLen = Math.max(2, Math.floor(swingLen / 2));
-  const internalSwings = detectSwingPoints(candles, internalSwingLen);
+  const majorLookback = Math.max(7, swingLen);
+  const majorSwings = detectSwingPoints(candles, majorLookback, true);
+  const minorLookback = Math.max(3, Math.floor(swingLen / 2));
+  const minorSwings = detectSwingPoints(candles, minorLookback, false);
+
+  const swings = [...majorSwings];
+  for (const ms of minorSwings) {
+    if (!swings.some(s => Math.abs(s.index - ms.index) <= 2)) {
+      swings.push(ms);
+    }
+  }
+  swings.sort((a, b) => a.index - b.index);
+  const internalSwingLen = minorLookback;
+  const internalSwings = minorSwings;
 
   // 2. Detect Structure Breaks (External vs Internal Structure)
   const externalBreaks = detectStructureBreaks(candles, swings, opt, swingLen);

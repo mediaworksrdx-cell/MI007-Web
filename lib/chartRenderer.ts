@@ -1328,19 +1328,25 @@ export function renderChart(
       const th = 13 * dpr;
 
       // Filter visible swings within horizontal window & master bias
-      const visibleSwings = smcData.swings.filter((sw) => {
+      let visibleSwings = smcData.swings.filter((sw) => {
         if (sw.index < startIdx || sw.index >= endIdx) return false;
         if (!isBullishMaster && !isBearishMaster) return false;
         if (!isBullishMaster && (sw.type === 'HH' || sw.type === 'HL')) return false;
         if (!isBearishMaster && (sw.type === 'LH' || sw.type === 'LL')) return false;
-        // Institutional clean mode: prioritize major high-conviction swing pivots
+        // Institutional clean mode: strictly prioritize major external swing pivots
         if (isCleanMode && (smcCfg.showMajorStructureOnly ?? true) && sw.significance === 'MINOR') return false;
         return true;
       });
 
       // Density control: institutional pivot spacing
-      const minBarSpacing = isCleanMode ? 5 : (candleW < 8 * dpr ? 6 : candleW < 14 * dpr ? 4 : 3);
-      const minPixelSpacing = isCleanMode ? 44 * dpr : 36 * dpr;
+      const minBarSpacing = isCleanMode ? 14 : (candleW < 8 * dpr ? 8 : candleW < 14 * dpr ? 6 : 4);
+      const minPixelSpacing = isCleanMode ? 85 * dpr : 45 * dpr;
+      const maxSwingsAllowed = isCleanMode ? 6 : 14;
+
+      if (visibleSwings.length > maxSwingsAllowed) {
+        // Keep the most recent key swings in the viewport
+        visibleSwings = visibleSwings.slice(-maxSwingsAllowed);
+      }
 
       interface RenderedSwingPill {
         x: number;
@@ -1464,23 +1470,19 @@ export function renderChart(
     const showDemandBlocks = smcCfg.showBullishOb ?? isBullishMaster;
     const showSupplyBlocks = smcCfg.showBearishOb ?? isBearishMaster;
 
-    const maxDemandQuota = isCleanMode ? 3 : 5;
-    const maxSupplyQuota = isCleanMode ? 3 : 5;
-    const maxBreakerQuota = isCleanMode ? 2 : 4;
-
     const allCandidateDemand = (showDemandBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
-    const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, Math.max(2, isCleanMode ? 3 : baseQuota));
+    const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 1 : Math.max(2, baseQuota));
     const mitigatedDemand = smcCfg.showMitigatedOb
-      ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, Math.max(1, isCleanMode ? 1 : mitigatedQuota))
+      ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, isCleanMode ? 1 : mitigatedQuota)
       : [];
     const demandBlocks = [...unmitigatedDemand, ...mitigatedDemand];
 
     const allCandidateSupply = (showSupplyBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && !ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
-    const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, Math.max(2, isCleanMode ? 3 : baseQuota));
+    const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 1 : Math.max(2, baseQuota));
     const mitigatedSupply = smcCfg.showMitigatedOb
-      ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, Math.max(1, isCleanMode ? 1 : mitigatedQuota))
+      ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, isCleanMode ? 1 : mitigatedQuota)
       : [];
     const supplyBlocks = [...unmitigatedSupply, ...mitigatedSupply];
 
@@ -1507,12 +1509,14 @@ export function renderChart(
 
     for (const ob of blocksToRender) {
       const rawLs = ob.startIndex - startIdx;
-      const maxBlockBars = 45;
-      const rawLe = ob.isMitigated
-        ? (ob.endIndex - startIdx)
-        : Math.min(visCnt, ob.startIndex - startIdx + maxBlockBars);
       const ls = Math.max(0, rawLs);
-      const le = Math.min(visCnt, Math.max(ls, rawLe));
+      let le: number;
+      if (ob.isMitigated) {
+        le = Math.min(visCnt, Math.max(ls, ob.endIndex - startIdx));
+      } else {
+        // Active unmitigated zone extends cleanly to the live current candle
+        le = Math.min(visCnt, Math.max(ls, (candles.length - 1) - startIdx));
+      }
       const lx = ls * candleW;
       const rx = le * candleW + candleW;
       const bw = Math.max(rx - lx, candleW * 1.5);
@@ -1524,41 +1528,41 @@ export function renderChart(
       const isTarget = isTargetZone(ob);
       let obColor = ob.isBullish ? '#0284C7' : '#EF4444';
       let obBg = isTarget
-        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.18)' : 'rgba(239, 68, 68, 0.18)')
-        : (ob.isBullish ? 'rgba(2, 132, 199, 0.08)' : 'rgba(239, 68, 68, 0.08)');
+        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.12)' : 'rgba(239, 68, 68, 0.12)')
+        : (ob.isBullish ? 'rgba(2, 132, 199, 0.035)' : 'rgba(239, 68, 68, 0.035)');
       let obBorder = isTarget
-        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.95)' : 'rgba(239, 68, 68, 0.95)')
-        : (ob.isBullish ? 'rgba(2, 132, 199, 0.55)' : 'rgba(239, 68, 68, 0.55)');
+        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.85)' : 'rgba(239, 68, 68, 0.85)')
+        : (ob.isBullish ? 'rgba(2, 132, 199, 0.35)' : 'rgba(239, 68, 68, 0.35)');
 
       if (ob.isBreaker) {
         obColor = ob.isBullish ? '#059669' : '#DC2626';
         obBg = isTarget
-          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.20)' : 'rgba(239, 68, 68, 0.20)')
-          : (ob.isBullish ? 'rgba(16, 185, 129, 0.09)' : 'rgba(239, 68, 68, 0.09)');
+          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.14)' : 'rgba(239, 68, 68, 0.14)')
+          : (ob.isBullish ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.04)');
         obBorder = isTarget
-          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.95)' : 'rgba(239, 68, 68, 0.95)')
-          : (ob.isBullish ? 'rgba(16, 185, 129, 0.60)' : 'rgba(239, 68, 68, 0.60)');
+          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.85)' : 'rgba(239, 68, 68, 0.85)')
+          : (ob.isBullish ? 'rgba(16, 185, 129, 0.40)' : 'rgba(239, 68, 68, 0.40)');
       }
 
       // Age-dependent historical visual fading
       const alpha = enableHistoricalFading
         ? sam.computeHistoricalAlpha(ob.startIndex, lastBarIdx, visMode, ob.isMitigated)
-        : (ob.isMitigated ? 0.40 : 1.0);
+        : (ob.isMitigated ? 0.35 : 1.0);
 
       ctx.save();
       ctx.globalAlpha = alpha;
 
       ctx.fillStyle = ob.isMitigated
-        ? (ob.isBullish ? (isDark ? 'rgba(2, 132, 199, 0.10)' : 'rgba(2, 132, 199, 0.06)') : (isDark ? 'rgba(239, 68, 68, 0.10)' : 'rgba(239, 68, 68, 0.06)'))
+        ? (ob.isBullish ? (isDark ? 'rgba(2, 132, 199, 0.04)' : 'rgba(2, 132, 199, 0.025)') : (isDark ? 'rgba(239, 68, 68, 0.04)' : 'rgba(239, 68, 68, 0.025)'))
         : obBg;
       ctx.fillRect(lx, bTop, bw, bH);
       if (ob.isBreaker || ob.isMitigated) {
         ctx.setLineDash([5 * dpr, 3 * dpr]);
       }
       ctx.strokeStyle = ob.isMitigated
-        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.45)' : 'rgba(239, 68, 68, 0.45)')
+        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.30)' : 'rgba(239, 68, 68, 0.30)')
         : obBorder;
-      ctx.lineWidth = isTarget ? 1.6 * dpr : 1.0 * dpr;
+      ctx.lineWidth = isTarget ? 1.4 * dpr : 0.8 * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
       if (ob.isBreaker || ob.isMitigated) {
         ctx.setLineDash([]);
@@ -1569,37 +1573,21 @@ export function renderChart(
       if (smcCfg.showFvgMidpoint && mtPrice >= pMin && mtPrice <= pMax) {
         const yMt = priceToY(mtPrice);
         ctx.setLineDash([4 * dpr, 3 * dpr]);
-        ctx.strokeStyle = ob.isBreaker ? (ob.isBullish ? '#10B981' : '#EF4444') : (ob.isBullish ? '#0284C7' : '#EF4444');
-        ctx.lineWidth = 1.0 * dpr;
+        ctx.strokeStyle = ob.isBreaker ? (ob.isBullish ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)') : (ob.isBullish ? 'rgba(2, 132, 199, 0.6)' : 'rgba(239, 68, 68, 0.6)');
+        ctx.lineWidth = 0.8 * dpr;
         ctx.beginPath();
         ctx.moveTo(lx, yMt);
         ctx.lineTo(lx + bw, yMt);
         ctx.stroke();
         ctx.setLineDash([]);
-
-        if (!isCleanMode || bw > 100 * dpr) {
-          const mtText = `50% MT: ${formatPrice(mtPrice)}`;
-          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-          const mtTm = ctx.measureText(mtText);
-          const mth = 12 * dpr;
-          const badgeRight = Math.min(chartW - 4 * dpr, lx + bw);
-          ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(241, 245, 249, 0.95)';
-          ctx.fillRect(badgeRight - mtTm.width - 6 * dpr, yMt - mth / 2, mtTm.width + 5 * dpr, mth);
-          ctx.strokeStyle = ob.isBreaker ? (ob.isBullish ? '#10B981' : '#EF4444') : (ob.isBullish ? '#0284C7' : '#EF4444');
-          ctx.lineWidth = 0.8 * dpr;
-          ctx.strokeRect(badgeRight - mtTm.width - 6 * dpr, yMt - mth / 2, mtTm.width + 5 * dpr, mth);
-          ctx.fillStyle = ob.isBreaker ? (ob.isBullish ? '#34D399' : '#F87171') : (ob.isBullish ? '#38BDF8' : '#FCA5A5');
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(mtText, badgeRight - 3 * dpr, yMt);
-        }
       }
 
       // Institutional corner micro badge (Clean: +OB / -OB / +BRK / -BRK)
       const baseTag = ob.isBreaker
         ? (ob.isBullish ? '+BRK' : '-BRK')
         : (ob.isBullish ? '+OB' : '-OB');
-      const text = ob.isMitigated ? `${baseTag} ✓` : baseTag;
+      const priceSpan = `₹${formatPrice(ob.bottomPrice)} - ₹${formatPrice(ob.topPrice)}`;
+      const text = bw > 90 * dpr ? `${baseTag} · ${priceSpan}` : baseTag;
 
       ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
       const tm = ctx.measureText(text);
@@ -1609,9 +1597,7 @@ export function renderChart(
       const badgeX = Math.max(4 * dpr, Math.min(chartW - tw - 4 * dpr, lx + 2 * dpr));
       const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, bTop + 2 * dpr));
 
-      ctx.fillStyle = ob.isBreaker
-        ? (ob.isBullish ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)')
-        : (ob.isBullish ? 'rgba(2, 132, 199, 0.22)' : 'rgba(239, 68, 68, 0.22)');
+      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.85)';
       ctx.fillRect(badgeX, badgeY, tw, th);
       ctx.strokeStyle = obBorder;
       ctx.lineWidth = 0.8 * dpr;
@@ -1622,7 +1608,7 @@ export function renderChart(
       ctx.textBaseline = 'middle';
       ctx.fillText(text, badgeX + 3 * dpr, badgeY + th / 2);
 
-      // Register into Smart Annotation Manager for hover telemetry & right-scale price badge
+      // Register into Smart Annotation Manager for hover telemetry
       sam.registerInteractiveZone({
         id: ob.id || `ob-${ob.startIndex}`,
         type: ob.isBreaker ? 'BREAKER' : 'OB',
@@ -1639,24 +1625,11 @@ export function renderChart(
         ],
       });
 
-      if (!ob.isMitigated || isTarget) {
-        sam.registerPriceBadge({
-          id: `ob-badge-${ob.id || ob.startIndex}`,
-          originalY: bTop + bH / 2,
-          y: bTop + bH / 2,
-          text: `${baseTag} ${formatPrice(ob.isBullish ? ob.topPrice : ob.bottomPrice)}`,
-          color: ob.isBullish ? '#0284C7' : '#EF4444',
-          bg: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.92)',
-          border: obBorder,
-          priority: isTarget ? 90 : 50,
-        });
-      }
-
       ctx.restore();
     }
 
     // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG) — Dedicated Quota Pools & High Visibility
-    const fvgBaseQuota = isTargetedMode ? 1 : (isCleanMode ? 3 : Math.max(3, Math.floor((smcCfg.maxVisibleZones || 6) / 2)));
+    const fvgBaseQuota = isTargetedMode ? 1 : (isCleanMode ? 1 : Math.max(2, Math.floor((smcCfg.maxVisibleZones || 6) / 2)));
     const fvgMitigatedQuota = smcCfg.showMitigatedFvg ? (isCleanMode ? 1 : 2) : 0;
 
     const inWindowFvgs = smcData.fvgs.filter((fvg) => {
@@ -1696,12 +1669,14 @@ export function renderChart(
     for (const fvg of fvgsToRender) {
       const isMit = fvg.isMitigated || fvg.isInvalidated;
       const rawLs = fvg.startIndex - startIdx;
-      const maxFvgBars = 35;
-      const rawLe = isMit
-        ? (fvg.endIndex - startIdx)
-        : Math.min(visCnt, fvg.startIndex - startIdx + maxFvgBars);
       const ls = Math.max(0, rawLs);
-      const le = Math.min(visCnt, Math.max(ls, rawLe));
+      let le: number;
+      if (isMit) {
+        le = Math.min(visCnt, Math.max(ls, fvg.endIndex - startIdx));
+      } else {
+        // Active unmitigated FVG extends cleanly to the live current candle
+        le = Math.min(visCnt, Math.max(ls, (candles.length - 1) - startIdx));
+      }
       const lx = ls * candleW;
       const rx = le * candleW + candleW;
       const bw = Math.max(rx - lx, candleW * 1.5);
@@ -1712,8 +1687,8 @@ export function renderChart(
       const base = fvg.isBullish
         ? (fvg.isInverse ? [6, 182, 212] : [16, 185, 129])
         : (fvg.isInverse ? [168, 85, 247] : [244, 63, 94]);
-      const fa = isMit ? (isDark ? 0.08 : 0.06) : (fvg.isInverse ? 0.10 : 0.08);
-      const ba = isMit ? 0.45 : (fvg.isInverse ? 0.70 : 0.60);
+      const fa = isMit ? (isDark ? 0.025 : 0.02) : (fvg.isInverse ? 0.04 : 0.035);
+      const ba = isMit ? 0.25 : (fvg.isInverse ? 0.45 : 0.35);
 
       // Age-dependent historical visual fading
       const alpha = enableHistoricalFading
@@ -1729,7 +1704,7 @@ export function renderChart(
         ctx.setLineDash([4 * dpr, 3 * dpr]);
       }
       ctx.strokeStyle = `rgba(${base},${ba})`;
-      ctx.lineWidth = (fvg.isInverse ? 1.2 : 1.0) * dpr;
+      ctx.lineWidth = (fvg.isInverse ? 1.0 : 0.8) * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
       if (fvg.isInverse || isMit) {
         ctx.setLineDash([]);
@@ -1739,8 +1714,8 @@ export function renderChart(
       if (smcCfg.showFvgMidpoint && fvg.cePrice) {
         const yCe = priceToY(fvg.cePrice);
         ctx.setLineDash([4 * dpr, 3 * dpr]);
-        ctx.strokeStyle = fvg.isInverse ? (fvg.isBullish ? '#06B6D4' : '#A855F7') : (fvg.isBullish ? '#10B981' : '#F59E0B');
-        ctx.lineWidth = 1.0 * dpr;
+        ctx.strokeStyle = fvg.isInverse ? (fvg.isBullish ? 'rgba(6, 182, 212, 0.6)' : 'rgba(168, 85, 247, 0.6)') : (fvg.isBullish ? 'rgba(16, 185, 129, 0.6)' : 'rgba(245, 158, 11, 0.6)');
+        ctx.lineWidth = 0.8 * dpr;
         ctx.beginPath();
         ctx.moveTo(lx, yCe);
         ctx.lineTo(lx + bw, yCe);
@@ -1761,9 +1736,9 @@ export function renderChart(
       const badgeX = Math.max(4 * dpr, Math.min(chartW - tw - 4 * dpr, lx + 2 * dpr));
       const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, bTop + 2 * dpr));
 
-      ctx.fillStyle = `rgba(${base},${isMit ? 0.15 : 0.25})`;
+      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.85)';
       ctx.fillRect(badgeX, badgeY, tw, th);
-      ctx.strokeStyle = `rgba(${base},${isMit ? 0.40 : 0.70})`;
+      ctx.strokeStyle = `rgba(${base},${isMit ? 0.35 : 0.50})`;
       ctx.lineWidth = 0.8 * dpr;
       ctx.strokeRect(badgeX, badgeY, tw, th);
 
@@ -1821,11 +1796,14 @@ export function renderChart(
       return true;
     });
 
-    // Render up to 12 visible structure breaks across the viewport in Clean mode, up to 16 in Advanced
-    const maxBreaks = isCleanMode ? 10 : 16;
+    // In Clean mode: maximum 3 structure breaks in the entire viewport
+    const maxBreaks = isCleanMode ? 3 : 8;
     const breaksToRender = inWindowBreaks.slice(-maxBreaks);
 
-    for (const sb of breaksToRender) {
+    for (let sbi = 0; sbi < breaksToRender.length; sbi++) {
+      const sb = breaksToRender[sbi];
+      const isLatestBreak = sbi === breaksToRender.length - 1;
+      const isChoch = sb.breakType === 'CHoCH' || sb.breakType === 'MSS';
       const y = Math.max(14 * dpr, Math.min(chartH - 14 * dpr, priceToY(sb.price)));
       const color = sb.isBullish ? '#059669' : '#DC2626';
 
@@ -1838,20 +1816,19 @@ export function renderChart(
       // Age-dependent historical fading
       const alpha = enableHistoricalFading
         ? sam.computeHistoricalAlpha(sb.candleIndex, lastBarIdx, visMode)
-        : 1.0;
+        : (isLatestBreak ? 1.0 : 0.45);
 
       ctx.save();
       ctx.globalAlpha = alpha;
 
       // 1. Broken swing segment: from origin swing to breakout candle (stops cleanly at breakout)
       if (x2 > x1) {
-        const isChoch = sb.breakType === 'CHoCH' || sb.breakType === 'MSS';
-        if (isChoch || sb.significance === 'MAJOR') {
+        if (isLatestBreak || isChoch) {
           ctx.setLineDash([]);
           ctx.lineWidth = 1.3 * dpr;
         } else {
           ctx.setLineDash([4 * dpr, 3 * dpr]);
-          ctx.lineWidth = 1.0 * dpr;
+          ctx.lineWidth = 0.8 * dpr;
         }
         ctx.strokeStyle = color;
         ctx.beginPath();
@@ -1869,45 +1846,54 @@ export function renderChart(
         ctx.stroke();
       }
 
-      // 2. Clean pill badge with collision resolution
+      // 2. Badge label: Prominent badge for latest break / CHoCH, subtle hairline text for prior
       const midX = (x2 > x1 && (x1 + x2) / 2 > 35 * dpr)
         ? Math.max(35 * dpr, Math.min(chartW - 35 * dpr, (x1 + x2) / 2))
         : Math.max(35 * dpr, Math.min(chartW - 35 * dpr, Math.max(x2, 40 * dpr)));
-      const isChoch = sb.breakType === 'CHoCH' || sb.breakType === 'MSS';
-      const text = sb.type;
-      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
-      const tm = ctx.measureText(text);
-      const tw = tm.width + 8 * dpr;
-      const th = 13 * dpr;
-      let badgeY = y - th / 2;
 
-      if (enableCollisionControl) {
-        const placement = sam.tryPlaceLabel({
-          x: midX - tw / 2,
-          y: badgeY,
-          w: tw,
-          h: th,
-          priority: isChoch ? 75 : 45,
-        });
-        if (!placement.placed) {
-          ctx.restore();
-          continue;
+      if (isLatestBreak || isChoch) {
+        const text = sb.type;
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+        const tm = ctx.measureText(text);
+        const tw = tm.width + 8 * dpr;
+        const th = 13 * dpr;
+        let badgeY = y - th / 2;
+
+        if (enableCollisionControl) {
+          const placement = sam.tryPlaceLabel({
+            x: midX - tw / 2,
+            y: badgeY,
+            w: tw,
+            h: th,
+            priority: isChoch ? 75 : 45,
+          });
+          if (placement.placed) {
+            badgeY = placement.y;
+          }
         }
-        badgeY = placement.y;
+
+        ctx.fillStyle = isChoch
+          ? (sb.isBullish ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)')
+          : (sb.isBullish ? 'rgba(5, 150, 105, 0.85)' : 'rgba(220, 38, 38, 0.85)');
+        ctx.fillRect(midX - tw / 2, badgeY, tw, th);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 0.8 * dpr;
+        ctx.strokeRect(midX - tw / 2, badgeY, tw, th);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, midX, badgeY + th / 2);
+      } else {
+        // Subtle label directly on the line without heavy filled box
+        const text = sb.breakType.toLowerCase();
+        ctx.font = `600 ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(text, midX, y - 2 * dpr);
       }
 
-      ctx.fillStyle = isChoch
-        ? (sb.isBullish ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)')
-        : (sb.isBullish ? 'rgba(5, 150, 105, 0.85)' : 'rgba(220, 38, 38, 0.85)');
-      ctx.fillRect(midX - tw / 2, badgeY, tw, th);
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 0.8 * dpr;
-      ctx.strokeRect(midX - tw / 2, badgeY, tw, th);
-
-      ctx.fillStyle = '#FFFFFF';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(text, midX, badgeY + th / 2);
       ctx.restore();
     }
 
@@ -1924,11 +1910,11 @@ export function renderChart(
       const bslLevels = consolidated
         .filter((l) => l.type === 'BSL' && l.price >= lastPrice && isBearishMaster)
         .sort((a, b) => a.price - b.price)
-        .slice(0, isCleanMode ? 2 : 3);
+        .slice(0, isCleanMode ? 1 : 3);
       const sslLevels = consolidated
         .filter((l) => l.type === 'SSL' && l.price <= lastPrice && isBullishMaster)
         .sort((a, b) => b.price - a.price)
-        .slice(0, isCleanMode ? 2 : 3);
+        .slice(0, isCleanMode ? 1 : 3);
 
       const levelsToDraw = [...bslLevels, ...sslLevels];
 
@@ -1946,7 +1932,7 @@ export function renderChart(
         }
         ctx.setLineDash([3 * dpr, 4 * dpr]);
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1.1 * dpr;
+        ctx.lineWidth = 1.0 * dpr;
         ctx.beginPath();
         ctx.moveTo(x1, y);
         ctx.lineTo(x2, y);
@@ -1977,8 +1963,8 @@ export function renderChart(
     if (smcCfg.showEqualHighLow && smcData.liquidityLevels) {
       const eqLevels = smcData.liquidityLevels.filter((lvl) => (lvl.type === 'EQH' || lvl.type === 'EQL') && (!lvl.isSwept || smcCfg.showSweeps));
       const consolidatedEq = sam.consolidateLiquidityLevels(eqLevels, lastPrice, 0.0025);
-      const eqhLevels = consolidatedEq.filter((l) => l.type === 'EQH').slice(-2);
-      const eqlLevels = consolidatedEq.filter((l) => l.type === 'EQL').slice(-2);
+      const eqhLevels = consolidatedEq.filter((l) => l.type === 'EQH').slice(isCleanMode ? -1 : -2);
+      const eqlLevels = consolidatedEq.filter((l) => l.type === 'EQL').slice(isCleanMode ? -1 : -2);
       const allEqLevels = [...eqhLevels, ...eqlLevels];
 
       for (const lvl of allEqLevels) {
@@ -1990,7 +1976,7 @@ export function renderChart(
         ctx.save();
         ctx.setLineDash([4 * dpr, 3 * dpr]);
         ctx.strokeStyle = '#F59E0B'; // Amber
-        ctx.lineWidth = 1.2 * dpr;
+        ctx.lineWidth = 1.0 * dpr;
         ctx.beginPath();
         ctx.moveTo(x1, y - 1.5 * dpr);
         ctx.lineTo(x2, y - 1.5 * dpr);
@@ -2030,12 +2016,14 @@ export function renderChart(
           if (smcCfg.showSslSweeps === false) return false;
           if (!smcCfg.showSslSweeps && !smcCfg.showSweeps) return false;
         }
+        // In Clean mode, only show recent sweeps within 25 bars
+        if (isCleanMode && (lastBarIdx - sw.candleIndex > 25)) return false;
         return sw.candleIndex >= startIdx - 5 && sw.candleIndex <= endIdx;
       });
 
       // Cluster adjacent sweeps to eliminate stacked repeated badges
       const aggregatedSweeps = sam.aggregateSweeps(visibleSweeps, 4);
-      const maxSweeps = isCleanMode ? 6 : 10;
+      const maxSweeps = isCleanMode ? 2 : 8;
       const sweepsToRender = aggregatedSweeps.slice(-maxSweeps);
 
       for (const sw of sweepsToRender) {
@@ -2056,35 +2044,41 @@ export function renderChart(
         ctx.save();
         ctx.globalAlpha = alpha;
 
-        // 1. Swept level horizontal line anchoring back 16 bars
-        const originBar = Math.max(0, li - 16);
-        const xOrigin = Math.max(0, originBar * candleW);
-        ctx.setLineDash([3 * dpr, 3 * dpr]);
-        ctx.strokeStyle = isHigh ? 'rgba(239, 68, 68, 0.70)' : 'rgba(16, 185, 129, 0.70)';
-        ctx.lineWidth = 1.1 * dpr;
-        ctx.beginPath();
-        ctx.moveTo(xOrigin, yLevel);
-        ctx.lineTo(xSweep, yLevel);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        // In non-clean mode or when explicitly requested, draw swept level horizontal ray
+        if (!isCleanMode) {
+          const originBar = Math.max(0, li - 16);
+          const xOrigin = Math.max(0, originBar * candleW);
+          ctx.setLineDash([3 * dpr, 3 * dpr]);
+          ctx.strokeStyle = isHigh ? 'rgba(239, 68, 68, 0.50)' : 'rgba(16, 185, 129, 0.50)';
+          ctx.lineWidth = 0.8 * dpr;
+          ctx.beginPath();
+          ctx.moveTo(xOrigin, yLevel);
+          ctx.lineTo(xSweep, yLevel);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
 
-        // Small cross marker at swept point on the level
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.4 * dpr;
-        const crossSize = 3 * dpr;
+        // Discrete wick-anchored chevron glyph (▼ for high sweep / ▲ for low sweep)
+        ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.moveTo(xSweep - crossSize, yLevel - crossSize);
-        ctx.lineTo(xSweep + crossSize, yLevel + crossSize);
-        ctx.moveTo(xSweep - crossSize, yLevel + crossSize);
-        ctx.lineTo(xSweep + crossSize, yLevel - crossSize);
-        ctx.stroke();
+        if (isHigh) {
+          ctx.moveTo(xSweep, yWick - 2 * dpr);
+          ctx.lineTo(xSweep - 3.5 * dpr, yWick - 6 * dpr);
+          ctx.lineTo(xSweep + 3.5 * dpr, yWick - 6 * dpr);
+        } else {
+          ctx.moveTo(xSweep, yWick + 2 * dpr);
+          ctx.lineTo(xSweep - 3.5 * dpr, yWick + 6 * dpr);
+          ctx.lineTo(xSweep + 3.5 * dpr, yWick + 6 * dpr);
+        }
+        ctx.closePath();
+        ctx.fill();
 
-        // 2. Clear sweep badge near the rejection wick (with collision resolution)
-        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+        // Discrete clean sweep badge near the rejection wick
+        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(label);
-        const tw = tm.width + 10 * dpr;
-        const th = 14 * dpr;
-        let badgeY = isHigh ? yWick - th - 6 * dpr : yWick + 6 * dpr;
+        const tw = tm.width + 8 * dpr;
+        const th = 12 * dpr;
+        let badgeY = isHigh ? yWick - th - 7 * dpr : yWick + 7 * dpr;
 
         if (enableCollisionControl) {
           const placement = sam.tryPlaceLabel({
@@ -2102,7 +2096,7 @@ export function renderChart(
         }
         badgeY = Math.max(20 * dpr, Math.min(chartH - th - 6 * dpr, badgeY));
 
-        ctx.fillStyle = isHigh ? 'rgba(220, 38, 38, 0.95)' : 'rgba(5, 150, 105, 0.95)';
+        ctx.fillStyle = isHigh ? 'rgba(220, 38, 38, 0.90)' : 'rgba(5, 150, 105, 0.90)';
         ctx.fillRect(xSweep - tw / 2, badgeY, tw, th);
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 0.8 * dpr;
@@ -2468,7 +2462,7 @@ export function renderChart(
     }
 
     // 11. Right Price-Axis Non-Overlapping Label Management (Smart Annotation Engine)
-    if (enableCollisionControl) {
+    if (enableCollisionControl && !isCleanMode) {
       const axisBadges = sam.layoutPriceBadges(14 * dpr, chartH - 18 * dpr, 14 * dpr);
       for (const badge of axisBadges) {
         ctx.save();
