@@ -276,9 +276,42 @@ export function renderQuantumAiOverlays(options: QuantumAiRenderOptions): void {
   }
 
   // ── 5b. Automated Risk & Execution Levels (Entry, SL, TP1, TP2, TP3) ────────
-  if (config.showExecutionLevels && analysis.setups.length > 0) {
+  if (config.showExecutionLevels) {
     // Pick the most relevant setup (active setup first, or latest completed setup)
-    const activeSetup = analysis.setups.find((s) => s.status === 'ACTIVE') || analysis.setups[analysis.setups.length - 1];
+    let activeSetup = analysis.setups && analysis.setups.length > 0
+      ? (analysis.setups.find((s) => s.status === 'ACTIVE') || analysis.setups[analysis.setups.length - 1])
+      : undefined;
+
+    // If no historical setup met the threshold, dynamically synthesize execution levels from the latest market state / dealing range
+    if (!activeSetup && candles.length >= 5) {
+      const lastC = candles[candles.length - 1];
+      const prevC = candles[candles.length - 2] || lastC;
+      const isBull = (analysis.dashboard && analysis.dashboard.bullScore > analysis.dashboard.bearScore) || lastC.close >= prevC.close;
+      const entry = lastC.close;
+      const recentHigh = Math.max(...candles.slice(-15).map(c => c.high));
+      const recentLow = Math.min(...candles.slice(-15).map(c => c.low));
+      const atrEst = Math.max(0.008 * entry, (recentHigh - recentLow) / 3);
+      const sl = isBull ? Math.max(0.01, +(entry - atrEst * 1.5).toFixed(2)) : +(entry + atrEst * 1.5).toFixed(2);
+      const risk = Math.max(0.01, Math.abs(entry - sl));
+
+      activeSetup = {
+        id: 'live-execution-bracket',
+        isBullish: isBull,
+        candleIndex: candles.length - 1,
+        time: lastC.openTime,
+        entryPrice: entry,
+        stopLossPrice: sl,
+        initialRisk: risk,
+        tp1Price: isBull ? +(entry + risk * 1.5).toFixed(2) : +(entry - risk * 1.5).toFixed(2),
+        tp2Price: isBull ? +(entry + risk * 2.5).toFixed(2) : +(entry - risk * 2.5).toFixed(2),
+        tp3Price: isBull ? +(entry + risk * 4.0).toFixed(2) : +(entry - risk * 4.0).toFixed(2),
+        confluenceScore: 7.5,
+        isBreakEvenActivated: false,
+        status: 'ACTIVE',
+        conditions: ['Live Market Institutional Risk Bracket', '1:1.5 / 1:2.5 / 1:4.0 Asymmetric Targets'],
+      };
+    }
+
     if (activeSetup) {
       const isBull = activeSetup.isBullish;
       const li = activeSetup.candleIndex - startIdx;

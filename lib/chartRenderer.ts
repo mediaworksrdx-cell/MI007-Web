@@ -1178,7 +1178,7 @@ export function renderChart(
       const sW = sTm.width + 10 * dpr;
       const sH = 15 * dpr;
       const sX = 12 * dpr;
-      const sY = 8 * dpr;
+      const sY = 36 * dpr;
 
       ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(241, 245, 249, 0.90)';
       ctx.fillRect(sX, sY, sW, sH);
@@ -3642,16 +3642,217 @@ export function renderChart(
           });
           ctx.restore();
         } else if (item.tool === 'BARS_PATTERN') {
-          const rx = Math.min(x1, x2), ry = Math.min(y1, y2);
-          const rw = Math.abs(x2 - x1), rh = Math.abs(y2 - y1);
+          // BARS PATTERN: Select historical candle sequence, copy and reposition with scaling, delta measurements & projection
+          const idx1 = resolveDrawingPointIndex(p1, candles);
+          const idx2 = resolveDrawingPointIndex(p2, candles);
+          const startSeqIdx = Math.min(idx1, idx2);
+          const endSeqIdx = Math.max(idx1, idx2);
+          const numBars = Math.max(1, endSeqIdx - startSeqIdx + 1);
+
+          const srcX1 = getPointX(p1);
+          const srcX2 = getPointX(p2);
+          const minSrcX = Math.min(srcX1, srcX2) - candleW * 0.4;
+          const maxSrcX = Math.max(srcX1, srcX2) + candleW * 0.4;
+
+          // Find high/low of source candle sequence
+          let srcHigh = -Infinity, srcLow = Infinity;
+          for (let bi = Math.max(0, startSeqIdx); bi <= Math.min(candles.length - 1, endSeqIdx); bi++) {
+            const c = candles[bi];
+            if (c) {
+              if (c.high > srcHigh) srcHigh = c.high;
+              if (c.low < srcLow) srcLow = c.low;
+            }
+          }
+          if (!isFinite(srcHigh)) srcHigh = Math.max(p1.price, p2.price);
+          if (!isFinite(srcLow)) srcLow = Math.min(p1.price, p2.price);
+
+          const yTop = priceToY(srcHigh);
+          const yBottom = priceToY(srcLow);
+          const srcBoxW = Math.max(candleW, maxSrcX - minSrcX);
+          const srcBoxH = Math.max(16 * dpr, yBottom - yTop);
+
           ctx.save();
-          ctx.setLineDash([4 * dpr, 4 * dpr]);
-          ctx.strokeRect(rx, ry, rw, rh);
+          // 1. Source Pattern Selection Box
+          ctx.strokeStyle = '#38BDF8';
+          ctx.lineWidth = 1.5 * dpr;
+          ctx.setLineDash([4 * dpr, 3 * dpr]);
+          ctx.strokeRect(minSrcX, yTop, srcBoxW, srcBoxH);
           ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
-          ctx.fillRect(rx, ry, rw, rh);
-          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          ctx.fillRect(minSrcX, yTop, srcBoxW, srcBoxH);
+
+          // Source pattern header pill
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          ctx.fillStyle = '#0F172A';
+          ctx.fillRect(minSrcX, Math.max(0, yTop - 14 * dpr), 125 * dpr, 13 * dpr);
           ctx.fillStyle = '#38BDF8';
-          ctx.fillText('BARS PROJECTION', rx + 6 * dpr, ry + 12 * dpr);
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`PATTERN: ${numBars} BARS`, minSrcX + 5 * dpr, Math.max(6 * dpr, yTop - 7.5 * dpr));
+
+          // 2. Projected Ghost Sequence extending forward from endSeqIdx
+          const priceShift = p2.price - p1.price;
+          const projStartIdx = endSeqIdx + 1;
+          const projEndIdx = projStartIdx + numBars - 1;
+
+          // Render cloned ghost candles
+          for (let step = 0; step < numBars; step++) {
+            const srcCandle = candles[startSeqIdx + step];
+            if (!srcCandle) continue;
+
+            const targetIdx = projStartIdx + step;
+            const targetX = (targetIdx - startIdx) * candleW + candleW / 2;
+            if (targetX < -candleW || targetX > chartW + candleW) continue;
+
+            const shiftedOpen = srcCandle.open + priceShift;
+            const shiftedClose = srcCandle.close + priceShift;
+            const shiftedHigh = srcCandle.high + priceShift;
+            const shiftedLow = srcCandle.low + priceShift;
+
+            const isBullBar = shiftedClose >= shiftedOpen;
+            const barYOpen = priceToY(shiftedOpen);
+            const barYClose = priceToY(shiftedClose);
+            const barYHigh = priceToY(shiftedHigh);
+            const barYLow = priceToY(shiftedLow);
+
+            const bodyTop = Math.min(barYOpen, barYClose);
+            const bodyHeight = Math.max(1.5 * dpr, Math.abs(barYClose - barYOpen));
+            const barWidth = Math.max(2 * dpr, candleW * 0.7);
+
+            // Wick
+            ctx.setLineDash([]);
+            ctx.strokeStyle = isBullBar ? 'rgba(52, 211, 153, 0.6)' : 'rgba(248, 113, 113, 0.6)';
+            ctx.lineWidth = 1 * dpr;
+            ctx.beginPath();
+            ctx.moveTo(targetX, barYHigh);
+            ctx.lineTo(targetX, barYLow);
+            ctx.stroke();
+
+            // Ghost Candle Body (translucent dashed rectangle)
+            ctx.fillStyle = isBullBar ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)';
+            ctx.fillRect(targetX - barWidth / 2, bodyTop, barWidth, bodyHeight);
+            ctx.strokeStyle = isBullBar ? '#10B981' : '#EF4444';
+            ctx.setLineDash([2 * dpr, 2 * dpr]);
+            ctx.strokeRect(targetX - barWidth / 2, bodyTop, barWidth, bodyHeight);
+          }
+
+          // 3. Projection Measurement Badge
+          const deltaPrice = priceShift;
+          const deltaPct = p1.price !== 0 ? (deltaPrice / p1.price) * 100 : 0;
+          const sign = deltaPrice >= 0 ? '+' : '';
+          const badgeText = `PROJECTION: ${sign}${formatPrice(deltaPrice)} (${sign}${deltaPct.toFixed(2)}%) | ${numBars} BARS`;
+          const badgeW = ctx.measureText(badgeText).width + 12 * dpr;
+          const projStartX = (projStartIdx - startIdx) * candleW + candleW / 2;
+          const projEndX = (projEndIdx - startIdx) * candleW + candleW / 2;
+          const badgeX = Math.max(6 * dpr, (projStartX + projEndX) / 2 - badgeW / 2);
+          const badgeY = Math.min(yTop, yBottom) - 20 * dpr;
+
+          ctx.setLineDash([]);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+          ctx.fillRect(badgeX, Math.max(6 * dpr, badgeY), badgeW, 16 * dpr);
+          ctx.strokeStyle = '#38BDF8';
+          ctx.lineWidth = 1 * dpr;
+          ctx.strokeRect(badgeX, Math.max(6 * dpr, badgeY), badgeW, 16 * dpr);
+
+          ctx.fillStyle = '#38BDF8';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(badgeText, badgeX + 6 * dpr, Math.max(6 * dpr, badgeY) + 8 * dpr);
+          ctx.restore();
+
+        } else if (item.tool === 'GHOST_FEED') {
+          // GHOST FEED: Manually draw hypothetical future candle scenarios (bullish/bearish path)
+          // Display hypothetical price movement separately from actual market data
+          // Institutional disclaimer: never treated as real-time prices or AI predictions
+          const idx1 = resolveDrawingPointIndex(p1, candles);
+          const idx2 = resolveDrawingPointIndex(p2, candles);
+          const totalSteps = Math.max(4, Math.min(40, Math.abs(idx2 - idx1) || 10));
+          const isBull = p2.price >= p1.price;
+          const deltaP = p2.price - p1.price;
+          const pct = p1.price !== 0 ? (deltaP / p1.price) * 100 : 0;
+
+          ctx.save();
+          // Draw projected guideline ray
+          ctx.strokeStyle = isBull ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+          ctx.lineWidth = 1.5 * dpr;
+          ctx.setLineDash([4 * dpr, 4 * dpr]);
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+
+          // Generate hypothetical candle sequence along vector
+          const minIdx = Math.min(idx1, idx2);
+          const stepPrice = deltaP / totalSteps;
+          const barW = Math.max(3 * dpr, candleW * 0.75);
+
+          for (let step = 0; step < totalSteps; step++) {
+            const currentIdx = minIdx + step;
+            const cx = (currentIdx - startIdx) * candleW + candleW / 2;
+            if (cx < -candleW || cx > chartW + candleW) continue;
+
+            const baseP = p1.price + stepPrice * step;
+            // Introduce realistic price action wave motion (impulse vs pullback)
+            const wave = Math.sin((step / totalSteps) * Math.PI * 3) * (Math.abs(deltaP) * 0.12);
+            const openP = baseP + wave;
+            // 75% direction aligned, 25% retracement candles
+            const isRetracement = step % 4 === 2;
+            const barDelta = (Math.abs(stepPrice) * 0.85 + Math.abs(deltaP) * 0.03) * (isBull ? (isRetracement ? -0.5 : 1) : (isRetracement ? 0.5 : -1));
+            const closeP = openP + barDelta;
+            const highP = Math.max(openP, closeP) + Math.abs(barDelta) * 0.35;
+            const lowP = Math.min(openP, closeP) - Math.abs(barDelta) * 0.35;
+
+            const isStepBull = closeP >= openP;
+            const barYOpen = priceToY(openP);
+            const barYClose = priceToY(closeP);
+            const barYHigh = priceToY(highP);
+            const barYLow = priceToY(lowP);
+            const bodyTop = Math.min(barYOpen, barYClose);
+            const bodyH = Math.max(2 * dpr, Math.abs(barYClose - barYOpen));
+
+            // Wick
+            ctx.setLineDash([]);
+            ctx.strokeStyle = isStepBull ? 'rgba(52, 211, 153, 0.7)' : 'rgba(248, 113, 113, 0.7)';
+            ctx.lineWidth = 1 * dpr;
+            ctx.beginPath();
+            ctx.moveTo(cx, barYHigh);
+            ctx.lineTo(cx, barYLow);
+            ctx.stroke();
+
+            // Ghost Body
+            ctx.fillStyle = isStepBull ? 'rgba(16, 185, 129, 0.28)' : 'rgba(239, 68, 68, 0.28)';
+            ctx.fillRect(cx - barW / 2, bodyTop, barW, bodyH);
+            ctx.strokeStyle = isStepBull ? '#10B981' : '#EF4444';
+            ctx.setLineDash([2 * dpr, 2 * dpr]);
+            ctx.strokeRect(cx - barW / 2, bodyTop, barW, bodyH);
+          }
+
+          // Regulatory / Institutional Disclaimer Pill
+          ctx.setLineDash([]);
+          const sign = deltaP >= 0 ? '+' : '';
+          const scenarioText = `GHOST FEED: HYPOTHETICAL SCENARIO (${sign}${formatPrice(deltaP)} | ${sign}${pct.toFixed(2)}%)`;
+          const disclaimText = `NON-REAL MARKET DATA | FOR PATH PLANNING ONLY`;
+
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+          const sW = Math.max(ctx.measureText(scenarioText).width, ctx.measureText(disclaimText).width) + 16 * dpr;
+          const sH = 26 * dpr;
+          const sX = Math.max(6 * dpr, Math.min(chartW - sW - 6 * dpr, (x1 + x2) / 2 - sW / 2));
+          const sY = Math.max(6 * dpr, Math.min(y1, y2) - sH - 8 * dpr);
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+          ctx.fillRect(sX, sY, sW, sH);
+          ctx.strokeStyle = isBull ? '#10B981' : '#EF4444';
+          ctx.lineWidth = 1 * dpr;
+          ctx.strokeRect(sX, sY, sW, sH);
+
+          ctx.fillStyle = isBull ? '#34D399' : '#F87171';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText(scenarioText, sX + 6 * dpr, sY + 4 * dpr);
+
+          ctx.font = `normal ${6.5 * dpr}px "JetBrains Mono",monospace`;
+          ctx.fillStyle = '#94A3B8';
+          ctx.fillText(disclaimText, sX + 6 * dpr, sY + 15 * dpr);
+
           ctx.restore();
         }
       }

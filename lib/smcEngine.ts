@@ -47,6 +47,10 @@ export interface SmcStructureBreak {
   brokenSwingPrice: number;
   protectedSwingPrice?: number;
   confirmationTime: number;
+  structureType?: 'INTERNAL' | 'EXTERNAL';
+  confirmationType?: 'CANDLE_CLOSE' | 'WICK';
+  displacementMultiple?: number;
+  volumeRatio?: number;
 }
 
 export interface SmcLiquidityLevel {
@@ -57,6 +61,9 @@ export interface SmcLiquidityLevel {
   candleIndices: number[];
   isSwept: boolean;
   sweepCandleIndex?: number;
+  subtype?: 'BSL' | 'SSL' | 'EQH' | 'EQL' | 'PDH' | 'PDL' | 'PWH' | 'PWL' | 'SESSION_ASIAN' | 'SESSION_LONDON' | 'SESSION_NY' | 'INDUCEMENT';
+  isInternal?: boolean;
+  isInducement?: boolean;
 }
 
 export interface SmcLiquiditySweep {
@@ -67,6 +74,8 @@ export interface SmcLiquiditySweep {
   label: string;
   sweptLevelPrice: number;
   wickRatio: number; // Upper wick for BSL, lower wick for SSL
+  isGenuineSweep?: boolean;
+  rejectionConfirmed?: boolean;
 }
 
 export interface SmcOrderBlock {
@@ -79,9 +88,14 @@ export interface SmcOrderBlock {
   isBreaker: boolean;
   isMitigated: boolean;
   mitigationIndex?: number;
+  mitigationState?: 'FRESH' | 'PARTIALLY_MITIGATED' | 'MITIGATED' | 'INVALIDATED';
   volumeRatio: number;
   label: string;
   formationTime: number;
+  isExternal?: boolean;
+  displacementAtr?: number;
+  originatingCandleIndex?: number;
+  clusterSize?: number;
 }
 
 export type SmcFvgState = 'FRESH' | 'PARTIALLY_MITIGATED' | 'MITIGATED' | 'INVALIDATED';
@@ -121,8 +135,34 @@ export interface SmcSessionLevels {
   pdl?: number; // Previous Day Low
   pwh?: number; // Previous Week High
   pwl?: number; // Previous Week Low
+  asianHigh?: number;
+  asianLow?: number;
+  londonHigh?: number;
+  londonLow?: number;
+  nyHigh?: number;
+  nyLow?: number;
   sessionSweeps?: SmcLiquiditySweep[];
 }
+
+export interface SmcConfluenceBreakdown {
+  htfAlignment: number;           // Max 20%
+  liquidityConfirmation: number; // Max 15%
+  marketStructure: number;       // Max 15%
+  orderBlockValidity: number;    // Max 15%
+  fvgConfluence: number;         // Max 10%
+  displacementStrength: number;  // Max 10%
+  premiumDiscount: number;       // Max 10%
+  volumeConfirmation: number;    // Max 5%
+}
+
+export type SmcConfluenceTier = 'HIGH' | 'STRONG' | 'MODERATE' | 'WEAK';
+
+export type SmcInstitutionalClass =
+  | 'Bullish Institutional Setup'
+  | 'Bearish Institutional Setup'
+  | 'Potential Reversal'
+  | 'Continuation Setup'
+  | 'No Valid Setup';
 
 export type SmcSetupType =
   | 'CHOCH_REVERSAL'
@@ -175,6 +215,11 @@ export interface SmcConfirmedSetup {
   invalidationLevel?: number;
   formationTime: number;
   confirmationTime: number;
+  qualityScore: number;
+  confluenceTier: SmcConfluenceTier;
+  institutionalClass: SmcInstitutionalClass;
+  confluenceBreakdown: SmcConfluenceBreakdown;
+  auditReasons?: string[];
 }
 
 export interface SmcAnalysis {
@@ -191,6 +236,9 @@ export interface SmcAnalysis {
   allSetups: SmcConfirmedSetup[];
   equilibriumPrice: number;
   datasetFingerprint?: string;
+  inducements?: SmcLiquidityLevel[];
+  internalSwings?: SmcSwingPoint[];
+  externalSwings?: SmcSwingPoint[];
 }
 
 export interface SmcFilterOptions {
@@ -1254,6 +1302,10 @@ export function detectSessionLevels(candles: Candle[]): SmcSessionLevels {
   const dayGroups = new Map<string, { high: number; low: number }>();
   const weekGroups = new Map<string, { high: number; low: number }>();
 
+  let asianHigh = -Infinity, asianLow = Infinity;
+  let londonHigh = -Infinity, londonLow = Infinity;
+  let nyHigh = -Infinity, nyLow = Infinity;
+
   for (const c of candles) {
     const d = new Date(c.openTime);
     const dayKey = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
@@ -1277,6 +1329,27 @@ export function detectSessionLevels(candles: Candle[]): SmcSessionLevels {
       curWeek.high = Math.max(curWeek.high, c.high);
       curWeek.low = Math.min(curWeek.low, c.low);
     }
+
+    // Session Hour detection (UTC)
+    const utcH = d.getUTCHours();
+    const utcM = d.getUTCMinutes();
+    const timeDec = utcH + utcM / 60;
+
+    // Asian Session: 00:00 to 08:00 UTC
+    if (timeDec >= 0 && timeDec < 8) {
+      asianHigh = Math.max(asianHigh, c.high);
+      asianLow = Math.min(asianLow, c.low);
+    }
+    // London Session: 07:00 to 15:30 UTC
+    if (timeDec >= 7 && timeDec < 15.5) {
+      londonHigh = Math.max(londonHigh, c.high);
+      londonLow = Math.min(londonLow, c.low);
+    }
+    // New York Session: 12:30 to 21:00 UTC
+    if (timeDec >= 12.5 && timeDec < 21) {
+      nyHigh = Math.max(nyHigh, c.high);
+      nyLow = Math.min(nyLow, c.low);
+    }
   }
 
   const dayEntries = Array.from(dayGroups.values());
@@ -1293,7 +1366,303 @@ export function detectSessionLevels(candles: Candle[]): SmcSessionLevels {
     levels.pwl = prevWeek.low;
   }
 
+  if (Number.isFinite(asianHigh) && Number.isFinite(asianLow)) {
+    levels.asianHigh = asianHigh;
+    levels.asianLow = asianLow;
+  }
+  if (Number.isFinite(londonHigh) && Number.isFinite(londonLow)) {
+    levels.londonHigh = londonHigh;
+    levels.londonLow = londonLow;
+  }
+  if (Number.isFinite(nyHigh) && Number.isFinite(nyLow)) {
+    levels.nyHigh = nyHigh;
+    levels.nyLow = nyLow;
+  }
+
   return levels;
+}
+
+// ── 7.5 Institutional Confluence Engine & Setup Quality Scoring ──────────────
+
+export function evaluateInstitutionalConfluence(
+  setup: {
+    setupType: SmcSetupType;
+    direction: 'BULLISH' | 'BEARISH';
+    candleIndex: number;
+    entryPrice: number;
+    stopLoss: number;
+    targetPrice: number;
+    riskReward: number;
+  },
+  candles: Candle[],
+  context: {
+    swings: SmcSwingPoint[];
+    structureBreaks: SmcStructureBreak[];
+    sweeps: SmcLiquiditySweep[];
+    orderBlocks: SmcOrderBlock[];
+    breakers: SmcOrderBlock[];
+    fvgs: SmcFvg[];
+    dealingRange: SmcDealingRange;
+    sessionLevels?: SmcSessionLevels;
+  }
+): {
+  qualityScore: number;
+  confluenceTier: SmcConfluenceTier;
+  institutionalClass: SmcInstitutionalClass;
+  confluenceBreakdown: SmcConfluenceBreakdown;
+  auditReasons: string[];
+} {
+  const isBull = setup.direction === 'BULLISH';
+  const entry = setup.entryPrice;
+  const auditReasons: string[] = [];
+
+  // 1. Higher-Timeframe Alignment (Max 20%)
+  let htfScore = 10;
+  let htfReason = 'HTF Bias: Neutral / Consolidating (+10/20)';
+  if (context.swings.length >= 3) {
+    const recentSwings = context.swings.slice(-4);
+    const highs = recentSwings.filter(s => s.isHigh);
+    const lows = recentSwings.filter(s => !s.isHigh);
+    const hasHH = highs.length >= 2 && highs[highs.length - 1].price > highs[highs.length - 2].price;
+    const hasHL = lows.length >= 2 && lows[lows.length - 1].price > lows[lows.length - 2].price;
+    const hasLH = highs.length >= 2 && highs[highs.length - 1].price < highs[highs.length - 2].price;
+    const hasLL = lows.length >= 2 && lows[lows.length - 1].price < lows[lows.length - 2].price;
+
+    if (isBull && (hasHH || hasHL)) {
+      htfScore = 20;
+      htfReason = 'HTF Alignment: Confirmed Bullish Structure (Higher Highs / Lows) (+20/20)';
+    } else if (!isBull && (hasLH || hasLL)) {
+      htfScore = 20;
+      htfReason = 'HTF Alignment: Confirmed Bearish Structure (Lower Highs / Lows) (+20/20)';
+    } else if ((isBull && (hasLH || hasLL)) || (!isBull && (hasHH || hasHL))) {
+      if (setup.setupType === 'CHOCH_REVERSAL' || setup.setupType === 'THREE_STAGE_REVERSAL') {
+        htfScore = 14;
+        htfReason = 'HTF Alignment: Structural Reversal Shift at Key Macro Extreme (+14/20)';
+      } else {
+        htfScore = 6;
+        htfReason = 'HTF Alignment: Counter-Trend Structure (+6/20)';
+      }
+    } else {
+      htfScore = 12;
+      htfReason = 'HTF Alignment: Mixed Range Structure (+12/20)';
+    }
+  }
+  auditReasons.push(htfReason);
+
+  // 2. Liquidity Confirmation (Max 15%)
+  let liqScore = 4;
+  let liqReason = 'Liquidity: No recent sweep detected (+4/15)';
+  const recentSweeps = context.sweeps.filter(sw => Math.abs(sw.candleIndex - setup.candleIndex) <= 20);
+  const matchingSweep = recentSweeps.find(sw => isBull ? !sw.isHighSweep : sw.isHighSweep);
+  if (matchingSweep) {
+    if (matchingSweep.isGenuineSweep !== false) {
+      liqScore = 15;
+      liqReason = `Liquidity: Confirmed ${matchingSweep.label} with ${(matchingSweep.wickRatio * 100).toFixed(0)}% rejection wick (+15/15)`;
+    } else {
+      liqScore = 11;
+      liqReason = `Liquidity: Minor liquidity grab at ${matchingSweep.sweptLevelPrice.toFixed(2)} (+11/15)`;
+    }
+  } else if (context.sessionLevels) {
+    const sl = context.sessionLevels;
+    if (isBull && sl.pdl && Math.abs(entry - sl.pdl) / sl.pdl < 0.015) {
+      liqScore = 13;
+      liqReason = `Liquidity: Trading at Previous Day Low (PDL) liquidity pool (+13/15)`;
+    } else if (!isBull && sl.pdh && Math.abs(entry - sl.pdh) / sl.pdh < 0.015) {
+      liqScore = 13;
+      liqReason = `Liquidity: Trading at Previous Day High (PDH) liquidity pool (+13/15)`;
+    }
+  }
+  auditReasons.push(liqReason);
+
+  // 3. Market Structure Alignment (Max 15%)
+  let structScore = 4;
+  let structReason = 'Market Structure: Neutral / Forming (+4/15)';
+  const recentBreaks = context.structureBreaks.filter(b => b.isBullish === isBull && Math.abs(b.candleIndex - setup.candleIndex) <= 15);
+  if (recentBreaks.length > 0) {
+    const latestBreak = recentBreaks[recentBreaks.length - 1];
+    if (latestBreak.breakType === 'BOS') {
+      structScore = 15;
+      structReason = `Market Structure: Confirmed ${isBull ? '+BOS' : '-BOS'} trend expansion at ${latestBreak.price.toFixed(2)} (+15/15)`;
+    } else {
+      structScore = 15;
+      structReason = `Market Structure: Confirmed ${isBull ? '+CHoCH' : '-CHoCH'} structural reversal at ${latestBreak.price.toFixed(2)} (+15/15)`;
+    }
+  } else if (context.structureBreaks.length > 0) {
+    structScore = 8;
+    structReason = 'Market Structure: Prior structure break active (+8/15)';
+  }
+  auditReasons.push(structReason);
+
+  // 4. Order Block Validity (Max 15%)
+  let obScore = 3;
+  let obReason = 'Order Block: Minor structural support/resistance (+3/15)';
+  const matchingObs = context.orderBlocks.filter(ob => ob.isBullish === isBull && !ob.isMitigated && Math.abs(ob.startIndex - setup.candleIndex) <= 30);
+  const matchingBreakers = context.breakers.filter(brk => (brk.isBreaker ? brk.isBullish : !brk.isBullish) === isBull && !brk.isMitigated);
+
+  if (matchingObs.length > 0) {
+    const ob = matchingObs[0];
+    const inRange = isBull ? (entry >= ob.bottomPrice * 0.995 && entry <= ob.topPrice * 1.01) : (entry <= ob.topPrice * 1.005 && entry >= ob.bottomPrice * 0.99);
+    if (inRange) {
+      obScore = ob.volumeRatio >= 1.25 ? 15 : 13;
+      obReason = `Order Block: High-conviction fresh ${isBull ? 'Demand' : 'Supply'} OB [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] (${ob.volumeRatio.toFixed(1)}x Vol) (+${obScore}/15)`;
+    } else {
+      obScore = 10;
+      obReason = `Order Block: Unmitigated OB near dealing range (+10/15)`;
+    }
+  } else if (matchingBreakers.length > 0) {
+    const brk = matchingBreakers[0];
+    obScore = 13;
+    obReason = `Order Block: Breaker Block polarity flip at [${brk.bottomPrice.toFixed(2)} - ${brk.topPrice.toFixed(2)}] (+13/15)`;
+  }
+  auditReasons.push(obReason);
+
+  // 5. FVG / IFVG Confluence (Max 10%)
+  let fvgScore = 2;
+  let fvgReason = 'FVG Confluence: Clean price delivery (+2/10)';
+  const activeGaps = context.fvgs.filter(f => !f.isMitigated && !f.isInvalidated && f.isBullish === isBull);
+  const overlappingGap = activeGaps.find(f => Math.abs(f.cePrice - entry) / entry <= 0.012);
+  if (overlappingGap) {
+    fvgScore = 10;
+    fvgReason = `FVG Confluence: Active ${overlappingGap.isInverse ? 'IFVG' : 'FVG'} with 50% CE magnet at ${overlappingGap.cePrice.toFixed(2)} (+10/10)`;
+  } else if (activeGaps.length > 0) {
+    fvgScore = 6;
+    fvgReason = `FVG Confluence: Nearby unfilled imbalance gap (+6/10)`;
+  }
+  auditReasons.push(fvgReason);
+
+  // 6. Displacement Strength (Max 10%)
+  let dispScore = 5;
+  let dispReason = 'Displacement: Standard candle expansion (+5/10)';
+  if (candles.length > 14) {
+    const cIdx = Math.min(setup.candleIndex, candles.length - 1);
+    const cur = candles[cIdx];
+    let trSum = 0;
+    const start = Math.max(0, cIdx - 14);
+    for (let k = start; k < cIdx; k++) {
+      trSum += Math.max(candles[k].high - candles[k].low, 0.001);
+    }
+    const atr = trSum / Math.max(1, cIdx - start);
+    const body = Math.abs(cur.close - cur.open);
+    const atrMult = body / Math.max(0.001, atr);
+
+    if (atrMult >= 1.6) {
+      dispScore = 10;
+      dispReason = `Displacement: Strong impulse expansion (${atrMult.toFixed(1)}x ATR) (+10/10)`;
+    } else if (atrMult >= 1.1) {
+      dispScore = 8;
+      dispReason = `Displacement: Moderate impulse expansion (${atrMult.toFixed(1)}x ATR) (+8/10)`;
+    } else {
+      dispScore = 4;
+      dispReason = `Displacement: Normal candle range (${atrMult.toFixed(1)}x ATR) (+4/10)`;
+    }
+  }
+  auditReasons.push(dispReason);
+
+  // 7. Premium / Discount Positioning (Max 10%)
+  let pdScore = 4;
+  let pdReason = 'Dealing Range: At Equilibrium (+4/10)';
+  const dr = context.dealingRange;
+  if (dr.highPrice > dr.lowPrice) {
+    const eq = dr.equilibriumPrice;
+    if (isBull) {
+      if (entry < eq) {
+        const dOteMin = dr.discountOteRange ? dr.discountOteRange[0] : dr.lowPrice + (dr.highPrice - dr.lowPrice) * 0.214;
+        const dOteMax = dr.discountOteRange ? dr.discountOteRange[1] : dr.lowPrice + (dr.highPrice - dr.lowPrice) * 0.382;
+        if (entry >= dOteMin * 0.995 && entry <= dOteMax * 1.005) {
+          pdScore = 10;
+          pdReason = `Dealing Range: Optimal Trade Entry (OTE 62%-79% Discount) (+10/10)`;
+        } else {
+          pdScore = 8;
+          pdReason = `Dealing Range: In Discount Zone (< 50% Dealing Range) (+8/10)`;
+        }
+      } else {
+        pdScore = 2;
+        pdReason = `Dealing Range: In Premium Zone (Unfavorable for Longs) (+2/10)`;
+      }
+    } else {
+      if (entry > eq) {
+        const pOteMin = dr.premiumOteRange ? dr.premiumOteRange[0] : dr.lowPrice + (dr.highPrice - dr.lowPrice) * 0.618;
+        const pOteMax = dr.premiumOteRange ? dr.premiumOteRange[1] : dr.lowPrice + (dr.highPrice - dr.lowPrice) * 0.786;
+        if (entry >= pOteMin * 0.995 && entry <= pOteMax * 1.005) {
+          pdScore = 10;
+          pdReason = `Dealing Range: Optimal Trade Entry (OTE 62%-79% Premium) (+10/10)`;
+        } else {
+          pdScore = 8;
+          pdReason = `Dealing Range: In Premium Zone (> 50% Dealing Range) (+8/10)`;
+        }
+      } else {
+        pdScore = 2;
+        pdReason = `Dealing Range: In Discount Zone (Unfavorable for Shorts) (+2/10)`;
+      }
+    }
+  }
+  auditReasons.push(pdReason);
+
+  // 8. Volume Confirmation (Max 5%)
+  let volScore = 2;
+  let volReason = 'Volume: Average participation (+2/5)';
+  if (candles.length >= 20) {
+    const cIdx = Math.min(setup.candleIndex, candles.length - 1);
+    let vSum = 0;
+    const start = Math.max(0, cIdx - 20);
+    for (let k = start; k < cIdx; k++) {
+      vSum += candles[k].volume;
+    }
+    const volSma = vSum / Math.max(1, cIdx - start);
+    const curVol = candles[cIdx].volume;
+    const volMult = curVol / Math.max(1, volSma);
+
+    if (volMult >= 1.4) {
+      volScore = 5;
+      volReason = `Volume: High institutional volume surge (${volMult.toFixed(1)}x Vol SMA) (+5/5)`;
+    } else if (volMult >= 1.05) {
+      volScore = 4;
+      volReason = `Volume: Above-average volume expansion (${volMult.toFixed(1)}x Vol SMA) (+4/5)`;
+    } else {
+      volScore = 1;
+      volReason = `Volume: Light volume participation (+1/5)`;
+    }
+  }
+  auditReasons.push(volReason);
+
+  const totalScore = Math.min(100, Math.max(0, htfScore + liqScore + structScore + obScore + fvgScore + dispScore + pdScore + volScore));
+
+  let confluenceTier: SmcConfluenceTier = 'WEAK';
+  if (totalScore >= 85) confluenceTier = 'HIGH';
+  else if (totalScore >= 70) confluenceTier = 'STRONG';
+  else if (totalScore >= 50) confluenceTier = 'MODERATE';
+
+  let institutionalClass: SmcInstitutionalClass = 'No Valid Setup';
+  if (totalScore >= 70) {
+    if (setup.setupType === 'CHOCH_REVERSAL' || setup.setupType === 'THREE_STAGE_REVERSAL') {
+      institutionalClass = 'Potential Reversal';
+    } else if (setup.setupType === 'BOS_CONTINUATION' || setup.setupType === 'BOS_FVG_RETEST') {
+      institutionalClass = 'Continuation Setup';
+    } else {
+      institutionalClass = isBull ? 'Bullish Institutional Setup' : 'Bearish Institutional Setup';
+    }
+  } else if (totalScore >= 50) {
+    institutionalClass = isBull ? 'Bullish Institutional Setup' : 'Bearish Institutional Setup';
+  }
+
+  const confluenceBreakdown: SmcConfluenceBreakdown = {
+    htfAlignment: htfScore,
+    liquidityConfirmation: liqScore,
+    marketStructure: structScore,
+    orderBlockValidity: obScore,
+    fvgConfluence: fvgScore,
+    displacementStrength: dispScore,
+    premiumDiscount: pdScore,
+    volumeConfirmation: volScore,
+  };
+
+  return {
+    qualityScore: totalScore,
+    confluenceTier,
+    institutionalClass,
+    confluenceBreakdown,
+    auditReasons,
+  };
 }
 
 // ── 8. Complete 16 Institutional SMC Strategy Detectors ─────────────────────
@@ -1533,6 +1902,29 @@ export function detectAll16SmcSetups(
     const intervalMs = candles.length > 1 ? candles[1].openTime - candles[0].openTime : 3600000;
     const confirmationTime = candles[candleIndex].openTime + intervalMs;
 
+    const confluence = evaluateInstitutionalConfluence(
+      {
+        setupType,
+        direction,
+        candleIndex,
+        entryPrice: roundSmcPrice(entryPrice),
+        stopLoss: roundSmcPrice(cleanStopLoss),
+        targetPrice: roundSmcPrice(guaranteedTarget),
+        riskReward: Math.max(1.0, rr),
+      },
+      candles,
+      {
+        swings,
+        structureBreaks: breaks,
+        sweeps,
+        orderBlocks,
+        breakers,
+        fvgs,
+        dealingRange,
+        sessionLevels,
+      }
+    );
+
     return {
       id: `${baseId}_${time}`,
       name,
@@ -1552,6 +1944,11 @@ export function detectAll16SmcSetups(
       invalidationLevel: roundSmcPrice(cleanStopLoss),
       formationTime: time,
       confirmationTime,
+      qualityScore: confluence.qualityScore,
+      confluenceTier: confluence.confluenceTier,
+      institutionalClass: confluence.institutionalClass,
+      confluenceBreakdown: confluence.confluenceBreakdown,
+      auditReasons: confluence.auditReasons,
     };
   };
 
@@ -2171,13 +2568,28 @@ export function calculateSMC(
   }
 
   const opt = config?.filters;
-  const swingLen = config?.swingLength ?? DEFAULT_SMC_CONFIG.swingLength;
+  const swingLen: number = (config?.swingLength ?? DEFAULT_SMC_CONFIG.swingLength) ?? 5;
 
-  // 1. Detect Swings (with dual timestamps)
+  // 1. Detect Swings (Major External Swings & Sub-Structure Internal Swings)
   const swings = detectSwingPoints(candles, swingLen);
+  const internalSwingLen = Math.max(2, Math.floor(swingLen / 2));
+  const internalSwings = detectSwingPoints(candles, internalSwingLen);
 
-  // 2. Detect Structure Breaks (BOS vs CHoCH / MSS with configurable displacement & volume)
-  const structureBreaks = detectStructureBreaks(candles, swings, opt, swingLen);
+  // 2. Detect Structure Breaks (External vs Internal Structure)
+  const externalBreaks = detectStructureBreaks(candles, swings, opt, swingLen);
+  externalBreaks.forEach(b => { b.structureType = 'EXTERNAL'; });
+
+  const rawInternalBreaks = detectStructureBreaks(candles, internalSwings, opt, internalSwingLen);
+  rawInternalBreaks.forEach(b => { b.structureType = 'INTERNAL'; });
+
+  // Merge structure breaks preserving order and tagging
+  const structureBreaks = [...externalBreaks];
+  for (const ib of rawInternalBreaks) {
+    if (!structureBreaks.some(eb => Math.abs(eb.candleIndex - ib.candleIndex) <= 1 && eb.isBullish === ib.isBullish)) {
+      structureBreaks.push(ib);
+    }
+  }
+  structureBreaks.sort((a, b) => a.candleIndex - b.candleIndex);
 
   // 3. Detect Liquidity Levels & Mirrored Sweeps
   const { levels: liquidityLevels, sweeps } = detectLiquidity(candles, swings);
@@ -2236,6 +2648,8 @@ export function calculateSMC(
     allSetups: filteredSetups,
     equilibriumPrice: dealingRange.equilibriumPrice,
     datasetFingerprint: fingerprint,
+    internalSwings,
+    externalSwings: swings,
   };
 
   // Cache Management (LRU Eviction)

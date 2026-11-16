@@ -30,7 +30,7 @@ export function QuantumAiToolbarMenu({
 
   return (
     <div
-      className="absolute top-full left-0 mt-1 w-88 sm:w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[min(480px,calc(100vh-140px))] flex flex-col animate-in fade-in duration-75 overflow-hidden"
+      className="absolute top-full left-0 mt-1 w-88 sm:w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[min(420px,calc(100dvh-220px))] flex flex-col animate-in fade-in duration-75 overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
       {/* ── 1. Header ── */}

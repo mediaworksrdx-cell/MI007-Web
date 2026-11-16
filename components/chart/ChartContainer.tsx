@@ -66,6 +66,12 @@ interface ChartContainerProps {
   initialSmcParam?: string;
   initialSetupId?: string;
   initialTfParam?: string;
+  initialTime?: string | number;
+  initialEntry?: string | number;
+  initialSl?: string | number;
+  initialTp?: string | number;
+  initialDir?: 'BULLISH' | 'BEARISH' | string;
+  initialSetupName?: string;
 }
 
 const TIMEFRAME_MS: Record<string, number> = {
@@ -197,12 +203,23 @@ export function ChartContainer({
   initialSmcParam,
   initialSetupId,
   initialTfParam,
+  initialTime,
+  initialEntry,
+  initialSl,
+  initialTp,
+  initialDir,
+  initialSetupName,
 }: ChartContainerProps) {
   const instruments = INSTRUMENTS[market];
   const [selectedSymbol, setSelectedSymbol] = useState(
     defaultSymbol ?? instruments[0].symbol
   );
-  const [timeframe, setTimeframe] = useState<Timeframe>('1H');
+  const [timeframe, setTimeframe] = useState<Timeframe>(() => {
+    if (initialTfParam && ['1m', '5m', '15m', '30m', '1H', '4H', '1D', '1W', '1M'].includes(initialTfParam)) {
+      return initialTfParam as Timeframe;
+    }
+    return '1H';
+  });
   const [chartType, setChartType] = useState<ChartType>('CANDLESTICK');
   const [activeDrawingTool, setActiveDrawingTool] = useState<DrawingToolType>('NONE');
   const [cursorMode, setCursorMode] = useState<CursorMode>('crosshair');
@@ -249,6 +266,12 @@ export function ChartContainer({
   const [showVolumePanel, setShowVolumePanel] = useState(false);
   const [smcConfig, setSmcConfig] = useState<SmcConfig>(() => {
     const stored = getStoredSmcConfig();
+    if (initialSmcParam === '1' || initialSmcParam === 'true') {
+      return { ...stored, enabled: true };
+    }
+    if (initialSmcParam === '0' || initialSmcParam === 'false') {
+      return { ...stored, enabled: false };
+    }
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search);
       const smcParam = sp.get('smc');
@@ -337,9 +360,39 @@ export function ChartContainer({
     });
   }, []);
 
-  const [targetCandleTime, setTargetCandleTime] = useState<number | undefined>();
-  const [targetSetupId, setTargetSetupId] = useState<string | undefined>();
-  const [targetSmcSetup, setTargetSmcSetup] = useState<any | undefined>();
+  const [targetCandleTime, setTargetCandleTime] = useState<number | undefined>(() => {
+    if (initialTime) {
+      const pt = Number(initialTime);
+      if (!Number.isNaN(pt) && pt > 0) return pt;
+    }
+    return undefined;
+  });
+  const [targetSetupId, setTargetSetupId] = useState<string | undefined>(initialSetupId);
+  const [targetSmcSetup, setTargetSmcSetup] = useState<any | undefined>(() => {
+    if (initialEntry && initialSl && initialTp && initialDir) {
+      const entryP = Number(initialEntry);
+      const slP = Number(initialSl);
+      const tpP = Number(initialTp);
+      const rr = Math.abs(tpP - entryP) / Math.max(0.01, Math.abs(entryP - slP));
+      return {
+        id: initialSetupId || 'screener-setup',
+        name: initialSetupName ? decodeURIComponent(initialSetupName) : 'SMC Setup',
+        setupType: 'CONFLUENCE_EXPANSION',
+        direction: initialDir as 'BULLISH' | 'BEARISH',
+        entryPrice: entryP,
+        stopLoss: slP,
+        targetPrice: tpP,
+        target2Price: tpP,
+        riskReward: Number(rr.toFixed(1)),
+        candleIndex: 0,
+        time: initialTime ? Number(initialTime) : Date.now(),
+        status: 'CONFIRMED',
+        confidence: 0.9,
+        reason: 'SMC Scanner verified setup',
+      };
+    }
+    return undefined;
+  });
 
   // Detect URL parameter for initial SMC mode activation (e.g. from SMC scanner or screener)
   useEffect(() => {
@@ -1848,6 +1901,42 @@ export function ChartContainer({
             <div className="flex items-center px-2.5 py-0.5 rounded-md bg-white/95 border border-slate-200 text-slate-800 font-mono text-[11px] font-black tracking-wider select-none shadow-xs pointer-events-none">
               <span>SYNTHETIX ANALYTICS</span>
             </div>
+
+            {/* SMC Active Indications Pill (Defect 2) */}
+            {showSmcOverlay && smcConfig?.enabled && (() => {
+              const tags: string[] = [];
+              if (smcConfig.showBos) tags.push('BOS');
+              if (smcConfig.showChoch) tags.push('CHoCH');
+              if (smcConfig.showBullishStructure || smcConfig.showBearishStructure) tags.push('Structure');
+              if (smcConfig.showBullishOb || smcConfig.showBearishOb) tags.push('OB');
+              if (smcConfig.showBreakers || smcConfig.showBullishBreakers || smcConfig.showBearishBreakers) tags.push('Breakers');
+              if (smcConfig.showMitigatedOb) tags.push('Mit.OB');
+              if (smcConfig.showBullishFvg || smcConfig.showBearishFvg) tags.push('FVG');
+              if (smcConfig.showBullishIfvg || smcConfig.showBearishIfvg) tags.push('IFVG');
+              if (smcConfig.showFvgMidpoint) tags.push('50% CE');
+              if (smcConfig.showMitigatedFvg) tags.push('Mit.FVG');
+              if (smcConfig.showSweeps || smcConfig.showSslSweeps || smcConfig.showBslSweeps) tags.push('Sweeps');
+              return (
+                <div
+                  title="Active Smart Money Concepts Indicators"
+                  className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border shadow-xs text-[11px] font-mono select-none bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 font-bold"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0 animate-pulse" />
+                  <span>SMC Pro: {tags.length > 0 ? tags.join(' · ') : 'Active'}</span>
+                </div>
+              );
+            })()}
+
+            {/* Target SMC Setup Pill from Screener / Scanner */}
+            {targetSmcSetup && (
+              <div
+                title="Active Scanned SMC Target Bracket"
+                className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border shadow-xs text-[11px] font-mono select-none bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-400 font-bold"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                <span>{targetSmcSetup.name} (1:{targetSmcSetup.riskReward.toFixed(1)} {targetSmcSetup.direction})</span>
+              </div>
+            )}
 
             {indicatorConfigs.map(cfg => {
                 const instanceId = cfg.id || cfg.type;

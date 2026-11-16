@@ -128,6 +128,7 @@ export function getDefaultToolColor(tool: DrawingToolType): string {
     case 'DATE_RANGE': return '#8B5CF6';
     case 'MEASURE': return '#0284C7';
     case 'BARS_PATTERN': return '#3B82F6';
+    case 'GHOST_FEED': return '#8B5CF6';
     case 'CHANNEL': return '#4F46E5';
     case 'DISJOINT_CHANNEL': return '#6366F1';
     case 'FIBONACCI': return '#D97706';
@@ -1153,6 +1154,21 @@ export function CandlestickCanvas({
 
     chartRafIdRef.current = requestAnimationFrame(() => {
       chartRafIdRef.current = null;
+      let resolvedSmcSetup = targetSmcSetup;
+      if (targetSmcSetup && cleanCandles.length > 0) {
+        let cIdx = targetSmcSetup.candleIndex;
+        if (targetSmcSetup.time) {
+          const found = cleanCandles.findIndex((c, i) => {
+            const next = cleanCandles[i + 1];
+            return targetSmcSetup.time >= c.openTime && (!next || targetSmcSetup.time < next.openTime);
+          });
+          if (found !== -1) cIdx = found;
+          else cIdx = cleanCandles.length - 1;
+        } else if (cIdx <= 0) {
+          cIdx = cleanCandles.length - 1;
+        }
+        resolvedSmcSetup = { ...targetSmcSetup, candleIndex: cIdx };
+      }
       renderChart(
         ctx,
         cleanCandles,
@@ -1161,7 +1177,7 @@ export function CandlestickCanvas({
           showSmcOverlay: smcConfig ? smcConfig.enabled : showSmcOverlay,
           smcConfig,
           targetSetupId: targetSetupIdRef.current || targetSetupId,
-          targetSmcSetup,
+          targetSmcSetup: resolvedSmcSetup,
           showOrderFlow,
           orderFlowConfig,
           orderFlowData,

@@ -17,6 +17,12 @@ interface ChartPageProps {
     orderflow?: string;
     setupId?: string;
     tf?: string;
+    time?: string;
+    entry?: string;
+    sl?: string;
+    tp?: string;
+    dir?: string;
+    setupName?: string;
   }>;
 }
 
@@ -101,6 +107,12 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
             initialSmcParam={resolvedSearchParams.smc}
             initialSetupId={resolvedSearchParams.setupId}
             initialTfParam={resolvedSearchParams.tf}
+            initialTime={resolvedSearchParams.time}
+            initialEntry={resolvedSearchParams.entry}
+            initialSl={resolvedSearchParams.sl}
+            initialTp={resolvedSearchParams.tp}
+            initialDir={resolvedSearchParams.dir}
+            initialSetupName={resolvedSearchParams.setupName}
           />
         </div>
       </main>

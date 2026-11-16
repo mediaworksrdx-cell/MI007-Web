@@ -102,7 +102,8 @@ export const TOOL_GROUPS: ToolGroup[] = [
       { id: 'PRICE_RANGE', label: 'Price Range', desc: 'Measure exact pip/cent change & percentage', icon: '↕' },
       { id: 'DATE_RANGE', label: 'Date Range', desc: 'Measure elapsed bars & duration', icon: '↔' },
       { id: 'MEASURE', label: 'Measure (Price & Time)', desc: 'Combined 2D box with price, time & bar count', icon: '📐' },
-      { id: 'BARS_PATTERN', label: 'Bars Pattern / Ghost', desc: 'Clone and overlay historical price swing pattern', icon: '𝄘' },
+      { id: 'BARS_PATTERN', label: 'Bars Pattern', desc: 'Copy and reposition historical price sequence with scaling and measurements', icon: '𝄘' },
+      { id: 'GHOST_FEED', label: 'Ghost Feed', desc: 'Manually draw hypothetical future candle scenarios (bullish/bearish path)', icon: '👻' },
     ],
   },
   {
@@ -367,7 +368,7 @@ export function DrawingToolbar({
 
         <div className="w-5 h-[1px] bg-slate-200 dark:bg-slate-800 my-1" />
 
-        {/* ── 4. Drawing Tool Groups (6 Groups: Lines, Fib, Shapes, Patterns, Prediction, Annotations) ── */}
+        {/* ── 4. Drawing Tool Groups (5 Groups: Lines, Fib, Shapes, Risk & Forecasting, Annotations) ── */}
         <div className="flex flex-col items-center gap-1">
           {TOOL_GROUPS.map((group) => {
             const isGroupActive = group.tools.some((t) => t.id === activeDrawingTool);
@@ -449,22 +450,6 @@ export function DrawingToolbar({
             <rect x="17.4" y="11" width="3.2" height="4.5" rx="0.5" fill="#94A3B8" />
           </svg>
         </button>
-
-        {/* ── 5b. Magnifier Loupe Inspection Lens ── */}
-        {onToggleMagnifier && (
-          <button
-            type="button"
-            onClick={() => onToggleMagnifier()}
-            title={isMagnifierActive ? 'Chart Magnifier Loupe: ON (Click to disable inspection lens) [Hotkey: M]' : 'Chart Magnifier Loupe: OFF (Click to enable inspection lens) [Hotkey: M]'}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer mb-1 ${
-              isMagnifierActive
-                ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <span className="text-sm leading-none">🔍</span>
-          </button>
-        )}
 
         {/* ── 6. Stay in Drawing Mode (Locks active drawing tool across consecutive draws) ── */}
         <button

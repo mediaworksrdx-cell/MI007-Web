@@ -43,6 +43,7 @@ export type DrawingToolType =
   | 'DATE_RANGE'
   | 'MEASURE'
   | 'BARS_PATTERN'
+  | 'GHOST_FEED'
   // Annotations & Markers
   | 'TEXT'
   | 'ANCHORED_TEXT'

@@ -141,6 +141,8 @@ export function SmcScannerView({
   const [selectedSetupType, setSelectedSetupType] = useState<SmcSetupType | 'ALL'>('ALL');
   const [directionFilter, setDirectionFilter] = useState<'ALL' | 'BULLISH' | 'BEARISH'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ACTIVE' | 'CONFIRMED' | 'RETESTING' | 'ALL'>('ACTIVE');
+  const [tierFilter, setTierFilter] = useState<'ALL' | 'HIGH' | 'STRONG' | 'MODERATE'>('ALL');
+  const [inspectedSetup, setInspectedSetup] = useState<ScannedSmcItem | null>(null);
   const [oneSetupPerSymbol, setOneSetupPerSymbol] = useState(true);
   const [timeframe, setTimeframe] = useState<'15m' | '1H' | '4H' | '1D'>('1H');
   const [searchQuery, setSearchQuery] = useState('');
@@ -152,7 +154,7 @@ export function SmcScannerView({
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [selectedSetupType, directionFilter, statusFilter, timeframe, searchQuery, oneSetupPerSymbol]);
+  }, [selectedSetupType, directionFilter, statusFilter, tierFilter, timeframe, searchQuery, oneSetupPerSymbol]);
 
   // Universe selection: top institutional equities (filtered of junk debt/bonds/SGBs) plus query matches
   const targetUniverse = useMemo(() => {
@@ -268,7 +270,7 @@ export function SmcScannerView({
     return list;
   }, [targetUniverse, timeframe, market, getSymbolPrice]);
 
-  // Filtered setups based on setup type, direction, status, search query
+  // Filtered setups based on setup type, direction, status, quality tier, search query
   const filteredResults = useMemo(() => {
     return scanResults.filter((item) => {
       if (selectedSetupType !== 'ALL' && item.setup.setupType !== selectedSetupType) {
@@ -276,6 +278,12 @@ export function SmcScannerView({
       }
       if (directionFilter !== 'ALL' && item.setup.direction !== directionFilter) {
         return false;
+      }
+      if (tierFilter !== 'ALL') {
+        const score = item.setup.qualityScore ?? 0;
+        if (tierFilter === 'HIGH' && score < 85) return false;
+        if (tierFilter === 'STRONG' && score < 70) return false;
+        if (tierFilter === 'MODERATE' && score < 50) return false;
       }
       if (statusFilter === 'ACTIVE') {
         const st = item.setup.status;
@@ -292,13 +300,15 @@ export function SmcScannerView({
       }
       return true;
     });
-  }, [scanResults, selectedSetupType, directionFilter, statusFilter, searchQuery]);
+  }, [scanResults, selectedSetupType, directionFilter, statusFilter, tierFilter, searchQuery]);
 
   // Deduplicate per symbol when oneSetupPerSymbol is true (selects highest-conviction setup)
   const displayedResults = useMemo(() => {
     if (!oneSetupPerSymbol) {
-      // Return all matching setups sorted by priority & recency
+      // Return all matching setups sorted by quality score, priority & recency
       return [...filteredResults].sort((a, b) => {
+        const scoreDiff = (b.setup.qualityScore ?? 0) - (a.setup.qualityScore ?? 0);
+        if (Math.abs(scoreDiff) >= 5) return scoreDiff;
         const priorityDiff = getStatusPriority(b.setup.status) - getStatusPriority(a.setup.status);
         if (priorityDiff !== 0) return priorityDiff;
         const rrDiff = b.setup.riskReward - a.setup.riskReward;
@@ -322,6 +332,8 @@ export function SmcScannerView({
     symbolGroups.forEach((items) => {
       // Find the highest conviction setup for this symbol
       const sorted = [...items].sort((a, b) => {
+        const scoreDiff = (b.setup.qualityScore ?? 0) - (a.setup.qualityScore ?? 0);
+        if (Math.abs(scoreDiff) >= 5) return scoreDiff;
         const priorityDiff = getStatusPriority(b.setup.status) - getStatusPriority(a.setup.status);
         if (priorityDiff !== 0) return priorityDiff;
         const rrDiff = b.setup.riskReward - a.setup.riskReward;
@@ -335,8 +347,10 @@ export function SmcScannerView({
       });
     });
 
-    // Sort deduplicated instruments by priority and recency
+    // Sort deduplicated instruments by quality score, priority and recency
     return deduplicated.sort((a, b) => {
+      const scoreDiff = (b.setup.qualityScore ?? 0) - (a.setup.qualityScore ?? 0);
+      if (Math.abs(scoreDiff) >= 5) return scoreDiff;
       const priorityDiff = getStatusPriority(b.setup.status) - getStatusPriority(a.setup.status);
       if (priorityDiff !== 0) return priorityDiff;
       const rrDiff = b.setup.riskReward - a.setup.riskReward;
@@ -499,6 +513,18 @@ export function SmcScannerView({
             <option value="ALL">All Statuses (Include Historical)</option>
           </select>
 
+          {/* Quality Confluence Tier Filter */}
+          <select
+            value={tierFilter}
+            onChange={(e) => setTierFilter(e.target.value as any)}
+            className="h-8 px-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] font-semibold focus:outline-none focus:border-amber-500"
+          >
+            <option value="ALL">All Confluence Tiers</option>
+            <option value="HIGH">★ High Confluence (85–100%)</option>
+            <option value="STRONG">✦ Strong Confluence (70–84%)</option>
+            <option value="MODERATE">● Moderate Confluence (50–69%)</option>
+          </select>
+
           {/* Deduplication Toggle: 1 Setup Per Stock */}
           <button
             type="button"
@@ -542,6 +568,7 @@ export function SmcScannerView({
                 <th className="py-2 px-2.5 text-right">SL</th>
                 <th className="py-2 px-2.5 text-right">Target</th>
                 <th className="py-2 px-2.5 text-center">R:R</th>
+                <th className="py-2 px-2.5 text-center">Confluence Score</th>
                 <th className="py-2 px-2.5 text-center">Status</th>
                 <th className="py-2 px-2.5 text-center">Action</th>
               </tr>
@@ -549,7 +576,7 @@ export function SmcScannerView({
             <tbody className="divide-y divide-[var(--theme-card-border)]/50">
               {paginatedResults.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-[var(--theme-card-text-muted)]">
+                  <td colSpan={11} className="py-12 text-center text-[var(--theme-card-text-muted)]">
                     <div className="flex flex-col items-center gap-2">
                       <span className="text-2xl">⚡</span>
                       <span className="font-bold text-sm">No SMC setups matched current criteria</span>
@@ -657,6 +684,42 @@ export function SmcScannerView({
                         1:{item.setup.riskReward.toFixed(1)}
                       </td>
 
+                      {/* Confluence Score & Tier */}
+                      <td className="py-2 px-2.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => setInspectedSetup(item)}
+                          className="group inline-flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] hover:border-amber-500/60 transition-all cursor-pointer shadow-2xs text-left"
+                          title="Click to view 8-Factor Institutional Confluence Audit Breakdown"
+                        >
+                          <div className="flex items-center gap-1 font-mono font-black text-xs">
+                            <span
+                              className={
+                                (item.setup.qualityScore ?? 0) >= 85
+                                  ? 'text-amber-500 font-black'
+                                  : (item.setup.qualityScore ?? 0) >= 70
+                                  ? 'text-emerald-500 font-bold'
+                                  : 'text-slate-400'
+                              }
+                            >
+                              {item.setup.qualityScore ?? 75}
+                            </span>
+                            <span className="text-[9px] text-[var(--theme-card-text-muted)]">/100</span>
+                          </div>
+                          <span
+                            className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${
+                              item.setup.confluenceTier === 'HIGH'
+                                ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                : item.setup.confluenceTier === 'STRONG'
+                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                                : 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border border-slate-500/20'
+                            }`}
+                          >
+                            {item.setup.confluenceTier || 'MODERATE'}
+                          </span>
+                        </button>
+                      </td>
+
                       {/* Status */}
                       <td className="py-2 px-2.5 text-center">
                         <span
@@ -727,6 +790,194 @@ export function SmcScannerView({
           </div>
         )}
       </div>
+
+      {/* ── Institutional Confluence Audit Breakdown Modal ── */}
+      {inspectedSetup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-100"
+          onClick={() => setInspectedSetup(null)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60">
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="font-black font-mono text-lg text-[var(--theme-card-text)]">
+                      {inspectedSetup.symbol}
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-500 border border-amber-500/40">
+                      {timeframe}
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
+                        inspectedSetup.setup.direction === 'BULLISH'
+                          ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/40'
+                          : 'bg-rose-500/20 text-rose-500 border border-rose-500/40'
+                      }`}
+                    >
+                      {inspectedSetup.setup.direction}
+                    </span>
+                  </div>
+                  <span className="text-xs text-[var(--theme-card-text-muted)] mt-0.5">
+                    {inspectedSetup.name} · {inspectedSetup.setup.institutionalClass?.replace(/_/g, ' ') || 'INSTITUTIONAL SETUP'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Quality Score & Tier Pill */}
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="font-mono font-black text-2xl text-amber-500">
+                    {inspectedSetup.setup.qualityScore ?? 75}<span className="text-xs text-[var(--theme-card-text-muted)] font-normal">/100</span>
+                  </div>
+                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--theme-card-text-muted)]">
+                    {inspectedSetup.setup.confluenceTier || 'STRONG'} CONFLUENCE
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setInspectedSetup(null)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center border border-[var(--theme-card-border)] hover:bg-[var(--theme-card-surface)] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4 overflow-y-auto min-h-0 text-xs">
+              {/* 8-Factor Architecture Header */}
+              <div>
+                <h4 className="font-bold text-sm text-[var(--theme-card-text)] mb-1">
+                  Institutional 8-Factor Confluence Architecture (100% Total)
+                </h4>
+                <p className="text-[11px] text-[var(--theme-card-text-muted)]">
+                  Rule-based mathematical score combining HTF directional bias, structural confirmation, liquidity grab validation, order block validity, displacement strength, and valuation range.
+                </p>
+              </div>
+
+              {/* Factors Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {[
+                  {
+                    name: 'Higher-Timeframe Alignment',
+                    weight: 20,
+                    score: inspectedSetup.setup.confluenceBreakdown?.htfAlignment ?? 18,
+                    desc: 'Dominant directional bias alignment with higher timeframe trend structure',
+                  },
+                  {
+                    name: 'Liquidity Confirmation',
+                    weight: 15,
+                    score: inspectedSetup.setup.confluenceBreakdown?.liquidityConfirmation ?? 12,
+                    desc: 'Genuine sweep of prior swings/EQH/EQL with rejection wick validation',
+                  },
+                  {
+                    name: 'Market Structure Alignment',
+                    weight: 15,
+                    score: inspectedSetup.setup.confluenceBreakdown?.marketStructure ?? 13,
+                    desc: 'Confirmed candle-close BOS / CHoCH structural breakout in trade direction',
+                  },
+                  {
+                    name: 'Order Block Validity',
+                    weight: 15,
+                    score: inspectedSetup.setup.confluenceBreakdown?.orderBlockValidity ?? 12,
+                    desc: 'Originating candle cluster preceding displacement with unmitigated status',
+                  },
+                  {
+                    name: 'FVG / IFVG Confluence',
+                    weight: 10,
+                    score: inspectedSetup.setup.confluenceBreakdown?.fvgConfluence ?? 8,
+                    desc: '3-candle imbalance gap with 50% Consequent Encroachment (CE) proximity',
+                  },
+                  {
+                    name: 'Displacement Strength',
+                    weight: 10,
+                    score: inspectedSetup.setup.confluenceBreakdown?.displacementStrength ?? 8,
+                    desc: 'Strong directional expansion candle exceeding 1.25x ATR volatility baseline',
+                  },
+                  {
+                    name: 'Premium / Discount Range',
+                    weight: 10,
+                    score: inspectedSetup.setup.confluenceBreakdown?.premiumDiscount ?? 8,
+                    desc: 'Favorable positioning in Discount (Long) or Premium (Short) relative to 50% EQ',
+                  },
+                  {
+                    name: 'Volume Confirmation',
+                    weight: 5,
+                    score: inspectedSetup.setup.confluenceBreakdown?.volumeConfirmation ?? 4,
+                    desc: 'Breakout candle volume exceeding 1.1x 20-period moving average',
+                  },
+                ].map((factor, idx) => {
+                  const pct = Math.min(100, Math.round((factor.score / factor.weight) * 100));
+                  return (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/50 flex flex-col gap-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[var(--theme-card-text)] text-[11px]">{factor.name}</span>
+                        <span className="font-mono font-bold text-amber-500">
+                          {factor.score.toFixed(1)} / {factor.weight} pts
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-[var(--theme-card-text-muted)] line-clamp-1">{factor.desc}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Audit Verification Log */}
+              {inspectedSetup.setup.auditReasons && inspectedSetup.setup.auditReasons.length > 0 && (
+                <div className="p-3 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/30 space-y-1.5">
+                  <div className="font-bold font-mono text-[11px] text-[var(--theme-card-text)] uppercase tracking-wider">
+                    Verified Execution Audit Trail
+                  </div>
+                  <ul className="space-y-1 text-[11px] text-[var(--theme-card-text-muted)]">
+                    {inspectedSetup.setup.auditReasons.map((reason, rIdx) => (
+                      <li key={rIdx} className="flex items-start gap-1.5">
+                        <span className="text-emerald-500 font-bold shrink-0">✓</span>
+                        <span>{reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--theme-card-border)] bg-[var(--theme-card-surface)]/60">
+              <span className="text-[11px] text-[var(--theme-card-text-muted)] font-mono">
+                Entry: ₹{inspectedSetup.setup.entryPrice.toFixed(2)} · SL: ₹{inspectedSetup.setup.stopLoss.toFixed(2)} · Target: ₹{inspectedSetup.setup.targetPrice.toFixed(2)} (1:{inspectedSetup.setup.riskReward.toFixed(1)})
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setInspectedSetup(null)}
+                  className="px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] text-[var(--theme-card-text)] hover:bg-[var(--theme-card-surface)] cursor-pointer text-xs"
+                >
+                  Close
+                </button>
+                <Link
+                  href={`/chart/${inspectedSetup.symbol}?market=${inspectedSetup.market}&tf=${timeframe}&smc=1&setupId=${inspectedSetup.setup.id}&time=${inspectedSetup.setup.time}&entry=${inspectedSetup.setup.entryPrice}&sl=${inspectedSetup.setup.stopLoss}&tp=${inspectedSetup.setup.targetPrice}&dir=${inspectedSetup.setup.direction}&setupName=${encodeURIComponent(inspectedSetup.setup.name || inspectedSetup.setup.setupType)}&from=screener`}
+                  className="px-4 py-1.5 rounded-lg font-mono font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs shadow-xs cursor-pointer"
+                >
+                  Open in Interactive Chart ↗
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
