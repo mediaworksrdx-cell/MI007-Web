@@ -54,7 +54,7 @@ const SYMBOLS_DATA = [
   {
     name: 'BTC/USD',
     symbol: 'BTC',
-    basePrice: 82010.0,
+    basePrice: 65193.58,
     spread: 5.0,
     currency: '$',
     change: '+1.14%',

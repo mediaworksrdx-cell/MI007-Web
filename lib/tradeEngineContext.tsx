@@ -173,27 +173,27 @@ export const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: 
   { symbol: 'AIRARABIA', price: 2.65, change: 0.03, changePct: 1.15 },
 
   // Crypto
-  { symbol: 'BTC', price: 82010.00, change: 922.33, changePct: 1.14 },
-  { symbol: 'ETH', price: 2403.00, change: 36.38, changePct: 1.54 },
-  { symbol: 'SOL', price: 104.37, change: 2.36, changePct: 2.31 },
-  { symbol: 'BNB', price: 727.00, change: 15.40, changePct: 2.16 },
-  { symbol: 'DOGE', price: 0.079, change: 0.0018, changePct: 2.31 },
+  { symbol: 'BTC', price: 65193.58, change: -412.33, changePct: -0.63 },
+  { symbol: 'ETH', price: 2450.00, change: 36.38, changePct: 1.54 },
+  { symbol: 'SOL', price: 135.00, change: 2.36, changePct: 2.31 },
+  { symbol: 'BNB', price: 580.00, change: 15.40, changePct: 2.16 },
+  { symbol: 'DOGE', price: 0.16, change: 0.0018, changePct: 2.31 },
   { symbol: 'SHIB', price: 0.0000185, change: -0.00000015, changePct: -0.85 },
-  { symbol: 'XRP', price: 1.31, change: 0.015, changePct: 1.15 },
-  { symbol: 'ADA', price: 0.218, change: 0.002, changePct: 0.92 },
-  { symbol: 'AVAX', price: 9.60, change: 0.12, changePct: 1.26 },
-  { symbol: 'DOT', price: 1.16, change: -0.01, changePct: -0.85 },
-  { symbol: 'LINK', price: 12.09, change: 0.18, changePct: 1.51 },
-  { symbol: 'MATIC', price: 0.126, change: 0.001, changePct: 0.80 },
+  { symbol: 'XRP', price: 1.15, change: 0.015, changePct: 1.15 },
+  { symbol: 'ADA', price: 0.65, change: 0.002, changePct: 0.92 },
+  { symbol: 'AVAX', price: 26.00, change: 0.12, changePct: 1.26 },
+  { symbol: 'DOT', price: 5.16, change: -0.01, changePct: -0.85 },
+  { symbol: 'LINK', price: 14.09, change: 0.18, changePct: 1.51 },
+  { symbol: 'MATIC', price: 0.426, change: 0.001, changePct: 0.80 },
 
-  // Macro Commodities
-  { symbol: 'GOLD', price: 2650.50, change: 11.80, changePct: 0.45 },
-  { symbol: 'XAU/USD', price: 2650.50, change: 12.20, changePct: 0.57 },
-  { symbol: 'BRENT', price: 74.50, change: 0.45, changePct: 0.55 },
+  // Macro Commodities (Calibrated to Twelve Data live benchmark feeds)
+  { symbol: 'GOLD', price: 3856.74, change: -7.69, changePct: -0.20 },
+  { symbol: 'XAU/USD', price: 3856.74, change: -7.69, changePct: -0.20 },
+  { symbol: 'BRENT', price: 58.67, change: 0.45, changePct: 0.55 },
 
-  // Forex Major Pairs (Live Market Benchmarks)
-  { symbol: 'EUR/USD', price: 1.1151, change: -0.0030, changePct: -0.27 },
-  { symbol: 'EURUSD', price: 1.1151, change: -0.0030, changePct: -0.27 },
+  // Forex Major Pairs (Live Market Benchmarks from Twelve Data)
+  { symbol: 'EUR/USD', price: 1.0997, change: -0.0007, changePct: -0.06 },
+  { symbol: 'EURUSD', price: 1.0997, change: -0.0007, changePct: -0.06 },
   { symbol: 'GBP/USD', price: 1.3388, change: 0.0013, changePct: 0.10 },
   { symbol: 'GBPUSD', price: 1.3388, change: 0.0013, changePct: 0.10 },
   { symbol: 'USD/JPY', price: 157.28, change: -0.37, changePct: -0.23 },
@@ -255,12 +255,12 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
   const [livePrices, setLivePrices] = useState<Map<string, LiveSymbolData>>(() => store.getMap());
   const [cryptoPrices, setCryptoPrices] = useState<TradeEngineCrypto[]>([]);
   const [macroData, setMacroData] = useState<TradeEngineMacro[]>([
-    { symbol: 'DXY', value: '104.20' },
-    { symbol: 'XAU/USD', value: '2650.50' },
-    { symbol: 'XAG/USD', value: '31.50' },
-    { symbol: 'US10Y', value: '4.25%' },
-    { symbol: 'BRENT', value: '74.50' },
-    { symbol: 'VIX', value: '18.56' },
+    { symbol: 'DXY', value: '104.43' },
+    { symbol: 'XAU/USD', value: '3856.74' },
+    { symbol: 'XAG/USD', value: '42.39' },
+    { symbol: 'US10Y', value: '4.24%' },
+    { symbol: 'BRENT', value: '58.67' },
+    { symbol: 'VIX', value: '19.57' },
   ]);
   const [lastTick, setLastTick] = useState<TradeEngineTick | null>(null);
   const lastTickRef = useRef<TradeEngineTick | null>(null);

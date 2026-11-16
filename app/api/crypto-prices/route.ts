@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const baseCryptos = [
-    { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', current_price: 82010.0, price_change_percentage_24h: 1.14, market_cap: 1610000000000 },
+    { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', current_price: 65193.58, price_change_percentage_24h: -0.63, market_cap: 1610000000000 },
     { id: 'ethereum', symbol: 'eth', name: 'Ethereum', current_price: 2403.0, price_change_percentage_24h: 1.54, market_cap: 289000000000 },
     { id: 'solana', symbol: 'sol', name: 'Solana', current_price: 104.37, price_change_percentage_24h: 2.31, market_cap: 49000000000 },
     { id: 'binancecoin', symbol: 'bnb', name: 'BNB', current_price: 727.0, price_change_percentage_24h: 2.16, market_cap: 106000000000 },

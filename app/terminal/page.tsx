@@ -116,7 +116,7 @@ const DEFAULT_UAE_WATCHLIST: WatchlistItem[] = [
 ];
 
 const DEFAULT_CRYPTO: CryptoItem[] = [
-  { symbol: 'BTC', name: 'Bitcoin', base: 82010.0, changePct: 1.14 },
+  { symbol: 'BTC', name: 'Bitcoin', base: 65193.58, changePct: -0.63 },
   { symbol: 'ETH', name: 'Ethereum', base: 2403.00, changePct: 1.54 },
   { symbol: 'SOL', name: 'Solana', base: 104.37, changePct: 2.31 },
   { symbol: 'BNB', name: 'BNB', base: 727.00, changePct: 2.16 },
@@ -170,7 +170,7 @@ const KNOWN_INDICES: Record<string, { name: string; base: number; market: Market
 };
 
 const KNOWN_CRYPTOS: Record<string, { name: string; base: number }> = {
-  BTC: { name: 'Bitcoin', base: 82010.0 },
+  BTC: { name: 'Bitcoin', base: 65193.58 },
   ETH: { name: 'Ethereum', base: 2403.00 },
   SOL: { name: 'Solana', base: 104.37 },
   BNB: { name: 'BNB', base: 727.00 },
@@ -335,17 +335,13 @@ const IndexTile = React.memo(function IndexTile({
   const currentPct = live ? live.changePct : changePct;
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(symbol);
+  const isLiveStreaming = Boolean(isOpen || (live && live.price > 0));
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isOpen) {
-      if (flash) setFlash(null);
-      prevPriceRef.current = price;
-      return;
-    }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       prevPriceRef.current = price;
@@ -358,7 +354,7 @@ const IndexTile = React.memo(function IndexTile({
     return () => {
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     };
-  }, [price, isOpen, flash]);
+  }, [price]);
 
   return (
     <div className="relative group">
@@ -373,11 +369,11 @@ const IndexTile = React.memo(function IndexTile({
                 {symbol}
               </span>
               <span className={`mono text-[9px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
-                isOpen
+                isLiveStreaming
                   ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
                   : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
               }`}>
-                {isOpen ? '● LIVE' : 'CLOSED'}
+                {isLiveStreaming ? '● LIVE' : 'CLOSED'}
               </span>
             </div>
             <div className="text-[13px] sm:text-[14px] inst-card-text-muted font-bold truncate">{name}</div>
@@ -445,17 +441,13 @@ const WatchlistRow = React.memo(function WatchlistRow({
   const currentPct = live ? live.changePct : changePct;
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(symbol);
+  const isLiveStreaming = Boolean(isOpen || (live && live.price > 0));
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isOpen) {
-      if (flash) setFlash(null);
-      prevPriceRef.current = price;
-      return;
-    }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       prevPriceRef.current = price;
@@ -468,7 +460,7 @@ const WatchlistRow = React.memo(function WatchlistRow({
     return () => {
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     };
-  }, [price, isOpen, flash]);
+  }, [price]);
 
   return (
     <div className="relative group">
@@ -484,11 +476,11 @@ const WatchlistRow = React.memo(function WatchlistRow({
           <div className="flex items-center gap-2">
             <span className="mono text-[14px] sm:text-[16px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate block">{symbol}</span>
             <span className={`mono text-[8.5px] px-1.5 py-0.2 rounded font-black uppercase tracking-wider ${
-              isOpen
+              isLiveStreaming
                 ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
                 : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
             }`}>
-              {isOpen ? 'LIVE' : 'CLOSED'}
+              {isLiveStreaming ? 'LIVE' : 'CLOSED'}
             </span>
           </div>
           <div className="text-[12px] sm:text-[14px] inst-card-text-muted font-bold truncate">{name}</div>
@@ -640,17 +632,13 @@ const CommodityTile = React.memo(function CommodityTile({
   const currentPct = live ? live.changePct : item.changePct;
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(item.symbol);
+  const isLiveStreaming = Boolean(isOpen || (live && live.price > 0));
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isOpen) {
-      if (flash) setFlash(null);
-      prevPriceRef.current = price;
-      return;
-    }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       prevPriceRef.current = price;
@@ -663,7 +651,7 @@ const CommodityTile = React.memo(function CommodityTile({
     return () => {
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     };
-  }, [price, isOpen, flash]);
+  }, [price]);
 
   return (
     <div className="relative group">
@@ -678,11 +666,13 @@ const CommodityTile = React.memo(function CommodityTile({
               <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
                 {item.symbol}
               </span>
-              {!isOpen && (
-                <span className="mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 bg-slate-500/15 text-slate-400 border border-slate-500/30">
-                  CLOSED
-                </span>
-              )}
+              <span className={`mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
+                isLiveStreaming
+                  ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                  : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
+              }`}>
+                {isLiveStreaming ? 'LIVE' : 'CLOSED'}
+              </span>
             </div>
             <div className="text-[11px] inst-card-text-muted font-bold truncate" title={item.name}>
               {item.name}
@@ -746,17 +736,13 @@ const ForexTile = React.memo(function ForexTile({
   const currentPct = live ? live.changePct : item.changePct;
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(item.symbol);
+  const isLiveStreaming = Boolean(isOpen || (live && live.price > 0));
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isOpen) {
-      if (flash) setFlash(null);
-      prevPriceRef.current = price;
-      return;
-    }
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       prevPriceRef.current = price;
@@ -769,7 +755,7 @@ const ForexTile = React.memo(function ForexTile({
     return () => {
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     };
-  }, [price, isOpen, flash]);
+  }, [price]);
 
   return (
     <div className="relative group">
@@ -784,11 +770,13 @@ const ForexTile = React.memo(function ForexTile({
               <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
                 {item.pair}
               </span>
-              {!isOpen && (
-                <span className="mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 bg-slate-500/15 text-slate-400 border border-slate-500/30">
-                  CLOSED
-                </span>
-              )}
+              <span className={`mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
+                isLiveStreaming
+                  ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                  : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
+              }`}>
+                {isLiveStreaming ? 'LIVE' : 'CLOSED'}
+              </span>
             </div>
             <div className="text-[11px] inst-card-text-muted font-bold truncate" title={item.name}>
               {item.name}

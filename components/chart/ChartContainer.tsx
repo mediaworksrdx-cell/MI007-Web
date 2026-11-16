@@ -122,6 +122,22 @@ function getExpectedPrice(market: MarketType, symbol: string): number {
       QQQ: 697,
       DFMGI: 5820,
       ADXGI: 9340,
+      BTC: 65193.58,
+      BTCUSD: 65193.58,
+      BTCUSDT: 65193.58,
+      ETH: 2450.0,
+      SOL: 135.0,
+      BNB: 580.0,
+      DOGE: 0.16,
+      XRP: 1.15,
+      ADA: 0.65,
+      AVAX: 26.0,
+      XAUUSD: 3856.74,
+      GOLD: 3856.74,
+      BRENT: 58.67,
+      EURUSD: 1.0997,
+      GBPUSD: 1.3388,
+      USDJPY: 157.28,
     };
     if (INDEX_BASES[symClean]) return INDEX_BASES[symClean];
 
@@ -858,14 +874,13 @@ export function ChartContainer({
         let rawCached = await loadStoredCandles(selectedSymbol, timeframe);
         if (rawCached && rawCached.length > 0) {
           const lastC = rawCached[rawCached.length - 1];
-          // If cached dataset has scale dislocation from live/expected price (> 20%), purge it
-          if (expectedPrice > 0 && lastC && lastC.close > 0) {
-            const dislocation = Math.abs(lastC.close - expectedPrice) / expectedPrice;
-            if (dislocation > 0.20) {
-              console.warn(`[ChartContainer] Auto-purging dislocated cache for ${selectedSymbol} (cached: ${lastC.close}, expected: ${expectedPrice})`);
-              await purgeStoredCandles(selectedSymbol, timeframe);
-              rawCached = null;
-            }
+          // Hard rule for BTC: BTC price should never exceed 150k or be below 20k (purges old mock random walk drift)
+          const isBtcDislocated = (selectedSymbol.toUpperCase() === 'BTC' || selectedSymbol.toUpperCase().includes('BITCOIN')) && (lastC.close > 120000 || lastC.close < 20000);
+          const dislocation = (expectedPrice > 0 && lastC && lastC.close > 0) ? Math.abs(lastC.close - expectedPrice) / expectedPrice : 0;
+          if (isBtcDislocated || dislocation > 0.15) {
+            console.warn(`[ChartContainer] Auto-purging dislocated cache for ${selectedSymbol} (cached: ${lastC.close}, expected: ${expectedPrice})`);
+            await purgeStoredCandles(selectedSymbol, timeframe);
+            rawCached = null;
           }
         }
 
@@ -883,6 +898,7 @@ export function ChartContainer({
           if (cleanFallback.length > 0) {
             setCandles(cleanFallback);
             setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);
+            setIsLoadingCandles(false);
           }
         }
 
@@ -891,13 +907,11 @@ export function ChartContainer({
         let cleanEngine = validateAndCleanCandles(rawEngine || [], timeframe);
 
         // Universal scale reconciliation across all markets (Forex, Commodities, Indices, Stocks):
-        // Only scale if expectedPrice is an explicitly verified real-time tick, NOT an unverified fallback
-        const isVerifiedLivePrice = Boolean(live && live.price > 0);
-        if (isVerifiedLivePrice && expectedPrice > 0 && cleanEngine.length > 0) {
+        if (expectedPrice > 0 && cleanEngine.length > 0) {
           const engineLast = cleanEngine[cleanEngine.length - 1];
           if (engineLast && engineLast.close > 0) {
             const dislocation = Math.abs(engineLast.close - expectedPrice) / expectedPrice;
-            if (dislocation > 0.20) {
+            if (dislocation > 0.15) {
               const scaleMultiplier = expectedPrice / engineLast.close;
               cleanEngine = rescaleCandleArray(cleanEngine, scaleMultiplier, expectedPrice);
             }
@@ -967,10 +981,24 @@ export function ChartContainer({
         const lastC = candles[candles.length - 1];
         if (lastC && lastC.close > 0) {
           const dis = Math.abs(live.price - lastC.close) / lastC.close;
-          if (dis > 0.25) {
+          const openDis = Math.abs(live.price - lastC.open) / Math.max(1, lastC.open);
+          if (dis > 0.15 || openDis > 0.15) {
             // Re-anchor candles to verified live price scale
             const ratio = live.price / lastC.close;
-            setCandles(cPrev => rescaleCandleArray(cPrev, ratio, live.price));
+            setCandles(cPrev => {
+              const rescaled = rescaleCandleArray(cPrev, ratio, live.price);
+              if (rescaled.length > 0) {
+                const lastIdx = rescaled.length - 1;
+                rescaled[lastIdx] = {
+                  ...rescaled[lastIdx],
+                  open: live.price,
+                  high: live.price,
+                  low: live.price,
+                  close: live.price,
+                };
+              }
+              return rescaled;
+            });
           }
         }
       }
@@ -993,9 +1021,21 @@ export function ChartContainer({
 
           // Scale dislocation guard: re-anchor candles if arriving tick is verified on authentic scale
           const dislocation = Math.abs(tick.price - currentLast.close) / currentLast.close;
-          if (dislocation > 0.25) {
+          const openDislocation = Math.abs(tick.price - currentLast.open) / Math.max(1, currentLast.open);
+          if (dislocation > 0.15 || openDislocation > 0.15) {
             const ratio = tick.price / currentLast.close;
-            return rescaleCandleArray(prev, ratio, tick.price);
+            const rescaled = rescaleCandleArray(prev, ratio, tick.price);
+            if (rescaled.length > 0) {
+              const lastIdx = rescaled.length - 1;
+              rescaled[lastIdx] = {
+                ...rescaled[lastIdx],
+                open: tick.price,
+                high: tick.price,
+                low: tick.price,
+                close: tick.price,
+              };
+            }
+            return rescaled;
           }
 
           const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
@@ -1041,14 +1081,17 @@ export function ChartContainer({
           ticksPerCandleRef.current.set(targetOpenTime, tickList);
 
           if (isSameBucket) {
-            // Case 1: Update active candle in place
-            const open = currentLast.open > 0 ? currentLast.open : tick.price;
+            // Case 1: Update active candle in place with wick sanity enforcement
+            const isDislocated = Math.abs(currentLast.open - tick.price) / Math.max(1, tick.price) > 0.15;
+            const open = (currentLast.open > 0 && !isDislocated) ? currentLast.open : tick.price;
+            const prevHigh = (!isDislocated && currentLast.high > 0) ? currentLast.high : tick.price;
+            const prevLow = (!isDislocated && currentLast.low > 0) ? currentLast.low : tick.price;
             const updated: Candle = {
               ...currentLast,
               open,
               close: tick.price,
-              high: Math.max(currentLast.high, tick.price),
-              low: currentLast.low > 0 ? Math.min(currentLast.low, tick.price) : tick.price,
+              high: Math.max(prevHigh, tick.price, open),
+              low: Math.min(prevLow, tick.price, open),
               volume: currentLast.volume + (tick.volume > 0 ? tick.volume : 1),
             };
             next = [...prev];

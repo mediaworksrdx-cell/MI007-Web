@@ -57,7 +57,7 @@ export const MASTER_CHART_INSTRUMENTS: ChartInstrumentItem[] = [
   { symbol: 'AUDUSD', name: 'Australian Dollar / USD', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 0.6650, sector: 'Commodity Currency' },
 
   // ─── CRYPTO ───
-  { symbol: 'BTC', name: 'Bitcoin', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 82010.00, sector: 'Store of Value' },
+  { symbol: 'BTC', name: 'Bitcoin', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 65193.58, sector: 'Store of Value' },
   { symbol: 'ETH', name: 'Ethereum', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 2403.00, sector: 'Smart Contracts' },
   { symbol: 'SOL', name: 'Solana', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 104.37, sector: 'Layer 1' },
   { symbol: 'BNB', name: 'Binance Coin', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 727.00, sector: 'Exchange Ecosystem' },

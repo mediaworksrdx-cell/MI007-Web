@@ -58,37 +58,37 @@ const BASE_PRICES: Record<MarketType, Record<string, number>> = {
 };
 
 const CRYPTO_BASE_PRICES: Record<string, number> = {
-  BTC: 82010.0,
-  ETH: 2403.0,
-  SOL: 104.37,
-  BNB: 727.0,
-  DOGE: 0.079,
+  BTC: 65193.58,
+  ETH: 2450.0,
+  SOL: 135.0,
+  BNB: 580.0,
+  DOGE: 0.16,
   SHIB: 0.0000185,
-  XRP: 0.60,
-  ADA: 0.45,
-  AVAX: 28.50,
+  XRP: 1.15,
+  ADA: 0.65,
+  AVAX: 26.0,
 };
 
 export const COMMODITY_BASE_PRICES: Record<string, number> = {
-  GOLD: 2735.40,
-  XAU: 2735.40,
-  XAUUSD: 2735.40,
-  SILVER: 31.85,
-  XAG: 31.85,
-  XAGUSD: 31.85,
-  CRUDEOIL: 74.20,
-  BRENT: 74.20,
-  WTI: 70.80,
+  GOLD: 3856.74,
+  XAU: 3856.74,
+  XAUUSD: 3856.74,
+  SILVER: 42.39,
+  XAG: 42.39,
+  XAGUSD: 42.39,
+  CRUDEOIL: 58.67,
+  BRENT: 58.67,
+  WTI: 56.40,
   NATGAS: 2.85,
   COPPER: 4.38,
   PLATINUM: 1024.50,
 };
 
 export const FOREX_BASE_PRICES: Record<string, number> = {
-  EURUSD: 1.0845,
-  GBPUSD: 1.2980,
-  USDJPY: 152.40,
-  USDINR: 84.08,
+  EURUSD: 1.0997,
+  GBPUSD: 1.3388,
+  USDJPY: 157.28,
+  USDINR: 84.15,
   USDCAD: 1.4092,
   AUDCAD: 0.9838,
   USDCHF: 0.8850,
@@ -132,14 +132,17 @@ export function generateMockCandles(
 
   for (let i = 0; i < count; i++) {
     if (waveSteps <= 0) {
-      waveTrend = Math.random() > 0.48 ? 1 : -1;
+      waveTrend = Math.random() > 0.50 ? 1 : -1;
       waveSteps = Math.floor(3 + Math.random() * 6); // 3 to 8 bars per swing
     }
     waveSteps--;
 
-    // Healthy institutional candle body (0.3% to 1.1% of price on 1H/1D)
+    // Healthy institutional candle body with mean reversion pull to prevent exponential drift
     const variance = (0.5 + Math.random() * 1.0);
-    const movePct = basePct * variance * (Math.random() > 0.38 ? waveTrend : -waveTrend);
+    const deviation = (basePrice - price) / Math.max(1, basePrice);
+    const meanReversion = deviation * 0.15;
+    const direction = (Math.random() > 0.50 ? waveTrend : -waveTrend) + meanReversion;
+    const movePct = basePct * variance * direction;
     const bodySize = Math.max(price * Math.abs(movePct), price * 0.0005);
     const isBull = movePct >= 0;
 
@@ -164,6 +167,23 @@ export function generateMockCandles(
 
     price = close;
   }
+
+  // Anchor the entire historical series to terminate precisely at basePrice
+  // This guarantees smooth scale alignment with live ticks and eliminates vertical price jumps
+  if (candles.length > 0) {
+    const finalClose = candles[candles.length - 1].close;
+    if (finalClose > 0 && Math.abs(finalClose - basePrice) > 0.0001) {
+      const scale = basePrice / finalClose;
+      for (let j = 0; j < candles.length; j++) {
+        candles[j].open = +(candles[j].open * scale).toFixed(decimals);
+        candles[j].high = +(candles[j].high * scale).toFixed(decimals);
+        candles[j].low = +(candles[j].low * scale).toFixed(decimals);
+        candles[j].close = +(candles[j].close * scale).toFixed(decimals);
+      }
+      candles[candles.length - 1].close = basePrice;
+    }
+  }
+
   return candles;
 }
 
