@@ -277,12 +277,13 @@ export function renderQuantumAiOverlays(options: QuantumAiRenderOptions): void {
 
   // ── 5b. Automated Risk & Execution Levels (Entry, SL, TP1, TP2, TP3) ────────
   if (config.showExecutionLevels) {
-    // Pick the most relevant setup (active setup first, or latest completed setup)
+    const lastBarIdx = candles.length - 1;
+    // Pick the most relevant ACTIVE setup within recent 20 bars (never pick ancient historical setups)
     let activeSetup = analysis.setups && analysis.setups.length > 0
-      ? (analysis.setups.find((s) => s.status === 'ACTIVE') || analysis.setups[analysis.setups.length - 1])
+      ? analysis.setups.find((s) => s.status === 'ACTIVE' && (lastBarIdx - s.candleIndex <= 20))
       : undefined;
 
-    // If no historical setup met the threshold, dynamically synthesize execution levels from the latest market state / dealing range
+    // If no recent setup met the threshold, dynamically synthesize execution levels from the latest market state / dealing range
     if (!activeSetup && candles.length >= 5) {
       const lastC = candles[candles.length - 1];
       const prevC = candles[candles.length - 2] || lastC;
@@ -314,10 +315,45 @@ export function renderQuantumAiOverlays(options: QuantumAiRenderOptions): void {
 
     if (activeSetup) {
       const isBull = activeSetup.isBullish;
-      const li = activeSetup.candleIndex - startIdx;
-      const rawX = li * candleW + candleW / 2;
-      const xStart = Math.max(10 * dpr, Math.min(chartW - 120 * dpr, rawX));
-      const xEnd = chartW - 5 * dpr;
+      const maxLifespan = 18;
+      let endIdx = Math.min(candles.length - 1, activeSetup.candleIndex + maxLifespan);
+      let isTradeOver = false;
+
+      // Track whether trade hit target, hit stop, or exceeded maximum lifespan
+      for (let ci = activeSetup.candleIndex + 1; ci < candles.length; ci++) {
+        const c = candles[ci];
+        if (!c) continue;
+        if (isBull) {
+          if (c.high >= activeSetup.tp1Price || c.low <= activeSetup.stopLossPrice) {
+            endIdx = ci;
+            isTradeOver = true;
+            break;
+          }
+        } else {
+          if (c.low <= activeSetup.tp1Price || c.high >= activeSetup.stopLossPrice) {
+            endIdx = ci;
+            isTradeOver = true;
+            break;
+          }
+        }
+        if (ci >= activeSetup.candleIndex + maxLifespan) {
+          endIdx = ci;
+          isTradeOver = true;
+          break;
+        }
+      }
+
+      // If trade concluded prior to visible viewport, skip drawing
+      if (!(isTradeOver && endIdx < startIdx)) {
+        const li = activeSetup.candleIndex - startIdx;
+        const rawX = li * candleW + candleW / 2;
+        const xStart = Math.max(10 * dpr, Math.min(chartW - 60 * dpr, rawX));
+        const rawEndX = (endIdx - startIdx) * candleW + candleW / 2;
+
+        // If timeframe is over, stop drawing at resolution candle! Do not project across newer candles
+        const xEnd = isTradeOver
+          ? Math.min(chartW - 5 * dpr, Math.max(xStart + 30 * dpr, rawEndX))
+          : chartW - 5 * dpr;
 
       ctx.save();
       const levels = [
@@ -380,6 +416,7 @@ export function renderQuantumAiOverlays(options: QuantumAiRenderOptions): void {
       ctx.fillRect(xStart, Math.min(yE, yT), xEnd - xStart, rewardH);
 
       ctx.restore();
+      }
     }
   }
 

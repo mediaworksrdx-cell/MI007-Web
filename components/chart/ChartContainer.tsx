@@ -412,6 +412,7 @@ export function ChartContainer({
           saveStoredSmcConfig(next);
           return next;
         });
+        setQuantumAiConfig(prev => ({ ...prev, enabled: false, showDashboard: false }));
       } else if (smcParam === '0' || smcParam === 'false' || strategiesParam || indicatorsParam) {
         // Explicitly disable SMC overlay for pure technical strategies
         setSmcConfig(prev => {
@@ -1901,42 +1902,6 @@ export function ChartContainer({
             <div className="flex items-center px-2.5 py-0.5 rounded-md bg-white/95 border border-slate-200 text-slate-800 font-mono text-[11px] font-black tracking-wider select-none shadow-xs pointer-events-none">
               <span>SYNTHETIX ANALYTICS</span>
             </div>
-
-            {/* SMC Active Indications Pill (Defect 2) */}
-            {showSmcOverlay && smcConfig?.enabled && (() => {
-              const tags: string[] = [];
-              if (smcConfig.showBos) tags.push('BOS');
-              if (smcConfig.showChoch) tags.push('CHoCH');
-              if (smcConfig.showBullishStructure || smcConfig.showBearishStructure) tags.push('Structure');
-              if (smcConfig.showBullishOb || smcConfig.showBearishOb) tags.push('OB');
-              if (smcConfig.showBreakers || smcConfig.showBullishBreakers || smcConfig.showBearishBreakers) tags.push('Breakers');
-              if (smcConfig.showMitigatedOb) tags.push('Mit.OB');
-              if (smcConfig.showBullishFvg || smcConfig.showBearishFvg) tags.push('FVG');
-              if (smcConfig.showBullishIfvg || smcConfig.showBearishIfvg) tags.push('IFVG');
-              if (smcConfig.showFvgMidpoint) tags.push('50% CE');
-              if (smcConfig.showMitigatedFvg) tags.push('Mit.FVG');
-              if (smcConfig.showSweeps || smcConfig.showSslSweeps || smcConfig.showBslSweeps) tags.push('Sweeps');
-              return (
-                <div
-                  title="Active Smart Money Concepts Indicators"
-                  className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border shadow-xs text-[11px] font-mono select-none bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 font-bold"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0 animate-pulse" />
-                  <span>SMC Pro: {tags.length > 0 ? tags.join(' · ') : 'Active'}</span>
-                </div>
-              );
-            })()}
-
-            {/* Target SMC Setup Pill from Screener / Scanner */}
-            {targetSmcSetup && (
-              <div
-                title="Active Scanned SMC Target Bracket"
-                className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border shadow-xs text-[11px] font-mono select-none bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-400 font-bold"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
-                <span>{targetSmcSetup.name} (1:{targetSmcSetup.riskReward.toFixed(1)} {targetSmcSetup.direction})</span>
-              </div>
-            )}
 
             {indicatorConfigs.map(cfg => {
                 const instanceId = cfg.id || cfg.type;

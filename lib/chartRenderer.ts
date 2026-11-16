@@ -1170,29 +1170,6 @@ export function renderChart(
     if (smcCfg.showSweeps || smcCfg.showSslSweeps || smcCfg.showBslSweeps) activeIndicators.push('Sweeps');
     if (smcCfg.showBullishConfluence || smcCfg.showBearishConfluence) activeIndicators.push('Setups');
 
-    if (activeIndicators.length > 0) {
-      ctx.save();
-      const statusText = `SMC: ${activeIndicators.join(' • ')}`;
-      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
-      const sTm = ctx.measureText(statusText);
-      const sW = sTm.width + 10 * dpr;
-      const sH = 15 * dpr;
-      const sX = 12 * dpr;
-      const sY = 36 * dpr;
-
-      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(241, 245, 249, 0.90)';
-      ctx.fillRect(sX, sY, sW, sH);
-      ctx.strokeStyle = isDark ? 'rgba(51, 65, 85, 0.85)' : 'rgba(203, 213, 225, 0.90)';
-      ctx.lineWidth = 0.8 * dpr;
-      ctx.strokeRect(sX, sY, sW, sH);
-
-      ctx.fillStyle = isDark ? '#94A3B8' : '#475569';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(statusText, sX + 5 * dpr, sY + sH / 2);
-      ctx.restore();
-    }
-
     // 1. Premium & Discount Zones (Dealing Range)
     const dr = smcData.dealingRange;
     if (smcCfg.showPremiumDiscount && dr.highPrice > dr.lowPrice) {
@@ -1437,7 +1414,7 @@ export function renderChart(
     // 4. Order Blocks & Breakers (Demand, Supply, Breakers) — Dedicated Quota Pools & High Contrast
     const lastPrice = candles[candles.length - 1]?.close || (pMin + pMax) / 2;
     const isTargetedMode = Boolean(options.targetSetupId);
-    const baseQuota = isTargetedMode ? 1 : Math.max(3, Math.floor((smcCfg.maxVisibleZones || 6) / 2));
+    const baseQuota = isTargetedMode ? 1 : 3;
     const mitigatedQuota = smcCfg.showMitigatedOb ? 2 : 0;
 
     const sortZonesByProximity = <T extends { topPrice: number; bottomPrice: number; startIndex: number }>(zones: T[]): T[] => {
@@ -1518,7 +1495,10 @@ export function renderChart(
 
     for (const ob of blocksToRender) {
       const rawLs = ob.startIndex - startIdx;
-      const rawLe = ob.isMitigated ? (ob.endIndex - startIdx) : visCnt;
+      const maxBlockBars = 35;
+      const rawLe = ob.isMitigated
+        ? (ob.endIndex - startIdx)
+        : Math.min(visCnt, ob.startIndex - startIdx + maxBlockBars);
       const ls = Math.max(0, rawLs);
       const le = Math.min(visCnt, Math.max(ls, rawLe));
       const lx = ls * candleW;
@@ -1697,7 +1677,10 @@ export function renderChart(
     for (const fvg of fvgsToRender) {
       const isMit = fvg.isMitigated || fvg.isInvalidated;
       const rawLs = fvg.startIndex - startIdx;
-      const rawLe = isMit ? (fvg.endIndex - startIdx) : visCnt;
+      const maxFvgBars = 30;
+      const rawLe = isMit
+        ? (fvg.endIndex - startIdx)
+        : Math.min(visCnt, fvg.startIndex - startIdx + maxFvgBars);
       const ls = Math.max(0, rawLs);
       const le = Math.min(visCnt, Math.max(ls, rawLe));
       const lx = ls * candleW;
@@ -1850,18 +1833,7 @@ export function renderChart(
         ctx.stroke();
       }
 
-      // 2. Active forward projection for recent breaks (or if breakout is near current price)
-      const isLatestBreak = sb === breaksToRender[breaksToRender.length - 1] || sb.candleIndex >= lastVisibleCandleIdx - 20;
-      if (isLatestBreak && currentCandleX > x2) {
-        ctx.setLineDash([2 * dpr, 3 * dpr]);
-        ctx.strokeStyle = sb.isBullish ? 'rgba(5, 150, 105, 0.50)' : 'rgba(220, 38, 38, 0.50)';
-        ctx.lineWidth = 1.0 * dpr;
-        ctx.beginPath();
-        ctx.moveTo(Math.max(0, x2), y);
-        ctx.lineTo(Math.min(chartW, currentCandleX + 15 * dpr), y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
+      // 2. Break stops cleanly at breakout candle x2 (no forward projection ray cluttering future candles)
 
       // 3. Clean pill badge
       const midX = (x2 > x1 && (x1 + x2) / 2 > 35 * dpr)
@@ -2177,56 +2149,100 @@ export function renderChart(
       }
 
       if (setupsToRender.length === 0) {
-        // 1. Active Bullish Confluence Setup (or fallback to latest completed bullish setup)
-        let activeBullish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && smcCfg.showBullishConfluence && isBullishMaster)
+        // Only select active setups that were formed within the last 25 bars (no fallback to ancient completed setups)
+        const lastBarIdx = candles.length - 1;
+        const activeBullish = (smcData.confirmedSetups || [])
+          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && smcCfg.showBullishConfluence && isBullishMaster && (lastBarIdx - s.candleIndex <= 25))
           .sort((a, b) => b.candleIndex - a.candleIndex)[0];
-        if (!activeBullish && smcCfg.showBullishConfluence && isBullishMaster && smcData.allSetups) {
-          activeBullish = smcData.allSetups
-            .filter((s) => s.direction === 'BULLISH')
-            .sort((a, b) => b.candleIndex - a.candleIndex)[0];
-        }
 
-        // 2. Active Bearish Confluence Setup (or fallback to latest completed bearish setup)
-        let activeBearish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && smcCfg.showBearishConfluence && isBearishMaster)
+        const activeBearish = (smcData.confirmedSetups || [])
+          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && smcCfg.showBearishConfluence && isBearishMaster && (lastBarIdx - s.candleIndex <= 25))
           .sort((a, b) => b.candleIndex - a.candleIndex)[0];
-        if (!activeBearish && smcCfg.showBearishConfluence && isBearishMaster && smcData.allSetups) {
-          activeBearish = smcData.allSetups
-            .filter((s) => s.direction === 'BEARISH')
-            .sort((a, b) => b.candleIndex - a.candleIndex)[0];
-        }
 
         setupsToRender = [activeBullish, activeBearish].filter(Boolean) as SmcConfirmedSetup[];
       }
 
       for (const st of setupsToRender) {
+        const isBull = st.direction === 'BULLISH';
+        const maxLifespan = 20; // 20 bars maximum trading timeframe
+        let endCandleIdx = Math.min(candles.length - 1, st.candleIndex + maxLifespan);
+        let isTradeOver = false;
+        let tradeOutcome = 'ACTIVE';
+
+        // Check subsequent candles to identify exact resolution candle (TP, SL, or lifespan expiration)
+        for (let ci = st.candleIndex + 1; ci < candles.length; ci++) {
+          const c = candles[ci];
+          if (!c) continue;
+          if (isBull) {
+            if (c.high >= st.targetPrice) {
+              endCandleIdx = ci;
+              isTradeOver = true;
+              tradeOutcome = 'TP1 HIT';
+              break;
+            }
+            if (c.low <= st.stopLoss) {
+              endCandleIdx = ci;
+              isTradeOver = true;
+              tradeOutcome = 'SL HIT';
+              break;
+            }
+          } else {
+            if (c.low <= st.targetPrice) {
+              endCandleIdx = ci;
+              isTradeOver = true;
+              tradeOutcome = 'TP1 HIT';
+              break;
+            }
+            if (c.high >= st.stopLoss) {
+              endCandleIdx = ci;
+              isTradeOver = true;
+              tradeOutcome = 'SL HIT';
+              break;
+            }
+          }
+          if (ci >= st.candleIndex + maxLifespan) {
+            endCandleIdx = ci;
+            isTradeOver = true;
+            tradeOutcome = 'EXPIRED';
+            break;
+          }
+        }
+
+        // If trade concluded prior to the visible viewport start, don't draw it
+        if (isTradeOver && endCandleIdx < startIdx) {
+          continue;
+        }
+
         const li = st.candleIndex - startIdx;
         const rawX = li * candleW + candleW / 2;
         const lastCandleIdx = Math.min(endIdx - 1, candles.length - 1);
         const currentCandleX = (lastCandleIdx - startIdx) * candleW + candleW / 2;
 
-        const minBracketW = 120 * dpr;
+        const minBracketW = 25 * dpr;
         let x: number;
         let boxW: number;
 
-        // An active setup must project across current market action and into the right margin
-        // so entry, stop loss, and targets are directly visible at current price.
-        if (rawX < 15 * dpr) {
-          // Formation happened to the left of the current viewport, but setup is actively live:
-          x = Math.max(8 * dpr, currentCandleX - 160 * dpr);
-          boxW = Math.min(chartW - x - 6 * dpr, Math.max(minBracketW, currentCandleX - x + 60 * dpr));
+        if (isTradeOver) {
+          // If timeframe is over or trade hit TP/SL, IT MUST STOP at its resolution candle!
+          // Never extend old signals across newer candles to the current price.
+          const rawEndX = (endCandleIdx - startIdx) * candleW + candleW / 2;
+          x = Math.max(5 * dpr, rawX);
+          boxW = Math.max(minBracketW, rawEndX - x);
         } else {
-          // Formation is visible on canvas: span from formation candle through current candle + forward projection
-          x = Math.max(5 * dpr, Math.min(rawX, chartW - minBracketW - 6 * dpr));
-          const targetW = Math.max(minBracketW, (currentCandleX - x) + 60 * dpr);
-          boxW = Math.min(chartW - x - 6 * dpr, targetW);
+          // Setup is actively live right now within its active timeframe:
+          if (rawX < 15 * dpr) {
+            x = Math.max(8 * dpr, currentCandleX - 140 * dpr);
+            boxW = Math.min(chartW - x - 6 * dpr, Math.max(minBracketW, currentCandleX - x + 25 * dpr));
+          } else {
+            x = Math.max(5 * dpr, Math.min(rawX, chartW - minBracketW - 6 * dpr));
+            const targetW = Math.max(minBracketW, (currentCandleX - x) + 25 * dpr);
+            boxW = Math.min(chartW - x - 6 * dpr, targetW);
+          }
         }
 
         const yEntry = priceToY(st.entryPrice);
         const ySL = priceToY(st.stopLoss);
         const yTP = priceToY(st.targetPrice);
-        const isBull = st.direction === 'BULLISH';
 
         // Obtain current price level for collision prevention
         const lastC = candles[Math.min(endIdx - 1, candles.length - 1)];
@@ -2352,7 +2368,7 @@ export function renderChart(
           .replace('Dealing Range ', '')
           .replace('Liquidity Pool ', '')
           .replace('Power of Three ', '');
-        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (1:${(st.riskReward || 2).toFixed(1)})`;
+        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (1:${(st.riskReward || 2).toFixed(1)})${isTradeOver ? ` [${tradeOutcome}]` : ''}`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(headerTag);
         const tw = tm.width + 10 * dpr;
@@ -4281,11 +4297,17 @@ export function renderChart(
 
   // ── LAYER 7.6: Quantum AI — SMC & Resonance Strategy Overlay ─────────────
   if (options.showQuantumAi && options.quantumAiConfig?.enabled && options.quantumAiData) {
+    // When SMC overlay is active, suppress Quantum AI dashboard HUD and execution levels to prevent duplicate/conflicting overlays
+    const isSmcActive = options.showSmcOverlay && options.smcConfig?.enabled;
+    const qaiConfig = isSmcActive
+      ? { ...options.quantumAiConfig, showDashboard: false, showExecutionLevels: false, showSignals: false }
+      : options.quantumAiConfig;
+
     renderQuantumAiOverlays({
       ctx,
       candles,
       analysis: options.quantumAiData,
-      config: options.quantumAiConfig,
+      config: qaiConfig,
       priceToY,
       safeStart,
       safeEnd,
