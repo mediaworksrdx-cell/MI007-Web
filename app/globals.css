@@ -52,13 +52,11 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   THEME PALETTE DEFINITIONS (6 Distinct High-Contrast Themes)
+   THEME PALETTE DEFINITIONS (Exact 4 Themes: 2 Dark & 2 Light)
    1. Deep Ocean & Turquoise (Dark): Ocean abyss (#071322) · Navy cards (#0E233D) · Turquoise glow (#00E5FF)
    2. Royal Violet & Parrot Green 🦜 (Dark): Violet obsidian (#0F081D) · Amethyst cards (#1A0F30) · Parrot Green (#22E555) · Electric Violet (#A855F7)
-   3. Royal Falcon & Champagne Gold 🦅 (Dark): Midnight navy (#070D18) · Wealth obsidian cards (#0F1A2E) · Champagne Gold (#F59E0B)
-   4. Cyberpunk Matrix Neon ⚡ (Dark): Carbon black (#050508) · Pitch cards (#0E0E17) · Hot Cyber Pink (#EC4899) · Neon Purple (#8B5CF6)
-   5. Executive Ivory & Excel Green 📊 (Light): Warm cream canvas (#F9F7F2) · Pure white cards (#FFFFFF) · Excel Icon Green (#107C41)
-   6. Sky Blue & Turquoise Breeze 🌤️ (Light): Sky blue mist (#E8F3FA) · Pure white cards (#FFFFFF) · Royal Sky (#0284C7) · Turquoise (#00B4D8)
+   3. Light & White Cream / Excel Green 📊 (Light): Warm cream canvas (#F9F7F2) · Pure white cards (#FFFFFF) · Excel Icon Green (#107C41)
+   4. Sky Blue & Turquoise Breeze 🌤️ (Light): Sky blue mist (#E8F3FA) · Pure white cards (#FFFFFF) · Royal Sky (#0284C7) · Turquoise (#00B4D8)
    ══════════════════════════════════════════════════════════════════════════════ */
 
 :root,
@@ -144,81 +142,7 @@ html[data-theme="techno"] {
   --theme-switcher-bg: #1A0F30;
 }
 
-html[data-theme="falcon"] {
-  --color-bg-midnight: #070D18;
-  --color-surface-card: #0F1A2E;
-  --color-surface-variant: #18263E;
-  --color-border-navy: #2A3C59;
-  --color-mint-green: #10B981;
-  --color-crimson-red: #EF4444;
-  --color-accent-cyan: #F59E0B;
-  --color-cyber-gold: #FFD600;
-  --color-chart-bg: #0A1424;
-  --color-text-primary: #FBFBFB;
-  --color-text-secondary: #E2E8F0;
-  --color-text-muted: #FCD34D;
-  --color-bull-green: #10B981;
-  --color-bear-red: #EF4444;
-  --color-glass-white: rgba(15, 26, 46, 0.96);
 
-  --theme-page-bg: #070D18;
-  --theme-page-text: #FBFBFB;
-  --theme-page-subtitle: #FCD34D;
-  --theme-page-border: #2A3C59;
-  --theme-navbar-bg: rgba(7, 13, 24, 0.97);
-  --theme-ticker-bg: #0C1628;
-  --theme-ticker-text: #FBFBFB;
-  --theme-ticker-border: #2A3C59;
-
-  --theme-card-bg: #0F1A2E;
-  --theme-card-surface: #18263E;
-  --theme-card-border: #2A3C59;
-  --theme-card-text: #FBFBFB;
-  --theme-card-text-muted: #CBD5E1;
-
-  --theme-footer-bg: #040810;
-  --theme-footer-text: #FBFBFB;
-  --theme-footer-border: #202F46;
-  --theme-switcher-bg: #0F1A2E;
-}
-
-html[data-theme="cyberpunk"] {
-  --color-bg-midnight: #050508;
-  --color-surface-card: #0E0E17;
-  --color-surface-variant: #181828;
-  --color-border-navy: #3D1B4D;
-  --color-mint-green: #10B981;
-  --color-crimson-red: #F43F5E;
-  --color-accent-cyan: #EC4899;
-  --color-cyber-gold: #8B5CF6;
-  --color-chart-bg: #08080E;
-  --color-text-primary: #FDF2F8;
-  --color-text-secondary: #FCE7F3;
-  --color-text-muted: #F472B6;
-  --color-bull-green: #10B981;
-  --color-bear-red: #F43F5E;
-  --color-glass-white: rgba(14, 14, 23, 0.96);
-
-  --theme-page-bg: #050508;
-  --theme-page-text: #FDF2F8;
-  --theme-page-subtitle: #F472B6;
-  --theme-page-border: #3D1B4D;
-  --theme-navbar-bg: rgba(5, 5, 8, 0.97);
-  --theme-ticker-bg: #0A0A10;
-  --theme-ticker-text: #FDF2F8;
-  --theme-ticker-border: #3D1B4D;
-
-  --theme-card-bg: #0E0E17;
-  --theme-card-surface: #181828;
-  --theme-card-border: #3D1B4D;
-  --theme-card-text: #FDF2F8;
-  --theme-card-text-muted: #F472B6;
-
-  --theme-footer-bg: #030305;
-  --theme-footer-text: #FDF2F8;
-  --theme-footer-border: #281233;
-  --theme-switcher-bg: #0E0E17;
-}
 
 html[data-theme="cream"],
 html[data-theme="ivory"],
@@ -390,8 +314,7 @@ html[data-theme="graphite"],
 html[data-theme="capital"],
 html[data-theme="metallic"],
 html[data-theme="techno"],
-html[data-theme="obsidian"],
-html[data-theme="cyberpunk"] {
+html[data-theme="obsidian"] {
   color-scheme: dark;
 }
 
@@ -535,28 +458,24 @@ html[data-theme="obsidian"] .ticker-tape-fade-right {
 html[data-theme="violet"] .ticker-tape-fade-left,
 html[data-theme="capital"] .ticker-tape-fade-left,
 html[data-theme="azure"] .ticker-tape-fade-left,
-html[data-theme="techno"] .ticker-tape-fade-left,
-html[data-theme="cyberpunk"] .ticker-tape-fade-left {
+html[data-theme="techno"] .ticker-tape-fade-left {
   background: linear-gradient(to right, #0F081D, transparent) !important;
 }
 html[data-theme="violet"] .ticker-tape-fade-right,
 html[data-theme="capital"] .ticker-tape-fade-right,
 html[data-theme="azure"] .ticker-tape-fade-right,
-html[data-theme="techno"] .ticker-tape-fade-right,
-html[data-theme="cyberpunk"] .ticker-tape-fade-right {
+html[data-theme="techno"] .ticker-tape-fade-right {
   background: linear-gradient(to left, #0F081D, transparent) !important;
 }
 
 html[data-theme="cream"] .ticker-tape-fade-left,
 html[data-theme="ivory"] .ticker-tape-fade-left,
-html[data-theme="champagne"] .ticker-tape-fade-left,
-html[data-theme="falcon"] .ticker-tape-fade-left {
+html[data-theme="champagne"] .ticker-tape-fade-left {
   background: linear-gradient(to right, #F9F7F2, transparent) !important;
 }
 html[data-theme="cream"] .ticker-tape-fade-right,
 html[data-theme="ivory"] .ticker-tape-fade-right,
-html[data-theme="champagne"] .ticker-tape-fade-right,
-html[data-theme="falcon"] .ticker-tape-fade-right {
+html[data-theme="champagne"] .ticker-tape-fade-right {
   background: linear-gradient(to left, #F9F7F2, transparent) !important;
 }
 
@@ -670,8 +589,7 @@ html[data-theme="cream"] .token-chip-txt-white,
 html[data-theme="sky"] .token-chip-txt-white,
 html[data-theme="capital"] .token-chip-txt-white,
 html[data-theme="azure"] .token-chip-txt-white,
-html[data-theme="techno"] .token-chip-txt-white,
-html[data-theme="cyberpunk"] .token-chip-txt-white {
+html[data-theme="techno"] .token-chip-txt-white {
   color: #0F172A !important;
 }
 
@@ -679,8 +597,7 @@ html[data-theme="cream"] .token-chip-txt-cyan,
 html[data-theme="sky"] .token-chip-txt-cyan,
 html[data-theme="capital"] .token-chip-txt-cyan,
 html[data-theme="azure"] .token-chip-txt-cyan,
-html[data-theme="techno"] .token-chip-txt-cyan,
-html[data-theme="cyberpunk"] .token-chip-txt-cyan {
+html[data-theme="techno"] .token-chip-txt-cyan {
   color: #0284C7 !important;
 }
 
@@ -688,8 +605,7 @@ html[data-theme="cream"] .token-chip-txt-blue,
 html[data-theme="sky"] .token-chip-txt-blue,
 html[data-theme="capital"] .token-chip-txt-blue,
 html[data-theme="azure"] .token-chip-txt-blue,
-html[data-theme="techno"] .token-chip-txt-blue,
-html[data-theme="cyberpunk"] .token-chip-txt-blue {
+html[data-theme="techno"] .token-chip-txt-blue {
   color: #1D4ED8 !important;
 }
 
@@ -697,8 +613,7 @@ html[data-theme="cream"] .token-chip-txt-green,
 html[data-theme="sky"] .token-chip-txt-green,
 html[data-theme="capital"] .token-chip-txt-green,
 html[data-theme="azure"] .token-chip-txt-green,
-html[data-theme="techno"] .token-chip-txt-green,
-html[data-theme="cyberpunk"] .token-chip-txt-green {
+html[data-theme="techno"] .token-chip-txt-green {
   color: #107C41 !important;
 }
 
@@ -706,8 +621,7 @@ html[data-theme="cream"] .token-chip-txt-purple,
 html[data-theme="sky"] .token-chip-txt-purple,
 html[data-theme="capital"] .token-chip-txt-purple,
 html[data-theme="azure"] .token-chip-txt-purple,
-html[data-theme="techno"] .token-chip-txt-purple,
-html[data-theme="cyberpunk"] .token-chip-txt-purple {
+html[data-theme="techno"] .token-chip-txt-purple {
   color: #7E22CE !important;
 }
 
@@ -715,8 +629,7 @@ html[data-theme="cream"] .token-chip-txt-red,
 html[data-theme="sky"] .token-chip-txt-red,
 html[data-theme="capital"] .token-chip-txt-red,
 html[data-theme="azure"] .token-chip-txt-red,
-html[data-theme="techno"] .token-chip-txt-red,
-html[data-theme="cyberpunk"] .token-chip-txt-red {
+html[data-theme="techno"] .token-chip-txt-red {
   color: #DC2626 !important;
 }
 
@@ -724,8 +637,7 @@ html[data-theme="cream"] .token-chip-txt-amber,
 html[data-theme="sky"] .token-chip-txt-amber,
 html[data-theme="capital"] .token-chip-txt-amber,
 html[data-theme="azure"] .token-chip-txt-amber,
-html[data-theme="techno"] .token-chip-txt-amber,
-html[data-theme="cyberpunk"] .token-chip-txt-amber {
+html[data-theme="techno"] .token-chip-txt-amber {
   color: #B45309 !important;
 }
 
@@ -733,8 +645,7 @@ html[data-theme="cream"] .token-chip-txt-teal,
 html[data-theme="sky"] .token-chip-txt-teal,
 html[data-theme="capital"] .token-chip-txt-teal,
 html[data-theme="azure"] .token-chip-txt-teal,
-html[data-theme="techno"] .token-chip-txt-teal,
-html[data-theme="cyberpunk"] .token-chip-txt-teal {
+html[data-theme="techno"] .token-chip-txt-teal {
   color: #0F766E !important;
 }
 
@@ -748,7 +659,6 @@ html[data-theme="cream"],
 html[data-theme="sky"],
 html[data-theme="ivory"],
 html[data-theme="champagne"],
-html[data-theme="falcon"],
 html[data-theme="arctic"],
 html[data-theme="lightblue"],
 html[data-theme="quartz"] {
@@ -841,28 +751,24 @@ html[data-theme="obsidian"] .hero-marquee-fade-right {
 html[data-theme="violet"] .hero-marquee-fade-left,
 html[data-theme="capital"] .hero-marquee-fade-left,
 html[data-theme="azure"] .hero-marquee-fade-left,
-html[data-theme="techno"] .hero-marquee-fade-left,
-html[data-theme="cyberpunk"] .hero-marquee-fade-left {
+html[data-theme="techno"] .hero-marquee-fade-left {
   background: linear-gradient(to right, #1A0F30, transparent) !important;
 }
 html[data-theme="violet"] .hero-marquee-fade-right,
 html[data-theme="capital"] .hero-marquee-fade-right,
 html[data-theme="azure"] .hero-marquee-fade-right,
-html[data-theme="techno"] .hero-marquee-fade-right,
-html[data-theme="cyberpunk"] .hero-marquee-fade-right {
+html[data-theme="techno"] .hero-marquee-fade-right {
   background: linear-gradient(to left, #1A0F30, transparent) !important;
 }
 
 html[data-theme="cream"] .hero-marquee-fade-left,
 html[data-theme="ivory"] .hero-marquee-fade-left,
-html[data-theme="champagne"] .hero-marquee-fade-left,
-html[data-theme="falcon"] .hero-marquee-fade-left {
+html[data-theme="champagne"] .hero-marquee-fade-left {
   background: linear-gradient(to right, #FFFFFF, transparent) !important;
 }
 html[data-theme="cream"] .hero-marquee-fade-right,
 html[data-theme="ivory"] .hero-marquee-fade-right,
-html[data-theme="champagne"] .hero-marquee-fade-right,
-html[data-theme="falcon"] .hero-marquee-fade-right {
+html[data-theme="champagne"] .hero-marquee-fade-right {
   background: linear-gradient(to left, #FFFFFF, transparent) !important;
 }
 
@@ -893,8 +799,7 @@ header {
 
 html[data-theme="capital"] .navbar-brand-badge,
 html[data-theme="azure"] .navbar-brand-badge,
-html[data-theme="techno"] .navbar-brand-badge,
-html[data-theme="cyberpunk"] .navbar-brand-badge {
+html[data-theme="techno"] .navbar-brand-badge {
   color: #34D399 !important;
 }
 
@@ -1104,8 +1009,7 @@ html[data-theme="techno"] footer {
 
 html[data-theme="cream"] footer,
 html[data-theme="ivory"] footer,
-html[data-theme="champagne"] footer,
-html[data-theme="falcon"] footer {
+html[data-theme="champagne"] footer {
   background-color: #111D16 !important;
   border-color: #1E3327 !important;
 }

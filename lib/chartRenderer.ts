@@ -81,39 +81,7 @@ export function getChartThemeColors(): ChartThemeColors {
     };
   }
 
-  if (themeAttr === 'falcon') {
-    return {
-      isDark: true,
-      bg: '#0A1424',
-      panelBg: '#070D18',
-      panelSep: 'rgba(245, 158, 11, 0.18)',
-      gridColor: 'rgba(255, 255, 255, 0.05)',
-      axisTextColor: '#FCD34D',
-      separatorColor: '#2A3C59',
-      bull: '#10B981',
-      bear: '#EF4444',
-      strokeBull: '#059669',
-      strokeBear: '#B91C1C',
-      crosshairColor: 'rgba(245, 158, 11, 0.6)',
-    };
-  }
 
-  if (themeAttr === 'cyberpunk') {
-    return {
-      isDark: true,
-      bg: '#08080E',
-      panelBg: '#050508',
-      panelSep: 'rgba(236, 72, 153, 0.22)',
-      gridColor: 'rgba(236, 72, 153, 0.07)',
-      axisTextColor: '#F472B6',
-      separatorColor: '#3D1B4D',
-      bull: '#10B981',
-      bear: '#F43F5E',
-      strokeBull: '#059669',
-      strokeBear: '#BE123C',
-      crosshairColor: 'rgba(236, 72, 153, 0.6)',
-    };
-  }
 
   if (themeAttr === 'cream' || themeAttr === 'ivory' || themeAttr === 'excel') {
     return {

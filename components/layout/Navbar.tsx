@@ -758,7 +758,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                 {/* Divider */}
                 <div className="w-full h-px opacity-20 bg-current my-0.5" />
 
-                {/* 2. Theme & Appearance (Quick 6-Theme Palette Selector) */}
+                {/* 2. Theme & Appearance (4-Theme Palette Selector: 2 Dark & 2 Light) */}
                 <div>
                   <div className="flex items-center justify-between px-1 mb-1.5">
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-60">

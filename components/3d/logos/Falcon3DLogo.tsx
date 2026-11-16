@@ -50,16 +50,12 @@ export function Falcon3DLogo({
   const isHovered = isHoveredExternal !== undefined ? isHoveredExternal : internalHovered;
   const shouldRender3D = !disable3d && (isHovered || hasInteracted);
 
-  // Theme-coordinated rim glow
+  // Theme-coordinated rim glow (4 distinct themes: 2 dark, 2 light)
   const accentColor =
     theme === 'violet'
       ? '#22E555' // vivid parrot green glow 🦜
       : theme === 'ocean'
       ? '#00E5FF' // electric turquoise glow
-      : theme === 'falcon'
-      ? '#F59E0B' // champagne gold glow 🦅
-      : theme === 'cyberpunk'
-      ? '#EC4899' // hot cyber pink glow ⚡
       : theme === 'cream'
       ? '#107C41' // excel icon green glow
       : '#0284C7'; // sky blue breeze glow

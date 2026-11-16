@@ -7,12 +7,10 @@ export function ThemeSwitcher() {
   const { theme, setTheme } = useAppTheme();
   const [isOpen, setIsOpen] = useState(true);
 
-  // Six Distinct Premium Themes (4 Dark & 2 Light)
+  // Four Distinct Premium Themes (2 Dark & 2 Light)
   const themeList = [
     THEMES.ocean,
     THEMES.violet,
-    THEMES.falcon,
-    THEMES.cyberpunk,
     THEMES.cream,
     THEMES.sky,
   ];
@@ -42,7 +40,7 @@ export function ThemeSwitcher() {
                 MI007 Palette Studio
               </span>
               <span className="px-1.5 py-0.5 rounded text-[9px] mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                6 DISTINCT THEMES
+                4 DISTINCT THEMES
               </span>
             </div>
             <button

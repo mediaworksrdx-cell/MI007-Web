@@ -30,13 +30,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               try {
                 var saved = localStorage.getItem('mi007_active_theme');
                 var theme = 'ocean';
-                if (saved === 'ocean' || saved === 'violet' || saved === 'falcon' || saved === 'cyberpunk' || saved === 'cream' || saved === 'sky') {
+                if (saved === 'ocean' || saved === 'violet' || saved === 'cream' || saved === 'sky') {
                   theme = saved;
                 } else if (saved === 'arctic' || saved === 'lightblue' || saved === 'quartz') {
                   theme = 'sky';
-                } else if (saved === 'ivory' || saved === 'champagne' || saved === 'excel') {
+                } else if (saved === 'ivory' || saved === 'champagne' || saved === 'excel' || saved === 'falcon') {
                   theme = 'cream';
-                } else if (saved === 'graphite' || saved === 'metallic' || saved === 'obsidian') {
+                } else if (saved === 'graphite' || saved === 'metallic' || saved === 'obsidian' || saved === 'cyberpunk') {
                   theme = 'ocean';
                 } else if (saved === 'capital' || saved === 'azure' || saved === 'techno') {
                   theme = 'violet';

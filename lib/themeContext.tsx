@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { workspaceSync } from './workspaceSync';
 
-export type AppTheme = 'ocean' | 'violet' | 'falcon' | 'cyberpunk' | 'cream' | 'sky';
+export type AppTheme = 'ocean' | 'violet' | 'cream' | 'sky';
 
 export interface ThemeConfig {
   id: AppTheme;
@@ -64,49 +64,11 @@ export const THEMES: Record<AppTheme, ThemeConfig> = {
       border: '#3B1F6A',
     },
   },
-  falcon: {
-    id: 'falcon',
-    name: 'Royal Falcon & Champagne Gold',
-    tagline: 'Midnight Navy · Deep Obsidian Cards · Champagne Gold & Amber 🦅',
-    badge: 'Falcon Gold 🦅',
-    mode: 'dark',
-    palette: {
-      bg: '#070D18',
-      card: '#0F1A2E',
-      surface: '#18263E',
-      accent: '#F59E0B',
-      accentSecondary: '#FFD600',
-      text: '#FBFBFB',
-      textMuted: '#FCD34D',
-      bull: '#10B981',
-      bear: '#EF4444',
-      border: '#2A3C59',
-    },
-  },
-  cyberpunk: {
-    id: 'cyberpunk',
-    name: 'Cyberpunk Matrix Neon',
-    tagline: 'Pitch Carbon Black · Neon DeFi Cards · Hot Cyber Pink ⚡',
-    badge: 'Cyberpunk ⚡',
-    mode: 'dark',
-    palette: {
-      bg: '#050508',
-      card: '#0E0E17',
-      surface: '#181828',
-      accent: '#EC4899',
-      accentSecondary: '#8B5CF6',
-      text: '#FDF2F8',
-      textMuted: '#F472B6',
-      bull: '#10B981',
-      bear: '#F43F5E',
-      border: '#3D1B4D',
-    },
-  },
   cream: {
     id: 'cream',
-    name: 'Executive Ivory (Excel Green)',
+    name: 'Light & White Cream (Excel Green)',
     tagline: 'Warm Paper Canvas · Pure White Cards · Excel Icon Green 📊',
-    badge: 'Excel Ivory 📊',
+    badge: 'Excel Cream 📊',
     mode: 'light',
     palette: {
       bg: '#F9F7F2',
@@ -173,9 +135,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       initialTheme = stored as AppTheme;
     } else if (stored === 'arctic' || stored === 'lightblue' || stored === 'quartz') {
       initialTheme = 'sky';
-    } else if (stored === 'ivory' || stored === 'champagne' || stored === 'excel') {
+    } else if (stored === 'ivory' || stored === 'champagne' || stored === 'excel' || stored === 'falcon') {
       initialTheme = 'cream';
-    } else if (stored === 'graphite' || stored === 'metallic' || stored === 'obsidian') {
+    } else if (stored === 'graphite' || stored === 'metallic' || stored === 'obsidian' || stored === 'cyberpunk') {
       initialTheme = 'ocean';
     } else if (stored === 'capital' || stored === 'azure' || stored === 'techno') {
       initialTheme = 'violet';
