@@ -32,6 +32,7 @@ export interface SmcSwingPoint {
   isHigh: boolean;
   formationTime: number; // T_i
   confirmationTime: number; // T_{i+R} (Zero look-ahead signal availability)
+  significance?: 'MAJOR' | 'MINOR';
 }
 
 export type SmcBreakType = 'BOS' | 'CHoCH' | 'MSS';
@@ -51,6 +52,7 @@ export interface SmcStructureBreak {
   confirmationType?: 'CANDLE_CLOSE' | 'WICK';
   displacementMultiple?: number;
   volumeRatio?: number;
+  significance?: 'MAJOR' | 'MINOR';
 }
 
 export interface SmcLiquidityLevel {
@@ -248,8 +250,15 @@ export interface SmcFilterOptions {
   volumeSmaMultiple?: number;        // Default: 1.10 * SMA(Volume, 20)
 }
 
+export type SmcVisualizationMode = 'clean' | 'advanced' | 'analysis';
+
 export interface SmcConfig {
   enabled: boolean;
+  visualizationMode?: SmcVisualizationMode; // 'clean' (default) | 'advanced' | 'analysis'
+  enableCollisionControl?: boolean;         // Centralized Smart Annotation Collision Engine
+  enableHistoricalFading?: boolean;         // Institutional age-dependent visual fading
+  showMajorStructureOnly?: boolean;         // Prioritize major swing structure (HH, HL, LH, LL)
+  showInternalStructure?: boolean;          // Short-term internal BOS vs Major External BOS
 
   // ── SMC Setup Direction (Master Controls) ──
   showBullishSetups: boolean;       // Master toggle: Long-side signals & demand-side patterns
@@ -306,6 +315,11 @@ export interface SmcConfig {
 
 export const DEFAULT_SMC_CONFIG: SmcConfig = {
   enabled: true,
+  visualizationMode: 'clean',       // Default: Institutional Clean Mode
+  enableCollisionControl: true,     // Smart collision management active by default
+  enableHistoricalFading: true,     // Fade older annotations to prioritize live price action
+  showMajorStructureOnly: true,     // Prioritize high-conviction major structure pivots
+  showInternalStructure: false,     // Internal structure subtle/hidden in Clean mode
   swingLength: 5,                   // Institutional pivot standard (5-bar lookback for high-conviction structural swings)
 
   // Master Direction Controls
@@ -481,6 +495,7 @@ export function detectSwingPoints(
       sw.type = !prevLow || sw.price <= prevLow.price ? 'LL' : 'HL';
       prevLow = sw;
     }
+    sw.significance = 'MAJOR';
   }
 
   return swings;

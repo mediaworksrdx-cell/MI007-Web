@@ -906,7 +906,7 @@ export function ChartToolbar({
 
           {openMenu === 'SMC' && (
             <div
-              className="absolute top-full left-0 mt-1 w-80 sm:w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[min(420px,calc(100dvh-220px))] flex flex-col animate-in fade-in duration-75 overflow-hidden"
+              className="absolute top-full left-0 mt-1 w-80 sm:w-96 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl z-[100] max-h-[min(520px,calc(100vh-140px))] flex flex-col animate-in fade-in duration-75 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -957,6 +957,51 @@ export function ChartToolbar({
                 </button>
               </div>
 
+              {/* Institutional Visualization Mode Selector */}
+              <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 shrink-0">
+                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span>Interface Mode</span>
+                  <span className="text-[9.5px] px-1.5 py-0.2 rounded font-mono font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    {activeSmcConfig.visualizationMode === 'analysis' ? 'Analysis' : activeSmcConfig.visualizationMode === 'advanced' ? 'Advanced' : 'Clean (Def)'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateSmc({ visualizationMode: 'clean', showMajorStructureOnly: true, showInternalStructure: false, enableCollisionControl: true, enableHistoricalFading: true })}
+                    className={`px-1.5 py-1 text-[10.5px] font-bold rounded border text-center transition-colors cursor-pointer ${
+                      (activeSmcConfig.visualizationMode || 'clean') === 'clean'
+                        ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Clean (Def)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateSmc({ visualizationMode: 'advanced', showMajorStructureOnly: false, showInternalStructure: true, enableCollisionControl: true, enableHistoricalFading: true })}
+                    className={`px-1.5 py-1 text-[10.5px] font-bold rounded border text-center transition-colors cursor-pointer ${
+                      activeSmcConfig.visualizationMode === 'advanced'
+                        ? 'bg-blue-500/15 border-blue-500/50 text-blue-600 dark:text-blue-400 shadow-xs'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Advanced
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateSmc({ visualizationMode: 'analysis', showMajorStructureOnly: false, showInternalStructure: true, showPremiumDiscount: true, showOte: true, enableCollisionControl: true, enableHistoricalFading: false })}
+                    className={`px-1.5 py-1 text-[10.5px] font-bold rounded border text-center transition-colors cursor-pointer ${
+                      activeSmcConfig.visualizationMode === 'analysis'
+                        ? 'bg-purple-500/15 border-purple-500/50 text-purple-600 dark:text-purple-400 shadow-xs'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Analysis
+                  </button>
+                </div>
+              </div>
+
               {/* Presets Bar */}
               <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex items-center gap-1 flex-wrap shrink-0">
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5 shrink-0">Presets:</span>
@@ -992,7 +1037,41 @@ export function ChartToolbar({
               </div>
 
               {/* Toggles Container */}
-              <div className={`flex-1 min-h-0 overflow-y-auto px-2 py-2 space-y-3 text-xs ${!activeSmcConfig.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
+              <div className={`flex-1 min-h-0 overflow-y-auto px-2 py-2 pb-10 space-y-3 text-xs ${!activeSmcConfig.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                {/* 0. Institutional Layout Controls */}
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
+                    Visual Layout &amp; Collision Engine
+                  </div>
+                  <div className="space-y-0.5">
+                    <SmcToggleRow
+                      label="Smart Collision Control"
+                      sublabel="Auto-repositions labels &amp; manages right price axis badges"
+                      checked={activeSmcConfig.enableCollisionControl !== false}
+                      onChange={(v) => handleUpdateSmc({ enableCollisionControl: v })}
+                      badge="AABB"
+                    />
+                    <SmcToggleRow
+                      label="Historical Structure Fading"
+                      sublabel="Subtly fades older zones so current price action remains prominent"
+                      checked={activeSmcConfig.enableHistoricalFading !== false}
+                      onChange={(v) => handleUpdateSmc({ enableHistoricalFading: v })}
+                    />
+                    <SmcToggleRow
+                      label="Major Structure Only"
+                      sublabel="Prioritize high-conviction swing highs/lows"
+                      checked={activeSmcConfig.showMajorStructureOnly !== false}
+                      onChange={(v) => handleUpdateSmc({ showMajorStructureOnly: v })}
+                    />
+                    <SmcToggleRow
+                      label="Internal Market Structure"
+                      sublabel="Subtle short-term swings independent of major swings"
+                      checked={Boolean(activeSmcConfig.showInternalStructure)}
+                      onChange={(v) => handleUpdateSmc({ showInternalStructure: v })}
+                    />
+                  </div>
+                </div>
+
                 {/* 1. Setup Direction */}
                 <div>
                   <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
