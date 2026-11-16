@@ -7,7 +7,7 @@ import { ChartTemplate } from '@/lib/chartTemplates';
 import { SmcConfig, DEFAULT_SMC_CONFIG } from '@/lib/smcEngine';
 import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG } from '@/lib/orderflow/types';
 import { OrderFlowToolbarMenu } from './OrderFlowToolbarMenu';
-import { QuantumAiConfig, DEFAULT_QUANTUM_AI_CONFIG, QuantumAiAnalysisResult, QuantumAiSubTab } from '@/lib/quantumai/types';
+import { QuantumAiConfig, DEFAULT_QUANTUM_AI_CONFIG, QuantumAiAnalysisResult } from '@/lib/quantumai/types';
 import { QuantumAiToolbarMenu } from './QuantumAiToolbarMenu';
 import { STRATEGY_INDICATOR_MAP } from '@/lib/screener/strategyIndicatorMap';
 
@@ -55,7 +55,6 @@ interface ChartToolbarProps {
   quantumAiAnalysis?: QuantumAiAnalysisResult;
   onToggleQuantumAi?: () => void;
   onQuantumAiConfigChange?: (config: Partial<QuantumAiConfig>) => void;
-  onOpenQuantumAiModal?: (subTab?: QuantumAiSubTab) => void;
   showVolumeProfile: boolean;
   showMagnifier?: boolean;
   onToggleMagnifier?: () => void;
@@ -169,7 +168,6 @@ export function ChartToolbar({
   quantumAiAnalysis,
   onToggleQuantumAi: _onToggleQuantumAi,
   onQuantumAiConfigChange,
-  onOpenQuantumAiModal,
   showVolumeProfile,
   showMagnifier = false,
   onToggleMagnifier,
@@ -1355,7 +1353,6 @@ export function ChartToolbar({
               const updated = { ...activeQuantumAiConfig, ...updates };
               onQuantumAiConfigChange?.(updated);
             }}
-            onOpenModal={(tab) => onOpenQuantumAiModal?.(tab)}
             analysis={quantumAiAnalysis}
           />
         </div>

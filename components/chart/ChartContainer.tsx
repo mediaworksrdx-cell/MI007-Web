@@ -32,9 +32,8 @@ import { SmcConfig, DEFAULT_SMC_CONFIG, getStoredSmcConfig, saveStoredSmcConfig 
 import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG, ExchangeTradeTick } from '@/lib/orderflow/types';
 import { analyzeOrderFlow } from '@/lib/orderflow/orderFlowEngine';
 import { OrderFlowSignalsModal } from './OrderFlowSignalsModal';
-import { QuantumAiConfig, DEFAULT_QUANTUM_AI_CONFIG, QuantumAiAnalysisResult, QuantumAiSubTab } from '@/lib/quantumai/types';
+import { QuantumAiConfig, DEFAULT_QUANTUM_AI_CONFIG, QuantumAiAnalysisResult } from '@/lib/quantumai/types';
 import { analyzeQuantumAi } from '@/lib/quantumai/quantumAiEngine';
-import { QuantumAiModal } from './QuantumAiModal';
 import { ChartToolbar } from './ChartToolbar';
 import { CandlestickCanvas } from './CandlestickCanvas';
 import { OHLCVHeader } from './OHLCVHeader';
@@ -341,9 +340,6 @@ export function ChartContainer({
     }
     return DEFAULT_QUANTUM_AI_CONFIG;
   });
-  const [isQuantumAiModalOpen, setIsQuantumAiModalOpen] = useState(false);
-  const [quantumAiModalTab, setQuantumAiModalTab] = useState<QuantumAiSubTab>('smc');
-
   const handleQuantumAiConfigChange = useCallback((updates: Partial<QuantumAiConfig>) => {
     setQuantumAiConfig(prev => {
       const next = { ...prev, ...updates };
@@ -354,11 +350,6 @@ export function ChartContainer({
       }
       return next;
     });
-  }, []);
-
-  const handleOpenQuantumAiModal = useCallback((subTab?: QuantumAiSubTab) => {
-    if (subTab) setQuantumAiModalTab(subTab);
-    setIsQuantumAiModalOpen(true);
   }, []);
 
   const [targetCandleTime, setTargetCandleTime] = useState<number | undefined>();
@@ -393,13 +384,8 @@ export function ChartContainer({
 
       // Detect Quantum AI strategy URL query parameters
       const moduleParam = sp.get('module');
-      const tabParam = sp.get('tab') as QuantumAiSubTab | null;
       if (moduleParam === 'quantum-ai') {
         setQuantumAiConfig(prev => ({ ...prev, enabled: true }));
-        if (tabParam) {
-          setQuantumAiModalTab(tabParam);
-          setIsQuantumAiModalOpen(true);
-        }
       }
 
       // Detect Order Flow Footprint URL query parameters (e.g. ?of=1 or ?orderflow=1)
@@ -1711,7 +1697,6 @@ export function ChartContainer({
         quantumAiAnalysis={quantumAiData}
         onToggleQuantumAi={() => handleQuantumAiConfigChange({ ...quantumAiConfig, enabled: !quantumAiConfig.enabled })}
         onQuantumAiConfigChange={handleQuantumAiConfigChange}
-        onOpenQuantumAiModal={handleOpenQuantumAiModal}
         showVolumeProfile={showVolumeProfile}
         showMagnifier={isMagnifierActive}
         onToggleMagnifier={handleToggleMagnifier}
@@ -1960,18 +1945,6 @@ export function ChartContainer({
         symbol={selectedSymbol}
       />
 
-      {/* ── Quantum AI Strategy Studio & Backtesting Modal ── */}
-      {quantumAiData && (
-        <QuantumAiModal
-          isOpen={isQuantumAiModalOpen}
-          onClose={() => setIsQuantumAiModalOpen(false)}
-          analysis={quantumAiData}
-          config={quantumAiConfig}
-          onChangeConfig={handleQuantumAiConfigChange}
-          symbol={selectedSymbol}
-          initialTab={quantumAiModalTab}
-        />
-      )}
 
       {/* ── Keyboard Shortcuts Cheat Sheet Modal ('?') ── */}
       <ChartHotkeysModal

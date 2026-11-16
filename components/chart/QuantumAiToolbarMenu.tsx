@@ -7,7 +7,6 @@
 import React from 'react';
 import {
   QuantumAiConfig,
-  QuantumAiSubTab,
   DEFAULT_QUANTUM_AI_CONFIG,
   QuantumAiAnalysisResult,
 } from '../../lib/quantumai/types';
@@ -17,7 +16,6 @@ interface QuantumAiToolbarMenuProps {
   onClose: () => void;
   config: QuantumAiConfig;
   onChangeConfig: (updates: Partial<QuantumAiConfig>) => void;
-  onOpenModal: (subTab?: QuantumAiSubTab) => void;
   analysis?: QuantumAiAnalysisResult;
 }
 
@@ -26,24 +24,9 @@ export function QuantumAiToolbarMenu({
   onClose,
   config,
   onChangeConfig,
-  onOpenModal,
   analysis,
 }: QuantumAiToolbarMenuProps) {
   if (!isOpen) return null;
-
-  const SUB_MODULES: { id: QuantumAiSubTab; label: string; icon: string; desc: string }[] = [
-    { id: 'smc', label: 'SMC Analysis', icon: '🏛️', desc: 'Smart Money institutional flow & price zones' },
-    { id: 'structure', label: 'Market Structure', icon: '📈', desc: 'BOS (Break of Structure) & CHoCH detection' },
-    { id: 'orderblocks', label: 'Order Blocks', icon: '🧱', desc: 'Bullish & Bearish institutional supply/demand' },
-    { id: 'liquidity', label: 'Liquidity Analysis', icon: '💧', desc: 'BSL / SSL pools and sweep rejections' },
-    { id: 'premium-discount', label: 'Premium / Discount', icon: '⚖️', desc: '40-bar Dealing Range & Equilibrium (EQ)' },
-    { id: 'volatility-momentum', label: 'Volatility & Momentum', icon: '⚡', desc: 'BB inside KC squeeze & LinReg momentum' },
-    { id: 'resonance', label: 'Multi-Timeframe Resonance', icon: '🔄', desc: 'HTF, MTF & LTF cross-timeframe alignment' },
-    { id: 'confluence', label: 'Confluence Engine', icon: '🎯', desc: 'Multi-factor weighted scoring (9.5 max, 7.0 th)' },
-    { id: 'signals', label: 'Trading Signals', icon: '🔔', desc: 'Qualified Long / Short high-probability entries' },
-    { id: 'risk-mgmt', label: 'Entry / SL / TP Management', icon: '🛡️', desc: '1:1.5, 1:2.5, 1:4.0 targets & Break-Even' },
-    { id: 'backtesting', label: 'Strategy Backtesting', icon: '📊', desc: 'Historical trade analytics, win rate & expectancy' },
-  ];
 
   return (
     <div
@@ -116,42 +99,9 @@ export function QuantumAiToolbarMenu({
         </div>
       )}
 
-      {/* ── 4. Scrollable 11 Sub-Modules & Display Toggles ── */}
+      {/* ── 4. Scrollable Core Display Toggles ── */}
       <div className="p-3.5 space-y-3.5 overflow-y-auto text-xs flex-1">
-        {/* A. Sub-Module Jump List */}
-        <div>
-          <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-            <span>Strategy Architecture Modules</span>
-            <span className="text-[9px] text-purple-600 dark:text-purple-400 font-mono">11 Sub-Systems</span>
-          </div>
-
-          <div className="space-y-1">
-            {SUB_MODULES.map((sub) => (
-              <div
-                key={sub.id}
-                onClick={() => {
-                  onClose();
-                  onOpenModal(sub.id);
-                }}
-                className="flex items-center justify-between p-1.5 rounded-lg border border-slate-100 dark:border-slate-800/80 hover:border-purple-300 dark:hover:border-purple-600 hover:bg-purple-50/30 dark:hover:bg-purple-950/20 transition-all cursor-pointer group"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-xs">{sub.icon}</span>
-                  <div className="min-w-0">
-                    <div className="text-[11px] font-bold text-slate-700 dark:text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors truncate">
-                      {sub.label}
-                    </div>
-                    <div className="text-[9px] text-slate-400 dark:text-slate-500 truncate">{sub.desc}</div>
-                  </div>
-                </div>
-                <span className="text-slate-400 group-hover:text-purple-600 text-xs shrink-0 font-bold">→</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* B. Core Display Toggles */}
-        <div className="space-y-1.5 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+        <div className="space-y-1.5">
           <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
             Canvas Overlay Elements
           </div>
@@ -209,17 +159,6 @@ export function QuantumAiToolbarMenu({
           className="text-[11px] font-mono text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
         >
           Reset Defaults
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            onClose();
-            onOpenModal('backtesting');
-          }}
-          className="px-2.5 py-1 rounded bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 font-mono text-[11px] font-bold border border-purple-200 dark:border-purple-500/40 hover:bg-purple-200 dark:hover:bg-purple-500/30 transition-colors cursor-pointer flex items-center gap-1"
-        >
-          <span>⚡ Quantum Studio &amp; Backtest</span>
         </button>
       </div>
     </div>
