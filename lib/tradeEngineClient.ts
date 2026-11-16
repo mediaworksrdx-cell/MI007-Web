@@ -143,10 +143,7 @@ export function areSymbolsEqual(symA: string, symB: string): boolean {
 // ── API Fetchers ─────────────────────────────────────────────────────────────
 
 function getApiBaseUrl(): string {
-  if (typeof window === 'undefined') {
-    return process.env.TRADE_ENGINE_URL || 'https://synthetixanalytics.com';
-  }
-  return '/api/trade-engine';
+  return process.env.NEXT_PUBLIC_TRADE_ENGINE_URL || process.env.TRADE_ENGINE_URL || 'https://synthetixanalytics.com';
 }
 
 /** Fetch current live prices for Indian stocks, indices, and active tickers */
