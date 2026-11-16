@@ -342,6 +342,7 @@ export function ChartContainer({
           return {
             ...DEFAULT_QUANTUM_AI_CONFIG,
             ...parsed,
+            showDashboard: false,
           };
         }
       } catch (e) {}
@@ -406,13 +407,20 @@ export function ChartContainer({
         ? decodeURIComponent(strategiesParam).split(',').some(s => s.startsWith('smc_'))
         : false;
 
-      if (smcParam === '1' || smcParam === 'true' || hasSmcStrat) {
+      const tabParam = sp.get('tab');
+      if (smcParam === '1' || smcParam === 'true' || hasSmcStrat || tabParam === 'smc') {
         setSmcConfig(prev => {
           const next = { ...prev, enabled: true };
           saveStoredSmcConfig(next);
           return next;
         });
-        setQuantumAiConfig(prev => ({ ...prev, enabled: false, showDashboard: false }));
+        setQuantumAiConfig(prev => ({
+          ...prev,
+          enabled: false,
+          showDashboard: false,
+          showSignals: false,
+          showExecutionLevels: false,
+        }));
       } else if (smcParam === '0' || smcParam === 'false' || strategiesParam || indicatorsParam) {
         // Explicitly disable SMC overlay for pure technical strategies
         setSmcConfig(prev => {
@@ -424,8 +432,8 @@ export function ChartContainer({
 
       // Detect Quantum AI strategy URL query parameters
       const moduleParam = sp.get('module');
-      if (moduleParam === 'quantum-ai') {
-        setQuantumAiConfig(prev => ({ ...prev, enabled: true }));
+      if (moduleParam === 'quantum-ai' && tabParam !== 'smc') {
+        setQuantumAiConfig(prev => ({ ...prev, enabled: true, showDashboard: false }));
       }
 
       // Detect Order Flow Footprint URL query parameters (e.g. ?of=1 or ?orderflow=1)

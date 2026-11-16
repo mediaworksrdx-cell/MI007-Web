@@ -1447,25 +1447,28 @@ export function renderChart(
     const showDemandBlocks = smcCfg.showBullishOb ?? isBullishMaster;
     const showSupplyBlocks = smcCfg.showBearishOb ?? isBearishMaster;
 
+    const lastBar = candles.length - 1;
+    const maxZoneAge = 35; // Stale zones older than 35 bars do not clutter modern price action
     const allCandidateDemand = (showDemandBlocks ? smcData.orderBlocks : [])
-      .filter((ob) => !ob.isBreaker && ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx - 50 || !ob.isMitigated));
-    const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, baseQuota);
+      .filter((ob) => !ob.isBreaker && ob.isBullish && ob.startIndex <= endIdx && (lastBar - ob.startIndex <= maxZoneAge) && (!ob.isMitigated || (smcCfg.showMitigatedOb && ob.endIndex >= startIdx)));
+    const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, Math.min(2, baseQuota));
     const mitigatedDemand = smcCfg.showMitigatedOb
-      ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated)).slice(0, Math.max(3, mitigatedQuota))
+      ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, 1)
       : [];
     const demandBlocks = [...unmitigatedDemand, ...mitigatedDemand];
 
     const allCandidateSupply = (showSupplyBlocks ? smcData.orderBlocks : [])
-      .filter((ob) => !ob.isBreaker && !ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx - 50 || !ob.isMitigated));
-    const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, baseQuota);
+      .filter((ob) => !ob.isBreaker && !ob.isBullish && ob.startIndex <= endIdx && (lastBar - ob.startIndex <= maxZoneAge) && (!ob.isMitigated || (smcCfg.showMitigatedOb && ob.endIndex >= startIdx)));
+    const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, Math.min(2, baseQuota));
     const mitigatedSupply = smcCfg.showMitigatedOb
-      ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated)).slice(0, Math.max(3, mitigatedQuota))
+      ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, 1)
       : [];
     const supplyBlocks = [...unmitigatedSupply, ...mitigatedSupply];
 
     // Breaker Blocks (+BRK Support & -BRK Resistance)
     const shouldCheckBreakers = smcCfg.showBreakers || smcCfg.showBullishBreakers || smcCfg.showBearishBreakers;
     const allCandidateBreakers = (shouldCheckBreakers ? smcData.breakers : []).filter((brk) => {
+      if (lastBar - brk.startIndex > maxZoneAge) return false;
       if (brk.isBullish) {
         if (smcCfg.showBullishBreakers === false) return false;
         if (!smcCfg.showBullishBreakers && !smcCfg.showBreakers) return false;
@@ -1475,11 +1478,11 @@ export function renderChart(
       }
       if (brk.isMitigated && !smcCfg.showMitigatedOb) return false;
       if (brk.startIndex > endIdx) return false;
-      if (brk.isMitigated && brk.endIndex < startIdx - 50) return false;
+      if (brk.isMitigated && brk.endIndex < startIdx) return false;
       return true;
     });
-    const bullBreakers = sortZonesByProximity(allCandidateBreakers.filter(b => b.isBullish)).slice(0, baseQuota);
-    const bearBreakers = sortZonesByProximity(allCandidateBreakers.filter(b => !b.isBullish)).slice(0, baseQuota);
+    const bullBreakers = sortZonesByProximity(allCandidateBreakers.filter(b => b.isBullish)).slice(0, 1);
+    const bearBreakers = sortZonesByProximity(allCandidateBreakers.filter(b => !b.isBullish)).slice(0, 1);
     const breakerBlocks = [...bullBreakers, ...bearBreakers];
 
     const blocksToRender = [...demandBlocks, ...supplyBlocks, ...breakerBlocks];
@@ -1638,10 +1641,11 @@ export function renderChart(
     }
 
     // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG) — Dedicated Quota Pools & High Visibility
-    const fvgBaseQuota = isTargetedMode ? 1 : Math.max(3, Math.floor((smcCfg.maxVisibleZones || 6) / 2));
-    const fvgMitigatedQuota = smcCfg.showMitigatedFvg ? 3 : 0;
+    const fvgBaseQuota = isTargetedMode ? 1 : 2;
+    const fvgMitigatedQuota = smcCfg.showMitigatedFvg ? 1 : 0;
 
     const inWindowFvgs = smcData.fvgs.filter((fvg) => {
+      if (lastBar - fvg.startIndex > 30) return false;
       if (fvg.isInverse) {
         if (fvg.isBullish && smcCfg.showBullishIfvg === false) return false;
         if (!fvg.isBullish && smcCfg.showBearishIfvg === false) return false;
@@ -1654,7 +1658,7 @@ export function renderChart(
         if (fvg.isInvalidated && !smcCfg.showMitigatedFvg) return false;
       }
       if (fvg.startIndex > endIdx) return false;
-      if ((fvg.isMitigated || fvg.isInvalidated) && fvg.endIndex < startIdx - 50) return false;
+      if ((fvg.isMitigated || fvg.isInvalidated) && fvg.endIndex < startIdx) return false;
       return true;
     });
 
@@ -1662,7 +1666,7 @@ export function renderChart(
       const candidates = inWindowFvgs.filter(filterFn);
       const unmit = sortZonesByProximity(candidates.filter(f => !f.isMitigated && !f.isInvalidated)).slice(0, fvgBaseQuota);
       const mit = smcCfg.showMitigatedFvg
-        ? sortZonesByProximity(candidates.filter(f => f.isMitigated || f.isInvalidated)).slice(0, Math.max(3, fvgMitigatedQuota))
+        ? sortZonesByProximity(candidates.filter(f => (f.isMitigated || f.isInvalidated) && f.endIndex >= startIdx)).slice(0, fvgMitigatedQuota)
         : [];
       return [...unmit, ...mit];
     };
@@ -1786,19 +1790,18 @@ export function renderChart(
       if (sb.isBullish && smcCfg.showBullishStructure === false) return false;
       if (!sb.isBullish && smcCfg.showBearishStructure === false) return false;
 
-      // Include breaks visible in viewport OR recent breaks from up to 80 bars prior
-      const isRecentPrior = sb.candleIndex >= startIdx - 80 && sb.candleIndex <= endIdx;
-      const isSwingInWindow = sb.swingIndex >= startIdx - 80 && sb.swingIndex <= endIdx;
-      if (!isRecentPrior && !isSwingInWindow) return false;
+      // Only include breaks from the active structure (within visible view and recent 35 bars)
+      if (sb.candleIndex < startIdx || sb.candleIndex > endIdx) return false;
+      if (lastBar - sb.candleIndex > 35) return false;
 
       // Price must be reasonably close to visible price bounds
-      const pMargin = (pMax - pMin) * 0.40;
+      const pMargin = (pMax - pMin) * 0.30;
       if (sb.price < pMin - pMargin || sb.price > pMax + pMargin) return false;
       return true;
     });
 
-    // Render up to 16 most recent visible breaks
-    const breaksToRender = inWindowBreaks.slice(-16);
+    // Render up to 4 most recent visible breaks to keep chart uncluttered
+    const breaksToRender = inWindowBreaks.slice(-4);
     const lastVisibleCandleIdx = Math.min(endIdx - 1, candles.length - 1);
     const currentCandleX = (lastVisibleCandleIdx - startIdx) * candleW + candleW / 2;
 
@@ -1971,10 +1974,10 @@ export function renderChart(
           if (smcCfg.showSslSweeps === false) return false;
           if (!smcCfg.showSslSweeps && !smcCfg.showSweeps) return false;
         }
-        return sw.candleIndex >= startIdx - 20 && sw.candleIndex <= endIdx;
+        return sw.candleIndex >= startIdx && sw.candleIndex <= endIdx && (lastBar - sw.candleIndex <= 30);
       });
-      // Limit to the 12 most recent visible sweeps to avoid text crowding
-      const sweepsToRender = visibleSweeps.slice(-12);
+      // Limit to 4 most recent visible sweeps to avoid text crowding
+      const sweepsToRender = visibleSweeps.slice(-4);
       const renderedSweepsX: number[] = [];
 
       for (const sw of sweepsToRender) {
