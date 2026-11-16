@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { INITIAL_SEED_ITEMS } from '@/lib/tradeEngineContext';
+import { INITIAL_SEED_ITEMS } from '@/lib/seedData';
 import { normalizeSymbolKey } from '@/lib/tradeEngineClient';
 import { getZerodhaStockPrice, findZerodhaStockBySymbol } from '@/lib/screener/zerodhaStocks';
 import { fetchTwelveDataQuote } from '@/lib/twelveDataService';

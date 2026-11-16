@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { INITIAL_SEED_ITEMS } from '@/lib/tradeEngineContext';
+import { INITIAL_SEED_ITEMS } from '@/lib/seedData';
 
 export const dynamic = 'force-dynamic';
 
