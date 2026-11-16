@@ -9,7 +9,7 @@ import {
   EventRegion,
 } from '@/lib/terminal/economicCalendarData';
 
-const TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
+const TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'https://synthetixanalytics.com';
 
 export const dynamic = 'force-dynamic';
 

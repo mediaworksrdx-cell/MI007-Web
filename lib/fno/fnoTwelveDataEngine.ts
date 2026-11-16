@@ -105,7 +105,7 @@ export async function fetchFnoSpotQuote(symbol: string): Promise<FnoSpotQuote> {
   if (cached) return cached;
 
   const { tdSymbol, yahooSymbol } = normalizeSymbol(symbol);
-  const tradeEngineUrl = process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
+  const tradeEngineUrl = process.env.TRADE_ENGINE_URL || 'https://synthetixanalytics.com';
 
   // 0. Priority 1 for Indian F&O instruments: Zerodha Kite Trade Engine (/live-prices)
   try {

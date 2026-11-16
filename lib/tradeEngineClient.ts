@@ -144,7 +144,7 @@ export function areSymbolsEqual(symA: string, symB: string): boolean {
 
 function getApiBaseUrl(): string {
   if (typeof window === 'undefined') {
-    return process.env.TRADE_ENGINE_URL || 'http://138.91.105.85';
+    return process.env.TRADE_ENGINE_URL || 'https://synthetixanalytics.com';
   }
   return '/api/trade-engine';
 }

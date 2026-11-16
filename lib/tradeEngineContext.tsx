@@ -96,7 +96,7 @@ interface TradeEngineContextValue {
   subscribeToSymbol: (symbol: string, callback: () => void) => () => void;
 }
 
-const WS_URL = process.env.NEXT_PUBLIC_TRADE_ENGINE_WS || 'ws://138.91.105.85/ws';
+const WS_URL = process.env.NEXT_PUBLIC_TRADE_ENGINE_WS || 'wss://synthetixanalytics.com/ws';
 
 // Baseline initial instruments to seed the engine immediately before first network tick
 const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: number; changePct: number }> = [
