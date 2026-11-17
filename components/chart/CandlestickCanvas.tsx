@@ -1616,17 +1616,38 @@ export function CandlestickCanvas({
               : st.status === 'TARGET_HIT'
               ? 'Target Achieved'
               : 'Confirmed Active';
+
+          const rawRisk = isBull ? (st.entryPrice - st.stopLoss) : (st.stopLoss - st.entryPrice);
+          const riskDist = st.riskDistance ?? Math.abs(rawRisk);
+          const rewardDist = st.rewardDistance ?? Math.abs(st.targetPrice - st.entryPrice);
+
+          const setupStatusFormatted: 'Active' | 'Invalidated' | 'Target Hit' | 'Stop Hit' =
+            st.status === 'TARGET_HIT' ? 'Target Hit' :
+            st.status === 'INVALIDATED' ? 'Stop Hit' :
+            st.status === 'EXPIRED' ? 'Invalidated' : 'Active';
+
           return {
             title: `${isBull ? 'Bullish' : 'Bearish'} Setup: ${st.name}`,
             type: `${isBull ? 'Long Position' : 'Short Position'} Bracket`,
             timeframe,
+            direction: isBull ? 'BULLISH' : 'BEARISH',
+            htfBias: st.htfBias || smc.htfBias || (isBull ? 'BULLISH' : 'BEARISH'),
+            ltfBias: st.ltfBias || smc.ltfBias || (isBull ? 'BULLISH' : 'BEARISH'),
+            entryPrice: formatPrice(st.entryPrice, symbol),
+            stopLoss: formatPrice(st.stopLoss, symbol),
+            target1: formatPrice(st.targetPrice, symbol),
+            target2: st.targetPrice2 ? formatPrice(st.targetPrice2, symbol) : formatPrice(isBull ? st.entryPrice + riskDist * 2 : st.entryPrice - riskDist * 2, symbol),
+            riskDistance: riskDist.toFixed(2),
+            rewardDistance: rewardDist.toFixed(2),
+            confluenceScore: st.confluenceScore ?? st.qualityScore ?? 85,
+            setupStatus: setupStatusFormatted,
             formationTime: formationTimeStr,
-            priceBoundaries: `Entry: ${formatPrice(st.entryPrice)} | SL: ${formatPrice(st.stopLoss)}`,
+            priceBoundaries: `Entry: ${formatPrice(st.entryPrice, symbol)} | SL: ${formatPrice(st.stopLoss, symbol)}`,
             detectionRule: st.description || `${st.setupType} confirmed on completed candle structure`,
             currentStatus: statusLabel,
-            invalidation: `Candle close breaching ${formatPrice(st.stopLoss)} invalidates setup structure`,
-            target: `TP1: ${formatPrice(st.targetPrice)}${st.targetPrice2 ? ` | TP2: ${formatPrice(st.targetPrice2)}` : ''}`,
-            riskReward: `1:${(st.riskReward || 2.5).toFixed(1)} R:R`,
+            invalidation: `Candle close breaching ${formatPrice(st.stopLoss, symbol)} invalidates setup structure`,
+            target: `TP1: ${formatPrice(st.targetPrice, symbol)}${st.targetPrice2 ? ` | TP2: ${formatPrice(st.targetPrice2, symbol)}` : ''}`,
+            riskReward: `1:${(st.riskReward || 1.5).toFixed(1)} R:R`,
           };
         }
       }

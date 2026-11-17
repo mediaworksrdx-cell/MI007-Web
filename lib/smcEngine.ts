@@ -222,6 +222,11 @@ export interface SmcConfirmedSetup {
   institutionalClass: SmcInstitutionalClass;
   confluenceBreakdown: SmcConfluenceBreakdown;
   auditReasons?: string[];
+  htfBias?: 'BULLISH' | 'BEARISH' | 'RANGE';
+  ltfBias?: 'BULLISH' | 'BEARISH' | 'RANGE';
+  riskDistance?: number;
+  rewardDistance?: number;
+  confluenceScore?: number;
 }
 
 export interface SmcAnalysis {
@@ -241,6 +246,8 @@ export interface SmcAnalysis {
   inducements?: SmcLiquidityLevel[];
   internalSwings?: SmcSwingPoint[];
   externalSwings?: SmcSwingPoint[];
+  htfBias?: 'BULLISH' | 'BEARISH' | 'RANGE';
+  ltfBias?: 'BULLISH' | 'BEARISH' | 'RANGE';
 }
 
 export interface SmcFilterOptions {
@@ -1685,6 +1692,79 @@ export function evaluateInstitutionalConfluence(
   };
 }
 
+// ── 7.5. Structural Bias Evaluator (HTF & LTF Trend Separation) ─────────────
+
+export function computeStructureBias(
+  candles: Candle[],
+  swings: SmcSwingPoint[],
+  breaks: SmcStructureBreak[]
+): { htfBias: 'BULLISH' | 'BEARISH' | 'RANGE'; ltfBias: 'BULLISH' | 'BEARISH' | 'RANGE' } {
+  if (!candles || candles.length < 5) {
+    return { htfBias: 'RANGE', ltfBias: 'RANGE' };
+  }
+
+  // 1. HTF Bias: Evaluated from major swings, external structure breaks, and macro momentum
+  let bullHtfPoints = 0;
+  let bearHtfPoints = 0;
+
+  // External breaks analysis
+  const recentExternalBreaks = breaks.filter(b => b.structureType !== 'INTERNAL').slice(-5);
+  for (const b of recentExternalBreaks) {
+    if (b.isBullish) bullHtfPoints += (b.breakType === 'CHoCH' || b.breakType === 'MSS') ? 3 : 2;
+    else bearHtfPoints += (b.breakType === 'CHoCH' || b.breakType === 'MSS') ? 3 : 2;
+  }
+
+  // Major swings analysis (HH/HL vs LH/LL)
+  const majorSwings = swings.filter(s => s.significance !== 'MINOR');
+  const highs = majorSwings.filter(s => s.isHigh);
+  const lows = majorSwings.filter(s => !s.isHigh);
+  if (highs.length >= 2) {
+    if (highs[highs.length - 1].price > highs[highs.length - 2].price) bullHtfPoints += 2;
+    else bearHtfPoints += 2;
+  }
+  if (lows.length >= 2) {
+    if (lows[lows.length - 1].price > lows[lows.length - 2].price) bullHtfPoints += 2;
+    else bearHtfPoints += 2;
+  }
+
+  // Macro momentum: compare current price to moving average of last 30-50 candles
+  const lookback = Math.min(candles.length, 40);
+  let sum = 0;
+  for (let i = candles.length - lookback; i < candles.length; i++) sum += candles[i].close;
+  const sma = sum / lookback;
+  const lastClose = candles[candles.length - 1].close;
+  if (lastClose > sma * 1.002) bullHtfPoints += 2;
+  else if (lastClose < sma * 0.998) bearHtfPoints += 2;
+
+  let htfBias: 'BULLISH' | 'BEARISH' | 'RANGE' = 'RANGE';
+  if (bullHtfPoints >= bearHtfPoints + 2) htfBias = 'BULLISH';
+  else if (bearHtfPoints >= bullHtfPoints + 2) htfBias = 'BEARISH';
+
+  // 2. LTF Bias: Evaluated from recent internal breaks and sub-structure (last 15 bars)
+  let bullLtfPoints = 0;
+  let bearLtfPoints = 0;
+  const recentInternalBreaks = breaks.slice(-6);
+  for (const b of recentInternalBreaks) {
+    if (b.isBullish) bullLtfPoints += (b.breakType === 'CHoCH' || b.breakType === 'MSS') ? 3 : 2;
+    else bearLtfPoints += (b.breakType === 'CHoCH' || b.breakType === 'MSS') ? 3 : 2;
+  }
+
+  const recentCandles = candles.slice(-10);
+  if (recentCandles.length >= 4) {
+    const firstClose = recentCandles[0].close;
+    const finalClose = recentCandles[recentCandles.length - 1].close;
+    if (finalClose > firstClose) bullLtfPoints += 2;
+    else bearLtfPoints += 2;
+  }
+
+  let ltfBias: 'BULLISH' | 'BEARISH' | 'RANGE' = 'RANGE';
+  if (bullLtfPoints > bearLtfPoints) ltfBias = 'BULLISH';
+  else if (bearLtfPoints > bullLtfPoints) ltfBias = 'BEARISH';
+  else ltfBias = htfBias;
+
+  return { htfBias, ltfBias };
+}
+
 // ── 8. Complete 16 Institutional SMC Strategy Detectors ─────────────────────
 
 export function detectAll16SmcSetups(
@@ -1697,7 +1777,8 @@ export function detectAll16SmcSetups(
   fvgs?: SmcFvg[],
   dealingRange?: SmcDealingRange,
   sessionLevels?: SmcSessionLevels,
-  options?: SmcFilterOptions
+  options?: SmcFilterOptions,
+  biasOverride?: { htfBias?: 'BULLISH' | 'BEARISH' | 'RANGE'; ltfBias?: 'BULLISH' | 'BEARISH' | 'RANGE' }
 ): SmcConfirmedSetup[] {
   if (!candles || candles.length < 5) return [];
 
@@ -1714,7 +1795,8 @@ export function detectAll16SmcSetups(
       analysis.fvgs,
       analysis.dealingRange,
       analysis.sessionLevels,
-      swingsOrConfig?.filters
+      swingsOrConfig?.filters,
+      { htfBias: analysis.htfBias, ltfBias: analysis.ltfBias }
     );
   }
 
@@ -1724,6 +1806,11 @@ export function detectAll16SmcSetups(
   orderBlocks = orderBlocks || [];
   breakers = breakers || [];
   fvgs = fvgs || [];
+
+  // Derive explicit HTF & LTF Structural Bias
+  const computedBias = biasOverride?.htfBias ? { htfBias: biasOverride.htfBias, ltfBias: biasOverride.ltfBias || biasOverride.htfBias } : computeStructureBias(candles, swings, breaks);
+  const htfBias = computedBias.htfBias;
+  const ltfBias = computedBias.ltfBias;
   const lastPrice = candles[candles.length - 1].close;
   dealingRange = dealingRange || {
     highPrice: lastPrice * 1.05,
@@ -1784,41 +1871,17 @@ export function detectAll16SmcSetups(
       cleanStopLoss = roundSmcPrice(entryPrice * 1.008);
     }
     const rawRisk = isBull ? (entryPrice - cleanStopLoss) : (cleanStopLoss - entryPrice);
-    const risk = rawRisk > 0 ? rawRisk : Math.max(Math.abs(entryPrice - cleanStopLoss), entryPrice * 0.005);
+    const riskDistance = rawRisk > 0 ? rawRisk : Math.max(Math.abs(entryPrice - cleanStopLoss), entryPrice * 0.005);
 
-    // 3. Strict Directional Target (TP1) Ordering Validation & Invariant
-    // LONG:  targetPrice MUST be strictly above entryPrice (at least 1.5R or 1.5% distance)
-    // SHORT: targetPrice MUST be strictly below entryPrice (at least 1.5R or 1.5% distance)
-    let guaranteedTarget = targetPrice;
-    if (isBull) {
-      if (!Number.isFinite(guaranteedTarget) || guaranteedTarget <= entryPrice + risk * 1.2) {
-        guaranteedTarget = roundSmcPrice(entryPrice + Math.max(risk * 2.5, entryPrice * 0.02));
-      }
-    } else {
-      if (!Number.isFinite(guaranteedTarget) || guaranteedTarget >= entryPrice - risk * 1.2) {
-        guaranteedTarget = roundSmcPrice(entryPrice - Math.max(risk * 2.5, entryPrice * 0.02));
-      }
-    }
-    let reward = Math.abs(guaranteedTarget - entryPrice);
-
-    // Realistic Institutional R:R Invariant (1:1.5 to 1:5.5 maximum)
-    if (risk > 0) {
-      if (reward / risk > 5.5) {
-        reward = roundSmcPrice(risk * 3.5);
-        guaranteedTarget = isBull ? roundSmcPrice(entryPrice + reward) : roundSmcPrice(entryPrice - reward);
-      } else if (reward / risk < 1.3) {
-        reward = roundSmcPrice(risk * 1.8);
-        guaranteedTarget = isBull ? roundSmcPrice(entryPrice + reward) : roundSmcPrice(entryPrice - reward);
-      }
-    }
-    const rr = Number((reward / Math.max(entryPrice * 0.0001, risk)).toFixed(1));
-
-    // 4. Strict Directional TP2 Ordering Validation & Invariant
-    // LONG:  TP1 must be nearer than TP2 (entry < TP1 < TP2)
-    // SHORT: TP1 must be nearer than TP2 (entry > TP1 > TP2)
+    // 3. Strict Institutional R:R Targets (Target 1: RR 1:1.5 | Target 2: RR 1:2.0)
+    const guaranteedTarget = isBull
+      ? roundSmcPrice(entryPrice + riskDistance * 1.5)
+      : roundSmcPrice(entryPrice - riskDistance * 1.5);
     const targetPrice2 = isBull
-      ? roundSmcPrice(guaranteedTarget + Math.max(reward * 0.5, risk * 1.0))
-      : roundSmcPrice(guaranteedTarget - Math.max(reward * 0.5, risk * 1.0));
+      ? roundSmcPrice(entryPrice + riskDistance * 2.0)
+      : roundSmcPrice(entryPrice - riskDistance * 2.0);
+    const rewardDistance = Math.abs(guaranteedTarget - entryPrice);
+    const rr = 1.5;
 
     let status: 'CONFIRMED' | 'RETESTING' | 'PENDING' | 'DETECTED' | 'FORMING' | 'ENTRY_ZONE_REACHED' | 'TARGET_HIT' | 'EXITED' | 'INVALIDATED' | 'EXPIRED' = statusOverride || 'CONFIRMED';
     let lifecycleState: SmcLifecycleState = statusOverride === 'CONFIRMED' ? 'CONFIRMED' : (status === 'RETESTING' ? 'RETESTED' : 'CONFIRMED');
@@ -1956,7 +2019,7 @@ export function detectAll16SmcSetups(
       stopLoss: roundSmcPrice(cleanStopLoss),
       targetPrice: roundSmcPrice(guaranteedTarget),
       targetPrice2,
-      riskReward: Math.max(1.0, rr),
+      riskReward: 1.5,
       status,
       lifecycleState,
       retestCount,
@@ -1969,6 +2032,11 @@ export function detectAll16SmcSetups(
       institutionalClass: confluence.institutionalClass,
       confluenceBreakdown: confluence.confluenceBreakdown,
       auditReasons: confluence.auditReasons,
+      htfBias,
+      ltfBias,
+      riskDistance: roundSmcPrice(riskDistance),
+      rewardDistance: roundSmcPrice(rewardDistance),
+      confluenceScore: confluence.qualityScore,
     };
   };
 
@@ -2096,6 +2164,22 @@ export function detectAll16SmcSetups(
   const activeObs = orderBlocks.filter((ob) => !ob.isMitigated).slice(-8);
   for (const ob of activeObs) {
     const isBull = ob.isBullish;
+
+    // Institutional Trend Alignment & Counter-Trend Reversal Rule:
+    // Do NOT automatically interpret a supply order block in a bull trend as a short signal!
+    // A counter-trend signal strictly requires validated entry conditions (CHoCH / MSS + liquidity sweep).
+    if (!isBull && htfBias === 'BULLISH') {
+      const recentBearChoch = breaks.find(b => !b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
+      if (!recentBearChoch) {
+        continue; // Suppress counter-trend short in macro bull trend
+      }
+    } else if (isBull && htfBias === 'BEARISH') {
+      const recentBullChoch = breaks.find(b => b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
+      if (!recentBullChoch) {
+        continue; // Suppress counter-trend long in macro bear trend
+      }
+    }
+
     const entry = (ob.topPrice + ob.bottomPrice) / 2;
     const sl = isBull ? ob.bottomPrice * 0.997 : ob.topPrice * 1.003;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
@@ -2137,6 +2221,15 @@ export function detectAll16SmcSetups(
   const activeBreakers = breakers.filter((b) => !b.isMitigated).slice(-8);
   for (const brk of activeBreakers) {
     const isBull = brk.label.includes('Bull') || (brk.isBreaker ? brk.isBullish : !brk.isBullish);
+
+    if (!isBull && htfBias === 'BULLISH') {
+      const recentBearChoch = breaks.find(b => !b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
+      if (!recentBearChoch) continue;
+    } else if (isBull && htfBias === 'BEARISH') {
+      const recentBullChoch = breaks.find(b => b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
+      if (!recentBullChoch) continue;
+    }
+
     const entry = (brk.topPrice + brk.bottomPrice) / 2;
     const sl = isBull ? brk.bottomPrice * 0.997 : brk.topPrice * 1.003;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
@@ -2185,59 +2278,57 @@ export function detectAll16SmcSetups(
     const lookback = Math.min(candles.length, 12);
 
     // Bullish: Price tapped Discount OTE zone (deep discount retracement)
-    for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
-      const c = candles[i];
-      if (c.low <= dOteMax && c.high >= dOteMin && c.close >= dealingRange.lowPrice) {
-        const entry = Math.max(dOteMin, Math.min(dOteMax, c.close));
-        const sl = dealingRange.lowPrice * 0.998;
-        const tp = dealingRange.highPrice;
-        if (entry > sl && tp > entry) {
-          const st = makeSetup(
-            `setup_dr_ote_bull_${i}`,
-            'Discount Dealing Range OTE Long',
-            'PREMIUM_DISCOUNT_OTE',
-            'BULLISH',
-            i,
-            c.openTime,
-            entry,
-            sl,
-            tp,
-            `Price tapped institutional Discount OTE zone (62%-79% retracement [${dOteMin.toFixed(2)} - ${dOteMax.toFixed(2)}]), targeting range high.`
-          );
-          // Standard ICT -0.27 Extension for TP2 (strictly preserving SL < Entry < TP1 < TP2)
-          const rawExtBull = dealingRange.highPrice + (dealingRange.highPrice - dealingRange.lowPrice) * 0.27;
-          st.targetPrice2 = Number(Math.max(st.targetPrice + Math.max(st.targetPrice - st.entryPrice, st.entryPrice * 0.01) * 0.5, rawExtBull).toFixed(2));
-          setups.push(st);
-          break; // Retain most recent confirmed tap
+    const allowDiscountOte = htfBias !== 'BEARISH' || breaks.some(b => b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
+    if (allowDiscountOte) {
+      for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
+        const c = candles[i];
+        if (c.low <= dOteMax && c.high >= dOteMin && c.close >= dealingRange.lowPrice) {
+          const entry = Math.max(dOteMin, Math.min(dOteMax, c.close));
+          const sl = dealingRange.lowPrice * 0.998;
+          const tp = dealingRange.highPrice;
+          if (entry > sl && tp > entry) {
+            setups.push(makeSetup(
+              `setup_dr_ote_bull_${i}`,
+              'Discount Dealing Range OTE Long',
+              'PREMIUM_DISCOUNT_OTE',
+              'BULLISH',
+              i,
+              c.openTime,
+              entry,
+              sl,
+              tp,
+              `Price tapped institutional Discount OTE zone (62%-79% retracement [${dOteMin.toFixed(2)} - ${dOteMax.toFixed(2)}]), targeting range high.`
+            ));
+            break; // Retain most recent confirmed tap
+          }
         }
       }
     }
 
     // Bearish: Price tapped Premium OTE zone (high premium retracement)
-    for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
-      const c = candles[i];
-      if (c.high >= pOteMin && c.low <= pOteMax && c.close <= dealingRange.highPrice) {
-        const entry = Math.min(pOteMax, Math.max(pOteMin, c.close));
-        const sl = dealingRange.highPrice * 1.002;
-        const tp = dealingRange.lowPrice;
-        if (entry < sl && tp < entry) {
-          const st = makeSetup(
-            `setup_dr_ote_bear_${i}`,
-            'Premium Dealing Range OTE Short',
-            'PREMIUM_DISCOUNT_OTE',
-            'BEARISH',
-            i,
-            c.openTime,
-            entry,
-            sl,
-            tp,
-            `Price tapped institutional Premium OTE zone (62%-79% retracement [${pOteMin.toFixed(2)} - ${pOteMax.toFixed(2)}]), targeting range low.`
-          );
-          // Standard ICT -0.27 Extension for TP2 (strictly preserving SL > Entry > TP1 > TP2)
-          const rawExtBear = dealingRange.lowPrice - (dealingRange.highPrice - dealingRange.lowPrice) * 0.27;
-          st.targetPrice2 = Number(Math.min(st.targetPrice - Math.max(st.entryPrice - st.targetPrice, st.entryPrice * 0.01) * 0.5, rawExtBear).toFixed(2));
-          setups.push(st);
-          break; // Retain most recent confirmed tap
+    const allowPremiumOte = htfBias !== 'BULLISH' || breaks.some(b => !b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
+    if (allowPremiumOte) {
+      for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
+        const c = candles[i];
+        if (c.high >= pOteMin && c.low <= pOteMax && c.close <= dealingRange.highPrice) {
+          const entry = Math.min(pOteMax, Math.max(pOteMin, c.close));
+          const sl = dealingRange.highPrice * 1.002;
+          const tp = dealingRange.lowPrice;
+          if (entry < sl && tp < entry) {
+            setups.push(makeSetup(
+              `setup_dr_ote_bear_${i}`,
+              'Premium Dealing Range OTE Short',
+              'PREMIUM_DISCOUNT_OTE',
+              'BEARISH',
+              i,
+              c.openTime,
+              entry,
+              sl,
+              tp,
+              `Price tapped institutional Premium OTE zone (62%-79% retracement [${pOteMin.toFixed(2)} - ${pOteMax.toFixed(2)}]), targeting range low.`
+            ));
+            break; // Retain most recent confirmed tap
+          }
         }
       }
     }
@@ -2637,6 +2728,9 @@ export function calculateSMC(
   // 7. Detect Key Historical Session Levels
   const sessionLevels = detectSessionLevels(candles);
 
+  // 7.5 Compute Structure Bias (HTF & LTF)
+  const { htfBias, ltfBias } = computeStructureBias(candles, swings, structureBreaks);
+
   // 8. Detect All 16 Confirmed SMC Setups
   const allSetups = detectAll16SmcSetups(
     candles,
@@ -2648,7 +2742,8 @@ export function calculateSMC(
     fvgs,
     dealingRange,
     sessionLevels,
-    opt
+    opt,
+    { htfBias, ltfBias }
   );
 
   // Directional filtering across all enabled SMC strategies
@@ -2681,6 +2776,8 @@ export function calculateSMC(
     datasetFingerprint: fingerprint,
     internalSwings,
     externalSwings: swings,
+    htfBias,
+    ltfBias,
   };
 
   // Cache Management (LRU Eviction)

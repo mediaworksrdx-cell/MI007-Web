@@ -6,16 +6,30 @@ const STORE_NAME = 'candles';
 
 /** Detects artificial synthetic linear staircase ramps (e.g. constant +62 delta per candle) */
 export function isArtificialLinearStaircase(candles: Candle[]): boolean {
-  if (!candles || candles.length < 6) return false;
+  if (!candles || candles.length < 8) return false;
   let matchingDeltas = 0;
-  for (let i = 2; i < Math.min(25, candles.length); i++) {
+  let monotonicStreak = 0;
+  for (let i = 2; i < candles.length; i++) {
     const d1 = candles[i].close - candles[i - 1].close;
     const d2 = candles[i - 1].close - candles[i - 2].close;
-    if (Math.abs(d1 - d2) < 0.25 && Math.abs(d1) > 0.05) {
-      matchingDeltas++;
+    // Check if deltas are in the same direction (monotonic rise or fall)
+    if (d1 * d2 > 0) {
+      monotonicStreak++;
+      const absD1 = Math.abs(d1);
+      const absDiff = Math.abs(d1 - d2);
+      const relDiff = absDiff / Math.max(0.001, absD1);
+      if (relDiff < 0.15 || (absDiff < 0.25 && absD1 > 0.05)) {
+        matchingDeltas++;
+      }
+    } else {
+      monotonicStreak = 0;
+    }
+    // A synthetic staircase has either 6+ near-identical relative deltas or 14+ consecutive monotonic bars
+    if (matchingDeltas >= 6 || monotonicStreak >= 14) {
+      return true;
     }
   }
-  return matchingDeltas >= 4;
+  return matchingDeltas >= 6;
 }
 
 function getStorageKey(symbol: string, timeframe: string): string {
