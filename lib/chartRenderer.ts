@@ -2315,14 +2315,14 @@ export function renderChart(
       }
 
       if (setupsToRender.length === 0) {
-        // Only select active setups that were formed within the last 25 bars (no fallback to ancient completed setups)
+        // Only select active setups that were formed within the last 60 bars (no fallback to ancient completed setups)
         const lastBarIdx = candles.length - 1;
         const activeBullish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && smcCfg.showBullishConfluence && isBullishMaster && (lastBarIdx - s.candleIndex <= 25))
+          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && smcCfg.showBullishConfluence && isBullishMaster && (lastBarIdx - s.candleIndex <= 60))
           .sort((a, b) => b.candleIndex - a.candleIndex)[0];
 
         const activeBearish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && smcCfg.showBearishConfluence && isBearishMaster && (lastBarIdx - s.candleIndex <= 25))
+          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && smcCfg.showBearishConfluence && isBearishMaster && (lastBarIdx - s.candleIndex <= 60))
           .sort((a, b) => b.candleIndex - a.candleIndex)[0];
 
         if (activeBullish && activeBearish) {

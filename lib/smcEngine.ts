@@ -452,7 +452,7 @@ export function saveStoredSmcConfig(cfg: SmcConfig): void {
 
 function roundSmcPrice(price: number): number {
   const abs = Math.abs(price);
-  const decimals = abs > 0 && abs < 1 ? 4 : abs < 10 ? 3 : 2;
+  const decimals = abs > 0 && abs < 0.0001 ? 8 : abs < 0.01 ? 6 : abs < 1 ? 4 : abs < 10 ? 3 : 2;
   return Number(price.toFixed(decimals));
 }
 

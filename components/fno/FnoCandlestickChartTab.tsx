@@ -263,7 +263,7 @@ export function FnoCandlestickChartTab({
     fetchCandles(instrument.symbol, timeframe, undefined, undefined, instrument.market)
       .then((real) => {
         if (!cancelled && Array.isArray(real) && real.length > 0) {
-          setBaseSpotCandles(real.slice(-150));
+          setBaseSpotCandles(real);
         }
       })
       .catch(() => {});
@@ -799,7 +799,7 @@ export function FnoCandlestickChartTab({
               chartType="CANDLESTICK"
               showVolume={showVolume}
               showVolumePanel={showVolume}
-              showSmcOverlay={false}
+              showSmcOverlay={true}
               showVolumeProfile={false}
               indicators={indicatorConfigs}
               indicatorResults={indicatorResults}
@@ -838,7 +838,7 @@ export function FnoCandlestickChartTab({
                 chartType="CANDLESTICK"
                 showVolume={showVolume}
                 showVolumePanel={showVolume}
-                showSmcOverlay={false}
+                showSmcOverlay={true}
                 showVolumeProfile={false}
                 indicators={indicatorConfigs}
                 indicatorResults={futuresIndicatorResults}
@@ -878,7 +878,7 @@ export function FnoCandlestickChartTab({
                 chartType="CANDLESTICK"
                 showVolume={showVolume}
                 showVolumePanel={showVolume}
-                showSmcOverlay={false}
+                showSmcOverlay={true}
                 showVolumeProfile={false}
                 indicators={indicatorConfigs}
                 indicatorResults={indicatorResults}
