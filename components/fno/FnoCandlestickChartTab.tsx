@@ -23,6 +23,7 @@ import {
   INDICATOR_DEFAULTS,
 } from '@/lib/chartRenderer';
 import { getMockCandles } from '@/lib/mockData';
+import { fetchCandles } from '@/lib/tradeEngineClient';
 import { CandlestickCanvas } from '@/components/chart/CandlestickCanvas';
 import { OHLCVHeader } from '@/components/chart/OHLCVHeader';
 
@@ -253,8 +254,20 @@ export function FnoCandlestickChartTab({
   // ════════════════════════════════════════════════════════════════════════════
   // 1. CANDLE GENERATION ENGINE FOR FUTURES & OPTIONS CONTRACTS
   // ════════════════════════════════════════════════════════════════════════════
-  const baseSpotCandles = useMemo(() => {
-    return getMockCandles(instrument.market, instrument.symbol, timeframe, 100);
+  const [baseSpotCandles, setBaseSpotCandles] = useState<Candle[]>(() =>
+    getMockCandles(instrument.market, instrument.symbol, timeframe, 100)
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCandles(instrument.symbol, timeframe, undefined, undefined, instrument.market)
+      .then((real) => {
+        if (!cancelled && Array.isArray(real) && real.length > 0) {
+          setBaseSpotCandles(real.slice(-150));
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [instrument.market, instrument.symbol, timeframe]);
 
   // Futures Candlesticks

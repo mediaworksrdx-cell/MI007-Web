@@ -924,36 +924,17 @@ export function ChartContainer({
           }
         }
 
-        // 2. Fetch latest candles from Trade Engine API
-        const rawEngine = await fetchCandles(selectedSymbol, timeframe);
+        // 2. Fetch latest exact exchange candles from API
+        const rawEngine = await fetchCandles(selectedSymbol, timeframe, undefined, undefined, market);
         let cleanEngine = validateAndCleanCandles(rawEngine || [], timeframe).filter(c => c.openTime <= Date.now() + 300_000);
         if (isArtificialLinearStaircase(cleanEngine)) {
           console.warn(`[ChartContainer] Auto-rejecting artificial staircase from engine for ${selectedSymbol}`);
           cleanEngine = [];
         }
 
-        // Authentic engine candles are preserved as ground truth.
-        // Only if candles are detected as synthetic staircase or legacy corrupt data would they be adjusted.
-
         if (!isCancelled) {
           if (cleanEngine.length > 0) {
-            let finalCandles: Candle[];
-            // Only merge older cached candles if they are on a continuous price scale with engine data
-            if (cleanCached.length > 0) {
-              const cachedLast = cleanCached[cleanCached.length - 1].close;
-              const engineFirst = cleanEngine[0].open;
-              const scaleDiff = Math.abs(cachedLast - engineFirst) / Math.max(1, engineFirst);
-              if (scaleDiff < 0.15 && cleanCached[cleanCached.length - 1].openTime < cleanEngine[0].openTime) {
-                finalCandles = mergeCandleArrays(cleanCached, cleanEngine, tfMs);
-              } else {
-                finalCandles = cleanEngine;
-                purgeStoredCandles(selectedSymbol, timeframe);
-              }
-            } else {
-              finalCandles = cleanEngine;
-            }
-
-            const cleanMerged = validateAndCleanCandles(finalCandles, timeframe);
+            const cleanMerged = validateAndCleanCandles(cleanEngine, timeframe);
 
             setCandles(cleanMerged);
             const lastC = cleanMerged[cleanMerged.length - 1];
@@ -1002,21 +983,27 @@ export function ChartContainer({
       const currentCandles = candlesRef.current;
       if (currentCandles.length > 0) {
         const lastC = currentCandles[currentCandles.length - 1];
-        if (lastC && lastC.close > 0 && isSymbolMarketOpen(selectedSymbol)) {
-          // If market is open, update the active forming candle's close
-          const now = Date.now();
-          if (now >= lastC.openTime) {
-            setCandles(cPrev => {
-              if (cPrev.length === 0) return cPrev;
-              const next = [...cPrev];
-              const idx = next.length - 1;
-              const forming = { ...next[idx] };
-              forming.close = live.price;
-              forming.high = Math.max(forming.high, live.price);
-              forming.low = Math.min(forming.low, live.price);
-              next[idx] = forming;
-              return next;
-            });
+        if (lastC && lastC.close > 0) {
+          const dislocation = Math.abs(live.price - lastC.close) / lastC.close;
+          if (dislocation > 0.05) {
+            return;
+          }
+          if (isSymbolMarketOpen(selectedSymbol)) {
+            // If market is open, update the active forming candle's close
+            const now = Date.now();
+            if (now >= lastC.openTime) {
+              setCandles(cPrev => {
+                if (cPrev.length === 0) return cPrev;
+                const next = [...cPrev];
+                const idx = next.length - 1;
+                const forming = { ...next[idx] };
+                forming.close = live.price;
+                forming.high = Math.max(forming.high, live.price);
+                forming.low = Math.min(forming.low, live.price);
+                next[idx] = forming;
+                return next;
+              });
+            }
           }
         }
       }
@@ -1041,9 +1028,9 @@ export function ChartContainer({
           const currentLast = prev[prev.length - 1];
           if (!currentLast || currentLast.close <= 0) return prev;
 
-          // Reject wild rogue ticks (>35% dislocation from active candle close)
+          // Reject wild rogue ticks (>5% dislocation from active candle close)
           const dislocation = Math.abs(tick.price - currentLast.close) / currentLast.close;
-          if (dislocation > 0.35) {
+          if (dislocation > 0.05) {
             console.warn(`[ChartContainer] Discarding outlier tick for ${selectedSymbol}: ${tick.price} vs active candle ${currentLast.close}`);
             return prev;
           }

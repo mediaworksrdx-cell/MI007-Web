@@ -603,10 +603,9 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
               return;
             }
 
-            // Discard wild outlier single-tick jumps (>65% dislocation)
+            // Discard dislocated/stale ticks (>2% away from current exchange quote)
             const prevEntryCheck = store?.getMap().get(key) || store?.getMap().get(baseSym);
-            if (prevEntryCheck && prevEntryCheck.price > 0 && Math.abs(tick.price - prevEntryCheck.price) / prevEntryCheck.price > 20.0) {
-              console.warn(`[TradeEngine WS] Discarding outlier tick for ${tick.symbol}: ${tick.price} vs current ${prevEntryCheck.price}`);
+            if (!prevEntryCheck || prevEntryCheck.price <= 0 || Math.abs(tick.price - prevEntryCheck.price) / prevEntryCheck.price > 0.02) {
               return;
             }
 

@@ -196,18 +196,20 @@ export async function fetchCandles(
   symbol: string,
   timeframe: string = '1D',
   from?: number,
-  to?: number
+  to?: number,
+  market?: string
 ): Promise<Candle[]> {
   try {
     const params = new URLSearchParams();
     params.set('symbol', symbol);
     params.set('timeframe', timeframe);
+    if (market) params.set('market', market);
     if (from) params.set('from', String(from));
     if (to) params.set('to', String(to));
 
     const res = await fetch(`${getApiBaseUrl()}/candles?${params.toString()}`, { 
       cache: 'no-store',
-      signal: getFetchSignal(3500)
+      signal: getFetchSignal(10000)
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const raw = await res.json();

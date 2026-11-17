@@ -31,7 +31,8 @@ const INDIAN_YAHOO_MAP: Record<string, string> = {
   'FINNIFTY': 'NIFTY_FIN_SERVICE.NS',
   'NIFTY FINANCIAL': 'NIFTY_FIN_SERVICE.NS',
   'MIDCPNIFTY': 'NIFTY_MID_SELECT.NS',
-  'BANKEX': '^BSEBK',
+  'BANKEX': 'BSE-BANK.BO',
+  'INDIAVIX': '^INDIAVIX',
   'RELIANCE': 'RELIANCE.NS',
   'TCS': 'TCS.NS',
   'HDFCBANK': 'HDFCBANK.NS',
@@ -100,18 +101,22 @@ const US_INDEX_YAHOO: Record<string, string> = {
   'DJI': '^DJI',
   'DOW JONES': '^DJI',
   'NASDAQ': '^IXIC',
-  'NDX': '^IXIC',
+  'NDX': '^NDX',
   'NASDAQ 100': '^NDX',
   'VIX': '^VIX',
 };
 
-// UAE Stocks
+// UAE Stocks & Indices
 const UAE_YAHOO_MAP: Record<string, string> = {
   'EMAAR': 'EMAAR.AE',
   'DEWA': 'DEWA.AE',
   'SALIK': 'SALIK.AE',
   'DFMGI': 'DFMGI.AE',
-  'ADX': 'ADI.AE',
+  'ADXGI': 'FADGI.FGI',
+  'ADX': 'FADGI.FGI',
+  'ENBD': 'EMIRATESNBD.AE',
+  'AIRARABIA': 'AIRARABIA.AE',
+  'DFM': 'DFM.AE',
 };
 
 export async function GET() {
@@ -139,68 +144,10 @@ export async function GET() {
   const fetchPromises: Promise<void>[] = [];
 
   // ══════════════════════════════════════════════════════════════════════════
-  // DOMAIN 1: INDIA -> ZERODHA (TRADE ENGINE) WITH YAHOO FALLBACK
+  // DOMAIN 1: INDIA -> EXACT NSE/BSE QUOTES VIA YAHOO FINANCE
   // ══════════════════════════════════════════════════════════════════════════
   fetchPromises.push((async () => {
-    let gcpFresh = false;
-    try {
-      const res = await fetch(`${GCP_TRADE_ENGINE_URL}/live-prices`, {
-        cache: 'no-store',
-        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2000) : undefined,
-      });
-
-      if (res.ok) {
-        const gcpPrices = await res.json();
-        if (Array.isArray(gcpPrices) && gcpPrices.length > 0) {
-          const maxTs = Math.max(...gcpPrices.map((x: any) => x.timestamp || 0));
-          // Only trust GCP if timestamp is within last 120s AND has active live price changes
-          const hasActiveChanges = gcpPrices.some((x: any) => typeof x.changePercent === 'number' && x.changePercent !== 0);
-          if (now - maxTs < 120_000 && hasActiveChanges) {
-            for (const item of gcpPrices) {
-              if (!item.symbol || typeof item.ltp !== 'number' || item.ltp <= 0) continue;
-              const rawSym = String(item.symbol).toUpperCase();
-              const cleanSym = rawSym.replace(/\.NS$/, '').replace(/\.BO$/, '').trim();
-
-              const isIndian = rawSym.includes('.NS') || rawSym.includes('.BO') || INDIAN_SYMBOLS.has(cleanSym) || Boolean(INDIAN_YAHOO_MAP[cleanSym]);
-              if (!isIndian) continue;
-
-              gcpFresh = true;
-              const existing = pricesMap.get(cleanSym) || pricesMap.get(rawSym);
-
-              const effChange = (typeof item.change === 'number' && item.change !== 0)
-                ? item.change
-                : (existing?.change ?? 0);
-              const effChangePct = (typeof item.changePercent === 'number' && item.changePercent !== 0)
-                ? item.changePercent
-                : (existing?.changePercent ?? 0);
-
-              pricesMap.set(cleanSym, {
-                instrumentToken: item.instrumentToken || (existing?.instrumentToken ?? 200000),
-                symbol: item.symbol,
-                ltp: item.ltp,
-                change: effChange,
-                changePercent: effChangePct,
-                timestamp: item.timestamp || now,
-              });
-              if (rawSym.includes('.NS') || rawSym.includes('.BO')) {
-                pricesMap.set(rawSym, {
-                  instrumentToken: item.instrumentToken || 200000,
-                  symbol: item.symbol,
-                  ltp: item.ltp,
-                  change: effChange,
-                  changePercent: effChangePct,
-                  timestamp: item.timestamp || now,
-                });
-              }
-            }
-          }
-        }
-      }
-    } catch (_err) {}
-
-    // Fallback to 1-day accurate Yahoo Finance quotes for Indian market
-    if (!gcpFresh) {
-      const indianFetches = Object.entries(INDIAN_YAHOO_MAP).map(async ([symbol, yahooSym], idx) => {
+    const indianFetches = Object.entries(INDIAN_YAHOO_MAP).map(async ([symbol, yahooSym], idx) => {
         try {
           const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=2d`, {
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
@@ -247,7 +194,6 @@ export async function GET() {
         } catch (_err) {}
       });
       await Promise.all(indianFetches);
-    }
   })());
 
   // ══════════════════════════════════════════════════════════════════════════

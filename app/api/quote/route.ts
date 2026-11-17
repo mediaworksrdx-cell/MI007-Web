@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { INITIAL_SEED_ITEMS } from '@/lib/seedData';
 import { normalizeSymbolKey } from '@/lib/tradeEngineClient';
 import { getZerodhaStockPrice, findZerodhaStockBySymbol } from '@/lib/screener/zerodhaStocks';
-import { fetchTwelveDataQuote } from '@/lib/twelveDataService';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,7 +72,8 @@ const INDIAN_YAHOO_MAP: Record<string, string> = {
   'FINNIFTY': 'NIFTY_FIN_SERVICE.NS',
   'NIFTY FINANCIAL': 'NIFTY_FIN_SERVICE.NS',
   'MIDCPNIFTY': 'NIFTY_MID_SELECT.NS',
-  'BANKEX': '^BSEBK',
+  'BANKEX': 'BSE-BANK.BO',
+  'INDIAVIX': '^INDIAVIX',
   'RELIANCE': 'RELIANCE.NS',
   'TCS': 'TCS.NS',
   'HDFCBANK': 'HDFCBANK.NS',
@@ -85,6 +85,19 @@ const INDIAN_YAHOO_MAP: Record<string, string> = {
   'BHARTIARTL': 'BHARTIARTL.NS',
   'ITC': 'ITC.NS',
   'LT': 'LT.NS',
+};
+
+// ─── 4B. UAE YAHOO MAPPING ───────────────────────────────────────────────────
+const UAE_YAHOO_MAP: Record<string, string> = {
+  'DFMGI': 'DFMGI.AE',
+  'ADXGI': 'FADGI.FGI',
+  'ADX': 'FADGI.FGI',
+  'EMAAR': 'EMAAR.AE',
+  'DEWA': 'DEWA.AE',
+  'SALIK': 'SALIK.AE',
+  'ENBD': 'EMIRATESNBD.AE',
+  'AIRARABIA': 'AIRARABIA.AE',
+  'DFM': 'DFM.AE',
 };
 
 // In-memory quote cache with 15-second TTL
@@ -101,8 +114,6 @@ interface CachedQuote {
 }
 const quoteCache = new Map<string, CachedQuote>();
 const QUOTE_TTL_MS = 15_000;
-
-const GCP_TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'https://synthetixanalytics.com';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -199,30 +210,13 @@ export async function GET(req: NextRequest) {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // TIER 3: US EQUITIES & INDICES -> TWELVE DATA
+  // TIER 3: US EQUITIES & INDICES -> YAHOO FINANCE (EXACT EXCHANGE RATES)
   // ══════════════════════════════════════════════════════════════════════════
   const isUsSymbol = US_SYMBOLS.has(cleanUpper) || US_SYMBOLS.has(cleanKey);
   if (isUsSymbol) {
-    try {
-      const tdQuote = await fetchTwelveDataQuote(cleanUpper);
-      if (tdQuote && tdQuote.price > 0) {
-        const quoteData = {
-          instrumentToken: 999300,
-          symbol: cleanUpper,
-          ltp: tdQuote.price,
-          change: tdQuote.change,
-          changePercent: tdQuote.changePct,
-          timestamp: Date.now(),
-        };
-        quoteCache.set(cleanUpper, { timestamp: Date.now(), data: quoteData });
-        return NextResponse.json(quoteData);
-      }
-    } catch (_tdErr) {}
-
-    // Fallback: Yahoo Finance US benchmarks (^GSPC, ^IXIC, ^DJI, ^VIX) & Equities (NVDA, AAPL, etc.)
     const US_INDEX_YAHOO: Record<string, string> = {
       'SPX': '^GSPC', 'S&P 500': '^GSPC', 'SP500': '^GSPC',
-      'NDX': '^IXIC', 'NASDAQ': '^IXIC', 'NASDAQ 100': '^NDX',
+      'NDX': '^NDX', 'NASDAQ': '^IXIC', 'NASDAQ 100': '^NDX',
       'DJI': '^DJI', 'DOW JONES': '^DJI', 'DOW': '^DJI',
       'VIX': '^VIX',
     };
@@ -270,41 +264,44 @@ export async function GET(req: NextRequest) {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // TIER 4: INDIA -> ZERODHA (TRADE ENGINE) WITH INDIAN YAHOO FALLBACK
+  // TIER 3B: UAE EQUITIES & INDICES -> YAHOO FINANCE
   // ══════════════════════════════════════════════════════════════════════════
-  // 1. Try Zerodha Kite Connect live prices from GCP Trade Engine
-  try {
-    const res = await fetch(`${GCP_TRADE_ENGINE_URL}/live-prices`, {
-      cache: 'no-store',
-      signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2000) : undefined,
-    });
-    if (res.ok) {
-      const items = await res.json();
-      if (Array.isArray(items)) {
-        // ONLY match Indian instruments (either .NS, .BO, or known Indian indices/equities)
-        const match = items.find((it: any) => {
-          const s = String(it.symbol || '').toUpperCase();
-          const clean = s.replace(/\.NS$/, '').replace(/\.BO$/, '');
-          const isIndian = s.includes('.NS') || s.includes('.BO') || Boolean(INDIAN_YAHOO_MAP[clean]) || Boolean(INDIAN_YAHOO_MAP[s]);
-          return isIndian && (clean === cleanUpper || clean === cleanKey || s === cleanUpper);
-        });
-        if (match && typeof match.ltp === 'number' && match.ltp > 0) {
+  const uaeYahooSym = UAE_YAHOO_MAP[cleanUpper] || UAE_YAHOO_MAP[cleanKey];
+  if (uaeYahooSym) {
+    try {
+      const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(uaeYahooSym)}?interval=1d&range=2d`, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        cache: 'no-store',
+        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+          const quotes = data?.chart?.result?.[0]?.indicators?.quote?.[0];
+          const closes = quotes?.close ? quotes.close.filter((x: any) => typeof x === 'number' && !isNaN(x)) : [];
+          const ltp = +meta.regularMarketPrice.toFixed(2);
+          const prevClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.chartPreviousClose || ltp);
+          const change = +(ltp - prevClose).toFixed(2);
+          const changePercent = +(((ltp - prevClose) / Math.max(0.001, prevClose)) * 100).toFixed(2);
           const quoteData = {
-            instrumentToken: match.instrumentToken || 999200,
+            instrumentToken: 999500,
             symbol: cleanUpper,
-            ltp: +match.ltp.toFixed(2),
-            change: Number(match.change || 0),
-            changePercent: Number(match.changePercent || 0),
-            timestamp: match.timestamp || Date.now(),
+            ltp,
+            change,
+            changePercent,
+            timestamp: (meta.regularMarketTime || Math.floor(Date.now() / 1000)) * 1000,
           };
           quoteCache.set(cleanUpper, { timestamp: Date.now(), data: quoteData });
           return NextResponse.json(quoteData);
         }
       }
-    }
-  } catch (_tErr) {}
+    } catch {}
+  }
 
-  // 2. Indian Yahoo Finance fallback
+  // ══════════════════════════════════════════════════════════════════════════
+  // TIER 4: INDIA -> EXACT NSE/BSE QUOTES VIA YAHOO FINANCE
+  // ══════════════════════════════════════════════════════════════════════════
   const indianYahooSym = INDIAN_YAHOO_MAP[cleanUpper] || INDIAN_YAHOO_MAP[cleanKey] || (cleanUpper.endsWith('.NS') ? cleanUpper : `${cleanUpper}.NS`);
   try {
     const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(indianYahooSym)}?interval=1d&range=2d`, {
