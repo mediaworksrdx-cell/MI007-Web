@@ -177,7 +177,8 @@ export async function GET(req: NextRequest) {
   const isCrypto = CRYPTO_SYMBOLS.has(cleanUpper) || CRYPTO_SYMBOLS.has(cleanKey) || cleanUpper.endsWith('USDT') || cleanUpper.endsWith('-USD');
   if (isCrypto) {
     const rawCoin = cleanUpper.replace(/USDT$/, '').replace(/-USD$/, '');
-    const binancePair = `${rawCoin}USDT`;
+    const binanceCoin = rawCoin === 'MATIC' ? 'POL' : rawCoin;
+    const binancePair = `${binanceCoin}USDT`;
     const baseUrls = ['https://api.binance.com/api/v3', 'https://api.binance.us/api/v3'];
 
     for (const baseUrl of baseUrls) {
@@ -192,7 +193,7 @@ export async function GET(req: NextRequest) {
           const pct = parseFloat(ticker.priceChangePercent);
           const chg = parseFloat(ticker.priceChange);
           if (!isNaN(price) && price > 0) {
-            const decimals = price < 0.01 ? 7 : price < 2 ? 4 : price < 20 ? 3 : 2;
+            const decimals = price < 0.0001 ? 8 : price < 0.01 ? 7 : price < 2 ? 4 : price < 20 ? 3 : 2;
             const quoteData = {
               instrumentToken: 999400,
               symbol: cleanUpper,

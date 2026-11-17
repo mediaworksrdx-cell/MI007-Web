@@ -772,10 +772,7 @@ export function ChartContainer({
     return Array.from(new Set(indicatorConfigs.filter(c => c.enabled).map(c => c.type)));
   }, [indicatorConfigs]);
 
-  const [candles, setCandles] = useState<Candle[]>(() => {
-    const sym = defaultSymbol ?? instruments[0]?.symbol ?? 'BTC';
-    return getMockCandles(market, sym, timeframe, 800);
-  });
+  const [candles, setCandles] = useState<Candle[]>([]);
   const ticksPerCandleRef = useRef<Map<number, ExchangeTradeTick[]>>(new Map());
 
   const orderFlowData = useMemo(() => {
@@ -913,15 +910,6 @@ export function ChartContainer({
           const lastC = cleanCached[cleanCached.length - 1];
           setCurrentPrice(lastC?.close);
           setIsLoadingCandles(false);
-        } else if (!isCancelled) {
-          // Immediately show baseline mock candles so user NEVER sees a blank screen or gets frozen
-          const fallback = getMockCandles(market, selectedSymbol, timeframe, 800);
-          const cleanFallback = validateAndCleanCandles(fallback, timeframe);
-          if (cleanFallback.length > 0) {
-            setCandles(cleanFallback);
-            setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);
-            setIsLoadingCandles(false);
-          }
         }
 
         // 2. Fetch latest exact exchange candles from API

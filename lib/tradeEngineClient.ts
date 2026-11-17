@@ -83,8 +83,11 @@ export function normalizeSymbolKey(sym: string): string {
   if (clean === 'SPX' || clean === 'S&P500' || clean === 'SP500') {
     return 'SPX';
   }
-  if (clean === 'NDX' || clean === 'NASDAQ100' || clean === 'NASDAQ') {
+  if (clean === 'NDX' || clean === 'NASDAQ100') {
     return 'NDX';
+  }
+  if (clean === 'NASDAQ' || clean === 'IXIC') {
+    return 'NASDAQ';
   }
   if (clean === 'DJI' || clean === 'DOWJONES' || clean === 'DOW') {
     return 'DJI';
