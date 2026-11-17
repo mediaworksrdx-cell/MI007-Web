@@ -2759,7 +2759,37 @@ export function detectAll16SmcSetups(
     ));
   }
 
-  return setups;
+  // Filter all generated setups through the Institutional Directional Validation Engine
+  const validatedSetups = setups.filter((st) => {
+    // If setup is already invalidated or expired, do not emit as active setup
+    if (st.status === 'INVALIDATED' || st.status === 'EXPIRED') return false;
+
+    const validation = validateSetupDirectionalConfirmation(
+      st.direction,
+      st.setupType,
+      st.candleIndex,
+      candles,
+      breaks,
+      sweeps,
+      htfBias,
+      ltfBias
+    );
+
+    if (!validation.isValid) {
+      return false; // Suppress conflicting, unconfirmed, or counter-trend setups
+    }
+
+    // Attach validation state and reason to audit trail
+    if (st.auditReasons) {
+      st.auditReasons.push(`[${validation.state}] ${validation.reason}`);
+    } else {
+      st.auditReasons = [`[${validation.state}] ${validation.reason}`];
+    }
+
+    return true;
+  });
+
+  return validatedSetups;
 }
 
 // ── 9. True 64-bit BigInt FNV-1a Dataset Hashing & LRU Cache ─────────────────
