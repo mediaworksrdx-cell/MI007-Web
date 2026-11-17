@@ -142,7 +142,8 @@ console.log('\n--- Test 4: Order Blocks (OB) & Breaker Blocks ---');
     makeCandle(t0 + minute * 5, 111, 113, 98, 105, 900000),   // C5: Low=98 taps into OB [96, 100] (Mitigation)
   ];
 
-  const { orderBlocks } = detectOrderBlocksAndBreakers(candles, []);
+  const mockBreak = [{ candleIndex: 3, time: t0 + minute * 3, price: 101, isBullish: true, type: 'BOS ↑', breakType: 'BOS' as const, swingIndex: 0, brokenSwingPrice: 101, confirmationTime: t0 + minute * 4 }];
+  const { orderBlocks } = detectOrderBlocksAndBreakers(candles, mockBreak);
   assert(orderBlocks.length >= 1, `Detected ${orderBlocks.length} order blocks`);
   const bullOb = orderBlocks.find((ob) => ob.isBullish);
   assert(bullOb !== undefined, 'Detected Bullish Demand Order Block');
@@ -155,7 +156,7 @@ console.log('\n--- Test 4: Order Blocks (OB) & Breaker Blocks ---');
     ...candles.slice(0, 5),
     makeCandle(t0 + minute * 5, 109, 110, 94, 94, 1200000), // Closes at 94 < 96 (violates OB bottom)
   ];
-  const { breakers } = detectOrderBlocksAndBreakers(violatedCandles, []);
+  const { breakers } = detectOrderBlocksAndBreakers(violatedCandles, mockBreak);
   assert(breakers.length >= 1, `Detected ${breakers.length} breaker blocks`);
   assert(breakers[0].isBreaker === true, 'Violated OB converted to Breaker Block');
 }
@@ -202,7 +203,7 @@ console.log('\n--- Test 6: Dealing Range, Equilibrium & OTE ---');
   assert(dr.equilibriumPrice === 150, `Equilibrium (50% EQ) is 150 (got: ${dr.equilibriumPrice})`);
   assert(dr.premiumRange[0] === 150 && dr.premiumRange[1] === 200, 'Premium range is [150, 200]');
   assert(dr.discountRange[0] === 100 && dr.discountRange[1] === 150, 'Discount range is [100, 150]');
-  assert(dr.oteRange[0] === 161.8 && dr.oteRange[1] === 178.6, `OTE range is [161.8, 178.6] (got: [${dr.oteRange[0]}, ${dr.oteRange[1]}])`);
+  assert(dr.premiumOteRange[0] === 161.8 && dr.premiumOteRange[1] === 178.6, `OTE range is [161.8, 178.6] (got: [${dr.premiumOteRange[0]}, ${dr.premiumOteRange[1]}])`);
 }
 
 // ── Test 7: Master calculateSMC Pipeline & Scanner Setup Generation ──

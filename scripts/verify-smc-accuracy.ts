@@ -5,11 +5,14 @@ import {
   calculateSMC,
   detectAll16SmcSetups,
   detectFairValueGaps,
+  detectOrderBlocksAndBreakers,
   detectStructureBreaks,
   detectSwingPoints,
   detectLiquidity,
+  isCandleClosed,
   isValidVerifiedCandleDataset,
   resolveSameBarTpSlOrder,
+  timeframeToMs,
   DEFAULT_SMC_CONFIG,
   SmcConfig,
 } from '../lib/smcEngine';
@@ -297,6 +300,60 @@ console.log('\n--- Test 4: Empirical Forward Outcome Simulation (Wins, Losses & 
 
   assert(structuralPct === 100, `All generated setups satisfy directional entry/SL/TP/RR invariants (got ${structuralPct.toFixed(1)}%)`);
   assert(resolvedCount > 0, `Forward simulation resolved at least 1 trade outcome (${resolvedCount} resolved)`);
+}
+
+// ── Test 5: Regression Suite (Fixes 1–12) ────────────────────────────────────
+console.log('\n--- Test 5: Regression Suite (Closed-Bar Fallback, Volume Isolation, Liquidity, Caching) ---');
+{
+  const hour = 3_600_000;
+  const pastStart = Date.now() - 40 * hour;
+
+  // 1. Missing isClosed flag falls back to now >= openTime + timeframe
+  const omittedFlagPast: Candle = { openTime: pastStart, open: 100, high: 105, low: 98, close: 103, volume: 1000 };
+  const omittedFlagLive: Candle = { openTime: Date.now() - 10_000, open: 103, high: 104, low: 102, close: 103.5, volume: 200 };
+  assert(isCandleClosed(omittedFlagPast, timeframeToMs('1H')) === true, 'Fix 1: Missing isClosed on past bar falls back to closed (true)');
+  assert(isCandleClosed(omittedFlagLive, timeframeToMs('1H')) === false, 'Fix 1: Missing isClosed on active bar falls back to open (false)');
+
+  // 2. Single estimated-volume bar does NOT poison the entire OB series
+  const volSeries: Candle[] = Array.from({ length: 30 }, (_, i) =>
+    makeCandle(pastStart + i * hour, 100 + Math.sin(i / 3) * 5, 106 + Math.sin(i / 3) * 5, 95 + Math.sin(i / 3) * 5, 102 + Math.sin(i / 3) * 5, 1_000_000)
+  );
+  volSeries[volSeries.length - 1] = { ...volSeries[volSeries.length - 1], volumeEstimated: true };
+  const sw = detectSwingPoints(volSeries, 3, true);
+  const brk = detectStructureBreaks(volSeries, sw, undefined, 3);
+  const { orderBlocks } = detectOrderBlocksAndBreakers(volSeries, brk);
+  const earlyCleanObs = orderBlocks.filter(ob => ob.startIndex < 20);
+  assert(earlyCleanObs.every(ob => !ob.volumeEstimated), 'Fix 6: Single live estimated-volume bar does not mark historical OBs as volumeEstimated');
+
+  // 3. Non-genuine sweep (wick < minWickRatio) must NOT mark liquidity level as swept
+  const liqCandles: Candle[] = [
+    makeCandle(pastStart + 0 * hour, 100, 102, 99, 101),
+    makeCandle(pastStart + 1 * hour, 101, 105, 100, 102),
+    makeCandle(pastStart + 2 * hour, 102, 110, 101, 103), // Swing high at 110
+    makeCandle(pastStart + 3 * hour, 103, 104, 100, 101),
+    makeCandle(pastStart + 4 * hour, 101, 103, 99, 100),
+    makeCandle(pastStart + 5 * hour, 100, 102, 98, 99),
+    // Tiny upper wick (110.2 - 109.9 = 0.3 out of range 110.2 - 100 = 10.2 => 2.9% < 25%) closing below 110
+    makeCandle(pastStart + 6 * hour, 100, 110.2, 100, 109.9),
+  ];
+  const liqSwings = detectSwingPoints(liqCandles, 2, true);
+  const liqRes = detectLiquidity(liqCandles, liqSwings, 0.25);
+  const bsl110 = liqRes.levels.find(l => l.type === 'BSL' && l.price === 110);
+  assert(Boolean(bsl110 && bsl110.isSwept === false), 'Fix 8: Non-genuine sweep does not mark BSL level as swept');
+
+  // 4. Forming-bar ticks hit O(1) cache cleanly without changing SMC output
+  const baseChart: Candle[] = Array.from({ length: 45 }, (_, i) => {
+    const t = Math.sin(i / 5) * 12;
+    const o = 1000 + t;
+    const c = 1000 + Math.sin((i + 1) / 5) * 12;
+    return makeCandle(pastStart + i * hour, o, Math.max(o, c) + 3, Math.min(o, c) - 3, c, 500_000);
+  });
+  const formingTick1: Candle = { ...makeCandle(pastStart + 45 * hour, 1005, 1006, 1004, 1005.5, 1000), isClosed: false };
+  const formingTick2: Candle = { ...makeCandle(pastStart + 45 * hour, 1005, 1008, 1003, 1007.2, 1500), isClosed: false };
+  const smcTick1 = calculateSMC([...baseChart, formingTick1], undefined, 'TEST', '1H');
+  const smcTick2 = calculateSMC([...baseChart, formingTick2], undefined, 'TEST', '1H');
+  assert(smcTick1.datasetFingerprint === smcTick2.datasetFingerprint, 'Fix 11: Forming-bar ticks share the same closed-bar cache fingerprint');
+  assert(smcTick1 === smcTick2, 'Fix 11: Forming-bar ticks return cached SmcAnalysis in O(1)');
 }
 
 console.log('\n======================================================================');

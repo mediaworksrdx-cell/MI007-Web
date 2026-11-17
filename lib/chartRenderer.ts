@@ -1331,8 +1331,8 @@ export function renderChart(
       }
 
       // Bearish Premium OTE: rendered in Premium zone (Short retracement)
-      if (isBearishMaster && (dr.premiumOteRange || dr.oteRange)) {
-        const premOte = dr.premiumOteRange || dr.oteRange;
+      if (isBearishMaster && dr.premiumOteRange) {
+        const premOte = dr.premiumOteRange;
         if (premOte[0] > 0 && premOte[1] > 0) {
           const yOte1 = priceToY(premOte[0]);
           const yOte2 = priceToY(premOte[1]);
@@ -2295,11 +2295,13 @@ export function renderChart(
 
     // 10. Confirmed Directional SMC Setups (Only Quality >= 70 Accepted; < 70 Strictly Excluded from Active Trade List)
     if (smcData.confirmedSetups || smcData.allSetups || smcData.rejectedSetups) {
+      const terminalClose = candles[candles.length - 1]?.close ?? 0;
       const isActiveSetup = (s: SmcConfirmedSetup) =>
         (s.qualityScore ?? 0) >= 70 &&
         !s.isRejectedPermanently &&
         s.signalState !== 'REJECTED' &&
         s.actionTier !== 'REJECT' &&
+        (terminalClose <= 0 || Math.abs(s.entryPrice - terminalClose) / terminalClose <= 0.05) &&
         (s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED' || s.status === 'PENDING');
 
       let setupsToRender: SmcConfirmedSetup[] = [];

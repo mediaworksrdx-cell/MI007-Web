@@ -103,6 +103,7 @@ function createVerifiedDailySeries(
       low,
       close,
       volume,
+      isClosed: i < totalDays - 1,
     });
   }
 
@@ -200,21 +201,22 @@ export function getVerifiedHistoricalCandles(
     const shouldScale = Math.abs(ratio - 1) > 0.05;
 
     return targetSlice.map((c, idx) => {
+      const isClosed = c.isClosed ?? (idx < targetSlice.length - 1);
       if (shouldScale) {
         const open = Number((c.open * ratio).toFixed(2));
         const close = idx === targetSlice.length - 1 ? validCurrentPrice : Number((c.close * ratio).toFixed(2));
         const high = Math.max(open, close, Number((c.high * ratio).toFixed(2)));
         const low = Math.min(open, close, Number((c.low * ratio).toFixed(2)));
-        return { ...c, open, close, high, low };
+        return { ...c, open, close, high, low, isClosed };
       }
       if (idx === targetSlice.length - 1) {
         const open = c.open;
         const close = validCurrentPrice;
         const high = Math.max(c.high, open, close);
         const low = Math.min(c.low, open, close);
-        return { ...c, close, high, low };
+        return { ...c, close, high, low, isClosed };
       }
-      return { ...c };
+      return { ...c, isClosed };
     });
   }
 

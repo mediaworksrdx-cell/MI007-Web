@@ -9,10 +9,9 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental, MarketRegion } from '@/lib/screener/types';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
-import { getVerifiedHistoricalCandles } from '@/lib/screener/verifiedHistoricalCandles';
-import { generateMockCandles } from '@/lib/mockData';
 import {
   calculateSMC,
+  timeframeToMs,
   SmcConfirmedSetup,
   SmcSetupType,
   SmcAnalysis,
@@ -129,8 +128,10 @@ function getStatusPriority(status: string): number {
   }
 }
 
-// SMC scan cache (module-scoped: results are a pure function of the cache key)
+// SMC scan cache & real /api/candles fetch cache (module-scoped)
 const SMC_SCAN_CACHE = new Map<string, ScannedSmcItem[]>();
+const CANDLE_FETCH_CACHE = new Map<string, { candles: Candle[]; fetchedAt: number; noData: boolean }>();
+const CANDLE_CACHE_TTL_MS = 60_000;
 
 export function SmcScannerView({
   companies,
@@ -148,6 +149,9 @@ export function SmcScannerView({
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [candlesBySymbol, setCandlesBySymbol] = useState<Record<string, Candle[]>>({});
+  const [noDataSymbols, setNoDataSymbols] = useState<string[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
 
   const { getSymbolPrice, requestQuoteFetch } = useTradeEngine();
 
@@ -187,85 +191,139 @@ export function SmcScannerView({
 
   // SMC Scan Cache
 
-  // Execute quantitative SMC scanning across universe
+  // Fetch real exchange OHLCV candles from /api/candles for every instrument in targetUniverse (zero mock/synthetic fallback)
+  useEffect(() => {
+    if (targetUniverse.length === 0) return;
+    let cancelled = false;
+    const controller = new AbortController();
+    const tfMs = timeframeToMs(timeframe);
+
+    async function loadCandles() {
+      setIsScanning(true);
+      const nextCandles: Record<string, Candle[]> = {};
+      const nextNoData: string[] = [];
+      const now = Date.now();
+      const pending: CompanyFundamental[] = [];
+
+      for (const comp of targetUniverse) {
+        const key = `${market}:${comp.symbol}:${timeframe}`;
+        const cached = CANDLE_FETCH_CACHE.get(key);
+        if (cached && now - cached.fetchedAt < CANDLE_CACHE_TTL_MS) {
+          if (cached.noData || cached.candles.length < 20) nextNoData.push(comp.symbol);
+          else nextCandles[comp.symbol] = cached.candles;
+        } else {
+          pending.push(comp);
+        }
+      }
+
+      if (!cancelled) {
+        if (Object.keys(nextCandles).length > 0) {
+          setCandlesBySymbol((prev) => ({ ...prev, ...nextCandles }));
+        }
+        setNoDataSymbols(nextNoData);
+      }
+
+      const BATCH_SIZE = 6;
+      for (let i = 0; i < pending.length; i += BATCH_SIZE) {
+        if (cancelled) break;
+        const batch = pending.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batch.map(async (comp) => {
+            const key = `${market}:${comp.symbol}:${timeframe}`;
+            try {
+              const res = await fetch(
+                `/api/candles?symbol=${encodeURIComponent(comp.symbol)}&timeframe=${encodeURIComponent(timeframe)}&market=${encodeURIComponent(market)}`,
+                { signal: controller.signal }
+              );
+              if (!res.ok) {
+                CANDLE_FETCH_CACHE.set(key, { candles: [], fetchedAt: Date.now(), noData: true });
+                return { symbol: comp.symbol, candles: [] as Candle[], noData: true };
+              }
+              const data = await res.json();
+              const raw: Candle[] = Array.isArray(data?.candles) ? data.candles : [];
+              const fetchNow = Date.now();
+              const normalized: Candle[] = raw.map((c, idx) => ({
+                ...c,
+                isClosed: typeof c.isClosed === 'boolean'
+                  ? c.isClosed
+                  : (idx < raw.length - 1 ? true : fetchNow >= c.openTime + tfMs),
+              }));
+              const hasData = normalized.length >= 20;
+              CANDLE_FETCH_CACHE.set(key, { candles: normalized, fetchedAt: fetchNow, noData: !hasData });
+              return { symbol: comp.symbol, candles: normalized, noData: !hasData };
+            } catch {
+              return { symbol: comp.symbol, candles: [] as Candle[], noData: true };
+            }
+          })
+        );
+
+        if (cancelled) break;
+        const batchCandles: Record<string, Candle[]> = {};
+        const batchNoData: string[] = [];
+        for (const r of batchResults) {
+          if (r.noData) batchNoData.push(r.symbol);
+          else batchCandles[r.symbol] = r.candles;
+        }
+        if (Object.keys(batchCandles).length > 0) {
+          setCandlesBySymbol((prev) => ({ ...prev, ...batchCandles }));
+        }
+        if (batchNoData.length > 0) {
+          setNoDataSymbols((prev) => Array.from(new Set([...prev, ...batchNoData])));
+        }
+      }
+
+      if (!cancelled) setIsScanning(false);
+    }
+
+    loadCandles();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [targetUniverse, timeframe, market]);
+
+  // Execute quantitative SMC scanning across universe using real /api/candles data only
   const scanResults = useMemo(() => {
     const list: ScannedSmcItem[] = [];
     const cache = SMC_SCAN_CACHE;
     if (cache.size > 5000) cache.clear();
 
     targetUniverse.forEach((comp) => {
+      const candles = candlesBySymbol[comp.symbol];
+      if (!candles || candles.length < 20) return;
+
       const live = getSymbolPrice(comp.symbol);
-      const price = live?.price ?? comp.currentPrice;
-      const cacheKey = `${market}:${comp.symbol}:${timeframe}:${price}`;
+      const price = live?.price ?? candles[candles.length - 1]?.close ?? comp.currentPrice;
+      const lastClosed = [...candles].reverse().find((c) => c.isClosed === true);
+      const cacheKey = `${market}:${comp.symbol}:${timeframe}:${candles.length}:${lastClosed?.openTime ?? 0}`;
 
       let items = cache.get(cacheKey);
       if (!items) {
         items = [];
-        const high52W = (comp.high52W && comp.high52W > price * 1.03) ? comp.high52W : price * 1.25;
-        const low52W = (comp.low52W && comp.low52W < price * 0.97) ? comp.low52W : price * 0.75;
-        
-        let candles: Candle[];
-        if (timeframe === '1D') {
-          candles = getVerifiedHistoricalCandles(
-            comp.symbol,
-            price,
-            high52W,
-            low52W,
-            comp.volume || 2000000,
-            (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA',
-            180
-          );
-        } else {
-          const tfMs =
-            timeframe === '15m' ? 15 * 60 * 1000 :
-            timeframe === '1H' ? 60 * 60 * 1000 :
-            timeframe === '4H' ? 4 * 60 * 60 * 1000 :
-            24 * 60 * 60 * 1000;
-          candles = generateMockCandles(
-            (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA',
-            comp.symbol,
-            160,
-            tfMs
-          );
-          if (candles.length > 0 && price > 0) {
-            const lastC = candles[candles.length - 1].close;
-            const ratio = price / (lastC || 1);
-            candles = candles.map((c, idx) => {
-              const open = Number((c.open * ratio).toFixed(2));
-              const close = idx === candles.length - 1 ? price : Number((c.close * ratio).toFixed(2));
-              const high = Math.max(open, close, Number((c.high * ratio).toFixed(2)));
-              const low = Math.min(open, close, Number((c.low * ratio).toFixed(2)));
-              return { ...c, open, high, low, close };
-            });
-          }
-        }
+        const analysis: SmcAnalysis = calculateSMC(candles, undefined, comp.symbol, timeframe);
+        const setupsList = (analysis.confirmedSetups && analysis.confirmedSetups.length > 0
+          ? analysis.confirmedSetups
+          : analysis.allSetups).filter(
+          (s) =>
+            (s.qualityScore ?? 0) >= 70 &&
+            !s.isRejectedPermanently &&
+            s.signalState !== 'REJECTED' &&
+            s.actionTier !== 'REJECT'
+        );
 
-        if (candles && candles.length >= 20) {
-          const analysis: SmcAnalysis = calculateSMC(candles, undefined, comp.symbol, timeframe);
-          const setupsList = (analysis.confirmedSetups && analysis.confirmedSetups.length > 0
-            ? analysis.confirmedSetups
-            : analysis.allSetups).filter(
-            (s) =>
-              (s.qualityScore ?? 0) >= 70 &&
-              !s.isRejectedPermanently &&
-              s.signalState !== 'REJECTED' &&
-              s.actionTier !== 'REJECT'
-          );
-
-          for (const setup of setupsList) {
-            items.push({
-              symbol: comp.symbol,
-              name: comp.name,
-              market,
-              currentPrice: price,
-              changePct: comp.priceChangePct ?? 0,
-              setup,
-              timeframe,
-              equilibrium: analysis.equilibriumPrice,
-              dealingRangeHigh: analysis.dealingRange.highPrice,
-              dealingRangeLow: analysis.dealingRange.lowPrice,
-            });
-          }
+        for (const setup of setupsList) {
+          items.push({
+            symbol: comp.symbol,
+            name: comp.name,
+            market,
+            currentPrice: price,
+            changePct: comp.priceChangePct ?? 0,
+            setup,
+            timeframe,
+            equilibrium: analysis.equilibriumPrice,
+            dealingRangeHigh: analysis.dealingRange.highPrice,
+            dealingRangeLow: analysis.dealingRange.lowPrice,
+          });
         }
         cache.set(cacheKey, items);
       }
@@ -274,7 +332,7 @@ export function SmcScannerView({
     });
 
     return list;
-  }, [targetUniverse, timeframe, market, getSymbolPrice]);
+  }, [targetUniverse, timeframe, market, candlesBySymbol, getSymbolPrice]);
 
   // Filtered setups based on setup type, direction, status, quality tier, search query
   const filteredResults = useMemo(() => {
@@ -584,9 +642,21 @@ export function SmcScannerView({
                 <tr>
                   <td colSpan={11} className="py-12 text-center text-[var(--theme-card-text-muted)]">
                     <div className="flex flex-col items-center gap-2">
-                      <span className="text-2xl">⚡</span>
-                      <span className="font-bold text-sm">No SMC setups matched current criteria</span>
-                      <span className="text-xs">Try selecting a different timeframe or broadening filters</span>
+                      <span className="text-2xl">{isScanning ? '⏳' : '⚡'}</span>
+                      <span className="font-bold text-sm">
+                        {isScanning
+                          ? 'Scanning real exchange candles from /api/candles...'
+                          : noDataSymbols.length >= targetUniverse.length
+                          ? 'No data'
+                          : 'No SMC setups matched current criteria'}
+                      </span>
+                      <span className="text-xs">
+                        {isScanning
+                          ? `Evaluating ${targetUniverse.length} instruments on ${timeframe}`
+                          : noDataSymbols.length > 0
+                          ? `No data for ${noDataSymbols.length} symbol(s): ${noDataSymbols.slice(0, 6).join(', ')}${noDataSymbols.length > 6 ? '...' : ''}`
+                          : 'Try selecting a different timeframe or broadening filters'}
+                      </span>
                     </div>
                   </td>
                 </tr>

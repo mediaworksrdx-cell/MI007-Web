@@ -12,13 +12,13 @@
 // - Close-based BOS & CHoCH / MSS with configurable displacement & volume options
 // - Mirrored Liquidity Sweeps (BSL Upper Wick ratio vs SSL Lower Wick ratio)
 // - Invalidation-First FVG Waterfall (evaluating structural invalidation before mitigation)
-// - Unambiguous Session Windows & IANA Timezone Awareness (London, NY RTH/Full, Tokyo, India)
+// - Unambiguous Session Windows & IANA Timezone Awareness (Tokyo, London, New York)
 // - Complete 9-State Lifecycle State Machine with single & multi-target scaling
 // - True 64-bit BigInt FNV-1a Dataset Hashing & Reentrant LRU Caching
 // - All 16 Institutional SMC Strategies with Stop Loss & Take Profit targets
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { Candle } from './types';
+import { Candle, getInstrumentDecimals } from './types';
 
 // ── Types & Configuration ──────────────────────────────────────────────────
 
@@ -141,7 +141,6 @@ export interface SmcDealingRange {
   equilibriumPrice: number;
   premiumRange: [number, number]; // [50%, 100%]
   discountRange: [number, number]; // [0%, 50%]
-  oteRange: [number, number]; // [61.8%, 78.6%] - preserved for backwards compatibility
   discountOteRange: [number, number]; // [21.4%, 38.2%] - 61.8% to 78.6% deep retracement down into discount
   premiumOteRange: [number, number]; // [61.8%, 78.6%] - 61.8% to 78.6% retracement up into premium
 }
@@ -495,9 +494,14 @@ export function saveStoredSmcConfig(cfg: SmcConfig): void {
   }
 }
 
-function roundSmcPrice(price: number): number {
+function roundSmcPrice(price: number, symbol?: string): number {
+  if (!Number.isFinite(price)) return 0;
+  if (symbol && symbol !== 'UNKNOWN') {
+    const dec = getInstrumentDecimals(symbol, price);
+    return Number(price.toFixed(dec));
+  }
   const abs = Math.abs(price);
-  const decimals = abs > 0 && abs < 0.0001 ? 8 : abs < 0.01 ? 6 : abs < 1 ? 4 : abs < 10 ? 3 : 2;
+  const decimals = abs > 0 && abs < 0.0001 ? 8 : abs < 0.01 ? 6 : abs < 2 ? 4 : 2;
   return Number(price.toFixed(decimals));
 }
 
@@ -515,11 +519,34 @@ export interface SmcRiskProfile {
 }
 export const DEFAULT_SMC_RISK_PROFILE: SmcRiskProfile = { target1R: 2.0, target2R: 3.0, minRiskReward: 2.0 };
 
+/** Converts a timeframe string (e.g. '15m', '1H', '4H', '1D', '1W', '1M') to milliseconds. */
+export function timeframeToMs(timeframe?: string): number {
+  switch ((timeframe || '').trim()) {
+    case '1m': return 60_000;
+    case '3m': return 3 * 60_000;
+    case '5m': return 5 * 60_000;
+    case '15m': return 15 * 60_000;
+    case '30m': return 30 * 60_000;
+    case '1H':
+    case '1h': return 60 * 60_000;
+    case '4H':
+    case '4h': return 4 * 60 * 60_000;
+    case '1D':
+    case '1d': return 24 * 60 * 60_000;
+    case '1W':
+    case '1w': return 7 * 24 * 60 * 60_000;
+    case '1M': return 30 * 24 * 60 * 60_000;
+    default: return 3_600_000;
+  }
+}
+
 /**
  * Data validation guard: rejects synthetic staircase, unverified/unclosed, non-positive, or out-of-order candle arrays.
  */
-export function isValidVerifiedCandleDataset(candles: Candle[] | undefined | null): boolean {
+export function isValidVerifiedCandleDataset(candles: Candle[] | undefined | null, timeframeMs?: number): boolean {
   if (!candles || !Array.isArray(candles) || candles.length < 5) return false;
+  const ivMs = timeframeMs ?? inferCandleIntervalMs(candles);
+  const nowMs = Date.now();
   let closedCount = 0;
   let identicalDeltaCount = 0;
   for (let i = 0; i < candles.length; i++) {
@@ -528,7 +555,7 @@ export function isValidVerifiedCandleDataset(candles: Candle[] | undefined | nul
     if (!Number.isFinite(c.open) || !Number.isFinite(c.high) || !Number.isFinite(c.low) || !Number.isFinite(c.close)) return false;
     if (c.open <= 0 || c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low) return false;
     if (i > 0 && c.openTime < candles[i - 1].openTime) return false;
-    if (c.isClosed === true) closedCount++;
+    if (isCandleClosed(c, ivMs, nowMs)) closedCount++;
     if (i >= 2) {
       const d1 = c.close - candles[i - 1].close;
       const d2 = candles[i - 1].close - candles[i - 2].close;
@@ -597,9 +624,12 @@ export function candleCloseTime(candles: Candle[], idx: number, intervalMs?: num
   return c.openTime + iv;
 }
 
-/** SMC-002: A candle is usable for signal generation only once explicitly closed (c.isClosed === true). */
-export function isCandleClosed(c: Candle | undefined): boolean {
-  return Boolean(c && c.isClosed === true);
+/** SMC-002: A candle is usable for signal generation once closed; if `isClosed` is omitted, falls back to `now >= openTime + timeframeMs`. */
+export function isCandleClosed(c: Candle | undefined, timeframeMs: number = 3_600_000, nowMs: number = Date.now()): boolean {
+  if (!c) return false;
+  if (c.isClosed === true) return true;
+  if (c.isClosed === false) return false;
+  return Number.isFinite(c.openTime) && nowMs >= c.openTime + timeframeMs;
 }
 
 /** SMC-020 / SMC-036: Wilder ATR using true range. */
@@ -749,8 +779,10 @@ export function detectStructureBreaks(
   const ivMs = inferCandleIntervalMs(candles);
 
   let trendDirection = 0; // 1 = Bullish, -1 = Bearish
-  const activeHighs: SmcSwingPoint[] = [];
-  const activeLows: SmcSwingPoint[] = [];
+  let activeHighs: SmcSwingPoint[] = [];
+  let activeLows: SmcSwingPoint[] = [];
+  let protectedLowSwing: SmcSwingPoint | null = null;
+  let protectedHighSwing: SmcSwingPoint | null = null;
   let swingPtr = 0;
   // SMC-001: a swing becomes active only after ITS OWN confirmation bar closed
   // (major swings use a longer lookback than `swingLength`).
@@ -765,9 +797,11 @@ export function detectStructureBreaks(
       if (sw.isHigh) {
         activeHighs.push(sw);
         if (activeHighs.length > 5) activeHighs.shift();
+        if (trendDirection === -1) protectedHighSwing = sw;
       } else {
         activeLows.push(sw);
         if (activeLows.length > 5) activeLows.shift();
+        if (trendDirection === 1) protectedLowSwing = sw;
       }
       swingPtr++;
     }
@@ -785,28 +819,23 @@ export function detectStructureBreaks(
       if (cur.volume < volMult * volSmaValues[i]) passFilters = false;
     }
 
-    // Break Above Active Highs (Bullish BOS / CHoCH — swing must be confirmed prior to break bar i and unbroken prior to i)
+    // Break Above Active Highs: pick the most recent broken swing and remove all broken swings from activeHighs.
+    // Classify CHoCH only when the protected swing high breaks.
     if (activeHighs.length > 0 && passFilters) {
-      let brokenHighIdx = -1;
-      for (let hi = activeHighs.length - 1; hi >= 0; hi--) {
-        const h = activeHighs[hi];
-        if (swingConfIdx(h) >= i) continue;
-        if (!(cur.close > h.price && prev.close <= h.price)) continue;
-        let alreadyBroken = false;
+      const brokenHighs = activeHighs.filter((h) => {
+        if (swingConfIdx(h) >= i) return false;
+        if (!(cur.close > h.price && prev.close <= h.price)) return false;
         for (let k = h.index + 1; k < i; k++) {
-          if (candles[k].close > h.price) {
-            alreadyBroken = true;
-            break;
-          }
+          if (candles[k].close > h.price) return false;
         }
-        if (!alreadyBroken) {
-          brokenHighIdx = hi;
-          break;
-        }
-      }
-      if (brokenHighIdx !== -1) {
-        const brokenHigh = activeHighs[brokenHighIdx];
-        const isReversal = trendDirection === -1;
+        return true;
+      });
+      if (brokenHighs.length > 0) {
+        const brokenHigh = brokenHighs[brokenHighs.length - 1];
+        const brokeProtected = protectedHighSwing
+          ? (cur.close > protectedHighSwing.price || brokenHigh.price >= protectedHighSwing.price)
+          : trendDirection === -1;
+        const isReversal = trendDirection === -1 && brokeProtected;
         const breakType: SmcBreakType = isReversal ? 'CHoCH' : 'BOS';
         const label = `${breakType} ↑`;
         let protectedLow = activeLows[activeLows.length - 1]?.price;
@@ -831,32 +860,30 @@ export function detectStructureBreaks(
         });
 
         trendDirection = 1;
-        activeHighs.splice(0, brokenHighIdx + 1);
+        protectedLowSwing = activeLows[activeLows.length - 1] ?? null;
+        protectedHighSwing = null;
+        // Remove all broken swings from activeHighs
+        activeHighs = activeHighs.filter((h) => !(swingConfIdx(h) < i && cur.close > h.price));
       }
     }
 
-    // Break Below Active Lows (Bearish BOS / CHoCH — swing must be confirmed prior to break bar i and unbroken prior to i)
+    // Break Below Active Lows: pick the most recent broken swing and remove all broken swings from activeLows.
+    // Classify CHoCH only when the protected swing low breaks.
     if (activeLows.length > 0 && passFilters) {
-      let brokenLowIdx = -1;
-      for (let li = activeLows.length - 1; li >= 0; li--) {
-        const l = activeLows[li];
-        if (swingConfIdx(l) >= i) continue;
-        if (!(cur.close < l.price && prev.close >= l.price)) continue;
-        let alreadyBroken = false;
+      const brokenLows = activeLows.filter((l) => {
+        if (swingConfIdx(l) >= i) return false;
+        if (!(cur.close < l.price && prev.close >= l.price)) return false;
         for (let k = l.index + 1; k < i; k++) {
-          if (candles[k].close < l.price) {
-            alreadyBroken = true;
-            break;
-          }
+          if (candles[k].close < l.price) return false;
         }
-        if (!alreadyBroken) {
-          brokenLowIdx = li;
-          break;
-        }
-      }
-      if (brokenLowIdx !== -1) {
-        const brokenLow = activeLows[brokenLowIdx];
-        const isReversal = trendDirection === 1;
+        return true;
+      });
+      if (brokenLows.length > 0) {
+        const brokenLow = brokenLows[brokenLows.length - 1];
+        const brokeProtected = protectedLowSwing
+          ? (cur.close < protectedLowSwing.price || brokenLow.price <= protectedLowSwing.price)
+          : trendDirection === 1;
+        const isReversal = trendDirection === 1 && brokeProtected;
         const breakType: SmcBreakType = isReversal ? 'CHoCH' : 'BOS';
         const label = `${breakType} ↓`;
         let protectedHigh = activeHighs[activeHighs.length - 1]?.price;
@@ -881,7 +908,10 @@ export function detectStructureBreaks(
         });
 
         trendDirection = -1;
-        activeLows.splice(0, brokenLowIdx + 1);
+        protectedHighSwing = activeHighs[activeHighs.length - 1] ?? null;
+        protectedLowSwing = null;
+        // Remove all broken swings from activeLows
+        activeLows = activeLows.filter((l) => !(swingConfIdx(l) < i && cur.close < l.price));
       }
     }
   }
@@ -998,9 +1028,9 @@ export function detectLiquidity(
           const upperWickRatio = upperWick / totalRange;
           const isGenuineSweep = upperWickRatio >= minWickRatio;
           const rejectionConfirmed = !!next && isCandleClosed(next) && next.close < lvl.price;
-          lvl.isSwept = true;
-          lvl.sweepCandleIndex = i;
           if (isGenuineSweep) {
+            lvl.isSwept = true;
+            lvl.sweepCandleIndex = i;
             sweeps.push({
               candleIndex: i,
               time: cur.openTime,
@@ -1026,9 +1056,9 @@ export function detectLiquidity(
           const lowerWickRatio = lowerWick / totalRange;
           const isGenuineSweep = lowerWickRatio >= minWickRatio;
           const rejectionConfirmed = !!next && isCandleClosed(next) && next.close > lvl.price;
-          lvl.isSwept = true;
-          lvl.sweepCandleIndex = i;
           if (isGenuineSweep) {
+            lvl.isSwept = true;
+            lvl.sweepCandleIndex = i;
             sweeps.push({
               candleIndex: i,
               time: cur.openTime,
@@ -1051,6 +1081,21 @@ export function detectLiquidity(
 
 // ── 4. Order Blocks & Breaker Blocks ────────────────────────────────────────
 
+/** Returns true when the target bar has estimated volume or >30% of the baseline window has estimated volume. */
+function isWindowVolumeEstimated(candles: Candle[], startIdx: number, endIdx: number): boolean {
+  const target = candles[endIdx];
+  if (!target || target.volumeEstimated) return true;
+  const lo = Math.max(0, startIdx);
+  const hi = Math.min(candles.length - 1, endIdx);
+  if (hi < lo) return true;
+  let estCount = 0;
+  const total = hi - lo + 1;
+  for (let k = lo; k <= hi; k++) {
+    if (candles[k]?.volumeEstimated) estCount++;
+  }
+  return estCount / total > 0.3;
+}
+
 export function detectOrderBlocksAndBreakers(
   candles: Candle[],
   breaks: SmcStructureBreak[],
@@ -1064,9 +1109,7 @@ export function detectOrderBlocksAndBreakers(
   const dispMult = options?.displacementAtrMultiple ?? 1.0;
   const volMult = options?.volumeSmaMultiple ?? 1.10;
   const linkBars = Math.max(1, options?.obStructureLinkBars ?? 6);
-  // SMC-016 / CH-003: volume expansion is only meaningful with real exchange volume
-  const volumeIsEstimated = candles.some(c => c.volumeEstimated);
-  const reqVol = (options?.requireVolumeExpansion ?? true) && !volumeIsEstimated;
+  const reqVolSetting = options?.requireVolumeExpansion ?? true;
   const atr = computeAtrSeries(candles, 14);
 
   // SMC-015: SMA(volume, 20) over the 20 bars BEFORE bar j (excludes the displacement bar itself)
@@ -1094,7 +1137,8 @@ export function detectOrderBlocksAndBreakers(
 
     const ma = volBaseline(i + 1);
     const volumeRatio = next.volume / Math.max(1, ma);
-    if (reqVol && next.volume < volMult * ma) return;
+    const obVolEstimated = isWindowVolumeEstimated(candles, Math.max(0, i + 1 - 20), i + 1);
+    if (reqVolSetting && !obVolEstimated && next.volume < volMult * ma) return;
 
     // SMC-013 / SMC-014: require a same-direction structural break caused by this displacement.
     // "Caused" = break occurs within linkBars of the OB AND price never closed back through the OB
@@ -1109,15 +1153,6 @@ export function detectOrderBlocksAndBreakers(
     });
     if (!linked) return;
 
-    // Merge adjacent same-direction blocks into one cluster
-    const lastOb = orderBlocks[orderBlocks.length - 1];
-    if (lastOb && lastOb.isBullish === isBull && Math.abs(lastOb.startIndex - i) <= 1) {
-      lastOb.bottomPrice = Math.min(lastOb.bottomPrice, candle.low);
-      lastOb.topPrice = Math.max(lastOb.topPrice, candle.high);
-      lastOb.clusterSize = (lastOb.clusterSize || 1) + 1;
-      return;
-    }
-
     const ob: SmcOrderBlock = {
       id: `ob-${isBull ? 'bull' : 'bear'}-${i}`,
       startIndex: i,
@@ -1129,7 +1164,7 @@ export function detectOrderBlocksAndBreakers(
       isMitigated: false,
       mitigationState: 'FRESH',
       volumeRatio,
-      volumeEstimated: volumeIsEstimated || undefined,
+      volumeEstimated: obVolEstimated || undefined,
       label: isBull ? 'OB (Demand)' : 'OB (Supply)',
       formationTime: candle.openTime,
       originatingCandleIndex: i,
@@ -1154,6 +1189,7 @@ export function detectOrderBlocksAndBreakers(
         ob.label = isBull ? 'Breaker (Bear)' : 'Breaker (Bull)';
 
         // SMC-018: breaker has its own lifecycle (FRESH → retest → INVALIDATED)
+        const brkVolEstimated = isWindowVolumeEstimated(candles, Math.max(0, k - 20), k);
         const brk: SmcOrderBlock = {
           id: `breaker-${isBull ? 'bear' : 'bull'}-${i}`,
           startIndex: k,
@@ -1166,7 +1202,7 @@ export function detectOrderBlocksAndBreakers(
           mitigationState: 'FRESH',
           mitigationIndex: k,
           volumeRatio: bar.volume / Math.max(1, volBaseline(k)),
-          volumeEstimated: volumeIsEstimated || undefined,
+          volumeEstimated: brkVolEstimated || undefined,
           label: isBull ? 'Breaker (Bear)' : 'Breaker (Bull)',
           formationTime: bar.openTime,
           originatingCandleIndex: i,
@@ -1391,7 +1427,6 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
       equilibriumPrice: 0,
       premiumRange: [0, 0],
       discountRange: [0, 0],
-      oteRange: [0, 0],
       discountOteRange: [0, 0],
       premiumOteRange: [0, 0],
     };
@@ -1410,18 +1445,8 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
 
   if (recentHighs.length > 0 && recentLows.length > 0) {
     // Structural dealing range: anchor to the active confirmed impulse leg
-    const latestHigh = recentHighs[recentHighs.length - 1];
-    const latestLow = recentLows[recentLows.length - 1];
-
-    if (latestHigh.index > latestLow.index) {
-      // Upward impulse leg from latestLow to latestHigh
-      lowPrice = latestLow.price;
-      highPrice = latestHigh.price;
-    } else {
-      // Downward impulse leg from latestHigh to latestLow
-      highPrice = latestHigh.price;
-      lowPrice = latestLow.price;
-    }
+    highPrice = recentHighs[recentHighs.length - 1].price;
+    lowPrice = recentLows[recentLows.length - 1].price;
   } else {
     for (const c of candles) {
       if (c.high > highPrice) highPrice = c.high;
@@ -1453,10 +1478,6 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
   const equilibriumPrice = (highPrice + lowPrice) / 2;
   const premiumRange: [number, number] = [equilibriumPrice, highPrice];
   const discountRange: [number, number] = [lowPrice, equilibriumPrice];
-  const oteRange: [number, number] = [
-    Number((lowPrice + range * 0.618).toFixed(4)),
-    Number((lowPrice + range * 0.786).toFixed(4)),
-  ];
   const discountOteRange: [number, number] = [
     Number((lowPrice + range * 0.214).toFixed(4)),
     Number((lowPrice + range * 0.382).toFixed(4)),
@@ -1472,7 +1493,6 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
     equilibriumPrice,
     premiumRange,
     discountRange,
-    oteRange,
     discountOteRange,
     premiumOteRange,
   };
@@ -1649,12 +1669,12 @@ export function evaluateInstitutionalConfluence(
     ? context.dealingRange
     : detectDealingRange(candles.slice(0, idx + 1), pitSwings);
 
-  // 1. Higher-Timeframe Alignment (Max 20%) — independently validated using 4x macro / HTF series structure
+  // 1. Higher-Timeframe Alignment (Max 20%) — point-in-time as of bar idx (no future hindsight)
   let htfScore = 0;
   let htfReason = 'HTF Bias: Unconfirmed (0/20)';
   const macroCandles = aggregateMacroCandles(candles.slice(0, idx + 1), 4);
   const macroSwings = macroCandles.length >= 12 ? detectSwingPoints(macroCandles, 2, true) : pitSwings.filter(s => s.significance === 'MAJOR');
-  const independentHtfBias = context.htfBias ?? (macroSwings.length >= 3 ? (() => {
+  const pitHtfBias: 'BULLISH' | 'BEARISH' | 'RANGE' = macroSwings.length >= 3 ? (() => {
     const recent = macroSwings.slice(-4);
     const highs = recent.filter(s => s.isHigh);
     const lows = recent.filter(s => !s.isHigh);
@@ -1665,7 +1685,8 @@ export function evaluateInstitutionalConfluence(
     if (hh || hl) return 'BULLISH';
     if (lh || ll) return 'BEARISH';
     return 'RANGE';
-  })() : 'RANGE');
+  })() : 'RANGE';
+  const independentHtfBias = idx >= candles.length - 1 && context.htfBias ? context.htfBias : pitHtfBias;
 
   if ((isBull && independentHtfBias === 'BULLISH') || (!isBull && independentHtfBias === 'BEARISH')) {
     htfScore = 20;
@@ -1869,7 +1890,7 @@ export function evaluateInstitutionalConfluence(
   let volScore = 0;
   let volReason = 'Volume & Target Liquidity: Unconfirmed (0/5)';
   const volWindowStart = Math.max(0, idx - 20);
-  const volEstimated = candles.slice(volWindowStart, idx + 1).some(c => c.volumeEstimated);
+  const volEstimated = isWindowVolumeEstimated(candles, volWindowStart, idx);
   const targetLiqPts = context.hasConfirmedTargetPool ? 2 : 0;
   if (!context.hasConfirmedTargetPool) {
     failedFactors.push('Unconfirmed Target Liquidity');
@@ -1936,7 +1957,7 @@ export function evaluateInstitutionalConfluence(
  * was not provided by the caller.
  */
 function aggregateMacroCandles(candles: Candle[], factor = 4): Candle[] {
-  const closed = candles.filter(isCandleClosed);
+  const closed = candles.filter(c => isCandleClosed(c));
   const out: Candle[] = [];
   for (let i = 0; i + factor <= closed.length; i += factor) {
     const slice = closed.slice(i, i + factor);
@@ -2016,7 +2037,7 @@ export function computeStructureBias(
     else bearLtfPoints += w;
   }
 
-  const closedCandles = candles.filter(isCandleClosed);
+  const closedCandles = candles.filter(c => isCandleClosed(c));
   const recentCandles = closedCandles.slice(-10);
   if (recentCandles.length >= 4) {
     if (recentCandles[recentCandles.length - 1].close > recentCandles[0].close) bullLtfPoints += 2;
@@ -2159,7 +2180,8 @@ export function detectAll16SmcSetups(
   riskProfile?: Partial<SmcRiskProfile>,
   ltfCandles?: Candle[],
   liquidityLevels?: SmcLiquidityLevel[],
-  rejectedOut?: SmcConfirmedSetup[]
+  rejectedOut?: SmcConfirmedSetup[],
+  symbol?: string
 ): SmcConfirmedSetup[] {
   if (!isValidVerifiedCandleDataset(candles)) return [];
 
@@ -2202,7 +2224,6 @@ export function detectAll16SmcSetups(
     equilibriumPrice: lastPrice,
     premiumRange: [lastPrice, lastPrice * 1.05],
     discountRange: [lastPrice * 0.95, lastPrice],
-    oteRange: [lastPrice * 0.96, lastPrice * 0.98],
     discountOteRange: [lastPrice * 0.96, lastPrice * 0.98],
     premiumOteRange: [lastPrice * 1.02, lastPrice * 1.04],
   };
@@ -2317,21 +2338,16 @@ export function detectAll16SmcSetups(
       statusOverride = 'INVALIDATED';
     }
 
-    // 1b. SMC Proximity Invariant (±5.0% of terminal close)
-    const terminalBar = candles[candles.length - 1];
-    if (terminalBar && terminalBar.close > 0) {
-      const priceDistancePct = Math.abs(cleanEntry - terminalBar.close) / terminalBar.close;
-      if (priceDistancePct > 0.05) {
-        statusOverride = 'INVALIDATED';
-      }
-    }
-
-    // 1c. Anti-Late-Entry & Dealing Range Positioning Guard:
+    // 1b. Point-in-Time Anti-Late-Entry & Dealing Range Positioning Guard (uses only swings/bars available at effectiveConfirmIdx):
     // Reject short entries in deep discount and reject long entries in deep premium.
-    if (dealingRange && dealingRange.highPrice > dealingRange.lowPrice) {
-      const drSpan = dealingRange.highPrice - dealingRange.lowPrice;
-      const deepPremium = dealingRange.equilibriumPrice + drSpan * 0.20;
-      const deepDiscount = dealingRange.equilibriumPrice - drSpan * 0.20;
+    const pitSwingsAtSetup = swings.filter(s => (s.confirmationIndex ?? s.index) <= effectiveConfirmIdx);
+    const pitDr = effectiveConfirmIdx >= candles.length - 1
+      ? dealingRange
+      : detectDealingRange(candles.slice(0, effectiveConfirmIdx + 1), pitSwingsAtSetup);
+    if (pitDr && pitDr.highPrice > pitDr.lowPrice) {
+      const drSpan = pitDr.highPrice - pitDr.lowPrice;
+      const deepPremium = pitDr.equilibriumPrice + drSpan * 0.20;
+      const deepDiscount = pitDr.equilibriumPrice - drSpan * 0.20;
       if (isBull && cleanEntry > deepPremium && setupType !== 'CHOCH_REVERSAL') {
         statusOverride = 'INVALIDATED';
       } else if (!isBull && cleanEntry < deepDiscount && setupType !== 'CHOCH_REVERSAL') {
@@ -2942,20 +2958,26 @@ export function detectAll16SmcSetups(
     };
   };
 
+  const rpDefault: SmcRiskProfile = { ...DEFAULT_SMC_RISK_PROFILE, ...riskProfile };
+  const atrBufferAt = (idx: number, factor = 0.25): number => {
+    const a = atrSeries[Math.min(Math.max(0, idx), atrSeries.length - 1)] || lastPrice * 0.003;
+    return Math.max(a * factor, lastPrice * 0.0003);
+  };
+
   // ── Strategy 1: BOS Continuation Scanner
   const recentBOS = breaks.filter((b) => b.breakType === 'BOS').slice(-8);
   for (const brk of recentBOS) {
     const isBull = brk.isBullish;
     const entry = brk.price;
     const refSwing = brk.protectedSwingPrice ?? brk.brokenSwingPrice;
-    const slDist = Math.max(Math.abs(entry - refSwing), entry * 0.008);
+    const buf = atrBufferAt(brk.candleIndex);
     const sl = isBull
-      ? roundSmcPrice(entry - Math.min(slDist, entry * 0.022))
-      : roundSmcPrice(entry + Math.min(slDist, entry * 0.022));
-    const risk = Math.max(Math.abs(entry - sl), entry * 0.005);
+      ? roundSmcPrice(Math.min(refSwing, entry - buf) - buf * 0.25, symbol)
+      : roundSmcPrice(Math.max(refSwing, entry + buf) + buf * 0.25, symbol);
+    const risk = Math.max(Math.abs(entry - sl), buf);
     const tp = isBull
-      ? roundSmcPrice(entry + risk * 2.8)
-      : roundSmcPrice(entry - risk * 2.8);
+      ? roundSmcPrice(entry + risk * rpDefault.target1R, symbol)
+      : roundSmcPrice(entry - risk * rpDefault.target1R, symbol);
     setups.push(makeSetup(
       `setup_bos_${brk.candleIndex}`,
       isBull ? 'BOS Trend Continuation (Bullish)' : 'BOS Trend Continuation (Bearish)',
@@ -2966,7 +2988,7 @@ export function detectAll16SmcSetups(
       entry,
       sl,
       tp,
-      `Decisive break of structure at ${roundSmcPrice(brk.price)} in trend direction.`
+      `Decisive break of structure at ${roundSmcPrice(brk.price, symbol)} in trend direction.`
     ));
   }
 
@@ -2976,14 +2998,14 @@ export function detectAll16SmcSetups(
     const isBull = brk.isBullish;
     const entry = brk.price;
     const refSwing = brk.protectedSwingPrice ?? brk.brokenSwingPrice;
-    const slDist = Math.max(Math.abs(entry - refSwing), entry * 0.008);
+    const buf = atrBufferAt(brk.candleIndex);
     const sl = isBull
-      ? roundSmcPrice(entry - Math.min(slDist, entry * 0.022))
-      : roundSmcPrice(entry + Math.min(slDist, entry * 0.022));
-    const risk = Math.max(Math.abs(entry - sl), entry * 0.005);
+      ? roundSmcPrice(Math.min(refSwing, entry - buf) - buf * 0.25, symbol)
+      : roundSmcPrice(Math.max(refSwing, entry + buf) + buf * 0.25, symbol);
+    const risk = Math.max(Math.abs(entry - sl), buf);
     const tp = isBull
-      ? roundSmcPrice(entry + risk * 2.6)
-      : roundSmcPrice(entry - risk * 2.6);
+      ? roundSmcPrice(entry + risk * rpDefault.target1R, symbol)
+      : roundSmcPrice(entry - risk * rpDefault.target1R, symbol);
     setups.push(makeSetup(
       `setup_choch_${brk.candleIndex}`,
       isBull ? `${brk.breakType} Structural Reversal (Bullish)` : `${brk.breakType} Structural Reversal (Bearish)`,
@@ -2994,18 +3016,37 @@ export function detectAll16SmcSetups(
       entry,
       sl,
       tp,
-      `Structural ${brk.breakType} trend invalidation confirmed at ${roundSmcPrice(brk.price)}.`
+      `Structural ${brk.breakType} trend invalidation confirmed at ${roundSmcPrice(brk.price, symbol)}.`
     ));
   }
+
+  const findSweepConfirmationBar = (sw: SmcLiquiditySweep, isBull: boolean): number | null => {
+    const sweepCandle = candles[sw.candleIndex];
+    if (!sweepCandle) return null;
+    const maxLookahead = Math.min(candles.length - 1, sw.candleIndex + 15);
+    for (let k = sw.candleIndex + 1; k <= maxLookahead; k++) {
+      const bar = candles[k];
+      if (!isCandleClosed(bar)) break;
+      const hasBreak = breaks.some((b) => b.isBullish === isBull && b.candleIndex === k);
+      const hasDisplacementClose = isBull ? bar.close > sweepCandle.high : bar.close < sweepCandle.low;
+      if (hasBreak || hasDisplacementClose) {
+        return k;
+      }
+    }
+    return null;
+  };
 
   // ── Strategy 3: Liquidity Sweep Reversal (Mirrored BSL/SSL)
   const recentSweeps = sweeps.slice(-8);
   for (const sw of recentSweeps) {
     const isBull = !sw.isHighSweep; // SSL sweep = Bullish reversal
+    const confirmIdx = findSweepConfirmationBar(sw, isBull);
+    if (confirmIdx === null) continue;
+
     const validation = validateSetupDirectionalConfirmation(
       isBull ? 'BULLISH' : 'BEARISH',
       'LIQUIDITY_SWEEP',
-      sw.candleIndex,
+      confirmIdx,
       candles,
       breaks,
       sweeps,
@@ -3014,21 +3055,25 @@ export function detectAll16SmcSetups(
     );
     if (!validation.isValid) continue;
 
-    const entry = candles[sw.candleIndex]?.close || lastPrice;
-    const sl = isBull ? Number((sw.price * 0.994).toFixed(2)) : Number((sw.price * 1.006).toFixed(2));
+    const confirmBar = candles[confirmIdx];
+    const entry = confirmBar?.close || lastPrice;
+    const slAtr = atrSeries[Math.min(confirmIdx, atrSeries.length - 1)] || entry * 0.003;
+    const sl = isBull ? roundSmcPrice(sw.price - slAtr * 0.25) : roundSmcPrice(sw.price + slAtr * 0.25);
     const risk = Math.max(Math.abs(entry - sl), entry * 0.005);
-    const tp = isBull ? Number((entry + risk * 2.5).toFixed(2)) : Number((entry - risk * 2.5).toFixed(2));
+    const tp = isBull
+      ? roundSmcPrice(entry + risk * rpDefault.target1R)
+      : roundSmcPrice(entry - risk * rpDefault.target1R);
     setups.push(makeSetup(
       `setup_sweep_${sw.candleIndex}`,
       isBull ? 'SSL Liquidity Pool Sweep (Bullish)' : 'BSL Liquidity Pool Sweep (Bearish)',
       'LIQUIDITY_SWEEP',
       isBull ? 'BULLISH' : 'BEARISH',
-      sw.candleIndex,
-      sw.time,
+      confirmIdx,
+      confirmBar?.openTime ?? sw.time,
       entry,
       sl,
       tp,
-      `Rejection wick (${(sw.wickRatio * 100).toFixed(0)}%) swept ${sw.sweptLevelPrice.toFixed(2)} liquidity pool. ${validation.reason}`
+      `Rejection wick (${(sw.wickRatio * 100).toFixed(0)}%) swept ${roundSmcPrice(sw.sweptLevelPrice)} liquidity pool and confirmed at bar #${confirmIdx}. ${validation.reason}`
     ));
   }
 
@@ -3036,10 +3081,13 @@ export function detectAll16SmcSetups(
   const eqSwept = sweeps.filter((s) => s.label.includes('EQH') || s.label.includes('EQL')).slice(-8);
   for (const eq of eqSwept) {
     const isBull = !eq.isHighSweep;
+    const confirmIdx = findSweepConfirmationBar(eq, isBull);
+    if (confirmIdx === null) continue;
+
     const validation = validateSetupDirectionalConfirmation(
       isBull ? 'BULLISH' : 'BEARISH',
       'EQH_EQL_SWEEP',
-      eq.candleIndex,
+      confirmIdx,
       candles,
       breaks,
       sweeps,
@@ -3048,20 +3096,25 @@ export function detectAll16SmcSetups(
     );
     if (!validation.isValid) continue;
 
-    const entry = candles[eq.candleIndex]?.close || lastPrice;
-    const sl = isBull ? eq.price * 0.996 : eq.price * 1.004;
-    const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
+    const confirmBar = candles[confirmIdx];
+    const entry = confirmBar?.close || lastPrice;
+    const slAtr = atrSeries[Math.min(confirmIdx, atrSeries.length - 1)] || entry * 0.003;
+    const sl = isBull ? roundSmcPrice(eq.price - slAtr * 0.25) : roundSmcPrice(eq.price + slAtr * 0.25);
+    const risk = Math.max(Math.abs(entry - sl), entry * 0.005);
+    const tp = isBull
+      ? roundSmcPrice(entry + risk * rpDefault.target1R)
+      : roundSmcPrice(entry - risk * rpDefault.target1R);
     setups.push(makeSetup(
       `setup_eq_${eq.candleIndex}`,
       isBull ? 'EQL Pool Liquidity Purge (Bullish)' : 'EQH Pool Liquidity Purge (Bearish)',
       'EQH_EQL_SWEEP',
       isBull ? 'BULLISH' : 'BEARISH',
-      eq.candleIndex,
-      eq.time,
+      confirmIdx,
+      confirmBar?.openTime ?? eq.time,
       entry,
       sl,
       tp,
-      `Engineered ${isBull ? 'Equal Lows' : 'Equal Highs'} pool at ${eq.sweptLevelPrice.toFixed(2)} purged. ${validation.reason}`
+      `Engineered ${isBull ? 'Equal Lows' : 'Equal Highs'} pool at ${roundSmcPrice(eq.sweptLevelPrice)} purged and confirmed at bar #${confirmIdx}. ${validation.reason}`
     ));
   }
 
@@ -3078,7 +3131,8 @@ export function detectAll16SmcSetups(
     const confIdx = fvg.confirmationIndex ?? Math.min(candles.length - 1, fvg.startIndex + 2);
     const confTime = candles[confIdx]?.openTime ?? fvg.formationTime;
     const entry = fvg.cePrice; // 50% CE entry
-    const sl = isBull ? fvg.bottomPrice * 0.998 : fvg.topPrice * 1.002;
+    const buf = atrBufferAt(confIdx);
+    const sl = isBull ? fvg.bottomPrice - buf : fvg.topPrice + buf;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
     setups.push(makeSetup(
       `setup_fvg_${fvg.id}`,
@@ -3099,14 +3153,12 @@ export function detectAll16SmcSetups(
   for (const ob of activeObs) {
     const isBull = ob.isBullish;
 
-    const entry = (ob.topPrice + ob.bottomPrice) / 2;
-    const sl = isBull ? ob.bottomPrice * 0.997 : ob.topPrice * 1.003;
-    const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
-
-    // Anchor OB at its confirmation bar (impulse bar startIndex + 1); makeSetup's closed-bar loop
-    // verifies whether a subsequent bar after the break actually pulled back to the 50% midpoint entry and rejected.
     const anchorIdx = ob.confirmationIndex ?? Math.min(candles.length - 1, ob.startIndex + 1);
     const anchorTime = candles[anchorIdx]?.openTime ?? ob.formationTime;
+    const entry = (ob.topPrice + ob.bottomPrice) / 2;
+    const buf = atrBufferAt(anchorIdx);
+    const sl = isBull ? ob.bottomPrice - buf : ob.topPrice + buf;
+    const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
 
     // Directional validation engine audit
     const validation = validateSetupDirectionalConfirmation(
@@ -3140,12 +3192,12 @@ export function detectAll16SmcSetups(
   for (const brk of activeBreakers) {
     const isBull = brk.label.includes('Bull') || (brk.isBreaker ? brk.isBullish : !brk.isBullish);
 
-    const entry = (brk.topPrice + brk.bottomPrice) / 2;
-    const sl = isBull ? brk.bottomPrice * 0.997 : brk.topPrice * 1.003;
-    const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
-
     const anchorIdx = brk.confirmationIndex ?? Math.min(candles.length - 1, brk.endIndex);
     const anchorTime = candles[anchorIdx]?.openTime ?? brk.formationTime;
+    const entry = (brk.topPrice + brk.bottomPrice) / 2;
+    const buf = atrBufferAt(anchorIdx);
+    const sl = isBull ? brk.bottomPrice - buf : brk.topPrice + buf;
+    const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
 
     // Directional validation engine audit
     const validation = validateSetupDirectionalConfirmation(
@@ -3201,7 +3253,7 @@ export function detectAll16SmcSetups(
         if (!validation.isValid) continue;
 
         const entry = Math.max(dOteMin, Math.min(dOteMax, c.close));
-        const sl = dealingRange.lowPrice * 0.998;
+        const sl = dealingRange.lowPrice - atrBufferAt(i);
         const tp = dealingRange.highPrice;
         if (entry > sl && tp > entry) {
           setups.push(makeSetup(
@@ -3238,7 +3290,7 @@ export function detectAll16SmcSetups(
         if (!validation.isValid) continue;
 
         const entry = Math.min(pOteMax, Math.max(pOteMin, c.close));
-        const sl = dealingRange.highPrice * 1.002;
+        const sl = dealingRange.highPrice + atrBufferAt(i);
         const tp = dealingRange.lowPrice;
         if (entry < sl && tp < entry) {
           setups.push(makeSetup(
@@ -3273,7 +3325,7 @@ export function detectAll16SmcSetups(
         lastBrk.candleIndex,
         lastBrk.time,
         (matchingOb.topPrice + matchingOb.bottomPrice) / 2,
-        isBull ? matchingOb.bottomPrice * 0.997 : matchingOb.topPrice * 1.003,
+        isBull ? matchingOb.bottomPrice - atrBufferAt(lastBrk.candleIndex) : matchingOb.topPrice + atrBufferAt(lastBrk.candleIndex),
         isBull ? dealingRange.highPrice : dealingRange.lowPrice,
         `HTF structural bias aligns with intermediate OB at ${((matchingOb.topPrice + matchingOb.bottomPrice) / 2).toFixed(2)}.`
       ));
@@ -3291,7 +3343,7 @@ export function detectAll16SmcSetups(
         candles.length - 1,
         lastCandle.openTime,
         lastCandle.close,
-        lastCandle.high * 1.003,
+        lastCandle.high + atrBufferAt(candles.length - 1),
         sessionLevels.pdl,
         `PDH at ${sessionLevels.pdh.toFixed(2)} swept with rejection back into range.`
       ));
@@ -3304,7 +3356,7 @@ export function detectAll16SmcSetups(
         candles.length - 1,
         lastCandle.openTime,
         lastCandle.close,
-        lastCandle.low * 0.997,
+        lastCandle.low - atrBufferAt(candles.length - 1),
         sessionLevels.pdh,
         `PDL at ${sessionLevels.pdl.toFixed(2)} swept with rejection back into range.`
       ));
@@ -3327,7 +3379,7 @@ export function detectAll16SmcSetups(
           fvg.startIndex,
           fvg.formationTime,
           fvg.cePrice,
-          isBull ? fvg.bottomPrice * 0.997 : fvg.topPrice * 1.003,
+          isBull ? fvg.bottomPrice - atrBufferAt(fvg.startIndex) : fvg.topPrice + atrBufferAt(fvg.startIndex),
           isBull ? dealingRange.highPrice : dealingRange.lowPrice,
           `High-probability 3-stage confluence: Stage 1 Sweep -> Stage 2 CHoCH -> Stage 3 FVG Retrace.`
         ));
@@ -3349,7 +3401,7 @@ export function detectAll16SmcSetups(
         nearbyFvg.startIndex,
         nearbyFvg.formationTime,
         nearbyFvg.cePrice,
-        isBull ? nearbyFvg.bottomPrice * 0.998 : nearbyFvg.topPrice * 1.002,
+        isBull ? nearbyFvg.bottomPrice - atrBufferAt(nearbyFvg.startIndex) : nearbyFvg.topPrice + atrBufferAt(nearbyFvg.startIndex),
         isBull ? dealingRange.highPrice : dealingRange.lowPrice,
         `Impulse BOS accompanied by active FVG [${nearbyFvg.bottomPrice.toFixed(2)} - ${nearbyFvg.topPrice.toFixed(2)}].`
       ));
@@ -3377,7 +3429,7 @@ export function detectAll16SmcSetups(
         ob.startIndex,
         ob.formationTime,
         (ob.topPrice + overlappingFvg.cePrice) / 2,
-        isBull ? ob.bottomPrice * 0.997 : ob.topPrice * 1.003,
+        isBull ? ob.bottomPrice - atrBufferAt(ob.startIndex) : ob.topPrice + atrBufferAt(ob.startIndex),
         isBull ? dealingRange.highPrice : dealingRange.lowPrice,
         `Strong confluence: Order Block overlaps with Fair Value Gap at ${overlappingFvg.cePrice.toFixed(2)}.`
       ));
@@ -3400,7 +3452,7 @@ export function detectAll16SmcSetups(
         lastSwing.index,
         lastSwing.time,
         (ob.topPrice + ob.bottomPrice) / 2,
-        isBull ? ob.bottomPrice * 0.997 : ob.topPrice * 1.003,
+        isBull ? ob.bottomPrice - atrBufferAt(lastSwing.index) : ob.topPrice + atrBufferAt(lastSwing.index),
         isBull ? dealingRange.highPrice : dealingRange.lowPrice,
         `Internal trap swing cleared at ${lastSwing.price.toFixed(2)} prior to institutional order block tap.`
       ));
@@ -3420,7 +3472,7 @@ export function detectAll16SmcSetups(
         sw.candleIndex,
         sw.time,
         candles[sw.candleIndex]?.close || lastPrice,
-        isBull ? sw.price * 0.996 : sw.price * 1.004,
+        isBull ? sw.price - atrBufferAt(sw.candleIndex) : sw.price + atrBufferAt(sw.candleIndex),
         isBull ? dealingRange.highPrice : dealingRange.lowPrice,
         `Accumulation range false breakout (Judas sweep) followed by explosive distribution wave.`
       ));
@@ -3437,7 +3489,7 @@ export function detectAll16SmcSetups(
   for (const ifvg of ifvgCandidates) {
     const isBull = ifvg.isInverse ? ifvg.isBullish : !ifvg.isBullish;
     const entry = ifvg.cePrice;
-    const sl = isBull ? ifvg.bottomPrice * 0.996 : ifvg.topPrice * 1.004;
+    const sl = isBull ? ifvg.bottomPrice - atrBufferAt(ifvg.startIndex) : ifvg.topPrice + atrBufferAt(ifvg.startIndex);
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
     setups.push(makeSetup(
       `setup_ifvg_${ifvg.id}`,
@@ -3532,20 +3584,38 @@ export function computeCandlesFingerprint(
   dataVersion?: number,
   config?: Partial<SmcConfig>
 ): string {
-  const len = candles.length;
-  const last = candles[len - 1];
-  const datasetHash = len > 0 ? computeCandleDatasetHash64(candles) : 'empty';
-  const closedFlag = last ? (last.isClosed === true ? 1 : 0) : 0;
+  const tfMs = timeframeToMs(timeframe);
+  const nowMs = Date.now();
+  let closedCount = 0;
+  let firstClosedOpen = 0;
+  let lastClosedOpen = 0;
+  let lastClosedClose = 0;
+  for (let i = 0; i < candles.length; i++) {
+    if (isCandleClosed(candles[i], tfMs, nowMs)) {
+      if (closedCount === 0) firstClosedOpen = candles[i].openTime;
+      closedCount++;
+      lastClosedOpen = candles[i].openTime;
+      lastClosedClose = candles[i].close;
+    }
+  }
   const htfCandles = config?.htfCandles;
-  const htfHash = htfCandles && htfCandles.length > 0
-    ? `${htfCandles.length}_${computeCandleDatasetHash64(htfCandles)}_${htfCandles[htfCandles.length - 1]?.isClosed === true ? 1 : 0}`
-    : 'no_htf';
+  let htfLastClosedOpen = 0;
+  let htfClosedCount = 0;
+  if (htfCandles && htfCandles.length > 0) {
+    for (let i = htfCandles.length - 1; i >= 0; i--) {
+      if (htfCandles[i]?.isClosed === true) {
+        if (htfLastClosedOpen === 0) htfLastClosedOpen = htfCandles[i].openTime;
+        htfClosedCount++;
+      }
+    }
+  }
+  const htfHash = htfClosedCount > 0 ? `${htfClosedCount}_${htfLastClosedOpen}` : 'no_htf';
   const versionSegment = dataVersion !== undefined ? `v${dataVersion}:` : '';
   const f = config?.filters;
   const cfgSegment = config
     ? `sw${config.swingLength ?? DEFAULT_SMC_CONFIG.swingLength}_b${config.showBullishSetups !== false ? 1 : 0}_s${config.showBearishSetups !== false ? 1 : 0}_d${f?.requireDisplacement ? f?.displacementAtrMultiple ?? 1.0 : 0}_v${f?.requireVolumeExpansion ? f?.volumeSmaMultiple ?? 1.1 : 0}_htf${htfHash}:`
     : '';
-  return `${symbol}:${timeframe}:${versionSegment}${cfgSegment}${len}:${datasetHash}:${closedFlag}`;
+  return `${symbol}:${timeframe}:${versionSegment}${cfgSegment}${closedCount}:${firstClosedOpen}:${lastClosedOpen}:${lastClosedClose}`;
 }
 
 export type SmcLifecycleAction =
@@ -3615,7 +3685,7 @@ export function calculateSMC(
   timeframe = '1D',
   dataVersion?: number
 ): SmcAnalysis {
-  if (!isValidVerifiedCandleDataset(candles)) {
+  if (!isValidVerifiedCandleDataset(candles, timeframeToMs(timeframe))) {
     const p = candles?.length ? candles[candles.length - 1].close : 0;
     return {
       swings: [],
@@ -3631,7 +3701,6 @@ export function calculateSMC(
         equilibriumPrice: p,
         premiumRange: [p, p * 1.05],
         discountRange: [p * 0.95, p],
-        oteRange: [p * 0.96, p * 0.98],
         discountOteRange: [p * 0.96, p * 0.98],
         premiumOteRange: [p * 1.02, p * 1.04],
       },
@@ -3642,12 +3711,18 @@ export function calculateSMC(
     };
   }
 
-  // Compute True 64-bit BigInt Fingerprint for Cache Check (including SmcConfig)
+  // Compute O(1) Closed-Bar Fingerprint for Cache Check (including SmcConfig)
   const fingerprint = computeCandlesFingerprint(symbol, timeframe, candles, dataVersion, config);
   const cached = _smcMemoryCache.get(fingerprint);
   if (cached) {
     return cached;
   }
+
+  // Run SMC engine strictly on closed bars only
+  const tfMs = timeframeToMs(timeframe);
+  const nowMs = Date.now();
+  const closedCandles = candles.filter(c => isCandleClosed(c, tfMs, nowMs));
+  candles = closedCandles;
 
   const opt = config?.filters;
   const swingLen: number = (config?.swingLength ?? DEFAULT_SMC_CONFIG.swingLength) ?? 5;
@@ -3719,7 +3794,8 @@ export function calculateSMC(
     config?.riskProfile,
     config?.ltfCandles,
     liquidityLevels,
-    rawRejectedSetups
+    rawRejectedSetups,
+    symbol
   );
 
   // Directional filtering across all enabled SMC strategies

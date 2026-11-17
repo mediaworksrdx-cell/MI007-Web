@@ -103,61 +103,18 @@ const DEFAULT_COLOR_PROGRESSIONS: Partial<Record<IndicatorType, string[]>> = {
   SUPERTREND: ['#10B981', '#059669'],
 };
 
-function getExpectedPrice(market: MarketType, symbol: string): number {
-  try {
-    const symClean = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
-    const INDEX_BASES: Record<string, number> = {
-      MIDCPNIFTY: 14359.30,
-      NIFTYMIDSELECT: 14359.30,
-      BANKEX: 70004.09,
-      BSEBANKEX: 70004.09,
-      NIFTY: 25400.40,
-      NIFTY50: 25400.40,
-      BANKNIFTY: 62264.70,
-      FINNIFTY: 28255.65,
-      SENSEX: 82409.43,
-      INDIAVIX: 15.24,
-      SPX: 7416.59,
-      NASDAQ: 24509.76,
-      NDX: 24509.76,
-      DJI: 51608.17,
-      VIX: 22.91,
-      QQQ: 661.75,
-      DFMGI: 4850.00,
-      ADXGI: 9250.00,
-      BTC: 65013.28,
-      BTCUSD: 65013.28,
-      BTCUSDT: 65013.28,
-      ETH: 1831.28,
-      SOL: 72.60,
-      BNB: 594.00,
-      DOGE: 0.059,
-      XRP: 0.9647,
-      ADA: 0.218,
-      AVAX: 9.60,
-      XAUUSD: 3876.58,
-      GOLD: 3876.58,
-      SILVER: 42.39,
-      XAGUSD: 42.39,
-      BRENT: 58.67,
-      CRUDEOIL: 58.67,
-      EURUSD: 1.1006,
-      GBPUSD: 1.3190,
-      USDJPY: 159.37,
-      USDINR: 93.84,
-      USDCAD: 1.4092,
-      AUDUSD: 0.6650,
-    };
-    if (INDEX_BASES[symClean]) return INDEX_BASES[symClean];
-
-    const zd = findZerodhaStockBySymbol(symClean);
-    if (zd && zd.lastPrice && zd.lastPrice > 0) return zd.lastPrice;
-    if (KNOWN_ZERODHA_PRICES[symClean]) return KNOWN_ZERODHA_PRICES[symClean];
-
-    const q = getMockQuote(market, symbol);
-    if (q && q.price > 0) return q.price;
-  } catch {}
-  return getZerodhaStockPrice(symbol);
+function hasStructuralCandleError(candles: Candle[], nowMs: number = Date.now()): boolean {
+  if (!candles || candles.length === 0) return false;
+  for (let i = 0; i < candles.length; i++) {
+    const c = candles[i];
+    if (!c || !Number.isFinite(c.openTime) || c.openTime <= 0) return true;
+    if (c.openTime > nowMs + 300_000) return true;
+    if (i > 0 && c.openTime <= candles[i - 1].openTime) return true;
+    if (!Number.isFinite(c.open) || !Number.isFinite(c.high) || !Number.isFinite(c.low) || !Number.isFinite(c.close)) return true;
+    if (c.open <= 0 || c.high <= 0 || c.low <= 0 || c.close <= 0) return true;
+    if (c.high < c.low || c.high < c.open || c.high < c.close || c.low > c.open || c.low > c.close) return true;
+  }
+  return false;
 }
 
 function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[] {
@@ -884,21 +841,15 @@ export function ChartContainer({
 
     async function loadCandles() {
       try {
-        const live = getSymbolPrice(selectedSymbol);
-        const expectedPrice = (live && live.price > 0) ? live.price : getExpectedPrice(market, selectedSymbol);
         const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
 
-        // 1. Instant load from IndexedDB cache with purge of dislocated historical data
+        // 1. Instant load from IndexedDB cache; purge only on structural errors (future/duplicate timestamps, impossible OHLC, staircase)
         let rawCached = await loadStoredCandles(selectedSymbol, timeframe);
         if (rawCached && rawCached.length > 0) {
-          const lastC = rawCached[rawCached.length - 1];
-          // Hard rule for BTC: BTC price should never exceed 150k or be below 20k (purges old mock random walk drift)
-          const isBtcDislocated = (selectedSymbol.toUpperCase() === 'BTC' || selectedSymbol.toUpperCase().includes('BITCOIN')) && (lastC.close > 120000 || lastC.close < 20000);
-          const dislocation = (expectedPrice > 0 && lastC && lastC.close > 0) ? Math.abs(lastC.close - expectedPrice) / expectedPrice : 0;
-          const isFutureCandle = lastC && (lastC.openTime > Date.now() + 300_000);
+          const isStructurallyCorrupt = hasStructuralCandleError(rawCached);
           const isStaircase = isArtificialLinearStaircase(rawCached);
-          if (isBtcDislocated || dislocation > 0.15 || isFutureCandle || isStaircase) {
-            console.warn(`[ChartContainer] Auto-purging dislocated/future/staircase cache for ${selectedSymbol}`);
+          if (isStructurallyCorrupt || isStaircase) {
+            console.warn(`[ChartContainer] Auto-purging structurally corrupt/staircase cache for ${selectedSymbol}`);
             await purgeStoredCandles(selectedSymbol, timeframe);
             rawCached = null;
           }
@@ -963,10 +914,20 @@ export function ChartContainer({
   const lastSaveTimeRef = useRef<number>(0);
   const lastLiveTickAtRef = useRef<number>(0);
   const lastTickTsRef = useRef<number>(0);
+  const dislocationConsensusRef = useRef<{ anchorPrice: number; count: number }>({ anchorPrice: 0, count: 0 });
+
+  const getDislocationThreshold = (mkt: string): number => {
+    const m = mkt.toUpperCase();
+    if (m === 'CRYPTO') return 0.12;
+    if (m === 'FOREX') return 0.03;
+    if (m === 'COMMODITIES') return 0.06;
+    return 0.08;
+  };
 
   useEffect(() => {
     lastLiveTickAtRef.current = 0;
     lastTickTsRef.current = 0;
+    dislocationConsensusRef.current = { anchorPrice: 0, count: 0 };
   }, [selectedSymbol, timeframe]);
 
   const candlesRef = useRef<Candle[]>(candles);
@@ -985,9 +946,21 @@ export function ChartContainer({
       if (currentCandles.length > 0) {
         const lastC = currentCandles[currentCandles.length - 1];
         if (lastC && lastC.close > 0) {
+          const threshold = getDislocationThreshold(market);
           const dislocation = Math.abs(live.price - lastC.close) / lastC.close;
-          if (dislocation > 0.05) {
-            return;
+          if (dislocation > threshold) {
+            const cons = dislocationConsensusRef.current;
+            if (cons.count > 0 && Math.abs(live.price - cons.anchorPrice) / cons.anchorPrice <= threshold * 0.5) {
+              cons.count += 1;
+            } else {
+              dislocationConsensusRef.current = { anchorPrice: live.price, count: 1 };
+            }
+            if (dislocationConsensusRef.current.count < 4) {
+              return;
+            }
+            dislocationConsensusRef.current = { anchorPrice: 0, count: 0 };
+          } else {
+            dislocationConsensusRef.current = { anchorPrice: 0, count: 0 };
           }
           if (isSymbolMarketOpen(selectedSymbol)) {
             const now = Date.now();
@@ -1012,7 +985,7 @@ export function ChartContainer({
       setCurrentPrice(live.price);
       setIsLiveFromEngine(true);
     }
-  }, [selectedSymbol, liveSymbolData, getSymbolPrice]);
+  }, [selectedSymbol, liveSymbolData, getSymbolPrice, market]);
 
   // Listen to live WebSocket ticks from the Trade Engine with monotonic timestamp guard
   useEffect(() => {
@@ -1036,11 +1009,23 @@ export function ChartContainer({
           const currentLast = prev[prev.length - 1];
           if (!currentLast || currentLast.close <= 0) return prev;
 
-          // Reject wild rogue ticks (>5% dislocation from active candle close)
+          // Reject single rogue outlier ticks beyond per-instrument threshold, but accept real gaps once 4 consecutive ticks agree
+          const threshold = getDislocationThreshold(market);
           const dislocation = Math.abs(tick.price - currentLast.close) / currentLast.close;
-          if (dislocation > 0.05) {
-            console.warn(`[ChartContainer] Discarding outlier tick for ${selectedSymbol}: ${tick.price} vs active candle ${currentLast.close}`);
-            return prev;
+          if (dislocation > threshold) {
+            const cons = dislocationConsensusRef.current;
+            if (cons.count > 0 && Math.abs(tick.price - cons.anchorPrice) / cons.anchorPrice <= threshold * 0.5) {
+              cons.count += 1;
+            } else {
+              dislocationConsensusRef.current = { anchorPrice: tick.price, count: 1 };
+            }
+            if (dislocationConsensusRef.current.count < 4) {
+              console.warn(`[ChartContainer] Holding outlier tick (${dislocationConsensusRef.current.count}/4) for ${selectedSymbol}: ${tick.price} vs active candle ${currentLast.close}`);
+              return prev;
+            }
+            dislocationConsensusRef.current = { anchorPrice: 0, count: 0 };
+          } else {
+            dislocationConsensusRef.current = { anchorPrice: 0, count: 0 };
           }
 
           const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];
@@ -1105,8 +1090,12 @@ export function ChartContainer({
               low: Math.min(prevLow, tick.price, open),
               volume: (currentLast.volume || 1000) + incVol,
               isClosed: false,
-              ...(isIncremental ? {} : { volumeEstimated: true }),
             };
+            if (isIncremental) {
+              delete updated.volumeEstimated;
+            } else {
+              updated.volumeEstimated = true;
+            }
             next = [...prev];
             next[next.length - 1] = updated;
           } else {
@@ -1146,7 +1135,7 @@ export function ChartContainer({
     });
 
     return () => unsub();
-  }, [selectedSymbol, timeframe, subscribeToTicks]);
+  }, [selectedSymbol, timeframe, market, subscribeToTicks]);
 
 
   // Currently editing indicator config by unique instance ID
@@ -1159,17 +1148,46 @@ export function ChartContainer({
 
   // Live price and display price resolution
   const livePriceData = getSymbolPrice(selectedSymbol);
-  const rawDisplayPrice = currentPrice ?? livePriceData?.price ?? candles[candles.length - 1]?.close ?? 0;
-  const expectedBenchmarkPrice = useMemo(() => {
-    const live = getSymbolPrice(selectedSymbol);
-    return (live && live.price > 0) ? live.price : getExpectedPrice(market, selectedSymbol);
-  }, [market, selectedSymbol, getSymbolPrice]);
-  const safeDisplayPrice = (rawDisplayPrice > 0)
-    ? rawDisplayPrice
-    : expectedBenchmarkPrice;
-  const displayPrice = safeDisplayPrice;
+  const displayPrice = currentPrice ?? livePriceData?.price ?? candles[candles.length - 1]?.close ?? 0;
   const displayChange = livePriceData?.change ?? (candles.length >= 2 ? +(candles[candles.length - 1].close - candles[candles.length - 2].close).toFixed(2) : quote.change);
   const displayChangePct = livePriceData?.changePct ?? (candles.length >= 2 && candles[candles.length - 2].close > 0 ? +(((candles[candles.length - 1].close - candles[candles.length - 2].close) / candles[candles.length - 2].close) * 100).toFixed(2) : quote.changePct);
+
+  const [htfCandles, setHtfCandles] = useState<Candle[] | undefined>(undefined);
+
+  useEffect(() => {
+    if (!showSmcOverlay || !selectedSymbol) {
+      setHtfCandles(undefined);
+      return;
+    }
+    const htfTf =
+      timeframe === '1m' || timeframe === '5m' || timeframe === '15m' || timeframe === '30m'
+        ? '4H'
+        : timeframe === '1H' || timeframe === '4H'
+        ? '1D'
+        : '1W';
+    if (htfTf === timeframe) {
+      setHtfCandles(undefined);
+      return;
+    }
+    let cancelled = false;
+    fetchCandles(selectedSymbol, htfTf, undefined, undefined, market)
+      .then((raw) => {
+        if (cancelled) return;
+        const cleaned = validateAndCleanCandles(raw || [], htfTf);
+        setHtfCandles(cleaned.length >= 10 ? cleaned : undefined);
+      })
+      .catch(() => {
+        if (!cancelled) setHtfCandles(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showSmcOverlay, selectedSymbol, timeframe, market]);
+
+  const smcConfigWithHtf = useMemo<SmcConfig>(
+    () => (htfCandles ? { ...smcConfig, htfCandles } : smcConfig),
+    [smcConfig, htfCandles]
+  );
 
   // Synchronize terminal candle with live tick price for continuous edge-to-edge tracking
   const activeCandles = useMemo(() => {
@@ -1942,7 +1960,7 @@ export function ChartContainer({
             showVolume={showVolume}
             showVolumePanel={showVolumePanel}
             showSmcOverlay={showSmcOverlay}
-            smcConfig={smcConfig}
+            smcConfig={smcConfigWithHtf}
             showOrderFlow={orderFlowConfig.enabled}
             orderFlowConfig={orderFlowConfig}
             orderFlowData={orderFlowData}

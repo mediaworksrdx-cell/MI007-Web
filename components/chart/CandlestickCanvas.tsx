@@ -892,11 +892,67 @@ export function CandlestickCanvas({
   const orderFlowConfigRef = useRef(orderFlowConfig);
   const orderFlowDataRef = useRef(orderFlowData);
 
-  // CH-017: Memoize SMC computation by its actual inputs instead of recomputing on every layout effect
-  const memoizedSmcData = useMemo(() => {
-    if (!(smcConfig?.enabled || showSmcOverlay)) return null;
-    return calculateSMC(cleanCandles, smcConfig, undefined, timeframe);
-  }, [cleanCandles, smcConfig, showSmcOverlay, timeframe]);
+  // Fix 11: Extract closed bars only and key memo on last closed bar's openTime so live ticks never recompute SMC
+  const closedSmcKey = useMemo(() => {
+    let count = 0;
+    let lastOpen = 0;
+    for (let i = cleanCandles.length - 1; i >= 0; i--) {
+      if (cleanCandles[i]?.isClosed === true) {
+        if (lastOpen === 0) lastOpen = cleanCandles[i].openTime;
+        count++;
+      }
+    }
+    return `${symbol}:${timeframe}:${count}:${lastOpen}`;
+  }, [cleanCandles, symbol, timeframe]);
+
+  const closedCandlesForSmc = useMemo(() => {
+    return cleanCandles.filter(c => c.isClosed === true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closedSmcKey]);
+
+  const [workerSmcData, setWorkerSmcData] = useState<import('@/lib/smcEngine').SmcAnalysis | null>(null);
+  const smcWorkerRef = useRef<Worker | null>(null);
+  const smcWorkerReqIdRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (typeof Worker === 'undefined') return;
+    try {
+      const worker = new Worker(new URL('../../lib/smc.worker.ts', import.meta.url));
+      smcWorkerRef.current = worker;
+      worker.onmessage = (e: MessageEvent<{ requestId: number; result: import('@/lib/smcEngine').SmcAnalysis }>) => {
+        if (e.data && e.data.requestId === smcWorkerReqIdRef.current) {
+          setWorkerSmcData(e.data.result);
+        }
+      };
+      return () => {
+        worker.terminate();
+        smcWorkerRef.current = null;
+      };
+    } catch {
+      smcWorkerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!(smcConfig?.enabled || showSmcOverlay) || closedCandlesForSmc.length < 5) {
+      setWorkerSmcData(null);
+      return;
+    }
+    const reqId = ++smcWorkerReqIdRef.current;
+    if (smcWorkerRef.current) {
+      smcWorkerRef.current.postMessage({
+        requestId: reqId,
+        candles: closedCandlesForSmc,
+        config: smcConfig,
+        symbol,
+        timeframe,
+      });
+    } else {
+      setWorkerSmcData(calculateSMC(closedCandlesForSmc, smcConfig, symbol, timeframe));
+    }
+  }, [closedCandlesForSmc, smcConfig, showSmcOverlay, symbol, timeframe]);
+
+  const memoizedSmcData = workerSmcData;
 
   // Keep latest-value refs in sync before paint (avoids writing refs during render)
   useLayoutEffect(() => {

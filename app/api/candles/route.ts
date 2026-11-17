@@ -163,6 +163,39 @@ function getIntervalSeconds(timeframe: string): number {
   }
 }
 
+function getCandleCloseTime(openTime: number, timeframe: string): number {
+  if (timeframe === '1M') {
+    const d = new Date(openTime);
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
+  }
+  return openTime + getIntervalSeconds(timeframe) * 1000;
+}
+
+const tzPartsCache = new Map<string, Intl.DateTimeFormat>();
+function getLocalExchangeParts(ts: number, timeZone: string): { dateKey: string; hourDec: number } {
+  let fmt = tzPartsCache.get(timeZone);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    });
+    tzPartsCache.set(timeZone, fmt);
+  }
+  const parts: Record<string, string> = {};
+  for (const p of fmt.formatToParts(new Date(ts))) {
+    parts[p.type] = p.value;
+  }
+  return {
+    dateKey: `${parts.year}-${parts.month}-${parts.day}`,
+    hourDec: Number(parts.hour) + Number(parts.minute) / 60,
+  };
+}
+
 function getBinanceInterval(timeframe: string): string {
   switch (timeframe) {
     case '1m': return '1m';
@@ -267,31 +300,28 @@ function aggregateTo4H(
     return result;
   }
 
-  // Cash market local timezone offset & session close hour (in local exchange time)
-  const tzOffsetMs = market === 'INDIA'
-    ? 5.5 * 3600_000
+  // Cash market IANA timeZone & session close hour (handles DST automatically for America/New_York)
+  const timeZone = market === 'INDIA'
+    ? 'Asia/Kolkata'
     : market === 'UAE'
-    ? 4 * 3600_000
-    : -5 * 3600_000;
+    ? 'Asia/Dubai'
+    : 'America/New_York';
   const sessionCloseHourLocal = market === 'INDIA' ? 15.5 : market === 'UAE' ? 15.0 : 16.0;
-
-  const getExchangeSessionDay = (ts: number) => Math.floor((ts + tzOffsetMs) / 86_400_000);
-  const getExchangeSessionCloseUtc = (sessionDay: number) =>
-    sessionDay * 86_400_000 - tzOffsetMs + sessionCloseHourLocal * 3600_000;
 
   const result: Candle[] = [];
   let chunk: Candle[] = [];
-  let chunkSessionDay = -1;
+  let chunkDateKey = '';
 
   const flushSession = (closedByNextSession: boolean) => {
     if (chunk.length === 0) return;
     const first = chunk[0];
     const last = chunk[chunk.length - 1];
     const allBarsClosed = chunk.every(c => c.isClosed === true);
-    const sessionCloseUtc = getExchangeSessionCloseUtc(chunkSessionDay);
+    const nowLocal = getLocalExchangeParts(now, timeZone);
+    const isPastSessionClose = nowLocal.dateKey > chunkDateKey || (nowLocal.dateKey === chunkDateKey && nowLocal.hourDec >= sessionCloseHourLocal);
     const bucketClosed = chunk.length === 4
       ? allBarsClosed && now >= first.openTime + FOUR_HOURS_MS
-      : allBarsClosed && (closedByNextSession || now >= sessionCloseUtc);
+      : allBarsClosed && (closedByNextSession || isPastSessionClose);
 
     result.push({
       openTime: first.openTime,
@@ -308,11 +338,11 @@ function aggregateTo4H(
 
   for (let i = 0; i < candles.length; i++) {
     const c = candles[i];
-    const sDay = getExchangeSessionDay(c.openTime);
-    if (chunk.length > 0 && sDay !== chunkSessionDay) {
+    const { dateKey } = getLocalExchangeParts(c.openTime, timeZone);
+    if (chunk.length > 0 && dateKey !== chunkDateKey) {
       flushSession(true);
     }
-    chunkSessionDay = sDay;
+    chunkDateKey = dateKey;
     chunk.push(c);
     if (chunk.length === 4) {
       flushSession(false);
@@ -412,48 +442,65 @@ function loadPrecomputed5YrHistory(cleanSym: string, timeframe: string = '1D'): 
   return null;
 }
 
-/** Fetches exact exchange historical candlestick data for Crypto from Binance */
+/** Fetches exact exchange historical candlestick data for Crypto from Binance (paginated beyond 1,000 bars, preserving float volume) */
 async function fetchBinanceCandles(symbol: string, timeframe: string): Promise<Candle[] | null> {
   const clean = symbol.toUpperCase().replace(/[\s\/-]+/g, '').replace(/USD$/, '');
   const baseCoin = clean.replace(/USDT$/, '') === 'MATIC' ? 'POL' : clean.replace(/USDT$/, '');
   const pair = `${baseCoin}USDT`;
   const interval = getBinanceInterval(timeframe);
   const limit = 1000;
+  const maxPages = 2; // Up to 2,000 bars
   const endpoints = ['https://api.binance.com/api/v3', 'https://api.binance.us/api/v3'];
   const now = Date.now();
 
+  const mapRaw = (raw: any[]): Candle[] =>
+    raw.map((k: any) => {
+      const openTime = Number(k[0]);
+      const open = parseFloat(k[1]);
+      const high = parseFloat(k[2]);
+      const low = parseFloat(k[3]);
+      const close = parseFloat(k[4]);
+      const volume = parseFloat(k[5] || '0');
+      const closeTime = Number(k[6] || 0);
+      const dec = getInstrumentDecimals(symbol, close);
+      return {
+        openTime,
+        open: +open.toFixed(dec),
+        high: +Math.max(high, open, close).toFixed(dec),
+        low: +Math.min(low, open, close).toFixed(dec),
+        close: +close.toFixed(dec),
+        volume: Number.isFinite(volume) ? Number(volume.toFixed(6)) : 0,
+        isClosed: closeTime > 0 ? now >= closeTime : now >= getCandleCloseTime(openTime, timeframe),
+      };
+    }).filter(c => Number.isFinite(c.openTime) && c.close > 0);
+
   for (const baseUrl of endpoints) {
     try {
-      const url = `${baseUrl}/klines?symbol=${encodeURIComponent(pair)}&interval=${interval}&limit=${limit}`;
-      const res = await fetch(url, {
-        cache: 'no-store',
-        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(4000) : undefined,
-      });
-      if (!res.ok) continue;
-      const raw = await res.json();
-      if (!Array.isArray(raw) || raw.length === 0) continue;
+      const allByOpenTime = new Map<number, Candle>();
+      let endTime: number | undefined;
 
-      const candles: Candle[] = raw.map((k: any) => {
-        const openTime = Number(k[0]);
-        const open = parseFloat(k[1]);
-        const high = parseFloat(k[2]);
-        const low = parseFloat(k[3]);
-        const close = parseFloat(k[4]);
-        const volume = parseFloat(k[5] || '0');
-        const closeTime = Number(k[6] || 0);
-        const dec = getInstrumentDecimals(symbol, close);
-        return {
-          openTime,
-          open: +open.toFixed(dec),
-          high: +Math.max(high, open, close).toFixed(dec),
-          low: +Math.min(low, open, close).toFixed(dec),
-          close: +close.toFixed(dec),
-          volume: Math.round(volume),
-          isClosed: closeTime > 0 ? now >= closeTime : true,
-        };
-      }).filter(c => Number.isFinite(c.openTime) && c.close > 0);
+      for (let page = 0; page < maxPages; page++) {
+        const endParam = endTime !== undefined ? `&endTime=${endTime}` : '';
+        const url = `${baseUrl}/klines?symbol=${encodeURIComponent(pair)}&interval=${interval}&limit=${limit}${endParam}`;
+        const res = await fetch(url, {
+          cache: 'no-store',
+          signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(4000) : undefined,
+        });
+        if (!res.ok) break;
+        const raw = await res.json();
+        if (!Array.isArray(raw) || raw.length === 0) break;
 
-      if (candles.length > 0) return candles;
+        const batch = mapRaw(raw);
+        for (const c of batch) allByOpenTime.set(c.openTime, c);
+        if (raw.length < limit) break;
+        const earliestOpen = Number(raw[0]?.[0]);
+        if (!Number.isFinite(earliestOpen) || earliestOpen <= 0) break;
+        endTime = earliestOpen - 1;
+      }
+
+      if (allByOpenTime.size > 0) {
+        return Array.from(allByOpenTime.values()).sort((a, b) => a.openTime - b.openTime);
+      }
     } catch {}
   }
   return null;
@@ -526,8 +573,8 @@ async function fetchYahooFinanceCandles(symbol: string, timeframe: string, marke
         const openTime = timestamps[i] * 1000;
         if (openTime > now + 300_000) continue;
 
-        const closeTime = openTime + intervalSec * 1000;
-        const isClosed = (i < timestamps.length - 1) && (now >= closeTime);
+        const closeTime = getCandleCloseTime(openTime, aggregate4H ? '1H' : timeframe);
+        const isClosed = now >= closeTime;
 
         const sampleClose = Number(c || 0);
         const dec = getInstrumentDecimals(symbol, sampleClose);
