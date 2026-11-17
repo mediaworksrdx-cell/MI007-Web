@@ -958,14 +958,24 @@ export function ChartContainer({
 
   // Track last save timestamp to throttle IndexedDB writes during active ticks
   const lastSaveTimeRef = useRef<number>(0);
+  const lastLiveTickAtRef = useRef<number>(0);
+  const lastTickTsRef = useRef<number>(0);
+
+  useEffect(() => {
+    lastLiveTickAtRef.current = 0;
+    lastTickTsRef.current = 0;
+  }, [selectedSymbol, timeframe]);
 
   const candlesRef = useRef<Candle[]>(candles);
   useEffect(() => {
     candlesRef.current = candles;
   }, [candles]);
 
-  // Sync current price immediately from Trade Engine if available (without destructive historical candle corruption)
+  // Sync current price from polled quote ONLY when real-time ticks haven't updated recently (prevents snap-back)
   useEffect(() => {
+    if (Date.now() - lastLiveTickAtRef.current < 10_000) {
+      return;
+    }
     const live = liveSymbolData || getSymbolPrice(selectedSymbol);
     if (live && live.price > 0) {
       const currentCandles = candlesRef.current;
@@ -977,9 +987,8 @@ export function ChartContainer({
             return;
           }
           if (isSymbolMarketOpen(selectedSymbol)) {
-            // If market is open, update the active forming candle's close
             const now = Date.now();
-            if (now >= lastC.openTime) {
+            if (now >= lastC.openTime && (!live.timestamp || live.timestamp >= lastC.openTime)) {
               setCandles(cPrev => {
                 if (cPrev.length === 0) return cPrev;
                 const next = [...cPrev];
@@ -1000,7 +1009,7 @@ export function ChartContainer({
     }
   }, [selectedSymbol, liveSymbolData, getSymbolPrice]);
 
-  // Listen to live WebSocket ticks from the Trade Engine with robust session-aware candle formation
+  // Listen to live WebSocket ticks from the Trade Engine with monotonic timestamp guard
   useEffect(() => {
     const unsub = subscribeToTicks((tick) => {
       // If official exchange market is closed, STOP COMPLETELY: no new candles, no tick mutations
@@ -1008,6 +1017,12 @@ export function ChartContainer({
         return;
       }
       if (areSymbolsEqual(tick.symbol, selectedSymbol) && tick.price > 0) {
+        const tickTs = tick.timestamp || Date.now();
+        if (tickTs < lastTickTsRef.current) {
+          return;
+        }
+        lastTickTsRef.current = tickTs;
+        lastLiveTickAtRef.current = Date.now();
         setIsLiveFromEngine(true);
         setCurrentPrice(tick.price);
 

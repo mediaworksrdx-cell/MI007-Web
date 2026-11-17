@@ -2568,27 +2568,31 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(slText, x + boxW - 4 * dpr, finalSlY);
 
-        // Entry Badge (Anchored strictly to the LEFT side of the bracket, away from right-side price axis)
+        // Entry Badge (Place outside-left when bracket is narrow so it never collides with TP1/TP2/SL)
         const entryText = `Entry: ${formatPrice(st.entryPrice, options.symbol)}`;
         const entryTm = ctx.measureText(entryText);
+        const entryBadgeW = entryTm.width + 8 * dpr;
         const entryBadgeH = 14 * dpr;
         let entryBadgeY = yEntry - entryBadgeH / 2;
         if (yCur > 0 && Math.abs(yEntry - yCur) < 14 * dpr) {
           entryBadgeY += isBull ? -10 * dpr : 10 * dpr;
         }
         entryBadgeY = Math.max(4 * dpr, Math.min(chartH - entryBadgeH - 4 * dpr, entryBadgeY));
+        const entryBadgeX = boxW < 170 * dpr
+          ? Math.max(4 * dpr, x - entryBadgeW - 4 * dpr)
+          : x + 4 * dpr;
 
-        ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.92)' : 'rgba(241, 245, 249, 0.92)';
-        ctx.fillRect(x + 4 * dpr, entryBadgeY, entryTm.width + 8 * dpr, entryBadgeH);
+        ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.94)' : 'rgba(241, 245, 249, 0.94)';
+        ctx.fillRect(entryBadgeX, entryBadgeY, entryBadgeW, entryBadgeH);
         ctx.strokeStyle = isDark ? '#64748B' : '#94A3B8';
         ctx.lineWidth = 1 * dpr;
-        ctx.strokeRect(x + 4 * dpr, entryBadgeY, entryTm.width + 8 * dpr, entryBadgeH);
+        ctx.strokeRect(entryBadgeX, entryBadgeY, entryBadgeW, entryBadgeH);
         ctx.fillStyle = isDark ? '#E2E8F0' : '#334155';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(entryText, x + 8 * dpr, entryBadgeY + entryBadgeH / 2);
+        ctx.fillText(entryText, entryBadgeX + 4 * dpr, entryBadgeY + entryBadgeH / 2);
 
-        // 6. Header Setup Signal Pill Badge (Placed at TOP-LEFT of bracket structure, never colliding with entry/price)
+        // 6. Advanced SMC Header Signal Pill (Direction + Setup + Actual R:R + Confluence %)
         const shortName = st.name
           .replace(/ \(Bullish\)| \(Bearish\)/g, '')
           .replace('Trend Continuation', 'BOS')
@@ -2597,27 +2601,30 @@ export function renderChart(
           .replace('Liquidity Pool ', '')
           .replace('Power of Three ', '');
         const rrLabel = st.riskReward ? `1:${st.riskReward.toFixed(1)}` : '1:1.5';
-        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (${rrLabel})${isTradeOver ? ` [${tradeOutcome}]` : ''}`;
+        const scoreLabel = st.qualityScore ? ` • ${Math.round(st.qualityScore)}%` : '';
+        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (${rrLabel}${scoreLabel})${isTradeOver ? ` [${tradeOutcome}]` : ''}`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(headerTag);
         const tw = tm.width + 10 * dpr;
         const th = 14 * dpr;
 
-        // Place header badge cleanly above the upper boundary (or inside top-left if TP/SL is near top edge)
-        const upperBracketY = Math.max(0, isBull ? yTP : ySL);
-        const rawBadgeY = upperBracketY > th + 24 * dpr ? upperBracketY - th - 5 * dpr : upperBracketY + 4 * dpr;
-        const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, rawBadgeY));
+        const topMostBadgeY = Math.min(finalTpY, hasTp2 ? finalTp2Y : finalTpY, finalSlY);
+        const botMostBadgeY = Math.max(finalTpY, hasTp2 ? finalTp2Y : finalTpY, finalSlY);
+        const badgeY = topMostBadgeY > th + 20 * dpr
+          ? topMostBadgeY - th - 6 * dpr
+          : Math.min(chartH - th - 4 * dpr, botMostBadgeY + 12 * dpr);
+        const badgeX = Math.max(4 * dpr, Math.min(chartW - tw - 70 * dpr, x));
 
         ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)';
-        ctx.fillRect(x + 4 * dpr, badgeY, tw, th);
+        ctx.fillRect(badgeX, badgeY, tw, th);
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 1 * dpr;
-        ctx.strokeRect(x + 4 * dpr, badgeY, tw, th);
+        ctx.strokeRect(badgeX, badgeY, tw, th);
 
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(headerTag, x + 9 * dpr, badgeY + th / 2);
+        ctx.fillText(headerTag, badgeX + 5 * dpr, badgeY + th / 2);
         ctx.restore();
       }
     }

@@ -196,15 +196,15 @@ function getYahooParams(timeframe: string, rangeOverride?: string | null): { int
 
   switch (timeframe) {
     case '1m': return { interval: '1m', range: '5d' };
-    case '5m': return { interval: '5m', range: '5d' };
-    case '15m': return { interval: '15m', range: '5d' };
-    case '30m': return { interval: '30m', range: '1mo' };
-    case '1H': return { interval: '1h', range: '60d' };
-    case '4H': return { interval: '1h', range: '60d', aggregate4H: true };
-    case '1D': return { interval: '1d', range: '5y' };
-    case '1W': return { interval: '1wk', range: '5y' };
-    case '1M': return { interval: '1mo', range: '5y' };
-    default: return { interval: '1d', range: '5y' };
+    case '5m': return { interval: '5m', range: '60d' };
+    case '15m': return { interval: '15m', range: '60d' };
+    case '30m': return { interval: '30m', range: '60d' };
+    case '1H': return { interval: '1h', range: '1y' };
+    case '4H': return { interval: '1h', range: '1y', aggregate4H: true };
+    case '1D': return { interval: '1d', range: '10y' };
+    case '1W': return { interval: '1wk', range: '10y' };
+    case '1M': return { interval: '1mo', range: '10y' };
+    default: return { interval: '1d', range: '10y' };
   }
 }
 
@@ -337,7 +337,7 @@ async function fetchBinanceCandles(symbol: string, timeframe: string): Promise<C
   const baseCoin = clean.replace(/USDT$/, '') === 'MATIC' ? 'POL' : clean.replace(/USDT$/, '');
   const pair = `${baseCoin}USDT`;
   const interval = getBinanceInterval(timeframe);
-  const limit = timeframe === '1D' ? 1000 : 500;
+  const limit = 1000;
   const endpoints = ['https://api.binance.com/api/v3', 'https://api.binance.us/api/v3'];
   const now = Date.now();
 
