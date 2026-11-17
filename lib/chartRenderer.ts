@@ -2317,16 +2317,21 @@ export function renderChart(
       if (setupsToRender.length === 0) {
         // Only select active setups that were formed within the last 60 bars (no fallback to ancient completed setups)
         const lastBarIdx = candles.length - 1;
-        // Prioritize higher-score approved setups over watchlist/rejected, and retest-confirmed over un-retested signals
+        // Prioritize higher-score approved setups over watchlist/rejected, and ENTRY_READY / RETEST_CONFIRMED over CONDITIONAL_SETUP
         const rankSetup = (a: SmcConfirmedSetup, b: SmcConfirmedSetup) => {
           const aApproved = (a.qualityScore ?? 0) >= 60 ? 1 : 0;
           const bApproved = (b.qualityScore ?? 0) >= 60 ? 1 : 0;
           if (aApproved !== bApproved) return bApproved - aApproved;
-          const aValidState = a.signalState !== 'MISSED_ENTRY' && a.signalState !== 'INVALIDATED' && a.signalState !== 'REJECTED' ? 1 : 0;
-          const bValidState = b.signalState !== 'MISSED_ENTRY' && b.signalState !== 'INVALIDATED' && b.signalState !== 'REJECTED' ? 1 : 0;
+          const aValidState = a.signalState !== 'MISSED_ENTRY' && a.signalState !== 'EXPIRED' && a.signalState !== 'INVALIDATED' && a.signalState !== 'REJECTED' ? 1 : 0;
+          const bValidState = b.signalState !== 'MISSED_ENTRY' && b.signalState !== 'EXPIRED' && b.signalState !== 'INVALIDATED' && b.signalState !== 'REJECTED' ? 1 : 0;
           if (aValidState !== bValidState) return bValidState - aValidState;
-          const aExec = a.signalState === 'RETEST_CONFIRMED' || a.signalState === 'EXECUTED' || a.signalState === 'CONFIRMED' ? 1 : 0;
-          const bExec = b.signalState === 'RETEST_CONFIRMED' || b.signalState === 'EXECUTED' || b.signalState === 'CONFIRMED' ? 1 : 0;
+          const stateScore = (stState?: string) =>
+            stState === 'EXECUTED' ? 4 :
+            stState === 'ENTRY_READY' ? 3 :
+            stState === 'RETEST_CONFIRMED' ? 2 :
+            stState === 'CONDITIONAL_SETUP' ? 1 : 0;
+          const aExec = stateScore(a.signalState);
+          const bExec = stateScore(b.signalState);
           if (aExec !== bExec) return bExec - aExec;
           const aHasBos = a.validatingBreak ? 1 : 0;
           const bHasBos = b.validatingBreak ? 1 : 0;
@@ -2680,20 +2685,19 @@ export function renderChart(
           : '';
         const tierText = (st.actionTier || (st.qualityScore && st.qualityScore < 60 ? 'REJECT' : 'WATCHLIST_ONLY')).replace(/_/g, ' ');
         const scoreLabel = st.qualityScore ? ` • Score ${Math.round(st.qualityScore)}/100 (${tierText})` : '';
-        // Never display EXECUTED or TP HIT on a REJECTED (<60), WATCHLIST ONLY (60-69), MISSED ENTRY, or WAITING FOR RETEST signal
-        const isNonExecutable =
-          st.actionTier === 'REJECT' ||
-          st.actionTier === 'WATCHLIST_ONLY' ||
-          st.signalState === 'REJECTED' ||
-          st.signalState === 'WATCHLIST_ONLY' ||
-          st.signalState === 'MISSED_ENTRY' ||
-          st.signalState === 'WAITING_FOR_RETEST' ||
-          st.signalState === 'PENDING_RETEST';
-        const rawStatus = isNonExecutable
-          ? (st.signalState || st.actionTier || 'REJECTED')
-          : isTradeOver && st.confirmedOrderFill
-          ? tradeOutcome
-          : (st.signalState || 'RETEST CONFIRMED');
+        // Keep CONDITIONAL SETUP, RETEST CONFIRMED, ENTRY READY, and EXECUTED as distinct states;
+        // never mark RETEST CONFIRMED or ENTRY READY when retestCount === 0 or when market is closed without prior completed retest
+        const hasVerifiedRetest = (st.retestCount ?? 0) > 0;
+        const effectiveSignalState =
+          !hasVerifiedRetest && (st.signalState === 'RETEST_CONFIRMED' || st.signalState === 'ENTRY_READY')
+            ? 'CONDITIONAL_SETUP'
+            : options.isMarketOpen === false && st.signalState === 'ENTRY_READY'
+            ? 'RETEST_CONFIRMED'
+            : (st.signalState || 'CONDITIONAL_SETUP');
+        const rawStatus =
+          isTradeOver && st.confirmedOrderFill
+            ? tradeOutcome
+            : effectiveSignalState;
         const statusLabel = rawStatus.replace(/_/g, ' ');
         const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName}${bosLabel} (${rrLabel}${scoreLabel}) [${statusLabel}]`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;

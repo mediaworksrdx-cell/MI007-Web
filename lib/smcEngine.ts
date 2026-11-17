@@ -252,8 +252,8 @@ export interface SmcConfirmedSetup {
   resolutionIndeterminate?: boolean;
   /** Exact structural break (BOS / CHoCH) that validates this setup */
   validatingBreak?: { breakType: SmcBreakType; price: number; candleIndex: number };
-  /** Explicit execution state distinguishing signal generation, entry eligibility, order submission, and confirmed exchange fill */
-  signalState?: 'REJECTED' | 'WATCHLIST_ONLY' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_CONFIRMED' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED';
+  /** Explicit execution state distinguishing CONDITIONAL_SETUP, RETEST_CONFIRMED, ENTRY_READY, and EXECUTED */
+  signalState?: 'REJECTED' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_CONFIRMED' | 'ENTRY_READY' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'EXPIRED' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED';
   /** Score-based system action tier (<60 Reject, 60-69 Watchlist only, 70-79 Conditional, 80-89 High-quality, 90-100 Highest-priority) */
   actionTier?: 'REJECT' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'HIGH_QUALITY_SETUP' | 'HIGHEST_PRIORITY_SETUP';
   /** Separate trade-quality approval from structural confirmation */
@@ -297,6 +297,7 @@ export interface SmcFilterOptions {
   requireBreakDisplacement?: boolean; // Structure-break candle body >= displacementAtrMultiple × ATR. Default: false
   requireBreakVolume?: boolean;       // Structure-break candle volume expansion. Default: false
   obStructureLinkBars?: number;       // Max bars between OB and the structural break it caused. Default: 6
+  maxRetestWaitBars?: number;         // Max bars to wait for entry-zone retest before expiring. Default: 18
 }
 
 export type SmcVisualizationMode = 'clean' | 'advanced' | 'analysis';
@@ -483,6 +484,7 @@ function roundSmcPrice(price: number): number {
 
 /** RR-005: Single source of truth for setup lifespan, shared by engine and renderer. */
 export const SMC_TRADE_LIFESPAN_BARS = 50;
+export const SMC_RETEST_EXPIRY_BARS = 18;
 
 /** RR-002: Configurable risk-reward profile (defaults 1:1.5 and 1:2). */
 export interface SmcRiskProfile {
@@ -2257,15 +2259,19 @@ export function detectAll16SmcSetups(
     const rawRisk = isBull ? (cleanEntry - cleanStopLoss) : (cleanStopLoss - cleanEntry);
     const riskDistance = rawRisk > 0 ? rawRisk : Math.max(Math.abs(cleanEntry - cleanStopLoss), cleanEntry * 0.005);
 
-    // 3. Target Calculation: Anchor TP1 & TP2 to independently detected opposing liquidity levels (SSL/BSL/EQH/EQL/PDL/PDH/Swings)
+    // 3. Target Calculation: Anchor TP1 & TP2 to independently detected & confirmed opposing liquidity levels (SSL/BSL/EQH/EQL/PDL/PDH/Swings)
     // within institutional R:R bounds, otherwise use exact 1:2 (TP1) and 1:3 (TP2) calculated from cleanEntry and cleanStopLoss.
     const rp: SmcRiskProfile = { ...DEFAULT_SMC_RISK_PROFILE, ...riskProfile };
+    const swingConfMap = new Map<number, number>();
+    for (const s of swings) swingConfMap.set(s.index, s.confirmationIndex ?? s.index);
+
     const candidatePools: { price: number; label: string }[] = [];
     if (liquidityLevels && liquidityLevels.length > 0) {
       for (const lvl of liquidityLevels) {
         if (lvl.isSwept) continue;
-        const maxPoolIdx = Math.max(...lvl.candleIndices);
-        if (maxPoolIdx <= candleIndex) {
+        // Require every constituent swing of the liquidity pool to be confirmed at or before candleIndex
+        const allSwingsConfirmed = lvl.candleIndices.every(ix => (swingConfMap.get(ix) ?? ix) <= candleIndex);
+        if (allSwingsConfirmed) {
           if (isBull && (lvl.type === 'BSL' || lvl.type === 'EQH') && lvl.price > cleanEntry) {
             candidatePools.push({ price: lvl.price, label: `${lvl.type} Liquidity` });
           } else if (!isBull && (lvl.type === 'SSL' || lvl.type === 'EQL') && lvl.price < cleanEntry) {
@@ -2420,15 +2426,26 @@ export function detectAll16SmcSetups(
           break;
         }
 
-        // Retest Validation: Confirm candle-close rejection at broken S/R / POI zone before entry
-        const tappedZone = isBull ? bar.low <= cleanEntry : bar.high >= cleanEntry;
-        const confirmedRejection = isBull
-          ? (bar.close > cleanStopLoss && (bar.close >= cleanEntry || bar.close > bar.open))
-          : (bar.close < cleanStopLoss && (bar.close <= cleanEntry || bar.close < bar.open));
+        // Retest & Market-Closed Validation:
+        // Require price to revisit cleanEntry on a closed bar with genuine traded range (bar.high > bar.low, rejecting flat market-closed bars)
+        // and produce a confirmed directional rejection candle (bullish close for longs, bearish close for shorts).
+        const hasRealRange = bar.high > bar.low;
+        const tappedZone = hasRealRange && (isBull ? bar.low <= cleanEntry : bar.high >= cleanEntry);
+        const confirmedRejection = hasRealRange && (isBull
+          ? (bar.close > cleanStopLoss && bar.close >= cleanEntry && bar.close > bar.open)
+          : (bar.close < cleanStopLoss && bar.close <= cleanEntry && bar.close < bar.open));
         if (!tp1Hit && tappedZone && confirmedRejection) {
           status = 'RETESTING';
           lifecycleState = 'RETESTED';
           retestCount++;
+        }
+
+        // Signal Expiry: Expire setup if retest does not occur within configurable maxRetestWaitBars
+        const maxRetestWaitBars = options?.maxRetestWaitBars ?? SMC_RETEST_EXPIRY_BARS;
+        if (retestCount === 0 && k - candleIndex >= maxRetestWaitBars) {
+          status = 'EXPIRED';
+          lifecycleState = 'EXPIRED';
+          break;
         }
 
         if (k - candleIndex >= maxLifespanBars && !tp1Hit) {
@@ -2439,7 +2456,8 @@ export function detectAll16SmcSetups(
       }
     }
 
-    // 3. Current Bar Reality Invariant Check (governed strictly by setup stopLoss & lifespan)
+    // 3. Current Bar Reality Invariant Check (governed strictly by setup stopLoss, retest expiry & lifespan)
+    const maxRetestWaitBars = options?.maxRetestWaitBars ?? SMC_RETEST_EXPIRY_BARS;
     const lastBar = candles[candles.length - 1];
     if (lastBar && (status === 'CONFIRMED' || status === 'RETESTING' || status === 'ENTRY_ZONE_REACHED')) {
       if (isBull && (lastBar.low <= cleanStopLoss || lastBar.close <= cleanStopLoss)) {
@@ -2448,6 +2466,9 @@ export function detectAll16SmcSetups(
       } else if (!isBull && (lastBar.high >= cleanStopLoss || lastBar.close >= cleanStopLoss)) {
         status = 'INVALIDATED';
         lifecycleState = 'INVALIDATED';
+      } else if (retestCount === 0 && candles.length - 1 - candleIndex >= maxRetestWaitBars) {
+        status = 'EXPIRED';
+        lifecycleState = 'EXPIRED';
       } else if (candles.length - 1 - candleIndex >= maxLifespanBars) {
         status = 'EXPIRED';
         lifecycleState = 'EXPIRED';
@@ -2502,17 +2523,8 @@ export function detectAll16SmcSetups(
     const qualityApproval: 'REJECTED' | 'WATCHLIST_ONLY' | 'APPROVED' | 'LOW_QUALITY' =
       score < 60 ? 'REJECTED' : score < 70 ? 'WATCHLIST_ONLY' : 'APPROVED';
 
-    const isLimitZoneSetup =
-      setupType === 'FVG_TAP' ||
-      setupType === 'OB_RETEST' ||
-      setupType === 'BREAKER_RETEST' ||
-      setupType === 'BOS_FVG_RETEST' ||
-      setupType === 'MTF_CONFLUENCE' ||
-      setupType === 'THREE_STAGE_REVERSAL' ||
-      setupType === 'PREMIUM_DISCOUNT_OTE';
-
-    // Retest is only confirmed if a closed bar strictly after formation pulled back to cleanEntry and rejected (retestCount > 0)
-    const retestConfirmed = retestCount > 0 || !isLimitZoneSetup;
+    // Retest is ONLY confirmed when at least one subsequent closed bar with real range revisited cleanEntry and produced a rejection close (retestCount > 0)
+    const retestConfirmed = retestCount > 0;
     let missedEntry = false;
     let waitingForRetest = false;
 
@@ -2534,22 +2546,28 @@ export function detectAll16SmcSetups(
       }
     }
 
-    // Critical rule: signals with Score < 60 (REJECT) or 60-69 (WATCHLIST_ONLY) NEVER receive automatic execution,
-    // and EXECUTED is reserved strictly for confirmed exchange order fills.
+    // Separate states: CONDITIONAL_SETUP, RETEST_CONFIRMED, ENTRY_READY, and EXECUTED
     const confirmedOrderFill = false;
-    const signalState: 'REJECTED' | 'WATCHLIST_ONLY' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_CONFIRMED' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED' =
-      status === 'INVALIDATED' || status === 'EXPIRED'
+    const isNearEntryNow = lastBar
+      ? (lastBar.high > lastBar.low && Math.abs(lastBar.close - cleanEntry) <= riskDistance * 0.35)
+      : false;
+    const signalState: 'REJECTED' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_CONFIRMED' | 'ENTRY_READY' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'EXPIRED' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED' =
+      status === 'INVALIDATED'
         ? 'INVALIDATED'
+        : status === 'EXPIRED'
+        ? (missedEntry ? 'MISSED_ENTRY' : 'EXPIRED')
         : actionTier === 'REJECT'
         ? 'REJECTED'
         : missedEntry
         ? 'MISSED_ENTRY'
         : actionTier === 'WATCHLIST_ONLY'
         ? 'WATCHLIST_ONLY'
-        : waitingForRetest || !retestConfirmed
-        ? 'WAITING_FOR_RETEST'
+        : !retestConfirmed || waitingForRetest
+        ? 'CONDITIONAL_SETUP'
         : confirmedOrderFill
         ? 'EXECUTED'
+        : score >= 80 && isNearEntryNow
+        ? 'ENTRY_READY'
         : 'RETEST_CONFIRMED';
 
     return {
