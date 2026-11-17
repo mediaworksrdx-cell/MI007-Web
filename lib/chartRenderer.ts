@@ -2228,7 +2228,20 @@ export function renderChart(
           .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && smcCfg.showBearishConfluence && isBearishMaster && (lastBarIdx - s.candleIndex <= 25))
           .sort((a, b) => b.candleIndex - a.candleIndex)[0];
 
-        setupsToRender = [activeBullish, activeBearish].filter(Boolean) as SmcConfirmedSetup[];
+        if (activeBullish && activeBearish) {
+          // If one setup is distinctly more recent, prioritize the latest to avoid conflicting overlapping boxes
+          if (activeBullish.candleIndex > activeBearish.candleIndex) {
+            setupsToRender = [activeBullish];
+          } else if (activeBearish.candleIndex > activeBullish.candleIndex) {
+            setupsToRender = [activeBearish];
+          } else {
+            const lastBreak = smcData.structureBreaks?.slice(-1)[0];
+            const isBullTrend = (lastBreak && lastBreak.type.includes('BULL')) || (candles.length >= 2 && candles[candles.length - 1].close >= candles[candles.length - 2].close);
+            setupsToRender = [isBullTrend ? activeBullish : activeBearish];
+          }
+        } else {
+          setupsToRender = [activeBullish, activeBearish].filter(Boolean) as SmcConfirmedSetup[];
+        }
       }
 
       for (const st of setupsToRender) {

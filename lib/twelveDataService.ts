@@ -250,7 +250,7 @@ export async function fetchTwelveDataCandles(
 
   try {
     const apiKey = getActiveApiKey();
-    const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(queryTicker)}&interval=${interval}&outputsize=${outputSize}&apikey=${apiKey}`;
+    const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(queryTicker)}&interval=${interval}&outputsize=${outputSize}&apikey=${apiKey}&timezone=UTC`;
 
     const res = await fetch(url, {
       cache: 'no-store',
@@ -268,7 +268,8 @@ export async function fetchTwelveDataCandles(
         const decimals = queryTicker.includes('/') ? 4 : 2;
         const candles: Candle[] = data.values
           .map((v: any) => {
-            const time = new Date(v.datetime).getTime();
+            const timeStr = v.datetime.endsWith('Z') ? v.datetime : `${v.datetime.replace(' ', 'T')}Z`;
+            const time = new Date(timeStr).getTime();
             const open = +(parseFloat(v.open) * multiplier).toFixed(decimals);
             const high = +(parseFloat(v.high) * multiplier).toFixed(decimals);
             const low = +(parseFloat(v.low) * multiplier).toFixed(decimals);

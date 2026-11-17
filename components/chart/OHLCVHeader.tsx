@@ -14,6 +14,8 @@ export function OHLCVHeader({ symbol, candle, currency, timeframe, currentPrice 
   if (!candle) return null;
 
   const price = currentPrice ?? candle.close;
+  const effectiveHigh = Math.max(candle.high, price);
+  const effectiveLow = Math.min(candle.low, price);
   const isUp = price >= candle.open;
   const change = price - candle.open;
   const changePct = (change / candle.open) * 100;
@@ -44,11 +46,11 @@ export function OHLCVHeader({ symbol, candle, currency, timeframe, currentPrice 
       </span>
       <span className="tabular-nums shrink-0" style={{ fontVariantNumeric: 'tabular-nums' }}>
         <span className="text-slate-400 dark:text-slate-500 font-extrabold text-[11px] mr-1">H</span>
-        <span className="text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">{currency}{fmt(candle.high)}</span>
+        <span className="text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">{currency}{fmt(effectiveHigh)}</span>
       </span>
       <span className="tabular-nums shrink-0" style={{ fontVariantNumeric: 'tabular-nums' }}>
         <span className="text-slate-400 dark:text-slate-500 font-extrabold text-[11px] mr-1">L</span>
-        <span className="text-rose-600 dark:text-rose-400 font-bold tabular-nums">{currency}{fmt(candle.low)}</span>
+        <span className="text-rose-600 dark:text-rose-400 font-bold tabular-nums">{currency}{fmt(effectiveLow)}</span>
       </span>
       <span className="flex items-center tabular-nums shrink-0" style={{ fontVariantNumeric: 'tabular-nums' }}>
         <span className="text-slate-400 dark:text-slate-500 font-extrabold text-[11px] mr-1">C</span>

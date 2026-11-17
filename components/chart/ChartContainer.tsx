@@ -886,14 +886,16 @@ export function ChartContainer({
           // Hard rule for BTC: BTC price should never exceed 150k or be below 20k (purges old mock random walk drift)
           const isBtcDislocated = (selectedSymbol.toUpperCase() === 'BTC' || selectedSymbol.toUpperCase().includes('BITCOIN')) && (lastC.close > 120000 || lastC.close < 20000);
           const dislocation = (expectedPrice > 0 && lastC && lastC.close > 0) ? Math.abs(lastC.close - expectedPrice) / expectedPrice : 0;
-          if (isBtcDislocated || dislocation > 0.15) {
-            console.warn(`[ChartContainer] Auto-purging dislocated cache for ${selectedSymbol} (cached: ${lastC.close}, expected: ${expectedPrice})`);
+          const isFutureCandle = lastC && (lastC.openTime > Date.now() + 300_000);
+          if (isBtcDislocated || dislocation > 0.15 || isFutureCandle) {
+            console.warn(`[ChartContainer] Auto-purging dislocated/future cache for ${selectedSymbol}`);
             await purgeStoredCandles(selectedSymbol, timeframe);
             rawCached = null;
           }
         }
 
-        const cleanCached = validateAndCleanCandles(rawCached || [], timeframe);
+        const nowTime = Date.now();
+        const cleanCached = validateAndCleanCandles(rawCached || [], timeframe).filter(c => c.openTime <= nowTime + 300_000);
 
         if (!isCancelled && cleanCached.length > 0) {
           setCandles(cleanCached);
@@ -913,7 +915,7 @@ export function ChartContainer({
 
         // 2. Fetch latest candles from Trade Engine API
         const rawEngine = await fetchCandles(selectedSymbol, timeframe);
-        let cleanEngine = validateAndCleanCandles(rawEngine || [], timeframe);
+        let cleanEngine = validateAndCleanCandles(rawEngine || [], timeframe).filter(c => c.openTime <= Date.now() + 300_000);
 
         // Universal scale reconciliation across all markets (Forex, Commodities, Indices, Stocks):
         if (expectedPrice > 0 && cleanEngine.length > 0) {
