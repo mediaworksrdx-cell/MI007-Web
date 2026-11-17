@@ -2345,6 +2345,21 @@ export function renderChart(
             setupsToRender = [activeBearish];
           }
         }
+
+        // If no currently open setup exists (e.g. NIFTY where recent setups already hit target), show most recent TARGET_HIT setup from allSetups
+        if (setupsToRender.length === 0 && smcData.allSetups && smcData.allSetups.length > 0) {
+          const recentCompleted = smcData.allSetups
+            .filter((s) =>
+              s.status === 'TARGET_HIT' &&
+              (lastBarIdx - s.candleIndex <= 60) &&
+              ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence && isBullishMaster) ||
+               (s.direction === 'BEARISH' && smcCfg.showBearishConfluence && isBearishMaster))
+            )
+            .sort((a, b) => b.candleIndex - a.candleIndex)[0];
+          if (recentCompleted) {
+            setupsToRender = [recentCompleted];
+          }
+        }
       }
 
       for (const st of setupsToRender) {
