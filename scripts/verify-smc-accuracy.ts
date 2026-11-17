@@ -118,6 +118,15 @@ console.log('\n--- Test 3: Historical Alignment & Confirmation Invariants ---');
     assert(st.formationTime <= st.confirmationTime, `Setup ${st.name}: formationTime (${st.formationTime}) <= confirmationTime (${st.confirmationTime})`);
     assert(st.candleIndex < wave.length, `Setup ${st.name}: candleIndex (${st.candleIndex}) within dataset boundary`);
     assert(st.riskReward >= 2.0, `Setup ${st.name}: Valid 1:2+ Risk-to-Reward ratio (got: ${st.riskReward})`);
+    assert(st.qualityScore >= 70 && !st.isRejectedPermanently && st.signalState !== 'REJECTED', `Setup ${st.name}: Active trade list strictly requires qualityScore >= 70 (got: ${st.qualityScore})`);
+  }
+  if (smc.rejectedSetups && smc.rejectedSetups.length > 0) {
+    for (const rej of smc.rejectedSetups) {
+      assert(
+        rej.qualityScore < 70 && rej.isRejectedPermanently === true && Boolean(rej.rejectionReason) && Boolean(rej.rejectionTimestamp) && Boolean(rej.invalidationLevel),
+        `Rejected Setup (${rej.name}): Excluded from active trade list with reason "${rej.rejectionReason}", timestamp ${rej.rejectionTimestamp}, and invalidation ${rej.invalidationLevel}`
+      );
+    }
   }
 
   // Verify synthetic staircase & unclosed dataset rejection

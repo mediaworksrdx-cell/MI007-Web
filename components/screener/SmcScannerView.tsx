@@ -242,9 +242,15 @@ export function SmcScannerView({
 
         if (candles && candles.length >= 20) {
           const analysis: SmcAnalysis = calculateSMC(candles, undefined, comp.symbol, timeframe);
-          const setupsList = analysis.allSetups && analysis.allSetups.length > 0
-            ? analysis.allSetups
-            : analysis.confirmedSetups;
+          const setupsList = (analysis.confirmedSetups && analysis.confirmedSetups.length > 0
+            ? analysis.confirmedSetups
+            : analysis.allSetups).filter(
+            (s) =>
+              (s.qualityScore ?? 0) >= 70 &&
+              !s.isRejectedPermanently &&
+              s.signalState !== 'REJECTED' &&
+              s.actionTier !== 'REJECT'
+          );
 
           for (const setup of setupsList) {
             items.push({

@@ -2293,20 +2293,24 @@ export function renderChart(
       ctx.restore();
     }
 
-    // 10. Confirmed Directional SMC Setups (Bullish vs Bearish Master Controlled)
-    if (smcData.confirmedSetups || smcData.allSetups) {
+    // 10. Confirmed Directional SMC Setups (Only Quality >= 70 Accepted; < 70 Strictly Excluded from Active Trade List)
+    if (smcData.confirmedSetups || smcData.allSetups || smcData.rejectedSetups) {
       const isActiveSetup = (s: SmcConfirmedSetup) =>
-        s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED' || s.status === 'PENDING';
+        (s.qualityScore ?? 0) >= 70 &&
+        !s.isRejectedPermanently &&
+        s.signalState !== 'REJECTED' &&
+        s.actionTier !== 'REJECT' &&
+        (s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED' || s.status === 'PENDING');
 
       let setupsToRender: SmcConfirmedSetup[] = [];
 
-      // If deep-linked with a specific setup from SMC Scanner, prioritize rendering that specific setup
-      if (options.targetSmcSetup) {
+      // If deep-linked with a specific setup from SMC Scanner, only render if it is an accepted (>= 70) setup
+      if (options.targetSmcSetup && isActiveSetup(options.targetSmcSetup)) {
         setupsToRender.push(options.targetSmcSetup);
       } else if (options.targetSetupId) {
         const targeted = (smcData.confirmedSetups || []).find((s) => s.id === options.targetSetupId)
           || (smcData.allSetups || []).find((s) => s.id === options.targetSetupId);
-        if (targeted) {
+        if (targeted && isActiveSetup(targeted)) {
           const isTargetBull = targeted.direction === 'BULLISH';
           if ((isTargetBull && isBullishMaster) || (!isTargetBull && isBearishMaster)) {
             setupsToRender.push(targeted);
@@ -2315,12 +2319,11 @@ export function renderChart(
       }
 
       if (setupsToRender.length === 0) {
-        // Only select active setups that were formed within the last 60 bars (no fallback to ancient completed setups)
+        // Only select active setups (>= 70 score) that were formed within the last 60 bars
         const lastBarIdx = candles.length - 1;
-        // Prioritize higher-score approved setups over watchlist/rejected, and ENTRY_READY / RETEST_CONFIRMED over CONDITIONAL_SETUP
         const rankSetup = (a: SmcConfirmedSetup, b: SmcConfirmedSetup) => {
-          const aApproved = (a.qualityScore ?? 0) >= 60 ? 1 : 0;
-          const bApproved = (b.qualityScore ?? 0) >= 60 ? 1 : 0;
+          const aApproved = (a.qualityScore ?? 0) >= 70 ? 1 : 0;
+          const bApproved = (b.qualityScore ?? 0) >= 70 ? 1 : 0;
           if (aApproved !== bApproved) return bApproved - aApproved;
           const aValidState = a.signalState !== 'MISSED_ENTRY' && a.signalState !== 'EXPIRED' && a.signalState !== 'INVALIDATED' && a.signalState !== 'REJECTED' ? 1 : 0;
           const bValidState = b.signalState !== 'MISSED_ENTRY' && b.signalState !== 'EXPIRED' && b.signalState !== 'INVALIDATED' && b.signalState !== 'REJECTED' ? 1 : 0;
@@ -2369,11 +2372,13 @@ export function renderChart(
           }
         }
 
-        // If no currently open setup exists (e.g. NIFTY where recent setups already hit target), show most recent TARGET_HIT setup from allSetups
+        // If no currently open setup exists, show most recent TARGET_HIT setup from allSetups (only if qualityScore >= 70)
         if (setupsToRender.length === 0 && smcData.allSetups && smcData.allSetups.length > 0) {
           const recentCompleted = smcData.allSetups
             .filter((s) =>
               s.status === 'TARGET_HIT' &&
+              (s.qualityScore ?? 0) >= 70 &&
+              !s.isRejectedPermanently &&
               (lastBarIdx - s.candleIndex <= 60) &&
               ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence && isBullishMaster) ||
                (s.direction === 'BEARISH' && smcCfg.showBearishConfluence && isBearishMaster))
@@ -2713,7 +2718,10 @@ export function renderChart(
           .replace('Breaker Block Role Reversal', 'Breaker')
           .replace('Supply Order Block Retest', 'Supply OB')
           .replace('Demand Order Block Retest', 'Demand OB')
+          .replace('BOS Trend Continuation', 'BOS Continuation')
           .replace('Trend Continuation', 'BOS')
+          .replace('CHoCH Structural Reversal', 'CHoCH Reversal')
+          .replace('MSS Structural Reversal', 'MSS Reversal')
           .replace('Structural Reversal', 'CHoCH')
           .replace('Multi-Timeframe SMC Alignment', 'MTF')
           .replace('50% CE Retracement', 'FVG CE')
@@ -2724,7 +2732,7 @@ export function renderChart(
         const bosLabel = st.validatingBreak
           ? ` • ${st.validatingBreak.breakType} @ ${formatPrice(st.validatingBreak.price, options.symbol)}`
           : '';
-        const tierText = (st.actionTier || (st.qualityScore && st.qualityScore < 60 ? 'REJECT' : 'WATCHLIST_ONLY')).replace(/_/g, ' ');
+        const tierText = (st.actionTier || (st.qualityScore && st.qualityScore < 70 ? 'REJECT' : 'CONDITIONAL_SETUP')).replace(/_/g, ' ');
         const scoreLabel = st.qualityScore ? ` • Quality ${Math.round(st.qualityScore)}/100 (${tierText})` : '';
         // Separate RETEST TOUCHED, REJECTION CONFIRMED, and ENTRY READY into three independent states;
         // if live price has recovered above short entry (or dropped below long entry), rejection is not holding -> RETEST TOUCHED.
@@ -2770,6 +2778,62 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(headerTag, badgeX + 5 * dpr, badgeY + th / 2);
         ctx.restore();
+      }
+
+      // 10b. Non-Executable Rejected Signal Audit Callout (Only rendered when no >= 70 setup is active; kept out of active trade brackets)
+      if (setupsToRender.length === 0 && smcData.rejectedSetups && smcData.rejectedSetups.length > 0) {
+        const lastBarIdx = candles.length - 1;
+        const recentRej = [...smcData.rejectedSetups]
+          .filter(s => lastBarIdx - s.candleIndex <= 40 && s.candleIndex >= startIdx)
+          .sort((a, b) => b.candleIndex - a.candleIndex)[0];
+        if (recentRej) {
+          const isBullRej = recentRej.direction === 'BULLISH';
+          const rejShortName = recentRej.name
+            .replace(/ \(Bullish\)| \(Bearish\)|Bullish |Bearish /g, '')
+            .replace('BOS Trend Continuation', 'BOS Continuation')
+            .replace('Trend Continuation', 'BOS')
+            .replace('CHoCH Structural Reversal', 'CHoCH Reversal')
+            .replace('Structural Reversal', 'CHoCH')
+            .replace('Supply Order Block Retest', 'Supply OB')
+            .replace('Demand Order Block Retest', 'Demand OB')
+            .replace('Breaker Block Role Reversal', 'Breaker');
+          const rejBos = recentRej.validatingBreak
+            ? ` • ${recentRej.validatingBreak.breakType} @ ${formatPrice(recentRej.validatingBreak.price, options.symbol)}`
+            : '';
+          const rejTs = recentRej.rejectionTimestamp || recentRej.confirmationTime;
+          const rejTimeStr = rejTs
+            ? new Date(rejTs).toISOString().replace('T', ' ').slice(5, 16) + ' UTC'
+            : 'Closed Bar';
+          const invPrice = formatPrice(recentRej.invalidationLevel ?? recentRej.stopLoss, options.symbol);
+          const invBasis = recentRej.invalidationBasis ? ` (${recentRej.invalidationBasis})` : '';
+          const line1 = `✕ REJECTED [EXCLUDED FROM ACTIVE TRADES]: ${isBullRej ? 'LONG' : 'SHORT'} ${rejShortName}${rejBos} •Entry Ref: ${formatPrice(recentRej.entryPrice, options.symbol)}`;
+          const line2 = `Reason: ${recentRej.rejectionReason || `Quality ${Math.round(recentRej.qualityScore)}/100 < 70 Min`} • Invalidation: ${invPrice}${invBasis} • Rejected: ${rejTimeStr}`;
+
+          ctx.save();
+          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          const w1 = ctx.measureText(line1).width;
+          const w2 = ctx.measureText(line2).width;
+          const boxWRej = Math.min(chartW - 80 * dpr, Math.max(w1, w2) + 14 * dpr);
+          const boxHRej = 28 * dpr;
+          const yRej = Math.max(24 * dpr, Math.min(chartH - boxHRej - 16 * dpr, priceToY(recentRej.entryPrice) - boxHRej / 2));
+          const xRej = Math.max(10 * dpr, Math.min(chartW - boxWRej - 70 * dpr, (recentRej.candleIndex - startIdx) * candleW));
+
+          ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.92)' : 'rgba(248, 250, 252, 0.94)';
+          ctx.fillRect(xRej, yRej, boxWRej, boxHRej);
+          ctx.setLineDash([4 * dpr, 2 * dpr]);
+          ctx.strokeStyle = 'rgba(244, 63, 94, 0.75)';
+          ctx.lineWidth = 1 * dpr;
+          ctx.strokeRect(xRej, yRej, boxWRej, boxHRej);
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = '#F43F5E';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(line1, xRej + 6 * dpr, yRej + 8 * dpr);
+          ctx.fillStyle = isDark ? '#94A3B8' : '#475569';
+          ctx.fillText(line2, xRej + 6 * dpr, yRej + 20 * dpr);
+          ctx.restore();
+        }
       }
     }
 

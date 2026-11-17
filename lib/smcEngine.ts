@@ -272,6 +272,14 @@ export interface SmcConfirmedSetup {
   qualityApproval?: 'REJECTED' | 'WATCHLIST_ONLY' | 'APPROVED' | 'LOW_QUALITY';
   /** True only when confirmed exchange order-fill data is present */
   confirmedOrderFill?: boolean;
+  /** True when the signal was rejected (<70 quality score); permanently locked from becoming executable without a new setup */
+  isRejectedPermanently?: boolean;
+  /** Exact diagnostic reason why the setup was rejected */
+  rejectionReason?: string;
+  /** Exact candle-close timestamp (ms) when the signal was rejected */
+  rejectionTimestamp?: number;
+  /** Individual confluence factors that failed validation */
+  rejectionFactors?: string[];
   /** Explicit entry basis label (e.g. 'BOS Level', 'Breaker 50%', 'OB 50%', 'FVG CE') */
   entryBasis?: string;
   /** Structural liquidity source for TP1 (e.g. 'Swing', 'PDL', '2.0R') */
@@ -292,6 +300,7 @@ export interface SmcAnalysis {
   sessionLevels: SmcSessionLevels;
   confirmedSetups: SmcConfirmedSetup[];
   allSetups: SmcConfirmedSetup[];
+  rejectedSetups?: SmcConfirmedSetup[];
   equilibriumPrice: number;
   datasetFingerprint?: string;
   inducements?: SmcLiquidityLevel[];
@@ -1612,6 +1621,8 @@ export function evaluateInstitutionalConfluence(
     fvgs: SmcFvg[];
     dealingRange: SmcDealingRange;
     sessionLevels?: SmcSessionLevels;
+    htfBias?: 'BULLISH' | 'BEARISH' | 'RANGE';
+    hasConfirmedTargetPool?: boolean;
   }
 ): {
   qualityScore: number;
@@ -1619,10 +1630,12 @@ export function evaluateInstitutionalConfluence(
   institutionalClass: SmcInstitutionalClass;
   confluenceBreakdown: SmcConfluenceBreakdown;
   auditReasons: string[];
+  failedFactors: string[];
 } {
   const isBull = setup.direction === 'BULLISH';
   const entry = setup.entryPrice;
   const auditReasons: string[] = [];
+  const failedFactors: string[] = [];
   const idx = Math.max(0, Math.min(setup.candleIndex, candles.length - 1));
 
   // ── Point-in-time view (SMC-025, SMC-028..031): only information available at bar `idx` ──
@@ -1636,92 +1649,98 @@ export function evaluateInstitutionalConfluence(
     ? context.dealingRange
     : detectDealingRange(candles.slice(0, idx + 1), pitSwings);
 
-  // 1. Higher-Timeframe Alignment (Max 20%) — external (major) structure only
-  let htfScore = 10;
-  let htfReason = 'HTF Bias: Neutral / Consolidating (+10/20)';
-  const majorPit = pitSwings.filter(s => s.significance === 'MAJOR');
-  const structSwings = majorPit.length >= 3 ? majorPit : pitSwings;
-  if (structSwings.length >= 3) {
-    const recentSwings = structSwings.slice(-4);
-    const highs = recentSwings.filter(s => s.isHigh);
-    const lows = recentSwings.filter(s => !s.isHigh);
-    const hasHH = highs.length >= 2 && highs[highs.length - 1].price > highs[highs.length - 2].price;
-    const hasHL = lows.length >= 2 && lows[lows.length - 1].price > lows[lows.length - 2].price;
-    const hasLH = highs.length >= 2 && highs[highs.length - 1].price < highs[highs.length - 2].price;
-    const hasLL = lows.length >= 2 && lows[lows.length - 1].price < lows[lows.length - 2].price;
+  // 1. Higher-Timeframe Alignment (Max 20%) — independently validated using 4x macro / HTF series structure
+  let htfScore = 0;
+  let htfReason = 'HTF Bias: Unconfirmed (0/20)';
+  const macroCandles = aggregateMacroCandles(candles.slice(0, idx + 1), 4);
+  const macroSwings = macroCandles.length >= 12 ? detectSwingPoints(macroCandles, 2, true) : pitSwings.filter(s => s.significance === 'MAJOR');
+  const independentHtfBias = context.htfBias ?? (macroSwings.length >= 3 ? (() => {
+    const recent = macroSwings.slice(-4);
+    const highs = recent.filter(s => s.isHigh);
+    const lows = recent.filter(s => !s.isHigh);
+    const hh = highs.length >= 2 && highs[highs.length - 1].price > highs[highs.length - 2].price;
+    const hl = lows.length >= 2 && lows[lows.length - 1].price > lows[lows.length - 2].price;
+    const lh = highs.length >= 2 && highs[highs.length - 1].price < highs[highs.length - 2].price;
+    const ll = lows.length >= 2 && lows[lows.length - 1].price < lows[lows.length - 2].price;
+    if (hh || hl) return 'BULLISH';
+    if (lh || ll) return 'BEARISH';
+    return 'RANGE';
+  })() : 'RANGE');
 
-    if (isBull && (hasHH || hasHL)) {
-      htfScore = 20;
-      htfReason = 'HTF Alignment: Confirmed Bullish Structure (Higher Highs / Lows) (+20/20)';
-    } else if (!isBull && (hasLH || hasLL)) {
-      htfScore = 20;
-      htfReason = 'HTF Alignment: Confirmed Bearish Structure (Lower Highs / Lows) (+20/20)';
-    } else if ((isBull && (hasLH || hasLL)) || (!isBull && (hasHH || hasHL))) {
-      if (setup.setupType === 'CHOCH_REVERSAL' || setup.setupType === 'THREE_STAGE_REVERSAL') {
-        htfScore = 14;
-        htfReason = 'HTF Alignment: Structural Reversal Shift at Key Macro Extreme (+14/20)';
-      } else {
-        htfScore = 6;
-        htfReason = 'HTF Alignment: Counter-Trend Structure (+6/20)';
-      }
-    } else {
-      htfScore = 12;
-      htfReason = 'HTF Alignment: Mixed Range Structure (+12/20)';
-    }
+  if ((isBull && independentHtfBias === 'BULLISH') || (!isBull && independentHtfBias === 'BEARISH')) {
+    htfScore = 20;
+    htfReason = `HTF Alignment: Independent ${independentHtfBias} macro structure confirmed (+20/20)`;
+  } else if (independentHtfBias === 'RANGE') {
+    htfScore = 12;
+    htfReason = 'HTF Alignment: Macro range / consolidation structure (+12/20)';
+    failedFactors.push('Neutral HTF Bias');
+  } else if (setup.setupType === 'CHOCH_REVERSAL' || setup.setupType === 'THREE_STAGE_REVERSAL') {
+    htfScore = 14;
+    htfReason = 'HTF Alignment: Structural CHoCH reversal at macro extreme (+14/20)';
+  } else {
+    htfScore = 4;
+    htfReason = `HTF Alignment: Counter-trend against ${independentHtfBias} HTF bias (+4/20)`;
+    failedFactors.push('Counter-Trend HTF Bias');
   }
   auditReasons.push(htfReason);
 
-  // 2. Liquidity Confirmation (Max 15%)
-  let liqScore = 4;
-  let liqReason = 'Liquidity: No recent sweep detected (+4/15)';
-  // SMC-012 / SMC-029: most recent relevant sweep at or before the setup (within 20 bars)
+  // 2. Liquidity Confirmation (Max 15%) — independently validated sweep or session liquidity pool
+  let liqScore = 0;
+  let liqReason = 'Liquidity: No confirmed sweep or pool interaction (0/15)';
   const matchingSweep = pitSweeps
     .filter(sw => idx - sw.candleIndex <= 20 && (isBull ? !sw.isHighSweep : sw.isHighSweep))
     .sort((a, b) => b.candleIndex - a.candleIndex)[0];
   if (matchingSweep) {
-    // SMC-011: explicit validation — undefined is NOT genuine
     const rejectionKnown = matchingSweep.candleIndex + 1 <= idx && matchingSweep.rejectionConfirmed === true;
     if (matchingSweep.isGenuineSweep === true && rejectionKnown) {
       liqScore = 15;
-      liqReason = `Liquidity: Confirmed ${matchingSweep.label} with ${(matchingSweep.wickRatio * 100).toFixed(0)}% rejection wick + follow-through (+15/15)`;
+      liqReason = `Liquidity: Confirmed ${matchingSweep.label} (${(matchingSweep.wickRatio * 100).toFixed(0)}% wick + closed rejection) (+15/15)`;
     } else if (matchingSweep.isGenuineSweep === true) {
       liqScore = 12;
-      liqReason = `Liquidity: ${matchingSweep.label} with ${(matchingSweep.wickRatio * 100).toFixed(0)}% rejection wick, follow-through unconfirmed (+12/15)`;
+      liqReason = `Liquidity: ${matchingSweep.label} (${(matchingSweep.wickRatio * 100).toFixed(0)}% rejection wick) (+12/15)`;
     } else {
-      liqScore = 8;
-      liqReason = `Liquidity: Minor liquidity grab at ${matchingSweep.sweptLevelPrice.toFixed(2)} — wick below threshold (+8/15)`;
+      liqScore = 6;
+      liqReason = `Liquidity: Minor wick grab at ${matchingSweep.sweptLevelPrice.toFixed(2)} below threshold (+6/15)`;
+      failedFactors.push('Weak Liquidity Sweep');
     }
   } else {
     const { pdh, pdl } = prevDayLevelsAt(candles, idx);
     if (isBull && pdl && Math.abs(entry - pdl) / pdl < 0.015) {
       liqScore = 13;
-      liqReason = `Liquidity: Trading at Previous Day Low (PDL) liquidity pool (+13/15)`;
+      liqReason = 'Liquidity: Confirmed reaction at Previous Day Low (PDL) pool (+13/15)';
     } else if (!isBull && pdh && Math.abs(entry - pdh) / pdh < 0.015) {
       liqScore = 13;
-      liqReason = `Liquidity: Trading at Previous Day High (PDH) liquidity pool (+13/15)`;
+      liqReason = 'Liquidity: Confirmed reaction at Previous Day High (PDH) pool (+13/15)';
+    } else {
+      failedFactors.push('No Liquidity Sweep');
     }
   }
   auditReasons.push(liqReason);
 
-  // 3. Market Structure Alignment (Max 15%) — SMC-028: breaks at or before the setup only
-  let structScore = 4;
-  let structReason = 'Market Structure: Neutral / Forming (+4/15)';
+  // 3. LTF Market Structure Break Validation (Max 15%) — independently verified closed-candle swing break
+  let structScore = 0;
+  let structReason = 'Market Structure: No confirmed recent BOS/CHoCH break (0/15)';
   const recentBreaks = pitBreaks.filter(b => b.isBullish === isBull && idx - b.candleIndex <= 15);
   if (recentBreaks.length > 0) {
-    const latestBreak = recentBreaks[recentBreaks.length - 1];
-    structScore = 15;
-    structReason = latestBreak.breakType === 'BOS'
-      ? `Market Structure: Confirmed ${isBull ? '+BOS' : '-BOS'} trend expansion at ${latestBreak.price.toFixed(2)} (+15/15)`
-      : `Market Structure: Confirmed ${isBull ? '+CHoCH' : '-CHoCH'} structural reversal at ${latestBreak.price.toFixed(2)} (+15/15)`;
-  } else if (pitBreaks.length > 0) {
-    structScore = 8;
-    structReason = 'Market Structure: Prior structure break active (+8/15)';
+    const externalBrk = recentBreaks.filter(b => b.structureType === 'EXTERNAL' || b.significance === 'MAJOR');
+    const latestBreak = (externalBrk.length > 0 ? externalBrk : recentBreaks)[(externalBrk.length > 0 ? externalBrk : recentBreaks).length - 1];
+    structScore = externalBrk.length > 0 ? 15 : 11;
+    structReason = `Market Structure: Confirmed ${latestBreak.structureType || 'EXTERNAL'} ${isBull ? '+' : '-'}${latestBreak.breakType} at ${latestBreak.price.toFixed(2)} (+${structScore}/15)`;
+    if (externalBrk.length === 0) {
+      failedFactors.push('Internal-Only BOS');
+    }
+  } else if (pitBreaks.some(b => b.isBullish === isBull)) {
+    structScore = 6;
+    structReason = 'Market Structure: Older structural break (>15 bars ago) (+6/15)';
+    failedFactors.push('Stale Structure Break');
+  } else {
+    failedFactors.push('Unconfirmed BOS/CHoCH');
   }
   auditReasons.push(structReason);
 
-  // 4. Order Block Validity (Max 15%) — SMC-030: OBs confirmed and unmitigated at setup time
-  let obScore = 3;
-  let obReason = 'Order Block: Minor structural support/resistance (+3/15)';
+  // 4. Order Block / Breaker Validity (Max 15%) — independently verified unmitigated zone at setup bar
+  let obScore = 0;
+  let obReason = 'Order Block: No active unmitigated OB or Breaker zone (0/15)';
   const matchingObs = pitObs
     .filter(ob => ob.isBullish === isBull && idx - ob.startIndex <= 30)
     .sort((a, b) => b.startIndex - a.startIndex);
@@ -1735,21 +1754,24 @@ export function evaluateInstitutionalConfluence(
     if (inRange) {
       const strongVol = !ob.volumeEstimated && ob.volumeRatio >= 1.25;
       obScore = strongVol ? 15 : 13;
-      obReason = `Order Block: Fresh ${isBull ? 'Demand' : 'Supply'} OB [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}]${ob.volumeEstimated ? ' (volume estimated)' : ` (${ob.volumeRatio.toFixed(1)}x Vol)`} (+${obScore}/15)`;
+      obReason = `Order Block: Fresh ${isBull ? 'Demand' : 'Supply'} OB [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] (+${obScore}/15)`;
     } else {
-      obScore = 10;
-      obReason = `Order Block: Unmitigated OB near dealing range (+10/15)`;
+      obScore = 9;
+      obReason = 'Order Block: Unmitigated OB adjacent to entry zone (+9/15)';
+      failedFactors.push('Entry Outside OB Bounds');
     }
   } else if (matchingBreakers.length > 0) {
     const brk = matchingBreakers[0];
     obScore = 13;
-    obReason = `Order Block: Breaker Block polarity flip at [${brk.bottomPrice.toFixed(2)} - ${brk.topPrice.toFixed(2)}] (+13/15)`;
+    obReason = `Order Block: Validated Breaker Block [${brk.bottomPrice.toFixed(2)} - ${brk.topPrice.toFixed(2)}] (+13/15)`;
+  } else {
+    failedFactors.push('No Active Order Block');
   }
   auditReasons.push(obReason);
 
-  // 5. FVG / IFVG Confluence (Max 10%) — SMC-031 point-in-time, SMC-035 real zone intersection
-  let fvgScore = 2;
-  let fvgReason = 'FVG Confluence: Clean price delivery (+2/10)';
+  // 5. FVG / IFVG Imbalance Confluence (Max 10%) — independently verified 3-candle price imbalance overlap
+  let fvgScore = 0;
+  let fvgReason = 'FVG Confluence: No active FVG/IFVG overlapping setup zone (0/10)';
   const activeGaps = pitFvgs.filter(f => f.isBullish === isBull);
   const containing = activeGaps.find(f => entry >= f.bottomPrice && entry <= f.topPrice);
   const riskLo = Math.min(entry, setup.stopLoss);
@@ -1757,41 +1779,55 @@ export function evaluateInstitutionalConfluence(
   const intersecting = activeGaps.find(f => f.bottomPrice <= riskHi && f.topPrice >= riskLo);
   if (containing) {
     fvgScore = 10;
-    fvgReason = `FVG Confluence: Entry inside active ${containing.isInverse ? 'IFVG' : 'FVG'} [${containing.bottomPrice.toFixed(2)} - ${containing.topPrice.toFixed(2)}] (+10/10)`;
+    fvgReason = `FVG Confluence: Entry inside unmitigated ${containing.isInverse ? 'IFVG' : 'FVG'} [${containing.bottomPrice.toFixed(2)} - ${containing.topPrice.toFixed(2)}] (+10/10)`;
   } else if (intersecting) {
     fvgScore = 7;
     fvgReason = `FVG Confluence: Active ${intersecting.isInverse ? 'IFVG' : 'FVG'} intersects entry-to-stop zone (+7/10)`;
-  } else if (activeGaps.length > 0) {
-    fvgScore = 4;
-    fvgReason = `FVG Confluence: Unfilled imbalance exists but does not intersect the trade zone (+4/10)`;
+  } else {
+    failedFactors.push('No FVG Confluence');
   }
   auditReasons.push(fvgReason);
 
-  // 6. Displacement Strength (Max 10%) — SMC-036: true-range ATR(14) prior to the setup bar
-  let dispScore = 5;
-  let dispReason = 'Displacement: Standard candle expansion (+5/10)';
-  if (candles.length > 15 && idx >= 15) {
+  // 6. Displacement Strength (Max 10%) — independently validated true-range ATR(14) impulse & body ratio
+  let dispScore = 0;
+  let dispReason = 'Displacement: Insufficient impulse body expansion (0/10)';
+  if (candles.length > 10 && idx >= 5) {
     const atrSeries = computeAtrSeries(candles.slice(0, idx), 14);
     const atr = atrSeries[atrSeries.length - 1] || 0.001;
-    const cur = candles[idx];
-    const body = Math.abs(cur.close - cur.open);
-    const atrMult = body / Math.max(1e-9, atr);
-    if (atrMult >= 1.6) {
-      dispScore = 10;
-      dispReason = `Displacement: Strong impulse expansion (${atrMult.toFixed(1)}x ATR14) (+10/10)`;
-    } else if (atrMult >= 1.1) {
-      dispScore = 8;
-      dispReason = `Displacement: Moderate impulse expansion (${atrMult.toFixed(1)}x ATR14) (+8/10)`;
-    } else {
-      dispScore = 4;
-      dispReason = `Displacement: Normal candle body (${atrMult.toFixed(1)}x ATR14) (+4/10)`;
+    let bestMult = 0;
+    let bestBodyRatio = 0;
+    for (let k = Math.max(0, idx - 2); k <= idx; k++) {
+      const c = candles[k];
+      if (!c) continue;
+      const body = Math.abs(c.close - c.open);
+      const range = Math.max(1e-9, c.high - c.low);
+      const mult = body / Math.max(1e-9, atr);
+      if (mult > bestMult) {
+        bestMult = mult;
+        bestBodyRatio = body / range;
+      }
     }
+    if (bestMult >= 1.5 && bestBodyRatio >= 0.55) {
+      dispScore = 10;
+      dispReason = `Displacement: Strong institutional impulse (${bestMult.toFixed(1)}x ATR14, ${(bestBodyRatio * 100).toFixed(0)}% body) (+10/10)`;
+    } else if (bestMult >= 1.0 && bestBodyRatio >= 0.45) {
+      dispScore = 8;
+      dispReason = `Displacement: Validated impulse expansion (${bestMult.toFixed(1)}x ATR14) (+8/10)`;
+    } else if (bestMult >= 0.75) {
+      dispScore = 4;
+      dispReason = `Displacement: Moderate candle body (${bestMult.toFixed(1)}x ATR14) (+4/10)`;
+      failedFactors.push(`Weak Displacement (${bestMult.toFixed(1)}x ATR)`);
+    } else {
+      failedFactors.push(`No Displacement (${bestMult.toFixed(1)}x ATR)`);
+    }
+  } else {
+    failedFactors.push('Insufficient ATR History');
   }
   auditReasons.push(dispReason);
 
-  // 7. Premium / Discount Positioning (Max 10%) — dealing range as of the setup bar
-  let pdScore = 4;
-  let pdReason = 'Dealing Range: At Equilibrium (+4/10)';
+  // 7. Premium / Discount Positioning (Max 10%) — independently validated dealing-range Fib zone
+  let pdScore = 0;
+  let pdReason = 'Dealing Range: Unfavorable zone positioning (0/10)';
   const dr = pitDealingRange;
   if (dr.highPrice > dr.lowPrice) {
     const eq = dr.equilibriumPrice;
@@ -1800,56 +1836,57 @@ export function evaluateInstitutionalConfluence(
         const [dOteMin, dOteMax] = dr.discountOteRange;
         if (entry >= dOteMin && entry <= dOteMax) {
           pdScore = 10;
-          pdReason = `Dealing Range: Optimal Trade Entry (OTE 62%-79% Discount) (+10/10)`;
+          pdReason = 'Dealing Range: Optimal Trade Entry (OTE 62%-79% Discount) (+10/10)';
         } else {
           pdScore = 8;
-          pdReason = `Dealing Range: In Discount Zone (< 50% Dealing Range) (+8/10)`;
+          pdReason = 'Dealing Range: Validated Discount Zone (< 50% EQ) (+8/10)';
         }
       } else {
-        pdScore = 2;
-        pdReason = `Dealing Range: In Premium Zone (Unfavorable for Longs) (+2/10)`;
+        pdScore = 0;
+        pdReason = 'Dealing Range: Long entry in Premium Zone (> 50% EQ) (0/10)';
+        failedFactors.push('Long Entry in Premium');
       }
     } else {
       if (entry > eq) {
         const [pOteMin, pOteMax] = dr.premiumOteRange;
         if (entry >= pOteMin && entry <= pOteMax) {
           pdScore = 10;
-          pdReason = `Dealing Range: Optimal Trade Entry (OTE 62%-79% Premium) (+10/10)`;
+          pdReason = 'Dealing Range: Optimal Trade Entry (OTE 62%-79% Premium) (+10/10)';
         } else {
           pdScore = 8;
-          pdReason = `Dealing Range: In Premium Zone (> 50% Dealing Range) (+8/10)`;
+          pdReason = 'Dealing Range: Validated Premium Zone (> 50% EQ) (+8/10)';
         }
       } else {
-        pdScore = 2;
-        pdReason = `Dealing Range: In Discount Zone (Unfavorable for Shorts) (+2/10)`;
+        pdScore = 0;
+        pdReason = 'Dealing Range: Short entry in Discount Zone (< 50% EQ) (0/10)';
+        failedFactors.push('Short Entry in Discount');
       }
     }
   }
   auditReasons.push(pdReason);
 
-  // 8. Volume Confirmation (Max 5%) — CH-003: estimated volume is never scored as institutional
-  let volScore = 2;
-  let volReason = 'Volume: Average participation (+2/5)';
+  // 8. Independent Volume & Confirmed Target Liquidity Validation (Max 5%)
+  let volScore = 0;
+  let volReason = 'Volume & Target Liquidity: Unconfirmed (0/5)';
   const volWindowStart = Math.max(0, idx - 20);
   const volEstimated = candles.slice(volWindowStart, idx + 1).some(c => c.volumeEstimated);
+  const targetLiqPts = context.hasConfirmedTargetPool ? 2 : 0;
+  if (!context.hasConfirmedTargetPool) {
+    failedFactors.push('Unconfirmed Target Liquidity');
+  }
   if (volEstimated) {
-    volScore = 2;
-    volReason = 'Volume: Exchange volume unavailable (estimated) — neutral score (+2/5)';
-  } else if (idx >= 20) {
+    volScore = targetLiqPts;
+    volReason = `Volume & Liquidity: Estimated volume (0/3) + Confirmed Target Pool (+${targetLiqPts}/2) (+${volScore}/5)`;
+    failedFactors.push('Unverified Exchange Volume');
+  } else if (idx >= 10) {
     let vSum = 0;
     for (let k = volWindowStart; k < idx; k++) vSum += candles[k].volume;
     const volSma = vSum / Math.max(1, idx - volWindowStart);
     const volMult = candles[idx].volume / Math.max(1, volSma);
-    if (volMult >= 1.4) {
-      volScore = 5;
-      volReason = `Volume: High volume surge (${volMult.toFixed(1)}x Vol SMA) (+5/5)`;
-    } else if (volMult >= 1.05) {
-      volScore = 4;
-      volReason = `Volume: Above-average volume expansion (${volMult.toFixed(1)}x Vol SMA) (+4/5)`;
-    } else {
-      volScore = 1;
-      volReason = `Volume: Light volume participation (+1/5)`;
-    }
+    const vPts = volMult >= 1.3 ? 3 : volMult >= 1.0 ? 2 : 0;
+    if (vPts === 0) failedFactors.push(`Low Volume (${volMult.toFixed(1)}x SMA)`);
+    volScore = vPts + targetLiqPts;
+    volReason = `Volume & Liquidity: ${volMult.toFixed(1)}x Vol SMA (+${vPts}/3) + Target Liquidity (+${targetLiqPts}/2) (+${volScore}/5)`;
   }
   auditReasons.push(volReason);
 
@@ -1869,8 +1906,6 @@ export function evaluateInstitutionalConfluence(
     } else {
       institutionalClass = isBull ? 'Bullish Institutional Setup' : 'Bearish Institutional Setup';
     }
-  } else if (totalScore >= 50) {
-    institutionalClass = isBull ? 'Bullish Institutional Setup' : 'Bearish Institutional Setup';
   }
 
   const confluenceBreakdown: SmcConfluenceBreakdown = {
@@ -1890,6 +1925,7 @@ export function evaluateInstitutionalConfluence(
     institutionalClass,
     confluenceBreakdown,
     auditReasons,
+    failedFactors,
   };
 }
 
@@ -2122,7 +2158,8 @@ export function detectAll16SmcSetups(
   biasOverride?: { htfBias?: 'BULLISH' | 'BEARISH' | 'RANGE'; ltfBias?: 'BULLISH' | 'BEARISH' | 'RANGE' },
   riskProfile?: Partial<SmcRiskProfile>,
   ltfCandles?: Candle[],
-  liquidityLevels?: SmcLiquidityLevel[]
+  liquidityLevels?: SmcLiquidityLevel[],
+  rejectedOut?: SmcConfirmedSetup[]
 ): SmcConfirmedSetup[] {
   if (!isValidVerifiedCandleDataset(candles)) return [];
 
@@ -2715,21 +2752,20 @@ export function detectAll16SmcSetups(
         fvgs,
         dealingRange,
         sessionLevels,
+        htfBias,
+        hasConfirmedTargetPool: Boolean(structuralTp1),
       }
     );
 
-    // 1. Score-based Required Execution Rules:
-    //    < 60  -> REJECT
-    //    60-69 -> WATCHLIST_ONLY
+    // 1. Score-based Required Execution Rules (Only accept >= 70; reject all < 70):
+    //    < 70  -> REJECT (permanently excluded from active trade list)
     //    70-79 -> CONDITIONAL_SETUP
     //    80-89 -> HIGH_QUALITY_SETUP
     //    90-100-> HIGHEST_PRIORITY_SETUP
     const score = confluence.qualityScore;
     const actionTier: 'REJECT' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'HIGH_QUALITY_SETUP' | 'HIGHEST_PRIORITY_SETUP' =
-      score < 60
+      score < 70
         ? 'REJECT'
-        : score < 70
-        ? 'WATCHLIST_ONLY'
         : score < 80
         ? 'CONDITIONAL_SETUP'
         : score < 90
@@ -2737,26 +2773,49 @@ export function detectAll16SmcSetups(
         : 'HIGHEST_PRIORITY_SETUP';
 
     const qualityApproval: 'REJECTED' | 'WATCHLIST_ONLY' | 'APPROVED' | 'LOW_QUALITY' =
-      score < 60 ? 'REJECTED' : score < 70 ? 'WATCHLIST_ONLY' : 'APPROVED';
+      score < 70 ? 'REJECTED' : 'APPROVED';
+
+    const wasStructurallyActive = status !== 'INVALIDATED' && status !== 'EXPIRED';
+    const isRejectedPermanently = score < 70 && wasStructurallyActive;
+    const rejectionFactors = score < 70 ? confluence.failedFactors : undefined;
+    const rejectionTimestamp = score < 70 ? confirmationTime : undefined;
+    const rejectionReason = score < 70
+      ? (confluence.failedFactors.length > 0
+          ? `Quality ${Math.round(score)}/100 < 70 Min (${confluence.failedFactors.slice(0, 3).join(', ')})`
+          : `Quality ${Math.round(score)}/100 < 70 Minimum Threshold`)
+      : undefined;
+
+    // Prevent rejected signals (<70) from ever becoming executable without a new setup
+    if (score < 70) {
+      retestTouched = false;
+      rejectionConfirmed = false;
+      retestCount = 0;
+      tp1Hit = false;
+      tp2Hit = false;
+      tp1HitIndex = undefined;
+      tp2HitIndex = undefined;
+    }
 
     let missedEntry = false;
     let waitingForRetest = false;
 
-    if (!retestTouched && !rejectionConfirmed && (tp1Hit || tp2Hit)) {
-      // Price reached target without ever pulling back to touch the entry zone
-      missedEntry = true;
-      tp1Hit = false;
-      tp2Hit = false;
-      status = 'EXPIRED';
-      lifecycleState = 'EXPIRED';
-    } else if (!retestTouched && !rejectionConfirmed && lastBar) {
-      const distPastEntry = isBull ? (lastBar.close - cleanEntry) : (cleanEntry - lastBar.close);
-      if (distPastEntry >= riskDistance * 0.65) {
+    if (!isRejectedPermanently) {
+      if (!retestTouched && !rejectionConfirmed && (tp1Hit || tp2Hit)) {
+        // Price reached target without ever pulling back to touch the entry zone
         missedEntry = true;
-        status = 'PENDING';
-      } else {
-        waitingForRetest = true;
-        status = 'CONFIRMED';
+        tp1Hit = false;
+        tp2Hit = false;
+        status = 'EXPIRED';
+        lifecycleState = 'EXPIRED';
+      } else if (!retestTouched && !rejectionConfirmed && lastBar) {
+        const distPastEntry = isBull ? (lastBar.close - cleanEntry) : (cleanEntry - lastBar.close);
+        if (distPastEntry >= riskDistance * 0.65) {
+          missedEntry = true;
+          status = 'PENDING';
+        } else {
+          waitingForRetest = true;
+          status = 'CONFIRMED';
+        }
       }
     }
 
@@ -2765,6 +2824,7 @@ export function detectAll16SmcSetups(
     const lastClosedIdx = candles[candles.length - 1]?.isClosed === true ? candles.length - 1 : Math.max(0, candles.length - 2);
     const distInTradeDir = lastBar ? (isBull ? (lastBar.close - cleanEntry) : (cleanEntry - lastBar.close)) : -1;
     const isEntryReadyNow = Boolean(
+      !isRejectedPermanently &&
       rejectionConfirmed &&
       lastBar &&
       lastBar.high > lastBar.low &&
@@ -2775,16 +2835,14 @@ export function detectAll16SmcSetups(
     );
 
     const signalState: 'REJECTED' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_TOUCHED' | 'REJECTION_CONFIRMED' | 'RETEST_CONFIRMED' | 'ENTRY_READY' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'EXPIRED' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED' =
-      status === 'INVALIDATED'
+      isRejectedPermanently || actionTier === 'REJECT'
+        ? 'REJECTED'
+        : status === 'INVALIDATED'
         ? 'INVALIDATED'
         : status === 'EXPIRED'
         ? (missedEntry ? 'MISSED_ENTRY' : 'EXPIRED')
-        : actionTier === 'REJECT'
-        ? 'REJECTED'
         : missedEntry
         ? 'MISSED_ENTRY'
-        : actionTier === 'WATCHLIST_ONLY'
-        ? 'WATCHLIST_ONLY'
         : confirmedOrderFill
         ? 'EXECUTED'
         : rejectionConfirmed
@@ -2807,8 +2865,8 @@ export function detectAll16SmcSetups(
       targetPrice: effectiveTarget1,
       targetPrice2,
       riskReward: computedRr,
-      status,
-      lifecycleState,
+      status: isRejectedPermanently ? 'INVALIDATED' : status,
+      lifecycleState: isRejectedPermanently ? 'INVALIDATED' : lifecycleState,
       retestCount,
       retestTouched,
       rejectionConfirmed,
@@ -2835,6 +2893,10 @@ export function detectAll16SmcSetups(
       actionTier,
       qualityApproval,
       confirmedOrderFill,
+      isRejectedPermanently,
+      ...(rejectionReason ? { rejectionReason } : {}),
+      ...(rejectionTimestamp ? { rejectionTimestamp } : {}),
+      ...(rejectionFactors ? { rejectionFactors } : {}),
       entryBasis,
       tp1Source,
       tp2Source,
@@ -3357,9 +3419,6 @@ export function detectAll16SmcSetups(
 
   // Filter all generated setups through the Institutional Directional Validation Engine
   const validatedSetups = setups.filter((st) => {
-    // If setup is already invalidated or expired, do not emit as active setup
-    if (st.status === 'INVALIDATED' || st.status === 'EXPIRED') return false;
-
     const validation = validateSetupDirectionalConfirmation(
       st.direction,
       st.setupType,
@@ -3381,6 +3440,18 @@ export function detectAll16SmcSetups(
     } else {
       st.auditReasons = [`[${validation.state}] ${validation.reason}`];
     }
+
+    // Keep REJECTED signals (< 70 score) strictly out of the active/accepted trade list,
+    // while recording them in rejectedOut with their exact rejection reason, timestamp, and invalidation level.
+    if (st.isRejectedPermanently || st.qualityScore < 70 || st.signalState === 'REJECTED' || st.actionTier === 'REJECT') {
+      if (st.isRejectedPermanently && rejectedOut) {
+        rejectedOut.push(st);
+      }
+      return false;
+    }
+
+    // If setup is structurally invalidated or expired, do not emit as active setup
+    if (st.status === 'INVALIDATED' || st.status === 'EXPIRED') return false;
 
     return true;
   });
@@ -3595,7 +3666,8 @@ export function calculateSMC(
   // 7.5 Compute Structure Bias (SMC-006: independent HTF candles if supplied, else 4x macro aggregation)
   const { htfBias, ltfBias } = computeStructureBias(candles, swings, structureBreaks, config?.htfCandles);
 
-  // 8. Detect All 16 Confirmed SMC Setups
+  // 8. Detect All 16 Confirmed SMC Setups (strictly separating >= 70 accepted setups from < 70 rejected setups)
+  const rawRejectedSetups: SmcConfirmedSetup[] = [];
   const allSetups = detectAll16SmcSetups(
     candles,
     swings,
@@ -3610,7 +3682,8 @@ export function calculateSMC(
     { htfBias, ltfBias },
     config?.riskProfile,
     config?.ltfCandles,
-    liquidityLevels
+    liquidityLevels,
+    rawRejectedSetups
   );
 
   // Directional filtering across all enabled SMC strategies
@@ -3620,11 +3693,23 @@ export function calculateSMC(
   const filteredSetups = allSetups.filter((s) => {
     if (s.direction === 'BULLISH' && !isBullAllowed) return false;
     if (s.direction === 'BEARISH' && !isBearAllowed) return false;
+    if (s.qualityScore < 70 || s.isRejectedPermanently || s.signalState === 'REJECTED' || s.actionTier === 'REJECT') return false;
+    return true;
+  });
+
+  const rejectedSetups = rawRejectedSetups.filter((s) => {
+    if (s.direction === 'BULLISH' && !isBullAllowed) return false;
+    if (s.direction === 'BEARISH' && !isBearAllowed) return false;
     return true;
   });
 
   const confirmedSetups = filteredSetups.filter(
-    (s) => s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED'
+    (s) =>
+      (s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED') &&
+      s.qualityScore >= 70 &&
+      !s.isRejectedPermanently &&
+      s.signalState !== 'REJECTED' &&
+      s.actionTier !== 'REJECT'
   );
 
   const result: SmcAnalysis = {
@@ -3639,6 +3724,7 @@ export function calculateSMC(
     sessionLevels,
     confirmedSetups,
     allSetups: filteredSetups,
+    rejectedSetups,
     equilibriumPrice: dealingRange.equilibriumPrice,
     datasetFingerprint: fingerprint,
     internalSwings,
