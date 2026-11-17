@@ -54,7 +54,11 @@ export async function GET(req: NextRequest) {
     try {
       const tdCandles = await fetchTwelveDataCandles(symbol, timeframe, 120);
       if (tdCandles && tdCandles.length > 0) {
-        return NextResponse.json(tdCandles);
+        const now = Date.now();
+        const validCandles = tdCandles.filter(c => c.openTime <= now + 300_000);
+        if (validCandles.length > 0) {
+          return NextResponse.json(validCandles);
+        }
       }
     } catch (_err) {
       // Fall through to mock candles
