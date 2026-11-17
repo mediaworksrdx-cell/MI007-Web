@@ -164,18 +164,11 @@ export function formatPrice(p: number, symbol?: string, forceDecimals?: number):
       maximumFractionDigits: forceDecimals,
     });
   }
-  if (symbol) {
-    const dec = getInstrumentDecimals(symbol, p);
-    return p.toLocaleString(undefined, {
-      minimumFractionDigits: dec,
-      maximumFractionDigits: dec,
-    });
-  }
-  if (p >= 10000) return p.toLocaleString(undefined, { maximumFractionDigits: 0 });
-  if (p >= 100) return p.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 });
-  if (p >= 2) return p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (p >= 0.01) return p.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-  return p.toFixed(6);
+  const dec = getInstrumentDecimals(symbol, p);
+  return p.toLocaleString(undefined, {
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec,
+  });
 }
 
 /**
@@ -1511,17 +1504,28 @@ export function renderChart(
     const baseQuota = isTargetedMode ? 1 : 3;
     const mitigatedQuota = smcCfg.showMitigatedOb ? 2 : 0;
 
-    const sortZonesByProximity = <T extends { topPrice: number; bottomPrice: number; startIndex: number }>(zones: T[]): T[] => {
-      return zones.slice().sort((a, b) => {
-        const aInPrice = a.bottomPrice <= pMax && a.topPrice >= pMin;
-        const bInPrice = b.bottomPrice <= pMax && b.topPrice >= pMin;
-        if (aInPrice && !bInPrice) return -1;
-        if (!aInPrice && bInPrice) return 1;
-        const aDist = Math.abs((a.topPrice + a.bottomPrice) / 2 - lastPrice);
-        const bDist = Math.abs((b.topPrice + b.bottomPrice) / 2 - lastPrice);
-        if (Math.abs(aDist - bDist) > (pMax - pMin) * 0.05) return aDist - bDist;
-        return b.startIndex - a.startIndex;
-      });
+    const sortZonesByProximity = <T extends { topPrice: number; bottomPrice: number; startIndex: number; isMitigated?: boolean }>(zones: T[]): T[] => {
+      return zones
+        .filter(z => {
+          if (!isCleanMode) return true;
+          // In Institutional Clean Mode, discard ancient or extreme outlier zones far from active trading action
+          const midP = (z.topPrice + z.bottomPrice) / 2;
+          const distPct = Math.abs(midP - lastPrice) / Math.max(1, lastPrice);
+          if (distPct > 0.05) return false;
+          if (candles.length - 1 - z.startIndex > 45) return false;
+          return true;
+        })
+        .slice()
+        .sort((a, b) => {
+          const aInPrice = a.bottomPrice <= pMax && a.topPrice >= pMin;
+          const bInPrice = b.bottomPrice <= pMax && b.topPrice >= pMin;
+          if (aInPrice && !bInPrice) return -1;
+          if (!aInPrice && bInPrice) return 1;
+          const aDist = Math.abs((a.topPrice + a.bottomPrice) / 2 - lastPrice);
+          const bDist = Math.abs((b.topPrice + b.bottomPrice) / 2 - lastPrice);
+          if (Math.abs(aDist - bDist) > (pMax - pMin) * 0.05) return aDist - bDist;
+          return b.startIndex - a.startIndex;
+        });
     };
 
     // Helper to identify targeted OB or setup focus
@@ -2403,27 +2407,23 @@ export function renderChart(
         const lastCandleIdx = Math.min(endIdx - 1, candles.length - 1);
         const currentCandleX = (lastCandleIdx - startIdx) * candleW + candleW / 2;
 
-        const minBracketW = 20 * dpr;
-        let x: number;
+        const rawEndX = (endCandleIdx - startIdx) * candleW + candleW / 2;
+        const maxAllowedRightX = isCleanMode
+          ? Math.min(chartW - 65 * dpr, currentCandleX - (candleW / 2 + 10 * dpr))
+          : Math.min(chartW - 65 * dpr, currentCandleX - (candleW / 2 + 4 * dpr));
+
+        const minBracketW = Math.max(35 * dpr, candleW * 3.5);
+        const maxTradeW = Math.max(minBracketW, Math.min(10 * candleW, 120 * dpr));
         let boxW: number;
+        let x: number;
 
         if (isTradeOver) {
-          const rawEndX = (endCandleIdx - startIdx) * candleW + candleW / 2;
-          x = Math.max(5 * dpr, rawX);
-          boxW = Math.max(minBracketW, rawEndX - x);
+          x = Math.max(5 * dpr, Math.min(rawX, maxAllowedRightX - minBracketW));
+          boxW = Math.max(minBracketW, Math.min(rawEndX - x, maxAllowedRightX - x));
         } else {
-          // Setup is actively live right now: strictly stop BEFORE the current forming candle
-          const maxAllowedRightX = isCleanMode
-            ? Math.min(chartW - 65 * dpr, currentCandleX - (candleW / 2 + 10 * dpr))
-            : Math.min(chartW - 65 * dpr, currentCandleX - (candleW / 2 + 4 * dpr));
-
-          if (rawX < 15 * dpr) {
-            x = Math.max(8 * dpr, currentCandleX - 120 * dpr);
-            boxW = Math.max(minBracketW, maxAllowedRightX - x);
-          } else {
-            x = Math.max(5 * dpr, Math.min(rawX, maxAllowedRightX - minBracketW));
-            boxW = Math.max(minBracketW, maxAllowedRightX - x);
-          }
+          // For active trades, restrict shading strictly to the trade formation and current area (no screen-spanning boxes)
+          x = Math.max(5 * dpr, Math.min(rawX, maxAllowedRightX - minBracketW));
+          boxW = Math.max(minBracketW, Math.min(maxTradeW, maxAllowedRightX - x));
         }
 
         const yEntry = priceToY(st.entryPrice);
@@ -2443,60 +2443,68 @@ export function renderChart(
           ctx.globalAlpha = Math.max(0.40, 1.0 - (lastBarIdx - st.candleIndex - 6) * 0.04);
         }
 
-        // 1. Take Profit (Reward) Zone (Entry to TP1)
+        // 1. Take Profit (Reward) Zone (Entry to TP1) — Subtle green shaded region
         const tpTop = Math.min(yEntry, yTP);
         const tpH = Math.max(Math.abs(yEntry - yTP), 2 * dpr);
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
         ctx.fillRect(x, tpTop, boxW, tpH);
-        ctx.strokeStyle = 'rgba(16, 185, 129, 0.65)';
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.50)';
         ctx.lineWidth = 1 * dpr;
         ctx.setLineDash([4 * dpr, 3 * dpr]);
         ctx.strokeRect(x, tpTop, boxW, tpH);
         ctx.setLineDash([]);
 
-        // 2. Stop Loss (Risk) Zone (Entry to SL)
+        // 2. Stop Loss (Risk) Zone (Entry to SL) — Subtle red shaded region
         const slTop = Math.min(yEntry, ySL);
         const slH = Math.max(Math.abs(yEntry - ySL), 2 * dpr);
-        ctx.fillStyle = 'rgba(244, 63, 94, 0.12)';
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.08)';
         ctx.fillRect(x, slTop, boxW, slH);
-        ctx.strokeStyle = 'rgba(244, 63, 94, 0.65)';
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.50)';
         ctx.lineWidth = 1 * dpr;
         ctx.setLineDash([4 * dpr, 3 * dpr]);
         ctx.strokeRect(x, slTop, boxW, slH);
         ctx.setLineDash([]);
 
-        // 3. Entry Line (Solid Razor Line)
-        ctx.strokeStyle = isBull ? '#059669' : '#DC2626';
-        ctx.lineWidth = 2.0 * dpr;
+        // 3. Entry Line (Thin Neutral Line - institutional hierarchy)
+        ctx.strokeStyle = isDark ? '#94A3B8' : '#64748B';
+        ctx.lineWidth = 1.2 * dpr;
         ctx.beginPath();
         ctx.moveTo(x, yEntry);
         ctx.lineTo(x + boxW, yEntry);
         ctx.stroke();
 
-        // 4. TP2 Extension Line (Target 2 – RR 1:2.0)
-        if (st.targetPrice2 && st.targetPrice2 > 0) {
-          const yTP2 = priceToY(st.targetPrice2);
-          if (yTP2 >= 0 && yTP2 <= chartH) {
-            ctx.setLineDash([3 * dpr, 3 * dpr]);
-            ctx.strokeStyle = 'rgba(5, 150, 105, 0.75)';
-            ctx.lineWidth = 1 * dpr;
-            ctx.beginPath();
-            ctx.moveTo(x, yTP2);
-            ctx.lineTo(x + boxW, yTP2);
-            ctx.stroke();
-            ctx.setLineDash([]);
+        // 4. TP2 Extension Line (Target 2 – RR 1:2.0) with collision separation
+        let finalTpY = yTP;
+        let finalTp2Y = (st.targetPrice2 && st.targetPrice2 > 0) ? priceToY(st.targetPrice2) : -999;
+        const hasTp2 = finalTp2Y >= 0 && finalTp2Y <= chartH;
 
-            // TP2 Badge (Right edge of bracket)
-            ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-            const tp2Text = `TP2 (1:2.0): ${formatPrice(st.targetPrice2, options.symbol)}`;
-            const tp2Tm = ctx.measureText(tp2Text);
-            ctx.fillStyle = 'rgba(5, 150, 105, 0.90)';
-            ctx.fillRect(x + boxW - tp2Tm.width - 6 * dpr, yTP2 - 6 * dpr, tp2Tm.width + 6 * dpr, 12 * dpr);
-            ctx.fillStyle = '#FFFFFF';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(tp2Text, x + boxW - 3 * dpr, yTP2);
+        if (hasTp2) {
+          // Guarantee vertical separation between TP1 and TP2 badges (at least 16 * dpr)
+          if (Math.abs(finalTp2Y - finalTpY) < 16 * dpr) {
+            finalTp2Y = isBull
+              ? Math.max(6 * dpr, finalTpY - 16 * dpr)
+              : Math.min(chartH - 6 * dpr, finalTpY + 16 * dpr);
           }
+
+          ctx.setLineDash([3 * dpr, 3 * dpr]);
+          ctx.strokeStyle = 'rgba(5, 150, 105, 0.75)';
+          ctx.lineWidth = 1 * dpr;
+          ctx.beginPath();
+          ctx.moveTo(x, priceToY(st.targetPrice2!));
+          ctx.lineTo(x + boxW, priceToY(st.targetPrice2!));
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // TP2 Badge (Right edge of bracket)
+          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          const tp2Text = `TP2 (1:2.0): ${formatPrice(st.targetPrice2!, options.symbol)}`;
+          const tp2Tm = ctx.measureText(tp2Text);
+          ctx.fillStyle = 'rgba(5, 150, 105, 0.90)';
+          ctx.fillRect(x + boxW - tp2Tm.width - 6 * dpr, finalTp2Y - 6 * dpr, tp2Tm.width + 6 * dpr, 12 * dpr);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(tp2Text, x + boxW - 3 * dpr, finalTp2Y);
         }
 
         // 5. Distinct Non-Overlapping Price Badges
@@ -2506,11 +2514,11 @@ export function renderChart(
         const tpText = `TP1 (1:1.5): ${formatPrice(st.targetPrice, options.symbol)}`;
         const tpTm = ctx.measureText(tpText);
         ctx.fillStyle = 'rgba(16, 185, 129, 0.92)';
-        ctx.fillRect(x + boxW - tpTm.width - 8 * dpr, yTP - 7 * dpr, tpTm.width + 8 * dpr, 14 * dpr);
+        ctx.fillRect(x + boxW - tpTm.width - 8 * dpr, finalTpY - 7 * dpr, tpTm.width + 8 * dpr, 14 * dpr);
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        ctx.fillText(tpText, x + boxW - 4 * dpr, yTP);
+        ctx.fillText(tpText, x + boxW - 4 * dpr, finalTpY);
 
         // SL Badge (Right edge of bracket)
         // Collision prevention: If SL is too close to Entry (< 18px) or Current Price (< 14px), nudge SL badge away
@@ -2541,12 +2549,12 @@ export function renderChart(
         }
         entryBadgeY = Math.max(4 * dpr, Math.min(chartH - entryBadgeH - 4 * dpr, entryBadgeY));
 
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.92)' : 'rgba(241, 245, 249, 0.92)';
         ctx.fillRect(x + 4 * dpr, entryBadgeY, entryTm.width + 8 * dpr, entryBadgeH);
-        ctx.strokeStyle = isBull ? '#059669' : '#DC2626';
+        ctx.strokeStyle = isDark ? '#64748B' : '#94A3B8';
         ctx.lineWidth = 1 * dpr;
         ctx.strokeRect(x + 4 * dpr, entryBadgeY, entryTm.width + 8 * dpr, entryBadgeH);
-        ctx.fillStyle = '#F8FAFC';
+        ctx.fillStyle = isDark ? '#E2E8F0' : '#334155';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(entryText, x + 8 * dpr, entryBadgeY + entryBadgeH / 2);
@@ -2562,25 +2570,6 @@ export function renderChart(
         const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (1:1.5 / 1:2.0)${isTradeOver ? ` [${tradeOutcome}]` : ''}`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(headerTag);
-        const tw = tm.width + 10 * dpr;
-        const th = 14 * dpr;
-
-        // Place header badge above the upper boundary of the bracket
-        const upperBracketY = isBull ? yTP : ySL;
-        const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, upperBracketY - th - 5 * dpr));
-
-        ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)';
-        ctx.fillRect(x + 4 * dpr, badgeY, tw, th);
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 1 * dpr;
-        ctx.strokeRect(x + 4 * dpr, badgeY, tw, th);
-
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(headerTag, x + 9 * dpr, badgeY + th / 2);
-        ctx.restore();
-      }
         const tw = tm.width + 10 * dpr;
         const th = 14 * dpr;
 
@@ -2632,7 +2621,7 @@ export function renderChart(
 
   // ── LAYER 4: Volume Overlay (behind candles - quiet opacity & anchored baseline divider) ──
   if (options.showVolume && !options.showVolumePanel) {
-    const volHeightRatio = 0.16; // 16% of canvas height (clean institutional proportion)
+    const volHeightRatio = 0.10; // 10% of canvas height (clean institutional proportion)
     const volH = chartH * volHeightRatio;
     const volDividerY = Math.floor(chartH - volH) + 0.5; // razor-sharp 1px baseline line
 
@@ -2668,32 +2657,43 @@ export function renderChart(
 
     // If volume is absent, constant, or flat (e.g. index/forex feeds with identical dummy volumes), derive realistic tick-volume proxy from candle range & momentum
     let effectiveVolumes: number[] = [];
+    let effectiveMaxV = maxV;
+
     if (hasRealVolumeVariation) {
       effectiveVolumes = volValues;
+      const sortedPositive = volValues.filter(v => v > 0).sort((a, b) => a - b);
+      if (sortedPositive.length > 0) {
+        const p90Idx = Math.floor(sortedPositive.length * 0.90);
+        const p90V = sortedPositive[p90Idx] || maxV;
+        // Clip extreme auction/closing spikes so normal intraday bars remain clearly legible
+        effectiveMaxV = maxV > p90V * 2.5 ? p90V * 2.2 : maxV;
+      }
     } else {
-      minV = Infinity;
-      maxV = -Infinity;
+      let maxTickV = 0.0001;
       for (let i = safeStart; i < safeEnd; i++) {
         const c = candles[i];
-        const range = Math.max(c.high - c.low, Math.abs(c.close - c.open), c.close * 0.0001);
         const body = Math.abs(c.close - c.open);
-        const tickVol = (range + body * 0.5) / Math.max(0.0001, c.close) * 10000;
+        const range = Math.max(c.high - c.low, body, c.close * 0.0004);
+        const wick = range - body;
+        const timeSeed = Math.abs(Math.sin((c.openTime / 3600000) * 1.5 + (c.openTime % 86400000) * 0.0001));
+        const tickVol = ((body * 1.3 + wick * 0.7) / Math.max(0.0001, c.close) * 10000) * (0.65 + timeSeed * 0.70);
         effectiveVolumes.push(tickVol);
-        if (tickVol < minV) minV = tickVol;
-        if (tickVol > maxV) maxV = tickVol;
+        if (tickVol > maxTickV) maxTickV = tickVol;
       }
+      const sortedTicks = [...effectiveVolumes].sort((a, b) => a - b);
+      const p90Tick = sortedTicks[Math.floor(sortedTicks.length * 0.90)] || maxTickV;
+      effectiveMaxV = maxTickV > p90Tick * 2.5 ? p90Tick * 2.2 : maxTickV;
     }
 
-    const vRange = maxV - minV;
     for (let i = safeStart; i < safeEnd; i++) {
       const li = i - startIdx;
       const x = Math.round(li * candleW + (candleW - volBodyW) / 2);
       const c = candles[i];
       const val = effectiveVolumes[i - safeStart] ?? 0;
-      const normalizedRatio = vRange > 0.0001
-        ? 0.15 + 0.80 * Math.max(0, Math.min(1, (val - minV) / vRange))
-        : 0.45;
-      const barH = Math.max(2 * dpr, Math.round(normalizedRatio * volH * 0.95));
+      if (val <= 0) continue;
+
+      const ratio = effectiveMaxV > 0 ? Math.max(0, Math.min(1.0, val / effectiveMaxV)) : 0;
+      const barH = Math.max(2 * dpr, Math.round((0.08 + ratio * 0.84) * volH));
       const bTop = Math.round(chartH - barH);
       const bull = c.close >= c.open;
       ctx.fillStyle = bull

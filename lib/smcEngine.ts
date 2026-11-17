@@ -1765,6 +1765,192 @@ export function computeStructureBias(
   return { htfBias, ltfBias };
 }
 
+// ── 7.6. Institutional Directional Signal Validation Engine ───────────────────
+
+export type SmcDirectionalState =
+  | 'BULLISH_STRUCTURAL_CONFIRMATION'
+  | 'BEARISH_STRUCTURAL_CONFIRMATION'
+  | 'LIQUIDITY_SWEEP_UNCONFIRMED'
+  | 'CONFLICTING_SIGNALS'
+  | 'CONFIRMED_REVERSAL';
+
+export interface SmcDirectionalValidation {
+  state: SmcDirectionalState;
+  isValid: boolean;
+  reason: string;
+}
+
+export function validateSetupDirectionalConfirmation(
+  direction: 'BULLISH' | 'BEARISH',
+  setupType: SmcSetupType,
+  candleIndex: number,
+  candles: Candle[],
+  breaks: SmcStructureBreak[],
+  sweeps: SmcLiquiditySweep[],
+  htfBias: 'BULLISH' | 'BEARISH' | 'RANGE',
+  ltfBias: 'BULLISH' | 'BEARISH' | 'RANGE'
+): SmcDirectionalValidation {
+  const isBull = direction === 'BULLISH';
+
+  // 1. Audit recent structural breaks around the setup anchor (up to 25 bars back)
+  const relevantBreaks = breaks
+    .filter(b => b.candleIndex <= candleIndex + 2 && b.candleIndex >= Math.max(0, candleIndex - 25))
+    .sort((a, b) => b.candleIndex - a.candleIndex);
+
+  const latestBreak = relevantBreaks[0];
+  const latestChoch = relevantBreaks.find(b => b.breakType === 'CHoCH' || b.breakType === 'MSS');
+
+  // 2. Audit recent sweeps leading into setup
+  const relevantSweeps = sweeps
+    .filter(s => s.candleIndex <= candleIndex + 1 && s.candleIndex >= Math.max(0, candleIndex - 20))
+    .sort((a, b) => b.candleIndex - a.candleIndex);
+  const latestSweep = relevantSweeps[0];
+
+  // ── AUDIT BEARISH SETUPS ──────────────────────────────────────────────────
+  if (!isBull) {
+    // Conflict check: An upward CHoCH/MSS occurred without subsequent downward shift
+    if (latestChoch && latestChoch.isBullish) {
+      const subsequentBearBreak = relevantBreaks.find(b => !b.isBullish && b.candleIndex > latestChoch.candleIndex);
+      if (!subsequentBearBreak) {
+        return {
+          state: 'CONFLICTING_SIGNALS',
+          isValid: false,
+          reason: `Upward ${latestChoch.breakType} at bar #${latestChoch.candleIndex} confirms bullish structural shift; conflicting bearish setup suppressed.`,
+        };
+      }
+    }
+
+    // Liquidity sweep reconciliation: BSL sweep must have confirmation
+    if (latestSweep && latestSweep.isHighSweep) {
+      const sweepCandle = candles[latestSweep.candleIndex];
+      const hasBearBreakAfterSweep = relevantBreaks.some(b => !b.isBullish && b.candleIndex >= latestSweep.candleIndex);
+      let hasDisplacement = false;
+      if (sweepCandle) {
+        for (let k = latestSweep.candleIndex; k <= Math.min(candles.length - 1, candleIndex + 2); k++) {
+          if (candles[k].close < sweepCandle.low) {
+            hasDisplacement = true;
+            break;
+          }
+        }
+      }
+
+      if (!hasBearBreakAfterSweep && !hasDisplacement) {
+        return {
+          state: 'LIQUIDITY_SWEEP_UNCONFIRMED',
+          isValid: false,
+          reason: `Buy-side liquidity (BSL) swept at ${latestSweep.sweptLevelPrice.toFixed(2)}, but lacks downward displacement or bearish CHoCH confirmation.`,
+        };
+      }
+
+      return {
+        state: 'CONFIRMED_REVERSAL',
+        isValid: true,
+        reason: `BSL liquidity sweep at ${latestSweep.sweptLevelPrice.toFixed(2)} confirmed by structural displacement / bearish shift.`,
+      };
+    }
+
+    // Pure Bearish Structural Confirmation
+    if (latestBreak && !latestBreak.isBullish) {
+      if (htfBias === 'BULLISH' && setupType !== 'CHOCH_REVERSAL') {
+        return {
+          state: 'CONFLICTING_SIGNALS',
+          isValid: false,
+          reason: 'HTF bias is Bullish; counter-trend short setup without major structural reversal is suppressed.',
+        };
+      }
+      return {
+        state: 'BEARISH_STRUCTURAL_CONFIRMATION',
+        isValid: true,
+        reason: `Bearish ${latestBreak.breakType} confirmed downward continuation.`,
+      };
+    }
+
+    // If both HTF and LTF bias are Bullish, suppress counter-trend Short
+    if (htfBias === 'BULLISH' && ltfBias === 'BULLISH') {
+      return {
+        state: 'CONFLICTING_SIGNALS',
+        isValid: false,
+        reason: 'Both HTF and LTF bias are Bullish; unconfirmed short setup suppressed.',
+      };
+    }
+
+    return {
+      state: htfBias === 'BEARISH' ? 'BEARISH_STRUCTURAL_CONFIRMATION' : 'LIQUIDITY_SWEEP_UNCONFIRMED',
+      isValid: htfBias === 'BEARISH' || ltfBias === 'BEARISH',
+      reason: htfBias === 'BEARISH' ? 'Aligned with higher timeframe bearish structure.' : 'Lacks decisive bearish structural confirmation.',
+    };
+  }
+
+  // ── AUDIT BULLISH SETUPS ──────────────────────────────────────────────────
+  if (latestChoch && !latestChoch.isBullish) {
+    const subsequentBullBreak = relevantBreaks.find(b => b.isBullish && b.candleIndex > latestChoch.candleIndex);
+    if (!subsequentBullBreak) {
+      return {
+        state: 'CONFLICTING_SIGNALS',
+        isValid: false,
+        reason: `Downward ${latestChoch.breakType} at bar #${latestChoch.candleIndex} confirms bearish structural shift; conflicting bullish setup suppressed.`,
+      };
+    }
+  }
+
+  if (latestSweep && !latestSweep.isHighSweep) {
+    const sweepCandle = candles[latestSweep.candleIndex];
+    const hasBullBreakAfterSweep = relevantBreaks.some(b => b.isBullish && b.candleIndex >= latestSweep.candleIndex);
+    let hasDisplacement = false;
+    if (sweepCandle) {
+      for (let k = latestSweep.candleIndex; k <= Math.min(candles.length - 1, candleIndex + 2); k++) {
+        if (candles[k].close > sweepCandle.high) {
+          hasDisplacement = true;
+          break;
+        }
+      }
+    }
+
+    if (!hasBullBreakAfterSweep && !hasDisplacement) {
+      return {
+        state: 'LIQUIDITY_SWEEP_UNCONFIRMED',
+        isValid: false,
+        reason: `Sell-side liquidity (SSL) swept at ${latestSweep.sweptLevelPrice.toFixed(2)}, but lacks upward displacement or bullish CHoCH confirmation.`,
+      };
+    }
+
+    return {
+      state: 'CONFIRMED_REVERSAL',
+      isValid: true,
+      reason: `SSL liquidity sweep at ${latestSweep.sweptLevelPrice.toFixed(2)} confirmed by structural displacement / bullish shift.`,
+    };
+  }
+
+  if (latestBreak && latestBreak.isBullish) {
+    if (htfBias === 'BEARISH' && setupType !== 'CHOCH_REVERSAL') {
+      return {
+        state: 'CONFLICTING_SIGNALS',
+        isValid: false,
+        reason: 'HTF bias is Bearish; counter-trend long setup without major structural reversal is suppressed.',
+      };
+    }
+    return {
+      state: 'BULLISH_STRUCTURAL_CONFIRMATION',
+      isValid: true,
+      reason: `Bullish ${latestBreak.breakType} confirmed upward continuation.`,
+    };
+  }
+
+  if (htfBias === 'BEARISH' && ltfBias === 'BEARISH') {
+    return {
+      state: 'CONFLICTING_SIGNALS',
+      isValid: false,
+      reason: 'Both HTF and LTF bias are Bearish; unconfirmed long setup suppressed.',
+    };
+  }
+
+  return {
+    state: htfBias === 'BULLISH' ? 'BULLISH_STRUCTURAL_CONFIRMATION' : 'LIQUIDITY_SWEEP_UNCONFIRMED',
+    isValid: htfBias === 'BULLISH' || ltfBias === 'BULLISH',
+    reason: htfBias === 'BULLISH' ? 'Aligned with higher timeframe bullish structure.' : 'Lacks decisive bullish structural confirmation.',
+  };
+}
+
 // ── 8. Complete 16 Institutional SMC Strategy Detectors ─────────────────────
 
 export function detectAll16SmcSetups(
@@ -2100,6 +2286,18 @@ export function detectAll16SmcSetups(
   const recentSweeps = sweeps.slice(-8);
   for (const sw of recentSweeps) {
     const isBull = !sw.isHighSweep; // SSL sweep = Bullish reversal
+    const validation = validateSetupDirectionalConfirmation(
+      isBull ? 'BULLISH' : 'BEARISH',
+      'LIQUIDITY_SWEEP',
+      sw.candleIndex,
+      candles,
+      breaks,
+      sweeps,
+      htfBias,
+      ltfBias
+    );
+    if (!validation.isValid) continue;
+
     const entry = candles[sw.candleIndex]?.close || lastPrice;
     const sl = isBull ? Number((sw.price * 0.994).toFixed(2)) : Number((sw.price * 1.006).toFixed(2));
     const risk = Math.max(Math.abs(entry - sl), entry * 0.005);
@@ -2114,7 +2312,7 @@ export function detectAll16SmcSetups(
       entry,
       sl,
       tp,
-      `Rejection wick (${(sw.wickRatio * 100).toFixed(0)}%) swept ${sw.sweptLevelPrice.toFixed(2)} liquidity pool.`
+      `Rejection wick (${(sw.wickRatio * 100).toFixed(0)}%) swept ${sw.sweptLevelPrice.toFixed(2)} liquidity pool. ${validation.reason}`
     ));
   }
 
@@ -2122,6 +2320,18 @@ export function detectAll16SmcSetups(
   const eqSwept = sweeps.filter((s) => s.label.includes('EQH') || s.label.includes('EQL')).slice(-8);
   for (const eq of eqSwept) {
     const isBull = !eq.isHighSweep;
+    const validation = validateSetupDirectionalConfirmation(
+      isBull ? 'BULLISH' : 'BEARISH',
+      'EQH_EQL_SWEEP',
+      eq.candleIndex,
+      candles,
+      breaks,
+      sweeps,
+      htfBias,
+      ltfBias
+    );
+    if (!validation.isValid) continue;
+
     const entry = candles[eq.candleIndex]?.close || lastPrice;
     const sl = isBull ? eq.price * 0.996 : eq.price * 1.004;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
@@ -2135,7 +2345,7 @@ export function detectAll16SmcSetups(
       entry,
       sl,
       tp,
-      `Engineered ${isBull ? 'Equal Lows' : 'Equal Highs'} pool at ${eq.sweptLevelPrice.toFixed(2)} purged.`
+      `Engineered ${isBull ? 'Equal Lows' : 'Equal Highs'} pool at ${eq.sweptLevelPrice.toFixed(2)} purged. ${validation.reason}`
     ));
   }
 
@@ -2165,21 +2375,6 @@ export function detectAll16SmcSetups(
   for (const ob of activeObs) {
     const isBull = ob.isBullish;
 
-    // Institutional Trend Alignment & Counter-Trend Reversal Rule:
-    // Do NOT automatically interpret a supply order block in a bull trend as a short signal!
-    // A counter-trend signal strictly requires validated entry conditions (CHoCH / MSS + liquidity sweep).
-    if (!isBull && htfBias === 'BULLISH') {
-      const recentBearChoch = breaks.find(b => !b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
-      if (!recentBearChoch) {
-        continue; // Suppress counter-trend short in macro bull trend
-      }
-    } else if (isBull && htfBias === 'BEARISH') {
-      const recentBullChoch = breaks.find(b => b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
-      if (!recentBullChoch) {
-        continue; // Suppress counter-trend long in macro bear trend
-      }
-    }
-
     const entry = (ob.topPrice + ob.bottomPrice) / 2;
     const sl = isBull ? ob.bottomPrice * 0.997 : ob.topPrice * 1.003;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
@@ -2202,6 +2397,19 @@ export function detectAll16SmcSetups(
     const anchorTime = lastRetestIdx >= 0 ? lastRetestTime : ob.formationTime;
     const statusOverride = lastRetestIdx >= 0 ? 'RETESTING' : undefined;
 
+    // Directional validation engine audit
+    const validation = validateSetupDirectionalConfirmation(
+      isBull ? 'BULLISH' : 'BEARISH',
+      'OB_RETEST',
+      anchorIdx,
+      candles,
+      breaks,
+      sweeps,
+      htfBias,
+      ltfBias
+    );
+    if (!validation.isValid) continue;
+
     setups.push(makeSetup(
       `setup_ob_${ob.id}`,
       isBull ? 'Bullish Demand Order Block Retest' : 'Bearish Supply Order Block Retest',
@@ -2212,7 +2420,7 @@ export function detectAll16SmcSetups(
       entry,
       sl,
       tp,
-      `High-volume ${isBull ? 'Demand' : 'Supply'} order block [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] ${lastRetestIdx >= 0 ? 'actively retested' : 'confirmed'}.`,
+      `High-volume ${isBull ? 'Demand' : 'Supply'} order block [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] ${lastRetestIdx >= 0 ? 'actively retested' : 'confirmed'}. ${validation.reason}`,
       statusOverride
     ));
   }
@@ -2221,14 +2429,6 @@ export function detectAll16SmcSetups(
   const activeBreakers = breakers.filter((b) => !b.isMitigated).slice(-8);
   for (const brk of activeBreakers) {
     const isBull = brk.label.includes('Bull') || (brk.isBreaker ? brk.isBullish : !brk.isBullish);
-
-    if (!isBull && htfBias === 'BULLISH') {
-      const recentBearChoch = breaks.find(b => !b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
-      if (!recentBearChoch) continue;
-    } else if (isBull && htfBias === 'BEARISH') {
-      const recentBullChoch = breaks.find(b => b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
-      if (!recentBullChoch) continue;
-    }
 
     const entry = (brk.topPrice + brk.bottomPrice) / 2;
     const sl = isBull ? brk.bottomPrice * 0.997 : brk.topPrice * 1.003;
@@ -2252,6 +2452,19 @@ export function detectAll16SmcSetups(
     const anchorTime = lastRetestIdx >= 0 ? lastRetestTime : brk.formationTime;
     const statusOverride = lastRetestIdx >= 0 ? 'RETESTING' : undefined;
 
+    // Directional validation engine audit
+    const validation = validateSetupDirectionalConfirmation(
+      isBull ? 'BULLISH' : 'BEARISH',
+      'BREAKER_RETEST',
+      anchorIdx,
+      candles,
+      breaks,
+      sweeps,
+      htfBias,
+      ltfBias
+    );
+    if (!validation.isValid) continue;
+
     setups.push(makeSetup(
       `setup_breaker_${brk.id}`,
       isBull ? 'Bullish Breaker Block Role Reversal' : 'Bearish Breaker Block Role Reversal',
@@ -2262,7 +2475,7 @@ export function detectAll16SmcSetups(
       entry,
       sl,
       tp,
-      `Failed order block flipped polarity at [${brk.bottomPrice.toFixed(2)} - ${brk.topPrice.toFixed(2)}] ${lastRetestIdx >= 0 ? 'actively retested' : 'confirmed'}.`,
+      `Failed order block flipped polarity at [${brk.bottomPrice.toFixed(2)} - ${brk.topPrice.toFixed(2)}] ${lastRetestIdx >= 0 ? 'actively retested' : 'confirmed'}. ${validation.reason}`,
       statusOverride
     ));
   }
@@ -2278,57 +2491,75 @@ export function detectAll16SmcSetups(
     const lookback = Math.min(candles.length, 12);
 
     // Bullish: Price tapped Discount OTE zone (deep discount retracement)
-    const allowDiscountOte = htfBias !== 'BEARISH' || breaks.some(b => b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
-    if (allowDiscountOte) {
-      for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
-        const c = candles[i];
-        if (c.low <= dOteMax && c.high >= dOteMin && c.close >= dealingRange.lowPrice) {
-          const entry = Math.max(dOteMin, Math.min(dOteMax, c.close));
-          const sl = dealingRange.lowPrice * 0.998;
-          const tp = dealingRange.highPrice;
-          if (entry > sl && tp > entry) {
-            setups.push(makeSetup(
-              `setup_dr_ote_bull_${i}`,
-              'Discount Dealing Range OTE Long',
-              'PREMIUM_DISCOUNT_OTE',
-              'BULLISH',
-              i,
-              c.openTime,
-              entry,
-              sl,
-              tp,
-              `Price tapped institutional Discount OTE zone (62%-79% retracement [${dOteMin.toFixed(2)} - ${dOteMax.toFixed(2)}]), targeting range high.`
-            ));
-            break; // Retain most recent confirmed tap
-          }
+    for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
+      const c = candles[i];
+      if (c.low <= dOteMax && c.high >= dOteMin && c.close >= dealingRange.lowPrice) {
+        const validation = validateSetupDirectionalConfirmation(
+          'BULLISH',
+          'PREMIUM_DISCOUNT_OTE',
+          i,
+          candles,
+          breaks,
+          sweeps,
+          htfBias,
+          ltfBias
+        );
+        if (!validation.isValid) continue;
+
+        const entry = Math.max(dOteMin, Math.min(dOteMax, c.close));
+        const sl = dealingRange.lowPrice * 0.998;
+        const tp = dealingRange.highPrice;
+        if (entry > sl && tp > entry) {
+          setups.push(makeSetup(
+            `setup_dr_ote_bull_${i}`,
+            'Discount Dealing Range OTE Long',
+            'PREMIUM_DISCOUNT_OTE',
+            'BULLISH',
+            i,
+            c.openTime,
+            entry,
+            sl,
+            tp,
+            `Price tapped institutional Discount OTE zone (62%-79% retracement [${dOteMin.toFixed(2)} - ${dOteMax.toFixed(2)}]), targeting range high. ${validation.reason}`
+          ));
+          break; // Retain most recent confirmed tap
         }
       }
     }
 
     // Bearish: Price tapped Premium OTE zone (high premium retracement)
-    const allowPremiumOte = htfBias !== 'BULLISH' || breaks.some(b => !b.isBullish && (b.breakType === 'CHoCH' || b.breakType === 'MSS') && b.candleIndex >= candles.length - 20);
-    if (allowPremiumOte) {
-      for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
-        const c = candles[i];
-        if (c.high >= pOteMin && c.low <= pOteMax && c.close <= dealingRange.highPrice) {
-          const entry = Math.min(pOteMax, Math.max(pOteMin, c.close));
-          const sl = dealingRange.highPrice * 1.002;
-          const tp = dealingRange.lowPrice;
-          if (entry < sl && tp < entry) {
-            setups.push(makeSetup(
-              `setup_dr_ote_bear_${i}`,
-              'Premium Dealing Range OTE Short',
-              'PREMIUM_DISCOUNT_OTE',
-              'BEARISH',
-              i,
-              c.openTime,
-              entry,
-              sl,
-              tp,
-              `Price tapped institutional Premium OTE zone (62%-79% retracement [${pOteMin.toFixed(2)} - ${pOteMax.toFixed(2)}]), targeting range low.`
-            ));
-            break; // Retain most recent confirmed tap
-          }
+    for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
+      const c = candles[i];
+      if (c.high >= pOteMin && c.low <= pOteMax && c.close <= dealingRange.highPrice) {
+        const validation = validateSetupDirectionalConfirmation(
+          'BEARISH',
+          'PREMIUM_DISCOUNT_OTE',
+          i,
+          candles,
+          breaks,
+          sweeps,
+          htfBias,
+          ltfBias
+        );
+        if (!validation.isValid) continue;
+
+        const entry = Math.min(pOteMax, Math.max(pOteMin, c.close));
+        const sl = dealingRange.highPrice * 1.002;
+        const tp = dealingRange.lowPrice;
+        if (entry < sl && tp < entry) {
+          setups.push(makeSetup(
+            `setup_dr_ote_bear_${i}`,
+            'Premium Dealing Range OTE Short',
+            'PREMIUM_DISCOUNT_OTE',
+            'BEARISH',
+            i,
+            c.openTime,
+            entry,
+            sl,
+            tp,
+            `Price tapped institutional Premium OTE zone (62%-79% retracement [${pOteMin.toFixed(2)} - ${pOteMax.toFixed(2)}]), targeting range low. ${validation.reason}`
+          ));
+          break; // Retain most recent confirmed tap
         }
       }
     }

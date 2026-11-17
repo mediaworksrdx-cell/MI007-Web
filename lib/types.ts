@@ -422,9 +422,16 @@ export const INSTRUMENTS: Record<MarketType, Instrument[]> = {
  */
 export function getInstrumentDecimals(symbol?: string, samplePrice?: number): number {
   if (symbol) {
-    const s = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
-    if (['EURUSD', 'GBPUSD', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'EURJPY', 'GBPJPY'].includes(s)) return 4;
-    if (['USDJPY', 'USDINR'].includes(s)) return 2;
+    const s = symbol.toUpperCase().replace(/[\s\/-=_.]+/g, '').replace(/=X$/, '');
+    if (['EURUSD', 'GBPUSD', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'EURGBP', 'EURCHF', 'AUDNZD', 'GBPAUD', 'EURAUD'].some(p => s.includes(p)) || (s.endsWith('USD') && s.length === 6)) {
+      return 4;
+    }
+    if (['USDJPY', 'EURJPY', 'GBPJPY', 'AUDJPY', 'CADJPY', 'CHFJPY', 'NZDJPY'].some(p => s.includes(p))) {
+      return 2;
+    }
+    if (s.includes('INR') && (s.includes('USD') || s.includes('EUR') || s.includes('GBP'))) {
+      return 4;
+    }
     if (['SHIB', 'PEPE'].includes(s)) return 8;
     if (['DOGE', 'ADA', 'XRP', 'MATIC', 'DOT', 'TRX'].includes(s)) return 4;
   }
@@ -444,9 +451,6 @@ export function getInstrumentDecimals(symbol?: string, samplePrice?: number): nu
 export function formatPriceValue(price: number, symbol?: string, forceDecimals?: number): string {
   if (isNaN(price) || !Number.isFinite(price)) return '0.00';
   const dec = forceDecimals !== undefined ? forceDecimals : getInstrumentDecimals(symbol, price);
-  if (price >= 10000 && dec <= 2) {
-    return price.toLocaleString(undefined, { maximumFractionDigits: 0 });
-  }
   return price.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
