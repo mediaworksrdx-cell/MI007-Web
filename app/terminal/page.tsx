@@ -134,24 +134,24 @@ const DEFAULT_CRYPTO: CryptoItem[] = [
 ];
 
 const DEFAULT_COMMODITIES: CommodityItem[] = [
-  { symbol: 'GOLD', name: 'Gold', base: 3859.30, unit: 'USD / oz', category: 'Precious Metals', changePct: -0.67 },
-  { symbol: 'SILVER', name: 'Silver', base: 47.56, unit: 'USD / oz', category: 'Precious Metals', changePct: -4.83 },
-  { symbol: 'CRUDEOIL', name: 'Crude Oil (WTI)', base: 86.40, unit: 'USD / bbl', category: 'Energy', changePct: -2.64 },
-  { symbol: 'BRENT', name: 'Brent Crude', base: 93.25, unit: 'USD / bbl', category: 'Energy', changePct: -2.68 },
-  { symbol: 'WTI', name: 'WTI Crude', base: 86.40, unit: 'USD / bbl', category: 'Energy', changePct: -2.64 },
-  { symbol: 'NATGAS', name: 'Natural Gas', base: 3.15, unit: 'USD / MMBtu', category: 'Energy', changePct: -5.84 },
-  { symbol: 'COPPER', name: 'Copper', base: 5.98, unit: 'USD / lb', category: 'Industrial Metals', changePct: -3.26 },
+  { symbol: 'GOLD', name: 'Gold', base: 3854.30, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.03 },
+  { symbol: 'SILVER', name: 'Silver', base: 47.36, unit: 'USD / oz', category: 'Precious Metals', changePct: 1.23 },
+  { symbol: 'CRUDEOIL', name: 'Crude Oil', base: 86.81, unit: 'USD / bbl', category: 'Energy', changePct: 1.27 },
+  { symbol: 'BRENT', name: 'Brent Crude', base: 93.56, unit: 'USD / bbl', category: 'Energy', changePct: 1.21 },
+  { symbol: 'WTI', name: 'WTI Crude', base: 86.81, unit: 'USD / bbl', category: 'Energy', changePct: 1.27 },
+  { symbol: 'NATGAS', name: 'Natural Gas', base: 3.10, unit: 'USD / MMBtu', category: 'Energy', changePct: -0.67 },
+  { symbol: 'COPPER', name: 'Copper', base: 5.97, unit: 'USD / lb', category: 'Industrial Metals', changePct: -0.45 },
 ];
 
 const DEFAULT_FOREX: ForexItem[] = [
-  { symbol: 'EURUSD', name: 'EUR / USD', pair: 'EUR / USD', base: 1.0990, pipSpread: '0.8 pips', changePct: -1.60 },
-  { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP / USD', base: 1.3188, pipSpread: '1.0 pips', changePct: -1.21 },
-  { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD / JPY', base: 159.33, pipSpread: '0.9 pips', changePct: 0.39 },
-  { symbol: 'USDINR', name: 'USD / INR', pair: 'USD / INR', base: 93.46, pipSpread: '1.2 pips', changePct: -0.50 },
-  { symbol: 'USDCAD', name: 'USD / CAD', pair: 'USD / CAD', base: 1.4298, pipSpread: '0.9 pips', changePct: 0.79 },
-  { symbol: 'AUDCAD', name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9621, pipSpread: '1.2 pips', changePct: -1.26 },
-  { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD / CHF', base: 0.8405, pipSpread: '0.9 pips', changePct: 1.89 },
-  { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD / USD', base: 0.6731, pipSpread: '1.1 pips', changePct: -2.02 },
+  { symbol: 'EURUSD', name: 'EUR / USD', pair: 'EUR/USD', base: 1.0981, pipSpread: '0.8 pips', changePct: -0.40 },
+  { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP/USD', base: 1.3178, pipSpread: '1.0 pips', changePct: -0.29 },
+  { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD/JPY', base: 159.37, pipSpread: '0.9 pips', changePct: -0.25 },
+  { symbol: 'USDINR', name: 'USD / INR', pair: 'USD/INR', base: 93.46, pipSpread: '1.2 pips', changePct: -0.83 },
+  { symbol: 'USDCAD', name: 'USD / CAD', pair: 'USD/CAD', base: 1.4304, pipSpread: '0.9 pips', changePct: 0.25 },
+  { symbol: 'AUDCAD', name: 'AUD / CAD', pair: 'AUD/CAD', base: 0.9620, pipSpread: '1.2 pips', changePct: -0.53 },
+  { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD/CHF', base: 0.8410, pipSpread: '0.9 pips', changePct: 0.23 },
+  { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD/USD', base: 0.6729, pipSpread: '1.1 pips', changePct: -0.74 },
 ];
 
 // Predefined catalog of recognized indices & cryptos for instantaneous auto-detection
@@ -175,42 +175,42 @@ const KNOWN_INDICES: Record<string, { name: string; base: number; market: Market
 };
 
 const KNOWN_CRYPTOS: Record<string, { name: string; base: number }> = {
-  BTC: { name: 'Bitcoin', base: 64975.62 },
-  ETH: { name: 'Ethereum', base: 1821.53 },
-  SOL: { name: 'Solana', base: 73.86 },
-  BNB: { name: 'BNB', base: 592.78 },
-  DOGE: { name: 'Dogecoin', base: 0.05942 },
-  SHIB: { name: 'Shiba Inu', base: 0.00000387 },
-  XRP: { name: 'Ripple XRP', base: 0.9749 },
-  ADA: { name: 'Cardano', base: 0.15445 },
-  AVAX: { name: 'Avalanche', base: 7.252 },
-  DOT: { name: 'Polkadot', base: 0.7350 },
-  LINK: { name: 'Chainlink', base: 9.312 },
-  MATIC: { name: 'Polygon', base: 0.0814 },
+  BTC: { name: 'Bitcoin', base: 64964.01 },
+  ETH: { name: 'Ethereum', base: 1822.58 },
+  SOL: { name: 'Solana', base: 73.46 },
+  BNB: { name: 'BNB', base: 591.81 },
+  DOGE: { name: 'Dogecoin', base: 0.05933 },
+  SHIB: { name: 'Shiba Inu', base: 0.0000039 },
+  XRP: { name: 'Ripple XRP', base: 0.9719 },
+  ADA: { name: 'Cardano', base: 0.1545 },
+  AVAX: { name: 'Avalanche', base: 7.25 },
+  DOT: { name: 'Polkadot', base: 0.738 },
+  LINK: { name: 'Chainlink', base: 9.26 },
+  MATIC: { name: 'Polygon', base: 0.082 },
 };
 
 const KNOWN_COMMODITIES: Record<string, { name: string; base: number; unit: string; category: string }> = {
-  GOLD: { name: 'Gold', base: 3859.30, unit: 'USD / oz', category: 'Precious Metals' },
-  SILVER: { name: 'Silver', base: 47.56, unit: 'USD / oz', category: 'Precious Metals' },
-  CRUDEOIL: { name: 'Crude Oil (WTI)', base: 86.40, unit: 'USD / bbl', category: 'Energy' },
-  BRENT: { name: 'Brent Crude', base: 93.25, unit: 'USD / bbl', category: 'Energy' },
-  WTI: { name: 'WTI Crude', base: 86.40, unit: 'USD / bbl', category: 'Energy' },
-  NATGAS: { name: 'Natural Gas', base: 3.15, unit: 'USD / MMBtu', category: 'Energy' },
-  COPPER: { name: 'Copper', base: 5.98, unit: 'USD / lb', category: 'Industrial Metals' },
+  GOLD: { name: 'Gold', base: 3854.30, unit: 'USD / oz', category: 'Precious Metals' },
+  SILVER: { name: 'Silver', base: 47.36, unit: 'USD / oz', category: 'Precious Metals' },
+  CRUDEOIL: { name: 'Crude Oil', base: 86.81, unit: 'USD / bbl', category: 'Energy' },
+  BRENT: { name: 'Brent Crude', base: 93.56, unit: 'USD / bbl', category: 'Energy' },
+  WTI: { name: 'WTI Crude', base: 86.81, unit: 'USD / bbl', category: 'Energy' },
+  NATGAS: { name: 'Natural Gas', base: 3.10, unit: 'USD / MMBtu', category: 'Energy' },
+  COPPER: { name: 'Copper', base: 5.97, unit: 'USD / lb', category: 'Industrial Metals' },
   PLATINUM: { name: 'Platinum', base: 1024.50, unit: 'USD / oz', category: 'Precious Metals' },
 };
 
 const KNOWN_FOREX: Record<string, { name: string; base: number; pair: string; pipSpread: string }> = {
-  EURUSD: { name: 'EUR / USD', pair: 'EUR / USD', base: 1.0990, pipSpread: '0.8 pips' },
-  GBPUSD: { name: 'GBP / USD', pair: 'GBP / USD', base: 1.3188, pipSpread: '1.0 pips' },
-  USDJPY: { name: 'USD / JPY', pair: 'USD / JPY', base: 159.33, pipSpread: '0.9 pips' },
-  USDINR: { name: 'USD / INR', pair: 'USD / INR', base: 93.46, pipSpread: '1.2 pips' },
-  USDCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4298, pipSpread: '0.9 pips' },
-  AUDCAD: { name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9621, pipSpread: '1.2 pips' },
-  USDCHF: { name: 'USD / CHF', pair: 'USD / CHF', base: 0.8405, pipSpread: '0.9 pips' },
-  USDAED: { name: 'USD / AED', pair: 'USD / AED', base: 3.6725, pipSpread: '0.5 pips' },
-  AUDUSD: { name: 'AUD / USD', pair: 'AUD / USD', base: 0.6731, pipSpread: '1.1 pips' },
-  UADCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4298, pipSpread: '0.9 pips' },
+  EURUSD: { name: 'EUR / USD', pair: 'EUR/USD', base: 1.0981, pipSpread: '0.8 pips' },
+  GBPUSD: { name: 'GBP / USD', pair: 'GBP/USD', base: 1.3178, pipSpread: '1.0 pips' },
+  USDJPY: { name: 'USD / JPY', pair: 'USD/JPY', base: 159.37, pipSpread: '0.9 pips' },
+  USDINR: { name: 'USD / INR', pair: 'USD/INR', base: 93.46, pipSpread: '1.2 pips' },
+  USDCAD: { name: 'USD / CAD', pair: 'USD/CAD', base: 1.4304, pipSpread: '0.9 pips' },
+  AUDCAD: { name: 'AUD / CAD', pair: 'AUD/CAD', base: 0.9620, pipSpread: '1.2 pips' },
+  USDCHF: { name: 'USD / CHF', pair: 'USD/CHF', base: 0.8410, pipSpread: '0.9 pips' },
+  USDAED: { name: 'USD / AED', pair: 'USD/AED', base: 3.6725, pipSpread: '0.5 pips' },
+  AUDUSD: { name: 'AUD / USD', pair: 'AUD/USD', base: 0.6729, pipSpread: '1.1 pips' },
+  UADCAD: { name: 'USD / CAD', pair: 'USD/CAD', base: 1.4304, pipSpread: '0.9 pips' },
 };
 
 const KNOWN_US_STOCKS: Record<string, { name: string; base: number; sector: string }> = {
@@ -580,19 +580,19 @@ const CryptoTile = React.memo(function CryptoTile({
         href={`/chart/${item.symbol}`}
         className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[88px]"
       >
-        <div className="flex items-start justify-between">
-          <div className="min-w-0 pr-4">
-            <div className="flex items-center gap-1.5">
-              <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate block">
+        <div className="flex items-start justify-between gap-1">
+          <div className="min-w-0 flex-1 pr-1">
+            <div className="flex items-center gap-1.5 flex-nowrap">
+              <span className="mono text-[13px] font-black inst-card-text group-hover:text-emerald-500 transition-colors whitespace-nowrap block">
                 {item.symbol}
               </span>
-              <span className="mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+              <span className="mono text-[8px] px-1 py-0.2 rounded font-black tracking-wider uppercase shrink-0 bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
                 24/7
               </span>
             </div>
-            <div className="text-[11px] inst-card-text-muted font-bold truncate max-w-[70px]">{item.name}</div>
+            <div className="text-[11px] inst-card-text-muted font-bold truncate" title={item.name}>{item.name}</div>
           </div>
-          <div className="scale-90 origin-top-right">
+          <div className="scale-90 origin-top-right shrink-0">
             <Sparkline symbol={item.symbol} up={up} changePct={currentPct} />
           </div>
         </div>
@@ -676,13 +676,13 @@ const CommodityTile = React.memo(function CommodityTile({
         className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[96px]"
         title={`Open ${item.name} Interactive Chart`}
       >
-        <div className="flex items-start justify-between">
-          <div className="min-w-0 pr-3">
-            <div className="flex items-center gap-1.5">
-              <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
+        <div className="flex items-start justify-between gap-1">
+          <div className="min-w-0 flex-1 pr-1">
+            <div className="flex items-center gap-1.5 flex-nowrap">
+              <span className="mono text-[13px] font-black inst-card-text group-hover:text-emerald-500 transition-colors whitespace-nowrap">
                 {item.symbol}
               </span>
-              <span className={`mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
+              <span className={`mono text-[8px] px-1 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
                 isLiveStreaming
                   ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
                   : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
@@ -783,13 +783,13 @@ const ForexTile = React.memo(function ForexTile({
         className="rounded-xl border inst-subcard p-3 hover:border-emerald-500 transition-all shadow-sm flex flex-col gap-1 group block min-h-[96px]"
         title={`Open ${item.name} Interactive Chart`}
       >
-        <div className="flex items-start justify-between">
-          <div className="min-w-0 pr-3">
-            <div className="flex items-center gap-1.5">
-              <span className="mono text-[14px] font-black inst-card-text group-hover:text-emerald-500 transition-colors truncate">
-                {item.pair}
+        <div className="flex items-start justify-between gap-1">
+          <div className="min-w-0 flex-1 pr-1">
+            <div className="flex items-center gap-1.5 flex-nowrap">
+              <span className="mono text-[13px] font-black inst-card-text group-hover:text-emerald-500 transition-colors whitespace-nowrap">
+                {item.pair ? item.pair.replace(/\s+/g, '') : item.symbol.replace(/(\w{3})(\w{3})/, '$1/$2')}
               </span>
-              <span className={`mono text-[8.5px] px-1.5 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
+              <span className={`mono text-[8px] px-1 py-0.2 rounded font-black tracking-wider uppercase shrink-0 ${
                 isLiveStreaming
                   ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
                   : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'

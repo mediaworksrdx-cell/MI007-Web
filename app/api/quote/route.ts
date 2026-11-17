@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
   const yahooForexSym = COMMODITY_FOREX_YAHOO_MAP[cleanUpper] || COMMODITY_FOREX_YAHOO_MAP[cleanKey];
   if (yahooForexSym) {
     try {
-      const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooForexSym)}?interval=1d&range=5d`, {
+      const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooForexSym)}?interval=1d&range=2d`, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
         cache: 'no-store',
         signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(3000) : undefined,
@@ -135,18 +135,20 @@ export async function GET(req: NextRequest) {
         const data = await res.json();
         const meta = data?.chart?.result?.[0]?.meta;
         if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+          const quotes = data?.chart?.result?.[0]?.indicators?.quote?.[0];
+          const closes = quotes?.close ? quotes.close.filter((x: any) => typeof x === 'number' && !isNaN(x)) : [];
+          const ltp = meta.regularMarketPrice;
+          const prevClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.chartPreviousClose || ltp);
           const isForex = yahooForexSym.includes('=X');
           const decimals = isForex ? (meta.regularMarketPrice < 2 ? 4 : 2) : 2;
-          const ltp = +meta.regularMarketPrice.toFixed(decimals);
-          const prevClose = meta.chartPreviousClose || ltp;
           const change = +(ltp - prevClose).toFixed(decimals);
-          const changePercent = +(((ltp - prevClose) / Math.max(0.001, prevClose)) * 100).toFixed(2);
+          const changePercent = +(((ltp - prevClose) / Math.max(0.0001, prevClose)) * 100).toFixed(2);
           const timestamp = (meta.regularMarketTime || Math.floor(Date.now() / 1000)) * 1000;
 
           const quoteData = {
             instrumentToken: 999100,
             symbol: cleanUpper,
-            ltp,
+            ltp: +ltp.toFixed(decimals),
             change,
             changePercent,
             timestamp,
@@ -217,17 +219,17 @@ export async function GET(req: NextRequest) {
       }
     } catch (_tdErr) {}
 
-    // Fallback: Yahoo Finance US benchmarks (^GSPC, ^IXIC, ^DJI, ^VIX)
+    // Fallback: Yahoo Finance US benchmarks (^GSPC, ^IXIC, ^DJI, ^VIX) & Equities (NVDA, AAPL, etc.)
     const US_INDEX_YAHOO: Record<string, string> = {
       'SPX': '^GSPC', 'S&P 500': '^GSPC', 'SP500': '^GSPC',
       'NDX': '^IXIC', 'NASDAQ': '^IXIC', 'NASDAQ 100': '^NDX',
       'DJI': '^DJI', 'DOW JONES': '^DJI', 'DOW': '^DJI',
       'VIX': '^VIX',
     };
-    const usYahooTicker = US_INDEX_YAHOO[cleanUpper] || US_INDEX_YAHOO[cleanKey];
+    const usYahooTicker = US_INDEX_YAHOO[cleanUpper] || US_INDEX_YAHOO[cleanKey] || cleanUpper;
     if (usYahooTicker) {
       try {
-        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(usYahooTicker)}?interval=1d`, {
+        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(usYahooTicker)}?interval=1d&range=2d`, {
           headers: { 'User-Agent': 'Mozilla/5.0' },
           cache: 'no-store',
           signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
@@ -236,8 +238,10 @@ export async function GET(req: NextRequest) {
           const data = await res.json();
           const meta = data?.chart?.result?.[0]?.meta;
           if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+            const quotes = data?.chart?.result?.[0]?.indicators?.quote?.[0];
+            const closes = quotes?.close ? quotes.close.filter((x: any) => typeof x === 'number' && !isNaN(x)) : [];
             const ltp = +meta.regularMarketPrice.toFixed(2);
-            const prevClose = meta.chartPreviousClose || ltp;
+            const prevClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.chartPreviousClose || ltp);
             const change = +(ltp - prevClose).toFixed(2);
             const changePercent = +(((ltp - prevClose) / Math.max(0.001, prevClose)) * 100).toFixed(2);
             const quoteData = {
@@ -254,6 +258,15 @@ export async function GET(req: NextRequest) {
         }
       } catch (_uyErr) {}
     }
+    // Never fall through to Indian market for US instruments
+    return NextResponse.json({
+      instrumentToken: 999399,
+      symbol: cleanUpper,
+      ltp: 0,
+      change: 0,
+      changePercent: 0,
+      timestamp: Date.now(),
+    });
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -294,7 +307,7 @@ export async function GET(req: NextRequest) {
   // 2. Indian Yahoo Finance fallback
   const indianYahooSym = INDIAN_YAHOO_MAP[cleanUpper] || INDIAN_YAHOO_MAP[cleanKey] || (cleanUpper.endsWith('.NS') ? cleanUpper : `${cleanUpper}.NS`);
   try {
-    const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(indianYahooSym)}?interval=1d&range=5d`, {
+    const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(indianYahooSym)}?interval=1d&range=2d`, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
       cache: 'no-store',
       signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
@@ -303,8 +316,10 @@ export async function GET(req: NextRequest) {
       const data = await res.json();
       const meta = data?.chart?.result?.[0]?.meta;
       if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+        const quotes = data?.chart?.result?.[0]?.indicators?.quote?.[0];
+        const closes = quotes?.close ? quotes.close.filter((x: any) => typeof x === 'number' && !isNaN(x)) : [];
         const ltp = +meta.regularMarketPrice.toFixed(2);
-        const prevClose = meta.chartPreviousClose || ltp;
+        const prevClose = closes.length >= 2 ? closes[closes.length - 2] : (meta.chartPreviousClose || ltp);
         const change = +(ltp - prevClose).toFixed(2);
         const changePercent = +(((ltp - prevClose) / Math.max(0.001, prevClose)) * 100).toFixed(2);
         const timestamp = (meta.regularMarketTime || Math.floor(Date.now() / 1000)) * 1000;
