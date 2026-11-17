@@ -173,10 +173,10 @@ export function SmcInspectorModal({ data, onClose }: SmcInspectorModalProps) {
           </div>
         </div>
 
-        {/* Setup Confluence Score (Progress bar 0-100) */}
+        {/* Setup Quality Score (Progress bar 0-100) */}
         <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Setup Confluence Score</span>
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Setup Quality Score (Not Win Prob)</span>
             <span className="font-mono font-black text-xs text-indigo-600 dark:text-indigo-400">
               {confluenceScore} / 100
             </span>

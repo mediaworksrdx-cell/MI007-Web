@@ -2326,9 +2326,10 @@ export function renderChart(
           const bValidState = b.signalState !== 'MISSED_ENTRY' && b.signalState !== 'EXPIRED' && b.signalState !== 'INVALIDATED' && b.signalState !== 'REJECTED' ? 1 : 0;
           if (aValidState !== bValidState) return bValidState - aValidState;
           const stateScore = (stState?: string) =>
-            stState === 'EXECUTED' ? 4 :
-            stState === 'ENTRY_READY' ? 3 :
-            stState === 'RETEST_CONFIRMED' ? 2 :
+            stState === 'EXECUTED' ? 5 :
+            stState === 'ENTRY_READY' ? 4 :
+            stState === 'REJECTION_CONFIRMED' || stState === 'RETEST_CONFIRMED' ? 3 :
+            stState === 'RETEST_TOUCHED' ? 2 :
             stState === 'CONDITIONAL_SETUP' ? 1 : 0;
           const aExec = stateScore(a.signalState);
           const bExec = stateScore(b.signalState);
@@ -2550,6 +2551,45 @@ export function renderChart(
         ctx.lineTo(x + boxW, yEntry);
         ctx.stroke();
 
+        // 3b. Validating Structural Break Line (Confirmed Swing -> Break Candle)
+        if (st.validatingBreak && st.validatingBreak.swingIndex !== undefined && st.validatingBreak.price > 0) {
+          const vb = st.validatingBreak;
+          const yVb = Math.max(12 * dpr, Math.min(chartH - 12 * dpr, priceToY(vb.price)));
+          const xSw = Math.max(4 * dpr, Math.min(maxRightX, (vb.swingIndex! - startIdx) * candleW + candleW / 2));
+          const xBrk = Math.max(4 * dpr, Math.min(maxRightX, (vb.candleIndex - startIdx) * candleW + candleW / 2));
+          if (xBrk > xSw) {
+            const vbColor = isBull ? '#059669' : '#DC2626';
+            ctx.save();
+            ctx.setLineDash([4 * dpr, 2 * dpr]);
+            ctx.strokeStyle = vbColor;
+            ctx.lineWidth = 1.3 * dpr;
+            ctx.beginPath();
+            ctx.moveTo(xSw, yVb);
+            ctx.lineTo(xBrk, yVb);
+            ctx.moveTo(xSw, yVb - 3.5 * dpr);
+            ctx.lineTo(xSw, yVb + 3.5 * dpr);
+            ctx.moveTo(xBrk, yVb - 3.5 * dpr);
+            ctx.lineTo(xBrk, yVb + 3.5 * dpr);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            const vbLabel = `${vb.breakType} ${isBull ? '↑' : '↓'} (${isBull ? 'Swing High' : 'Swing Low'}: ${formatPrice(vb.price, options.symbol)})`;
+            ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+            const vbTm = ctx.measureText(vbLabel);
+            const vbW = vbTm.width + 8 * dpr;
+            const vbH = 12 * dpr;
+            const vbMidX = Math.max(8 * dpr, Math.min(maxRightX - vbW, (xSw + xBrk) / 2 - vbW / 2));
+            const vbBoxY = isBull ? yVb - vbH - 3 * dpr : yVb + 3 * dpr;
+            ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.90)' : 'rgba(220, 38, 38, 0.90)';
+            ctx.fillRect(vbMidX, vbBoxY, vbW, vbH);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(vbLabel, vbMidX + 4 * dpr, vbBoxY + vbH / 2);
+            ctx.restore();
+          }
+        }
+
         // 4. TP1 & TP2 Extension Lines & Clamped Badges (Always visible inside [20*dpr, chartH - 20*dpr])
         let finalTpY = Math.max(22 * dpr, Math.min(chartH - 22 * dpr, yTP));
         let finalTp2Y = (st.targetPrice2 && st.targetPrice2 > 0)
@@ -2620,11 +2660,12 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(tpText, x + boxW - 4 * dpr, finalTpY);
 
-        // SL Badge (Right edge of bracket, displaying exact SL price, risk per unit, risk %, and 1%-risk position size)
+        // SL Badge (Right edge of bracket, displaying exact SL price, structural invalidation basis, risk/u, risk %, and 1%-risk position size)
         const riskPerUnit = Math.abs(st.entryPrice - st.stopLoss);
         const riskPct = ((riskPerUnit / Math.max(1e-9, st.entryPrice)) * 100).toFixed(2);
         const posSizeUnits = (1000 / Math.max(1e-9, riskPerUnit)).toFixed(1);
-        const slText = `SL: ${formatPrice(st.stopLoss, options.symbol)} (Risk/u: ${formatPrice(riskPerUnit, options.symbol)} • ${riskPct}% • Qty: ${posSizeUnits}u)`;
+        const slBasis = st.invalidationBasis ? `${st.invalidationBasis} • ` : '';
+        const slText = `SL: ${formatPrice(st.stopLoss, options.symbol)} (${slBasis}Risk/u: ${formatPrice(riskPerUnit, options.symbol)} • ${riskPct}% • Qty: ${posSizeUnits}u)`;
         const slTm = ctx.measureText(slText);
         let slOffset = 0;
         if (Math.abs(ySL - yEntry) < 18 * dpr) {
@@ -2666,7 +2707,7 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(entryText, entryBadgeX + 4 * dpr, entryBadgeY + entryBadgeH / 2);
 
-        // 6. Advanced SMC Header Signal Pill (Direction + Setup + Actual R:R + Confluence %)
+        // 6. Advanced SMC Header Signal Pill (Direction + Setup + Actual R:R + Setup Quality Score)
         const shortName = st.name
           .replace(/ \(Bullish\)| \(Bearish\)|Bullish |Bearish /g, '')
           .replace('Breaker Block Role Reversal', 'Breaker')
@@ -2684,15 +2725,21 @@ export function renderChart(
           ? ` • ${st.validatingBreak.breakType} @ ${formatPrice(st.validatingBreak.price, options.symbol)}`
           : '';
         const tierText = (st.actionTier || (st.qualityScore && st.qualityScore < 60 ? 'REJECT' : 'WATCHLIST_ONLY')).replace(/_/g, ' ');
-        const scoreLabel = st.qualityScore ? ` • Score ${Math.round(st.qualityScore)}/100 (${tierText})` : '';
-        // Keep CONDITIONAL SETUP, RETEST CONFIRMED, ENTRY READY, and EXECUTED as distinct states;
-        // never mark RETEST CONFIRMED or ENTRY READY when retestCount === 0 or when market is closed without prior completed retest
-        const hasVerifiedRetest = (st.retestCount ?? 0) > 0;
+        const scoreLabel = st.qualityScore ? ` • Quality ${Math.round(st.qualityScore)}/100 (${tierText})` : '';
+        // Separate RETEST TOUCHED, REJECTION CONFIRMED, and ENTRY READY into three independent states;
+        // if live price has recovered above short entry (or dropped below long entry), rejection is not holding -> RETEST TOUCHED.
+        const priceRecoveredAgainstEntry = curPrice > 0 && (isBull ? curPrice < st.entryPrice : curPrice > st.entryPrice);
+        const hasVerifiedRejection = Boolean(st.rejectionConfirmed && (st.retestCount ?? 0) > 0 && !priceRecoveredAgainstEntry);
+        const hasRetestTouch = Boolean(st.retestTouched || priceRecoveredAgainstEntry);
         const effectiveSignalState =
-          !hasVerifiedRetest && (st.signalState === 'RETEST_CONFIRMED' || st.signalState === 'ENTRY_READY')
+          priceRecoveredAgainstEntry && hasRetestTouch
+            ? 'RETEST_TOUCHED'
+            : hasVerifiedRejection
+            ? (options.isMarketOpen === false || st.signalState !== 'ENTRY_READY' ? 'REJECTION_CONFIRMED' : 'ENTRY_READY')
+            : hasRetestTouch
+            ? 'RETEST_TOUCHED'
+            : (st.signalState === 'RETEST_CONFIRMED' || st.signalState === 'REJECTION_CONFIRMED' || st.signalState === 'ENTRY_READY')
             ? 'CONDITIONAL_SETUP'
-            : options.isMarketOpen === false && st.signalState === 'ENTRY_READY'
-            ? 'RETEST_CONFIRMED'
             : (st.signalState || 'CONDITIONAL_SETUP');
         const rawStatus =
           isTradeOver && st.confirmedOrderFill

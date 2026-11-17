@@ -251,9 +251,21 @@ export interface SmcConfirmedSetup {
   /** RR-006: true when both SL and TP were touched inside the same bar (worst-case SL applied) */
   resolutionIndeterminate?: boolean;
   /** Exact structural break (BOS / CHoCH) that validates this setup */
-  validatingBreak?: { breakType: SmcBreakType; price: number; candleIndex: number };
-  /** Explicit execution state distinguishing CONDITIONAL_SETUP, RETEST_CONFIRMED, ENTRY_READY, and EXECUTED */
-  signalState?: 'REJECTED' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_CONFIRMED' | 'ENTRY_READY' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'EXPIRED' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED';
+  validatingBreak?: {
+    breakType: SmcBreakType;
+    price: number;
+    candleIndex: number;
+    swingIndex?: number;
+    brokenSwingPrice?: number;
+  };
+  /** Explicit execution state separating CONDITIONAL_SETUP, RETEST_TOUCHED, REJECTION_CONFIRMED, ENTRY_READY, and EXECUTED */
+  signalState?: 'REJECTED' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_TOUCHED' | 'REJECTION_CONFIRMED' | 'RETEST_CONFIRMED' | 'ENTRY_READY' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'EXPIRED' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED';
+  /** True when price has revisited/touched the entry zone after the structural break */
+  retestTouched?: boolean;
+  /** True only when a completed directional rejection candle closed at the entry zone and price remains rejected */
+  rejectionConfirmed?: boolean;
+  /** Structural invalidation reference used for stop-loss placement */
+  invalidationBasis?: string;
   /** Score-based system action tier (<60 Reject, 60-69 Watchlist only, 70-79 Conditional, 80-89 High-quality, 90-100 Highest-priority) */
   actionTier?: 'REJECT' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'HIGH_QUALITY_SETUP' | 'HIGHEST_PRIORITY_SETUP';
   /** Separate trade-quality approval from structural confirmation */
@@ -764,17 +776,36 @@ export function detectStructureBreaks(
       if (cur.volume < volMult * volSmaValues[i]) passFilters = false;
     }
 
-    // Break Above Active Highs (Bullish BOS / CHoCH — swing must be confirmed prior to break bar i)
+    // Break Above Active Highs (Bullish BOS / CHoCH — swing must be confirmed prior to break bar i and unbroken prior to i)
     if (activeHighs.length > 0 && passFilters) {
-      const brokenHighIdx = activeHighs.findIndex(
-        (h) => swingConfIdx(h) < i && cur.close > h.price && prev.close <= h.price
-      );
+      let brokenHighIdx = -1;
+      for (let hi = activeHighs.length - 1; hi >= 0; hi--) {
+        const h = activeHighs[hi];
+        if (swingConfIdx(h) >= i) continue;
+        if (!(cur.close > h.price && prev.close <= h.price)) continue;
+        let alreadyBroken = false;
+        for (let k = h.index + 1; k < i; k++) {
+          if (candles[k].close > h.price) {
+            alreadyBroken = true;
+            break;
+          }
+        }
+        if (!alreadyBroken) {
+          brokenHighIdx = hi;
+          break;
+        }
+      }
       if (brokenHighIdx !== -1) {
         const brokenHigh = activeHighs[brokenHighIdx];
         const isReversal = trendDirection === -1;
         const breakType: SmcBreakType = isReversal ? 'CHoCH' : 'BOS';
         const label = `${breakType} ↑`;
-        const lastLow = activeLows[activeLows.length - 1];
+        let protectedLow = activeLows[activeLows.length - 1]?.price;
+        for (let k = brokenHigh.index; k <= i; k++) {
+          if (protectedLow === undefined || candles[k].low < protectedLow) {
+            protectedLow = candles[k].low;
+          }
+        }
 
         breaks.push({
           candleIndex: i,
@@ -785,27 +816,46 @@ export function detectStructureBreaks(
           breakType,
           swingIndex: brokenHigh.index,
           brokenSwingPrice: brokenHigh.price,
-          protectedSwingPrice: lastLow?.price,
+          protectedSwingPrice: protectedLow,
           confirmationTime: candleCloseTime(candles, i, ivMs),
           significance: brokenHigh.significance || 'MAJOR',
         });
 
         trendDirection = 1;
-        activeHighs.splice(brokenHighIdx, 1);
+        activeHighs.splice(0, brokenHighIdx + 1);
       }
     }
 
-    // Break Below Active Lows (Bearish BOS / CHoCH — swing must be confirmed prior to break bar i)
+    // Break Below Active Lows (Bearish BOS / CHoCH — swing must be confirmed prior to break bar i and unbroken prior to i)
     if (activeLows.length > 0 && passFilters) {
-      const brokenLowIdx = activeLows.findIndex(
-        (l) => swingConfIdx(l) < i && cur.close < l.price && prev.close >= l.price
-      );
+      let brokenLowIdx = -1;
+      for (let li = activeLows.length - 1; li >= 0; li--) {
+        const l = activeLows[li];
+        if (swingConfIdx(l) >= i) continue;
+        if (!(cur.close < l.price && prev.close >= l.price)) continue;
+        let alreadyBroken = false;
+        for (let k = l.index + 1; k < i; k++) {
+          if (candles[k].close < l.price) {
+            alreadyBroken = true;
+            break;
+          }
+        }
+        if (!alreadyBroken) {
+          brokenLowIdx = li;
+          break;
+        }
+      }
       if (brokenLowIdx !== -1) {
         const brokenLow = activeLows[brokenLowIdx];
         const isReversal = trendDirection === 1;
         const breakType: SmcBreakType = isReversal ? 'CHoCH' : 'BOS';
         const label = `${breakType} ↓`;
-        const lastHigh = activeHighs[activeHighs.length - 1];
+        let protectedHigh = activeHighs[activeHighs.length - 1]?.price;
+        for (let k = brokenLow.index; k <= i; k++) {
+          if (protectedHigh === undefined || candles[k].high > protectedHigh) {
+            protectedHigh = candles[k].high;
+          }
+        }
 
         breaks.push({
           candleIndex: i,
@@ -816,13 +866,13 @@ export function detectStructureBreaks(
           breakType,
           swingIndex: brokenLow.index,
           brokenSwingPrice: brokenLow.price,
-          protectedSwingPrice: lastHigh?.price,
+          protectedSwingPrice: protectedHigh,
           confirmationTime: candleCloseTime(candles, i, ivMs),
           significance: brokenLow.significance || 'MAJOR',
         });
 
         trendDirection = -1;
-        activeLows.splice(brokenLowIdx, 1);
+        activeLows.splice(0, brokenLowIdx + 1);
       }
     }
   }
@@ -2149,23 +2199,49 @@ export function detectAll16SmcSetups(
     }
 
     // 0b. Structure Confirmation & BOS Validation:
-    // Require a confirmed BOS/CHoCH where the break candle is closed and body-closed beyond the broken swing.
-    // Match the break that directly aligns with this setup's entry zone rather than a later unaligned break.
+    // Require a confirmed BOS/CHoCH where the break candle is closed and body-closed beyond a verified confirmed swing.
     const cleanEntry = roundSmcPrice(entryPrice);
+    const swingMap = new Map<number, SmcSwingPoint>();
+    for (const s of swings) swingMap.set(s.index, s);
+
     const validBreaks = (breaks || []).filter(b => {
-      if (b.isBullish !== isBull || b.candleIndex > candleIndex) return false;
+      if (b.isBullish !== isBull) return false;
+      if (b.candleIndex > Math.min(candles.length - 1, candleIndex + 8)) return false;
+      if (Math.abs(b.candleIndex - candleIndex) > 18) return false;
       const brkBar = candles[b.candleIndex];
       if (!isCandleClosed(brkBar)) return false;
-      return isBull ? brkBar.close > b.brokenSwingPrice : brkBar.close < b.brokenSwingPrice;
+      if (b.swingIndex < 0 || b.swingIndex >= b.candleIndex) return false;
+      const brokenSw = swingMap.get(b.swingIndex);
+      if (brokenSw) {
+        if (brokenSw.isHigh !== isBull) return false;
+        if ((brokenSw.confirmationIndex ?? brokenSw.index) >= b.candleIndex) return false;
+      }
+      const closedBeyond = isBull ? brkBar.close > b.brokenSwingPrice : brkBar.close < b.brokenSwingPrice;
+      if (!closedBeyond) return false;
+      for (let k = b.swingIndex + 1; k < b.candleIndex; k++) {
+        if (isBull ? candles[k].close > b.brokenSwingPrice : candles[k].close < b.brokenSwingPrice) {
+          return false;
+        }
+      }
+      return true;
     });
     const externalValidBreaks = validBreaks.filter(b => b.structureType === 'EXTERNAL' || b.significance === 'MAJOR');
     const candidateBreaks = externalValidBreaks.length > 0 ? externalValidBreaks : validBreaks;
     const alignedBreak = [...candidateBreaks]
-      .sort((a, b) => Math.abs(a.price - cleanEntry) - Math.abs(b.price - cleanEntry))[0]
+      .sort((a, b) => Math.abs(a.brokenSwingPrice - cleanEntry) - Math.abs(b.brokenSwingPrice - cleanEntry))[0]
       ?? candidateBreaks[candidateBreaks.length - 1];
 
+    const effectiveConfirmIdx = alignedBreak ? Math.max(candleIndex, alignedBreak.candleIndex) : candleIndex;
+    const effectiveConfirmTime = candles[effectiveConfirmIdx]?.openTime ?? time;
+
     const validatingBreak = alignedBreak
-      ? { breakType: alignedBreak.breakType, price: roundSmcPrice(alignedBreak.price), candleIndex: alignedBreak.candleIndex }
+      ? {
+          breakType: alignedBreak.breakType,
+          price: roundSmcPrice(alignedBreak.brokenSwingPrice),
+          candleIndex: alignedBreak.candleIndex,
+          swingIndex: alignedBreak.swingIndex,
+          brokenSwingPrice: roundSmcPrice(alignedBreak.brokenSwingPrice),
+        }
       : undefined;
 
     if (
@@ -2179,6 +2255,7 @@ export function detectAll16SmcSetups(
        setupType === 'BOS_FVG_RETEST' ||
        setupType === 'MTF_CONFLUENCE' ||
        setupType === 'THREE_STAGE_REVERSAL' ||
+       setupType === 'PREMIUM_DISCOUNT_OTE' ||
        setupType === 'SESSION_LIQUIDITY')
     ) {
       statusOverride = 'INVALIDATED';
@@ -2212,13 +2289,12 @@ export function detectAll16SmcSetups(
       }
     }
 
-    // 1c. Anti-Late-Entry & Liquidity-Sweep Guard:
-    // Reject short entries that appear late after substantial bearish movement (bottom 25% of dealing range / near PDL)
-    // and reject long entries that appear late after substantial bullish movement (top 25% of dealing range / near PDH).
+    // 1c. Anti-Late-Entry & Dealing Range Positioning Guard:
+    // Reject short entries in deep discount and reject long entries in deep premium.
     if (dealingRange && dealingRange.highPrice > dealingRange.lowPrice) {
       const drSpan = dealingRange.highPrice - dealingRange.lowPrice;
-      const deepPremium = dealingRange.equilibriumPrice + drSpan * 0.25;
-      const deepDiscount = dealingRange.equilibriumPrice - drSpan * 0.25;
+      const deepPremium = dealingRange.equilibriumPrice + drSpan * 0.20;
+      const deepDiscount = dealingRange.equilibriumPrice - drSpan * 0.20;
       if (isBull && cleanEntry > deepPremium && setupType !== 'CHOCH_REVERSAL') {
         statusOverride = 'INVALIDATED';
       } else if (!isBull && cleanEntry < deepDiscount && setupType !== 'CHOCH_REVERSAL') {
@@ -2226,24 +2302,77 @@ export function detectAll16SmcSetups(
       }
     }
 
-    // 2. Stop-Loss: Place SL beyond confirmed swing high (for short) / swing low (for long) with ATR-based buffer
-    const atrVal = atrSeries[Math.min(Math.max(0, candleIndex), atrSeries.length - 1)] || cleanEntry * 0.003;
-    const atrBuffer = Math.max(atrVal * 0.25, cleanEntry * 0.0005);
+    // 2. Stop-Loss: Validate SL strictly against the local structural invalidation level + ATR buffer (never arbitrary wide distance)
+    const atrVal = atrSeries[Math.min(Math.max(0, effectiveConfirmIdx), atrSeries.length - 1)] || cleanEntry * 0.003;
+    const atrBuffer = Math.max(atrVal * 0.20, cleanEntry * 0.0005);
     let cleanStopLoss = roundSmcPrice(stopLoss);
+    let invalidationBasis = isBull ? 'Zone Low - ATR' : 'Zone High + ATR';
 
-    if (swings && swings.length > 0 && Number.isFinite(cleanStopLoss)) {
+    if (swings && swings.length > 0) {
+      const localLookbackStart = Math.max(0, effectiveConfirmIdx - 12);
       if (!isBull) {
+        // Find the nearest confirmed swing high above cleanEntry within a tight structural window (<= 1.8x ATR)
         const confSwingHigh = [...swings]
-          .reverse()
-          .find(s => s.isHigh && (s.confirmationIndex ?? s.index) <= candleIndex && s.price > cleanEntry && (s.price - cleanEntry) <= atrVal * 3.5);
-        const anchorHigh = confSwingHigh ? Math.max(cleanStopLoss, confSwingHigh.price) : cleanStopLoss;
-        cleanStopLoss = roundSmcPrice(anchorHigh + atrBuffer * 0.25);
+          .filter(
+            s =>
+              s.isHigh &&
+              (s.confirmationIndex ?? s.index) <= effectiveConfirmIdx &&
+              s.index >= localLookbackStart &&
+              s.price > cleanEntry &&
+              (s.price - cleanEntry) <= atrVal * 1.8
+          )
+          .sort((a, b) => a.price - b.price)[0];
+
+        const zoneHighValid = Number.isFinite(cleanStopLoss) && cleanStopLoss > cleanEntry && (cleanStopLoss - cleanEntry) <= atrVal * 1.8;
+        if (confSwingHigh) {
+          cleanStopLoss = roundSmcPrice(confSwingHigh.price + atrBuffer);
+          invalidationBasis = 'Confirmed Swing High + ATR';
+        } else if (zoneHighValid) {
+          cleanStopLoss = roundSmcPrice(cleanStopLoss + atrBuffer * 0.25);
+          invalidationBasis = 'POI Invalidation High + ATR';
+        } else {
+          // Use break candle or immediate 4-bar structure high + ATR buffer
+          let nearHigh = candles[effectiveConfirmIdx]?.high ?? cleanEntry;
+          for (let k = Math.max(0, effectiveConfirmIdx - 4); k <= effectiveConfirmIdx; k++) {
+            if (candles[k] && candles[k].high > nearHigh && (candles[k].high - cleanEntry) <= atrVal * 1.8) {
+              nearHigh = candles[k].high;
+            }
+          }
+          const baseHigh = nearHigh > cleanEntry ? nearHigh : cleanEntry + atrVal * 1.0;
+          cleanStopLoss = roundSmcPrice(baseHigh + atrBuffer);
+          invalidationBasis = 'Structure High + ATR';
+        }
       } else {
+        // Find the nearest confirmed swing low below cleanEntry within a tight structural window (<= 1.8x ATR)
         const confSwingLow = [...swings]
-          .reverse()
-          .find(s => !s.isHigh && (s.confirmationIndex ?? s.index) <= candleIndex && s.price < cleanEntry && (cleanEntry - s.price) <= atrVal * 3.5);
-        const anchorLow = confSwingLow ? Math.min(cleanStopLoss, confSwingLow.price) : cleanStopLoss;
-        cleanStopLoss = roundSmcPrice(anchorLow - atrBuffer * 0.25);
+          .filter(
+            s =>
+              !s.isHigh &&
+              (s.confirmationIndex ?? s.index) <= effectiveConfirmIdx &&
+              s.index >= localLookbackStart &&
+              s.price < cleanEntry &&
+              (cleanEntry - s.price) <= atrVal * 1.8
+          )
+          .sort((a, b) => b.price - a.price)[0];
+
+        const zoneLowValid = Number.isFinite(cleanStopLoss) && cleanStopLoss < cleanEntry && (cleanEntry - cleanStopLoss) <= atrVal * 1.8;
+        if (confSwingLow) {
+          cleanStopLoss = roundSmcPrice(confSwingLow.price - atrBuffer);
+          invalidationBasis = 'Confirmed Swing Low - ATR';
+        } else if (zoneLowValid) {
+          cleanStopLoss = roundSmcPrice(cleanStopLoss - atrBuffer * 0.25);
+          invalidationBasis = 'POI Invalidation Low - ATR';
+        } else {
+          let nearLow = candles[effectiveConfirmIdx]?.low ?? cleanEntry;
+          for (let k = Math.max(0, effectiveConfirmIdx - 4); k <= effectiveConfirmIdx; k++) {
+            if (candles[k] && candles[k].low < nearLow && (cleanEntry - candles[k].low) <= atrVal * 1.8) {
+              nearLow = candles[k].low;
+            }
+          }
+          const baseLow = nearLow < cleanEntry ? nearLow : cleanEntry - atrVal * 1.0;
+          cleanStopLoss = roundSmcPrice(baseLow - atrBuffer);
+          invalidationBasis = 'Structure Low - ATR';
+        }
       }
     }
 
@@ -2259,42 +2388,72 @@ export function detectAll16SmcSetups(
     const rawRisk = isBull ? (cleanEntry - cleanStopLoss) : (cleanStopLoss - cleanEntry);
     const riskDistance = rawRisk > 0 ? rawRisk : Math.max(Math.abs(cleanEntry - cleanStopLoss), cleanEntry * 0.005);
 
-    // 3. Target Calculation: Anchor TP1 & TP2 to independently detected & confirmed opposing liquidity levels (SSL/BSL/EQH/EQL/PDL/PDH/Swings)
-    // within institutional R:R bounds, otherwise use exact 1:2 (TP1) and 1:3 (TP2) calculated from cleanEntry and cleanStopLoss.
+    // 3. Target Calculation: Validate TP1 (1:2+) & TP2 (1:3+) strictly against confirmed opposing liquidity levels (SSL/BSL/EQH/EQL/PDL/PDH/Swings)
     const rp: SmcRiskProfile = { ...DEFAULT_SMC_RISK_PROFILE, ...riskProfile };
     const swingConfMap = new Map<number, number>();
     for (const s of swings) swingConfMap.set(s.index, s.confirmationIndex ?? s.index);
 
-    const candidatePools: { price: number; label: string }[] = [];
+    const rawPools: { price: number; label: string }[] = [];
     if (liquidityLevels && liquidityLevels.length > 0) {
       for (const lvl of liquidityLevels) {
         if (lvl.isSwept) continue;
-        // Require every constituent swing of the liquidity pool to be confirmed at or before candleIndex
-        const allSwingsConfirmed = lvl.candleIndices.every(ix => (swingConfMap.get(ix) ?? ix) <= candleIndex);
+        const allSwingsConfirmed = lvl.candleIndices.every(ix => (swingConfMap.get(ix) ?? ix) <= effectiveConfirmIdx);
         if (allSwingsConfirmed) {
           if (isBull && (lvl.type === 'BSL' || lvl.type === 'EQH') && lvl.price > cleanEntry) {
-            candidatePools.push({ price: lvl.price, label: `${lvl.type} Liquidity` });
+            rawPools.push({ price: lvl.price, label: `${lvl.type} Liquidity` });
           } else if (!isBull && (lvl.type === 'SSL' || lvl.type === 'EQL') && lvl.price < cleanEntry) {
-            candidatePools.push({ price: lvl.price, label: `${lvl.type} Liquidity` });
+            rawPools.push({ price: lvl.price, label: `${lvl.type} Liquidity` });
           }
         }
       }
     }
     for (const s of swings) {
-      if ((s.confirmationIndex ?? s.index) <= candleIndex) {
-        if (isBull && s.isHigh && s.price > cleanEntry) candidatePools.push({ price: s.price, label: 'BSL Swing' });
-        if (!isBull && !s.isHigh && s.price < cleanEntry) candidatePools.push({ price: s.price, label: 'SSL Swing' });
+      if ((s.confirmationIndex ?? s.index) <= effectiveConfirmIdx) {
+        if (isBull && s.isHigh && s.price > cleanEntry) rawPools.push({ price: s.price, label: 'BSL Swing' });
+        if (!isBull && !s.isHigh && s.price < cleanEntry) rawPools.push({ price: s.price, label: 'SSL Swing' });
       }
     }
-    if (sessionLevels?.pdh && isBull && sessionLevels.pdh > cleanEntry) candidatePools.push({ price: sessionLevels.pdh, label: 'PDH' });
-    if (sessionLevels?.pdl && !isBull && sessionLevels.pdl < cleanEntry) candidatePools.push({ price: sessionLevels.pdl, label: 'PDL' });
-    if (sessionLevels?.pwh && isBull && sessionLevels.pwh > cleanEntry) candidatePools.push({ price: sessionLevels.pwh, label: 'PWH' });
-    if (sessionLevels?.pwl && !isBull && sessionLevels.pwl < cleanEntry) candidatePools.push({ price: sessionLevels.pwl, label: 'PWL' });
-    if (dealingRange) {
-      if (isBull && dealingRange.highPrice > cleanEntry) candidatePools.push({ price: dealingRange.highPrice, label: 'Range High' });
-      if (!isBull && dealingRange.lowPrice < cleanEntry) candidatePools.push({ price: dealingRange.lowPrice, label: 'Range Low' });
+    for (let pIdx = 2; pIdx <= effectiveConfirmIdx - 2; pIdx++) {
+      const pc = candles[pIdx];
+      if (!pc) continue;
+      if (isBull) {
+        if (
+          pc.high > cleanEntry &&
+          pc.high >= candles[pIdx - 1].high &&
+          pc.high >= candles[pIdx - 2].high &&
+          pc.high >= candles[pIdx + 1].high &&
+          pc.high >= candles[pIdx + 2].high
+        ) {
+          rawPools.push({ price: pc.high, label: 'BSL Swing' });
+        }
+      } else {
+        if (
+          pc.low < cleanEntry &&
+          pc.low <= candles[pIdx - 1].low &&
+          pc.low <= candles[pIdx - 2].low &&
+          pc.low <= candles[pIdx + 1].low &&
+          pc.low <= candles[pIdx + 2].low
+        ) {
+          rawPools.push({ price: pc.low, label: 'SSL Swing' });
+        }
+      }
     }
-    candidatePools.sort((a, b) => Math.abs(a.price - cleanEntry) - Math.abs(b.price - cleanEntry));
+    if (sessionLevels?.pdh && isBull && sessionLevels.pdh > cleanEntry) rawPools.push({ price: sessionLevels.pdh, label: 'PDH' });
+    if (sessionLevels?.pdl && !isBull && sessionLevels.pdl < cleanEntry) rawPools.push({ price: sessionLevels.pdl, label: 'PDL' });
+    if (sessionLevels?.pwh && isBull && sessionLevels.pwh > cleanEntry) rawPools.push({ price: sessionLevels.pwh, label: 'PWH' });
+    if (sessionLevels?.pwl && !isBull && sessionLevels.pwl < cleanEntry) rawPools.push({ price: sessionLevels.pwl, label: 'PWL' });
+    if (dealingRange) {
+      if (isBull && dealingRange.highPrice > cleanEntry) rawPools.push({ price: dealingRange.highPrice, label: 'Range High' });
+      if (!isBull && dealingRange.lowPrice < cleanEntry) rawPools.push({ price: dealingRange.lowPrice, label: 'Range Low' });
+    }
+    rawPools.sort((a, b) => Math.abs(a.price - cleanEntry) - Math.abs(b.price - cleanEntry));
+
+    const candidatePools: { price: number; label: string }[] = [];
+    for (const p of rawPools) {
+      if (!candidatePools.some(existing => Math.abs(existing.price - p.price) <= atrVal * 0.15)) {
+        candidatePools.push(p);
+      }
+    }
 
     const minTp1Dist = riskDistance * rp.target1R;
     const structuralTp1 = candidatePools.find(p => {
@@ -2304,7 +2463,7 @@ export function detectAll16SmcSetups(
     const effectiveTarget1 = roundSmcPrice(
       structuralTp1 ? structuralTp1.price : (isBull ? cleanEntry + minTp1Dist : cleanEntry - minTp1Dist)
     );
-    const tp1Source = structuralTp1 ? structuralTp1.label : `${rp.target1R.toFixed(1)}R`;
+    const tp1Source = structuralTp1 ? structuralTp1.label : `${rp.target1R.toFixed(1)}R (${isBull ? 'BSL' : 'SSL'} Target)`;
     const rewardDistance = Math.abs(effectiveTarget1 - cleanEntry);
     const computedRr = Number((rewardDistance / Math.max(1e-9, riskDistance)).toFixed(2));
 
@@ -2316,7 +2475,7 @@ export function detectAll16SmcSetups(
     const targetPrice2 = roundSmcPrice(
       structuralTp2 ? structuralTp2.price : (isBull ? cleanEntry + riskDistance * rp.target2R : cleanEntry - riskDistance * rp.target2R)
     );
-    const tp2Source = structuralTp2 ? structuralTp2.label : `${rp.target2R.toFixed(1)}R`;
+    const tp2Source = structuralTp2 ? structuralTp2.label : `${rp.target2R.toFixed(1)}R (${isBull ? 'BSL' : 'SSL'} Target)`;
     if (computedRr < rp.minRiskReward && !statusOverride) {
       statusOverride = 'INVALIDATED';
     }
@@ -2326,14 +2485,17 @@ export function detectAll16SmcSetups(
       ? 'INVALIDATED'
       : statusOverride === 'CONFIRMED' ? 'CONFIRMED' : (status === 'RETESTING' ? 'RETESTED' : 'CONFIRMED');
     let retestCount = 0;
+    let retestTouched = false;
+    let rejectionConfirmed = false;
+    let lastRejectionBarIdx = -1;
     let tp1Hit = false;
     let tp1HitIndex: number | undefined;
     let tp2Hit = false;
     let tp2HitIndex: number | undefined;
     let resolutionIndeterminate = false;
 
-    // 1. Formation bar validation
-    const formBar = candles[candleIndex];
+    // 1. Confirmation bar validation
+    const formBar = candles[effectiveConfirmIdx];
     if (formBar) {
       if (isBull ? formBar.close <= cleanStopLoss : formBar.close >= cleanStopLoss) {
         status = 'INVALIDATED';
@@ -2341,12 +2503,17 @@ export function detectAll16SmcSetups(
       }
     }
 
-    // 2. RR-004 / RR-005 / RR-006: Track post-formation outcomes with shared lifespan,
-    // worst-case SL-before-TP ordering, and independent TP1 & TP2 lifecycle states.
+    // 2. RR-004 / RR-005 / RR-006: Track post-confirmation outcomes starting strictly AFTER effectiveConfirmIdx
     const maxLifespanBars = SMC_TRADE_LIFESPAN_BARS;
+    const zoneHalfWidth = Math.max(atrVal * 0.20, riskDistance * 0.12);
+    const entryZoneLow = isBull ? cleanEntry - zoneHalfWidth : cleanEntry - zoneHalfWidth * 0.5;
+    const entryZoneHigh = isBull ? cleanEntry + zoneHalfWidth * 0.5 : cleanEntry + zoneHalfWidth;
+    let hasDepartedZone = Boolean(
+      formBar && (isBull ? formBar.close > entryZoneHigh : formBar.close < entryZoneLow)
+    );
 
     if (status !== 'INVALIDATED') {
-      for (let k = candleIndex + 1; k < candles.length; k++) {
+      for (let k = effectiveConfirmIdx + 1; k < candles.length; k++) {
         const bar = candles[k];
         if (!isCandleClosed(bar)) break;
 
@@ -2380,7 +2547,6 @@ export function detectAll16SmcSetups(
             if (tp1Touched && !tp1Hit) {
               tp1Hit = true;
               tp1HitIndex = k;
-              // TP1 banked first, then stopped out on remainder
               status = 'EXITED';
               lifecycleState = 'EXITED';
               break;
@@ -2394,7 +2560,6 @@ export function detectAll16SmcSetups(
             status = 'INVALIDATED';
             lifecycleState = 'INVALIDATED';
           } else {
-            // TP1 already banked; remaining position stopped out → EXITED
             status = 'EXITED';
             lifecycleState = 'EXITED';
           }
@@ -2426,29 +2591,64 @@ export function detectAll16SmcSetups(
           break;
         }
 
-        // Retest & Market-Closed Validation:
-        // Require price to revisit cleanEntry on a closed bar with genuine traded range (bar.high > bar.low, rejecting flat market-closed bars)
-        // and produce a confirmed directional rejection candle (bullish close for longs, bearish close for shorts).
-        const hasRealRange = bar.high > bar.low;
-        const tappedZone = hasRealRange && (isBull ? bar.low <= cleanEntry : bar.high >= cleanEntry);
-        const confirmedRejection = hasRealRange && (isBull
-          ? (bar.close > cleanStopLoss && bar.close >= cleanEntry && bar.close > bar.open)
-          : (bar.close < cleanStopLoss && bar.close <= cleanEntry && bar.close < bar.open));
-        if (!tp1Hit && tappedZone && confirmedRejection) {
-          status = 'RETESTING';
-          lifecycleState = 'RETESTED';
-          retestCount++;
+        // Track departure from entry zone before evaluating pullback retests
+        if (!hasDepartedZone) {
+          if (isBull ? bar.close > entryZoneHigh : bar.close < entryZoneLow) {
+            hasDepartedZone = true;
+          }
+          continue;
         }
 
-        // Signal Expiry: Expire setup if retest does not occur within configurable maxRetestWaitBars
+        // Separate RETEST_TOUCHED vs REJECTION_CONFIRMED on completed bars with genuine range:
+        const hasRealRange = bar.high > bar.low && (bar.high - bar.low) / Math.max(1e-9, bar.close) >= 0.00005;
+        const tappedZone = hasRealRange && (isBull
+          ? (bar.low <= entryZoneHigh && bar.high >= cleanStopLoss)
+          : (bar.high >= entryZoneLow && bar.low <= cleanStopLoss));
+
+        const barRange = Math.max(1e-9, bar.high - bar.low);
+        const upperWickRatio = (bar.high - Math.max(bar.open, bar.close)) / barRange;
+        const lowerWickRatio = (Math.min(bar.open, bar.close) - bar.low) / barRange;
+        const closePosInBar = (bar.close - bar.low) / barRange;
+
+        const confirmedRejection = hasRealRange && (isBull
+          ? (bar.close > cleanStopLoss && bar.close >= cleanEntry && bar.close > bar.open && (closePosInBar >= 0.50 || lowerWickRatio >= 0.25))
+          : (bar.close < cleanStopLoss && bar.close <= cleanEntry && bar.close < bar.open && (closePosInBar <= 0.50 || upperWickRatio >= 0.25)));
+
+        if (!tp1Hit && tappedZone) {
+          retestTouched = true;
+          if (confirmedRejection) {
+            rejectionConfirmed = true;
+            lastRejectionBarIdx = k;
+            status = 'RETESTING';
+            lifecycleState = 'RETESTED';
+            retestCount++;
+          } else if (!rejectionConfirmed) {
+            status = 'ENTRY_ZONE_REACHED';
+            lifecycleState = 'ENTRY_ZONE_REACHED';
+          }
+        }
+
+        // If price subsequently closes back beyond cleanEntry against the trade direction, any prior rejection is negated
+        // and the setup reverts to RETEST_TOUCHED awaiting a fresh rejection candle close.
+        if (rejectionConfirmed && k > lastRejectionBarIdx) {
+          const recoveredAgainstTrade = isBull ? bar.close < cleanEntry : bar.close > cleanEntry;
+          if (recoveredAgainstTrade) {
+            rejectionConfirmed = false;
+            retestTouched = true;
+            status = 'ENTRY_ZONE_REACHED';
+            lifecycleState = 'ENTRY_ZONE_REACHED';
+          }
+        }
+
+        // Signal Expiry: Expire setup if neither touch nor rejection occurs within configurable maxRetestWaitBars
         const maxRetestWaitBars = options?.maxRetestWaitBars ?? SMC_RETEST_EXPIRY_BARS;
-        if (retestCount === 0 && k - candleIndex >= maxRetestWaitBars) {
+        if (!retestTouched && retestCount === 0 && k - effectiveConfirmIdx >= maxRetestWaitBars) {
           status = 'EXPIRED';
           lifecycleState = 'EXPIRED';
           break;
         }
 
-        if (k - candleIndex >= maxLifespanBars && !tp1Hit) {
+        if (k - effectiveConfirmIdx >= maxLifespanBars && !tp1Hit) {
           status = 'EXPIRED';
           lifecycleState = 'EXPIRED';
           break;
@@ -2456,7 +2656,7 @@ export function detectAll16SmcSetups(
       }
     }
 
-    // 3. Current Bar Reality Invariant Check (governed strictly by setup stopLoss, retest expiry & lifespan)
+    // 3. Current Bar Reality Invariant Check (governed strictly by setup stopLoss, current price recovery, retest expiry & lifespan)
     const maxRetestWaitBars = options?.maxRetestWaitBars ?? SMC_RETEST_EXPIRY_BARS;
     const lastBar = candles[candles.length - 1];
     if (lastBar && (status === 'CONFIRMED' || status === 'RETESTING' || status === 'ENTRY_ZONE_REACHED')) {
@@ -2466,23 +2666,40 @@ export function detectAll16SmcSetups(
       } else if (!isBull && (lastBar.high >= cleanStopLoss || lastBar.close >= cleanStopLoss)) {
         status = 'INVALIDATED';
         lifecycleState = 'INVALIDATED';
-      } else if (retestCount === 0 && candles.length - 1 - candleIndex >= maxRetestWaitBars) {
+      } else if (!retestTouched && retestCount === 0 && candles.length - 1 - effectiveConfirmIdx >= maxRetestWaitBars) {
         status = 'EXPIRED';
         lifecycleState = 'EXPIRED';
-      } else if (candles.length - 1 - candleIndex >= maxLifespanBars) {
+      } else if (candles.length - 1 - effectiveConfirmIdx >= maxLifespanBars) {
         status = 'EXPIRED';
         lifecycleState = 'EXPIRED';
+      } else {
+        // Check if current price has recovered above short entry or dropped below long entry:
+        // If so, rejection is NOT confirmed — mark as RETEST_TOUCHED awaiting a completed rejection candle.
+        const recoveredPastEntryNow = isBull ? lastBar.close < cleanEntry : lastBar.close > cleanEntry;
+        const touchingZoneNow = lastBar.high > lastBar.low && (isBull ? lastBar.low <= entryZoneHigh : lastBar.high >= entryZoneLow);
+        if (recoveredPastEntryNow) {
+          rejectionConfirmed = false;
+          if (hasDepartedZone || touchingZoneNow) {
+            retestTouched = true;
+            status = 'ENTRY_ZONE_REACHED';
+            lifecycleState = 'ENTRY_ZONE_REACHED';
+          }
+        } else if (!retestTouched && hasDepartedZone && touchingZoneNow) {
+          retestTouched = true;
+          status = 'ENTRY_ZONE_REACHED';
+          lifecycleState = 'ENTRY_ZONE_REACHED';
+        }
       }
     }
 
     // RR-007: use actual next-bar open / close time rather than candles[1] - candles[0]
-    const confirmationTime = candleCloseTime(candles, candleIndex);
+    const confirmationTime = candleCloseTime(candles, effectiveConfirmIdx);
 
     const confluence = evaluateInstitutionalConfluence(
       {
         setupType,
         direction,
-        candleIndex,
+        candleIndex: effectiveConfirmIdx,
         entryPrice: roundSmcPrice(entryPrice),
         stopLoss: roundSmcPrice(cleanStopLoss),
         targetPrice: effectiveTarget1,
@@ -2501,7 +2718,6 @@ export function detectAll16SmcSetups(
       }
     );
 
-    // Distinguish signal generation, entry eligibility (retest confirmed), order submission, and confirmed exchange fill:
     // 1. Score-based Required Execution Rules:
     //    < 60  -> REJECT
     //    60-69 -> WATCHLIST_ONLY
@@ -2523,35 +2739,42 @@ export function detectAll16SmcSetups(
     const qualityApproval: 'REJECTED' | 'WATCHLIST_ONLY' | 'APPROVED' | 'LOW_QUALITY' =
       score < 60 ? 'REJECTED' : score < 70 ? 'WATCHLIST_ONLY' : 'APPROVED';
 
-    // Retest is ONLY confirmed when at least one subsequent closed bar with real range revisited cleanEntry and produced a rejection close (retestCount > 0)
-    const retestConfirmed = retestCount > 0;
     let missedEntry = false;
     let waitingForRetest = false;
 
-    if (!retestConfirmed && (tp1Hit || tp2Hit)) {
-      // Price reached target without ever pulling back to fill the entry level
+    if (!retestTouched && !rejectionConfirmed && (tp1Hit || tp2Hit)) {
+      // Price reached target without ever pulling back to touch the entry zone
       missedEntry = true;
       tp1Hit = false;
       tp2Hit = false;
       status = 'EXPIRED';
       lifecycleState = 'EXPIRED';
-    } else if (!retestConfirmed && lastBar) {
+    } else if (!retestTouched && !rejectionConfirmed && lastBar) {
       const distPastEntry = isBull ? (lastBar.close - cleanEntry) : (cleanEntry - lastBar.close);
-      if (distPastEntry >= riskDistance * 0.5) {
+      if (distPastEntry >= riskDistance * 0.65) {
         missedEntry = true;
         status = 'PENDING';
       } else {
         waitingForRetest = true;
-        status = 'PENDING';
+        status = 'CONFIRMED';
       }
     }
 
-    // Separate states: CONDITIONAL_SETUP, RETEST_CONFIRMED, ENTRY_READY, and EXECUTED
+    // Separate independent states: CONDITIONAL_SETUP, RETEST_TOUCHED, REJECTION_CONFIRMED, ENTRY_READY, and EXECUTED
     const confirmedOrderFill = false;
-    const isNearEntryNow = lastBar
-      ? (lastBar.high > lastBar.low && Math.abs(lastBar.close - cleanEntry) <= riskDistance * 0.35)
-      : false;
-    const signalState: 'REJECTED' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_CONFIRMED' | 'ENTRY_READY' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'EXPIRED' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED' =
+    const lastClosedIdx = candles[candles.length - 1]?.isClosed === true ? candles.length - 1 : Math.max(0, candles.length - 2);
+    const distInTradeDir = lastBar ? (isBull ? (lastBar.close - cleanEntry) : (cleanEntry - lastBar.close)) : -1;
+    const isEntryReadyNow = Boolean(
+      rejectionConfirmed &&
+      lastBar &&
+      lastBar.high > lastBar.low &&
+      distInTradeDir >= 0 &&
+      distInTradeDir <= riskDistance * 0.30 &&
+      lastRejectionBarIdx >= 0 &&
+      (lastClosedIdx - lastRejectionBarIdx <= 3)
+    );
+
+    const signalState: 'REJECTED' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_TOUCHED' | 'REJECTION_CONFIRMED' | 'RETEST_CONFIRMED' | 'ENTRY_READY' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'EXPIRED' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED' =
       status === 'INVALIDATED'
         ? 'INVALIDATED'
         : status === 'EXPIRED'
@@ -2562,21 +2785,23 @@ export function detectAll16SmcSetups(
         ? 'MISSED_ENTRY'
         : actionTier === 'WATCHLIST_ONLY'
         ? 'WATCHLIST_ONLY'
-        : !retestConfirmed || waitingForRetest
-        ? 'CONDITIONAL_SETUP'
         : confirmedOrderFill
         ? 'EXECUTED'
-        : score >= 80 && isNearEntryNow
-        ? 'ENTRY_READY'
-        : 'RETEST_CONFIRMED';
+        : rejectionConfirmed
+        ? (score >= 75 && isEntryReadyNow ? 'ENTRY_READY' : 'REJECTION_CONFIRMED')
+        : retestTouched
+        ? 'RETEST_TOUCHED'
+        : waitingForRetest
+        ? 'CONDITIONAL_SETUP'
+        : 'CONDITIONAL_SETUP';
 
     return {
-      id: `${baseId}_${time}`,
+      id: `${baseId}_${effectiveConfirmTime}`,
       name,
       setupType,
       direction,
-      candleIndex,
-      time,
+      candleIndex: effectiveConfirmIdx,
+      time: effectiveConfirmTime,
       entryPrice: cleanEntry,
       stopLoss: roundSmcPrice(cleanStopLoss),
       targetPrice: effectiveTarget1,
@@ -2585,9 +2810,12 @@ export function detectAll16SmcSetups(
       status,
       lifecycleState,
       retestCount,
+      retestTouched,
+      rejectionConfirmed,
+      invalidationBasis,
       description,
       invalidationLevel: roundSmcPrice(cleanStopLoss),
-      formationTime: time,
+      formationTime: effectiveConfirmTime,
       confirmationTime,
       qualityScore: confluence.qualityScore,
       confluenceTier: confluence.confluenceTier,
