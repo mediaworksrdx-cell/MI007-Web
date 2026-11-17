@@ -2416,29 +2416,18 @@ export function renderChart(
           continue;
         }
 
-        const li = st.candleIndex - startIdx;
-        const rawX = li * candleW + candleW / 2;
         const lastCandleIdx = Math.min(endIdx - 1, candles.length - 1);
         const currentCandleX = (lastCandleIdx - startIdx) * candleW + candleW / 2;
+        const rightEdgeX = Math.min(chartW - 65 * dpr, currentCandleX + candleW * 2);
 
-        const rawEndX = (endCandleIdx - startIdx) * candleW + candleW / 2;
-        const maxAllowedRightX = isCleanMode
-          ? Math.min(chartW - 65 * dpr, currentCandleX - (candleW / 2 + 10 * dpr))
-          : Math.min(chartW - 65 * dpr, currentCandleX - (candleW / 2 + 4 * dpr));
+        // Stick bracket to the last ~5 candles at the live edge instead of stranded far back in history
+        const anchorIdx = Math.max(st.candleIndex, Math.max(0, lastBarIdx - 5));
+        const anchorX = (anchorIdx - startIdx) * candleW + candleW / 2;
 
-        const minBracketW = Math.max(35 * dpr, candleW * 3.5);
-        const maxTradeW = Math.max(minBracketW, Math.min(10 * candleW, 120 * dpr));
-        let boxW: number;
-        let x: number;
-
-        if (isTradeOver) {
-          x = Math.max(5 * dpr, Math.min(rawX, maxAllowedRightX - minBracketW));
-          boxW = Math.max(minBracketW, Math.min(rawEndX - x, maxAllowedRightX - x));
-        } else {
-          // For active trades, restrict shading strictly to the trade formation and current area (no screen-spanning boxes)
-          x = Math.max(5 * dpr, Math.min(rawX, maxAllowedRightX - minBracketW));
-          boxW = Math.max(minBracketW, Math.min(maxTradeW, maxAllowedRightX - x));
-        }
+        const minBracketW = Math.max(48 * dpr, candleW * 5);
+        const maxTradeW = Math.max(minBracketW, Math.min(8 * candleW, 130 * dpr));
+        const boxW = Math.max(minBracketW, Math.min(maxTradeW, rightEdgeX - anchorX));
+        const x = Math.max(8 * dpr, Math.min(anchorX, rightEdgeX - boxW));
 
         const yEntry = priceToY(st.entryPrice);
         const ySL = priceToY(st.stopLoss);
@@ -2606,9 +2595,14 @@ export function renderChart(
 
         // 6. Advanced SMC Header Signal Pill (Direction + Setup + Actual R:R + Confluence %)
         const shortName = st.name
-          .replace(/ \(Bullish\)| \(Bearish\)/g, '')
+          .replace(/ \(Bullish\)| \(Bearish\)|Bullish |Bearish /g, '')
+          .replace('Breaker Block Role Reversal', 'Breaker')
+          .replace('Supply Order Block Retest', 'Supply OB')
+          .replace('Demand Order Block Retest', 'Demand OB')
           .replace('Trend Continuation', 'BOS')
           .replace('Structural Reversal', 'CHoCH')
+          .replace('Multi-Timeframe SMC Alignment', 'MTF')
+          .replace('50% CE Retracement', 'FVG CE')
           .replace('Dealing Range ', '')
           .replace('Liquidity Pool ', '')
           .replace('Power of Three ', '');
@@ -2625,7 +2619,7 @@ export function renderChart(
         const badgeY = topMostBadgeY > th + 20 * dpr
           ? topMostBadgeY - th - 6 * dpr
           : Math.min(chartH - th - 4 * dpr, botMostBadgeY + 12 * dpr);
-        const badgeX = Math.max(4 * dpr, Math.min(chartW - tw - 70 * dpr, x));
+        const badgeX = Math.max(8 * dpr, Math.min(chartW - tw - 70 * dpr, x + boxW - tw));
 
         ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)';
         ctx.fillRect(badgeX, badgeY, tw, th);
