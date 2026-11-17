@@ -119,39 +119,39 @@ const DEFAULT_UAE_WATCHLIST: WatchlistItem[] = [
 ];
 
 const DEFAULT_CRYPTO: CryptoItem[] = [
-  { symbol: 'BTC', name: 'Bitcoin', base: 64951.37, changePct: 1.32 },
-  { symbol: 'ETH', name: 'Ethereum', base: 1818.49, changePct: 1.30 },
-  { symbol: 'SOL', name: 'Solana', base: 73.58, changePct: 4.06 },
-  { symbol: 'BNB', name: 'BNB', base: 593.38, changePct: 1.21 },
-  { symbol: 'DOGE', name: 'Dogecoin', base: 0.05937, changePct: 1.77 },
-  { symbol: 'SHIB', name: 'Shiba Inu', base: 0.00000387, changePct: 1.04 },
-  { symbol: 'XRP', name: 'Ripple XRP', base: 0.9711, changePct: 2.24 },
-  { symbol: 'ADA', name: 'Cardano', base: 0.1547, changePct: 2.31 },
-  { symbol: 'AVAX', name: 'Avalanche', base: 7.22, changePct: 1.91 },
-  { symbol: 'DOT', name: 'Polkadot', base: 0.7380, changePct: 1.79 },
-  { symbol: 'LINK', name: 'Chainlink', base: 9.26, changePct: 1.99 },
-  { symbol: 'MATIC', name: 'Polygon', base: 0.08207, changePct: 4.53 },
+  { symbol: 'BTC', name: 'Bitcoin', base: 64975.62, changePct: 1.07 },
+  { symbol: 'ETH', name: 'Ethereum', base: 1821.53, changePct: 1.05 },
+  { symbol: 'SOL', name: 'Solana', base: 73.86, changePct: 3.98 },
+  { symbol: 'BNB', name: 'BNB', base: 592.78, changePct: 0.94 },
+  { symbol: 'DOGE', name: 'Dogecoin', base: 0.05942, changePct: 1.75 },
+  { symbol: 'SHIB', name: 'Shiba Inu', base: 0.00000387, changePct: 0.52 },
+  { symbol: 'XRP', name: 'Ripple XRP', base: 0.9749, changePct: 2.48 },
+  { symbol: 'ADA', name: 'Cardano', base: 0.15445, changePct: 1.87 },
+  { symbol: 'AVAX', name: 'Avalanche', base: 7.252, changePct: 2.04 },
+  { symbol: 'DOT', name: 'Polkadot', base: 0.7350, changePct: 0.82 },
+  { symbol: 'LINK', name: 'Chainlink', base: 9.312, changePct: 2.24 },
+  { symbol: 'MATIC', name: 'Polygon', base: 0.0814, changePct: 2.39 },
 ];
 
 const DEFAULT_COMMODITIES: CommodityItem[] = [
-  { symbol: 'GOLD', name: 'Gold', base: 3862.80, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.25 },
-  { symbol: 'SILVER', name: 'Silver', base: 47.54, unit: 'USD / oz', category: 'Precious Metals', changePct: 1.61 },
-  { symbol: 'CRUDEOIL', name: 'Brent Crude', base: 86.18, unit: 'USD / bbl', category: 'Energy', changePct: 0.54 },
-  { symbol: 'BRENT', name: 'Brent Crude', base: 92.86, unit: 'USD / bbl', category: 'Energy', changePct: 0.45 },
-  { symbol: 'WTI', name: 'WTI Crude', base: 86.18, unit: 'USD / bbl', category: 'Energy', changePct: 0.54 },
-  { symbol: 'NATGAS', name: 'Natural Gas', base: 3.14, unit: 'USD / MMBtu', category: 'Energy', changePct: 0.48 },
-  { symbol: 'COPPER', name: 'Copper', base: 5.98, unit: 'USD / lb', category: 'Industrial Metals', changePct: -0.34 },
+  { symbol: 'GOLD', name: 'Gold', base: 3859.30, unit: 'USD / oz', category: 'Precious Metals', changePct: -0.67 },
+  { symbol: 'SILVER', name: 'Silver', base: 47.56, unit: 'USD / oz', category: 'Precious Metals', changePct: -4.83 },
+  { symbol: 'CRUDEOIL', name: 'Crude Oil (WTI)', base: 86.40, unit: 'USD / bbl', category: 'Energy', changePct: -2.64 },
+  { symbol: 'BRENT', name: 'Brent Crude', base: 93.25, unit: 'USD / bbl', category: 'Energy', changePct: -2.68 },
+  { symbol: 'WTI', name: 'WTI Crude', base: 86.40, unit: 'USD / bbl', category: 'Energy', changePct: -2.64 },
+  { symbol: 'NATGAS', name: 'Natural Gas', base: 3.15, unit: 'USD / MMBtu', category: 'Energy', changePct: -5.84 },
+  { symbol: 'COPPER', name: 'Copper', base: 5.98, unit: 'USD / lb', category: 'Industrial Metals', changePct: -3.26 },
 ];
 
 const DEFAULT_FOREX: ForexItem[] = [
-  { symbol: 'EURUSD', name: 'EUR / USD', pair: 'EUR / USD', base: 1.0990, pipSpread: '0.8 pips', changePct: -0.32 },
-  { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP / USD', base: 1.3192, pipSpread: '1.0 pips', changePct: -0.18 },
-  { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD / JPY', base: 159.30, pipSpread: '0.9 pips', changePct: -0.30 },
-  { symbol: 'USDINR', name: 'USD / INR', pair: 'USD / INR', base: 93.46, pipSpread: '1.2 pips', changePct: -0.83 },
-  { symbol: 'USDCAD', name: 'USD / CAD', pair: 'USD / CAD', base: 1.4301, pipSpread: '0.9 pips', changePct: 0.22 },
-  { symbol: 'AUDCAD', name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9625, pipSpread: '1.2 pips', changePct: -0.48 },
-  { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD / CHF', base: 0.8402, pipSpread: '0.9 pips', changePct: 0.13 },
-  { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD / USD', base: 0.6734, pipSpread: '1.1 pips', changePct: -0.66 },
+  { symbol: 'EURUSD', name: 'EUR / USD', pair: 'EUR / USD', base: 1.0990, pipSpread: '0.8 pips', changePct: -1.60 },
+  { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP / USD', base: 1.3188, pipSpread: '1.0 pips', changePct: -1.21 },
+  { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD / JPY', base: 159.33, pipSpread: '0.9 pips', changePct: 0.39 },
+  { symbol: 'USDINR', name: 'USD / INR', pair: 'USD / INR', base: 93.46, pipSpread: '1.2 pips', changePct: -0.50 },
+  { symbol: 'USDCAD', name: 'USD / CAD', pair: 'USD / CAD', base: 1.4298, pipSpread: '0.9 pips', changePct: 0.79 },
+  { symbol: 'AUDCAD', name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9621, pipSpread: '1.2 pips', changePct: -1.26 },
+  { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD / CHF', base: 0.8405, pipSpread: '0.9 pips', changePct: 1.89 },
+  { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD / USD', base: 0.6731, pipSpread: '1.1 pips', changePct: -2.02 },
 ];
 
 // Predefined catalog of recognized indices & cryptos for instantaneous auto-detection
@@ -175,42 +175,42 @@ const KNOWN_INDICES: Record<string, { name: string; base: number; market: Market
 };
 
 const KNOWN_CRYPTOS: Record<string, { name: string; base: number }> = {
-  BTC: { name: 'Bitcoin', base: 64951.37 },
-  ETH: { name: 'Ethereum', base: 1818.49 },
-  SOL: { name: 'Solana', base: 73.58 },
-  BNB: { name: 'BNB', base: 593.38 },
-  DOGE: { name: 'Dogecoin', base: 0.05937 },
+  BTC: { name: 'Bitcoin', base: 64975.62 },
+  ETH: { name: 'Ethereum', base: 1821.53 },
+  SOL: { name: 'Solana', base: 73.86 },
+  BNB: { name: 'BNB', base: 592.78 },
+  DOGE: { name: 'Dogecoin', base: 0.05942 },
   SHIB: { name: 'Shiba Inu', base: 0.00000387 },
-  XRP: { name: 'Ripple XRP', base: 0.9711 },
-  ADA: { name: 'Cardano', base: 0.1547 },
-  AVAX: { name: 'Avalanche', base: 7.22 },
-  DOT: { name: 'Polkadot', base: 0.7380 },
-  LINK: { name: 'Chainlink', base: 9.26 },
-  MATIC: { name: 'Polygon', base: 0.08207 },
+  XRP: { name: 'Ripple XRP', base: 0.9749 },
+  ADA: { name: 'Cardano', base: 0.15445 },
+  AVAX: { name: 'Avalanche', base: 7.252 },
+  DOT: { name: 'Polkadot', base: 0.7350 },
+  LINK: { name: 'Chainlink', base: 9.312 },
+  MATIC: { name: 'Polygon', base: 0.0814 },
 };
 
 const KNOWN_COMMODITIES: Record<string, { name: string; base: number; unit: string; category: string }> = {
-  GOLD: { name: 'Gold', base: 3862.80, unit: 'USD / oz', category: 'Precious Metals' },
-  SILVER: { name: 'Silver', base: 47.54, unit: 'USD / oz', category: 'Precious Metals' },
-  CRUDEOIL: { name: 'Brent Crude', base: 86.18, unit: 'USD / bbl', category: 'Energy' },
-  BRENT: { name: 'Brent Crude', base: 92.86, unit: 'USD / bbl', category: 'Energy' },
-  WTI: { name: 'WTI Crude', base: 86.18, unit: 'USD / bbl', category: 'Energy' },
-  NATGAS: { name: 'Natural Gas', base: 3.14, unit: 'USD / MMBtu', category: 'Energy' },
+  GOLD: { name: 'Gold', base: 3859.30, unit: 'USD / oz', category: 'Precious Metals' },
+  SILVER: { name: 'Silver', base: 47.56, unit: 'USD / oz', category: 'Precious Metals' },
+  CRUDEOIL: { name: 'Crude Oil (WTI)', base: 86.40, unit: 'USD / bbl', category: 'Energy' },
+  BRENT: { name: 'Brent Crude', base: 93.25, unit: 'USD / bbl', category: 'Energy' },
+  WTI: { name: 'WTI Crude', base: 86.40, unit: 'USD / bbl', category: 'Energy' },
+  NATGAS: { name: 'Natural Gas', base: 3.15, unit: 'USD / MMBtu', category: 'Energy' },
   COPPER: { name: 'Copper', base: 5.98, unit: 'USD / lb', category: 'Industrial Metals' },
   PLATINUM: { name: 'Platinum', base: 1024.50, unit: 'USD / oz', category: 'Precious Metals' },
 };
 
 const KNOWN_FOREX: Record<string, { name: string; base: number; pair: string; pipSpread: string }> = {
   EURUSD: { name: 'EUR / USD', pair: 'EUR / USD', base: 1.0990, pipSpread: '0.8 pips' },
-  GBPUSD: { name: 'GBP / USD', pair: 'GBP / USD', base: 1.3192, pipSpread: '1.0 pips' },
-  USDJPY: { name: 'USD / JPY', pair: 'USD / JPY', base: 159.30, pipSpread: '0.9 pips' },
+  GBPUSD: { name: 'GBP / USD', pair: 'GBP / USD', base: 1.3188, pipSpread: '1.0 pips' },
+  USDJPY: { name: 'USD / JPY', pair: 'USD / JPY', base: 159.33, pipSpread: '0.9 pips' },
   USDINR: { name: 'USD / INR', pair: 'USD / INR', base: 93.46, pipSpread: '1.2 pips' },
-  USDCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4301, pipSpread: '0.9 pips' },
-  AUDCAD: { name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9625, pipSpread: '1.2 pips' },
-  USDCHF: { name: 'USD / CHF', pair: 'USD / CHF', base: 0.8402, pipSpread: '0.9 pips' },
+  USDCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4298, pipSpread: '0.9 pips' },
+  AUDCAD: { name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9621, pipSpread: '1.2 pips' },
+  USDCHF: { name: 'USD / CHF', pair: 'USD / CHF', base: 0.8405, pipSpread: '0.9 pips' },
   USDAED: { name: 'USD / AED', pair: 'USD / AED', base: 3.6725, pipSpread: '0.5 pips' },
-  AUDUSD: { name: 'AUD / USD', pair: 'AUD / USD', base: 0.6734, pipSpread: '1.1 pips' },
-  UADCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4301, pipSpread: '0.9 pips' },
+  AUDUSD: { name: 'AUD / USD', pair: 'AUD / USD', base: 0.6731, pipSpread: '1.1 pips' },
+  UADCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4298, pipSpread: '0.9 pips' },
 };
 
 const KNOWN_US_STOCKS: Record<string, { name: string; base: number; sector: string }> = {

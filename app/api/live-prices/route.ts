@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { INITIAL_SEED_ITEMS } from '@/lib/seedData';
-import { isMarketOpen } from '@/lib/marketHours';
+import { fetchTwelveDataQuote } from '@/lib/twelveDataService';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,12 +15,12 @@ export interface LivePriceResponse {
   timestamp: number;
 }
 
-// In-memory cache for fast sub-50ms responses and upstream rate-limit protection
+// In-memory cache for fast sub-50ms responses
 let cachedPayload: LivePriceResponse[] | null = null;
 let lastCacheTimestamp = 0;
-const CACHE_TTL_MS = 6000;
+const CACHE_TTL_MS = 3000; // 3-second cache
 
-// Yahoo Finance Indian Market mapping
+// ─── 1. ZERODHA (INDIA) MAPPING ─────────────────────────────────────────────
 const INDIAN_YAHOO_MAP: Record<string, string> = {
   'NIFTY': '^NSEI',
   'NIFTY 50': '^NSEI',
@@ -30,6 +30,8 @@ const INDIAN_YAHOO_MAP: Record<string, string> = {
   'BSE SENSEX': '^BSESN',
   'FINNIFTY': 'NIFTY_FIN_SERVICE.NS',
   'NIFTY FINANCIAL': 'NIFTY_FIN_SERVICE.NS',
+  'MIDCPNIFTY': 'NIFTY_MID_SELECT.NS',
+  'BANKEX': '^BSEBK',
   'RELIANCE': 'RELIANCE.NS',
   'TCS': 'TCS.NS',
   'HDFCBANK': 'HDFCBANK.NS',
@@ -42,9 +44,15 @@ const INDIAN_YAHOO_MAP: Record<string, string> = {
   'LT': 'LT.NS',
 };
 
-// Yahoo Finance Commodity & Forex mapping (24/5)
+const INDIAN_SYMBOLS = new Set([
+  'NIFTY', 'NIFTY 50', 'NIFTY50', 'BANKNIFTY', 'BANK NIFTY', 'SENSEX', 'BSE SENSEX',
+  'FINNIFTY', 'NIFTY FINANCIAL', 'MIDCPNIFTY', 'BANKEX', 'RELIANCE', 'TCS', 'HDFCBANK',
+  'INFY', 'ICICIBANK', 'TATAMOTORS', 'SBIN', 'BHARTIARTL', 'ITC', 'LT'
+]);
+
+// ─── 2. YAHOO FINANCE FOREX & COMMODITIES MAPPING (24/5) ────────────────────
 const COMMODITY_FOREX_YAHOO_MAP: Record<string, string> = {
-  // Precious & Industrial Metals
+  // Commodities
   'GOLD': 'GC=F',
   'XAU/USD': 'GC=F',
   'XAUUSD': 'GC=F',
@@ -53,8 +61,6 @@ const COMMODITY_FOREX_YAHOO_MAP: Record<string, string> = {
   'XAGUSD': 'SI=F',
   'COPPER': 'HG=F',
   'PLATINUM': 'PL=F',
-
-  // Energy
   'CRUDEOIL': 'CL=F',
   'CRUDE OIL': 'CL=F',
   'WTI': 'CL=F',
@@ -86,7 +92,43 @@ const COMMODITY_FOREX_YAHOO_MAP: Record<string, string> = {
   'USDAED': 'AED=X',
 };
 
+// ─── 3. CRYPTO SYMBOLS (BINANCE) ────────────────────────────────────────────
+const BINANCE_CRYPTO_LIST = [
+  { symbol: 'BTC', pair: 'BTCUSDT', id: 'bitcoin', name: 'Bitcoin' },
+  { symbol: 'ETH', pair: 'ETHUSDT', id: 'ethereum', name: 'Ethereum' },
+  { symbol: 'SOL', pair: 'SOLUSDT', id: 'solana', name: 'Solana' },
+  { symbol: 'BNB', pair: 'BNBUSDT', id: 'binancecoin', name: 'BNB' },
+  { symbol: 'DOGE', pair: 'DOGEUSDT', id: 'dogecoin', name: 'Dogecoin' },
+  { symbol: 'SHIB', pair: 'SHIBUSDT', id: 'shiba-inu', name: 'Shiba Inu' },
+  { symbol: 'XRP', pair: 'XRPUSDT', id: 'ripple', name: 'Ripple XRP' },
+  { symbol: 'ADA', pair: 'ADAUSDT', id: 'cardano', name: 'Cardano' },
+  { symbol: 'AVAX', pair: 'AVAXUSDT', id: 'avalanche-2', name: 'Avalanche' },
+  { symbol: 'DOT', pair: 'DOTUSDT', id: 'polkadot', name: 'Polkadot' },
+  { symbol: 'LINK', pair: 'LINKUSDT', id: 'chainlink', name: 'Chainlink' },
+  { symbol: 'MATIC', pair: 'POLUSDT', altPair: 'MATICUSDT', id: 'polygon-ecosystem-token', name: 'Polygon' },
+];
 
+// ─── 4. US STRATEGIC STOCKS & CASH INDICES (TWELVE DATA) ────────────────────
+const US_STOCKS = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL'];
+const US_INDEX_YAHOO: Record<string, string> = {
+  'SPX': '^GSPC',
+  'S&P 500': '^GSPC',
+  'DJI': '^DJI',
+  'DOW JONES': '^DJI',
+  'NASDAQ': '^IXIC',
+  'NDX': '^IXIC',
+  'NASDAQ 100': '^NDX',
+  'VIX': '^VIX',
+};
+
+// UAE Stocks
+const UAE_YAHOO_MAP: Record<string, string> = {
+  'EMAAR': 'EMAAR.AE',
+  'DEWA': 'DEWA.AE',
+  'SALIK': 'SALIK.AE',
+  'DFMGI': 'DFMGI.AE',
+  'ADX': 'ADI.AE',
+};
 
 export async function GET() {
   const now = Date.now();
@@ -112,30 +154,37 @@ export async function GET() {
 
   const fetchPromises: Promise<void>[] = [];
 
-  // 3. Indian Market: Check GCP Trade Engine or fallback to real-time Yahoo Finance
+  // ══════════════════════════════════════════════════════════════════════════
+  // DOMAIN 1: INDIA -> ZERODHA (TRADE ENGINE) WITH YAHOO FALLBACK
+  // ══════════════════════════════════════════════════════════════════════════
   fetchPromises.push((async () => {
     let gcpFresh = false;
     try {
       const res = await fetch(`${GCP_TRADE_ENGINE_URL}/live-prices`, {
         cache: 'no-store',
-        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(1800) : undefined,
+        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2000) : undefined,
       });
 
       if (res.ok) {
         const gcpPrices = await res.json();
         if (Array.isArray(gcpPrices) && gcpPrices.length > 0) {
           const maxTs = Math.max(...gcpPrices.map((x: any) => x.timestamp || 0));
-          const hasNonZeroChange = gcpPrices.some((x: any) => (x.change && x.change !== 0) || (x.changePercent && x.changePercent !== 0));
-          // Only trust GCP if timestamp is within last 120 seconds AND data contains real non-zero fluctuations
-          if (now - maxTs < 120_000 && hasNonZeroChange) {
-            gcpFresh = true;
+          // Only trust GCP if timestamp is within last 120 seconds
+          if (now - maxTs < 120_000) {
             for (const item of gcpPrices) {
               if (!item.symbol || typeof item.ltp !== 'number' || item.ltp <= 0) continue;
-              const cleanSym = item.symbol.replace(/\.NS$/, '').replace(/\.BO$/, '').trim();
-              const cleanUpper = cleanSym.toUpperCase();
-              const existing = pricesMap.get(cleanUpper) || pricesMap.get(item.symbol.toUpperCase());
+              const rawSym = String(item.symbol).toUpperCase();
+              const cleanSym = rawSym.replace(/\.NS$/, '').replace(/\.BO$/, '').trim();
 
-              pricesMap.set(cleanUpper, {
+              // CRITICAL: ONLY accept Indian symbols from Trade Engine!
+              // Discard any foreign stocks, commodities, or crypto sent by Trade Engine.
+              const isIndian = rawSym.includes('.NS') || rawSym.includes('.BO') || INDIAN_SYMBOLS.has(cleanSym) || Boolean(INDIAN_YAHOO_MAP[cleanSym]);
+              if (!isIndian) continue;
+
+              gcpFresh = true;
+              const existing = pricesMap.get(cleanSym) || pricesMap.get(rawSym);
+
+              pricesMap.set(cleanSym, {
                 instrumentToken: item.instrumentToken || (existing?.instrumentToken ?? 200000),
                 symbol: item.symbol,
                 ltp: item.ltp,
@@ -143,21 +192,28 @@ export async function GET() {
                 changePercent: item.changePercent ?? existing?.changePercent ?? 0,
                 timestamp: item.timestamp || now,
               });
+              if (rawSym.includes('.NS') || rawSym.includes('.BO')) {
+                pricesMap.set(rawSym, {
+                  instrumentToken: item.instrumentToken || 200000,
+                  symbol: item.symbol,
+                  ltp: item.ltp,
+                  change: item.change ?? 0,
+                  changePercent: item.changePercent ?? 0,
+                  timestamp: item.timestamp || now,
+                });
+              }
             }
           }
         }
       }
-    } catch (_err) {
-      // GCP unreachable
-    }
+    } catch (_err) {}
 
-    // If GCP data is stale or unavailable, stream directly from live exchange via Yahoo Finance
-    // (Works 24/7/365: live ticks during market hours, official exchange closing prices and daily % changes after close)
+    // If Zerodha GCP data is stale or unavailable, stream directly from Indian Yahoo Finance
     if (!gcpFresh) {
       const indianFetches = Object.entries(INDIAN_YAHOO_MAP).map(async ([symbol, yahooSym], idx) => {
         try {
           const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=5d`, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
             cache: 'no-store',
             signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(3000) : undefined,
           });
@@ -195,66 +251,76 @@ export async function GET() {
           if (cleanUpper === 'SENSEX') {
             pricesMap.set('BSE SENSEX', { ...entry, symbol: 'BSE SENSEX' });
           }
-        } catch (_err) {
-          // Individual symbol fetch failure graceful skip
-        }
+        } catch (_err) {}
       });
       await Promise.all(indianFetches);
     }
   })());
 
-  // 4. Crypto Market (Trade Engine live pricing)
+  // ══════════════════════════════════════════════════════════════════════════
+  // DOMAIN 2: CRYPTO -> BINANCE (24/7 Dual Endpoint API)
+  // ══════════════════════════════════════════════════════════════════════════
   fetchPromises.push((async () => {
-    try {
-      const res = await fetch(`${GCP_TRADE_ENGINE_URL}/live-prices`, {
-        cache: 'no-store',
-        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
-      });
+    const baseUrls = ['https://api.binance.com/api/v3', 'https://api.binance.us/api/v3'];
+    let fetched = false;
 
-      if (res.ok) {
-        const engineData = await res.json();
-        if (Array.isArray(engineData)) {
-          for (const item of engineData) {
-            const rawSym = String(item.symbol || '').toUpperCase();
-            const cleanSym = rawSym.replace(/USDT$/, '').replace(/-USD$/, '');
-            const price = parseFloat(item.ltp ?? item.price);
-            const change = parseFloat(item.change ?? 0);
-            const changePct = parseFloat(item.changePercent ?? item.changePct ?? 0);
-            if (!isNaN(price) && price > 0) {
-              const decimals = price < 0.01 ? 7 : price < 2 ? 4 : price < 20 ? 3 : 2;
-              const formattedPrice = +price.toFixed(decimals);
-              const formattedChange = !isNaN(change) ? +change.toFixed(decimals) : 0;
-              const formattedPct = !isNaN(changePct) ? +changePct.toFixed(2) : 0;
+    for (const baseUrl of baseUrls) {
+      if (fetched) break;
+      try {
+        const pairs = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'DOGEUSDT', 'SHIBUSDT', 'XRPUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT', 'LINKUSDT', 'POLUSDT'];
+        const symbolsParam = encodeURIComponent(JSON.stringify(pairs));
+        const res = await fetch(`${baseUrl}/ticker/24hr?symbols=${symbolsParam}`, {
+          cache: 'no-store',
+          signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(3000) : undefined,
+        });
 
-              const entry: LivePriceResponse = {
-                instrumentToken: item.instrumentToken || 400000,
-                symbol: cleanSym,
-                ltp: formattedPrice,
-                change: formattedChange,
-                changePercent: formattedPct,
-                timestamp: item.timestamp || now,
-              };
+        if (res.ok) {
+          const tickers = await res.json();
+          if (Array.isArray(tickers) && tickers.length > 0) {
+            fetched = true;
+            for (const t of tickers) {
+              const price = parseFloat(t.lastPrice);
+              const pct = parseFloat(t.priceChangePercent);
+              const chg = parseFloat(t.priceChange);
+              if (!isNaN(price) && price > 0) {
+                const rawCoin = t.symbol.replace(/USDT$/, '').replace(/-USD$/, '');
+                const cleanSym = rawCoin === 'POL' ? 'MATIC' : rawCoin;
+                const decimals = price < 0.01 ? 7 : price < 2 ? 4 : price < 20 ? 3 : 2;
 
-              pricesMap.set(cleanSym, entry);
-              pricesMap.set(`${cleanSym}USDT`, entry);
-              pricesMap.set(`${cleanSym}-USD`, entry);
+                const entry: LivePriceResponse = {
+                  instrumentToken: 400000,
+                  symbol: cleanSym,
+                  ltp: +price.toFixed(decimals),
+                  change: !isNaN(chg) ? +chg.toFixed(decimals) : 0,
+                  changePercent: !isNaN(pct) ? +pct.toFixed(2) : 0,
+                  timestamp: t.closeTime || now,
+                };
+
+                pricesMap.set(cleanSym, entry);
+                pricesMap.set(`${cleanSym}USDT`, entry);
+                pricesMap.set(`${cleanSym}-USD`, entry);
+                if (cleanSym === 'MATIC') {
+                  pricesMap.set('POL', entry);
+                  pricesMap.set('POLUSDT', entry);
+                }
+              }
             }
           }
         }
-      }
-    } catch (_err) {
-      // Graceful fallback to baseline seed crypto
+      } catch (_err) {}
     }
   })());
 
-  // 5. Forex & Commodities (24/7/365 live & closing exchange quotes)
+  // ══════════════════════════════════════════════════════════════════════════
+  // DOMAIN 3: FOREX & COMMODITIES -> YAHOO FINANCE (24/5 Direct Exchange Quotes)
+  // ══════════════════════════════════════════════════════════════════════════
   fetchPromises.push((async () => {
     const cfFetches = Object.entries(COMMODITY_FOREX_YAHOO_MAP).map(async ([symbol, yahooSym], idx) => {
       try {
         const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=5d`, {
           headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
           cache: 'no-store',
-          signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
+          signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(3000) : undefined,
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -262,7 +328,8 @@ export async function GET() {
         if (!meta || typeof meta.regularMarketPrice !== 'number' || meta.regularMarketPrice <= 0) return;
         const ltp = meta.regularMarketPrice;
         const prevClose = meta.chartPreviousClose || ltp;
-        const decimals = ltp < 2 ? 4 : 2;
+        const isForex = yahooSym.includes('=X');
+        const decimals = isForex ? (ltp < 2 ? 4 : 2) : 2;
         const change = +(ltp - prevClose).toFixed(decimals);
         const changePercent = +(((ltp - prevClose) / Math.max(0.001, prevClose)) * 100).toFixed(2);
         const timestamp = (meta.regularMarketTime || Math.floor(now / 1000)) * 1000;
@@ -275,19 +342,67 @@ export async function GET() {
           changePercent,
           timestamp,
         });
-      } catch (_err) {
-        // Graceful skip
-      }
+      } catch (_err) {}
     });
     await Promise.all(cfFetches);
   })());
 
-  // 6. UAE Real Estate & Banking (Official ADX / DFM Exchanges)
-  const UAE_YAHOO_MAP: Record<string, string> = {
-    'EMAAR': 'EMAAR.AE',
-    'DEWA': 'DEWA.AE',
-    'SALIK': 'SALIK.AE',
-  };
+  // ══════════════════════════════════════════════════════════════════════════
+  // DOMAIN 4: US STOCKS & INDICES -> TWELVE DATA (With Spot Benchmark Scale)
+  // ══════════════════════════════════════════════════════════════════════════
+  fetchPromises.push((async () => {
+    // 1. Twelve Data for 7 US Strategic Stocks
+    const stockFetches = US_STOCKS.map(async (sym, idx) => {
+      try {
+        const td = await fetchTwelveDataQuote(sym);
+        if (td && td.price > 0) {
+          pricesMap.set(sym, {
+            instrumentToken: 600000 + idx,
+            symbol: sym,
+            ltp: td.price,
+            change: td.change,
+            changePercent: td.changePct,
+            timestamp: now,
+          });
+        }
+      } catch (_err) {}
+    });
+
+    // 2. Authentic Spot Benchmarks for Cash Indices (^GSPC, ^IXIC, ^DJI, ^VIX)
+    const indexFetches = Object.entries(US_INDEX_YAHOO).map(async ([symbol, yahooSym], idx) => {
+      try {
+        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d`, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          cache: 'no-store',
+          signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (!meta || typeof meta.regularMarketPrice !== 'number' || meta.regularMarketPrice <= 0) return;
+        const ltp = +meta.regularMarketPrice.toFixed(2);
+        const prevClose = meta.chartPreviousClose || ltp;
+        const change = +(ltp - prevClose).toFixed(2);
+        const changePercent = +(((ltp - prevClose) / Math.max(0.01, prevClose)) * 100).toFixed(2);
+        const timestamp = (meta.regularMarketTime || Math.floor(now / 1000)) * 1000;
+
+        pricesMap.set(symbol.toUpperCase(), {
+          instrumentToken: 650000 + idx,
+          symbol,
+          ltp,
+          change,
+          changePercent,
+          timestamp,
+        });
+      } catch (_err) {}
+    });
+
+    await Promise.all([...stockFetches, ...indexFetches]);
+  })());
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // UAE STOCKS & INDICES
+  // ══════════════════════════════════════════════════════════════════════════
   fetchPromises.push((async () => {
     const uaeFetches = Object.entries(UAE_YAHOO_MAP).map(async ([symbol, yahooSym], idx) => {
       try {
@@ -307,71 +422,16 @@ export async function GET() {
         const timestamp = (meta.regularMarketTime || Math.floor(now / 1000)) * 1000;
 
         pricesMap.set(symbol.toUpperCase(), {
-          instrumentToken: 550000 + idx,
+          instrumentToken: 700000 + idx,
           symbol,
           ltp: +ltp.toFixed(2),
           change,
           changePercent,
           timestamp,
         });
-      } catch (_err) {
-        // Graceful skip
-      }
+      } catch (_err) {}
     });
     await Promise.all(uaeFetches);
-  })());
-
-  // 7. USA Cash Indices & Equities (Fetch official closing benchmarks when closed, live ticks when open)
-  const US_YAHOO_MAP: Record<string, { yahoo: string; mult: number }> = {
-    'SPX': { yahoo: '^GSPC', mult: 1.0 },
-    'S&P 500': { yahoo: '^GSPC', mult: 1.0 },
-    'DJI': { yahoo: '^DJI', mult: 1.0 },
-    'DOW JONES': { yahoo: '^DJI', mult: 1.0 },
-    'NASDAQ': { yahoo: '^IXIC', mult: 1.0 },
-    'NDX': { yahoo: '^IXIC', mult: 1.0 },
-    'NASDAQ 100': { yahoo: '^IXIC', mult: 1.0 },
-    'VIX': { yahoo: '^VIX', mult: 1.0 },
-    'NVDA': { yahoo: 'NVDA', mult: 1.0 },
-    'AAPL': { yahoo: 'AAPL', mult: 1.0 },
-    'MSFT': { yahoo: 'MSFT', mult: 1.0 },
-    'TSLA': { yahoo: 'TSLA', mult: 1.0 },
-    'AMZN': { yahoo: 'AMZN', mult: 1.0 },
-    'META': { yahoo: 'META', mult: 1.0 },
-    'GOOGL': { yahoo: 'GOOGL', mult: 1.0 },
-  };
-
-  fetchPromises.push((async () => {
-    const usFetches = Object.entries(US_YAHOO_MAP).map(async ([symbol, { yahoo, mult }], idx) => {
-      try {
-        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahoo)}?interval=1d`, {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
-          cache: 'no-store',
-          signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const meta = data?.chart?.result?.[0]?.meta;
-        if (!meta || typeof meta.regularMarketPrice !== 'number' || meta.regularMarketPrice <= 0) return;
-        const rawPrice = meta.regularMarketPrice * mult;
-        const rawPrev = (meta.chartPreviousClose || meta.regularMarketPrice) * mult;
-        const ltp = +rawPrice.toFixed(2);
-        const change = +(rawPrice - rawPrev).toFixed(2);
-        const changePercent = +(((rawPrice - rawPrev) / Math.max(0.01, rawPrev)) * 100).toFixed(2);
-        const timestamp = (meta.regularMarketTime || Math.floor(now / 1000)) * 1000;
-
-        pricesMap.set(symbol.toUpperCase(), {
-          instrumentToken: 600000 + idx,
-          symbol,
-          ltp,
-          change,
-          changePercent,
-          timestamp,
-        });
-      } catch (_err) {
-        // Graceful skip
-      }
-    });
-    await Promise.all(usFetches);
   })());
 
   await Promise.all(fetchPromises);

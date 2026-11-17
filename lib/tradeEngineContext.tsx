@@ -25,6 +25,13 @@ export interface LiveSymbolData {
   lastUpdated: number;
 }
 
+const NON_INDIAN_SET = new Set([
+  'GOLD', 'SILVER', 'CRUDEOIL', 'BRENT', 'WTI', 'NATGAS', 'COPPER', 'PLATINUM', 'XAU', 'XAG', 'OIL',
+  'EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDCAD', 'AUDCAD', 'USDCHF', 'AUDUSD', 'USDAED',
+  'BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC', 'POL',
+  'SPX', 'NDX', 'DJI', 'VIX', 'NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'GOOG', 'QQQ', 'SPY', 'DIA'
+]);
+
 // ── Granular Per-Symbol External Store for Zero-Lag High-Frequency Updates ────
 class SymbolPriceStore {
   private map: Map<string, LiveSymbolData>;
@@ -42,12 +49,13 @@ class SymbolPriceStore {
     if (!symbol) return undefined;
     const cleanKey = normalizeSymbolKey(symbol);
     const upper = symbol.toUpperCase().trim();
+    const isNonIndian = NON_INDIAN_SET.has(cleanKey) || NON_INDIAN_SET.has(upper);
     return (
       this.map.get(cleanKey) ||
       this.map.get(symbol) ||
       this.map.get(upper) ||
-      this.map.get(`${cleanKey}.NS`) ||
-      this.map.get(`${upper}.NS`) ||
+      (!isNonIndian ? this.map.get(`${cleanKey}.NS`) : undefined) ||
+      (!isNonIndian ? this.map.get(`${upper}.NS`) : undefined) ||
       this.map.get(symbol.replace(/\s+/g, '')) ||
       this.map.get(symbol.replace(/\.NS$/, ''))
     );
@@ -587,6 +595,14 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             const baseSym = sym.replace(/USDT$/, '').replace(/-USD$/, '');
             const key = normalizeSymbolKey(tick.symbol);
 
+            // Filter: Trade Engine WebSocket is strictly reserved for Zerodha Indian market!
+            // Reject any commodity, forex, crypto, or US index/stock ticks sent by Trade Engine.
+            const isIndianSym = sym.includes('.NS') || sym.includes('.BO') ||
+              ['NIFTY', 'BANKNIFTY', 'SENSEX', 'FINNIFTY', 'MIDCPNIFTY', 'BANKEX', 'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'TATAMOTORS', 'SBIN', 'BHARTIARTL', 'ITC', 'LT'].includes(baseSym);
+            if (!isIndianSym) {
+              return;
+            }
+
             // Discard wild outlier single-tick jumps (>65% dislocation)
             const prevEntryCheck = store?.getMap().get(key) || store?.getMap().get(baseSym);
             if (prevEntryCheck && prevEntryCheck.price > 0 && Math.abs(tick.price - prevEntryCheck.price) / prevEntryCheck.price > 20.0) {
@@ -671,6 +687,108 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
       }
     };
   }, [scheduleLivePricesUpdate]);
+
+  // 4. WebSocket Real-time Binance Crypto Stream (24/7 Sub-Second Streaming)
+  useEffect(() => {
+    let isDisposed = false;
+    let bws: WebSocket | null = null;
+    let reconnectTimer: NodeJS.Timeout | null = null;
+
+    function connectBinance() {
+      if (isDisposed || typeof window === 'undefined') return;
+      try {
+        const binanceWsUrl = 'wss://stream.binance.com:9443/ws/!ticker@arr';
+        bws = new WebSocket(binanceWsUrl);
+
+        bws.onmessage = (event) => {
+          try {
+            const tickers = JSON.parse(event.data);
+            if (!Array.isArray(tickers)) return;
+
+            const cryptoPairs = new Set([
+              'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'DOGEUSDT', 'SHIBUSDT',
+              'XRPUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT', 'LINKUSDT', 'POLUSDT'
+            ]);
+
+            const now = Date.now();
+            let hasAnyUpdate = false;
+
+            store?.updateBatch((prev) => {
+              const next = new Map(prev);
+              const changedKeys = new Set<string>();
+
+              for (const t of tickers) {
+                if (!cryptoPairs.has(t.s)) continue;
+                const rawCoin = t.s.replace(/USDT$/, '');
+                const cleanSym = rawCoin === 'POL' ? 'MATIC' : rawCoin;
+                const price = parseFloat(t.c);
+                const pct = parseFloat(t.P);
+                const chg = parseFloat(t.p);
+                if (isNaN(price) || price <= 0) continue;
+
+                const key = normalizeSymbolKey(cleanSym);
+                const decimals = price < 0.01 ? 7 : price < 2 ? 4 : price < 20 ? 3 : 2;
+                const prevEntry = next.get(key);
+                const dir = prevEntry
+                  ? (price > prevEntry.price ? 'up' : price < prevEntry.price ? 'down' : prevEntry.tickDirection)
+                  : 'neutral';
+
+                const data: LiveSymbolData = {
+                  symbol: cleanSym,
+                  price: +price.toFixed(decimals),
+                  change: !isNaN(chg) ? +chg.toFixed(decimals) : 0,
+                  changePct: !isNaN(pct) ? +pct.toFixed(2) : 0,
+                  volume: parseFloat(t.v) || 0,
+                  timestamp: t.E || now,
+                  tickDirection: dir,
+                  lastUpdated: now,
+                };
+
+                changedKeys.add(key);
+                changedKeys.add(cleanSym);
+                changedKeys.add(`${cleanSym}USDT`);
+                changedKeys.add(`${cleanSym}-USD`);
+                next.set(key, data);
+                next.set(cleanSym, data);
+                next.set(cleanSym.toLowerCase(), data);
+                next.set(`${cleanSym}USDT`, data);
+                next.set(`${cleanSym}-USD`, data);
+                if (cleanSym === 'MATIC') {
+                  next.set('POL', data);
+                  next.set('POLUSDT', data);
+                }
+                hasAnyUpdate = true;
+              }
+              return { next, changedKeys };
+            });
+
+            if (hasAnyUpdate) {
+              scheduleLivePricesUpdate();
+            }
+          } catch (_e) {}
+        };
+
+        bws.onclose = () => {
+          if (!isDisposed) reconnectTimer = setTimeout(connectBinance, 3000);
+        };
+
+        bws.onerror = () => {
+          if (bws) bws.close();
+        };
+      } catch (_e) {}
+    }
+
+    connectBinance();
+
+    return () => {
+      isDisposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (bws) {
+        bws.onclose = null;
+        bws.close();
+      }
+    };
+  }, [scheduleLivePricesUpdate, store]);
 
   const pendingQuoteFetches = useRef<Set<string>>(new Set());
 
