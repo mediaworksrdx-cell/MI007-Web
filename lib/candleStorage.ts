@@ -1,8 +1,22 @@
 import { Candle } from './types';
 
-const DB_NAME = 'MI007_MarketData_v8';
+const DB_NAME = 'MI007_MarketData_v9';
 const DB_VERSION = 1;
 const STORE_NAME = 'candles';
+
+/** Detects artificial synthetic linear staircase ramps (e.g. constant +62 delta per candle) */
+export function isArtificialLinearStaircase(candles: Candle[]): boolean {
+  if (!candles || candles.length < 6) return false;
+  let matchingDeltas = 0;
+  for (let i = 2; i < Math.min(25, candles.length); i++) {
+    const d1 = candles[i].close - candles[i - 1].close;
+    const d2 = candles[i - 1].close - candles[i - 2].close;
+    if (Math.abs(d1 - d2) < 0.25 && Math.abs(d1) > 0.05) {
+      matchingDeltas++;
+    }
+  }
+  return matchingDeltas >= 4;
+}
 
 function getStorageKey(symbol: string, timeframe: string): string {
   return `${symbol.trim().toUpperCase()}_${timeframe.trim()}`;
@@ -20,6 +34,7 @@ if (typeof window !== 'undefined') {
       window.indexedDB.deleteDatabase('MI007_MarketData_v5');
       window.indexedDB.deleteDatabase('MI007_MarketData_v6');
       window.indexedDB.deleteDatabase('MI007_MarketData_v7');
+      window.indexedDB.deleteDatabase('MI007_MarketData_v8');
     }
     if (window.localStorage) {
       for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -93,7 +108,11 @@ export async function loadStoredCandles(symbol: string, timeframe: string): Prom
             clearTimeout(timer);
             const res = req.result;
             if (res && Array.isArray(res.candles) && res.candles.length > 0) {
-              resolve(res.candles);
+              if (isArtificialLinearStaircase(res.candles)) {
+                resolve(null);
+              } else {
+                resolve(res.candles);
+              }
             } else {
               resolve(null);
             }
@@ -114,7 +133,7 @@ export async function loadStoredCandles(symbol: string, timeframe: string): Prom
       const raw = localStorage.getItem(`mi007_candles_${key}`);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0 && !isArtificialLinearStaircase(parsed)) return parsed;
       }
     }
   } catch (err) {
@@ -126,7 +145,7 @@ export async function loadStoredCandles(symbol: string, timeframe: string): Prom
 
 /** Save candles to IndexedDB with fallback to localStorage (caps at max 1500 candles) */
 export async function saveStoredCandles(symbol: string, timeframe: string, candles: Candle[]): Promise<void> {
-  if (!candles || candles.length === 0) return;
+  if (!candles || candles.length === 0 || isArtificialLinearStaircase(candles)) return;
   const key = getStorageKey(symbol, timeframe);
   // Keep the most recent 1500 candles to optimize disk & memory while providing deep indicator history
   const trimmed = candles.slice(-1500);

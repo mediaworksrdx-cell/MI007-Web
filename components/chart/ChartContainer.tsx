@@ -18,7 +18,7 @@ import { getMockCandles, getMockQuote } from '@/lib/mockData';
 import { findZerodhaStockBySymbol, KNOWN_ZERODHA_PRICES, getZerodhaStockPrice } from '@/lib/screener/zerodhaStocks';
 import { fetchCandles, areSymbolsEqual } from '@/lib/tradeEngineClient';
 import { useTradeEngine, useLiveSymbol } from '@/lib/tradeEngineContext';
-import { loadStoredCandles, saveStoredCandles, mergeCandleArrays, purgeStoredCandles } from '@/lib/candleStorage';
+import { loadStoredCandles, saveStoredCandles, mergeCandleArrays, purgeStoredCandles, isArtificialLinearStaircase } from '@/lib/candleStorage';
 import {
   ChartTemplate,
   getStoredTemplates,
@@ -106,16 +106,16 @@ function getExpectedPrice(market: MarketType, symbol: string): number {
   try {
     const symClean = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
     const INDEX_BASES: Record<string, number> = {
-      MIDCPNIFTY: 12958.45,
-      NIFTYMIDSELECT: 12958.45,
-      BANKEX: 61083.33,
-      BSEBANKEX: 61083.33,
-      NIFTY: 25291.10,
-      NIFTY50: 25291.10,
-      BANKNIFTY: 61575.90,
-      FINNIFTY: 28015.40,
-      SENSEX: 82104.79,
-      INDIAVIX: 14.5,
+      MIDCPNIFTY: 14359.30,
+      NIFTYMIDSELECT: 14359.30,
+      BANKEX: 70004.09,
+      BSEBANKEX: 70004.09,
+      NIFTY: 25400.40,
+      NIFTY50: 25400.40,
+      BANKNIFTY: 62264.70,
+      FINNIFTY: 28255.65,
+      SENSEX: 82409.43,
+      INDIAVIX: 15.24,
       SPX: 7416.59,
       NASDAQ: 24509.76,
       NDX: 24509.76,
@@ -887,8 +887,9 @@ export function ChartContainer({
           const isBtcDislocated = (selectedSymbol.toUpperCase() === 'BTC' || selectedSymbol.toUpperCase().includes('BITCOIN')) && (lastC.close > 120000 || lastC.close < 20000);
           const dislocation = (expectedPrice > 0 && lastC && lastC.close > 0) ? Math.abs(lastC.close - expectedPrice) / expectedPrice : 0;
           const isFutureCandle = lastC && (lastC.openTime > Date.now() + 300_000);
-          if (isBtcDislocated || dislocation > 0.15 || isFutureCandle) {
-            console.warn(`[ChartContainer] Auto-purging dislocated/future cache for ${selectedSymbol}`);
+          const isStaircase = isArtificialLinearStaircase(rawCached);
+          if (isBtcDislocated || dislocation > 0.15 || isFutureCandle || isStaircase) {
+            console.warn(`[ChartContainer] Auto-purging dislocated/future/staircase cache for ${selectedSymbol}`);
             await purgeStoredCandles(selectedSymbol, timeframe);
             rawCached = null;
           }
@@ -921,8 +922,10 @@ export function ChartContainer({
         if (expectedPrice > 0 && cleanEngine.length > 0) {
           const engineLast = cleanEngine[cleanEngine.length - 1];
           if (engineLast && engineLast.close > 0) {
+            const hasRealLivePrice = live && live.price > 0;
+            const dislocationThreshold = hasRealLivePrice ? 0.05 : 0.25;
             const dislocation = Math.abs(engineLast.close - expectedPrice) / expectedPrice;
-            if (dislocation > 0.02) {
+            if (dislocation > dislocationThreshold) {
               const scaleMultiplier = expectedPrice / engineLast.close;
               cleanEngine = rescaleCandleArray(cleanEngine, scaleMultiplier, expectedPrice);
             }
