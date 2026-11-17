@@ -2420,13 +2420,18 @@ export function renderChart(
         const currentCandleX = (lastCandleIdx - startIdx) * candleW + candleW / 2;
         const rightEdgeX = Math.min(chartW - 65 * dpr, currentCandleX + candleW * 2);
 
-        // Start at the exact breakout/setup candle and extend forward to TP/SL hit (if closed) or live edge (if active)
-        const rawX = (st.candleIndex - startIdx) * candleW + candleW / 2;
-        const rawEndX = (endCandleIdx - startIdx) * candleW + candleW / 2;
-        const minBracketW = Math.max(48 * dpr, candleW * 3.5);
-        const x = Math.max(8 * dpr, Math.min(rawX, rightEdgeX - minBracketW));
-        const targetRightX = isTradeOver ? Math.min(rightEdgeX, rawEndX) : rightEdgeX;
-        const boxW = Math.max(minBracketW, targetRightX - x);
+        // Fresh active setups (<= 8 bars old) start at the exact breakout candle;
+        // older or concluded setups pin to the last 5 candles at the live edge so they never sit stranded back in history.
+        const isFreshActive = !isTradeOver && (lastBarIdx - st.candleIndex <= 8);
+        const anchorIdx = isFreshActive
+          ? st.candleIndex
+          : Math.max(st.candleIndex, Math.max(0, lastBarIdx - 5));
+        const anchorX = (anchorIdx - startIdx) * candleW + candleW / 2;
+
+        const minBracketW = Math.max(48 * dpr, candleW * 5);
+        const maxTradeW = Math.max(minBracketW, Math.min(10 * candleW, 150 * dpr));
+        const boxW = Math.max(minBracketW, Math.min(maxTradeW, rightEdgeX - anchorX));
+        const x = Math.max(8 * dpr, Math.min(anchorX, rightEdgeX - boxW));
 
         const yEntry = priceToY(st.entryPrice);
         const ySL = priceToY(st.stopLoss);
