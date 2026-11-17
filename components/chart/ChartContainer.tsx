@@ -1127,7 +1127,7 @@ export function ChartContainer({
               close: tick.price,
               volume: tick.volume > 0 ? tick.volume : 1,
             };
-            next = [...prev.slice(-999), newBar];
+            next = [...prev.slice(-5999), newBar];
           }
 
           // Throttle save to storage every 4 seconds

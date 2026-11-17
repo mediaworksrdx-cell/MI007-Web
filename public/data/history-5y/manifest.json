@@ -1,0 +1,315 @@
+{
+  "generatedAt": "2026-11-17T05:07:55.407Z",
+  "totalInstruments": 44,
+  "successfulInstruments": 44,
+  "instruments": [
+    {
+      "symbol": "BANKNIFTY",
+      "count": 1234,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "NIFTY",
+      "count": 1235,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "FINNIFTY",
+      "count": 1229,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "SENSEX",
+      "count": 1233,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "MIDCPNIFTY",
+      "count": 1229,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "INDIAVIX",
+      "count": 1229,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "RELIANCE",
+      "count": 1236,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "TCS",
+      "count": 1236,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "HDFCBANK",
+      "count": 1236,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "INFY",
+      "count": 1236,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "ICICIBANK",
+      "count": 1236,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "TATAMOTORS",
+      "count": 1236,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "SBIN",
+      "count": 1236,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "BHARTIARTL",
+      "count": 1236,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "ITC",
+      "count": 1236,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "LT",
+      "count": 1236,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "SPX",
+      "count": 1254,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "DJI",
+      "count": 1254,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "NASDAQ",
+      "count": 1254,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "NDX",
+      "count": 1254,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "VIX",
+      "count": 1257,
+      "from": "2021-11-16",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "NVDA",
+      "count": 1254,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "AAPL",
+      "count": 1254,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "MSFT",
+      "count": 1254,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "TSLA",
+      "count": 1254,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "AMZN",
+      "count": 1254,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "META",
+      "count": 1254,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "GOOGL",
+      "count": 1254,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "BTC",
+      "count": 1826,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "ETH",
+      "count": 1826,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "SOL",
+      "count": 1826,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "BNB",
+      "count": 1826,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "DOGE",
+      "count": 1826,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "XRP",
+      "count": 1826,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "ADA",
+      "count": 1826,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "AVAX",
+      "count": 1826,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "GOLD",
+      "count": 1257,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "SILVER",
+      "count": 1256,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "BRENT",
+      "count": 1257,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "CRUDEOIL",
+      "count": 1256,
+      "from": "2021-11-17",
+      "to": "2026-11-16",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "EURUSD",
+      "count": 1300,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "GBPUSD",
+      "count": 1300,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "USDJPY",
+      "count": 1300,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    },
+    {
+      "symbol": "USDINR",
+      "count": 1300,
+      "from": "2021-11-17",
+      "to": "2026-11-17",
+      "status": "SUCCESS"
+    }
+  ]
+}

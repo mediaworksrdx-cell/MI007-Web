@@ -143,12 +143,12 @@ export async function loadStoredCandles(symbol: string, timeframe: string): Prom
   return null;
 }
 
-/** Save candles to IndexedDB with fallback to localStorage (caps at max 1500 candles) */
+/** Save candles to IndexedDB with fallback to localStorage (caps at max 6000 candles for deep 5-year multi-timeframe history) */
 export async function saveStoredCandles(symbol: string, timeframe: string, candles: Candle[]): Promise<void> {
   if (!candles || candles.length === 0 || isArtificialLinearStaircase(candles)) return;
   const key = getStorageKey(symbol, timeframe);
-  // Keep the most recent 1500 candles to optimize disk & memory while providing deep indicator history
-  const trimmed = candles.slice(-1500);
+  // Keep up to 6000 candles to store full 5-year daily (1,260-1,827 bars) and deep intraday histories
+  const trimmed = candles.slice(-6000);
 
   try {
     const db = await getDB();
@@ -217,8 +217,8 @@ export async function purgeStoredCandles(symbol?: string, timeframe?: string): P
  * - Keeps incoming candle values for identical timestamps (updates closing prices)
  */
 export function mergeCandleArrays(base: Candle[], incoming: Candle[], timeframeMs?: number): Candle[] {
-  if (!base || base.length === 0) return (incoming || []).slice(-1000);
-  if (!incoming || incoming.length === 0) return (base || []).slice(-1000);
+  if (!base || base.length === 0) return (incoming || []).slice(-6000);
+  if (!incoming || incoming.length === 0) return (base || []).slice(-6000);
 
   // Infer timeframe interval from candles if not explicitly supplied
   let inferredMs = timeframeMs;
@@ -263,5 +263,5 @@ export function mergeCandleArrays(base: Candle[], incoming: Candle[], timeframeM
   }
 
   const merged = Array.from(candleMap.values()).sort((a, b) => a.openTime - b.openTime);
-  return merged.slice(-1000);
+  return merged.slice(-6000);
 }

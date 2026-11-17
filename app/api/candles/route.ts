@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 import { getMockCandles } from '@/lib/mockData';
 import { MarketType, Candle } from '@/lib/types';
 import { fetchTwelveDataCandles } from '@/lib/twelveDataService';
@@ -28,8 +30,9 @@ const YAHOO_GLOBAL_MAP: Record<string, string> = {
   'NIFTY FINANCIAL': 'NIFTY_FIN_SERVICE.NS',
   'NIFTY FINANCIAL SERVICES': 'NIFTY_FIN_SERVICE.NS',
   'NIFTYFINSERVICE': 'NIFTY_FIN_SERVICE.NS',
-  'MIDCPNIFTY': 'NIFTY_MID_SELECT.NS',
-  'NIFTY MIDCAP SELECT': 'NIFTY_MID_SELECT.NS',
+  'MIDCPNIFTY': '^NSEMDCP50',
+  'NIFTY MIDCAP SELECT': '^NSEMDCP50',
+  'NIFTYMIDSELECT': '^NSEMDCP50',
   'BANKEX': 'BSE-BANK.BO',
   'BSE BANKEX': 'BSE-BANK.BO',
   'INDIA VIX': '^INDIAVIX',
@@ -102,22 +105,37 @@ function getIntervalSeconds(timeframe: string): number {
     case '1D': return 86400;
     case '1W': return 604800;
     case '1M': return 2592000;
-    default: return 3600;
+    default: return 86400;
   }
 }
 
-function getYahooParams(timeframe: string): { interval: string; range: string; aggregate4H?: boolean } {
+function getYahooParams(timeframe: string, rangeOverride?: string | null): { interval: string; range: string; aggregate4H?: boolean } {
+  if (rangeOverride) {
+    switch (timeframe) {
+      case '1m': return { interval: '1m', range: rangeOverride };
+      case '5m': return { interval: '5m', range: rangeOverride };
+      case '15m': return { interval: '15m', range: rangeOverride };
+      case '30m': return { interval: '30m', range: rangeOverride };
+      case '1H': return { interval: '1h', range: rangeOverride };
+      case '4H': return { interval: '1h', range: rangeOverride, aggregate4H: true };
+      case '1D': return { interval: '1d', range: rangeOverride };
+      case '1W': return { interval: '1wk', range: rangeOverride };
+      case '1M': return { interval: '1mo', range: rangeOverride };
+      default: return { interval: '1d', range: rangeOverride };
+    }
+  }
+
   switch (timeframe) {
     case '1m': return { interval: '1m', range: '5d' };
     case '5m': return { interval: '5m', range: '5d' };
     case '15m': return { interval: '15m', range: '5d' };
     case '30m': return { interval: '30m', range: '1mo' };
-    case '1H': return { interval: '1h', range: '3mo' };
-    case '4H': return { interval: '1h', range: '6mo', aggregate4H: true };
-    case '1D': return { interval: '1d', range: '1y' };
-    case '1W': return { interval: '1wk', range: '5y' };
-    case '1M': return { interval: '1mo', range: '10y' };
-    default: return { interval: '1h', range: '3mo' };
+    case '1H': return { interval: '1h', range: '730d' }; // 2-year deep hourly history (Yahoo maximum limit for 1h)
+    case '4H': return { interval: '1h', range: '730d', aggregate4H: true };
+    case '1D': return { interval: '1d', range: '5y' };   // Full 5 years of daily bars (~1,260-1,827 candles)
+    case '1W': return { interval: '1wk', range: '5y' };  // Full 5 years of weekly bars (~260 candles)
+    case '1M': return { interval: '1mo', range: '5y' };  // Full 5 years of monthly bars (~60 candles)
+    default: return { interval: '1d', range: '5y' };
   }
 }
 
@@ -155,8 +173,23 @@ function isArtificialLinearStaircase(candles: Candle[]): boolean {
   return matchingDeltas >= 4;
 }
 
+/** Loads pre-computed 5-year daily historical candle cache from disk */
+function loadPrecomputed5YrHistory(cleanSym: string): Candle[] | null {
+  try {
+    const filePath = path.join(process.cwd(), 'public', 'data', 'history-5y', `${cleanSym}.json`);
+    if (fs.existsSync(filePath)) {
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return null;
+}
+
 /** Fetches authentic exchange historical candlestick data from Yahoo Finance */
-async function fetchYahooFinanceCandles(symbol: string, timeframe: string, market: MarketType): Promise<Candle[] | null> {
+async function fetchYahooFinanceCandles(symbol: string, timeframe: string, market: MarketType, rangeOverride?: string | null): Promise<Candle[] | null> {
   const cleanSym = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
   let yahooSym = YAHOO_GLOBAL_MAP[cleanSym] || YAHOO_GLOBAL_MAP[symbol.toUpperCase()];
 
@@ -172,14 +205,14 @@ async function fetchYahooFinanceCandles(symbol: string, timeframe: string, marke
     }
   }
 
-  const { interval, range, aggregate4H } = getYahooParams(timeframe);
+  const { interval, range, aggregate4H } = getYahooParams(timeframe, rangeOverride);
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=${interval}&range=${range}`;
 
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
       cache: 'no-store',
-      signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(3500) : undefined,
+      signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(4500) : undefined,
     });
     if (!res.ok) return null;
 
@@ -255,6 +288,7 @@ export async function GET(req: NextRequest) {
   const rawSymbol = searchParams.get('symbol') || 'NIFTY';
   const symbol = rawSymbol.toUpperCase().trim();
   const timeframe = searchParams.get('timeframe') || '1H';
+  const rangeParam = searchParams.get('range');
   const cleanSym = symbol.replace(/[\s\/-]+/g, '');
 
   let market: MarketType = 'INDIA';
@@ -264,8 +298,28 @@ export async function GET(req: NextRequest) {
     market = 'UAE';
   }
 
-  // 1. Try Twelve Data first for US Equities, Forex, Commodities, and Crypto
-  if (USA_SYMBOLS.has(cleanSym) || COMMODITY_FOREX_SYMBOLS.has(cleanSym) || CRYPTO_SYMBOLS.has(cleanSym)) {
+  const isMultiDayOr5Y = rangeParam === '5y' || timeframe === '1D' || timeframe === '1W' || timeframe === '1M';
+
+  // 1. If 5Y range or multi-day timeframe requested, or for Indian market, fetch deep authentic history from Yahoo Finance
+  if (isMultiDayOr5Y || market === 'INDIA') {
+    try {
+      const yahooCandles = await fetchYahooFinanceCandles(symbol, timeframe, market, rangeParam);
+      if (yahooCandles && yahooCandles.length > 0 && !isArtificialLinearStaircase(yahooCandles)) {
+        return NextResponse.json(yahooCandles);
+      }
+    } catch (_yErr) {}
+
+    // Instant offline fallback to pre-computed 5-year historical dataset on disk
+    if (timeframe === '1D' || rangeParam === '5y') {
+      const precomputed = loadPrecomputed5YrHistory(cleanSym);
+      if (precomputed && precomputed.length > 0) {
+        return NextResponse.json(precomputed);
+      }
+    }
+  }
+
+  // 2. Try Twelve Data for intraday US Equities, Forex, Commodities, and Crypto
+  if (!isMultiDayOr5Y && (USA_SYMBOLS.has(cleanSym) || COMMODITY_FOREX_SYMBOLS.has(cleanSym) || CRYPTO_SYMBOLS.has(cleanSym))) {
     try {
       const tdCandles = await fetchTwelveDataCandles(symbol, timeframe, 120);
       if (tdCandles && tdCandles.length > 0) {
@@ -280,9 +334,9 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 2. Fetch authentic exchange candles from Yahoo Finance (High-frequency primary for Indian market, resilient secondary for US/Crypto/Commodities)
+  // 3. Resilient fallback to Yahoo Finance for any remaining symbols
   try {
-    const yahooCandles = await fetchYahooFinanceCandles(symbol, timeframe, market);
+    const yahooCandles = await fetchYahooFinanceCandles(symbol, timeframe, market, rangeParam);
     if (yahooCandles && yahooCandles.length > 0 && !isArtificialLinearStaircase(yahooCandles)) {
       return NextResponse.json(yahooCandles);
     }
@@ -290,7 +344,7 @@ export async function GET(req: NextRequest) {
     // Fall through to trade engine
   }
 
-  // 3. Try GCP Trade Engine for Indian stocks & Kite indices (Guarded with strict linear staircase rejection)
+  // 4. Try GCP Trade Engine for Indian stocks & Kite indices (Guarded with strict linear staircase rejection)
   if (market === 'INDIA') {
     try {
       const gcpQuerySym = (cleanSym === 'NIFTY' || cleanSym === 'NIFTY50') ? 'NIFTY 50' : symbol;
@@ -310,7 +364,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 4. Calibrated realistic candles anchored precisely to authentic market price
+  // 5. Calibrated realistic candles anchored precisely to authentic market price
   const candles = getMockCandles(market, symbol, timeframe, 800);
   if (candles.length > 0 && isMarketOpen('INDIA')) {
     const yahooSym = YAHOO_GLOBAL_MAP[cleanSym] || YAHOO_GLOBAL_MAP[symbol] || (cleanSym.includes('.') ? cleanSym : `${cleanSym}.NS`);
