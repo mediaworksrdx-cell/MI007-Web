@@ -917,6 +917,10 @@ export function ChartContainer({
         // 2. Fetch latest candles from Trade Engine API
         const rawEngine = await fetchCandles(selectedSymbol, timeframe);
         let cleanEngine = validateAndCleanCandles(rawEngine || [], timeframe).filter(c => c.openTime <= Date.now() + 300_000);
+        if (isArtificialLinearStaircase(cleanEngine)) {
+          console.warn(`[ChartContainer] Auto-rejecting artificial staircase from engine for ${selectedSymbol}`);
+          cleanEngine = [];
+        }
 
         // Universal scale reconciliation across all markets (Forex, Commodities, Indices, Stocks):
         if (expectedPrice > 0 && cleanEngine.length > 0) {
@@ -1002,14 +1006,7 @@ export function ChartContainer({
             setCandles(cPrev => {
               const rescaled = rescaleCandleArray(cPrev, ratio, live.price);
               if (rescaled.length > 0) {
-                const lastIdx = rescaled.length - 1;
-                rescaled[lastIdx] = {
-                  ...rescaled[lastIdx],
-                  open: live.price,
-                  high: live.price,
-                  low: live.price,
-                  close: live.price,
-                };
+                rescaled[rescaled.length - 1].close = live.price;
               }
               return rescaled;
             });
@@ -1044,14 +1041,7 @@ export function ChartContainer({
             const ratio = tick.price / currentLast.close;
             const rescaled = rescaleCandleArray(prev, ratio, tick.price);
             if (rescaled.length > 0) {
-              const lastIdx = rescaled.length - 1;
-              rescaled[lastIdx] = {
-                ...rescaled[lastIdx],
-                open: tick.price,
-                high: tick.price,
-                low: tick.price,
-                close: tick.price,
-              };
+              rescaled[rescaled.length - 1].close = tick.price;
             }
             return rescaled;
           }

@@ -54,6 +54,14 @@ export interface ConsolidatedSweep {
   time?: number;
 }
 
+export interface ExclusionZone {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  reason?: string;
+}
+
 export interface InteractiveZone {
   id: string;
   type: 'OB' | 'BREAKER' | 'FVG' | 'IFVG' | 'DEALING_RANGE';
@@ -70,6 +78,7 @@ export class SmartAnnotationManager {
   private placedLabels: AnnotationBox[] = [];
   private priceBadges: PriceAxisBadge[] = [];
   private interactiveZones: InteractiveZone[] = [];
+  private exclusionZones: ExclusionZone[] = [];
   private dpr: number = 1;
 
   constructor(dpr: number = 1) {
@@ -80,7 +89,13 @@ export class SmartAnnotationManager {
     this.placedLabels = [];
     this.priceBadges = [];
     this.interactiveZones = [];
+    this.exclusionZones = [];
     this.dpr = dpr;
+  }
+
+  /** Registers a protected area where no annotations or text badges may be placed (e.g. current candle, live price marker) */
+  public addExclusionZone(zone: ExclusionZone): void {
+    this.exclusionZones.push(zone);
   }
 
   // ── 1. Label Collision Detection & Nudging ──────────────────────────────────
@@ -90,6 +105,15 @@ export class SmartAnnotationManager {
     const bRight = box.x + box.w + pad;
     const bTop = box.y - pad;
     const bBottom = box.y + box.h + pad;
+
+    // Check against absolute exclusion zones first (e.g. current candle wicks/body)
+    for (const ez of this.exclusionZones) {
+      const ezOverlapX = bLeft < ez.x2 && bRight > ez.x1;
+      const ezOverlapY = bTop < ez.y2 && bBottom > ez.y1;
+      if (ezOverlapX && ezOverlapY) {
+        return false;
+      }
+    }
 
     for (const p of this.placedLabels) {
       const pLeft = p.x;
@@ -172,19 +196,46 @@ export class SmartAnnotationManager {
   public layoutPriceBadges(
     minY: number,
     maxY: number,
-    badgeH: number = 14
+    badgeH: number = 14,
+    currentPriceY?: number,
+    maxBadges: number = 4
   ): PriceAxisBadge[] {
     if (this.priceBadges.length === 0) return [];
 
     const bh = badgeH * this.dpr;
-    const minGap = bh + 2 * this.dpr;
+    const minGap = bh + 3 * this.dpr;
+    const livePriceProtectionGap = 16 * this.dpr;
 
-    // Sort by desired original Y coordinate ascending
-    const sorted = [...this.priceBadges].sort((a, b) => a.originalY - b.originalY);
+    // Filter out badges that collide with the current live price beacon
+    let candidates = this.priceBadges.filter(b => {
+      if (currentPriceY != null && currentPriceY > 0) {
+        if (Math.abs(b.originalY - currentPriceY) < livePriceProtectionGap) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    // Sort by priority descending and cap at maxBadges
+    candidates.sort((a, b) => b.priority - a.priority);
+    candidates = candidates.slice(0, maxBadges);
+
+    // Sort by desired original Y coordinate ascending for layout
+    const sorted = [...candidates].sort((a, b) => a.originalY - b.originalY);
     const resolved: PriceAxisBadge[] = [];
 
     for (const b of sorted) {
       let targetY = Math.max(minY, Math.min(maxY - bh, b.originalY));
+
+      if (currentPriceY != null && currentPriceY > 0) {
+        if (Math.abs(targetY - currentPriceY) < livePriceProtectionGap) {
+          if (targetY < currentPriceY) {
+            targetY = currentPriceY - livePriceProtectionGap - bh;
+          } else {
+            targetY = currentPriceY + livePriceProtectionGap;
+          }
+        }
+      }
 
       if (resolved.length > 0) {
         const last = resolved[resolved.length - 1];
@@ -193,24 +244,10 @@ export class SmartAnnotationManager {
         }
       }
 
-      if (targetY <= maxY - bh) {
+      if (targetY >= minY && targetY <= maxY - bh) {
         resolved.push({
           ...b,
           y: targetY,
-        });
-      } else if (b.priority >= 80) {
-        // High priority badge: push earlier items upwards if space permits
-        let overflow = targetY - (maxY - bh);
-        for (let i = resolved.length - 1; i >= 0 && overflow > 0; i--) {
-          const shift = Math.min(overflow, resolved[i].y - (i === 0 ? minY : resolved[i - 1].y + minGap));
-          if (shift > 0) {
-            resolved[i].y -= shift;
-            overflow -= shift;
-          }
-        }
-        resolved.push({
-          ...b,
-          y: Math.min(maxY - bh, targetY),
         });
       }
     }
@@ -257,13 +294,27 @@ export class SmartAnnotationManager {
     return groups.map((grp) => {
       const avgPrice = grp.reduce((sum, l) => sum + l.price, 0) / grp.length;
       const count = grp.length;
-      const primaryType = grp[0].type;
+      const hasEqh = grp.some(l => l.type === 'EQH');
+      const hasBsl = grp.some(l => l.type === 'BSL');
+      const hasEql = grp.some(l => l.type === 'EQL');
+      const hasSsl = grp.some(l => l.type === 'SSL');
+
+      let primaryType: 'BSL' | 'SSL' | 'EQH' | 'EQL' = grp[0].type;
+      let baseLabel: string = primaryType;
+
+      if (hasEqh && hasBsl) {
+        primaryType = 'BSL';
+        baseLabel = count > 2 ? `BSL / EQH (x${count})` : 'BSL / EQH';
+      } else if (hasEql && hasSsl) {
+        primaryType = 'SSL';
+        baseLabel = count > 2 ? `SSL / EQL (x${count})` : 'SSL / EQL';
+      } else if (count > 1) {
+        baseLabel = `${primaryType} (x${count})`;
+      } else {
+        baseLabel = grp[0].label || primaryType;
+      }
+
       const allSwept = grp.every(l => l.isSwept);
-
-      const baseLabel = count > 1
-        ? `${primaryType} (x${count})`
-        : grp[0].label || primaryType;
-
       const allCandleIndices = Array.from(new Set(grp.flatMap(l => l.candleIndices || [])));
 
       return {

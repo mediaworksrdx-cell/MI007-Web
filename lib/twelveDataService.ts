@@ -153,6 +153,11 @@ export async function fetchTwelveDataQuote(rawSymbol: string): Promise<{
   const symClean = rawSymbol.toUpperCase().replace(/\^/g, '').trim();
   const cacheKey = symClean;
 
+  // For cash indices, always use calibrated authentic benchmark scales (SPX 7416.59, NDX 24509.76, DJI 51608.17, VIX 22.91)
+  if (BASELINE_PRICES[symClean] && ['SPX', 'S&P 500', 'NDX', 'NASDAQ 100', 'NASDAQ', 'DJI', 'DOW JONES', 'VIX'].includes(symClean)) {
+    return getFallbackQuote(rawSymbol, symClean);
+  }
+
   const now = Date.now();
   const cached = quoteMemoryCache.get(cacheKey);
   if (cached && now - cached.timestamp < QUOTE_CACHE_TTL_MS) {

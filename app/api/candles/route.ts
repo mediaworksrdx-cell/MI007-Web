@@ -130,8 +130,8 @@ function getYahooParams(timeframe: string, rangeOverride?: string | null): { int
     case '5m': return { interval: '5m', range: '5d' };
     case '15m': return { interval: '15m', range: '5d' };
     case '30m': return { interval: '30m', range: '1mo' };
-    case '1H': return { interval: '1h', range: '730d' }; // 2-year deep hourly history (Yahoo maximum limit for 1h)
-    case '4H': return { interval: '1h', range: '730d', aggregate4H: true };
+    case '1H': return { interval: '1h', range: '60d' };  // 60-day deep hourly history (~420-1,440 candles, fast response)
+    case '4H': return { interval: '1h', range: '60d', aggregate4H: true };
     case '1D': return { interval: '1d', range: '5y' };   // Full 5 years of daily bars (~1,260-1,827 candles)
     case '1W': return { interval: '1wk', range: '5y' };  // Full 5 years of weekly bars (~260 candles)
     case '1M': return { interval: '1mo', range: '5y' };  // Full 5 years of monthly bars (~60 candles)
@@ -366,10 +366,10 @@ export async function GET(req: NextRequest) {
 
   // 5. Calibrated realistic candles anchored precisely to authentic market price
   const candles = getMockCandles(market, symbol, timeframe, 800);
-  if (candles.length > 0 && isMarketOpen('INDIA')) {
+  if (candles.length > 0) {
     const yahooSym = YAHOO_GLOBAL_MAP[cleanSym] || YAHOO_GLOBAL_MAP[symbol] || (cleanSym.includes('.') ? cleanSym : `${cleanSym}.NS`);
     try {
-      const yRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1m`, {
+      const yRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1m&range=5d`, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         cache: 'no-store',
         signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(1800) : undefined,
@@ -380,9 +380,16 @@ export async function GET(req: NextRequest) {
         if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
           const ltp = meta.regularMarketPrice;
           const last = candles[candles.length - 1];
-          last.close = ltp;
-          last.high = Math.max(last.high, ltp);
-          last.low = Math.min(last.low, ltp);
+          if (last && last.close > 0 && Math.abs(last.close - ltp) > 0.001) {
+            const scale = ltp / last.close;
+            for (let j = 0; j < candles.length; j++) {
+              candles[j].open = +(candles[j].open * scale).toFixed(2);
+              candles[j].high = +(candles[j].high * scale).toFixed(2);
+              candles[j].low = +(candles[j].low * scale).toFixed(2);
+              candles[j].close = +(candles[j].close * scale).toFixed(2);
+            }
+          }
+          candles[candles.length - 1].close = ltp;
         }
       }
     } catch (_yErr) {

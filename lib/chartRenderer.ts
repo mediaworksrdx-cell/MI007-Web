@@ -1165,6 +1165,30 @@ export function renderChart(
     const enableHistoricalFading = smcCfg.enableHistoricalFading !== false;
     const enableCollisionControl = smcCfg.enableCollisionControl !== false;
     const lastBarIdx = candles.length - 1;
+    const lastCandleIdx = Math.min(endIdx - 1, candles.length - 1);
+    const lastCandleX = (lastCandleIdx - startIdx) * candleW + candleW / 2;
+    const curPrice = options.currentPriceOverride && options.currentPriceOverride > 0
+      ? options.currentPriceOverride
+      : (candles[candles.length - 1]?.close ?? 0);
+    const curPriceY = curPrice > 0 ? priceToY(curPrice) : -999;
+
+    // Register protected zones: Current active forming candle & Live price axis beacon
+    sam.addExclusionZone({
+      x1: lastCandleX - candleW * 1.5,
+      y1: 0,
+      x2: chartW,
+      y2: chartH,
+      reason: 'Current Forming Candle & Live Action',
+    });
+    if (curPriceY > 0) {
+      sam.addExclusionZone({
+        x1: chartW - 85 * dpr,
+        y1: curPriceY - 18 * dpr,
+        x2: chartW,
+        y2: curPriceY + 18 * dpr,
+        reason: 'Live Price Beacon',
+      });
+    }
 
     // 1. Premium & Discount Zones (Dealing Range)
     const dr = smcData.dealingRange;
@@ -1212,21 +1236,23 @@ export function renderChart(
         ctx.fillText(dBadge, chartW - 9 * dpr, yLow - 3 * dpr - dbh / 2);
       }
 
-      // Subtle dashed range boundaries at High and Low
-      ctx.setLineDash([4 * dpr, 4 * dpr]);
-      ctx.lineWidth = 0.8 * dpr;
-      ctx.strokeStyle = 'rgba(244, 63, 94, 0.35)';
-      ctx.beginPath();
-      ctx.moveTo(0, yHigh);
-      ctx.lineTo(chartW, yHigh);
-      ctx.stroke();
+      // Range boundaries: stroked only in non-clean modes to eliminate horizontal line clutter
+      if (!isCleanMode) {
+        ctx.setLineDash([4 * dpr, 4 * dpr]);
+        ctx.lineWidth = 0.8 * dpr;
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.25)';
+        ctx.beginPath();
+        ctx.moveTo(0, yHigh);
+        ctx.lineTo(chartW, yHigh);
+        ctx.stroke();
 
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
-      ctx.beginPath();
-      ctx.moveTo(0, yLow);
-      ctx.lineTo(chartW, yLow);
-      ctx.stroke();
-      ctx.setLineDash([]);
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
+        ctx.beginPath();
+        ctx.moveTo(0, yLow);
+        ctx.lineTo(chartW, yLow);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
       ctx.restore();
     }
 
@@ -1239,20 +1265,22 @@ export function renderChart(
         const yOte2 = priceToY(dr.discountOteRange[1]);
         const oteTop = Math.max(0, Math.min(chartH - 2 * dpr, Math.min(yOte1, yOte2)));
         const oteH = Math.max(Math.abs(yOte1 - yOte2), 2 * dpr);
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.035)';
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.025)';
         ctx.fillRect(0, oteTop, chartW, oteH);
-        ctx.setLineDash([3 * dpr, 3 * dpr]);
-        ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
-        ctx.lineWidth = 0.8 * dpr;
-        ctx.beginPath();
-        ctx.moveTo(0, oteTop);
-        ctx.lineTo(chartW, oteTop);
-        ctx.moveTo(0, oteTop + oteH);
-        ctx.lineTo(chartW, oteTop + oteH);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        if (!isCleanMode) {
+          ctx.setLineDash([3 * dpr, 3 * dpr]);
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
+          ctx.lineWidth = 0.8 * dpr;
+          ctx.beginPath();
+          ctx.moveTo(0, oteTop);
+          ctx.lineTo(chartW, oteTop);
+          ctx.moveTo(0, oteTop + oteH);
+          ctx.lineTo(chartW, oteTop + oteH);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
         ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = 'rgba(5, 150, 105, 0.85)';
+        ctx.fillStyle = 'rgba(5, 150, 105, 0.75)';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(`OTE [61.8% - 78.6%]`, 8 * dpr, oteTop + oteH / 2);
@@ -1266,20 +1294,22 @@ export function renderChart(
           const yOte2 = priceToY(premOte[1]);
           const oteTop = Math.max(0, Math.min(chartH - 2 * dpr, Math.min(yOte1, yOte2)));
           const oteH = Math.max(Math.abs(yOte1 - yOte2), 2 * dpr);
-          ctx.fillStyle = 'rgba(244, 63, 94, 0.035)';
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.025)';
           ctx.fillRect(0, oteTop, chartW, oteH);
-          ctx.setLineDash([3 * dpr, 3 * dpr]);
-          ctx.strokeStyle = 'rgba(244, 63, 94, 0.35)';
-          ctx.lineWidth = 0.8 * dpr;
-          ctx.beginPath();
-          ctx.moveTo(0, oteTop);
-          ctx.lineTo(chartW, oteTop);
-          ctx.moveTo(0, oteTop + oteH);
-          ctx.lineTo(chartW, oteTop + oteH);
-          ctx.stroke();
-          ctx.setLineDash([]);
+          if (!isCleanMode) {
+            ctx.setLineDash([3 * dpr, 3 * dpr]);
+            ctx.strokeStyle = 'rgba(244, 63, 94, 0.25)';
+            ctx.lineWidth = 0.8 * dpr;
+            ctx.beginPath();
+            ctx.moveTo(0, oteTop);
+            ctx.lineTo(chartW, oteTop);
+            ctx.moveTo(0, oteTop + oteH);
+            ctx.lineTo(chartW, oteTop + oteH);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
           ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-          ctx.fillStyle = 'rgba(225, 29, 72, 0.85)';
+          ctx.fillStyle = 'rgba(225, 29, 72, 0.75)';
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
           ctx.fillText(`OTE [61.8% - 78.6%]`, 8 * dpr, oteTop + oteH / 2);
@@ -1291,13 +1321,14 @@ export function renderChart(
     // 2. Equilibrium Midline (EQ 50% — Golden Dash) — Strictly neutral context
     if (smcCfg.showEquilibrium && smcData.equilibriumPrice > 0 && smcData.equilibriumPrice >= pMin && smcData.equilibriumPrice <= pMax) {
       const eqY = priceToY(smcData.equilibriumPrice);
+      const eqStopX = isCleanMode ? Math.min(chartW - 65 * dpr, lastCandleX - 16 * dpr) : chartW;
       ctx.save();
       ctx.setLineDash([6 * dpr, 4 * dpr]);
-      ctx.strokeStyle = 'rgba(217, 119, 6, 0.65)';
-      ctx.lineWidth = 1 * dpr;
+      ctx.strokeStyle = isCleanMode ? 'rgba(217, 119, 6, 0.25)' : 'rgba(217, 119, 6, 0.50)';
+      ctx.lineWidth = 0.8 * dpr;
       ctx.beginPath();
       ctx.moveTo(0, eqY);
-      ctx.lineTo(chartW, eqY);
+      ctx.lineTo(eqStopX, eqY);
       ctx.stroke();
       ctx.setLineDash([]);
 
@@ -1308,9 +1339,9 @@ export function renderChart(
       const tw = tm.width + 8 * dpr;
       const th = 13 * dpr;
 
-      ctx.fillStyle = 'rgba(217, 119, 6, 0.15)';
+      ctx.fillStyle = 'rgba(217, 119, 6, 0.12)';
       ctx.fillRect(8 * dpr, eqY - th - 2 * dpr, tw, th);
-      ctx.strokeStyle = 'rgba(217, 119, 6, 0.50)';
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
       ctx.lineWidth = 0.8 * dpr;
       ctx.strokeRect(8 * dpr, eqY - th - 2 * dpr, tw, th);
 
@@ -1473,16 +1504,18 @@ export function renderChart(
     const allCandidateDemand = (showDemandBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
     const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 1 : Math.max(2, baseQuota));
-    const mitigatedDemand = smcCfg.showMitigatedOb
-      ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, isCleanMode ? 1 : mitigatedQuota)
+    // In Clean Mode, mitigated order blocks are strictly hidden to ensure zero chart clutter
+    const mitigatedDemand = (smcCfg.showMitigatedOb && !isCleanMode)
+      ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, mitigatedQuota)
       : [];
     const demandBlocks = [...unmitigatedDemand, ...mitigatedDemand];
 
     const allCandidateSupply = (showSupplyBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && !ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
     const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 1 : Math.max(2, baseQuota));
-    const mitigatedSupply = smcCfg.showMitigatedOb
-      ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, isCleanMode ? 1 : mitigatedQuota)
+    // In Clean Mode, mitigated order blocks are strictly hidden
+    const mitigatedSupply = (smcCfg.showMitigatedOb && !isCleanMode)
+      ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, mitigatedQuota)
       : [];
     const supplyBlocks = [...unmitigatedSupply, ...mitigatedSupply];
 
@@ -1496,7 +1529,7 @@ export function renderChart(
         if (smcCfg.showBearishBreakers === false) return false;
         if (!smcCfg.showBearishBreakers && !smcCfg.showBreakers) return false;
       }
-      if (brk.isMitigated && !smcCfg.showMitigatedOb) return false;
+      if (brk.isMitigated && (isCleanMode || !smcCfg.showMitigatedOb)) return false;
       if (brk.startIndex > endIdx) return false;
       if (brk.isMitigated && brk.endIndex < startIdx) return false;
       return true;
@@ -1511,15 +1544,17 @@ export function renderChart(
       const rawLs = ob.startIndex - startIdx;
       const ls = Math.max(0, rawLs);
       let le: number;
+      let rx: number;
       if (ob.isMitigated) {
         le = Math.min(visCnt, Math.max(ls, ob.endIndex - startIdx));
+        rx = le * candleW + candleW;
       } else {
-        // Active unmitigated zone extends cleanly to the live current candle
+        // Active unmitigated zone stops cleanly BEFORE the current forming candle
         le = Math.min(visCnt, Math.max(ls, (candles.length - 1) - startIdx));
+        rx = Math.min(chartW - 55 * dpr, le * candleW - 4 * dpr);
       }
       const lx = ls * candleW;
-      const rx = le * candleW + candleW;
-      const bw = Math.max(rx - lx, candleW * 1.5);
+      const bw = Math.max(candleW * 1.5, rx - lx);
       const yT = priceToY(ob.topPrice);
       const yB = priceToY(ob.bottomPrice);
       const bTop = Math.min(yT, yB);
@@ -1586,7 +1621,7 @@ export function renderChart(
       const baseTag = ob.isBreaker
         ? (ob.isBullish ? '+BRK' : '-BRK')
         : (ob.isBullish ? '+OB' : '-OB');
-      const priceSpan = `₹${formatPrice(ob.bottomPrice)} - ₹${formatPrice(ob.topPrice)}`;
+      const priceSpan = `${formatPrice(ob.bottomPrice)} - ${formatPrice(ob.topPrice)}`;
       const text = bw > 90 * dpr ? `${baseTag} · ${priceSpan}` : baseTag;
 
       ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
@@ -1630,10 +1665,11 @@ export function renderChart(
 
     // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG) — Dedicated Quota Pools & High Visibility
     const fvgBaseQuota = isTargetedMode ? 1 : (isCleanMode ? 1 : Math.max(2, Math.floor((smcCfg.maxVisibleZones || 6) / 2)));
-    const fvgMitigatedQuota = smcCfg.showMitigatedFvg ? (isCleanMode ? 1 : 2) : 0;
+    const fvgMitigatedQuota = (smcCfg.showMitigatedFvg && !isCleanMode) ? 2 : 0;
 
     const inWindowFvgs = smcData.fvgs.filter((fvg) => {
       if (fvg.isInverse) {
+        if (isCleanMode) return false; // IFVGs hidden by default in clean mode
         if (fvg.isBullish && smcCfg.showBullishIfvg === false) return false;
         if (!fvg.isBullish && smcCfg.showBearishIfvg === false) return false;
         if (!smcCfg.showBullishIfvg && !smcCfg.showBearishIfvg) return false;
@@ -1641,8 +1677,8 @@ export function renderChart(
       } else {
         if (fvg.isBullish && smcCfg.showBullishFvg === false) return false;
         if (!fvg.isBullish && smcCfg.showBearishFvg === false) return false;
-        if (fvg.isMitigated && !smcCfg.showMitigatedFvg) return false;
-        if (fvg.isInvalidated && !smcCfg.showMitigatedFvg) return false;
+        if (fvg.isMitigated && (isCleanMode || !smcCfg.showMitigatedFvg)) return false;
+        if (fvg.isInvalidated && (isCleanMode || !smcCfg.showMitigatedFvg)) return false;
       }
       if (fvg.startIndex > endIdx) return false;
       const isMit = fvg.isMitigated || fvg.isInvalidated;
@@ -1653,7 +1689,7 @@ export function renderChart(
     const getFvgGroup = (filterFn: (f: SmcFvg) => boolean) => {
       const candidates = inWindowFvgs.filter(filterFn);
       const unmit = sortZonesByProximity(candidates.filter(f => !f.isMitigated && !f.isInvalidated)).slice(0, fvgBaseQuota);
-      const mit = smcCfg.showMitigatedFvg
+      const mit = (smcCfg.showMitigatedFvg && !isCleanMode)
         ? sortZonesByProximity(candidates.filter(f => (f.isMitigated || f.isInvalidated) && f.endIndex >= startIdx)).slice(0, Math.max(1, fvgMitigatedQuota))
         : [];
       return [...unmit, ...mit];
@@ -1661,8 +1697,8 @@ export function renderChart(
 
     const bullishFvgs = getFvgGroup((f) => f.isBullish && !f.isInverse);
     const bearishFvgs = getFvgGroup((f) => !f.isBullish && !f.isInverse);
-    const bullishIfvgs = getFvgGroup((f) => f.isBullish && Boolean(f.isInverse));
-    const bearishIfvgs = getFvgGroup((f) => !f.isBullish && Boolean(f.isInverse));
+    const bullishIfvgs = isCleanMode ? [] : getFvgGroup((f) => f.isBullish && Boolean(f.isInverse));
+    const bearishIfvgs = isCleanMode ? [] : getFvgGroup((f) => !f.isBullish && Boolean(f.isInverse));
 
     const fvgsToRender = [...bullishFvgs, ...bearishFvgs, ...bullishIfvgs, ...bearishIfvgs];
 
@@ -1671,15 +1707,17 @@ export function renderChart(
       const rawLs = fvg.startIndex - startIdx;
       const ls = Math.max(0, rawLs);
       let le: number;
+      let rx: number;
       if (isMit) {
         le = Math.min(visCnt, Math.max(ls, fvg.endIndex - startIdx));
+        rx = le * candleW + candleW;
       } else {
-        // Active unmitigated FVG extends cleanly to the live current candle
+        // Active unmitigated FVG stops cleanly BEFORE the current forming candle
         le = Math.min(visCnt, Math.max(ls, (candles.length - 1) - startIdx));
+        rx = Math.min(chartW - 55 * dpr, le * candleW - 4 * dpr);
       }
       const lx = ls * candleW;
-      const rx = le * candleW + candleW;
-      const bw = Math.max(rx - lx, candleW * 1.5);
+      const bw = Math.max(candleW * 1.5, rx - lx);
       const yT = priceToY(fvg.topPrice);
       const yB = priceToY(fvg.bottomPrice);
       const bTop = Math.min(yT, yB);
@@ -1796,8 +1834,8 @@ export function renderChart(
       return true;
     });
 
-    // In Clean mode: maximum 3 structure breaks in the entire viewport
-    const maxBreaks = isCleanMode ? 3 : 8;
+    // In Clean mode: maximum 2 major structure breaks in the entire viewport (zero line clutter)
+    const maxBreaks = isCleanMode ? 2 : 6;
     const breaksToRender = inWindowBreaks.slice(-maxBreaks);
 
     for (let sbi = 0; sbi < breaksToRender.length; sbi++) {
@@ -1807,10 +1845,11 @@ export function renderChart(
       const y = Math.max(14 * dpr, Math.min(chartH - 14 * dpr, priceToY(sb.price)));
       const color = sb.isBullish ? '#059669' : '#DC2626';
 
-      // Start at the broken swing point; terminate at breakout candle
+      // Start at the broken swing point (bounded to recent bars in clean mode); terminate STRICTLY at breakout candle
       const rawX1 = (sb.swingIndex - startIdx) * candleW + candleW / 2;
       const rawX2 = (sb.candleIndex - startIdx) * candleW + candleW / 2;
-      const x1 = Math.max(0, Math.min(chartW, rawX1));
+      const startX = isCleanMode ? Math.max(rawX1, rawX2 - 10 * candleW) : rawX1;
+      const x1 = Math.max(0, Math.min(chartW, startX));
       const x2 = Math.max(0, Math.min(chartW, rawX2));
 
       // Age-dependent historical fading
@@ -1897,22 +1936,25 @@ export function renderChart(
       ctx.restore();
     }
 
-    // 7. Liquidity Levels (BSL, SSL) — Consolidated & Anchored
+    // 7. Liquidity Levels (BSL, SSL, EQH, EQL) — Consolidated & Collision-Safe
     if (smcCfg.showLiquidityLevels && smcData.liquidityLevels) {
       const rawLevels = smcData.liquidityLevels.filter((lvl) => {
-        if (lvl.type === 'EQH' || lvl.type === 'EQL') return false;
+        if (isCleanMode && (lvl.type === 'EQH' || lvl.type === 'EQL')) {
+          // In clean mode, merge EQH/EQL into unified BSL/SSL clusters below
+          return true;
+        }
         if (isCleanMode && lvl.isSwept) return false;
-        return true;
+        return lvl.type !== 'EQH' && lvl.type !== 'EQL';
       });
 
-      // Consolidate nearby levels into unified zones (e.g. BSL x2)
-      const consolidated = sam.consolidateLiquidityLevels(rawLevels, lastPrice, 0.0025);
+      // Consolidate nearby levels into unified clusters (e.g. BSL / EQH)
+      const consolidated = sam.consolidateLiquidityLevels(rawLevels, lastPrice, isCleanMode ? 0.0035 : 0.0025);
       const bslLevels = consolidated
-        .filter((l) => l.type === 'BSL' && l.price >= lastPrice && isBearishMaster)
+        .filter((l) => (l.type === 'BSL' || l.type === 'EQH') && l.price >= lastPrice && isBearishMaster)
         .sort((a, b) => a.price - b.price)
         .slice(0, isCleanMode ? 1 : 3);
       const sslLevels = consolidated
-        .filter((l) => l.type === 'SSL' && l.price <= lastPrice && isBullishMaster)
+        .filter((l) => (l.type === 'SSL' || l.type === 'EQL') && l.price <= lastPrice && isBullishMaster)
         .sort((a, b) => b.price - a.price)
         .slice(0, isCleanMode ? 1 : 3);
 
@@ -1920,11 +1962,12 @@ export function renderChart(
 
       for (const lvl of levelsToDraw) {
         const y = Math.max(10 * dpr, Math.min(chartH - 10 * dpr, priceToY(lvl.price)));
-        const isHighSide = lvl.type === 'BSL';
+        const isHighSide = lvl.type === 'BSL' || lvl.type === 'EQH';
         const color = isHighSide ? 'rgba(244, 63, 94, 0.85)' : 'rgba(16, 185, 129, 0.85)';
         const originIdx = lvl.candleIndices && lvl.candleIndices.length > 0 ? lvl.candleIndices[0] : startIdx;
         const x1 = Math.max(0, (originIdx - startIdx) * candleW + candleW / 2);
-        const x2 = chartW;
+        // In Clean Mode, stop line before the live candle column (never cuts through active candle)
+        const x2 = isCleanMode ? Math.min(chartW - 65 * dpr, lastCandleX - 16 * dpr) : chartW;
 
         ctx.save();
         if (lvl.isSwept) {
@@ -1939,32 +1982,37 @@ export function renderChart(
         ctx.stroke();
         ctx.setLineDash([]);
 
-        const text = lvl.label;
-        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
-        const tm = ctx.measureText(text);
-        const tw = tm.width + 6 * dpr;
-        const th = 12 * dpr;
+        // Suppress right axis badge if too close to current price beacon
+        const isNearCurrentPrice = curPriceY > 0 && Math.abs(y - curPriceY) < 18 * dpr;
+        if (!isNearCurrentPrice) {
+          const text = lvl.label;
+          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          const tm = ctx.measureText(text);
+          const tw = tm.width + 6 * dpr;
+          const th = 12 * dpr;
 
-        ctx.fillStyle = isHighSide ? 'rgba(244, 63, 94, 0.18)' : 'rgba(16, 185, 129, 0.18)';
-        ctx.fillRect(x2 - tw - 6 * dpr, y - th - 2 * dpr, tw, th);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 0.8 * dpr;
-        ctx.strokeRect(x2 - tw - 6 * dpr, y - th - 2 * dpr, tw, th);
+          const badgeX = isCleanMode ? x2 - tw - 4 * dpr : x2 - tw - 6 * dpr;
+          ctx.fillStyle = isHighSide ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+          ctx.fillRect(badgeX, y - th / 2, tw, th);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 0.8 * dpr;
+          ctx.strokeRect(badgeX, y - th / 2, tw, th);
 
-        ctx.fillStyle = isHighSide ? '#E11D48' : '#059669';
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(text, x2 - 9 * dpr, y - th / 2 - 2 * dpr);
+          ctx.fillStyle = isHighSide ? '#E11D48' : '#059669';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(text, badgeX + tw / 2, y);
+        }
         ctx.restore();
       }
     }
 
-    // 7b. Equal Highs & Equal Lows (EQH / EQL) — Institutional Double Top / Bottom Levels
-    if (smcCfg.showEqualHighLow && smcData.liquidityLevels) {
+    // 7b. Equal Highs & Equal Lows (EQH / EQL) — Handled separately only in non-clean modes
+    if (!isCleanMode && smcCfg.showEqualHighLow && smcData.liquidityLevels) {
       const eqLevels = smcData.liquidityLevels.filter((lvl) => (lvl.type === 'EQH' || lvl.type === 'EQL') && (!lvl.isSwept || smcCfg.showSweeps));
       const consolidatedEq = sam.consolidateLiquidityLevels(eqLevels, lastPrice, 0.0025);
-      const eqhLevels = consolidatedEq.filter((l) => l.type === 'EQH').slice(isCleanMode ? -1 : -2);
-      const eqlLevels = consolidatedEq.filter((l) => l.type === 'EQL').slice(isCleanMode ? -1 : -2);
+      const eqhLevels = consolidatedEq.filter((l) => l.type === 'EQH').slice(-2);
+      const eqlLevels = consolidatedEq.filter((l) => l.type === 'EQL').slice(-2);
       const allEqLevels = [...eqhLevels, ...eqlLevels];
 
       for (const lvl of allEqLevels) {
@@ -2290,6 +2338,11 @@ export function renderChart(
           }
         }
 
+        // In Institutional Clean Mode, hide expired or concluded trades to preserve maximum chart clarity
+        if (isCleanMode && isTradeOver) {
+          continue;
+        }
+
         // If trade concluded prior to the visible viewport start, don't draw it
         if (isTradeOver && endCandleIdx < startIdx) {
           continue;
@@ -2300,7 +2353,7 @@ export function renderChart(
         const lastCandleIdx = Math.min(endIdx - 1, candles.length - 1);
         const currentCandleX = (lastCandleIdx - startIdx) * candleW + candleW / 2;
 
-        const minBracketW = 25 * dpr;
+        const minBracketW = 20 * dpr;
         let x: number;
         let boxW: number;
 
@@ -2311,14 +2364,14 @@ export function renderChart(
           x = Math.max(5 * dpr, rawX);
           boxW = Math.max(minBracketW, rawEndX - x);
         } else {
-          // Setup is actively live right now within its active timeframe:
+          // Setup is actively live right now: strictly stop BEFORE the current forming candle
           if (rawX < 15 * dpr) {
-            x = Math.max(8 * dpr, currentCandleX - 140 * dpr);
-            boxW = Math.min(chartW - x - 6 * dpr, Math.max(minBracketW, currentCandleX - x + 25 * dpr));
+            x = Math.max(8 * dpr, currentCandleX - 120 * dpr);
+            boxW = Math.max(minBracketW, Math.min(chartW - x - 65 * dpr, currentCandleX - x - 6 * dpr));
           } else {
-            x = Math.max(5 * dpr, Math.min(rawX, chartW - minBracketW - 6 * dpr));
-            const targetW = Math.max(minBracketW, (currentCandleX - x) + 25 * dpr);
-            boxW = Math.min(chartW - x - 6 * dpr, targetW);
+            x = Math.max(5 * dpr, Math.min(rawX, chartW - minBracketW - 65 * dpr));
+            const targetW = Math.max(minBracketW, currentCandleX - x - 6 * dpr);
+            boxW = Math.min(chartW - x - 65 * dpr, targetW);
           }
         }
 
@@ -2475,8 +2528,8 @@ export function renderChart(
     }
 
     // 11. Right Price-Axis Non-Overlapping Label Management (Smart Annotation Engine)
-    if (enableCollisionControl && !isCleanMode) {
-      const axisBadges = sam.layoutPriceBadges(14 * dpr, chartH - 18 * dpr, 14 * dpr);
+    if (enableCollisionControl) {
+      const axisBadges = sam.layoutPriceBadges(14 * dpr, chartH - 18 * dpr, 13 * dpr, curPriceY, isCleanMode ? 3 : 5);
       for (const badge of axisBadges) {
         ctx.save();
         ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
