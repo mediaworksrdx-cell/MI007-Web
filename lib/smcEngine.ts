@@ -252,8 +252,14 @@ export interface SmcConfirmedSetup {
   resolutionIndeterminate?: boolean;
   /** Exact structural break (BOS / CHoCH) that validates this setup */
   validatingBreak?: { breakType: SmcBreakType; price: number; candleIndex: number };
-  /** Explicit execution state distinguishing PENDING, CONFIRMED, EXECUTED, and INVALIDATED signals */
-  signalState?: 'PENDING' | 'CONFIRMED' | 'EXECUTED' | 'INVALIDATED';
+  /** Explicit execution state distinguishing PENDING_RETEST, CONFIRMED, EXECUTED, MISSED_ENTRY, and INVALIDATED signals */
+  signalState?: 'PENDING' | 'PENDING_RETEST' | 'CONFIRMED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED';
+  /** Explicit entry basis label (e.g. 'BOS Level', 'Breaker 50%', 'OB 50%', 'FVG CE') */
+  entryBasis?: string;
+  /** Structural liquidity source for TP1 (e.g. 'Swing', 'PDL', '2.0R') */
+  tp1Source?: string;
+  /** Structural liquidity source for TP2 (e.g. 'PDL', 'Range Low', '3.0R') */
+  tp2Source?: string;
 }
 
 export interface SmcAnalysis {
@@ -2127,13 +2133,24 @@ export function detectAll16SmcSetups(
       statusOverride = 'INVALIDATED';
     }
 
-    // 0b. Structure Confirmation: Market structure & confirmed BOS/CHoCH are the primary decision inputs.
-    // Identify the exact validating break; never allow PDL/session low alone as a primary trigger.
-    const matchedBreak = breaks && breaks.length > 0
-      ? [...breaks].reverse().find(b => b.isBullish === isBull && b.candleIndex <= candleIndex)
-      : undefined;
-    const validatingBreak = matchedBreak
-      ? { breakType: matchedBreak.breakType, price: roundSmcPrice(matchedBreak.price), candleIndex: matchedBreak.candleIndex }
+    // 0b. Structure Confirmation & BOS Validation:
+    // Require a confirmed BOS/CHoCH where the break candle is closed and body-closed beyond the broken swing.
+    // Match the break that directly aligns with this setup's entry zone rather than a later unaligned break.
+    const cleanEntry = roundSmcPrice(entryPrice);
+    const validBreaks = (breaks || []).filter(b => {
+      if (b.isBullish !== isBull || b.candleIndex > candleIndex) return false;
+      const brkBar = candles[b.candleIndex];
+      if (!isCandleClosed(brkBar)) return false;
+      return isBull ? brkBar.close > b.brokenSwingPrice : brkBar.close < b.brokenSwingPrice;
+    });
+    const externalValidBreaks = validBreaks.filter(b => b.structureType === 'EXTERNAL' || b.significance === 'MAJOR');
+    const candidateBreaks = externalValidBreaks.length > 0 ? externalValidBreaks : validBreaks;
+    const alignedBreak = [...candidateBreaks]
+      .sort((a, b) => Math.abs(a.price - cleanEntry) - Math.abs(b.price - cleanEntry))[0]
+      ?? candidateBreaks[candidateBreaks.length - 1];
+
+    const validatingBreak = alignedBreak
+      ? { breakType: alignedBreak.breakType, price: roundSmcPrice(alignedBreak.price), candleIndex: alignedBreak.candleIndex }
       : undefined;
 
     if (
@@ -2152,8 +2169,17 @@ export function detectAll16SmcSetups(
       statusOverride = 'INVALIDATED';
     }
 
+    // Explicit Entry Basis definition
+    const entryBasis =
+      setupType === 'BOS_CONTINUATION' ? 'BOS Level' :
+      setupType === 'CHOCH_REVERSAL' ? 'CHoCH Level' :
+      setupType === 'BREAKER_RETEST' ? 'Breaker 50%' :
+      setupType === 'OB_RETEST' ? 'OB 50%' :
+      setupType === 'FVG_TAP' || setupType === 'BOS_FVG_RETEST' || setupType === 'THREE_STAGE_REVERSAL' ? 'FVG 50% CE' :
+      setupType === 'PREMIUM_DISCOUNT_OTE' ? 'OTE Fib' :
+      'Zone Level';
+
     // 1. Numerical Sanity Check
-    const cleanEntry = roundSmcPrice(entryPrice);
     if (
       !Number.isFinite(cleanEntry) || cleanEntry <= 0 ||
       !Number.isFinite(stopLoss) || stopLoss <= 0 ||
@@ -2218,45 +2244,47 @@ export function detectAll16SmcSetups(
     const rawRisk = isBull ? (cleanEntry - cleanStopLoss) : (cleanStopLoss - cleanEntry);
     const riskDistance = rawRisk > 0 ? rawRisk : Math.max(Math.abs(cleanEntry - cleanStopLoss), cleanEntry * 0.005);
 
-    // 3. Target Calculation: Anchor TP1 & TP2 to opposing structural liquidity pools when available within institutional R:R bounds,
+    // 3. Target Calculation: Anchor TP1 & TP2 to named structural liquidity pools within institutional R:R bounds,
     // otherwise use exact 1:2 (TP1) and 1:3 (TP2) calculated from the actual cleanEntry and cleanStopLoss.
     const rp: SmcRiskProfile = { ...DEFAULT_SMC_RISK_PROFILE, ...riskProfile };
-    const candidatePools: number[] = [];
+    const candidatePools: { price: number; label: string }[] = [];
     for (const s of swings) {
       if ((s.confirmationIndex ?? s.index) <= candleIndex) {
-        if (isBull && s.isHigh && s.price > cleanEntry) candidatePools.push(s.price);
-        if (!isBull && !s.isHigh && s.price < cleanEntry) candidatePools.push(s.price);
+        if (isBull && s.isHigh && s.price > cleanEntry) candidatePools.push({ price: s.price, label: 'BSL Swing' });
+        if (!isBull && !s.isHigh && s.price < cleanEntry) candidatePools.push({ price: s.price, label: 'SSL Swing' });
       }
     }
-    if (sessionLevels?.pdh && isBull && sessionLevels.pdh > cleanEntry) candidatePools.push(sessionLevels.pdh);
-    if (sessionLevels?.pdl && !isBull && sessionLevels.pdl < cleanEntry) candidatePools.push(sessionLevels.pdl);
-    if (sessionLevels?.pwh && isBull && sessionLevels.pwh > cleanEntry) candidatePools.push(sessionLevels.pwh);
-    if (sessionLevels?.pwl && !isBull && sessionLevels.pwl < cleanEntry) candidatePools.push(sessionLevels.pwl);
+    if (sessionLevels?.pdh && isBull && sessionLevels.pdh > cleanEntry) candidatePools.push({ price: sessionLevels.pdh, label: 'PDH' });
+    if (sessionLevels?.pdl && !isBull && sessionLevels.pdl < cleanEntry) candidatePools.push({ price: sessionLevels.pdl, label: 'PDL' });
+    if (sessionLevels?.pwh && isBull && sessionLevels.pwh > cleanEntry) candidatePools.push({ price: sessionLevels.pwh, label: 'PWH' });
+    if (sessionLevels?.pwl && !isBull && sessionLevels.pwl < cleanEntry) candidatePools.push({ price: sessionLevels.pwl, label: 'PWL' });
     if (dealingRange) {
-      if (isBull && dealingRange.highPrice > cleanEntry) candidatePools.push(dealingRange.highPrice);
-      if (!isBull && dealingRange.lowPrice < cleanEntry) candidatePools.push(dealingRange.lowPrice);
+      if (isBull && dealingRange.highPrice > cleanEntry) candidatePools.push({ price: dealingRange.highPrice, label: 'Range High' });
+      if (!isBull && dealingRange.lowPrice < cleanEntry) candidatePools.push({ price: dealingRange.lowPrice, label: 'Range Low' });
     }
-    candidatePools.sort((a, b) => Math.abs(a - cleanEntry) - Math.abs(b - cleanEntry));
+    candidatePools.sort((a, b) => Math.abs(a.price - cleanEntry) - Math.abs(b.price - cleanEntry));
 
     const minTp1Dist = riskDistance * rp.target1R;
     const structuralTp1 = candidatePools.find(p => {
-      const d = Math.abs(p - cleanEntry);
+      const d = Math.abs(p.price - cleanEntry);
       return d >= minTp1Dist && d <= riskDistance * 2.8;
     });
     const effectiveTarget1 = roundSmcPrice(
-      structuralTp1 ?? (isBull ? cleanEntry + minTp1Dist : cleanEntry - minTp1Dist)
+      structuralTp1 ? structuralTp1.price : (isBull ? cleanEntry + minTp1Dist : cleanEntry - minTp1Dist)
     );
+    const tp1Source = structuralTp1 ? structuralTp1.label : `${rp.target1R.toFixed(1)}R`;
     const rewardDistance = Math.abs(effectiveTarget1 - cleanEntry);
     const computedRr = Number((rewardDistance / Math.max(1e-9, riskDistance)).toFixed(2));
 
     const minTp2Dist = Math.max(rewardDistance + riskDistance * 0.5, riskDistance * rp.target2R);
     const structuralTp2 = candidatePools.find(p => {
-      const d = Math.abs(p - cleanEntry);
+      const d = Math.abs(p.price - cleanEntry);
       return d >= minTp2Dist && d <= riskDistance * 4.5;
     });
     const targetPrice2 = roundSmcPrice(
-      structuralTp2 ?? (isBull ? cleanEntry + riskDistance * rp.target2R : cleanEntry - riskDistance * rp.target2R)
+      structuralTp2 ? structuralTp2.price : (isBull ? cleanEntry + riskDistance * rp.target2R : cleanEntry - riskDistance * rp.target2R)
     );
+    const tp2Source = structuralTp2 ? structuralTp2.label : `${rp.target2R.toFixed(1)}R`;
     if (computedRr < rp.minRiskReward && !statusOverride) {
       statusOverride = 'INVALIDATED';
     }
@@ -2416,11 +2444,37 @@ export function detectAll16SmcSetups(
       }
     );
 
-    const signalState: 'PENDING' | 'CONFIRMED' | 'EXECUTED' | 'INVALIDATED' =
-      status === 'INVALIDATED' || status === 'EXPIRED'
+    // Distinguish active retested trades from pending-retest or missed-entry signals (where price ran to TP1 without retesting entry)
+    const formBarTouchedEntry = formBar
+      ? (isBull ? formBar.low <= cleanEntry && formBar.close >= cleanStopLoss : formBar.high >= cleanEntry && formBar.close <= cleanStopLoss)
+      : false;
+    let entryExecuted = statusOverride === 'RETESTING' || retestCount > 0 || formBarTouchedEntry;
+    let missedEntry = false;
+    if (!entryExecuted && (tp1Hit || tp2Hit)) {
+      // Price reached target without ever pulling back to fill the entry level
+      missedEntry = true;
+      tp1Hit = false;
+      tp2Hit = false;
+      status = 'EXPIRED';
+      lifecycleState = 'EXPIRED';
+    } else if (!entryExecuted && lastBar) {
+      const distPastEntry = isBull ? (lastBar.close - cleanEntry) : (cleanEntry - lastBar.close);
+      if (distPastEntry > riskDistance * 1.2) {
+        missedEntry = true;
+      }
+    }
+
+    const signalState: 'PENDING' | 'PENDING_RETEST' | 'CONFIRMED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED' =
+      status === 'INVALIDATED'
+        ? 'INVALIDATED'
+        : missedEntry
+        ? 'MISSED_ENTRY'
+        : status === 'EXPIRED'
         ? 'INVALIDATED'
         : (tp1Hit || tp2Hit || retestCount > 0 || status === 'RETESTING' || status === 'TARGET_HIT' || status === 'EXITED')
         ? 'EXECUTED'
+        : !entryExecuted
+        ? 'PENDING_RETEST'
         : status === 'PENDING'
         ? 'PENDING'
         : 'CONFIRMED';
@@ -2459,6 +2513,9 @@ export function detectAll16SmcSetups(
       tp2Hit,
       tp2HitIndex,
       signalState,
+      entryBasis,
+      tp1Source,
+      tp2Source,
       ...(validatingBreak ? { validatingBreak } : {}),
       ...(stopLossAdjusted ? { stopLossAdjusted: true } : {}),
       ...(resolutionIndeterminate ? { resolutionIndeterminate: true } : {}),

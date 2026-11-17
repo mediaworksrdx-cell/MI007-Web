@@ -2317,8 +2317,14 @@ export function renderChart(
       if (setupsToRender.length === 0) {
         // Only select active setups that were formed within the last 60 bars (no fallback to ancient completed setups)
         const lastBarIdx = candles.length - 1;
-        // Prioritize setups backed by a confirmed BOS/CHoCH structural break over non-break triggers
+        // Prioritize setups backed by a confirmed BOS/CHoCH structural break and active/retested execution over missed/unretested signals
         const rankSetup = (a: SmcConfirmedSetup, b: SmcConfirmedSetup) => {
+          const aValidState = a.signalState !== 'MISSED_ENTRY' && a.signalState !== 'INVALIDATED' ? 1 : 0;
+          const bValidState = b.signalState !== 'MISSED_ENTRY' && b.signalState !== 'INVALIDATED' ? 1 : 0;
+          if (aValidState !== bValidState) return bValidState - aValidState;
+          const aExec = a.signalState === 'EXECUTED' || a.signalState === 'CONFIRMED' ? 1 : 0;
+          const bExec = b.signalState === 'EXECUTED' || b.signalState === 'CONFIRMED' ? 1 : 0;
+          if (aExec !== bExec) return bExec - aExec;
           const aHasBos = a.validatingBreak ? 1 : 0;
           const bHasBos = b.validatingBreak ? 1 : 0;
           if (aHasBos !== bHasBos) return bHasBos - aHasBos;
@@ -2579,8 +2585,9 @@ export function renderChart(
           // TP2 Badge (Right edge of bracket – structural liquidity target & exact R:R from Entry/SL)
           const actualRiskDist2 = Math.max(1e-9, Math.abs(st.entryPrice - st.stopLoss));
           const tp2Rr = (Math.abs(st.targetPrice2! - st.entryPrice) / actualRiskDist2).toFixed(1);
+          const tp2Src = st.tp2Source ? ` • ${st.tp2Source}` : '';
           ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-          const tp2Text = `TP2 (1:${tp2Rr}): ${formatPrice(st.targetPrice2!, options.symbol)}`;
+          const tp2Text = `TP2 (1:${tp2Rr}${tp2Src}): ${formatPrice(st.targetPrice2!, options.symbol)}`;
           const tp2Tm = ctx.measureText(tp2Text);
           ctx.fillStyle = 'rgba(5, 150, 105, 0.92)';
           ctx.fillRect(x + boxW - tp2Tm.width - 6 * dpr, finalTp2Y - 6 * dpr, tp2Tm.width + 6 * dpr, 12 * dpr);
@@ -2590,13 +2597,14 @@ export function renderChart(
           ctx.fillText(tp2Text, x + boxW - 3 * dpr, finalTp2Y);
         }
 
-        // 5. Distinct Non-Overlapping Price Badges (Entry, SL + Risk %, TP1, TP2, Signal Status)
+        // 5. Distinct Non-Overlapping Price Badges (Entry + Basis, SL + Risk %, TP1, TP2, Signal Status)
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
 
         // TP1 Badge (Target 1 – structural liquidity target & exact R:R from Entry/SL)
         const actualRiskDist1 = Math.max(1e-9, Math.abs(st.entryPrice - st.stopLoss));
         const tp1Rr = (Math.abs(st.targetPrice - st.entryPrice) / actualRiskDist1).toFixed(1);
-        const tpText = `TP1 (1:${tp1Rr}): ${formatPrice(st.targetPrice, options.symbol)}`;
+        const tp1Src = st.tp1Source ? ` • ${st.tp1Source}` : '';
+        const tpText = `TP1 (1:${tp1Rr}${tp1Src}): ${formatPrice(st.targetPrice, options.symbol)}`;
         const tpTm = ctx.measureText(tpText);
         ctx.fillStyle = 'rgba(16, 185, 129, 0.92)';
         ctx.fillRect(x + boxW - tpTm.width - 8 * dpr, finalTpY - 7 * dpr, tpTm.width + 8 * dpr, 14 * dpr);
@@ -2624,8 +2632,9 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(slText, x + boxW - 4 * dpr, finalSlY);
 
-        // Entry Badge (Place outside-left when bracket is narrow so it never collides with TP1/TP2/SL)
-        const entryText = `Entry: ${formatPrice(st.entryPrice, options.symbol)}`;
+        // Entry Badge (Explicitly states entry basis, e.g. BOS Level, Breaker 50%, OB 50%, FVG 50% CE)
+        const entryBasisTag = st.entryBasis ? ` (${st.entryBasis})` : '';
+        const entryText = `Entry${entryBasisTag}: ${formatPrice(st.entryPrice, options.symbol)}`;
         const entryTm = ctx.measureText(entryText);
         const entryBadgeW = entryTm.width + 8 * dpr;
         const entryBadgeH = 14 * dpr;
@@ -2665,10 +2674,11 @@ export function renderChart(
         const bosLabel = st.validatingBreak
           ? ` • ${st.validatingBreak.breakType} @ ${formatPrice(st.validatingBreak.price, options.symbol)}`
           : '';
-        const scoreLabel = st.qualityScore ? ` • ${Math.round(st.qualityScore)}%` : '';
-        const statusLabel = isTradeOver
+        const scoreLabel = st.qualityScore ? ` • Score ${Math.round(st.qualityScore)}/100` : '';
+        const rawStatus = isTradeOver && st.signalState !== 'MISSED_ENTRY'
           ? tradeOutcome
           : (st.signalState || st.status || 'CONFIRMED');
+        const statusLabel = rawStatus.replace(/_/g, ' ');
         const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName}${bosLabel} (${rrLabel}${scoreLabel}) [${statusLabel}]`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(headerTag);
