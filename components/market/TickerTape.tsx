@@ -14,12 +14,12 @@ interface TickerTapeProps {
 }
 
 const MACRO_ITEMS = [
-  { symbol: 'DXY', displayVal: '104.20', isMacro: true, change: 0, changePct: 0, price: 104.20 },
-  { symbol: 'XAU/USD', displayVal: '2,650.50', isMacro: true, change: 0, changePct: 0, price: 2650.50 },
-  { symbol: 'XAG/USD', displayVal: '31.50', isMacro: true, change: 0, changePct: 0, price: 31.50 },
-  { symbol: 'US10Y', displayVal: '4.25%', isMacro: true, change: 0, changePct: 0, price: 4.25 },
-  { symbol: 'BRENT', displayVal: '$74.50', isMacro: true, change: 0, changePct: 0, price: 74.50 },
-  { symbol: 'VIX', displayVal: '18.56', isMacro: true, change: -1.43, changePct: -7.15, price: 18.56 },
+  { symbol: 'DXY', displayVal: '104.43', isMacro: true, change: 0, changePct: 0, price: 104.43 },
+  { symbol: 'XAU/USD', displayVal: '3,876.58', isMacro: true, change: 12.14, changePct: 0.31, price: 3876.58 },
+  { symbol: 'XAG/USD', displayVal: '42.39', isMacro: true, change: -0.42, changePct: -0.98, price: 42.39 },
+  { symbol: 'US10Y', displayVal: '4.24%', isMacro: true, change: 0, changePct: 0, price: 4.24 },
+  { symbol: 'BRENT', displayVal: '$58.67', isMacro: true, change: 0.45, changePct: 0.55, price: 58.67 },
+  { symbol: 'VIX', displayVal: '19.57', isMacro: true, change: 1.65, changePct: 9.21, price: 19.57 },
 ];
 
 export function TickerTape({ market: propMarket, currency: propCurrency }: TickerTapeProps) {

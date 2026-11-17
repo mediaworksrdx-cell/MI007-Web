@@ -41,7 +41,8 @@ export async function GET(req: NextRequest) {
   // 2. Try GCP Trade Engine for Indian stocks & Kite indices
   if (market === 'INDIA') {
     try {
-      const res = await fetch(`${GCP_TRADE_ENGINE_URL}/candles?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`, {
+      const gcpQuerySym = (cleanSym === 'NIFTY' || cleanSym === 'NIFTY50') ? 'NIFTY 50' : symbol;
+      const res = await fetch(`${GCP_TRADE_ENGINE_URL}/candles?symbol=${encodeURIComponent(gcpQuerySym)}&timeframe=${encodeURIComponent(timeframe)}`, {
         cache: 'no-store',
         signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2200) : undefined,
       });

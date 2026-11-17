@@ -61,13 +61,13 @@ const BASE_PRICES: Record<MarketType, Record<string, number>> = {
 };
 
 const CRYPTO_BASE_PRICES: Record<string, number> = {
-  BTC: 64682.67,
-  ETH: 2403.44,
-  SOL: 104.37,
-  BNB: 726.72,
-  DOGE: 0.079,
+  BTC: 65013.28,
+  ETH: 1831.28,
+  SOL: 72.60,
+  BNB: 594.00,
+  DOGE: 0.059,
   SHIB: 0.0000185,
-  XRP: 1.31,
+  XRP: 0.9647,
   ADA: 0.218,
   AVAX: 9.60,
   DOT: 1.16,
@@ -76,28 +76,28 @@ const CRYPTO_BASE_PRICES: Record<string, number> = {
 };
 
 export const COMMODITY_BASE_PRICES: Record<string, number> = {
-  GOLD: 3856.74,
-  XAU: 3856.74,
-  XAUUSD: 3856.74,
+  GOLD: 3876.58,
+  XAU: 3876.58,
+  XAUUSD: 3876.58,
   SILVER: 42.39,
   XAG: 42.39,
   XAGUSD: 42.39,
   CRUDEOIL: 58.67,
   BRENT: 58.67,
-  WTI: 56.40,
+  WTI: 55.40,
   NATGAS: 2.85,
   COPPER: 4.38,
   PLATINUM: 1024.50,
 };
 
 export const FOREX_BASE_PRICES: Record<string, number> = {
-  EURUSD: 1.0997,
-  GBPUSD: 1.3388,
-  USDJPY: 157.28,
-  USDINR: 84.15,
+  EURUSD: 1.1006,
+  GBPUSD: 1.3190,
+  USDJPY: 159.37,
+  USDINR: 93.84,
   USDCAD: 1.4092,
-  AUDCAD: 0.9838,
-  USDCHF: 0.8850,
+  AUDCAD: 0.9816,
+  USDCHF: 0.8248,
   USDAED: 3.6725,
   AUDUSD: 0.6650,
 };
