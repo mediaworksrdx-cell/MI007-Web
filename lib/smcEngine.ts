@@ -348,6 +348,8 @@ export interface SmcConfig {
   riskProfile?: Partial<SmcRiskProfile>;
   /** SMC-006: optional independently-fetched higher-timeframe candle dataset for HTF bias */
   htfCandles?: Candle[];
+  /** Optional lower-timeframe candle dataset to deterministically resolve same-candle TP/SL conflicts */
+  ltfCandles?: Candle[];
 }
 
 export const DEFAULT_SMC_CONFIG: SmcConfig = {
@@ -467,7 +469,64 @@ export interface SmcRiskProfile {
   target2R: number;
   minRiskReward: number;
 }
-export const DEFAULT_SMC_RISK_PROFILE: SmcRiskProfile = { target1R: 1.5, target2R: 2.0, minRiskReward: 1.0 };
+export const DEFAULT_SMC_RISK_PROFILE: SmcRiskProfile = { target1R: 2.0, target2R: 3.0, minRiskReward: 2.0 };
+
+/**
+ * Data validation guard: rejects synthetic staircase, unverified/unclosed, non-positive, or out-of-order candle arrays.
+ */
+export function isValidVerifiedCandleDataset(candles: Candle[] | undefined | null): boolean {
+  if (!candles || !Array.isArray(candles) || candles.length < 5) return false;
+  let closedCount = 0;
+  let identicalDeltaCount = 0;
+  for (let i = 0; i < candles.length; i++) {
+    const c = candles[i];
+    if (!c || !Number.isFinite(c.openTime) || c.openTime <= 0) return false;
+    if (!Number.isFinite(c.open) || !Number.isFinite(c.high) || !Number.isFinite(c.low) || !Number.isFinite(c.close)) return false;
+    if (c.open <= 0 || c.high <= 0 || c.low <= 0 || c.close <= 0 || c.high < c.low) return false;
+    if (i > 0 && c.openTime < candles[i - 1].openTime) return false;
+    if (c.isClosed === true) closedCount++;
+    if (i >= 2) {
+      const d1 = c.close - candles[i - 1].close;
+      const d2 = candles[i - 1].close - candles[i - 2].close;
+      if (d1 * d2 > 0 && Math.abs(d1) > 1e-6 && Math.abs(d1 - d2) / Math.abs(d1) < 0.0005) {
+        identicalDeltaCount++;
+      }
+    }
+  }
+  if (candles.length >= 10 && identicalDeltaCount === candles.length - 2) {
+    return false;
+  }
+  return closedCount >= 5;
+}
+
+/**
+ * Resolves execution order when both TP and SL are touched within the same candle:
+ * 1. Uses lower-timeframe (LTF) closed sub-candles inside [bar.openTime, nextBarOpenTime) when available.
+ * 2. Otherwise falls back to intrabar open-proximity path with indeterminate flag.
+ */
+export function resolveSameBarTpSlOrder(
+  bar: Candle,
+  nextBarOpenTime: number,
+  isBull: boolean,
+  stopPrice: number,
+  tpPrice: number,
+  ltfCandles?: Candle[]
+): { order: 'SL_FIRST' | 'TP_FIRST'; usedLtf: boolean } {
+  if (ltfCandles && ltfCandles.length > 0) {
+    for (let i = 0; i < ltfCandles.length; i++) {
+      const sub = ltfCandles[i];
+      if (!sub || sub.isClosed !== true) continue;
+      if (sub.openTime < bar.openTime) continue;
+      if (sub.openTime >= nextBarOpenTime) break;
+      const slHit = isBull ? (sub.low <= stopPrice || sub.close <= stopPrice) : (sub.high >= stopPrice || sub.close >= stopPrice);
+      const tpHit = isBull ? sub.high >= tpPrice : sub.low <= tpPrice;
+      if (slHit && !tpHit) return { order: 'SL_FIRST', usedLtf: true };
+      if (tpHit && !slHit) return { order: 'TP_FIRST', usedLtf: true };
+      if (slHit && tpHit) return { order: 'SL_FIRST', usedLtf: true };
+    }
+  }
+  return { order: 'SL_FIRST', usedLtf: false };
+}
 
 /** Median spacing between consecutive candles (robust to session gaps). */
 export function inferCandleIntervalMs(candles: Candle[]): number {
@@ -1976,9 +2035,10 @@ export function detectAll16SmcSetups(
   sessionLevels?: SmcSessionLevels,
   options?: SmcFilterOptions,
   biasOverride?: { htfBias?: 'BULLISH' | 'BEARISH' | 'RANGE'; ltfBias?: 'BULLISH' | 'BEARISH' | 'RANGE' },
-  riskProfile?: Partial<SmcRiskProfile>
+  riskProfile?: Partial<SmcRiskProfile>,
+  ltfCandles?: Candle[]
 ): SmcConfirmedSetup[] {
-  if (!candles || candles.length < 5) return [];
+  if (!isValidVerifiedCandleDataset(candles)) return [];
 
   // Convenience overload if called with (candles, config?)
   if (!Array.isArray(swingsOrConfig)) {
@@ -1994,7 +2054,9 @@ export function detectAll16SmcSetups(
       analysis.dealingRange,
       analysis.sessionLevels,
       swingsOrConfig?.filters,
-      { htfBias: analysis.htfBias, ltfBias: analysis.ltfBias }
+      { htfBias: analysis.htfBias, ltfBias: analysis.ltfBias },
+      swingsOrConfig?.riskProfile,
+      swingsOrConfig?.ltfCandles
     );
   }
 
@@ -2024,6 +2086,8 @@ export function detectAll16SmcSetups(
 
   const setups: SmcConfirmedSetup[] = [];
   const lastCandle = candles[candles.length - 1];
+  const atrSeries = computeAtrSeries(candles, 14);
+  const intervalMs = inferCandleIntervalMs(candles);
 
   // Helper to construct setup with deterministic ID
   const makeSetup = (
@@ -2040,6 +2104,29 @@ export function detectAll16SmcSetups(
     statusOverride?: 'CONFIRMED' | 'RETESTING' | 'PENDING' | 'DETECTED' | 'FORMING' | 'ENTRY_ZONE_REACHED' | 'TARGET_HIT' | 'EXITED' | 'INVALIDATED' | 'EXPIRED'
   ): SmcConfirmedSetup => {
     const isBull = direction === 'BULLISH';
+
+    // 0. Entry Validation: Trigger entry ONLY after candle-close confirmation
+    const sigBar = candles[candleIndex];
+    if (!isCandleClosed(sigBar)) {
+      statusOverride = 'INVALIDATED';
+    }
+
+    // 0b. Structure Confirmation: Require a confirmed same-direction BOS/CHoCH before generating signal
+    if (breaks && breaks.length > 0) {
+      const hasConfirmedBreak = breaks.some(b => b.isBullish === isBull && b.candleIndex <= candleIndex);
+      if (
+        !hasConfirmedBreak &&
+        (setupType === 'BOS_CONTINUATION' ||
+         setupType === 'CHOCH_REVERSAL' ||
+         setupType === 'OB_RETEST' ||
+         setupType === 'BREAKER_RETEST' ||
+         setupType === 'BOS_FVG_RETEST' ||
+         setupType === 'MTF_CONFLUENCE' ||
+         setupType === 'THREE_STAGE_REVERSAL')
+      ) {
+        statusOverride = 'INVALIDATED';
+      }
+    }
 
     // 1. Numerical Sanity Check
     if (
@@ -2074,8 +2161,29 @@ export function detectAll16SmcSetups(
       }
     }
 
-    // 2. RR-001: Directional Risk Ordering — flag & invalidate broken stops instead of silently replacing them
+    // 2. Stop-Loss: Place SL beyond confirmed swing high (for short) / swing low (for long) with ATR-based buffer
+    const atrVal = atrSeries[Math.min(Math.max(0, candleIndex), atrSeries.length - 1)] || entryPrice * 0.003;
+    const atrBuffer = Math.max(atrVal * 0.25, entryPrice * 0.0005);
     let cleanStopLoss = stopLoss;
+
+    if (swings && swings.length > 0 && Number.isFinite(cleanStopLoss)) {
+      if (!isBull) {
+        // Short trade: look for nearest confirmed Swing High above entryPrice within 3.5 ATR
+        const confSwingHigh = [...swings]
+          .reverse()
+          .find(s => s.isHigh && (s.confirmationIndex ?? s.index) <= candleIndex && s.price > entryPrice && (s.price - entryPrice) <= atrVal * 3.5);
+        const anchorHigh = confSwingHigh ? Math.max(cleanStopLoss, confSwingHigh.price) : cleanStopLoss;
+        cleanStopLoss = roundSmcPrice(anchorHigh + atrBuffer * 0.25);
+      } else {
+        // Long trade: look for nearest confirmed Swing Low below entryPrice within 3.5 ATR
+        const confSwingLow = [...swings]
+          .reverse()
+          .find(s => !s.isHigh && (s.confirmationIndex ?? s.index) <= candleIndex && s.price < entryPrice && (entryPrice - s.price) <= atrVal * 3.5);
+        const anchorLow = confSwingLow ? Math.min(cleanStopLoss, confSwingLow.price) : cleanStopLoss;
+        cleanStopLoss = roundSmcPrice(anchorLow - atrBuffer * 0.25);
+      }
+    }
+
     let stopLossAdjusted = false;
     const slInvalid = isBull
       ? (!Number.isFinite(cleanStopLoss) || cleanStopLoss >= entryPrice)
@@ -2083,23 +2191,20 @@ export function detectAll16SmcSetups(
     if (slInvalid) {
       stopLossAdjusted = true;
       statusOverride = 'INVALIDATED';
-      cleanStopLoss = roundSmcPrice(isBull ? entryPrice * 0.992 : entryPrice * 1.008);
+      cleanStopLoss = roundSmcPrice(isBull ? entryPrice - atrBuffer : entryPrice + atrBuffer);
     }
     const rawRisk = isBull ? (entryPrice - cleanStopLoss) : (cleanStopLoss - entryPrice);
     const riskDistance = rawRisk > 0 ? rawRisk : Math.max(Math.abs(entryPrice - cleanStopLoss), entryPrice * 0.005);
 
-    // 3. RR-002 / RR-003: Configurable risk profile + honour valid strategy-supplied targets
+    // 3. Target Calculation: Strict 1:2 (TP1) and 1:3 (TP2) calculated from actual entryPrice and stopLoss
     const rp: SmcRiskProfile = { ...DEFAULT_SMC_RISK_PROFILE, ...riskProfile };
-    const suppliedTargetValid = Number.isFinite(targetPrice) && (isBull ? targetPrice > entryPrice : targetPrice < entryPrice);
-    const effectiveTarget1 = suppliedTargetValid
-      ? roundSmcPrice(targetPrice)
-      : roundSmcPrice(isBull ? entryPrice + riskDistance * rp.target1R : entryPrice - riskDistance * rp.target1R);
+    const effectiveTarget1 = roundSmcPrice(
+      isBull ? entryPrice + riskDistance * rp.target1R : entryPrice - riskDistance * rp.target1R
+    );
     const rewardDistance = Math.abs(effectiveTarget1 - entryPrice);
     const computedRr = Number((rewardDistance / Math.max(1e-9, riskDistance)).toFixed(2));
     const targetPrice2 = roundSmcPrice(
-      isBull
-        ? entryPrice + Math.max(rewardDistance * (rp.target2R / rp.target1R), riskDistance * rp.target2R)
-        : entryPrice - Math.max(rewardDistance * (rp.target2R / rp.target1R), riskDistance * rp.target2R)
+      isBull ? entryPrice + riskDistance * rp.target2R : entryPrice - riskDistance * rp.target2R
     );
     if (computedRr < rp.minRiskReward && !statusOverride) {
       statusOverride = 'INVALIDATED';
@@ -2138,9 +2243,42 @@ export function detectAll16SmcSetups(
         const tp1Touched = isBull ? bar.high >= effectiveTarget1 : bar.low <= effectiveTarget1;
         const tp2Touched = isBull ? bar.high >= targetPrice2 : bar.low <= targetPrice2;
 
-        // Worst-case SL check FIRST (RR-006)
+        // Trade Management: Resolve same-candle TP & SL conflict using LTF data when available
+        if (slTouched && (tp1Touched || tp2Touched)) {
+          const nextOpen = candles[k + 1]?.openTime ?? (bar.openTime + intervalMs);
+          const resolved = resolveSameBarTpSlOrder(
+            bar,
+            nextOpen,
+            isBull,
+            cleanStopLoss,
+            tp1Hit ? targetPrice2 : effectiveTarget1,
+            ltfCandles
+          );
+          if (!resolved.usedLtf) {
+            resolutionIndeterminate = true;
+          }
+          if (resolved.order === 'TP_FIRST') {
+            if (tp2Touched) {
+              tp1Hit = true;
+              tp2Hit = true;
+              tp2HitIndex = k;
+              status = 'EXITED';
+              lifecycleState = 'EXITED';
+              break;
+            }
+            if (tp1Touched && !tp1Hit) {
+              tp1Hit = true;
+              tp1HitIndex = k;
+              // TP1 banked first, then stopped out on remainder
+              status = 'EXITED';
+              lifecycleState = 'EXITED';
+              break;
+            }
+          }
+        }
+
+        // Signal Invalidation / Stop Hit
         if (slTouched) {
-          if (tp1Touched && !tp1Hit) resolutionIndeterminate = true;
           if (!tp1Hit) {
             status = 'INVALIDATED';
             lifecycleState = 'INVALIDATED';
@@ -2167,8 +2305,12 @@ export function detectAll16SmcSetups(
           break;
         }
 
-        // Valid retest tap in entry zone before TP1
-        if (!tp1Hit && (isBull ? (bar.low <= entryPrice && bar.close > cleanStopLoss) : (bar.high >= entryPrice && bar.close < cleanStopLoss))) {
+        // Retest Validation: Confirm candle-close rejection at broken S/R / POI zone before entry
+        const tappedZone = isBull ? bar.low <= entryPrice : bar.high >= entryPrice;
+        const confirmedRejection = isBull
+          ? (bar.close > cleanStopLoss && (bar.close >= entryPrice || bar.close > bar.open))
+          : (bar.close < cleanStopLoss && (bar.close <= entryPrice || bar.close < bar.open));
+        if (!tp1Hit && tappedZone && confirmedRejection) {
           status = 'RETESTING';
           lifecycleState = 'RETESTED';
           retestCount++;
@@ -2947,7 +3089,7 @@ export function calculateSMC(
   timeframe = '1D',
   dataVersion?: number
 ): SmcAnalysis {
-  if (!candles || candles.length < 5) {
+  if (!isValidVerifiedCandleDataset(candles)) {
     const p = candles?.length ? candles[candles.length - 1].close : 0;
     return {
       swings: [],
@@ -3047,7 +3189,8 @@ export function calculateSMC(
     sessionLevels,
     opt,
     { htfBias, ltfBias },
-    config?.riskProfile
+    config?.riskProfile,
+    config?.ltfCandles
   );
 
   // Directional filtering across all enabled SMC strategies

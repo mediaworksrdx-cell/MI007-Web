@@ -8,6 +8,8 @@ import {
   detectStructureBreaks,
   detectSwingPoints,
   detectLiquidity,
+  isValidVerifiedCandleDataset,
+  resolveSameBarTpSlOrder,
   DEFAULT_SMC_CONFIG,
   SmcConfig,
 } from '../lib/smcEngine';
@@ -115,8 +117,27 @@ console.log('\n--- Test 3: Historical Alignment & Confirmation Invariants ---');
   for (const st of smc.confirmedSetups) {
     assert(st.formationTime <= st.confirmationTime, `Setup ${st.name}: formationTime (${st.formationTime}) <= confirmationTime (${st.confirmationTime})`);
     assert(st.candleIndex < wave.length, `Setup ${st.name}: candleIndex (${st.candleIndex}) within dataset boundary`);
-    assert(st.riskReward >= 1.0, `Setup ${st.name}: Valid institutional Risk-to-Reward ratio (got: ${st.riskReward})`);
+    assert(st.riskReward >= 2.0, `Setup ${st.name}: Valid 1:2+ Risk-to-Reward ratio (got: ${st.riskReward})`);
   }
+
+  // Verify synthetic staircase & unclosed dataset rejection
+  const syntheticStaircase: Candle[] = Array.from({ length: 15 }, (_, i) =>
+    makeCandle(t0 + i * minute, 100 + i * 5, 105 + i * 5, 100 + i * 5, 105 + i * 5)
+  );
+  assert(isValidVerifiedCandleDataset(syntheticStaircase) === false, 'Data Validation: Synthetic linear staircase rejected');
+  assert(calculateSMC(syntheticStaircase).confirmedSetups.length === 0, 'Data Validation: Zero setups generated from synthetic staircase');
+
+  const unclosedSeries: Candle[] = wave.map(c => ({ ...c, isClosed: false }));
+  assert(isValidVerifiedCandleDataset(unclosedSeries) === false, 'Data Validation: Unclosed candle series rejected');
+
+  // Verify LTF same-candle TP/SL conflict resolution
+  const parentBar = makeCandle(t0, 100, 110, 90, 105);
+  const ltfTpFirst: Candle[] = [
+    makeCandle(t0, 100, 101, 91, 92),          // Hits short TP (92) first
+    makeCandle(t0 + 15000, 92, 106, 92, 105),  // Hits short SL (105) second
+  ];
+  const ltfResolved = resolveSameBarTpSlOrder(parentBar, t0 + minute, false, 105, 92, ltfTpFirst);
+  assert(ltfResolved.usedLtf === true && ltfResolved.order === 'TP_FIRST', 'Trade Management: LTF sub-candles deterministically resolve same-candle TP-before-SL');
 }
 
 // ── Test 4: Empirical Forward Outcome Simulation (Wins, Losses, Profit Factor & Expectancy) ──
@@ -176,7 +197,7 @@ console.log('\n--- Test 4: Empirical Forward Outcome Simulation (Wins, Losses & 
     const validEntry = st.entryPrice > 0;
     const validSL = isBull ? st.stopLoss < st.entryPrice : st.stopLoss > st.entryPrice;
     const validTP = isBull ? st.targetPrice > st.entryPrice : st.targetPrice < st.entryPrice;
-    const validRR = st.riskReward >= 1.0;
+    const validRR = st.riskReward >= 2.0;
 
     if (validEntry && validSL && validTP && validRR) {
       structuralValidCount++;

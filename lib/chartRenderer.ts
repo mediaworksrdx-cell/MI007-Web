@@ -16,7 +16,7 @@ import {
   CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN, calculateDynamicPanelHeight,
   getInstrumentDecimals,
 } from './types';
-import { calculateSMC, DEFAULT_SMC_CONFIG, SMC_TRADE_LIFESPAN_BARS, type SmcConfig } from './smcEngine';
+import { calculateSMC, DEFAULT_SMC_CONFIG, SMC_TRADE_LIFESPAN_BARS, resolveSameBarTpSlOrder, inferCandleIntervalMs, type SmcConfig } from './smcEngine';
 import { SmartAnnotationManager, type SmcVisualizationMode } from './smc/smartAnnotationManager';
 import { renderOrderFlowFootprint, formatVol } from './orderflow/orderFlowRenderer';
 import { renderQuantumAiOverlays } from './quantumai/quantumAiRenderer';
@@ -2362,6 +2362,7 @@ export function renderChart(
         }
       }
 
+      const barIntervalMs = inferCandleIntervalMs(candles);
       for (const st of setupsToRender) {
         const isBull = st.direction === 'BULLISH';
         // RR-005 / RR-006: Reproduce smcEngine's exact independent TP1 / TP2 / SL lifecycle on closed bars
@@ -2384,7 +2385,36 @@ export function renderChart(
             ? (isBull ? c.high >= st.targetPrice2 : c.low <= st.targetPrice2)
             : false;
 
-          // Worst-case SL check FIRST (matching smcEngine)
+          // Resolve same-candle TP & SL conflict using LTF data when available
+          if (slTouched && (tp1Touched || tp2Touched)) {
+            const nextOpen = candles[ci + 1]?.openTime ?? (c.openTime + barIntervalMs);
+            const resolved = resolveSameBarTpSlOrder(
+              c,
+              nextOpen,
+              isBull,
+              st.stopLoss,
+              tp1Reached && st.targetPrice2 ? st.targetPrice2 : st.targetPrice,
+              smcCfg.ltfCandles
+            );
+            if (resolved.order === 'TP_FIRST') {
+              if (tp2Touched) {
+                tp1Reached = true;
+                tp2Reached = true;
+                endCandleIdx = ci;
+                isTradeOver = true;
+                tradeOutcome = 'TP2 HIT';
+                break;
+              }
+              if (tp1Touched && !tp1Reached) {
+                tp1Reached = true;
+                endCandleIdx = ci;
+                isTradeOver = true;
+                tradeOutcome = 'TP1 BANKED • EXITED';
+                break;
+              }
+            }
+          }
+
           if (slTouched) {
             endCandleIdx = ci;
             isTradeOver = true;
@@ -2538,9 +2568,9 @@ export function renderChart(
             ctx.setLineDash([]);
           }
 
-          // TP2 Badge (Right edge of bracket)
+          // TP2 Badge (Right edge of bracket – 1:3.0 target)
           ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-          const tp2Text = `TP2 (1:2.0): ${formatPrice(st.targetPrice2!, options.symbol)}`;
+          const tp2Text = `TP2 (1:3.0): ${formatPrice(st.targetPrice2!, options.symbol)}`;
           const tp2Tm = ctx.measureText(tp2Text);
           ctx.fillStyle = 'rgba(5, 150, 105, 0.92)';
           ctx.fillRect(x + boxW - tp2Tm.width - 6 * dpr, finalTp2Y - 6 * dpr, tp2Tm.width + 6 * dpr, 12 * dpr);
@@ -2550,11 +2580,11 @@ export function renderChart(
           ctx.fillText(tp2Text, x + boxW - 3 * dpr, finalTp2Y);
         }
 
-        // 5. Distinct Non-Overlapping Price Badges
+        // 5. Distinct Non-Overlapping Price Badges (Entry, SL + Risk %, TP1 1:2.0, TP2 1:3.0, Signal Status)
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
 
-        // TP1 Badge (Target 1 – RR 1:1.5)
-        const tpText = `TP1 (1:1.5): ${formatPrice(st.targetPrice, options.symbol)}`;
+        // TP1 Badge (Target 1 – RR 1:2.0)
+        const tpText = `TP1 (1:2.0): ${formatPrice(st.targetPrice, options.symbol)}`;
         const tpTm = ctx.measureText(tpText);
         ctx.fillStyle = 'rgba(16, 185, 129, 0.92)';
         ctx.fillRect(x + boxW - tpTm.width - 8 * dpr, finalTpY - 7 * dpr, tpTm.width + 8 * dpr, 14 * dpr);
@@ -2563,9 +2593,9 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(tpText, x + boxW - 4 * dpr, finalTpY);
 
-        // SL Badge (Right edge of bracket)
-        // Collision prevention: If SL is too close to Entry (< 18px) or Current Price (< 14px), nudge SL badge away
-        const slText = `SL: ${formatPrice(st.stopLoss, options.symbol)}`;
+        // SL Badge (Right edge of bracket, displaying exact SL price and Risk %)
+        const riskPct = ((Math.abs(st.entryPrice - st.stopLoss) / Math.max(1e-9, st.entryPrice)) * 100).toFixed(2);
+        const slText = `SL: ${formatPrice(st.stopLoss, options.symbol)} (${riskPct}% Risk)`;
         const slTm = ctx.measureText(slText);
         let slOffset = 0;
         if (Math.abs(ySL - yEntry) < 18 * dpr) {
@@ -2619,9 +2649,10 @@ export function renderChart(
           .replace('Dealing Range ', '')
           .replace('Liquidity Pool ', '')
           .replace('Power of Three ', '');
-        const rrLabel = st.riskReward ? `1:${st.riskReward.toFixed(1)}` : '1:1.5';
+        const rrLabel = st.riskReward ? `1:${st.riskReward.toFixed(1)}` : '1:2.0';
         const scoreLabel = st.qualityScore ? ` • ${Math.round(st.qualityScore)}%` : '';
-        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (${rrLabel}${scoreLabel})${isTradeOver ? ` [${tradeOutcome}]` : ''}`;
+        const statusLabel = isTradeOver ? tradeOutcome : (st.status || 'CONFIRMED');
+        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (${rrLabel}${scoreLabel}) [${statusLabel}]`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(headerTag);
         const tw = tm.width + 10 * dpr;
