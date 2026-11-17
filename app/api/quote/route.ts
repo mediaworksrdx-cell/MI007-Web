@@ -89,6 +89,46 @@ interface CachedQuote {
 const quoteCache = new Map<string, CachedQuote>();
 const QUOTE_TTL_MS = 15_000;
 
+// Binance 24/7 Crypto mapping (Direct API, zero Trade Engine dependency)
+const BINANCE_CRYPTO_MAP: Record<string, string> = {
+  'BTC': 'BTCUSDT',
+  'BTCUSD': 'BTCUSDT',
+  'BTCUSDT': 'BTCUSDT',
+  'ETH': 'ETHUSDT',
+  'ETHUSD': 'ETHUSDT',
+  'ETHUSDT': 'ETHUSDT',
+  'SOL': 'SOLUSDT',
+  'SOLUSD': 'SOLUSDT',
+  'SOLUSDT': 'SOLUSDT',
+  'BNB': 'BNBUSDT',
+  'BNBUSD': 'BNBUSDT',
+  'BNBUSDT': 'BNBUSDT',
+  'XRP': 'XRPUSDT',
+  'XRPUSD': 'XRPUSDT',
+  'XRPUSDT': 'XRPUSDT',
+  'DOGE': 'DOGEUSDT',
+  'DOGEUSD': 'DOGEUSDT',
+  'DOGEUSDT': 'DOGEUSDT',
+  'ADA': 'ADAUSDT',
+  'ADAUSD': 'ADAUSDT',
+  'ADAUSDT': 'ADAUSDT',
+  'AVAX': 'AVAXUSDT',
+  'AVAXUSD': 'AVAXUSDT',
+  'AVAXUSDT': 'AVAXUSDT',
+  'LINK': 'LINKUSDT',
+  'LINKUSD': 'LINKUSDT',
+  'LINKUSDT': 'LINKUSDT',
+  'DOT': 'DOTUSDT',
+  'DOTUSD': 'DOTUSDT',
+  'DOTUSDT': 'DOTUSDT',
+  'MATIC': 'POLUSDT',
+  'POL': 'POLUSDT',
+  'MATICUSD': 'POLUSDT',
+  'SHIB': 'SHIBUSDT',
+  'SHIBUSD': 'SHIBUSDT',
+  'SHIBUSDT': 'SHIBUSDT',
+};
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const symbol = searchParams.get('symbol') || '';
@@ -103,6 +143,36 @@ export async function GET(req: NextRequest) {
   const cached = quoteCache.get(cleanUpper) || quoteCache.get(cleanKey);
   if (cached && Date.now() - cached.timestamp < QUOTE_TTL_MS) {
     return NextResponse.json(cached.data);
+  }
+
+  // 1. Direct Binance API for Crypto (100% authentic, zero Trade Engine)
+  const binanceSym = BINANCE_CRYPTO_MAP[cleanUpper] || BINANCE_CRYPTO_MAP[cleanKey];
+  if (binanceSym) {
+    try {
+      const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(binanceSym)}`, {
+        cache: 'no-store',
+        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(3000) : undefined,
+      });
+      if (res.ok) {
+        const item = await res.json();
+        const price = parseFloat(item.lastPrice);
+        const change = parseFloat(item.priceChange);
+        const changePct = parseFloat(item.priceChangePercent);
+        if (!isNaN(price) && price > 0) {
+          const decimals = price < 0.01 ? 7 : price < 2 ? 4 : price < 20 ? 3 : 2;
+          const quoteData = {
+            instrumentToken: 999200,
+            symbol: cleanUpper,
+            ltp: +price.toFixed(decimals),
+            change: !isNaN(change) ? +change.toFixed(decimals) : 0,
+            changePercent: !isNaN(changePct) ? +changePct.toFixed(2) : 0,
+            timestamp: Date.now(),
+          };
+          quoteCache.set(cleanUpper, { timestamp: Date.now(), data: quoteData });
+          return NextResponse.json(quoteData);
+        }
+      }
+    } catch (_bErr) {}
   }
 
   // 1. Authentic Quote from Yahoo Finance (Works 24/7/365 for live ticks and official exchange closes)

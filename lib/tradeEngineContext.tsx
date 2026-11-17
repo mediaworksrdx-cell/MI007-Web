@@ -138,6 +138,23 @@ const TradeEngineContext = createContext<TradeEngineContextValue>({
   subscribeToSymbol: () => () => {},
 });
 
+const BINANCE_WS_MAP: Record<string, string> = {
+  'BTCUSDT': 'BTC',
+  'ETHUSDT': 'ETH',
+  'SOLUSDT': 'SOL',
+  'BNBUSDT': 'BNB',
+  'XRPUSDT': 'XRP',
+  'DOGEUSDT': 'DOGE',
+  'ADAUSDT': 'ADA',
+  'AVAXUSDT': 'AVAX',
+  'LINKUSDT': 'LINK',
+  'DOTUSDT': 'DOT',
+  'POLUSDT': 'MATIC',
+  'SHIBUSDT': 'SHIB',
+};
+
+const BINANCE_WS_URL = 'wss://stream.binance.com:9443/stream?streams=btcusdt@ticker/ethusdt@ticker/solusdt@ticker/bnbusdt@ticker/xrpusdt@ticker/dogeusdt@ticker/adausdt@ticker/avaxusdt@ticker/linkusdt@ticker/dotusdt@ticker/polusdt@ticker/shibusdt@ticker';
+
 export function TradeEngineProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
   const [latencyMs, setLatencyMs] = useState<number>(18);
@@ -548,7 +565,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     };
   }, [syncLivePrices, syncCryptoPrices, syncMacroData]);
 
-  // 3. WebSocket Real-time Tick Streams (Trade Engine + Coinbase Crypto)
+  // 3. WebSocket Real-time Tick Streams (Trade Engine + Binance Crypto Multi-Stream)
   useEffect(() => {
     let isDisposed = false;
     let cryptoWs: WebSocket | null = null;
@@ -559,39 +576,29 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
       if (typeof window === 'undefined') return;
 
       try {
-        const cWs = new WebSocket('wss://ws-feed.exchange.coinbase.com');
+        const cWs = new WebSocket(BINANCE_WS_URL);
         cryptoWs = cWs;
-
-        cWs.onopen = () => {
-          if (isDisposed) { cWs.close(); return; }
-          cWs.send(JSON.stringify({
-            type: 'subscribe',
-            product_ids: [
-              'BTC-USD', 'ETH-USD', 'SOL-USD', 'DOGE-USD', 'SHIB-USD',
-              'XRP-USD', 'ADA-USD', 'AVAX-USD', 'DOT-USD', 'LINK-USD'
-            ],
-            channels: ['ticker'],
-          }));
-        };
 
         cWs.onmessage = (event) => {
           try {
-            const msg = JSON.parse(event.data);
-            if (msg.type !== 'ticker' || !msg.product_id || !msg.price) return;
+            const raw = JSON.parse(event.data);
+            const d = raw?.data;
+            if (!d || !d.s || !d.c) return;
 
-            const sym = msg.product_id.replace('-USD', '').toUpperCase();
-            const price = parseFloat(msg.price);
+            const binanceSym = d.s;
+            const sym = BINANCE_WS_MAP[binanceSym] || binanceSym.replace('USDT', '');
+            const price = parseFloat(d.c);
             if (isNaN(price) || price <= 0) return;
 
-            const open24h = parseFloat(msg.open_24h || 0);
-            const change = open24h > 0 ? +(price - open24h).toFixed(2) : 0;
-            const changePct = open24h > 0 ? +(((price - open24h) / open24h) * 100).toFixed(2) : 0;
+            const change = parseFloat(d.p) || 0;
+            const changePct = parseFloat(d.P) || 0;
+            const volume = parseFloat(d.v) || 0;
             const now = Date.now();
 
             const tick: TradeEngineTick = {
               symbol: sym,
               price,
-              volume: parseFloat(msg.last_size || 0) || 0,
+              volume,
               timestamp: now,
             };
 
@@ -608,17 +615,14 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
                 ? price > prevEntry.price ? 'up' : price < prevEntry.price ? 'down' : prevEntry.tickDirection
                 : 'neutral';
 
-              const effectiveChangePct = open24h > 0 ? changePct : (prevEntry?.changePct ?? 0);
-              const effectiveChange = open24h > 0 ? change : (prevEntry?.change ?? 0);
-
               const next = new Map(prev);
               const changedKeys = new Set<string>([key, sym, `${sym}USDT`, `${sym}-USD`]);
               const data: LiveSymbolData = {
                 symbol: sym,
                 price,
-                change: effectiveChange,
-                changePct: effectiveChangePct,
-                volume: tick.volume,
+                change: +change.toFixed(price < 2 ? 4 : 2),
+                changePct: +changePct.toFixed(2),
+                volume,
                 timestamp: now,
                 tickDirection: dir,
                 lastUpdated: now,
