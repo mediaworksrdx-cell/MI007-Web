@@ -20,16 +20,10 @@ export async function GET() {
 
   // 1. Populate with calibrated baseline seed items
   INITIAL_SEED_ITEMS.forEach((item, idx) => {
-    const isSubDollar = item.price < 5;
-    const isForex = item.symbol.includes('USD') || item.symbol.includes('EUR') || item.symbol.includes('GBP') || item.symbol.includes('JPY');
-    const decimals = (isSubDollar || isForex) ? 4 : item.price < 20 ? 3 : 2;
-    const jitter = (Math.random() - 0.49) * 0.0005 * item.price;
-    const ltp = +(item.price + jitter).toFixed(decimals);
-
     pricesMap.set(item.symbol.toUpperCase(), {
       instrumentToken: 100000 + idx,
       symbol: item.symbol,
-      ltp,
+      ltp: item.price,
       change: item.change,
       changePercent: item.changePct,
       timestamp: now,

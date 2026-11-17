@@ -1,6 +1,6 @@
 import { Candle } from './types';
 
-const DB_NAME = 'MI007_MarketData_v6';
+const DB_NAME = 'MI007_MarketData_v7';
 const DB_VERSION = 1;
 const STORE_NAME = 'candles';
 
@@ -18,6 +18,7 @@ if (typeof window !== 'undefined') {
       window.indexedDB.deleteDatabase('MI007_MarketData_v3');
       window.indexedDB.deleteDatabase('MI007_MarketData_v4');
       window.indexedDB.deleteDatabase('MI007_MarketData_v5');
+      window.indexedDB.deleteDatabase('MI007_MarketData_v6');
     }
     if (window.localStorage) {
       for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -37,6 +38,10 @@ function getDB(): Promise<IDBDatabase | null> {
 
   if (!dbPromise) {
     dbPromise = new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        resolve(null);
+      }, 500);
+
       try {
         const req = window.indexedDB.open(DB_NAME, DB_VERSION);
         req.onupgradeneeded = () => {
@@ -45,12 +50,22 @@ function getDB(): Promise<IDBDatabase | null> {
             db.createObjectStore(STORE_NAME, { keyPath: 'key' });
           }
         };
-        req.onsuccess = () => resolve(req.result);
+        req.onsuccess = () => {
+          clearTimeout(timer);
+          resolve(req.result);
+        };
         req.onerror = () => {
+          clearTimeout(timer);
           console.warn('[CandleStorage] IndexedDB open error, falling back to localStorage');
           resolve(null);
         };
+        req.onblocked = () => {
+          clearTimeout(timer);
+          console.warn('[CandleStorage] IndexedDB open blocked, falling back');
+          resolve(null);
+        };
       } catch (e) {
+        clearTimeout(timer);
         console.warn('[CandleStorage] IndexedDB init exception:', e);
         resolve(null);
       }
@@ -68,11 +83,13 @@ export async function loadStoredCandles(symbol: string, timeframe: string): Prom
     const db = await getDB();
     if (db) {
       return new Promise((resolve) => {
+        const timer = setTimeout(() => resolve(null), 500);
         try {
           const tx = db.transaction(STORE_NAME, 'readonly');
           const store = tx.objectStore(STORE_NAME);
           const req = store.get(key);
           req.onsuccess = () => {
+            clearTimeout(timer);
             const res = req.result;
             if (res && Array.isArray(res.candles) && res.candles.length > 0) {
               resolve(res.candles);
@@ -80,8 +97,12 @@ export async function loadStoredCandles(symbol: string, timeframe: string): Prom
               resolve(null);
             }
           };
-          req.onerror = () => resolve(null);
+          req.onerror = () => {
+            clearTimeout(timer);
+            resolve(null);
+          };
         } catch {
+          clearTimeout(timer);
           resolve(null);
         }
       });

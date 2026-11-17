@@ -18,40 +18,106 @@ function rotateApiKey() {
 
 // Map cash indices to liquid ETF tickers supported on Twelve Data free plan
 const INDEX_PROXY_MAP: Record<string, { proxy: string; multiplier: number }> = {
-  SPX: { proxy: 'SPY', multiplier: 10.306 },
-  'S&P 500': { proxy: 'SPY', multiplier: 10.306 },
-  NDX: { proxy: 'QQQ', multiplier: 41.094 },
-  'NASDAQ 100': { proxy: 'QQQ', multiplier: 41.094 },
-  DJI: { proxy: 'DIA', multiplier: 100.248 },
-  'DOW JONES': { proxy: 'DIA', multiplier: 100.248 },
-  VIX: { proxy: 'VIXY', multiplier: 1.025 },
+  SPX: { proxy: 'SPY', multiplier: 10.0 },
+  'S&P 500': { proxy: 'SPY', multiplier: 10.0 },
+  NDX: { proxy: 'QQQ', multiplier: 41.0 },
+  'NASDAQ 100': { proxy: 'QQQ', multiplier: 41.0 },
+  DJI: { proxy: 'DIA', multiplier: 100.0 },
+  'DOW JONES': { proxy: 'DIA', multiplier: 100.0 },
+  VIX: { proxy: 'VIXY', multiplier: 1.0 },
 };
+
+const CRYPTO_MAP: Record<string, string> = {
+  BTC: 'BTC/USD',
+  ETH: 'ETH/USD',
+  SOL: 'SOL/USD',
+  BNB: 'BNB/USD',
+  XRP: 'XRP/USD',
+  DOGE: 'DOGE/USD',
+  ADA: 'ADA/USD',
+  AVAX: 'AVAX/USD',
+  DOT: 'DOT/USD',
+  LINK: 'LINK/USD',
+  MATIC: 'MATIC/USD',
+  SHIB: 'SHIB/USD',
+};
+
+const COMMODITY_MAP: Record<string, string> = {
+  GOLD: 'XAU/USD',
+  XAU: 'XAU/USD',
+  XAUUSD: 'XAU/USD',
+  SILVER: 'XAG/USD',
+  XAG: 'XAG/USD',
+  XAGUSD: 'XAG/USD',
+  BRENT: 'BRENT',
+  CRUDEOIL: 'BRENT',
+};
+
+const FOREX_MAP: Record<string, string> = {
+  EURUSD: 'EUR/USD',
+  GBPUSD: 'GBP/USD',
+  USDJPY: 'USD/JPY',
+  USDINR: 'USD/INR',
+  USDCAD: 'USD/CAD',
+  AUDUSD: 'AUD/USD',
+};
+
+function resolveTwelveDataTicker(symClean: string): { ticker: string; multiplier: number } {
+  if (INDEX_PROXY_MAP[symClean]) {
+    return { ticker: INDEX_PROXY_MAP[symClean].proxy, multiplier: INDEX_PROXY_MAP[symClean].multiplier };
+  }
+  if (CRYPTO_MAP[symClean]) {
+    return { ticker: CRYPTO_MAP[symClean], multiplier: 1.0 };
+  }
+  if (COMMODITY_MAP[symClean]) {
+    return { ticker: COMMODITY_MAP[symClean], multiplier: 1.0 };
+  }
+  if (FOREX_MAP[symClean]) {
+    return { ticker: FOREX_MAP[symClean], multiplier: 1.0 };
+  }
+  return { ticker: symClean, multiplier: 1.0 };
+}
 
 // Calibrated baseline prices matching actual live market scales
 const BASELINE_PRICES: Record<string, { price: number; change: number; changePct: number }> = {
-  SPX: { price: 7626.75, change: -93.64, changePct: -1.21 },
-  NDX: { price: 28636.47, change: -766.04, changePct: -2.61 },
-  DJI: { price: 52129.31, change: -213.25, changePct: -0.41 },
-  VIX: { price: 18.92, change: 1.72, changePct: 10.00 },
-  QQQ: { price: 696.86, change: -18.48, changePct: -2.58 },
-  SPY: { price: 740.05, change: -14.32, changePct: -1.90 },
-  DIA: { price: 520.00, change: -2.13, changePct: -0.41 },
-  NVDA: { price: 156.16, change: -6.69, changePct: -4.11 },
-  AAPL: { price: 352.81, change: -3.46, changePct: -0.97 },
-  MSFT: { price: 518.07, change: -5.81, changePct: -1.11 },
-  TSLA: { price: 354.70, change: -9.80, changePct: -2.43 },
-  AMZN: { price: 215.30, change: -4.51, changePct: -1.85 },
-  META: { price: 618.50, change: -6.02, changePct: -0.96 },
-  GOOGL: { price: 182.40, change: -2.88, changePct: -1.01 },
+  SPX: { price: 7399.50, change: -144.20, changePct: -1.91 },
+  NDX: { price: 27131.75, change: -743.74, changePct: -2.67 },
+  DJI: { price: 51568.00, change: -750.00, changePct: -1.43 },
+  VIX: { price: 19.57, change: 1.65, changePct: 9.21 },
+  QQQ: { price: 661.75, change: -18.14, changePct: -2.67 },
+  SPY: { price: 739.95, change: -14.42, changePct: -1.91 },
+  DIA: { price: 515.68, change: -7.50, changePct: -1.43 },
+  NVDA: { price: 156.14, change: -6.71, changePct: -4.12 },
+  AAPL: { price: 352.78, change: -3.49, changePct: -0.98 },
+  MSFT: { price: 517.99, change: -5.89, changePct: -1.12 },
+  TSLA: { price: 379.74, change: -10.48, changePct: -2.69 },
+  AMZN: { price: 257.75, change: -8.91, changePct: -3.34 },
+  META: { price: 626.41, change: -15.28, changePct: -2.38 },
+  GOOGL: { price: 283.72, change: -12.05, changePct: -4.07 },
+  // Crypto
+  BTC: { price: 64682.67, change: -200.20, changePct: -0.31 },
+  'BTC/USD': { price: 64682.67, change: -200.20, changePct: -0.31 },
+  ETH: { price: 2403.44, change: 36.38, changePct: 1.54 },
+  'ETH/USD': { price: 2403.44, change: 36.38, changePct: 1.54 },
+  SOL: { price: 104.37, change: 2.36, changePct: 2.31 },
+  'SOL/USD': { price: 104.37, change: 2.36, changePct: 2.31 },
+  XRP: { price: 1.31, change: 0.015, changePct: 1.15 },
+  'XRP/USD': { price: 1.31, change: 0.015, changePct: 1.15 },
+  DOGE: { price: 0.079, change: 0.0018, changePct: 2.31 },
   // Forex
-  'EUR/USD': { price: 1.0997, change: -0.0007, changePct: -0.06 },
-  'GBP/USD': { price: 1.3388, change: 0.0013, changePct: 0.10 },
-  'USD/JPY': { price: 157.28, change: -0.37, changePct: -0.23 },
+  'EUR/USD': { price: 1.1006, change: 0.0001, changePct: 0.01 },
+  EURUSD: { price: 1.1006, change: 0.0001, changePct: 0.01 },
+  'GBP/USD': { price: 1.3190, change: 0.0003, changePct: 0.02 },
+  GBPUSD: { price: 1.3190, change: 0.0003, changePct: 0.02 },
+  'USD/JPY': { price: 159.37, change: -0.10, changePct: -0.06 },
+  USDJPY: { price: 159.37, change: -0.10, changePct: -0.06 },
+  'USD/INR': { price: 93.84, change: -0.06, changePct: -0.07 },
+  USDINR: { price: 93.84, change: -0.06, changePct: -0.07 },
   'USD/CAD': { price: 1.4092, change: 0.0021, changePct: 0.15 },
   'AUD/USD': { price: 0.6650, change: 0.0008, changePct: 0.12 },
   // Commodities
-  'XAU/USD': { price: 3856.74, change: -7.69, changePct: -0.20 },
-  GOLD: { price: 3856.74, change: -7.69, changePct: -0.20 },
+  'XAU/USD': { price: 3876.58, change: 12.14, changePct: 0.31 },
+  GOLD: { price: 3876.58, change: 12.14, changePct: 0.31 },
   'XAG/USD': { price: 42.39, change: -0.42, changePct: -0.98 },
   SILVER: { price: 42.39, change: -0.42, changePct: -0.98 },
   BRENT: { price: 58.67, change: 0.45, changePct: 0.55 },
@@ -91,9 +157,7 @@ export async function fetchTwelveDataQuote(rawSymbol: string): Promise<{
     return cached.data;
   }
 
-  const proxyConfig = INDEX_PROXY_MAP[symClean];
-  const queryTicker = proxyConfig ? proxyConfig.proxy : symClean;
-  const multiplier = proxyConfig ? proxyConfig.multiplier : 1.0;
+  const { ticker: queryTicker, multiplier } = resolveTwelveDataTicker(symClean);
 
   try {
     const apiKey = getActiveApiKey();
@@ -183,9 +247,7 @@ export async function fetchTwelveDataCandles(
     return cached.candles;
   }
 
-  const proxyConfig = INDEX_PROXY_MAP[symClean];
-  const queryTicker = proxyConfig ? proxyConfig.proxy : symClean;
-  const multiplier = proxyConfig ? proxyConfig.multiplier : 1.0;
+  const { ticker: queryTicker, multiplier } = resolveTwelveDataTicker(symClean);
 
   try {
     const apiKey = getActiveApiKey();

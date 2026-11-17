@@ -754,7 +754,10 @@ export function ChartContainer({
     return Array.from(new Set(indicatorConfigs.filter(c => c.enabled).map(c => c.type)));
   }, [indicatorConfigs]);
 
-  const [candles, setCandles] = useState<Candle[]>([]);
+  const [candles, setCandles] = useState<Candle[]>(() => {
+    const sym = defaultSymbol ?? instruments[0]?.symbol ?? 'BTC';
+    return getMockCandles(market, sym, timeframe, 800);
+  });
   const ticksPerCandleRef = useRef<Map<number, ExchangeTradeTick[]>>(new Map());
 
   const orderFlowData = useMemo(() => {
@@ -767,7 +770,7 @@ export function ChartContainer({
     return analyzeQuantumAi(candles, quantumAiConfig);
   }, [candles, quantumAiConfig]);
   const [currentPrice, setCurrentPrice] = useState<number | undefined>();
-  const [isLoadingCandles, setIsLoadingCandles] = useState(true);
+  const [isLoadingCandles, setIsLoadingCandles] = useState(false);
   const [isLiveFromEngine, setIsLiveFromEngine] = useState(false);
 
   // Fullscreen container support
@@ -860,8 +863,6 @@ export function ChartContainer({
   useEffect(() => {
     let isCancelled = false;
     setIsLoadingCandles(true);
-    setCandles([]);
-    setCurrentPrice(undefined);
     ticksPerCandleRef.current.clear();
 
     async function loadCandles() {
@@ -1893,7 +1894,7 @@ export function ChartContainer({
 
         {/* Chart Canvas Area */}
         <div ref={chartWrapperRef} className="flex-1 min-h-0 relative bg-[var(--color-chart-bg)] overflow-hidden">
-          {isLoadingCandles && (
+          {isLoadingCandles && candles.length === 0 && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-xs pointer-events-none">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-[12px] mono font-bold shadow-md">
                 <span className="w-3 h-3 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin" />

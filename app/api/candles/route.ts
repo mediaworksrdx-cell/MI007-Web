@@ -26,50 +26,35 @@ export async function GET(req: NextRequest) {
     market = 'UAE';
   }
 
-  // 1. Try Twelve Data for US equities, Forex, and Commodities
-  if (USA_SYMBOLS.has(cleanSym) || COMMODITY_FOREX_SYMBOLS.has(cleanSym)) {
+  // 1. Try Twelve Data for US equities, Forex, Commodities, and Crypto
+  if (USA_SYMBOLS.has(cleanSym) || COMMODITY_FOREX_SYMBOLS.has(cleanSym) || CRYPTO_SYMBOLS.has(cleanSym)) {
     try {
       const tdCandles = await fetchTwelveDataCandles(symbol, timeframe, 120);
       if (tdCandles && tdCandles.length > 0) {
         return NextResponse.json(tdCandles);
       }
     } catch (_err) {
-      // Fall through to GCP / mock candles
+      // Fall through to mock candles
     }
   }
 
-  // 2. Try GCP Trade Engine
-  try {
-    const res = await fetch(`${GCP_TRADE_ENGINE_URL}/candles?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`, {
-      cache: 'no-store',
-      signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2200) : undefined,
-    });
+  // 2. Try GCP Trade Engine for Indian stocks & Kite indices
+  if (market === 'INDIA') {
+    try {
+      const res = await fetch(`${GCP_TRADE_ENGINE_URL}/candles?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`, {
+        cache: 'no-store',
+        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2200) : undefined,
+      });
 
-    if (res.ok) {
-      const gcpCandles: Candle[] = await res.json();
-      if (Array.isArray(gcpCandles) && gcpCandles.length > 0) {
-        // Guard against any scale dislocation on crypto / index endpoints
-        if (cleanSym === 'BTC') {
-          const targetBtcPrice = 65193.58;
-          const lastC = gcpCandles[gcpCandles.length - 1];
-          if (lastC && Math.abs(lastC.close - targetBtcPrice) / targetBtcPrice > 0.10) {
-            const ratio = targetBtcPrice / lastC.close;
-            const rescaled = gcpCandles.map(c => ({
-              ...c,
-              open: +(c.open * ratio).toFixed(2),
-              high: +(c.high * ratio).toFixed(2),
-              low: +(c.low * ratio).toFixed(2),
-              close: +(c.close * ratio).toFixed(2),
-            }));
-            rescaled[rescaled.length - 1].close = targetBtcPrice;
-            return NextResponse.json(rescaled);
-          }
+      if (res.ok) {
+        const gcpCandles: Candle[] = await res.json();
+        if (Array.isArray(gcpCandles) && gcpCandles.length > 0) {
+          return NextResponse.json(gcpCandles);
         }
-        return NextResponse.json(gcpCandles);
       }
+    } catch (_err) {
+      // Fall through to mock candles
     }
-  } catch (_err) {
-    // Fall through to mock candles
   }
 
   // 3. Calibrated realistic candles anchored precisely to authentic market price

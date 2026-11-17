@@ -67,37 +67,39 @@ export interface ForexItem {
 }
 
 const DEFAULT_INDIA_INDICES: IndexItem[] = [
-  { symbol: 'NIFTY', name: 'NIFTY 50', base: 22687.65, changePct: -0.88 },
-  { symbol: 'BANKNIFTY', name: 'BANK NIFTY', base: 54925.70, changePct: -1.01 },
-  { symbol: 'SENSEX', name: 'SENSEX', base: 73249.39, changePct: -1.17 },
-  { symbol: 'FINNIFTY', name: 'NIFTY FINANCIAL', base: 24657.70, changePct: -0.76 },
+  { symbol: 'NIFTY', name: 'NIFTY 50', base: 25291.10, changePct: 0.0 },
+  { symbol: 'BANKNIFTY', name: 'BANK NIFTY', base: 61575.90, changePct: 0.0 },
+  { symbol: 'SENSEX', name: 'SENSEX', base: 82104.79, changePct: 0.0 },
+  { symbol: 'FINNIFTY', name: 'NIFTY FINANCIAL', base: 28015.40, changePct: 0.0 },
 ];
 
 const DEFAULT_INDIA_WATCHLIST: WatchlistItem[] = [
-  { symbol: 'RELIANCE', name: 'Reliance Industries', base: 1184.50, sector: 'Energy', changePct: -1.62 },
-  { symbol: 'TCS', name: 'Tata Consultancy', base: 2506.90, sector: 'IT', changePct: 0.90 },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank', base: 694.05, sector: 'Banking', changePct: -1.82 },
-  { symbol: 'INFY', name: 'Infosys', base: 1153.35, sector: 'IT', changePct: -1.35 },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank', base: 1398.50, sector: 'Banking', changePct: 1.03 },
-  { symbol: 'TATAMOTORS', name: 'Tata Motors', base: 270.00, sector: 'Automotive', changePct: -1.75 },
-  { symbol: 'SBIN', name: 'State Bank of India', base: 970.00, sector: 'Banking', changePct: 0.88 },
+  { symbol: 'RELIANCE', name: 'Reliance Industries', base: 1344.80, sector: 'Energy', changePct: 0.0 },
+  { symbol: 'TCS', name: 'Tata Consultancy', base: 2405.00, sector: 'IT', changePct: 0.0 },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank', base: 816.50, sector: 'Banking', changePct: 0.0 },
+  { symbol: 'INFY', name: 'Infosys', base: 1145.10, sector: 'IT', changePct: 0.0 },
+  { symbol: 'ICICIBANK', name: 'ICICI Bank', base: 1585.00, sector: 'Banking', changePct: 0.0 },
+  { symbol: 'TATAMOTORS', name: 'Tata Motors', base: 262.40, sector: 'Automotive', changePct: 0.0 },
+  { symbol: 'SBIN', name: 'State Bank of India', base: 1090.50, sector: 'Banking', changePct: 0.0 },
+  { symbol: 'BHARTIARTL', name: 'Bharti Airtel', base: 2153.50, sector: 'Telecom', changePct: 0.0 },
+  { symbol: 'ITC', name: 'ITC Limited', base: 295.10, sector: 'FMCG', changePct: 0.0 },
 ];
 
 const DEFAULT_USA_INDICES: IndexItem[] = [
-  { symbol: 'SPX', name: 'S&P 500', base: 7626.75, changePct: -1.21 },
-  { symbol: 'NDX', name: 'NASDAQ 100', base: 28636.47, changePct: -2.61 },
-  { symbol: 'DJI', name: 'DOW JONES', base: 52129.31, changePct: -0.41 },
-  { symbol: 'VIX', name: 'Volatility Index', base: 18.92, changePct: 10.00 },
+  { symbol: 'SPX', name: 'S&P 500', base: 7399.50, changePct: -1.91 },
+  { symbol: 'NDX', name: 'NASDAQ 100', base: 27131.75, changePct: -2.67 },
+  { symbol: 'DJI', name: 'DOW JONES', base: 51568.00, changePct: -1.43 },
+  { symbol: 'VIX', name: 'Volatility Index', base: 19.57, changePct: 9.21 },
 ];
 
 const DEFAULT_USA_WATCHLIST: WatchlistItem[] = [
-  { symbol: 'NVDA', name: 'NVIDIA Corporation', base: 207.12, sector: 'Technology', changePct: -3.06 },
-  { symbol: 'AAPL', name: 'Apple Inc.', base: 345.51, sector: 'Technology', changePct: -0.97 },
-  { symbol: 'MSFT', name: 'Microsoft Corporation', base: 522.50, sector: 'Technology', changePct: -1.44 },
-  { symbol: 'TSLA', name: 'Tesla Inc.', base: 393.50, sector: 'Consumer Cyclical', changePct: -2.43 },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.', base: 239.28, sector: 'Consumer Cyclical', changePct: -1.85 },
-  { symbol: 'META', name: 'Meta Platforms Inc.', base: 618.50, sector: 'Communication Services', changePct: -0.96 },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', base: 280.94, sector: 'Communication Services', changePct: -1.01 },
+  { symbol: 'NVDA', name: 'NVIDIA Corporation', base: 156.14, sector: 'Technology', changePct: -4.12 },
+  { symbol: 'AAPL', name: 'Apple Inc.', base: 352.78, sector: 'Technology', changePct: -0.98 },
+  { symbol: 'MSFT', name: 'Microsoft Corporation', base: 517.99, sector: 'Technology', changePct: -1.12 },
+  { symbol: 'TSLA', name: 'Tesla Inc.', base: 379.74, sector: 'Consumer Cyclical', changePct: -2.69 },
+  { symbol: 'AMZN', name: 'Amazon.com Inc.', base: 257.75, sector: 'Consumer Cyclical', changePct: -3.34 },
+  { symbol: 'META', name: 'Meta Platforms Inc.', base: 626.41, sector: 'Communication Services', changePct: -2.38 },
+  { symbol: 'GOOGL', name: 'Alphabet Inc.', base: 283.72, sector: 'Communication Services', changePct: -4.07 },
 ];
 
 const DEFAULT_UAE_INDICES: IndexItem[] = [
@@ -107,62 +109,63 @@ const DEFAULT_UAE_INDICES: IndexItem[] = [
 ];
 
 const DEFAULT_UAE_WATCHLIST: WatchlistItem[] = [
-  { symbol: 'EMAAR', name: 'Emaar Properties', base: 8.45, sector: 'Real Estate', changePct: 0.95 },
-  { symbol: 'FAB', name: 'First Abu Dhabi Bank', base: 13.20, sector: 'Banking', changePct: -0.72 },
-  { symbol: 'DEWA', name: 'Dubai Electricity', base: 2.45, sector: 'Utilities', changePct: 0.68 },
+  { symbol: 'EMAAR', name: 'Emaar Properties', base: 8.48, sector: 'Real Estate', changePct: 0.95 },
+  { symbol: 'FAB', name: 'First Abu Dhabi Bank', base: 13.85, sector: 'Banking', changePct: -0.72 },
+  { symbol: 'DEWA', name: 'Dubai Electricity', base: 2.94, sector: 'Utilities', changePct: 0.68 },
   { symbol: 'SALIK', name: 'Salik Company', base: 3.65, sector: 'Transport', changePct: 1.15 },
-  { symbol: 'ALDAR', name: 'Aldar Properties', base: 6.82, sector: 'Real Estate', changePct: 0.55 },
-  { symbol: 'ENBD', name: 'Emirates NBD', base: 18.65, sector: 'Banking', changePct: -0.30 },
+  { symbol: 'ALDAR', name: 'Aldar Properties', base: 6.82, sector: 'Real Estate', changePct: 0.89 },
+  { symbol: 'ENBD', name: 'Emirates NBD', base: 18.65, sector: 'Banking', changePct: -0.80 },
 ];
 
 const DEFAULT_CRYPTO: CryptoItem[] = [
-  { symbol: 'BTC', name: 'Bitcoin', base: 65193.58, changePct: -0.63 },
-  { symbol: 'ETH', name: 'Ethereum', base: 2403.00, changePct: 1.54 },
+  { symbol: 'BTC', name: 'Bitcoin', base: 64682.67, changePct: -0.31 },
+  { symbol: 'ETH', name: 'Ethereum', base: 2403.44, changePct: 1.54 },
   { symbol: 'SOL', name: 'Solana', base: 104.37, changePct: 2.31 },
-  { symbol: 'BNB', name: 'BNB', base: 727.00, changePct: 2.16 },
+  { symbol: 'BNB', name: 'BNB', base: 726.72, changePct: 2.16 },
   { symbol: 'DOGE', name: 'Dogecoin', base: 0.079, changePct: 2.31 },
   { symbol: 'SHIB', name: 'Shiba Inu', base: 0.0000185, changePct: -0.85 },
-  { symbol: 'XRP', name: 'Ripple XRP', base: 1.31, changePct: 0.85 },
-  { symbol: 'ADA', name: 'Cardano', base: 0.218, changePct: 0.45 },
-  { symbol: 'AVAX', name: 'Avalanche', base: 9.60, changePct: 1.20 },
-  { symbol: 'DOT', name: 'Polkadot', base: 1.16, changePct: -0.50 },
-  { symbol: 'LINK', name: 'Chainlink', base: 12.09, changePct: 1.10 },
-  { symbol: 'MATIC', name: 'Polygon', base: 0.126, changePct: 0.75 },
+  { symbol: 'XRP', name: 'Ripple XRP', base: 1.31, changePct: 1.15 },
+  { symbol: 'ADA', name: 'Cardano', base: 0.218, changePct: 0.92 },
+  { symbol: 'AVAX', name: 'Avalanche', base: 9.60, changePct: 1.26 },
+  { symbol: 'DOT', name: 'Polkadot', base: 1.16, changePct: -0.85 },
+  { symbol: 'LINK', name: 'Chainlink', base: 12.09, changePct: 1.51 },
+  { symbol: 'MATIC', name: 'Polygon', base: 0.126, changePct: 0.80 },
 ];
 
 const DEFAULT_COMMODITIES: CommodityItem[] = [
-  { symbol: 'GOLD', name: 'Gold', base: 2735.40, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.65 },
-  { symbol: 'SILVER', name: 'Silver', base: 31.85, unit: 'USD / oz', category: 'Precious Metals', changePct: 1.20 },
-  { symbol: 'CRUDEOIL', name: 'Brent Crude', base: 74.20, unit: 'USD / bbl', category: 'Energy', changePct: -0.45 },
-  { symbol: 'WTI', name: 'WTI Crude', base: 70.80, unit: 'USD / bbl', category: 'Energy', changePct: -0.35 },
+  { symbol: 'GOLD', name: 'Gold', base: 3876.58, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.31 },
+  { symbol: 'SILVER', name: 'Silver', base: 42.39, unit: 'USD / oz', category: 'Precious Metals', changePct: -0.98 },
+  { symbol: 'CRUDEOIL', name: 'Brent Crude', base: 58.67, unit: 'USD / bbl', category: 'Energy', changePct: 0.55 },
+  { symbol: 'BRENT', name: 'Brent Crude', base: 58.67, unit: 'USD / bbl', category: 'Energy', changePct: 0.55 },
+  { symbol: 'WTI', name: 'WTI Crude', base: 55.40, unit: 'USD / bbl', category: 'Energy', changePct: 0.40 },
   { symbol: 'NATGAS', name: 'Natural Gas', base: 2.85, unit: 'USD / MMBtu', category: 'Energy', changePct: 2.15 },
   { symbol: 'COPPER', name: 'Copper', base: 4.38, unit: 'USD / lb', category: 'Industrial Metals', changePct: 0.82 },
 ];
 
 const DEFAULT_FOREX: ForexItem[] = [
-  { symbol: 'EURUSD', name: 'EUR / USD', pair: 'EUR / USD', base: 1.1151, pipSpread: '0.8 pips', changePct: -0.27 },
-  { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP / USD', base: 1.3388, pipSpread: '1.0 pips', changePct: 0.10 },
-  { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD / JPY', base: 157.28, pipSpread: '0.9 pips', changePct: -0.23 },
-  { symbol: 'USDINR', name: 'USD / INR', pair: 'USD / INR', base: 94.94, pipSpread: '1.2 pips', changePct: -0.28 },
-  { symbol: 'USDCAD', name: 'USD / CAD', pair: 'USD / CAD', base: 1.3960, pipSpread: '0.9 pips', changePct: -0.19 },
+  { symbol: 'EURUSD', name: 'EUR / USD', pair: 'EUR / USD', base: 1.1006, pipSpread: '0.8 pips', changePct: 0.01 },
+  { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP / USD', base: 1.3190, pipSpread: '1.0 pips', changePct: 0.02 },
+  { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD / JPY', base: 159.37, pipSpread: '0.9 pips', changePct: -0.06 },
+  { symbol: 'USDINR', name: 'USD / INR', pair: 'USD / INR', base: 93.84, pipSpread: '1.2 pips', changePct: -0.07 },
+  { symbol: 'USDCAD', name: 'USD / CAD', pair: 'USD / CAD', base: 1.4092, pipSpread: '0.9 pips', changePct: 0.15 },
   { symbol: 'AUDCAD', name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9816, pipSpread: '1.2 pips', changePct: -0.13 },
   { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD / CHF', base: 0.8248, pipSpread: '0.9 pips', changePct: 0.12 },
-  { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD / USD', base: 0.7034, pipSpread: '1.1 pips', changePct: 0.04 },
+  { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips', changePct: 0.12 },
 ];
 
 // Predefined catalog of recognized indices & cryptos for instantaneous auto-detection
 const KNOWN_INDICES: Record<string, { name: string; base: number; market: MarketType }> = {
-  NIFTY: { name: 'NIFTY 50', base: 22687.65, market: 'INDIA' },
-  BANKNIFTY: { name: 'BANK NIFTY', base: 54925.70, market: 'INDIA' },
-  SENSEX: { name: 'BSE SENSEX', base: 73249.39, market: 'INDIA' },
-  FINNIFTY: { name: 'NIFTY FINANCIAL', base: 24657.70, market: 'INDIA' },
-  MIDCPNIFTY: { name: 'NIFTY MIDCAP SELECT', base: 12450.00, market: 'INDIA' },
-  BANKEX: { name: 'BSE BANKEX', base: 59800.00, market: 'INDIA' },
+  NIFTY: { name: 'NIFTY 50', base: 25291.10, market: 'INDIA' },
+  BANKNIFTY: { name: 'BANK NIFTY', base: 61575.90, market: 'INDIA' },
+  SENSEX: { name: 'BSE SENSEX', base: 82104.79, market: 'INDIA' },
+  FINNIFTY: { name: 'NIFTY FINANCIAL', base: 28015.40, market: 'INDIA' },
+  MIDCPNIFTY: { name: 'NIFTY MIDCAP SELECT', base: 12958.45, market: 'INDIA' },
+  BANKEX: { name: 'BSE BANKEX', base: 61083.33, market: 'INDIA' },
   NIFTYNXT50: { name: 'NIFTY NEXT 50', base: 67200.00, market: 'INDIA' },
-  SPX: { name: 'S&P 500', base: 7626.75, market: 'USA' },
-  NDX: { name: 'NASDAQ 100', base: 28636.47, market: 'USA' },
-  DJI: { name: 'DOW JONES', base: 52129.31, market: 'USA' },
-  VIX: { name: 'Volatility Index', base: 18.92, market: 'USA' },
+  SPX: { name: 'S&P 500', base: 7399.50, market: 'USA' },
+  NDX: { name: 'NASDAQ 100', base: 27131.75, market: 'USA' },
+  DJI: { name: 'DOW JONES', base: 51568.00, market: 'USA' },
+  VIX: { name: 'Volatility Index', base: 19.57, market: 'USA' },
   RUT: { name: 'Russell 2000', base: 2721.37, market: 'USA' },
   DFMGI: { name: 'DFM General', base: 4850.0, market: 'UAE' },
   ADX: { name: 'ADX General', base: 9250.0, market: 'UAE' },
@@ -170,10 +173,10 @@ const KNOWN_INDICES: Record<string, { name: string; base: number; market: Market
 };
 
 const KNOWN_CRYPTOS: Record<string, { name: string; base: number }> = {
-  BTC: { name: 'Bitcoin', base: 65193.58 },
-  ETH: { name: 'Ethereum', base: 2403.00 },
+  BTC: { name: 'Bitcoin', base: 64682.67 },
+  ETH: { name: 'Ethereum', base: 2403.44 },
   SOL: { name: 'Solana', base: 104.37 },
-  BNB: { name: 'BNB', base: 727.00 },
+  BNB: { name: 'BNB', base: 726.72 },
   DOGE: { name: 'Dogecoin', base: 0.079 },
   SHIB: { name: 'Shiba Inu', base: 0.0000185 },
   XRP: { name: 'Ripple XRP', base: 1.31 },
@@ -335,13 +338,14 @@ const IndexTile = React.memo(function IndexTile({
   const currentPct = live ? live.changePct : changePct;
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(symbol);
-  const isLiveStreaming = Boolean(isOpen || (live && live.price > 0));
+  const isLiveStreaming = isOpen;
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    if (!isOpen) return;
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       prevPriceRef.current = price;
@@ -354,7 +358,7 @@ const IndexTile = React.memo(function IndexTile({
     return () => {
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     };
-  }, [price]);
+  }, [price, isOpen]);
 
   return (
     <div className="relative group">
@@ -441,13 +445,14 @@ const WatchlistRow = React.memo(function WatchlistRow({
   const currentPct = live ? live.changePct : changePct;
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(symbol);
-  const isLiveStreaming = Boolean(isOpen || (live && live.price > 0));
+  const isLiveStreaming = isOpen;
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    if (!isOpen) return;
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       prevPriceRef.current = price;
@@ -460,7 +465,7 @@ const WatchlistRow = React.memo(function WatchlistRow({
     return () => {
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     };
-  }, [price]);
+  }, [price, isOpen]);
 
   return (
     <div className="relative group">
@@ -632,13 +637,14 @@ const CommodityTile = React.memo(function CommodityTile({
   const currentPct = live ? live.changePct : item.changePct;
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(item.symbol);
-  const isLiveStreaming = Boolean(isOpen || (live && live.price > 0));
+  const isLiveStreaming = isOpen;
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    if (!isOpen) return;
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       prevPriceRef.current = price;
@@ -651,7 +657,7 @@ const CommodityTile = React.memo(function CommodityTile({
     return () => {
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     };
-  }, [price]);
+  }, [price, isOpen]);
 
   return (
     <div className="relative group">
@@ -736,13 +742,14 @@ const ForexTile = React.memo(function ForexTile({
   const currentPct = live ? live.changePct : item.changePct;
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(item.symbol);
-  const isLiveStreaming = Boolean(isOpen || (live && live.price > 0));
+  const isLiveStreaming = isOpen;
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
   const prevPriceRef = useRef(price);
   const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    if (!isOpen) return;
     if (prevPriceRef.current !== price) {
       const dir = price > prevPriceRef.current ? 'up' : 'down';
       prevPriceRef.current = price;
@@ -755,7 +762,7 @@ const ForexTile = React.memo(function ForexTile({
     return () => {
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
     };
-  }, [price]);
+  }, [price, isOpen]);
 
   return (
     <div className="relative group">
