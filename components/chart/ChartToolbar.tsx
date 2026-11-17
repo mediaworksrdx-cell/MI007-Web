@@ -1011,16 +1011,12 @@ export function ChartToolbar({
                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5 shrink-0">Presets:</span>
                 {[
                   { id: 'all', label: 'All' },
-                  { id: 'bullish', label: 'Bullish' },
-                  { id: 'bearish', label: 'Bearish' },
                   { id: 'structure', label: 'Structure' },
                   { id: 'zones', label: 'OB & FVG' },
                   { id: 'reset', label: 'Reset' },
                 ].map((p) => {
                   const isActive =
-                    (p.id === 'bullish' && activeSmcConfig.showBullishSetups && !activeSmcConfig.showBearishSetups) ||
-                    (p.id === 'bearish' && !activeSmcConfig.showBullishSetups && activeSmcConfig.showBearishSetups) ||
-                    (p.id === 'all' && activeSmcConfig.showBullishSetups && activeSmcConfig.showBearishSetups && activeSmcConfig.showBos && activeSmcConfig.showBullishOb) ||
+                    (p.id === 'all' && activeSmcConfig.showBos && activeSmcConfig.showBullishOb) ||
                     (p.id === 'structure' && activeSmcConfig.showBos && !activeSmcConfig.showBullishOb) ||
                     (p.id === 'zones' && !activeSmcConfig.showBos && activeSmcConfig.showBullishOb);
                   return (
@@ -1072,27 +1068,6 @@ export function ChartToolbar({
                       sublabel="Subtle short-term swings independent of major swings"
                       checked={Boolean(activeSmcConfig.showInternalStructure)}
                       onChange={(v) => handleUpdateSmc({ showInternalStructure: v })}
-                    />
-                  </div>
-                </div>
-
-                {/* 1. Setup Direction */}
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
-                    Direction Controls
-                  </div>
-                  <div className="space-y-0.5">
-                    <SmcToggleRow
-                      label="Bullish Setups"
-                      sublabel="Demand zones, +BOS, +CHoCH, SSL sweeps"
-                      checked={activeSmcConfig.showBullishSetups !== false}
-                      onChange={(v) => handleUpdateSmc({ showBullishSetups: v })}
-                    />
-                    <SmcToggleRow
-                      label="Bearish Setups"
-                      sublabel="Supply zones, -BOS, -CHoCH, BSL sweeps"
-                      checked={activeSmcConfig.showBearishSetups !== false}
-                      onChange={(v) => handleUpdateSmc({ showBearishSetups: v })}
                     />
                   </div>
                 </div>
