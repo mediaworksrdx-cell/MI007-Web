@@ -67,22 +67,23 @@ export interface ForexItem {
 }
 
 const DEFAULT_INDIA_INDICES: IndexItem[] = [
-  { symbol: 'NIFTY', name: 'NIFTY 50', base: 25291.10, changePct: 0.0 },
-  { symbol: 'BANKNIFTY', name: 'BANK NIFTY', base: 61575.90, changePct: 0.0 },
-  { symbol: 'SENSEX', name: 'SENSEX', base: 82104.79, changePct: 0.0 },
-  { symbol: 'FINNIFTY', name: 'NIFTY FINANCIAL', base: 28015.40, changePct: 0.0 },
+  { symbol: 'NIFTY', name: 'NIFTY 50', base: 25387.40, changePct: 0.97 },
+  { symbol: 'BANKNIFTY', name: 'BANK NIFTY', base: 62273.25, changePct: 2.03 },
+  { symbol: 'SENSEX', name: 'SENSEX', base: 82532.19, changePct: 1.15 },
+  { symbol: 'FINNIFTY', name: 'NIFTY FINANCIAL', base: 28195.00, changePct: 1.22 },
 ];
 
 const DEFAULT_INDIA_WATCHLIST: WatchlistItem[] = [
-  { symbol: 'RELIANCE', name: 'Reliance Industries', base: 1344.80, sector: 'Energy', changePct: 0.0 },
-  { symbol: 'TCS', name: 'Tata Consultancy', base: 2405.00, sector: 'IT', changePct: 0.0 },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank', base: 816.50, sector: 'Banking', changePct: 0.0 },
-  { symbol: 'INFY', name: 'Infosys', base: 1145.10, sector: 'IT', changePct: 0.0 },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank', base: 1585.00, sector: 'Banking', changePct: 0.0 },
-  { symbol: 'TATAMOTORS', name: 'Tata Motors', base: 262.40, sector: 'Automotive', changePct: 0.0 },
-  { symbol: 'SBIN', name: 'State Bank of India', base: 1090.50, sector: 'Banking', changePct: 0.0 },
-  { symbol: 'BHARTIARTL', name: 'Bharti Airtel', base: 2153.50, sector: 'Telecom', changePct: 0.0 },
-  { symbol: 'ITC', name: 'ITC Limited', base: 295.10, sector: 'FMCG', changePct: 0.0 },
+  { symbol: 'RELIANCE', name: 'Reliance Industries', base: 1367.00, sector: 'Energy', changePct: 1.65 },
+  { symbol: 'TCS', name: 'Tata Consultancy', base: 2406.60, sector: 'IT', changePct: 0.07 },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank', base: 814.95, sector: 'Banking', changePct: -0.19 },
+  { symbol: 'INFY', name: 'Infosys', base: 1130.00, sector: 'IT', changePct: -1.32 },
+  { symbol: 'ICICIBANK', name: 'ICICI Bank', base: 1598.70, sector: 'Banking', changePct: 0.86 },
+  { symbol: 'TATAMOTORS', name: 'Tata Motors', base: 259.20, sector: 'Automotive', changePct: -1.22 },
+  { symbol: 'SBIN', name: 'State Bank of India', base: 1108.60, sector: 'Banking', changePct: 1.66 },
+  { symbol: 'BHARTIARTL', name: 'Bharti Airtel', base: 2138.30, sector: 'Telecom', changePct: -0.71 },
+  { symbol: 'ITC', name: 'ITC Limited', base: 293.30, sector: 'FMCG', changePct: -0.61 },
+  { symbol: 'LT', name: 'Larsen & Toubro', base: 4155.50, sector: 'Capital Goods', changePct: 0.37 },
 ];
 
 const DEFAULT_USA_INDICES: IndexItem[] = [
@@ -155,10 +156,10 @@ const DEFAULT_FOREX: ForexItem[] = [
 
 // Predefined catalog of recognized indices & cryptos for instantaneous auto-detection
 const KNOWN_INDICES: Record<string, { name: string; base: number; market: MarketType }> = {
-  NIFTY: { name: 'NIFTY 50', base: 25291.10, market: 'INDIA' },
-  BANKNIFTY: { name: 'BANK NIFTY', base: 61575.90, market: 'INDIA' },
-  SENSEX: { name: 'BSE SENSEX', base: 82104.79, market: 'INDIA' },
-  FINNIFTY: { name: 'NIFTY FINANCIAL', base: 28015.40, market: 'INDIA' },
+  NIFTY: { name: 'NIFTY 50', base: 25387.40, market: 'INDIA' },
+  BANKNIFTY: { name: 'BANK NIFTY', base: 62273.25, market: 'INDIA' },
+  SENSEX: { name: 'BSE SENSEX', base: 82532.19, market: 'INDIA' },
+  FINNIFTY: { name: 'NIFTY FINANCIAL', base: 28195.00, market: 'INDIA' },
   MIDCPNIFTY: { name: 'NIFTY MIDCAP SELECT', base: 12958.45, market: 'INDIA' },
   BANKEX: { name: 'BSE BANKEX', base: 61083.33, market: 'INDIA' },
   NIFTYNXT50: { name: 'NIFTY NEXT 50', base: 67200.00, market: 'INDIA' },
@@ -335,8 +336,10 @@ const IndexTile = React.memo(function IndexTile({
   onDelete?: () => void;
 }) {
   const { live } = useLiveSymbol(symbol);
-  const price = live ? live.price : base;
-  const currentPct = live ? live.changePct : changePct;
+  const price = live && live.price > 0 ? live.price : base;
+  const currentPct = (live && typeof live.changePct === 'number' && (live.changePct !== 0 || live.change !== 0))
+    ? live.changePct
+    : (typeof changePct === 'number' ? changePct : 0.0);
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(symbol);
   const isLiveStreaming = isOpen;
@@ -442,8 +445,10 @@ const WatchlistRow = React.memo(function WatchlistRow({
   onDelete?: () => void;
 }) {
   const { live } = useLiveSymbol(symbol);
-  const price = live ? live.price : base;
-  const currentPct = live ? live.changePct : changePct;
+  const price = live && live.price > 0 ? live.price : base;
+  const currentPct = (live && typeof live.changePct === 'number' && (live.changePct !== 0 || live.change !== 0))
+    ? live.changePct
+    : (typeof changePct === 'number' ? changePct : 0.0);
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(symbol);
   const isLiveStreaming = isOpen;
@@ -544,8 +549,10 @@ const CryptoTile = React.memo(function CryptoTile({
   onDelete?: () => void;
 }) {
   const { live } = useLiveSymbol(item.symbol);
-  const price = live ? live.price : item.base;
-  const currentPct = live ? live.changePct : item.changePct;
+  const price = live && live.price > 0 ? live.price : item.base;
+  const currentPct = (live && typeof live.changePct === 'number' && (live.changePct !== 0 || live.change !== 0))
+    ? live.changePct
+    : (typeof item.changePct === 'number' ? item.changePct : 0.0);
   const up = currentPct >= 0;
 
   const [flash, setFlash] = useState<'up' | 'down' | null>(null);
@@ -634,8 +641,10 @@ const CommodityTile = React.memo(function CommodityTile({
   onDelete?: () => void;
 }) {
   const { live } = useLiveSymbol(item.symbol);
-  const price = live ? live.price : item.base;
-  const currentPct = live ? live.changePct : item.changePct;
+  const price = live && live.price > 0 ? live.price : item.base;
+  const currentPct = (live && typeof live.changePct === 'number' && (live.changePct !== 0 || live.change !== 0))
+    ? live.changePct
+    : (typeof item.changePct === 'number' ? item.changePct : 0.0);
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(item.symbol);
   const isLiveStreaming = isOpen;
@@ -739,8 +748,10 @@ const ForexTile = React.memo(function ForexTile({
   onDelete?: () => void;
 }) {
   const { live } = useLiveSymbol(item.symbol);
-  const price = live ? live.price : item.base;
-  const currentPct = live ? live.changePct : item.changePct;
+  const price = live && live.price > 0 ? live.price : item.base;
+  const currentPct = (live && typeof live.changePct === 'number' && (live.changePct !== 0 || live.change !== 0))
+    ? live.changePct
+    : (typeof item.changePct === 'number' ? item.changePct : 0.0);
   const up = currentPct >= 0;
   const isOpen = isSymbolMarketOpen(item.symbol);
   const isLiveStreaming = isOpen;
@@ -962,18 +973,46 @@ export default function TerminalPage() {
   // Sync state when market changes or load from localStorage
   useEffect(() => {
     try {
+      const defIndices = market === 'INDIA' ? DEFAULT_INDIA_INDICES : market === 'USA' ? DEFAULT_USA_INDICES : DEFAULT_UAE_INDICES;
       const savedIndices = localStorage.getItem(`${STORAGE_PREFIX}indices_${market}`);
       if (savedIndices) {
-        setIndices(JSON.parse(savedIndices));
+        try {
+          const parsed: IndexItem[] = JSON.parse(savedIndices);
+          const defMap = new Map(defIndices.map(d => [d.symbol, d]));
+          const upgraded = parsed.map(p => {
+            const def = defMap.get(p.symbol);
+            if (def && (p.changePct === 0 || !p.changePct || Math.abs(p.base - def.base) > 50)) {
+              return { ...p, base: def.base, changePct: def.changePct };
+            }
+            return p;
+          });
+          setIndices(upgraded);
+        } catch {
+          setIndices(defIndices);
+        }
       } else {
-        setIndices(market === 'INDIA' ? DEFAULT_INDIA_INDICES : market === 'USA' ? DEFAULT_USA_INDICES : DEFAULT_UAE_INDICES);
+        setIndices(defIndices);
       }
 
+      const defWatchlist = market === 'INDIA' ? DEFAULT_INDIA_WATCHLIST : market === 'USA' ? DEFAULT_USA_WATCHLIST : DEFAULT_UAE_WATCHLIST;
       const savedWatchlist = localStorage.getItem(`${STORAGE_PREFIX}watchlist_${market}`);
       if (savedWatchlist) {
-        setWatchlist(JSON.parse(savedWatchlist));
+        try {
+          const parsed: WatchlistItem[] = JSON.parse(savedWatchlist);
+          const defWatMap = new Map(defWatchlist.map(d => [d.symbol, d]));
+          const upgradedWat = parsed.map(p => {
+            const def = defWatMap.get(p.symbol);
+            if (def && (p.changePct === 0 || !p.changePct || Math.abs(p.base - def.base) > 50)) {
+              return { ...p, base: def.base, changePct: def.changePct };
+            }
+            return p;
+          });
+          setWatchlist(upgradedWat);
+        } catch {
+          setWatchlist(defWatchlist);
+        }
       } else {
-        setWatchlist(market === 'INDIA' ? DEFAULT_INDIA_WATCHLIST : market === 'USA' ? DEFAULT_USA_WATCHLIST : DEFAULT_UAE_WATCHLIST);
+        setWatchlist(defWatchlist);
       }
 
       const savedCrypto = localStorage.getItem(`${STORAGE_PREFIX}crypto`);

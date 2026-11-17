@@ -104,8 +104,7 @@ export async function GET() {
 
   const fetchPromises: Promise<void>[] = [];
 
-  // 3. Indian Market: Check GCP Trade Engine or fallback to real-time Yahoo Finance during market hours
-  const isIndiaOpen = isMarketOpen('INDIA');
+  // 3. Indian Market: Check GCP Trade Engine or fallback to real-time Yahoo Finance
   fetchPromises.push((async () => {
     let gcpFresh = false;
     try {
@@ -117,24 +116,26 @@ export async function GET() {
       if (res.ok) {
         const gcpPrices = await res.json();
         if (Array.isArray(gcpPrices) && gcpPrices.length > 0) {
-          const maxTs = Math.max(...gcpPrices.map(x => x.timestamp || 0));
-          if (now - maxTs < 60_000) {
+          const maxTs = Math.max(...gcpPrices.map((x: any) => x.timestamp || 0));
+          const hasNonZeroChange = gcpPrices.some((x: any) => (x.change && x.change !== 0) || (x.changePercent && x.changePercent !== 0));
+          // Only trust GCP if timestamp is within last 120 seconds AND data contains real non-zero fluctuations
+          if (now - maxTs < 120_000 && hasNonZeroChange) {
             gcpFresh = true;
-          }
-          for (const item of gcpPrices) {
-            if (!item.symbol || typeof item.ltp !== 'number' || item.ltp <= 0) continue;
-            const cleanSym = item.symbol.replace(/\.NS$/, '').replace(/\.BO$/, '').trim();
-            const cleanUpper = cleanSym.toUpperCase();
-            const existing = pricesMap.get(cleanUpper) || pricesMap.get(item.symbol.toUpperCase());
+            for (const item of gcpPrices) {
+              if (!item.symbol || typeof item.ltp !== 'number' || item.ltp <= 0) continue;
+              const cleanSym = item.symbol.replace(/\.NS$/, '').replace(/\.BO$/, '').trim();
+              const cleanUpper = cleanSym.toUpperCase();
+              const existing = pricesMap.get(cleanUpper) || pricesMap.get(item.symbol.toUpperCase());
 
-            pricesMap.set(cleanUpper, {
-              instrumentToken: item.instrumentToken || (existing?.instrumentToken ?? 200000),
-              symbol: item.symbol,
-              ltp: item.ltp,
-              change: item.change ?? existing?.change ?? 0,
-              changePercent: item.changePercent ?? existing?.changePercent ?? 0,
-              timestamp: item.timestamp || now,
-            });
+              pricesMap.set(cleanUpper, {
+                instrumentToken: item.instrumentToken || (existing?.instrumentToken ?? 200000),
+                symbol: item.symbol,
+                ltp: item.ltp,
+                change: item.change ?? existing?.change ?? 0,
+                changePercent: item.changePercent ?? existing?.changePercent ?? 0,
+                timestamp: item.timestamp || now,
+              });
+            }
           }
         }
       }
@@ -142,14 +143,15 @@ export async function GET() {
       // GCP unreachable
     }
 
-    // If Indian market is open and GCP data is stale or unavailable, stream directly from live exchange via Yahoo Finance
-    if (isIndiaOpen && !gcpFresh) {
+    // If GCP data is stale or unavailable, stream directly from live exchange via Yahoo Finance
+    // (Works 24/7/365: live ticks during market hours, official exchange closing prices and daily % changes after close)
+    if (!gcpFresh) {
       const indianFetches = Object.entries(INDIAN_YAHOO_MAP).map(async ([symbol, yahooSym], idx) => {
         try {
-          const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1m`, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+          const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=5d`, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
             cache: 'no-store',
-            signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
+            signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(3000) : undefined,
           });
           if (!res.ok) return;
           const data = await res.json();
@@ -162,27 +164,28 @@ export async function GET() {
           const timestamp = (meta.regularMarketTime || Math.floor(now / 1000)) * 1000;
 
           const cleanUpper = symbol.toUpperCase();
-          pricesMap.set(cleanUpper, {
+          const entry: LivePriceResponse = {
             instrumentToken: 300000 + idx,
             symbol,
             ltp,
             change,
             changePercent,
             timestamp,
-          });
+          };
+          pricesMap.set(cleanUpper, entry);
 
           if (cleanUpper === 'NIFTY') {
-            pricesMap.set('NIFTY 50', { instrumentToken: 300000 + idx, symbol: 'NIFTY 50', ltp, change, changePercent, timestamp });
-            pricesMap.set('NIFTY50', { instrumentToken: 300000 + idx, symbol: 'NIFTY50', ltp, change, changePercent, timestamp });
+            pricesMap.set('NIFTY 50', { ...entry, symbol: 'NIFTY 50' });
+            pricesMap.set('NIFTY50', { ...entry, symbol: 'NIFTY50' });
           }
           if (cleanUpper === 'BANKNIFTY') {
-            pricesMap.set('BANK NIFTY', { instrumentToken: 300000 + idx, symbol: 'BANK NIFTY', ltp, change, changePercent, timestamp });
+            pricesMap.set('BANK NIFTY', { ...entry, symbol: 'BANK NIFTY' });
           }
           if (cleanUpper === 'FINNIFTY') {
-            pricesMap.set('NIFTY FINANCIAL', { instrumentToken: 300000 + idx, symbol: 'NIFTY FINANCIAL', ltp, change, changePercent, timestamp });
+            pricesMap.set('NIFTY FINANCIAL', { ...entry, symbol: 'NIFTY FINANCIAL' });
           }
           if (cleanUpper === 'SENSEX') {
-            pricesMap.set('BSE SENSEX', { instrumentToken: 300000 + idx, symbol: 'BSE SENSEX', ltp, change, changePercent, timestamp });
+            pricesMap.set('BSE SENSEX', { ...entry, symbol: 'BSE SENSEX' });
           }
         } catch (_err) {
           // Individual symbol fetch failure graceful skip
@@ -238,44 +241,81 @@ export async function GET() {
     }
   })());
 
-  // 5. Forex & Commodities (24/5 live quotes when market is open)
-  if (isMarketOpen('FOREX') || isMarketOpen('COMMODITY')) {
-    fetchPromises.push((async () => {
-      const cfFetches = Object.entries(COMMODITY_FOREX_YAHOO_MAP).map(async ([symbol, yahooSym], idx) => {
-        try {
-          const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1m`, {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
-            cache: 'no-store',
-            signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
-          });
-          if (!res.ok) return;
-          const data = await res.json();
-          const meta = data?.chart?.result?.[0]?.meta;
-          if (!meta || typeof meta.regularMarketPrice !== 'number' || meta.regularMarketPrice <= 0) return;
-          const ltp = meta.regularMarketPrice;
-          const prevClose = meta.chartPreviousClose || ltp;
-          const decimals = ltp < 2 ? 4 : 2;
-          const change = +(ltp - prevClose).toFixed(decimals);
-          const changePercent = +(((ltp - prevClose) / Math.max(0.001, prevClose)) * 100).toFixed(2);
-          const timestamp = (meta.regularMarketTime || Math.floor(now / 1000)) * 1000;
+  // 5. Forex & Commodities (24/7/365 live & closing exchange quotes)
+  fetchPromises.push((async () => {
+    const cfFetches = Object.entries(COMMODITY_FOREX_YAHOO_MAP).map(async ([symbol, yahooSym], idx) => {
+      try {
+        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=5d`, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          cache: 'no-store',
+          signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (!meta || typeof meta.regularMarketPrice !== 'number' || meta.regularMarketPrice <= 0) return;
+        const ltp = meta.regularMarketPrice;
+        const prevClose = meta.chartPreviousClose || ltp;
+        const decimals = ltp < 2 ? 4 : 2;
+        const change = +(ltp - prevClose).toFixed(decimals);
+        const changePercent = +(((ltp - prevClose) / Math.max(0.001, prevClose)) * 100).toFixed(2);
+        const timestamp = (meta.regularMarketTime || Math.floor(now / 1000)) * 1000;
 
-          pricesMap.set(symbol.toUpperCase(), {
-            instrumentToken: 500000 + idx,
-            symbol,
-            ltp: +ltp.toFixed(decimals),
-            change,
-            changePercent,
-            timestamp,
-          });
-        } catch (_err) {
-          // Graceful skip
-        }
-      });
-      await Promise.all(cfFetches);
-    })());
-  }
+        pricesMap.set(symbol.toUpperCase(), {
+          instrumentToken: 500000 + idx,
+          symbol,
+          ltp: +ltp.toFixed(decimals),
+          change,
+          changePercent,
+          timestamp,
+        });
+      } catch (_err) {
+        // Graceful skip
+      }
+    });
+    await Promise.all(cfFetches);
+  })());
 
-  // 6. USA Cash Indices & Equities (Fetch official closing benchmarks when closed, live ticks when open)
+  // 6. UAE Real Estate & Banking (Official ADX / DFM Exchanges)
+  const UAE_YAHOO_MAP: Record<string, string> = {
+    'EMAAR': 'EMAAR.AE',
+    'DEWA': 'DEWA.AE',
+    'SALIK': 'SALIK.AE',
+  };
+  fetchPromises.push((async () => {
+    const uaeFetches = Object.entries(UAE_YAHOO_MAP).map(async ([symbol, yahooSym], idx) => {
+      try {
+        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=5d`, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          cache: 'no-store',
+          signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (!meta || typeof meta.regularMarketPrice !== 'number' || meta.regularMarketPrice <= 0) return;
+        const ltp = meta.regularMarketPrice;
+        const prevClose = meta.chartPreviousClose || ltp;
+        const change = +(ltp - prevClose).toFixed(2);
+        const changePercent = +(((ltp - prevClose) / Math.max(0.001, prevClose)) * 100).toFixed(2);
+        const timestamp = (meta.regularMarketTime || Math.floor(now / 1000)) * 1000;
+
+        pricesMap.set(symbol.toUpperCase(), {
+          instrumentToken: 550000 + idx,
+          symbol,
+          ltp: +ltp.toFixed(2),
+          change,
+          changePercent,
+          timestamp,
+        });
+      } catch (_err) {
+        // Graceful skip
+      }
+    });
+    await Promise.all(uaeFetches);
+  })());
+
+  // 7. USA Cash Indices & Equities (Fetch official closing benchmarks when closed, live ticks when open)
   const US_YAHOO_MAP: Record<string, { yahoo: string; mult: number }> = {
     'SPX': { yahoo: '^GSPC', mult: 1.0 },
     'S&P 500': { yahoo: '^GSPC', mult: 1.0 },

@@ -932,20 +932,8 @@ export function ChartContainer({
           cleanEngine = [];
         }
 
-        // Universal scale reconciliation across all markets (Forex, Commodities, Indices, Stocks):
-        if (expectedPrice > 0 && cleanEngine.length > 0) {
-          const engineLast = cleanEngine[cleanEngine.length - 1];
-          if (engineLast && engineLast.close > 0) {
-            const hasRealLivePrice = live && live.price > 0;
-            const dislocationThreshold = hasRealLivePrice ? 0.05 : 0.25;
-            const dislocation = Math.abs(engineLast.close - expectedPrice) / expectedPrice;
-            if (dislocation > dislocationThreshold) {
-              const scaleMultiplier = expectedPrice / engineLast.close;
-              console.warn(`[MI007] Price rescaling applied to ${selectedSymbol}: engine close ${engineLast.close} → expected ${expectedPrice} (dislocation ${(dislocation * 100).toFixed(1)}%). Historical prices are adjusted, not raw.`);
-              cleanEngine = rescaleCandleArray(cleanEngine, scaleMultiplier, expectedPrice);
-            }
-          }
-        }
+        // Authentic engine candles are preserved as ground truth.
+        // Only if candles are detected as synthetic staircase or legacy corrupt data would they be adjusted.
 
         if (!isCancelled) {
           if (cleanEngine.length > 0) {
@@ -1007,25 +995,27 @@ export function ChartContainer({
     candlesRef.current = candles;
   }, [candles]);
 
-  // Sync current price immediately from Trade Engine if available (with scale dislocation protection)
+  // Sync current price immediately from Trade Engine if available (without destructive historical candle corruption)
   useEffect(() => {
     const live = liveSymbolData || getSymbolPrice(selectedSymbol);
     if (live && live.price > 0) {
       const currentCandles = candlesRef.current;
       if (currentCandles.length > 0) {
         const lastC = currentCandles[currentCandles.length - 1];
-        if (lastC && lastC.close > 0) {
-          const dis = Math.abs(live.price - lastC.close) / lastC.close;
-          const openDis = Math.abs(live.price - lastC.open) / Math.max(1, lastC.open);
-          if (dis > 0.20 || openDis > 0.20) {
-            // Re-anchor candles to verified live price scale
-            const ratio = live.price / lastC.close;
+        if (lastC && lastC.close > 0 && isSymbolMarketOpen(selectedSymbol)) {
+          // If market is open, update the active forming candle's close
+          const now = Date.now();
+          if (now >= lastC.openTime) {
             setCandles(cPrev => {
-              const rescaled = rescaleCandleArray(cPrev, ratio, live.price, selectedSymbol);
-              if (rescaled.length > 0) {
-                rescaled[rescaled.length - 1].close = live.price;
-              }
-              return rescaled;
+              if (cPrev.length === 0) return cPrev;
+              const next = [...cPrev];
+              const idx = next.length - 1;
+              const forming = { ...next[idx] };
+              forming.close = live.price;
+              forming.high = Math.max(forming.high, live.price);
+              forming.low = Math.min(forming.low, live.price);
+              next[idx] = forming;
+              return next;
             });
           }
         }
@@ -1051,16 +1041,11 @@ export function ChartContainer({
           const currentLast = prev[prev.length - 1];
           if (!currentLast || currentLast.close <= 0) return prev;
 
-          // Scale dislocation guard: re-anchor candles if arriving tick is verified on authentic scale
+          // Reject wild rogue ticks (>35% dislocation from active candle close)
           const dislocation = Math.abs(tick.price - currentLast.close) / currentLast.close;
-          const openDislocation = Math.abs(tick.price - currentLast.open) / Math.max(1, currentLast.open);
-          if (dislocation > 0.15 || openDislocation > 0.15) {
-            const ratio = tick.price / currentLast.close;
-            const rescaled = rescaleCandleArray(prev, ratio, tick.price);
-            if (rescaled.length > 0) {
-              rescaled[rescaled.length - 1].close = tick.price;
-            }
-            return rescaled;
+          if (dislocation > 0.35) {
+            console.warn(`[ChartContainer] Discarding outlier tick for ${selectedSymbol}: ${tick.price} vs active candle ${currentLast.close}`);
+            return prev;
           }
 
           const tfMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1H'];

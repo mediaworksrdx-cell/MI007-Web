@@ -223,11 +223,18 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             ? p.ltp > prevEntry.price ? 'up' : p.ltp < prevEntry.price ? 'down' : 'neutral'
             : 'neutral';
 
+          const effectiveChange = (p.change !== 0 || p.changePercent !== 0)
+            ? p.change
+            : (prevEntry?.change ?? p.change);
+          const effectiveChangePct = (p.change !== 0 || p.changePercent !== 0)
+            ? p.changePercent
+            : (prevEntry?.changePct ?? p.changePercent);
+
           const entry: LiveSymbolData = {
             symbol: p.symbol,
             price: p.ltp,
-            change: p.change,
-            changePct: p.changePercent,
+            change: effectiveChange,
+            changePct: effectiveChangePct,
             timestamp: p.timestamp || now,
             tickDirection,
             lastUpdated: now,
@@ -672,13 +679,26 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
             if (!tick.symbol || tick.price <= 0) return;
 
+            // Reject rogue mock crypto ticks from Synthetix WS; Coinbase WebSocket & Binance provide authentic crypto pricing
+            const isCryptoSymbol = /^(BTC|ETH|SOL|BNB|DOGE|SHIB|XRP|ADA|AVAX|DOT|LINK|MATIC)/i.test(tick.symbol);
+            if (isCryptoSymbol) {
+              return;
+            }
+
+            // Discard wild outlier single-tick jumps (>35% dislocation)
+            const key = normalizeSymbolKey(tick.symbol);
+            const prevEntryCheck = store?.getMap().get(key);
+            if (prevEntryCheck && prevEntryCheck.price > 0 && Math.abs(tick.price - prevEntryCheck.price) / prevEntryCheck.price > 0.35) {
+              console.warn(`[TradeEngine WS] Discarding outlier tick for ${tick.symbol}: ${tick.price} vs current ${prevEntryCheck.price}`);
+              return;
+            }
+
             lastTickRef.current = tick;
 
             listenersRef.current.forEach(listener => {
               try { listener(tick); } catch (e) { console.error(e); }
             });
 
-            const key = normalizeSymbolKey(tick.symbol);
             const now = Date.now();
             const changed = store?.updateBatch((prev) => {
               const prevEntry = prev.get(key) || prev.get(tick.symbol.toUpperCase());
