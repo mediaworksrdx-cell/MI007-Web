@@ -2782,62 +2782,6 @@ export function renderChart(
         ctx.fillText(headerTag, badgeX + 5 * dpr, badgeY + th / 2);
         ctx.restore();
       }
-
-      // 10b. Non-Executable Rejected Signal Audit Callout (Only rendered when no >= 70 setup is active; kept out of active trade brackets)
-      if (setupsToRender.length === 0 && smcData.rejectedSetups && smcData.rejectedSetups.length > 0) {
-        const lastBarIdx = candles.length - 1;
-        const recentRej = [...smcData.rejectedSetups]
-          .filter(s => lastBarIdx - s.candleIndex <= 40 && s.candleIndex >= startIdx)
-          .sort((a, b) => b.candleIndex - a.candleIndex)[0];
-        if (recentRej) {
-          const isBullRej = recentRej.direction === 'BULLISH';
-          const rejShortName = recentRej.name
-            .replace(/ \(Bullish\)| \(Bearish\)|Bullish |Bearish /g, '')
-            .replace('BOS Trend Continuation', 'BOS Continuation')
-            .replace('Trend Continuation', 'BOS')
-            .replace('CHoCH Structural Reversal', 'CHoCH Reversal')
-            .replace('Structural Reversal', 'CHoCH')
-            .replace('Supply Order Block Retest', 'Supply OB')
-            .replace('Demand Order Block Retest', 'Demand OB')
-            .replace('Breaker Block Role Reversal', 'Breaker');
-          const rejBos = recentRej.validatingBreak
-            ? ` • ${recentRej.validatingBreak.breakType} @ ${formatPrice(recentRej.validatingBreak.price, options.symbol)}`
-            : '';
-          const rejTs = recentRej.rejectionTimestamp || recentRej.confirmationTime;
-          const rejTimeStr = rejTs
-            ? new Date(rejTs).toISOString().replace('T', ' ').slice(5, 16) + ' UTC'
-            : 'Closed Bar';
-          const invPrice = formatPrice(recentRej.invalidationLevel ?? recentRej.stopLoss, options.symbol);
-          const invBasis = recentRej.invalidationBasis ? ` (${recentRej.invalidationBasis})` : '';
-          const line1 = `✕ REJECTED [EXCLUDED FROM ACTIVE TRADES]: ${isBullRej ? 'LONG' : 'SHORT'} ${rejShortName}${rejBos} •Entry Ref: ${formatPrice(recentRej.entryPrice, options.symbol)}`;
-          const line2 = `Reason: ${recentRej.rejectionReason || `Quality ${Math.round(recentRej.qualityScore)}/100 < 70 Min`} • Invalidation: ${invPrice}${invBasis} • Rejected: ${rejTimeStr}`;
-
-          ctx.save();
-          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-          const w1 = ctx.measureText(line1).width;
-          const w2 = ctx.measureText(line2).width;
-          const boxWRej = Math.min(chartW - 80 * dpr, Math.max(w1, w2) + 14 * dpr);
-          const boxHRej = 28 * dpr;
-          const yRej = Math.max(24 * dpr, Math.min(chartH - boxHRej - 16 * dpr, priceToY(recentRej.entryPrice) - boxHRej / 2));
-          const xRej = Math.max(10 * dpr, Math.min(chartW - boxWRej - 70 * dpr, (recentRej.candleIndex - startIdx) * candleW));
-
-          ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.92)' : 'rgba(248, 250, 252, 0.94)';
-          ctx.fillRect(xRej, yRej, boxWRej, boxHRej);
-          ctx.setLineDash([4 * dpr, 2 * dpr]);
-          ctx.strokeStyle = 'rgba(244, 63, 94, 0.75)';
-          ctx.lineWidth = 1 * dpr;
-          ctx.strokeRect(xRej, yRej, boxWRej, boxHRej);
-          ctx.setLineDash([]);
-
-          ctx.fillStyle = '#F43F5E';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(line1, xRej + 6 * dpr, yRej + 8 * dpr);
-          ctx.fillStyle = isDark ? '#94A3B8' : '#475569';
-          ctx.fillText(line2, xRej + 6 * dpr, yRej + 20 * dpr);
-          ctx.restore();
-        }
-      }
     }
 
     // 11. Right Price-Axis Non-Overlapping Label Management (Smart Annotation Engine)
