@@ -2317,13 +2317,21 @@ export function renderChart(
       if (setupsToRender.length === 0) {
         // Only select active setups that were formed within the last 60 bars (no fallback to ancient completed setups)
         const lastBarIdx = candles.length - 1;
+        // Prioritize setups backed by a confirmed BOS/CHoCH structural break over non-break triggers
+        const rankSetup = (a: SmcConfirmedSetup, b: SmcConfirmedSetup) => {
+          const aHasBos = a.validatingBreak ? 1 : 0;
+          const bHasBos = b.validatingBreak ? 1 : 0;
+          if (aHasBos !== bHasBos) return bHasBos - aHasBos;
+          return b.candleIndex - a.candleIndex;
+        };
+
         const activeBullish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && smcCfg.showBullishConfluence && isBullishMaster && (lastBarIdx - s.candleIndex <= 60))
-          .sort((a, b) => b.candleIndex - a.candleIndex)[0];
+          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBullishConfluence && isBullishMaster && (lastBarIdx - s.candleIndex <= 60))
+          .sort(rankSetup)[0];
 
         const activeBearish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && smcCfg.showBearishConfluence && isBearishMaster && (lastBarIdx - s.candleIndex <= 60))
-          .sort((a, b) => b.candleIndex - a.candleIndex)[0];
+          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBearishConfluence && isBearishMaster && (lastBarIdx - s.candleIndex <= 60))
+          .sort(rankSetup)[0];
 
         if (activeBullish && activeBearish) {
           // Strictly adhere to Higher-Timeframe Bias to eliminate conflicting simultaneous signals
@@ -2568,9 +2576,11 @@ export function renderChart(
             ctx.setLineDash([]);
           }
 
-          // TP2 Badge (Right edge of bracket – 1:3.0 target)
+          // TP2 Badge (Right edge of bracket – structural liquidity target & exact R:R from Entry/SL)
+          const actualRiskDist2 = Math.max(1e-9, Math.abs(st.entryPrice - st.stopLoss));
+          const tp2Rr = (Math.abs(st.targetPrice2! - st.entryPrice) / actualRiskDist2).toFixed(1);
           ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-          const tp2Text = `TP2 (1:3.0): ${formatPrice(st.targetPrice2!, options.symbol)}`;
+          const tp2Text = `TP2 (1:${tp2Rr}): ${formatPrice(st.targetPrice2!, options.symbol)}`;
           const tp2Tm = ctx.measureText(tp2Text);
           ctx.fillStyle = 'rgba(5, 150, 105, 0.92)';
           ctx.fillRect(x + boxW - tp2Tm.width - 6 * dpr, finalTp2Y - 6 * dpr, tp2Tm.width + 6 * dpr, 12 * dpr);
@@ -2580,11 +2590,13 @@ export function renderChart(
           ctx.fillText(tp2Text, x + boxW - 3 * dpr, finalTp2Y);
         }
 
-        // 5. Distinct Non-Overlapping Price Badges (Entry, SL + Risk %, TP1 1:2.0, TP2 1:3.0, Signal Status)
+        // 5. Distinct Non-Overlapping Price Badges (Entry, SL + Risk %, TP1, TP2, Signal Status)
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
 
-        // TP1 Badge (Target 1 – RR 1:2.0)
-        const tpText = `TP1 (1:2.0): ${formatPrice(st.targetPrice, options.symbol)}`;
+        // TP1 Badge (Target 1 – structural liquidity target & exact R:R from Entry/SL)
+        const actualRiskDist1 = Math.max(1e-9, Math.abs(st.entryPrice - st.stopLoss));
+        const tp1Rr = (Math.abs(st.targetPrice - st.entryPrice) / actualRiskDist1).toFixed(1);
+        const tpText = `TP1 (1:${tp1Rr}): ${formatPrice(st.targetPrice, options.symbol)}`;
         const tpTm = ctx.measureText(tpText);
         ctx.fillStyle = 'rgba(16, 185, 129, 0.92)';
         ctx.fillRect(x + boxW - tpTm.width - 8 * dpr, finalTpY - 7 * dpr, tpTm.width + 8 * dpr, 14 * dpr);
@@ -2649,10 +2661,15 @@ export function renderChart(
           .replace('Dealing Range ', '')
           .replace('Liquidity Pool ', '')
           .replace('Power of Three ', '');
-        const rrLabel = st.riskReward ? `1:${st.riskReward.toFixed(1)}` : '1:2.0';
+        const rrLabel = `1:${tp1Rr}`;
+        const bosLabel = st.validatingBreak
+          ? ` • ${st.validatingBreak.breakType} @ ${formatPrice(st.validatingBreak.price, options.symbol)}`
+          : '';
         const scoreLabel = st.qualityScore ? ` • ${Math.round(st.qualityScore)}%` : '';
-        const statusLabel = isTradeOver ? tradeOutcome : (st.status || 'CONFIRMED');
-        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (${rrLabel}${scoreLabel}) [${statusLabel}]`;
+        const statusLabel = isTradeOver
+          ? tradeOutcome
+          : (st.signalState || st.status || 'CONFIRMED');
+        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName}${bosLabel} (${rrLabel}${scoreLabel}) [${statusLabel}]`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(headerTag);
         const tw = tm.width + 10 * dpr;

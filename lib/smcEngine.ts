@@ -250,6 +250,10 @@ export interface SmcConfirmedSetup {
   stopLossAdjusted?: boolean;
   /** RR-006: true when both SL and TP were touched inside the same bar (worst-case SL applied) */
   resolutionIndeterminate?: boolean;
+  /** Exact structural break (BOS / CHoCH) that validates this setup */
+  validatingBreak?: { breakType: SmcBreakType; price: number; candleIndex: number };
+  /** Explicit execution state distinguishing PENDING, CONFIRMED, EXECUTED, and INVALIDATED signals */
+  signalState?: 'PENDING' | 'CONFIRMED' | 'EXECUTED' | 'INVALIDATED';
 }
 
 export interface SmcAnalysis {
@@ -905,30 +909,40 @@ export function detectLiquidity(
       if (lvl.isSwept) continue;
 
       if (lvl.type === 'BSL' || lvl.type === 'EQH') {
-        // Buy-Side Liquidity (BSL) Sweep: wick above level, close back below
+        // If candle body closes above the confirmed swing high, the level was broken (BOS), not swept
+        if (cur.close > lvl.price) {
+          lvl.isSwept = true;
+          continue;
+        }
+        // Buy-Side Liquidity (BSL) Sweep: wick above confirmed swing high, close back below
         if (cur.high > lvl.price && cur.close < lvl.price) {
           const upperWick = cur.high - Math.max(cur.open, cur.close);
           const upperWickRatio = upperWick / totalRange;
-          // SMC-010: the wick-ratio requirement is MANDATORY. Penetration depth no longer bypasses it.
           const isGenuineSweep = upperWickRatio >= minWickRatio;
-          // Rejection is confirmed only when the NEXT closed bar fails to reclaim the level
           const rejectionConfirmed = !!next && isCandleClosed(next) && next.close < lvl.price;
           lvl.isSwept = true;
           lvl.sweepCandleIndex = i;
-          sweeps.push({
-            candleIndex: i,
-            time: cur.openTime,
-            price: cur.high,
-            isHighSweep: true,
-            label: `${lvl.type} Sweep ($$$)`,
-            sweptLevelPrice: lvl.price,
-            wickRatio: Number(upperWickRatio.toFixed(3)),
-            isGenuineSweep,
-            rejectionConfirmed,
-          });
+          if (isGenuineSweep) {
+            sweeps.push({
+              candleIndex: i,
+              time: cur.openTime,
+              price: cur.high,
+              isHighSweep: true,
+              label: `${lvl.type} Sweep (${roundSmcPrice(lvl.price)})`,
+              sweptLevelPrice: lvl.price,
+              wickRatio: Number(upperWickRatio.toFixed(3)),
+              isGenuineSweep,
+              rejectionConfirmed,
+            });
+          }
         }
       } else if (lvl.type === 'SSL' || lvl.type === 'EQL') {
-        // Sell-Side Liquidity (SSL) Sweep: wick below level, close back above
+        // If candle body closes below the confirmed swing low, the level was broken (BOS), not swept
+        if (cur.close < lvl.price) {
+          lvl.isSwept = true;
+          continue;
+        }
+        // Sell-Side Liquidity (SSL) Sweep: wick below confirmed swing low, close back above
         if (cur.low < lvl.price && cur.close > lvl.price) {
           const lowerWick = Math.min(cur.open, cur.close) - cur.low;
           const lowerWickRatio = lowerWick / totalRange;
@@ -936,17 +950,19 @@ export function detectLiquidity(
           const rejectionConfirmed = !!next && isCandleClosed(next) && next.close > lvl.price;
           lvl.isSwept = true;
           lvl.sweepCandleIndex = i;
-          sweeps.push({
-            candleIndex: i,
-            time: cur.openTime,
-            price: cur.low,
-            isHighSweep: false,
-            label: `${lvl.type} Sweep ($$$)`,
-            sweptLevelPrice: lvl.price,
-            wickRatio: Number(lowerWickRatio.toFixed(3)),
-            isGenuineSweep,
-            rejectionConfirmed,
-          });
+          if (isGenuineSweep) {
+            sweeps.push({
+              candleIndex: i,
+              time: cur.openTime,
+              price: cur.low,
+              isHighSweep: false,
+              label: `${lvl.type} Sweep (${roundSmcPrice(lvl.price)})`,
+              sweptLevelPrice: lvl.price,
+              wickRatio: Number(lowerWickRatio.toFixed(3)),
+              isGenuineSweep,
+              rejectionConfirmed,
+            });
+          }
         }
       }
     }
@@ -2111,26 +2127,35 @@ export function detectAll16SmcSetups(
       statusOverride = 'INVALIDATED';
     }
 
-    // 0b. Structure Confirmation: Require a confirmed same-direction BOS/CHoCH before generating signal
-    if (breaks && breaks.length > 0) {
-      const hasConfirmedBreak = breaks.some(b => b.isBullish === isBull && b.candleIndex <= candleIndex);
-      if (
-        !hasConfirmedBreak &&
-        (setupType === 'BOS_CONTINUATION' ||
-         setupType === 'CHOCH_REVERSAL' ||
-         setupType === 'OB_RETEST' ||
-         setupType === 'BREAKER_RETEST' ||
-         setupType === 'BOS_FVG_RETEST' ||
-         setupType === 'MTF_CONFLUENCE' ||
-         setupType === 'THREE_STAGE_REVERSAL')
-      ) {
-        statusOverride = 'INVALIDATED';
-      }
+    // 0b. Structure Confirmation: Market structure & confirmed BOS/CHoCH are the primary decision inputs.
+    // Identify the exact validating break; never allow PDL/session low alone as a primary trigger.
+    const matchedBreak = breaks && breaks.length > 0
+      ? [...breaks].reverse().find(b => b.isBullish === isBull && b.candleIndex <= candleIndex)
+      : undefined;
+    const validatingBreak = matchedBreak
+      ? { breakType: matchedBreak.breakType, price: roundSmcPrice(matchedBreak.price), candleIndex: matchedBreak.candleIndex }
+      : undefined;
+
+    if (
+      !validatingBreak &&
+      breaks &&
+      breaks.length > 0 &&
+      (setupType === 'BOS_CONTINUATION' ||
+       setupType === 'CHOCH_REVERSAL' ||
+       setupType === 'OB_RETEST' ||
+       setupType === 'BREAKER_RETEST' ||
+       setupType === 'BOS_FVG_RETEST' ||
+       setupType === 'MTF_CONFLUENCE' ||
+       setupType === 'THREE_STAGE_REVERSAL' ||
+       setupType === 'SESSION_LIQUIDITY')
+    ) {
+      statusOverride = 'INVALIDATED';
     }
 
     // 1. Numerical Sanity Check
+    const cleanEntry = roundSmcPrice(entryPrice);
     if (
-      !Number.isFinite(entryPrice) || entryPrice <= 0 ||
+      !Number.isFinite(cleanEntry) || cleanEntry <= 0 ||
       !Number.isFinite(stopLoss) || stopLoss <= 0 ||
       !Number.isFinite(targetPrice) || targetPrice <= 0
     ) {
@@ -2140,45 +2165,42 @@ export function detectAll16SmcSetups(
     // 1b. SMC Proximity Invariant (±5.0% of terminal close)
     const terminalBar = candles[candles.length - 1];
     if (terminalBar && terminalBar.close > 0) {
-      const priceDistancePct = Math.abs(entryPrice - terminalBar.close) / terminalBar.close;
+      const priceDistancePct = Math.abs(cleanEntry - terminalBar.close) / terminalBar.close;
       if (priceDistancePct > 0.05) {
         statusOverride = 'INVALIDATED';
       }
     }
 
-    // 1c. Liquidity-Sweep & Premium/Discount Confluence Guard:
-    // Do not confirm a BULLISH setup deep in Premium right after a BSL sweep (or BEARISH deep in Discount after SSL sweep)
+    // 1c. Anti-Late-Entry & Liquidity-Sweep Guard:
+    // Reject short entries that appear late after substantial bearish movement (bottom 25% of dealing range / near PDL)
+    // and reject long entries that appear late after substantial bullish movement (top 25% of dealing range / near PDH).
     if (dealingRange && dealingRange.highPrice > dealingRange.lowPrice) {
       const drSpan = dealingRange.highPrice - dealingRange.lowPrice;
       const deepPremium = dealingRange.equilibriumPrice + drSpan * 0.25;
       const deepDiscount = dealingRange.equilibriumPrice - drSpan * 0.25;
-      if (isBull && entryPrice > deepPremium) {
-        const recentBslSweep = sweeps.some(s => s.isHighSweep && candleIndex - s.candleIndex >= 0 && candleIndex - s.candleIndex <= 6);
-        if (recentBslSweep) statusOverride = 'INVALIDATED';
-      } else if (!isBull && entryPrice < deepDiscount) {
-        const recentSslSweep = sweeps.some(s => !s.isHighSweep && candleIndex - s.candleIndex >= 0 && candleIndex - s.candleIndex <= 6);
-        if (recentSslSweep) statusOverride = 'INVALIDATED';
+      if (isBull && cleanEntry > deepPremium && setupType !== 'CHOCH_REVERSAL') {
+        statusOverride = 'INVALIDATED';
+      } else if (!isBull && cleanEntry < deepDiscount && setupType !== 'CHOCH_REVERSAL') {
+        statusOverride = 'INVALIDATED';
       }
     }
 
     // 2. Stop-Loss: Place SL beyond confirmed swing high (for short) / swing low (for long) with ATR-based buffer
-    const atrVal = atrSeries[Math.min(Math.max(0, candleIndex), atrSeries.length - 1)] || entryPrice * 0.003;
-    const atrBuffer = Math.max(atrVal * 0.25, entryPrice * 0.0005);
-    let cleanStopLoss = stopLoss;
+    const atrVal = atrSeries[Math.min(Math.max(0, candleIndex), atrSeries.length - 1)] || cleanEntry * 0.003;
+    const atrBuffer = Math.max(atrVal * 0.25, cleanEntry * 0.0005);
+    let cleanStopLoss = roundSmcPrice(stopLoss);
 
     if (swings && swings.length > 0 && Number.isFinite(cleanStopLoss)) {
       if (!isBull) {
-        // Short trade: look for nearest confirmed Swing High above entryPrice within 3.5 ATR
         const confSwingHigh = [...swings]
           .reverse()
-          .find(s => s.isHigh && (s.confirmationIndex ?? s.index) <= candleIndex && s.price > entryPrice && (s.price - entryPrice) <= atrVal * 3.5);
+          .find(s => s.isHigh && (s.confirmationIndex ?? s.index) <= candleIndex && s.price > cleanEntry && (s.price - cleanEntry) <= atrVal * 3.5);
         const anchorHigh = confSwingHigh ? Math.max(cleanStopLoss, confSwingHigh.price) : cleanStopLoss;
         cleanStopLoss = roundSmcPrice(anchorHigh + atrBuffer * 0.25);
       } else {
-        // Long trade: look for nearest confirmed Swing Low below entryPrice within 3.5 ATR
         const confSwingLow = [...swings]
           .reverse()
-          .find(s => !s.isHigh && (s.confirmationIndex ?? s.index) <= candleIndex && s.price < entryPrice && (entryPrice - s.price) <= atrVal * 3.5);
+          .find(s => !s.isHigh && (s.confirmationIndex ?? s.index) <= candleIndex && s.price < cleanEntry && (cleanEntry - s.price) <= atrVal * 3.5);
         const anchorLow = confSwingLow ? Math.min(cleanStopLoss, confSwingLow.price) : cleanStopLoss;
         cleanStopLoss = roundSmcPrice(anchorLow - atrBuffer * 0.25);
       }
@@ -2186,25 +2208,54 @@ export function detectAll16SmcSetups(
 
     let stopLossAdjusted = false;
     const slInvalid = isBull
-      ? (!Number.isFinite(cleanStopLoss) || cleanStopLoss >= entryPrice)
-      : (!Number.isFinite(cleanStopLoss) || cleanStopLoss <= entryPrice);
+      ? (!Number.isFinite(cleanStopLoss) || cleanStopLoss >= cleanEntry)
+      : (!Number.isFinite(cleanStopLoss) || cleanStopLoss <= cleanEntry);
     if (slInvalid) {
       stopLossAdjusted = true;
       statusOverride = 'INVALIDATED';
-      cleanStopLoss = roundSmcPrice(isBull ? entryPrice - atrBuffer : entryPrice + atrBuffer);
+      cleanStopLoss = roundSmcPrice(isBull ? cleanEntry - atrBuffer : cleanEntry + atrBuffer);
     }
-    const rawRisk = isBull ? (entryPrice - cleanStopLoss) : (cleanStopLoss - entryPrice);
-    const riskDistance = rawRisk > 0 ? rawRisk : Math.max(Math.abs(entryPrice - cleanStopLoss), entryPrice * 0.005);
+    const rawRisk = isBull ? (cleanEntry - cleanStopLoss) : (cleanStopLoss - cleanEntry);
+    const riskDistance = rawRisk > 0 ? rawRisk : Math.max(Math.abs(cleanEntry - cleanStopLoss), cleanEntry * 0.005);
 
-    // 3. Target Calculation: Strict 1:2 (TP1) and 1:3 (TP2) calculated from actual entryPrice and stopLoss
+    // 3. Target Calculation: Anchor TP1 & TP2 to opposing structural liquidity pools when available within institutional R:R bounds,
+    // otherwise use exact 1:2 (TP1) and 1:3 (TP2) calculated from the actual cleanEntry and cleanStopLoss.
     const rp: SmcRiskProfile = { ...DEFAULT_SMC_RISK_PROFILE, ...riskProfile };
+    const candidatePools: number[] = [];
+    for (const s of swings) {
+      if ((s.confirmationIndex ?? s.index) <= candleIndex) {
+        if (isBull && s.isHigh && s.price > cleanEntry) candidatePools.push(s.price);
+        if (!isBull && !s.isHigh && s.price < cleanEntry) candidatePools.push(s.price);
+      }
+    }
+    if (sessionLevels?.pdh && isBull && sessionLevels.pdh > cleanEntry) candidatePools.push(sessionLevels.pdh);
+    if (sessionLevels?.pdl && !isBull && sessionLevels.pdl < cleanEntry) candidatePools.push(sessionLevels.pdl);
+    if (sessionLevels?.pwh && isBull && sessionLevels.pwh > cleanEntry) candidatePools.push(sessionLevels.pwh);
+    if (sessionLevels?.pwl && !isBull && sessionLevels.pwl < cleanEntry) candidatePools.push(sessionLevels.pwl);
+    if (dealingRange) {
+      if (isBull && dealingRange.highPrice > cleanEntry) candidatePools.push(dealingRange.highPrice);
+      if (!isBull && dealingRange.lowPrice < cleanEntry) candidatePools.push(dealingRange.lowPrice);
+    }
+    candidatePools.sort((a, b) => Math.abs(a - cleanEntry) - Math.abs(b - cleanEntry));
+
+    const minTp1Dist = riskDistance * rp.target1R;
+    const structuralTp1 = candidatePools.find(p => {
+      const d = Math.abs(p - cleanEntry);
+      return d >= minTp1Dist && d <= riskDistance * 2.8;
+    });
     const effectiveTarget1 = roundSmcPrice(
-      isBull ? entryPrice + riskDistance * rp.target1R : entryPrice - riskDistance * rp.target1R
+      structuralTp1 ?? (isBull ? cleanEntry + minTp1Dist : cleanEntry - minTp1Dist)
     );
-    const rewardDistance = Math.abs(effectiveTarget1 - entryPrice);
+    const rewardDistance = Math.abs(effectiveTarget1 - cleanEntry);
     const computedRr = Number((rewardDistance / Math.max(1e-9, riskDistance)).toFixed(2));
+
+    const minTp2Dist = Math.max(rewardDistance + riskDistance * 0.5, riskDistance * rp.target2R);
+    const structuralTp2 = candidatePools.find(p => {
+      const d = Math.abs(p - cleanEntry);
+      return d >= minTp2Dist && d <= riskDistance * 4.5;
+    });
     const targetPrice2 = roundSmcPrice(
-      isBull ? entryPrice + riskDistance * rp.target2R : entryPrice - riskDistance * rp.target2R
+      structuralTp2 ?? (isBull ? cleanEntry + riskDistance * rp.target2R : cleanEntry - riskDistance * rp.target2R)
     );
     if (computedRr < rp.minRiskReward && !statusOverride) {
       statusOverride = 'INVALIDATED';
@@ -2365,6 +2416,15 @@ export function detectAll16SmcSetups(
       }
     );
 
+    const signalState: 'PENDING' | 'CONFIRMED' | 'EXECUTED' | 'INVALIDATED' =
+      status === 'INVALIDATED' || status === 'EXPIRED'
+        ? 'INVALIDATED'
+        : (tp1Hit || tp2Hit || retestCount > 0 || status === 'RETESTING' || status === 'TARGET_HIT' || status === 'EXITED')
+        ? 'EXECUTED'
+        : status === 'PENDING'
+        ? 'PENDING'
+        : 'CONFIRMED';
+
     return {
       id: `${baseId}_${time}`,
       name,
@@ -2372,7 +2432,7 @@ export function detectAll16SmcSetups(
       direction,
       candleIndex,
       time,
-      entryPrice: roundSmcPrice(entryPrice),
+      entryPrice: cleanEntry,
       stopLoss: roundSmcPrice(cleanStopLoss),
       targetPrice: effectiveTarget1,
       targetPrice2,
@@ -2398,6 +2458,8 @@ export function detectAll16SmcSetups(
       tp1HitIndex,
       tp2Hit,
       tp2HitIndex,
+      signalState,
+      ...(validatingBreak ? { validatingBreak } : {}),
       ...(stopLossAdjusted ? { stopLossAdjusted: true } : {}),
       ...(resolutionIndeterminate ? { resolutionIndeterminate: true } : {}),
     };
