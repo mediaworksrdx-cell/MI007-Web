@@ -126,7 +126,7 @@ console.log('\n--- Test 4: Empirical Forward Outcome Simulation (Wins, Losses & 
   const histPath = path.join(process.cwd(), 'public', 'data', 'history-5y', 'NIFTY.json');
   if (fs.existsSync(histPath)) {
     const raw = JSON.parse(fs.readFileSync(histPath, 'utf-8')) as Candle[];
-    series = raw.slice(-300).map((c) => ({ ...c, isClosed: true }));
+    series = raw.slice(-180).map((c) => ({ ...c, isClosed: true }));
   } else {
     const cycles = 180;
     const minute = 60000;
@@ -143,29 +143,35 @@ console.log('\n--- Test 4: Empirical Forward Outcome Simulation (Wins, Losses & 
     }
   }
 
-  // Point-in-time walk-forward evaluation: collect setups as they confirm at bar t, then simulate future bars t+1..N
+  // Bar-by-bar (1-bar step) point-in-time walk-forward evaluation:
+  // captures every intermediate setup state at the exact bar t it confirms, then simulates future bars t..N-1
   const seenIds = new Set<string>();
-  const allEvaluated = [];
-  for (let t = 40; t <= series.length; t += 10) {
+  const allEvaluated: { setup: (typeof series extends Candle[] ? ReturnType<typeof calculateSMC>['confirmedSetups'][number] : never); confirmedAtBar: number }[] = [];
+  for (let t = 40; t <= series.length; t += 1) {
     const sub = calculateSMC(series.slice(0, t));
     for (const st of sub.confirmedSetups) {
       if (!seenIds.has(st.id)) {
         seenIds.add(st.id);
-        allEvaluated.push(st);
+        allEvaluated.push({ setup: st, confirmedAtBar: t - 1 });
       }
     }
   }
   const totalSetups = allEvaluated.length;
-  assert(totalSetups > 0, `Generated ${totalSetups} point-in-time institutional setups across walk-forward series`);
+  assert(totalSetups > 0, `Generated ${totalSetups} bar-by-bar point-in-time setups across walk-forward series`);
+
+  // Realistic execution friction parameters
+  const SLIPPAGE_RATE = 0.0005;   // 5 bps per leg slippage
+  const COMMISSION_RATE = 0.0004; // 4 bps round-trip commission/fees
+  const PARTIAL_TP1_WEIGHT = 0.5; // 50% scale-out at TP1, 50% runner to TP2
 
   let structuralValidCount = 0;
   let wins = 0;
   let losses = 0;
   let unresolved = 0;
-  let grossWinR = 0;
-  let grossLossR = 0;
+  let netWinR = 0;
+  let netLossR = 0;
 
-  for (const st of allEvaluated) {
+  for (const { setup: st, confirmedAtBar } of allEvaluated) {
     const isBull = st.direction === 'BULLISH';
     const validEntry = st.entryPrice > 0;
     const validSL = isBull ? st.stopLoss < st.entryPrice : st.stopLoss > st.entryPrice;
@@ -176,31 +182,44 @@ console.log('\n--- Test 4: Empirical Forward Outcome Simulation (Wins, Losses & 
       structuralValidCount++;
     }
 
-    const risk = Math.max(1e-9, Math.abs(st.entryPrice - st.stopLoss));
-    const tp1R = Math.abs(st.targetPrice - st.entryPrice) / risk;
-    const tp2R = st.targetPrice2 ? Math.abs(st.targetPrice2 - st.entryPrice) / risk : tp1R;
+    // Apply adverse entry & stop-exit slippage
+    const effectiveEntry = isBull
+      ? st.entryPrice * (1 + SLIPPAGE_RATE)
+      : st.entryPrice * (1 - SLIPPAGE_RATE);
+    const effectiveStop = isBull
+      ? st.stopLoss * (1 - SLIPPAGE_RATE)
+      : st.stopLoss * (1 + SLIPPAGE_RATE);
 
-    // Forward bar-by-bar simulation: wait for limit entry fill at entryPrice, then evaluate SL-before-TP on subsequent closed bars
+    const risk = Math.max(1e-9, Math.abs(effectiveEntry - effectiveStop));
+    const feeInR = (st.entryPrice * COMMISSION_RATE) / risk;
+    const tp1R = Math.max(0, Math.abs(st.targetPrice - effectiveEntry) / risk);
+    const tp2R = st.targetPrice2
+      ? Math.max(0, Math.abs(st.targetPrice2 - effectiveEntry) / risk)
+      : tp1R;
+
     let entryFilled = false;
     let hitTp1 = false;
     let hitTp2 = false;
     let hitSl = false;
 
-    for (let k = st.candleIndex + 1; k < series.length; k++) {
+    const simStartIdx = Math.max(st.candleIndex + 1, confirmedAtBar + 1);
+    for (let k = simStartIdx; k < series.length; k++) {
       const bar = series[k];
       if (!bar || bar.isClosed !== true) break;
 
       if (!entryFilled) {
-        // If price invalidates stopLoss before filling entry, setup is cancelled
         if (isBull ? bar.low <= st.stopLoss : bar.high >= st.stopLoss) break;
-        const filled = isBull ? bar.low <= st.entryPrice : bar.high >= st.entryPrice;
+        // Require price to trade through effectiveEntry (accounting for slippage/queue depth)
+        const filled = isBull ? bar.low <= effectiveEntry : bar.high >= effectiveEntry;
         if (filled) {
           entryFilled = true;
         }
         continue;
       }
 
-      const slTouched = isBull ? (bar.low <= st.stopLoss || bar.close <= st.stopLoss) : (bar.high >= st.stopLoss || bar.close >= st.stopLoss);
+      const slTouched = isBull
+        ? (bar.low <= effectiveStop || bar.close <= effectiveStop)
+        : (bar.high >= effectiveStop || bar.close >= effectiveStop);
       const tp1Touched = isBull ? bar.high >= st.targetPrice : bar.low <= st.targetPrice;
       const tp2Touched = st.targetPrice2
         ? (isBull ? bar.high >= st.targetPrice2 : bar.low <= st.targetPrice2)
@@ -220,19 +239,18 @@ console.log('\n--- Test 4: Empirical Forward Outcome Simulation (Wins, Losses & 
     }
 
     if (hitTp2) {
-      wins++;
-      // 50% banked at TP1 + 50% banked at TP2
-      grossWinR += 0.5 * tp1R + 0.5 * tp2R;
+      const tradeR = PARTIAL_TP1_WEIGHT * tp1R + (1 - PARTIAL_TP1_WEIGHT) * tp2R - feeInR;
+      if (tradeR >= 0) { wins++; netWinR += tradeR; } else { losses++; netLossR += Math.abs(tradeR); }
     } else if (hitTp1 && hitSl) {
-      wins++;
-      // 50% banked at TP1, remainder stopped at breakeven / SL
-      grossWinR += 0.5 * tp1R;
+      // 50% banked at TP1, runner stopped at original SL (-0.5R) minus fees
+      const tradeR = PARTIAL_TP1_WEIGHT * tp1R - (1 - PARTIAL_TP1_WEIGHT) * 1.0 - feeInR;
+      if (tradeR >= 0) { wins++; netWinR += tradeR; } else { losses++; netLossR += Math.abs(tradeR); }
     } else if (hitTp1) {
-      wins++;
-      grossWinR += tp1R;
+      const tradeR = PARTIAL_TP1_WEIGHT * tp1R - feeInR;
+      if (tradeR >= 0) { wins++; netWinR += tradeR; } else { losses++; netLossR += Math.abs(tradeR); }
     } else if (hitSl) {
       losses++;
-      grossLossR += 1.0;
+      netLossR += 1.0 + feeInR;
     } else {
       unresolved++;
     }
@@ -241,11 +259,11 @@ console.log('\n--- Test 4: Empirical Forward Outcome Simulation (Wins, Losses & 
   const structuralPct = (structuralValidCount / totalSetups) * 100;
   const resolvedCount = wins + losses;
   const winRatePct = resolvedCount > 0 ? (wins / resolvedCount) * 100 : 0;
-  const expectancyR = resolvedCount > 0 ? (grossWinR - grossLossR) / resolvedCount : 0;
-  const profitFactor = grossLossR > 0 ? grossWinR / grossLossR : (grossWinR > 0 ? Infinity : 0);
+  const expectancyR = resolvedCount > 0 ? (netWinR - netLossR) / resolvedCount : 0;
+  const profitFactor = netLossR > 0 ? netWinR / netLossR : (netWinR > 0 ? Infinity : 0);
 
   console.log(`  ▶ Structural Invariant Compliance: ${structuralPct.toFixed(1)}% (${structuralValidCount}/${totalSetups})`);
-  console.log(`  ▶ Empirical Forward Simulation: ${wins}W / ${losses}L / ${unresolved} Open (Win Rate: ${winRatePct.toFixed(1)}%, PF: ${Number.isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞'}, Expectancy: ${expectancyR >= 0 ? '+' : ''}${expectancyR.toFixed(2)}R)`);
+  console.log(`  ▶ Bar-by-Bar Net Forward Simulation (5bps slip + 4bps fee + 50/50 partial TP): ${wins}W / ${losses}L / ${unresolved} Unfilled-or-Open (Win Rate: ${winRatePct.toFixed(1)}%, Net PF: ${Number.isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞'}, Net Expectancy: ${expectancyR >= 0 ? '+' : ''}${expectancyR.toFixed(2)}R)`);
 
   assert(structuralPct === 100, `All generated setups satisfy directional entry/SL/TP/RR invariants (got ${structuralPct.toFixed(1)}%)`);
   assert(resolvedCount > 0, `Forward simulation resolved at least 1 trade outcome (${resolvedCount} resolved)`);

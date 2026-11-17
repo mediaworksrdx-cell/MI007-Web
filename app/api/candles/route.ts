@@ -214,23 +214,85 @@ function getYahooParams(timeframe: string, rangeOverride?: string | null): { int
  * 4-bar buckets are counted from each session's first bar rather than from the
  * start of the array.
  */
-function aggregateTo4H(candles: Candle[], now: number = Date.now()): Candle[] {
+/**
+ * Exchange-session-aligned 4H aggregation:
+ * - 24/7 Crypto & 24/5 Forex/Commodities: aligned to fixed 4-hour UTC epoch boundaries (no artificial UTC-midnight split).
+ * - Cash Equities/Indices (INDIA IST 09:15-15:30, UAE GST 10:00-15:00, USA ET 09:30-16:00):
+ *   grouped per local exchange session day from the session open; partial final session buckets
+ *   close strictly once the exchange's official closing bell has passed.
+ */
+function aggregateTo4H(
+  candles: Candle[],
+  symbol: string,
+  market: MarketType,
+  now: number = Date.now()
+): Candle[] {
+  if (candles.length === 0) return [];
+  const cleanSym = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
+  const isContinuous24h = CRYPTO_SYMBOLS.has(cleanSym) || COMMODITY_FOREX_SYMBOLS.has(cleanSym);
+  const FOUR_HOURS_MS = 4 * 3600_000;
+
+  if (isContinuous24h) {
+    const result: Candle[] = [];
+    let chunk: Candle[] = [];
+    let currentBucketStart = -1;
+    const flushContinuous = () => {
+      if (chunk.length === 0) return;
+      const first = chunk[0];
+      const last = chunk[chunk.length - 1];
+      const allBarsClosed = chunk.every(c => c.isClosed === true);
+      const bucketEnd = currentBucketStart + FOUR_HOURS_MS;
+      const isClosed = allBarsClosed && (now >= bucketEnd || now - last.openTime > 6 * 3600_000);
+      result.push({
+        openTime: first.openTime,
+        open: first.open,
+        high: Math.max(...chunk.map(c => c.high)),
+        low: Math.min(...chunk.map(c => c.low)),
+        close: last.close,
+        volume: chunk.reduce((acc, c) => acc + c.volume, 0),
+        isClosed,
+        ...(chunk.some(c => c.volumeEstimated) ? { volumeEstimated: true } : {}),
+      });
+      chunk = [];
+    };
+    for (const c of candles) {
+      const bStart = Math.floor(c.openTime / FOUR_HOURS_MS) * FOUR_HOURS_MS;
+      if (currentBucketStart !== -1 && bStart !== currentBucketStart) {
+        flushContinuous();
+      }
+      currentBucketStart = bStart;
+      chunk.push(c);
+    }
+    flushContinuous();
+    return result;
+  }
+
+  // Cash market local timezone offset & session close hour (in local exchange time)
+  const tzOffsetMs = market === 'INDIA'
+    ? 5.5 * 3600_000
+    : market === 'UAE'
+    ? 4 * 3600_000
+    : -5 * 3600_000;
+  const sessionCloseHourLocal = market === 'INDIA' ? 15.5 : market === 'UAE' ? 15.0 : 16.0;
+
+  const getExchangeSessionDay = (ts: number) => Math.floor((ts + tzOffsetMs) / 86_400_000);
+  const getExchangeSessionCloseUtc = (sessionDay: number) =>
+    sessionDay * 86_400_000 - tzOffsetMs + sessionCloseHourLocal * 3600_000;
+
   const result: Candle[] = [];
   let chunk: Candle[] = [];
-  const flush = (closedBySessionBreak: boolean, isTrailingBucket: boolean) => {
+  let chunkSessionDay = -1;
+
+  const flushSession = (closedByNextSession: boolean) => {
     if (chunk.length === 0) return;
     const first = chunk[0];
     const last = chunk[chunk.length - 1];
     const allBarsClosed = chunk.every(c => c.isClosed === true);
-    let bucketClosed = false;
-    if (chunk.length === 4) {
-      bucketClosed = allBarsClosed && now >= first.openTime + 4 * 3600_000;
-    } else if (closedBySessionBreak && !isTrailingBucket) {
-      bucketClosed = allBarsClosed;
-    } else {
-      // Trailing partial bucket (< 4 bars): closed only if all constituent bars closed AND session gap (> 2h) has elapsed
-      bucketClosed = allBarsClosed && (now - last.openTime > 2 * 3600_000);
-    }
+    const sessionCloseUtc = getExchangeSessionCloseUtc(chunkSessionDay);
+    const bucketClosed = chunk.length === 4
+      ? allBarsClosed && now >= first.openTime + FOUR_HOURS_MS
+      : allBarsClosed && (closedByNextSession || now >= sessionCloseUtc);
+
     result.push({
       openTime: first.openTime,
       open: first.open,
@@ -243,18 +305,21 @@ function aggregateTo4H(candles: Candle[], now: number = Date.now()): Candle[] {
     });
     chunk = [];
   };
+
   for (let i = 0; i < candles.length; i++) {
     const c = candles[i];
-    const prev = candles[i - 1];
-    const prevDay = prev ? Math.floor(prev.openTime / 86_400_000) : -1;
-    const curDay = Math.floor(c.openTime / 86_400_000);
-    const sessionBreak = Boolean(prev && (c.openTime - prev.openTime > 2 * 3600_000 || curDay !== prevDay));
-    if (sessionBreak) flush(true, false);
+    const sDay = getExchangeSessionDay(c.openTime);
+    if (chunk.length > 0 && sDay !== chunkSessionDay) {
+      flushSession(true);
+    }
+    chunkSessionDay = sDay;
     chunk.push(c);
-    if (chunk.length === 4) flush(false, false);
+    if (chunk.length === 4) {
+      flushSession(false);
+    }
   }
   if (chunk.length > 0) {
-    flush(false, true);
+    flushSession(false);
   }
   return result;
 }
@@ -336,8 +401,8 @@ function loadPrecomputed5YrHistory(cleanSym: string, timeframe: string = '1D'): 
             c.volume = getSynthesizedVolume(cleanSym, timeframe, c.open, c.high, c.low, c.close, c.openTime);
             c.volumeEstimated = true;
           }
-          if (c.isClosed === undefined) {
-            c.isClosed = i < parsed.length - 1 || now >= c.openTime + tfMs;
+          if (typeof c.isClosed !== 'boolean') {
+            c.isClosed = c.openTime > 0 && now >= c.openTime + tfMs;
           }
         }
         return parsed;
@@ -508,7 +573,7 @@ async function fetchYahooFinanceCandles(symbol: string, timeframe: string, marke
       }
 
       if (aggregate4H) {
-        candles = aggregateTo4H(candles);
+        candles = aggregateTo4H(candles, symbol, market, now);
       }
 
       if (candles.length > 0) return candles;

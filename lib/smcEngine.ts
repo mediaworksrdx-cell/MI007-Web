@@ -2167,13 +2167,6 @@ export function detectAll16SmcSetups(
           break;
         }
 
-        // Hard adverse failure (> 3.2% adverse close) before TP1
-        if (!tp1Hit && (isBull ? bar.close < entryPrice * 0.968 : bar.close > entryPrice * 1.032)) {
-          status = 'INVALIDATED';
-          lifecycleState = 'INVALIDATED';
-          break;
-        }
-
         // Valid retest tap in entry zone before TP1
         if (!tp1Hit && (isBull ? (bar.low <= entryPrice && bar.close > cleanStopLoss) : (bar.high >= entryPrice && bar.close < cleanStopLoss))) {
           status = 'RETESTING';
@@ -2189,13 +2182,13 @@ export function detectAll16SmcSetups(
       }
     }
 
-    // 3. Current Bar Reality Invariant Check
+    // 3. Current Bar Reality Invariant Check (governed strictly by setup stopLoss & lifespan)
     const lastBar = candles[candles.length - 1];
     if (lastBar && (status === 'CONFIRMED' || status === 'RETESTING' || status === 'ENTRY_ZONE_REACHED')) {
-      if (isBull && (lastBar.close <= cleanStopLoss || lastBar.close < entryPrice * 0.97)) {
+      if (isBull && (lastBar.low <= cleanStopLoss || lastBar.close <= cleanStopLoss)) {
         status = 'INVALIDATED';
         lifecycleState = 'INVALIDATED';
-      } else if (!isBull && (lastBar.close >= cleanStopLoss || lastBar.close > entryPrice * 1.03)) {
+      } else if (!isBull && (lastBar.high >= cleanStopLoss || lastBar.close >= cleanStopLoss)) {
         status = 'INVALIDATED';
         lifecycleState = 'INVALIDATED';
       } else if (candles.length - 1 - candleIndex >= maxLifespanBars) {

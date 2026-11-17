@@ -2410,13 +2410,6 @@ export function renderChart(
             break;
           }
 
-          if (!tp1Reached && (isBull ? c.close < st.entryPrice * 0.968 : c.close > st.entryPrice * 1.032)) {
-            endCandleIdx = ci;
-            isTradeOver = true;
-            tradeOutcome = 'SL HIT';
-            break;
-          }
-
           if (ci - st.candleIndex >= maxLifespan && !tp1Reached) {
             endCandleIdx = ci;
             isTradeOver = true;

@@ -219,17 +219,27 @@ export async function fetchCandles(
 
     if (!Array.isArray(raw)) return [];
 
-    return raw.map((item: any, idx: number) => ({
-      openTime: Number(item.openTime || item.timestamp || 0),
-      open: Number(item.open || 0),
-      high: Number(item.high || 0),
-      low: Number(item.low || 0),
-      close: Number(item.close || 0),
-      volume: Number(item.volume || 0),
-      // CH-002: preserve explicit closed-candle state (historical bars default true, terminal bar requires explicit true)
-      isClosed: item.isClosed !== undefined ? Boolean(item.isClosed) : idx < raw.length - 1,
-      ...(item.volumeEstimated ? { volumeEstimated: true } : {}),
-    }));
+    const tfMsMap: Record<string, number> = {
+      '1m': 60_000, '5m': 300_000, '15m': 900_000, '30m': 1_800_000,
+      '1H': 3_600_000, '4H': 14_400_000, '1D': 86_400_000, '1W': 604_800_000, '1M': 2_592_000_000,
+    };
+    const tfMs = tfMsMap[timeframe] || 86_400_000;
+    const now = Date.now();
+
+    return raw.map((item: any) => {
+      const openTime = Number(item.openTime || item.timestamp || 0);
+      return {
+        openTime,
+        open: Number(item.open || 0),
+        high: Number(item.high || 0),
+        low: Number(item.low || 0),
+        close: Number(item.close || 0),
+        volume: Number(item.volume || 0),
+        // CH-002: require explicit source isClosed or strict timestamp elapsed check (never array position)
+        isClosed: typeof item.isClosed === 'boolean' ? item.isClosed : (openTime > 0 && now >= openTime + tfMs),
+        ...(item.volumeEstimated ? { volumeEstimated: true } : {}),
+      };
+    });
   } catch (err) {
     console.warn(`[TradeEngineClient] fetchCandles error for ${symbol}:`, err);
     return [];

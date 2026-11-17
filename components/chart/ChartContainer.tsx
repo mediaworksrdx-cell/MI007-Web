@@ -178,6 +178,7 @@ function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[
         ? Number(c.volume)
         : Math.round(Math.max(100, (range / Math.max(1, close)) * 5_000_000));
 
+      const tfMs = (timeframe && TIMEFRAME_MS[timeframe]) ? TIMEFRAME_MS[timeframe] : 3_600_000;
       const cleaned: Candle = {
         openTime: c.openTime,
         open,
@@ -185,17 +186,13 @@ function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[
         low,
         close,
         volume,
-        isClosed: c.isClosed !== undefined ? Boolean(c.isClosed) : false,
+        isClosed: typeof c.isClosed === 'boolean' ? c.isClosed : (c.openTime > 0 && Date.now() >= c.openTime + tfMs),
       };
       // CH-003: flag synthesized volume so it is never treated as exchange volume
       if (!hasRealVolume || c.volumeEstimated) cleaned.volumeEstimated = true;
       return cleaned;
     })
     .sort((a, b) => a.openTime - b.openTime);
-
-  for (let i = 0; i < valid.length - 1; i++) {
-    if (valid[i].isClosed !== true) valid[i].isClosed = true;
-  }
 
   if (valid.length <= 1) return valid;
 
@@ -224,9 +221,6 @@ function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[
         }
       }
       merged.push({ ...c });
-    }
-    for (let i = 0; i < merged.length - 1; i++) {
-      merged[i].isClosed = true;
     }
     return merged;
   }
