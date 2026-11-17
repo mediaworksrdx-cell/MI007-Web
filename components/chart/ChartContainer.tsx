@@ -185,14 +185,17 @@ function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[
         low,
         close,
         volume,
+        isClosed: c.isClosed !== undefined ? Boolean(c.isClosed) : false,
       };
-      // CH-001: preserve closed-candle state for non-repainting detection
-      if (c.isClosed !== undefined) cleaned.isClosed = c.isClosed;
       // CH-003: flag synthesized volume so it is never treated as exchange volume
       if (!hasRealVolume || c.volumeEstimated) cleaned.volumeEstimated = true;
       return cleaned;
     })
     .sort((a, b) => a.openTime - b.openTime);
+
+  for (let i = 0; i < valid.length - 1; i++) {
+    if (valid[i].isClosed !== true) valid[i].isClosed = true;
+  }
 
   if (valid.length <= 1) return valid;
 
@@ -215,10 +218,15 @@ function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[
           prev.low = Math.min(prev.low, c.low);
           prev.close = c.close;
           prev.volume += c.volume;
+          prev.isClosed = c.isClosed;
+          if (c.volumeEstimated) prev.volumeEstimated = true;
           continue;
         }
       }
       merged.push({ ...c });
+    }
+    for (let i = 0; i < merged.length - 1; i++) {
+      merged[i].isClosed = true;
     }
     return merged;
   }
@@ -999,6 +1007,7 @@ export function ChartContainer({
                 forming.close = live.price;
                 forming.high = Math.max(forming.high, live.price);
                 forming.low = Math.min(forming.low, live.price);
+                forming.isClosed = false;
                 next[idx] = forming;
                 return next;
               });

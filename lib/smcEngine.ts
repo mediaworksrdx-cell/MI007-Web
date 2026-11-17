@@ -494,9 +494,9 @@ export function candleCloseTime(candles: Candle[], idx: number, intervalMs?: num
   return c.openTime + iv;
 }
 
-/** SMC-002: A candle is usable for signal generation only once closed. */
+/** SMC-002: A candle is usable for signal generation only once explicitly closed (c.isClosed === true). */
 export function isCandleClosed(c: Candle | undefined): boolean {
-  return !!c && c.isClosed !== false;
+  return Boolean(c && c.isClosed === true);
 }
 
 /** SMC-020 / SMC-036: Wilder ATR using true range. */
@@ -2871,20 +2871,20 @@ export function computeCandlesFingerprint(
   dataVersion?: number,
   config?: Partial<SmcConfig>
 ): string {
-  // CH-017: O(1) structural fingerprint so live ticks do not re-hash all 5,000 candles on every tick
   const len = candles.length;
-  const first = candles[0];
   const last = candles[len - 1];
-  const prev = len > 1 ? candles[len - 2] : last;
-  const tailSig = last
-    ? `${first?.openTime ?? 0}:${prev?.openTime ?? 0}:${prev?.close ?? 0}:${last.openTime}:${last.high}:${last.low}:${last.close}:${last.volume}:${last.isClosed === false ? 0 : 1}`
-    : 'empty';
+  const datasetHash = len > 0 ? computeCandleDatasetHash64(candles) : 'empty';
+  const closedFlag = last ? (last.isClosed === true ? 1 : 0) : 0;
+  const htfCandles = config?.htfCandles;
+  const htfHash = htfCandles && htfCandles.length > 0
+    ? `${htfCandles.length}_${computeCandleDatasetHash64(htfCandles)}_${htfCandles[htfCandles.length - 1]?.isClosed === true ? 1 : 0}`
+    : 'no_htf';
   const versionSegment = dataVersion !== undefined ? `v${dataVersion}:` : '';
   const f = config?.filters;
   const cfgSegment = config
-    ? `sw${config.swingLength ?? DEFAULT_SMC_CONFIG.swingLength}_b${config.showBullishSetups !== false ? 1 : 0}_s${config.showBearishSetups !== false ? 1 : 0}_d${f?.requireDisplacement ? f?.displacementAtrMultiple ?? 1.0 : 0}_v${f?.requireVolumeExpansion ? f?.volumeSmaMultiple ?? 1.1 : 0}_htf${config.htfCandles?.length ?? 0}:`
+    ? `sw${config.swingLength ?? DEFAULT_SMC_CONFIG.swingLength}_b${config.showBullishSetups !== false ? 1 : 0}_s${config.showBearishSetups !== false ? 1 : 0}_d${f?.requireDisplacement ? f?.displacementAtrMultiple ?? 1.0 : 0}_v${f?.requireVolumeExpansion ? f?.volumeSmaMultiple ?? 1.1 : 0}_htf${htfHash}:`
     : '';
-  return `${symbol}:${timeframe}:${versionSegment}${cfgSegment}${len}:${tailSig}`;
+  return `${symbol}:${timeframe}:${versionSegment}${cfgSegment}${len}:${datasetHash}:${closedFlag}`;
 }
 
 export type SmcLifecycleAction =

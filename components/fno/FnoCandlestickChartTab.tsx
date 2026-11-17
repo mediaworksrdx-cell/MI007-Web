@@ -287,6 +287,8 @@ export function FnoCandlestickChartTab({
         low: Math.round(l * 100) / 100,
         close: Math.round(targetClose * 100) / 100,
         volume: Math.round(c.volume * 0.42),
+        isClosed: c.isClosed !== undefined ? (c.isClosed && !isLast) : !isLast,
+        volumeEstimated: true,
       };
     });
   }, [baseSpotCandles, basis, currentFuture]);
@@ -328,6 +330,8 @@ export function FnoCandlestickChartTab({
         low: Math.round(low * 100) / 100,
         close: cl,
         volume: Math.round((activeOptionContract.volume / 80) * volFactor),
+        isClosed: c.isClosed !== undefined ? (c.isClosed && !isLast) : !isLast,
+        volumeEstimated: true,
       };
     });
   }, [baseSpotCandles, activeOptionContract, contractType, selectedStrike, chainData.daysToExpiry]);

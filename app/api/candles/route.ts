@@ -214,13 +214,23 @@ function getYahooParams(timeframe: string, rangeOverride?: string | null): { int
  * 4-bar buckets are counted from each session's first bar rather than from the
  * start of the array.
  */
-function aggregateTo4H(candles: Candle[]): Candle[] {
+function aggregateTo4H(candles: Candle[], now: number = Date.now()): Candle[] {
   const result: Candle[] = [];
   let chunk: Candle[] = [];
-  const flush = () => {
+  const flush = (closedBySessionBreak: boolean, isTrailingBucket: boolean) => {
     if (chunk.length === 0) return;
     const first = chunk[0];
     const last = chunk[chunk.length - 1];
+    const allBarsClosed = chunk.every(c => c.isClosed === true);
+    let bucketClosed = false;
+    if (chunk.length === 4) {
+      bucketClosed = allBarsClosed && now >= first.openTime + 4 * 3600_000;
+    } else if (closedBySessionBreak && !isTrailingBucket) {
+      bucketClosed = allBarsClosed;
+    } else {
+      // Trailing partial bucket (< 4 bars): closed only if all constituent bars closed AND session gap (> 2h) has elapsed
+      bucketClosed = allBarsClosed && (now - last.openTime > 2 * 3600_000);
+    }
     result.push({
       openTime: first.openTime,
       open: first.open,
@@ -228,7 +238,7 @@ function aggregateTo4H(candles: Candle[]): Candle[] {
       low: Math.min(...chunk.map(c => c.low)),
       close: last.close,
       volume: chunk.reduce((acc, c) => acc + c.volume, 0),
-      isClosed: last.isClosed,
+      isClosed: bucketClosed,
       ...(chunk.some(c => c.volumeEstimated) ? { volumeEstimated: true } : {}),
     });
     chunk = [];
@@ -236,15 +246,15 @@ function aggregateTo4H(candles: Candle[]): Candle[] {
   for (let i = 0; i < candles.length; i++) {
     const c = candles[i];
     const prev = candles[i - 1];
-    const sessionBreak = prev && c.openTime - prev.openTime > 2 * 3600_000;
-    if (sessionBreak) flush();
+    const prevDay = prev ? Math.floor(prev.openTime / 86_400_000) : -1;
+    const curDay = Math.floor(c.openTime / 86_400_000);
+    const sessionBreak = Boolean(prev && (c.openTime - prev.openTime > 2 * 3600_000 || curDay !== prevDay));
+    if (sessionBreak) flush(true, false);
     chunk.push(c);
-    if (chunk.length === 4) flush();
+    if (chunk.length === 4) flush(false, false);
   }
   if (chunk.length > 0) {
-    flush();
-    const tail = result[result.length - 1];
-    if (tail && candles.length > 0 && candles[candles.length - 1].isClosed !== true) tail.isClosed = false;
+    flush(false, true);
   }
   return result;
 }
@@ -318,10 +328,16 @@ function loadPrecomputed5YrHistory(cleanSym: string, timeframe: string = '1D'): 
       const raw = fs.readFileSync(filePath, 'utf-8');
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        for (const c of parsed) {
+        const now = Date.now();
+        const tfMs = getIntervalSeconds(timeframe) * 1000;
+        for (let i = 0; i < parsed.length; i++) {
+          const c = parsed[i];
           if (!c.volume || c.volume <= 0) {
             c.volume = getSynthesizedVolume(cleanSym, timeframe, c.open, c.high, c.low, c.close, c.openTime);
             c.volumeEstimated = true;
+          }
+          if (c.isClosed === undefined) {
+            c.isClosed = i < parsed.length - 1 || now >= c.openTime + tfMs;
           }
         }
         return parsed;

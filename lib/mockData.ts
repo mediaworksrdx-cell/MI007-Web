@@ -169,6 +169,8 @@ export function generateMockCandles(
       low: +low.toFixed(decimals),
       close: +close.toFixed(decimals),
       volume,
+      isClosed: i < count - 1,
+      volumeEstimated: true,
     });
 
     price = close;

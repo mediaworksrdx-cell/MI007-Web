@@ -219,15 +219,15 @@ export async function fetchCandles(
 
     if (!Array.isArray(raw)) return [];
 
-    return raw.map((item: any) => ({
+    return raw.map((item: any, idx: number) => ({
       openTime: Number(item.openTime || item.timestamp || 0),
       open: Number(item.open || 0),
       high: Number(item.high || 0),
       low: Number(item.low || 0),
       close: Number(item.close || 0),
       volume: Number(item.volume || 0),
-      // CH-002: preserve closed-candle state
-      ...(item.isClosed !== undefined ? { isClosed: Boolean(item.isClosed) } : {}),
+      // CH-002: preserve explicit closed-candle state (historical bars default true, terminal bar requires explicit true)
+      isClosed: item.isClosed !== undefined ? Boolean(item.isClosed) : idx < raw.length - 1,
       ...(item.volumeEstimated ? { volumeEstimated: true } : {}),
     }));
   } catch (err) {

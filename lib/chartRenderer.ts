@@ -2364,44 +2364,60 @@ export function renderChart(
 
       for (const st of setupsToRender) {
         const isBull = st.direction === 'BULLISH';
-        // RR-005: shared lifespan constant matching smcEngine
+        // RR-005 / RR-006: Reproduce smcEngine's exact independent TP1 / TP2 / SL lifecycle on closed bars
         const maxLifespan = SMC_TRADE_LIFESPAN_BARS;
         let endCandleIdx = Math.min(candles.length - 1, st.candleIndex + maxLifespan);
         let isTradeOver = false;
-        let tradeOutcome = 'ACTIVE';
+        let tp1Reached = Boolean(st.tp1Hit);
+        let tp2Reached = Boolean(st.tp2Hit);
+        let tradeOutcome = tp2Reached ? 'TP2 HIT' : tp1Reached ? 'TP1 HIT' : 'ACTIVE';
 
-        // RR-006: Check SL BEFORE TP on every bar (worst-case ordering, matching smcEngine)
         for (let ci = st.candleIndex + 1; ci < candles.length; ci++) {
           const c = candles[ci];
-          if (!c) continue;
-          if (isBull) {
-            if (c.low <= st.stopLoss) {
+          if (!c || c.isClosed !== true) break;
+
+          const slTouched = isBull
+            ? (c.low <= st.stopLoss || c.close <= st.stopLoss)
+            : (c.high >= st.stopLoss || c.close >= st.stopLoss);
+          const tp1Touched = isBull ? c.high >= st.targetPrice : c.low <= st.targetPrice;
+          const tp2Touched = (st.targetPrice2 && st.targetPrice2 > 0)
+            ? (isBull ? c.high >= st.targetPrice2 : c.low <= st.targetPrice2)
+            : false;
+
+          // Worst-case SL check FIRST (matching smcEngine)
+          if (slTouched) {
+            endCandleIdx = ci;
+            isTradeOver = true;
+            tradeOutcome = tp1Reached ? 'TP1 BANKED • EXITED' : 'SL HIT';
+            break;
+          }
+
+          if (tp1Touched && !tp1Reached) {
+            tp1Reached = true;
+            tradeOutcome = 'TP1 HIT';
+            if (!st.targetPrice2 || st.targetPrice2 <= 0) {
               endCandleIdx = ci;
               isTradeOver = true;
-              tradeOutcome = 'SL HIT';
-              break;
-            }
-            if (c.high >= st.targetPrice) {
-              endCandleIdx = ci;
-              isTradeOver = true;
-              tradeOutcome = 'TP1 HIT';
-              break;
-            }
-          } else {
-            if (c.high >= st.stopLoss) {
-              endCandleIdx = ci;
-              isTradeOver = true;
-              tradeOutcome = 'SL HIT';
-              break;
-            }
-            if (c.low <= st.targetPrice) {
-              endCandleIdx = ci;
-              isTradeOver = true;
-              tradeOutcome = 'TP1 HIT';
               break;
             }
           }
-          if (ci >= st.candleIndex + maxLifespan) {
+
+          if (tp2Touched && !tp2Reached) {
+            tp2Reached = true;
+            endCandleIdx = ci;
+            isTradeOver = true;
+            tradeOutcome = 'TP2 HIT';
+            break;
+          }
+
+          if (!tp1Reached && (isBull ? c.close < st.entryPrice * 0.968 : c.close > st.entryPrice * 1.032)) {
+            endCandleIdx = ci;
+            isTradeOver = true;
+            tradeOutcome = 'SL HIT';
+            break;
+          }
+
+          if (ci - st.candleIndex >= maxLifespan && !tp1Reached) {
             endCandleIdx = ci;
             isTradeOver = true;
             tradeOutcome = 'EXPIRED';
