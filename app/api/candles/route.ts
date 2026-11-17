@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getMockCandles } from '@/lib/mockData';
 import { MarketType, Candle } from '@/lib/types';
 import { fetchTwelveDataCandles } from '@/lib/twelveDataService';
+import { isMarketOpen } from '@/lib/marketHours';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,28 @@ const CRYPTO_SYMBOLS = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP
 const USA_SYMBOLS = new Set(['SPX', 'NDX', 'DJI', 'VIX', 'QQQ', 'SPY', 'DIA', 'NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL']);
 const UAE_SYMBOLS = new Set(['DFMGI', 'ADXGI', 'EMAAR', 'FAB', 'DEWA', 'ALDAR', 'ENBD', 'ADNOC', 'AIRARABIA']);
 const COMMODITY_FOREX_SYMBOLS = new Set(['GOLD', 'SILVER', 'BRENT', 'CRUDEOIL', 'XAUUSD', 'XAGUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDINR']);
+
+const INDIAN_YAHOO_MAP: Record<string, string> = {
+  'NIFTY': '^NSEI',
+  'NIFTY 50': '^NSEI',
+  'NIFTY50': '^NSEI',
+  'BANKNIFTY': '^NSEBANK',
+  'BANK NIFTY': '^NSEBANK',
+  'SENSEX': '^BSESN',
+  'BSE SENSEX': '^BSESN',
+  'FINNIFTY': 'NIFTY_FIN_SERVICE.NS',
+  'NIFTY FINANCIAL': 'NIFTY_FIN_SERVICE.NS',
+  'RELIANCE': 'RELIANCE.NS',
+  'TCS': 'TCS.NS',
+  'HDFCBANK': 'HDFCBANK.NS',
+  'INFY': 'INFY.NS',
+  'ICICIBANK': 'ICICIBANK.NS',
+  'TATAMOTORS': 'TMPV.NS',
+  'SBIN': 'SBIN.NS',
+  'BHARTIARTL': 'BHARTIARTL.NS',
+  'ITC': 'ITC.NS',
+  'LT': 'LT.NS',
+};
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -50,6 +73,30 @@ export async function GET(req: NextRequest) {
       if (res.ok) {
         const gcpCandles: Candle[] = await res.json();
         if (Array.isArray(gcpCandles) && gcpCandles.length > 0) {
+          // If Indian market is open, sync the active forming candle's close with real-time exchange price
+          if (isMarketOpen('INDIA')) {
+            const last = gcpCandles[gcpCandles.length - 1];
+            const yahooSym = INDIAN_YAHOO_MAP[cleanSym] || INDIAN_YAHOO_MAP[symbol] || (cleanSym.includes('.') ? cleanSym : `${cleanSym}.NS`);
+            try {
+              const yRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1m`, {
+                headers: { 'User-Agent': 'Mozilla/5.0' },
+                cache: 'no-store',
+                signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(1800) : undefined,
+              });
+              if (yRes.ok) {
+                const yData = await yRes.json();
+                const meta = yData?.chart?.result?.[0]?.meta;
+                if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+                  const ltp = meta.regularMarketPrice;
+                  last.close = ltp;
+                  last.high = Math.max(last.high, ltp);
+                  last.low = Math.min(last.low, ltp);
+                }
+              }
+            } catch (_yErr) {
+              // Graceful fallback
+            }
+          }
           return NextResponse.json(gcpCandles);
         }
       }
@@ -60,5 +107,29 @@ export async function GET(req: NextRequest) {
 
   // 3. Calibrated realistic candles anchored precisely to authentic market price
   const candles = getMockCandles(market, symbol, timeframe, 800);
+  if (candles.length > 0 && isMarketOpen('INDIA')) {
+    const last = candles[candles.length - 1];
+    const yahooSym = INDIAN_YAHOO_MAP[cleanSym] || INDIAN_YAHOO_MAP[symbol] || (cleanSym.includes('.') ? cleanSym : `${cleanSym}.NS`);
+    try {
+      const yRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1m`, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        cache: 'no-store',
+        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(1800) : undefined,
+      });
+      if (yRes.ok) {
+        const yData = await yRes.json();
+        const meta = yData?.chart?.result?.[0]?.meta;
+        if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
+          const ltp = meta.regularMarketPrice;
+          last.close = ltp;
+          last.high = Math.max(last.high, ltp);
+          last.low = Math.min(last.low, ltp);
+        }
+      }
+    } catch (_yErr) {
+      // Graceful fallback
+    }
+  }
+
   return NextResponse.json(candles);
 }

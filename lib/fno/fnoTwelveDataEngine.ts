@@ -122,7 +122,8 @@ export async function fetchFnoSpotQuote(symbol: string): Promise<FnoSpotQuote> {
           const itemSym = String(item?.symbol || '').replace(/\.NS$/, '').replace(/\.BO$/, '').toUpperCase();
           return itemSym === cleanQuery || String(item?.symbol || '').toUpperCase() === tdSymbol.toUpperCase();
         });
-        if (match && typeof match.ltp === 'number' && match.ltp > 0) {
+        const isMatchFresh = match?.timestamp && (Date.now() - match.timestamp < 60_000);
+        if (match && typeof match.ltp === 'number' && match.ltp > 0 && isMatchFresh) {
           const result: FnoSpotQuote = {
             symbol: tdSymbol,
             price: +match.ltp.toFixed(2),
