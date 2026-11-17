@@ -94,60 +94,7 @@ const YAHOO_GLOBAL_MAP: Record<string, string> = {
   'LT': 'LT.NS',
 };
 
-// Binance 24/7 Institutional Crypto Mapping (100% direct Binance API, zero Trade Engine)
-const BINANCE_CRYPTO_MAP: Record<string, string> = {
-  'BTC': 'BTCUSDT',
-  'BTCUSD': 'BTCUSDT',
-  'BTCUSDT': 'BTCUSDT',
-  'ETH': 'ETHUSDT',
-  'ETHUSD': 'ETHUSDT',
-  'ETHUSDT': 'ETHUSDT',
-  'SOL': 'SOLUSDT',
-  'SOLUSD': 'SOLUSDT',
-  'SOLUSDT': 'SOLUSDT',
-  'BNB': 'BNBUSDT',
-  'BNBUSD': 'BNBUSDT',
-  'BNBUSDT': 'BNBUSDT',
-  'XRP': 'XRPUSDT',
-  'XRPUSD': 'XRPUSDT',
-  'XRPUSDT': 'XRPUSDT',
-  'DOGE': 'DOGEUSDT',
-  'DOGEUSD': 'DOGEUSDT',
-  'DOGEUSDT': 'DOGEUSDT',
-  'ADA': 'ADAUSDT',
-  'ADAUSD': 'ADAUSDT',
-  'ADAUSDT': 'ADAUSDT',
-  'AVAX': 'AVAXUSDT',
-  'AVAXUSD': 'AVAXUSDT',
-  'AVAXUSDT': 'AVAXUSDT',
-  'LINK': 'LINKUSDT',
-  'LINKUSD': 'LINKUSDT',
-  'LINKUSDT': 'LINKUSDT',
-  'DOT': 'DOTUSDT',
-  'DOTUSD': 'DOTUSDT',
-  'DOTUSDT': 'DOTUSDT',
-  'MATIC': 'POLUSDT',
-  'POL': 'POLUSDT',
-  'MATICUSD': 'POLUSDT',
-  'SHIB': 'SHIBUSDT',
-  'SHIBUSD': 'SHIBUSDT',
-  'SHIBUSDT': 'SHIBUSDT',
-};
 
-function getBinanceInterval(timeframe: string): string {
-  switch (timeframe) {
-    case '1m': return '1m';
-    case '5m': return '5m';
-    case '15m': return '15m';
-    case '30m': return '30m';
-    case '1H': return '1h';
-    case '4H': return '4h';
-    case '1D': return '1d';
-    case '1W': return '1w';
-    case '1M': return '1M';
-    default: return '1h';
-  }
-}
 
 function getIntervalSeconds(timeframe: string): number {
   switch (timeframe) {
@@ -469,33 +416,30 @@ export async function GET(req: NextRequest) {
 
   const isMultiDayOr5Y = rangeParam === '5y' || timeframe === '1D' || timeframe === '1W' || timeframe === '1M';
 
-  // 0. Direct Binance Klines API for all Cryptocurrencies (100% authentic exchange candles, zero Trade Engine)
-  const binanceCryptoSym = BINANCE_CRYPTO_MAP[cleanSym] || (CRYPTO_SYMBOLS.has(cleanSym) ? `${cleanSym}USDT` : null);
-  if (binanceCryptoSym) {
+  // 0. Trade Engine Candles API for Cryptocurrencies
+  if (CRYPTO_SYMBOLS.has(cleanSym)) {
     try {
-      const bInterval = getBinanceInterval(timeframe);
-      const limit = isMultiDayOr5Y ? 1000 : 500;
-      const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(binanceCryptoSym)}&interval=${bInterval}&limit=${limit}`, {
+      const res = await fetch(`${GCP_TRADE_ENGINE_URL}/candles?symbol=${encodeURIComponent(cleanSym)}&timeframe=${encodeURIComponent(timeframe)}`, {
         cache: 'no-store',
         signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(3500) : undefined,
       });
       if (res.ok) {
-        const rawKlines = await res.json();
-        if (Array.isArray(rawKlines) && rawKlines.length > 0) {
+        const rawCandles = await res.json();
+        if (Array.isArray(rawCandles) && rawCandles.length > 0 && !isArtificialLinearStaircase(rawCandles)) {
           const now = Date.now();
-          const candles: Candle[] = rawKlines.map((k: any) => ({
-            openTime: Number(k[0]),
-            open: parseFloat(k[1]),
-            high: parseFloat(k[2]),
-            low: parseFloat(k[3]),
-            close: parseFloat(k[4]),
-            volume: parseFloat(k[5]),
-            isClosed: Number(k[6]) < now,
+          const candles: Candle[] = rawCandles.map((k: any) => ({
+            openTime: Number(k.openTime || k[0]),
+            open: parseFloat(k.open ?? k[1]),
+            high: parseFloat(k.high ?? k[2]),
+            low: parseFloat(k.low ?? k[3]),
+            close: parseFloat(k.close ?? k[4]),
+            volume: parseFloat(k.volume ?? k[5] ?? 0),
+            isClosed: typeof k.isClosed === 'boolean' ? k.isClosed : Number(k.closeTime ?? k[6] ?? 0) < now,
           }));
           return NextResponse.json(candles);
         }
       }
-    } catch (_bErr) {
+    } catch (_tErr) {
       // Fall through to precomputed or Yahoo
     }
   }

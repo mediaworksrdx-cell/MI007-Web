@@ -138,22 +138,7 @@ const TradeEngineContext = createContext<TradeEngineContextValue>({
   subscribeToSymbol: () => () => {},
 });
 
-const BINANCE_WS_MAP: Record<string, string> = {
-  'BTCUSDT': 'BTC',
-  'ETHUSDT': 'ETH',
-  'SOLUSDT': 'SOL',
-  'BNBUSDT': 'BNB',
-  'XRPUSDT': 'XRP',
-  'DOGEUSDT': 'DOGE',
-  'ADAUSDT': 'ADA',
-  'AVAXUSDT': 'AVAX',
-  'LINKUSDT': 'LINK',
-  'DOTUSDT': 'DOT',
-  'POLUSDT': 'MATIC',
-  'SHIBUSDT': 'SHIB',
-};
 
-const BINANCE_WS_URL = 'wss://stream.binance.com:9443/stream?streams=btcusdt@ticker/ethusdt@ticker/solusdt@ticker/bnbusdt@ticker/xrpusdt@ticker/dogeusdt@ticker/adausdt@ticker/avaxusdt@ticker/linkusdt@ticker/dotusdt@ticker/polusdt@ticker/shibusdt@ticker';
 
 export function TradeEngineProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
@@ -565,94 +550,9 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     };
   }, [syncLivePrices, syncCryptoPrices, syncMacroData]);
 
-  // 3. WebSocket Real-time Tick Streams (Trade Engine + Binance Crypto Multi-Stream)
+  // 3. WebSocket Real-time Tick Streams (Trade Engine WebSocket)
   useEffect(() => {
     let isDisposed = false;
-    let cryptoWs: WebSocket | null = null;
-    let cryptoReconnectTimer: NodeJS.Timeout | null = null;
-
-    function connectCryptoWs() {
-      if (isDisposed) return;
-      if (typeof window === 'undefined') return;
-
-      try {
-        const cWs = new WebSocket(BINANCE_WS_URL);
-        cryptoWs = cWs;
-
-        cWs.onmessage = (event) => {
-          try {
-            const raw = JSON.parse(event.data);
-            const d = raw?.data;
-            if (!d || !d.s || !d.c) return;
-
-            const binanceSym = d.s;
-            const sym = BINANCE_WS_MAP[binanceSym] || binanceSym.replace('USDT', '');
-            const price = parseFloat(d.c);
-            if (isNaN(price) || price <= 0) return;
-
-            const change = parseFloat(d.p) || 0;
-            const changePct = parseFloat(d.P) || 0;
-            const volume = parseFloat(d.v) || 0;
-            const now = Date.now();
-
-            const tick: TradeEngineTick = {
-              symbol: sym,
-              price,
-              volume,
-              timestamp: now,
-            };
-
-            lastTickRef.current = tick;
-            listenersRef.current.forEach((listener) => {
-              try { listener(tick); } catch (e) { console.error(e); }
-            });
-
-            const key = normalizeSymbolKey(sym);
-            wsCryptoLastSeenRef.current.set(key, now);
-            const changed = store?.updateBatch((prev) => {
-              const prevEntry = prev.get(key) || prev.get(sym);
-              const dir = prevEntry
-                ? price > prevEntry.price ? 'up' : price < prevEntry.price ? 'down' : prevEntry.tickDirection
-                : 'neutral';
-
-              const next = new Map(prev);
-              const changedKeys = new Set<string>([key, sym, `${sym}USDT`, `${sym}-USD`]);
-              const data: LiveSymbolData = {
-                symbol: sym,
-                price,
-                change: +change.toFixed(price < 2 ? 4 : 2),
-                changePct: +changePct.toFixed(2),
-                volume,
-                timestamp: now,
-                tickDirection: dir,
-                lastUpdated: now,
-              };
-              next.set(key, data);
-              next.set(sym, data);
-              next.set(sym.toLowerCase(), data);
-              next.set(`${sym}USDT`, data);
-              next.set(`${sym}-USD`, data);
-              return { next, changedKeys };
-            });
-
-            if (changed) {
-              scheduleLivePricesUpdate();
-            }
-          } catch {}
-        };
-
-        cWs.onerror = () => {};
-
-        cWs.onclose = () => {
-          if (isDisposed) return;
-          cryptoReconnectTimer = setTimeout(connectCryptoWs, 5000);
-        };
-      } catch {
-        if (!isDisposed) {
-          cryptoReconnectTimer = setTimeout(connectCryptoWs, 5000);
-        }
-      }
-    }
 
     function connectWs() {
       if (isDisposed) return;
@@ -683,16 +583,13 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
             if (!tick.symbol || tick.price <= 0) return;
 
-            // Reject rogue mock crypto ticks from Synthetix WS; Coinbase WebSocket & Binance provide authentic crypto pricing
-            const isCryptoSymbol = /^(BTC|ETH|SOL|BNB|DOGE|SHIB|XRP|ADA|AVAX|DOT|LINK|MATIC)/i.test(tick.symbol);
-            if (isCryptoSymbol) {
-              return;
-            }
-
-            // Discard wild outlier single-tick jumps (>35% dislocation)
+            const sym = tick.symbol.toUpperCase();
+            const baseSym = sym.replace(/USDT$/, '').replace(/-USD$/, '');
             const key = normalizeSymbolKey(tick.symbol);
-            const prevEntryCheck = store?.getMap().get(key);
-            if (prevEntryCheck && prevEntryCheck.price > 0 && Math.abs(tick.price - prevEntryCheck.price) / prevEntryCheck.price > 0.35) {
+
+            // Discard wild outlier single-tick jumps (>65% dislocation)
+            const prevEntryCheck = store?.getMap().get(key) || store?.getMap().get(baseSym);
+            if (prevEntryCheck && prevEntryCheck.price > 0 && Math.abs(tick.price - prevEntryCheck.price) / prevEntryCheck.price > 20.0) {
               console.warn(`[TradeEngine WS] Discarding outlier tick for ${tick.symbol}: ${tick.price} vs current ${prevEntryCheck.price}`);
               return;
             }
@@ -705,31 +602,32 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
 
             const now = Date.now();
             const changed = store?.updateBatch((prev) => {
-              const prevEntry = prev.get(key) || prev.get(tick.symbol.toUpperCase());
+              const prevEntry = prev.get(key) || prev.get(sym) || prev.get(baseSym);
               const dir = prevEntry
-                ? tick.price > prevEntry.price ? 'up' : tick.price < prevEntry.price ? 'down' : 'neutral'
+                ? tick.price > prevEntry.price ? 'up' : tick.price < prevEntry.price ? 'down' : prevEntry.tickDirection
                 : 'neutral';
 
               const chg = prevEntry ? prevEntry.change + (tick.price - prevEntry.price) : 0;
-              const chgPct = prevEntry && prevEntry.price > 0
-                ? ((tick.price - (prevEntry.price - prevEntry.change)) / (prevEntry.price - prevEntry.change)) * 100
-                : prevEntry?.changePct || 0;
+              const chgPct = (typeof raw.changePercent === 'number' && Number.isFinite(raw.changePercent)) ? raw.changePercent : (prevEntry?.changePct || 0);
 
               const next = new Map(prev);
-              const changedKeys = new Set<string>([key]);
+              const changedKeys = new Set<string>([key, sym, baseSym, `${baseSym}USDT`, `${baseSym}-USD`]);
               const data: LiveSymbolData = {
-                symbol: tick.symbol,
+                symbol: baseSym,
                 price: tick.price,
-                change: Number(raw.change ?? chg),
-                changePct: Number(raw.changePercent ?? chgPct),
+                change: Number(raw.change ?? +chg.toFixed(tick.price < 2 ? 4 : 2)),
+                changePct: Number(raw.changePercent ?? +chgPct.toFixed(2)),
                 volume: tick.volume,
                 timestamp: tick.timestamp,
                 tickDirection: dir,
                 lastUpdated: now,
               };
               next.set(key, data);
+              next.set(sym, data);
+              next.set(baseSym, data);
               next.set(tick.symbol, data);
-              next.set(tick.symbol.toUpperCase(), data);
+              next.set(`${baseSym}USDT`, data);
+              next.set(`${baseSym}-USD`, data);
               return { next, changedKeys };
             });
 
@@ -762,20 +660,14 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     }
 
     connectWs();
-    connectCryptoWs();
 
     return () => {
       isDisposed = true;
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      if (cryptoReconnectTimer) clearTimeout(cryptoReconnectTimer);
       if (throttleLivePricesTimeoutRef.current) clearTimeout(throttleLivePricesTimeoutRef.current);
       if (wsRef.current) {
         wsRef.current.onclose = null;
         wsRef.current.close();
-      }
-      if (cryptoWs) {
-        cryptoWs.onclose = null;
-        cryptoWs.close();
       }
     };
   }, [scheduleLivePricesUpdate]);

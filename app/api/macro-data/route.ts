@@ -6,17 +6,17 @@ const GCP_TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'https://synthetixa
 
 const BASELINE_MACROS = [
   { symbol: 'DXY', value: '104.43', change: 0.12, changePercent: 0.11 },
-  { symbol: 'XAU/USD', value: '3879.20', change: -6.10, changePercent: -0.16 },
-  { symbol: 'XAG/USD', value: '42.39', change: -0.42, changePercent: -0.98 },
+  { symbol: 'XAU/USD', value: '3862.80', change: 9.80, changePercent: 0.25 },
+  { symbol: 'XAG/USD', value: '47.54', change: 0.76, changePercent: 1.61 },
   { symbol: 'US10Y', value: '4.24%', change: 0.01, changePercent: 0.24 },
-  { symbol: 'BRENT', value: '58.67', change: 0.45, changePercent: 0.55 },
-  { symbol: 'VIX', value: '22.91', change: 3.45, changePercent: 17.73 },
-  { symbol: 'EUR/USD', value: '1.1006', change: 0.0001, changePercent: 0.01 },
-  { symbol: 'GBP/USD', value: '1.3190', change: 0.0003, changePct: 0.02 },
-  { symbol: 'USD/JPY', value: '159.37', change: -0.10, changePercent: -0.06 },
-  { symbol: 'USD/INR', value: '84.15', change: 0.05, changePercent: 0.06 },
-  { symbol: 'GOLD', value: '3879.20', change: -6.10, changePercent: -0.16 },
-  { symbol: 'SILVER', value: '42.39', change: -0.42, changePercent: -0.98 },
+  { symbol: 'BRENT', value: '92.86', change: 0.42, changePercent: 0.45 },
+  { symbol: 'VIX', value: '22.91', change: 3.61, changePercent: 18.70 },
+  { symbol: 'EUR/USD', value: '1.0990', change: -0.0035, changePercent: -0.32 },
+  { symbol: 'GBP/USD', value: '1.3192', change: -0.0024, changePercent: -0.18 },
+  { symbol: 'USD/JPY', value: '159.30', change: -0.48, changePercent: -0.30 },
+  { symbol: 'USD/INR', value: '93.46', change: -0.78, changePercent: -0.83 },
+  { symbol: 'GOLD', value: '3862.80', change: 9.80, changePercent: 0.25 },
+  { symbol: 'SILVER', value: '47.54', change: 0.76, changePercent: 1.61 },
 ];
 
 export async function GET() {

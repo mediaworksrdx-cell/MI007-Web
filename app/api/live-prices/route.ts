@@ -44,11 +44,27 @@ const INDIAN_YAHOO_MAP: Record<string, string> = {
 
 // Yahoo Finance Commodity & Forex mapping (24/5)
 const COMMODITY_FOREX_YAHOO_MAP: Record<string, string> = {
+  // Precious & Industrial Metals
   'GOLD': 'GC=F',
   'XAU/USD': 'GC=F',
+  'XAUUSD': 'GC=F',
   'SILVER': 'SI=F',
   'XAG/USD': 'SI=F',
+  'XAGUSD': 'SI=F',
+  'COPPER': 'HG=F',
+  'PLATINUM': 'PL=F',
+
+  // Energy
+  'CRUDEOIL': 'CL=F',
+  'CRUDE OIL': 'CL=F',
+  'WTI': 'CL=F',
+  'WTI CRUDE': 'CL=F',
   'BRENT': 'BZ=F',
+  'BRENT CRUDE': 'BZ=F',
+  'NATGAS': 'NG=F',
+  'NATURAL GAS': 'NG=F',
+
+  // Major Forex Pairs
   'EUR/USD': 'EURUSD=X',
   'EURUSD': 'EURUSD=X',
   'GBP/USD': 'GBPUSD=X',
@@ -57,28 +73,20 @@ const COMMODITY_FOREX_YAHOO_MAP: Record<string, string> = {
   'USDJPY': 'JPY=X',
   'USD/INR': 'INR=X',
   'USDINR': 'INR=X',
+  'USD/CAD': 'CAD=X',
+  'USDCAD': 'CAD=X',
+  'UADCAD': 'CAD=X',
+  'AUD/CAD': 'AUDCAD=X',
+  'AUDCAD': 'AUDCAD=X',
+  'USD/CHF': 'CHF=X',
+  'USDCHF': 'CHF=X',
+  'AUD/USD': 'AUDUSD=X',
+  'AUDUSD': 'AUDUSD=X',
+  'USD/AED': 'AED=X',
+  'USDAED': 'AED=X',
 };
 
-// Binance 24hr Crypto mapping (24/7)
-const BINANCE_CRYPTO_SYMBOLS = [
-  'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT',
-  'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'LINKUSDT', 'DOTUSDT', 'POLUSDT', 'SHIBUSDT'
-];
 
-const BINANCE_MAP: Record<string, string> = {
-  'BTCUSDT': 'BTC',
-  'ETHUSDT': 'ETH',
-  'SOLUSDT': 'SOL',
-  'BNBUSDT': 'BNB',
-  'XRPUSDT': 'XRP',
-  'DOGEUSDT': 'DOGE',
-  'ADAUSDT': 'ADA',
-  'AVAXUSDT': 'AVAX',
-  'LINKUSDT': 'LINK',
-  'DOTUSDT': 'DOT',
-  'POLUSDT': 'MATIC',
-  'SHIBUSDT': 'SHIB',
-};
 
 export async function GET() {
   const now = Date.now();
@@ -195,25 +203,23 @@ export async function GET() {
     }
   })());
 
-  // 4. Crypto Market (24/7/365 live Binance streaming)
+  // 4. Crypto Market (Trade Engine live pricing)
   fetchPromises.push((async () => {
     try {
-      const symbolsParam = JSON.stringify(BINANCE_CRYPTO_SYMBOLS);
-      const url = `https://api.binance.com/api/v3/ticker/24hr?symbols=${encodeURIComponent(symbolsParam)}`;
-      const res = await fetch(url, {
+      const res = await fetch(`${GCP_TRADE_ENGINE_URL}/live-prices`, {
         cache: 'no-store',
         signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
       });
 
       if (res.ok) {
-        const binanceData = await res.json();
-        if (Array.isArray(binanceData)) {
-          for (const item of binanceData) {
-            const sym = BINANCE_MAP[item.symbol];
-            if (!sym) continue;
-            const price = parseFloat(item.lastPrice);
-            const change = parseFloat(item.priceChange);
-            const changePct = parseFloat(item.priceChangePercent);
+        const engineData = await res.json();
+        if (Array.isArray(engineData)) {
+          for (const item of engineData) {
+            const rawSym = String(item.symbol || '').toUpperCase();
+            const cleanSym = rawSym.replace(/USDT$/, '').replace(/-USD$/, '');
+            const price = parseFloat(item.ltp ?? item.price);
+            const change = parseFloat(item.change ?? 0);
+            const changePct = parseFloat(item.changePercent ?? item.changePct ?? 0);
             if (!isNaN(price) && price > 0) {
               const decimals = price < 0.01 ? 7 : price < 2 ? 4 : price < 20 ? 3 : 2;
               const formattedPrice = +price.toFixed(decimals);
@@ -221,17 +227,17 @@ export async function GET() {
               const formattedPct = !isNaN(changePct) ? +changePct.toFixed(2) : 0;
 
               const entry: LivePriceResponse = {
-                instrumentToken: 400000 + BINANCE_CRYPTO_SYMBOLS.indexOf(item.symbol),
-                symbol: sym,
+                instrumentToken: item.instrumentToken || 400000,
+                symbol: cleanSym,
                 ltp: formattedPrice,
                 change: formattedChange,
                 changePercent: formattedPct,
-                timestamp: now,
+                timestamp: item.timestamp || now,
               };
 
-              pricesMap.set(sym, entry);
-              pricesMap.set(`${sym}USDT`, entry);
-              pricesMap.set(`${sym}-USD`, entry);
+              pricesMap.set(cleanSym, entry);
+              pricesMap.set(`${cleanSym}USDT`, entry);
+              pricesMap.set(`${cleanSym}-USD`, entry);
             }
           }
         }

@@ -119,39 +119,39 @@ const DEFAULT_UAE_WATCHLIST: WatchlistItem[] = [
 ];
 
 const DEFAULT_CRYPTO: CryptoItem[] = [
-  { symbol: 'BTC', name: 'Bitcoin', base: 65013.28, changePct: -0.02 },
-  { symbol: 'ETH', name: 'Ethereum', base: 1831.28, changePct: 0.53 },
-  { symbol: 'SOL', name: 'Solana', base: 72.60, changePct: 0.89 },
-  { symbol: 'BNB', name: 'BNB', base: 594.00, changePct: 0.29 },
-  { symbol: 'DOGE', name: 'Dogecoin', base: 0.059, changePct: 0.41 },
-  { symbol: 'SHIB', name: 'Shiba Inu', base: 0.0000185, changePct: -0.85 },
-  { symbol: 'XRP', name: 'Ripple XRP', base: 0.9647, changePct: 0.20 },
-  { symbol: 'ADA', name: 'Cardano', base: 0.218, changePct: 0.92 },
-  { symbol: 'AVAX', name: 'Avalanche', base: 9.60, changePct: 1.26 },
-  { symbol: 'DOT', name: 'Polkadot', base: 1.16, changePct: -0.85 },
-  { symbol: 'LINK', name: 'Chainlink', base: 12.09, changePct: 1.51 },
-  { symbol: 'MATIC', name: 'Polygon', base: 0.126, changePct: 0.80 },
+  { symbol: 'BTC', name: 'Bitcoin', base: 64951.37, changePct: 1.32 },
+  { symbol: 'ETH', name: 'Ethereum', base: 1818.49, changePct: 1.30 },
+  { symbol: 'SOL', name: 'Solana', base: 73.58, changePct: 4.06 },
+  { symbol: 'BNB', name: 'BNB', base: 593.38, changePct: 1.21 },
+  { symbol: 'DOGE', name: 'Dogecoin', base: 0.05937, changePct: 1.77 },
+  { symbol: 'SHIB', name: 'Shiba Inu', base: 0.00000387, changePct: 1.04 },
+  { symbol: 'XRP', name: 'Ripple XRP', base: 0.9711, changePct: 2.24 },
+  { symbol: 'ADA', name: 'Cardano', base: 0.1547, changePct: 2.31 },
+  { symbol: 'AVAX', name: 'Avalanche', base: 7.22, changePct: 1.91 },
+  { symbol: 'DOT', name: 'Polkadot', base: 0.7380, changePct: 1.79 },
+  { symbol: 'LINK', name: 'Chainlink', base: 9.26, changePct: 1.99 },
+  { symbol: 'MATIC', name: 'Polygon', base: 0.08207, changePct: 4.53 },
 ];
 
 const DEFAULT_COMMODITIES: CommodityItem[] = [
-  { symbol: 'GOLD', name: 'Gold', base: 3876.58, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.31 },
-  { symbol: 'SILVER', name: 'Silver', base: 42.39, unit: 'USD / oz', category: 'Precious Metals', changePct: -0.98 },
-  { symbol: 'CRUDEOIL', name: 'Brent Crude', base: 58.67, unit: 'USD / bbl', category: 'Energy', changePct: 0.55 },
-  { symbol: 'BRENT', name: 'Brent Crude', base: 58.67, unit: 'USD / bbl', category: 'Energy', changePct: 0.55 },
-  { symbol: 'WTI', name: 'WTI Crude', base: 55.40, unit: 'USD / bbl', category: 'Energy', changePct: 0.40 },
-  { symbol: 'NATGAS', name: 'Natural Gas', base: 2.85, unit: 'USD / MMBtu', category: 'Energy', changePct: 2.15 },
-  { symbol: 'COPPER', name: 'Copper', base: 4.38, unit: 'USD / lb', category: 'Industrial Metals', changePct: 0.82 },
+  { symbol: 'GOLD', name: 'Gold', base: 3862.80, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.25 },
+  { symbol: 'SILVER', name: 'Silver', base: 47.54, unit: 'USD / oz', category: 'Precious Metals', changePct: 1.61 },
+  { symbol: 'CRUDEOIL', name: 'Brent Crude', base: 86.18, unit: 'USD / bbl', category: 'Energy', changePct: 0.54 },
+  { symbol: 'BRENT', name: 'Brent Crude', base: 92.86, unit: 'USD / bbl', category: 'Energy', changePct: 0.45 },
+  { symbol: 'WTI', name: 'WTI Crude', base: 86.18, unit: 'USD / bbl', category: 'Energy', changePct: 0.54 },
+  { symbol: 'NATGAS', name: 'Natural Gas', base: 3.14, unit: 'USD / MMBtu', category: 'Energy', changePct: 0.48 },
+  { symbol: 'COPPER', name: 'Copper', base: 5.98, unit: 'USD / lb', category: 'Industrial Metals', changePct: -0.34 },
 ];
 
 const DEFAULT_FOREX: ForexItem[] = [
-  { symbol: 'EURUSD', name: 'EUR / USD', pair: 'EUR / USD', base: 1.1006, pipSpread: '0.8 pips', changePct: 0.01 },
-  { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP / USD', base: 1.3190, pipSpread: '1.0 pips', changePct: 0.02 },
-  { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD / JPY', base: 159.37, pipSpread: '0.9 pips', changePct: -0.06 },
-  { symbol: 'USDINR', name: 'USD / INR', pair: 'USD / INR', base: 93.84, pipSpread: '1.2 pips', changePct: -0.07 },
-  { symbol: 'USDCAD', name: 'USD / CAD', pair: 'USD / CAD', base: 1.4092, pipSpread: '0.9 pips', changePct: 0.15 },
-  { symbol: 'AUDCAD', name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9816, pipSpread: '1.2 pips', changePct: -0.13 },
-  { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD / CHF', base: 0.8248, pipSpread: '0.9 pips', changePct: 0.12 },
-  { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips', changePct: 0.12 },
+  { symbol: 'EURUSD', name: 'EUR / USD', pair: 'EUR / USD', base: 1.0990, pipSpread: '0.8 pips', changePct: -0.32 },
+  { symbol: 'GBPUSD', name: 'GBP / USD', pair: 'GBP / USD', base: 1.3192, pipSpread: '1.0 pips', changePct: -0.18 },
+  { symbol: 'USDJPY', name: 'USD / JPY', pair: 'USD / JPY', base: 159.30, pipSpread: '0.9 pips', changePct: -0.30 },
+  { symbol: 'USDINR', name: 'USD / INR', pair: 'USD / INR', base: 93.46, pipSpread: '1.2 pips', changePct: -0.83 },
+  { symbol: 'USDCAD', name: 'USD / CAD', pair: 'USD / CAD', base: 1.4301, pipSpread: '0.9 pips', changePct: 0.22 },
+  { symbol: 'AUDCAD', name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9625, pipSpread: '1.2 pips', changePct: -0.48 },
+  { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD / CHF', base: 0.8402, pipSpread: '0.9 pips', changePct: 0.13 },
+  { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD / USD', base: 0.6734, pipSpread: '1.1 pips', changePct: -0.66 },
 ];
 
 // Predefined catalog of recognized indices & cryptos for instantaneous auto-detection
@@ -175,42 +175,42 @@ const KNOWN_INDICES: Record<string, { name: string; base: number; market: Market
 };
 
 const KNOWN_CRYPTOS: Record<string, { name: string; base: number }> = {
-  BTC: { name: 'Bitcoin', base: 65013.28 },
-  ETH: { name: 'Ethereum', base: 1831.28 },
-  SOL: { name: 'Solana', base: 72.60 },
-  BNB: { name: 'BNB', base: 594.00 },
-  DOGE: { name: 'Dogecoin', base: 0.059 },
-  SHIB: { name: 'Shiba Inu', base: 0.0000185 },
-  XRP: { name: 'Ripple XRP', base: 0.9647 },
-  ADA: { name: 'Cardano', base: 0.218 },
-  AVAX: { name: 'Avalanche', base: 9.60 },
-  DOT: { name: 'Polkadot', base: 1.16 },
-  LINK: { name: 'Chainlink', base: 12.09 },
-  MATIC: { name: 'Polygon', base: 0.126 },
+  BTC: { name: 'Bitcoin', base: 64951.37 },
+  ETH: { name: 'Ethereum', base: 1818.49 },
+  SOL: { name: 'Solana', base: 73.58 },
+  BNB: { name: 'BNB', base: 593.38 },
+  DOGE: { name: 'Dogecoin', base: 0.05937 },
+  SHIB: { name: 'Shiba Inu', base: 0.00000387 },
+  XRP: { name: 'Ripple XRP', base: 0.9711 },
+  ADA: { name: 'Cardano', base: 0.1547 },
+  AVAX: { name: 'Avalanche', base: 7.22 },
+  DOT: { name: 'Polkadot', base: 0.7380 },
+  LINK: { name: 'Chainlink', base: 9.26 },
+  MATIC: { name: 'Polygon', base: 0.08207 },
 };
 
 const KNOWN_COMMODITIES: Record<string, { name: string; base: number; unit: string; category: string }> = {
-  GOLD: { name: 'Gold', base: 3876.58, unit: 'USD / oz', category: 'Precious Metals' },
-  SILVER: { name: 'Silver', base: 42.39, unit: 'USD / oz', category: 'Precious Metals' },
-  CRUDEOIL: { name: 'Brent Crude', base: 58.67, unit: 'USD / bbl', category: 'Energy' },
-  BRENT: { name: 'Brent Crude', base: 58.67, unit: 'USD / bbl', category: 'Energy' },
-  WTI: { name: 'WTI Crude', base: 55.40, unit: 'USD / bbl', category: 'Energy' },
-  NATGAS: { name: 'Natural Gas', base: 2.85, unit: 'USD / MMBtu', category: 'Energy' },
-  COPPER: { name: 'Copper', base: 4.38, unit: 'USD / lb', category: 'Industrial Metals' },
+  GOLD: { name: 'Gold', base: 3862.80, unit: 'USD / oz', category: 'Precious Metals' },
+  SILVER: { name: 'Silver', base: 47.54, unit: 'USD / oz', category: 'Precious Metals' },
+  CRUDEOIL: { name: 'Brent Crude', base: 86.18, unit: 'USD / bbl', category: 'Energy' },
+  BRENT: { name: 'Brent Crude', base: 92.86, unit: 'USD / bbl', category: 'Energy' },
+  WTI: { name: 'WTI Crude', base: 86.18, unit: 'USD / bbl', category: 'Energy' },
+  NATGAS: { name: 'Natural Gas', base: 3.14, unit: 'USD / MMBtu', category: 'Energy' },
+  COPPER: { name: 'Copper', base: 5.98, unit: 'USD / lb', category: 'Industrial Metals' },
   PLATINUM: { name: 'Platinum', base: 1024.50, unit: 'USD / oz', category: 'Precious Metals' },
 };
 
 const KNOWN_FOREX: Record<string, { name: string; base: number; pair: string; pipSpread: string }> = {
-  EURUSD: { name: 'EUR / USD', pair: 'EUR / USD', base: 1.1006, pipSpread: '0.8 pips' },
-  GBPUSD: { name: 'GBP / USD', pair: 'GBP / USD', base: 1.3190, pipSpread: '1.0 pips' },
-  USDJPY: { name: 'USD / JPY', pair: 'USD / JPY', base: 159.37, pipSpread: '0.9 pips' },
-  USDINR: { name: 'USD / INR', pair: 'USD / INR', base: 93.84, pipSpread: '1.2 pips' },
-  USDCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4092, pipSpread: '0.9 pips' },
-  AUDCAD: { name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9816, pipSpread: '1.2 pips' },
-  USDCHF: { name: 'USD / CHF', pair: 'USD / CHF', base: 0.8248, pipSpread: '0.9 pips' },
+  EURUSD: { name: 'EUR / USD', pair: 'EUR / USD', base: 1.0990, pipSpread: '0.8 pips' },
+  GBPUSD: { name: 'GBP / USD', pair: 'GBP / USD', base: 1.3192, pipSpread: '1.0 pips' },
+  USDJPY: { name: 'USD / JPY', pair: 'USD / JPY', base: 159.30, pipSpread: '0.9 pips' },
+  USDINR: { name: 'USD / INR', pair: 'USD / INR', base: 93.46, pipSpread: '1.2 pips' },
+  USDCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4301, pipSpread: '0.9 pips' },
+  AUDCAD: { name: 'AUD / CAD', pair: 'AUD / CAD', base: 0.9625, pipSpread: '1.2 pips' },
+  USDCHF: { name: 'USD / CHF', pair: 'USD / CHF', base: 0.8402, pipSpread: '0.9 pips' },
   USDAED: { name: 'USD / AED', pair: 'USD / AED', base: 3.6725, pipSpread: '0.5 pips' },
-  AUDUSD: { name: 'AUD / USD', pair: 'AUD / USD', base: 0.6650, pipSpread: '1.1 pips' },
-  UADCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4092, pipSpread: '0.9 pips' },
+  AUDUSD: { name: 'AUD / USD', pair: 'AUD / USD', base: 0.6734, pipSpread: '1.1 pips' },
+  UADCAD: { name: 'USD / CAD', pair: 'USD / CAD', base: 1.4301, pipSpread: '0.9 pips' },
 };
 
 const KNOWN_US_STOCKS: Record<string, { name: string; base: number; sector: string }> = {
@@ -946,9 +946,19 @@ export default function TerminalPage() {
         const savedComm = localStorage.getItem(`${STORAGE_PREFIX}commodities`);
         if (savedComm) {
           const parsed: CommodityItem[] = JSON.parse(savedComm);
-          const existingSyms = new Set(parsed.map(p => p.symbol));
+          const defaultMap = new Map(DEFAULT_COMMODITIES.map(d => [d.symbol, d]));
+          const upgraded = parsed.map(p => {
+            const def = defaultMap.get(p.symbol);
+            if (def && (p.changePct === 0 || !p.changePct || Math.abs(p.base - def.base) / def.base > 0.4)) {
+              return { ...p, base: def.base, changePct: def.changePct };
+            }
+            return p;
+          });
+          const existingSyms = new Set(upgraded.map(p => p.symbol));
           const missingDefaults = DEFAULT_COMMODITIES.filter(d => !existingSyms.has(d.symbol));
-          setCommodities(missingDefaults.length > 0 ? [...parsed, ...missingDefaults] : parsed);
+          const finalComm = missingDefaults.length > 0 ? [...upgraded, ...missingDefaults] : upgraded;
+          setCommodities(finalComm);
+          localStorage.setItem(`${STORAGE_PREFIX}commodities`, JSON.stringify(finalComm));
         }
 
         const savedFx = localStorage.getItem(`${STORAGE_PREFIX}forex`);
@@ -957,14 +967,16 @@ export default function TerminalPage() {
           const defaultMap = new Map(DEFAULT_FOREX.map(d => [d.symbol, d]));
           const upgraded = parsed.map(p => {
             const def = defaultMap.get(p.symbol);
-            if (def && (p.changePct === 0 || p.base === 1.0845)) {
+            if (def && (p.changePct === 0 || !p.changePct || Math.abs(p.base - def.base) / def.base > 0.4)) {
               return { ...p, base: def.base, changePct: def.changePct };
             }
             return p;
           });
           const existingSyms = new Set(upgraded.map(p => p.symbol));
           const missingDefaults = DEFAULT_FOREX.filter(d => !existingSyms.has(d.symbol));
-          setForex(missingDefaults.length > 0 ? [...upgraded, ...missingDefaults] : upgraded);
+          const finalFx = missingDefaults.length > 0 ? [...upgraded, ...missingDefaults] : upgraded;
+          setForex(finalFx);
+          localStorage.setItem(`${STORAGE_PREFIX}forex`, JSON.stringify(finalFx));
         }
       } catch {}
     }
@@ -1020,7 +1032,16 @@ export default function TerminalPage() {
         try {
           const parsed = JSON.parse(savedCrypto);
           if (Array.isArray(parsed) && parsed.length >= 12) {
-            setCrypto(parsed);
+            const defMap = new Map(DEFAULT_CRYPTO.map(d => [d.symbol, d]));
+            const upgraded = parsed.map((p: CryptoItem) => {
+              const def = defMap.get(p.symbol);
+              if (def && (p.changePct === 0 || !p.changePct || Math.abs(p.base - def.base) / def.base > 0.4)) {
+                return { ...p, base: def.base, changePct: def.changePct };
+              }
+              return p;
+            });
+            setCrypto(upgraded);
+            localStorage.setItem(`${STORAGE_PREFIX}crypto`, JSON.stringify(upgraded));
           } else {
             setCrypto(DEFAULT_CRYPTO);
           }

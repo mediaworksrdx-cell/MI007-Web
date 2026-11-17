@@ -62,8 +62,16 @@ const YAHOO_GLOBAL_MAP: Record<string, string> = {
   'SILVER': 'SI=F',
   'XAGUSD': 'SI=F',
   'XAG/USD': 'SI=F',
-  'BRENT': 'BZ=F',
+  'COPPER': 'HG=F',
+  'PLATINUM': 'PL=F',
   'CRUDEOIL': 'CL=F',
+  'CRUDE OIL': 'CL=F',
+  'WTI': 'CL=F',
+  'WTI CRUDE': 'CL=F',
+  'BRENT': 'BZ=F',
+  'BRENT CRUDE': 'BZ=F',
+  'NATGAS': 'NG=F',
+  'NATURAL GAS': 'NG=F',
   'EURUSD': 'EURUSD=X',
   'EUR/USD': 'EURUSD=X',
   'GBPUSD': 'GBPUSD=X',
@@ -72,6 +80,17 @@ const YAHOO_GLOBAL_MAP: Record<string, string> = {
   'USD/JPY': 'JPY=X',
   'USDINR': 'INR=X',
   'USD/INR': 'INR=X',
+  'USDCAD': 'CAD=X',
+  'USD/CAD': 'CAD=X',
+  'UADCAD': 'CAD=X',
+  'AUDCAD': 'AUDCAD=X',
+  'AUD/CAD': 'AUDCAD=X',
+  'USDCHF': 'CHF=X',
+  'USD/CHF': 'CHF=X',
+  'AUDUSD': 'AUDUSD=X',
+  'AUD/USD': 'AUDUSD=X',
+  'USDAED': 'AED=X',
+  'USD/AED': 'AED=X',
 };
 
 // In-memory quote cache with 15-second TTL to keep live prices blazing fast
@@ -89,45 +108,7 @@ interface CachedQuote {
 const quoteCache = new Map<string, CachedQuote>();
 const QUOTE_TTL_MS = 15_000;
 
-// Binance 24/7 Crypto mapping (Direct API, zero Trade Engine dependency)
-const BINANCE_CRYPTO_MAP: Record<string, string> = {
-  'BTC': 'BTCUSDT',
-  'BTCUSD': 'BTCUSDT',
-  'BTCUSDT': 'BTCUSDT',
-  'ETH': 'ETHUSDT',
-  'ETHUSD': 'ETHUSDT',
-  'ETHUSDT': 'ETHUSDT',
-  'SOL': 'SOLUSDT',
-  'SOLUSD': 'SOLUSDT',
-  'SOLUSDT': 'SOLUSDT',
-  'BNB': 'BNBUSDT',
-  'BNBUSD': 'BNBUSDT',
-  'BNBUSDT': 'BNBUSDT',
-  'XRP': 'XRPUSDT',
-  'XRPUSD': 'XRPUSDT',
-  'XRPUSDT': 'XRPUSDT',
-  'DOGE': 'DOGEUSDT',
-  'DOGEUSD': 'DOGEUSDT',
-  'DOGEUSDT': 'DOGEUSDT',
-  'ADA': 'ADAUSDT',
-  'ADAUSD': 'ADAUSDT',
-  'ADAUSDT': 'ADAUSDT',
-  'AVAX': 'AVAXUSDT',
-  'AVAXUSD': 'AVAXUSDT',
-  'AVAXUSDT': 'AVAXUSDT',
-  'LINK': 'LINKUSDT',
-  'LINKUSD': 'LINKUSDT',
-  'LINKUSDT': 'LINKUSDT',
-  'DOT': 'DOTUSDT',
-  'DOTUSD': 'DOTUSDT',
-  'DOTUSDT': 'DOTUSDT',
-  'MATIC': 'POLUSDT',
-  'POL': 'POLUSDT',
-  'MATICUSD': 'POLUSDT',
-  'SHIB': 'SHIBUSDT',
-  'SHIBUSD': 'SHIBUSDT',
-  'SHIBUSDT': 'SHIBUSDT',
-};
+const GCP_TRADE_ENGINE_URL = process.env.TRADE_ENGINE_URL || 'https://synthetixanalytics.com';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -145,35 +126,35 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(cached.data);
   }
 
-  // 1. Direct Binance API for Crypto (100% authentic, zero Trade Engine)
-  const binanceSym = BINANCE_CRYPTO_MAP[cleanUpper] || BINANCE_CRYPTO_MAP[cleanKey];
-  if (binanceSym) {
-    try {
-      const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(binanceSym)}`, {
-        cache: 'no-store',
-        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(3000) : undefined,
-      });
-      if (res.ok) {
-        const item = await res.json();
-        const price = parseFloat(item.lastPrice);
-        const change = parseFloat(item.priceChange);
-        const changePct = parseFloat(item.priceChangePercent);
-        if (!isNaN(price) && price > 0) {
-          const decimals = price < 0.01 ? 7 : price < 2 ? 4 : price < 20 ? 3 : 2;
+  // 1. Trade Engine Live Price check
+  try {
+    const res = await fetch(`${GCP_TRADE_ENGINE_URL}/live-prices`, {
+      cache: 'no-store',
+      signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2000) : undefined,
+    });
+    if (res.ok) {
+      const items = await res.json();
+      if (Array.isArray(items)) {
+        const match = items.find((it: any) => {
+          const s = String(it.symbol || '').toUpperCase().replace(/\.NS$/, '').replace(/\.BO$/, '');
+          return s === cleanUpper || s === cleanKey;
+        });
+        if (match && typeof match.ltp === 'number' && match.ltp > 0) {
+          const decimals = match.ltp < 0.01 ? 7 : match.ltp < 2 ? 4 : match.ltp < 20 ? 3 : 2;
           const quoteData = {
-            instrumentToken: 999200,
+            instrumentToken: match.instrumentToken || 999200,
             symbol: cleanUpper,
-            ltp: +price.toFixed(decimals),
-            change: !isNaN(change) ? +change.toFixed(decimals) : 0,
-            changePercent: !isNaN(changePct) ? +changePct.toFixed(2) : 0,
-            timestamp: Date.now(),
+            ltp: +match.ltp.toFixed(decimals),
+            change: Number(match.change || 0),
+            changePercent: Number(match.changePercent || 0),
+            timestamp: match.timestamp || Date.now(),
           };
           quoteCache.set(cleanUpper, { timestamp: Date.now(), data: quoteData });
           return NextResponse.json(quoteData);
         }
       }
-    } catch (_bErr) {}
-  }
+    }
+  } catch (_tErr) {}
 
   // 1. Authentic Quote from Yahoo Finance (Works 24/7/365 for live ticks and official exchange closes)
   const yahooSym = YAHOO_GLOBAL_MAP[cleanUpper] || YAHOO_GLOBAL_MAP[cleanKey];
@@ -241,12 +222,12 @@ export async function GET(req: NextRequest) {
   let change = seed ? seed.change : 0;
   let changePercent = seed ? seed.changePct : 0;
 
-  // 4. Indian stocks fallback
+  // 4. Indian stocks fallback (only if symbol actually exists in Indian universe)
   if (ltp <= 0) {
     const zd = findZerodhaStockBySymbol(cleanKey);
     if (zd && zd.lastPrice && zd.lastPrice > 0) {
       ltp = zd.lastPrice;
-    } else {
+    } else if (zd) {
       ltp = getZerodhaStockPrice(cleanKey);
     }
   }
