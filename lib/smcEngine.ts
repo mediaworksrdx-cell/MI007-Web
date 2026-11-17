@@ -252,10 +252,14 @@ export interface SmcConfirmedSetup {
   resolutionIndeterminate?: boolean;
   /** Exact structural break (BOS / CHoCH) that validates this setup */
   validatingBreak?: { breakType: SmcBreakType; price: number; candleIndex: number };
-  /** Explicit execution state distinguishing WAITING_FOR_RETEST, CONFIRMED, EXECUTED, MISSED_ENTRY, and INVALIDATED signals */
-  signalState?: 'PENDING' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'CONFIRMED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED';
+  /** Explicit execution state distinguishing signal generation, entry eligibility, order submission, and confirmed exchange fill */
+  signalState?: 'REJECTED' | 'WATCHLIST_ONLY' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_CONFIRMED' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED';
+  /** Score-based system action tier (<60 Reject, 60-69 Watchlist only, 70-79 Conditional, 80-89 High-quality, 90-100 Highest-priority) */
+  actionTier?: 'REJECT' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'HIGH_QUALITY_SETUP' | 'HIGHEST_PRIORITY_SETUP';
   /** Separate trade-quality approval from structural confirmation */
-  qualityApproval?: 'APPROVED' | 'LOW_QUALITY';
+  qualityApproval?: 'REJECTED' | 'WATCHLIST_ONLY' | 'APPROVED' | 'LOW_QUALITY';
+  /** True only when confirmed exchange order-fill data is present */
+  confirmedOrderFill?: boolean;
   /** Explicit entry basis label (e.g. 'BOS Level', 'Breaker 50%', 'OB 50%', 'FVG CE') */
   entryBasis?: string;
   /** Structural liquidity source for TP1 (e.g. 'Swing', 'PDL', '2.0R') */
@@ -753,10 +757,10 @@ export function detectStructureBreaks(
       if (cur.volume < volMult * volSmaValues[i]) passFilters = false;
     }
 
-    // Break Above Active Highs (Bullish BOS / CHoCH)
+    // Break Above Active Highs (Bullish BOS / CHoCH — swing must be confirmed prior to break bar i)
     if (activeHighs.length > 0 && passFilters) {
       const brokenHighIdx = activeHighs.findIndex(
-        (h) => cur.close > h.price && (prev.close <= h.price || i === swingConfIdx(h))
+        (h) => swingConfIdx(h) < i && cur.close > h.price && prev.close <= h.price
       );
       if (brokenHighIdx !== -1) {
         const brokenHigh = activeHighs[brokenHighIdx];
@@ -784,10 +788,10 @@ export function detectStructureBreaks(
       }
     }
 
-    // Break Below Active Lows (Bearish BOS / CHoCH)
+    // Break Below Active Lows (Bearish BOS / CHoCH — swing must be confirmed prior to break bar i)
     if (activeLows.length > 0 && passFilters) {
       const brokenLowIdx = activeLows.findIndex(
-        (l) => cur.close < l.price && (prev.close >= l.price || i === swingConfIdx(l))
+        (l) => swingConfIdx(l) < i && cur.close < l.price && prev.close >= l.price
       );
       if (brokenLowIdx !== -1) {
         const brokenLow = activeLows[brokenLowIdx];
@@ -2471,9 +2475,28 @@ export function detectAll16SmcSetups(
       }
     );
 
-    // Distinguish active retested trades from waiting-for-retest or missed-entry signals:
-    // Limit-zone setups (FVG_TAP, OB_RETEST, BREAKER_RETEST, etc.) are NEVER executed on their own formation candle;
-    // they require a subsequent closed bar (retestCount > 0) to pull back into cleanEntry and reject.
+    // Distinguish signal generation, entry eligibility (retest confirmed), order submission, and confirmed exchange fill:
+    // 1. Score-based Required Execution Rules:
+    //    < 60  -> REJECT
+    //    60-69 -> WATCHLIST_ONLY
+    //    70-79 -> CONDITIONAL_SETUP
+    //    80-89 -> HIGH_QUALITY_SETUP
+    //    90-100-> HIGHEST_PRIORITY_SETUP
+    const score = confluence.qualityScore;
+    const actionTier: 'REJECT' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'HIGH_QUALITY_SETUP' | 'HIGHEST_PRIORITY_SETUP' =
+      score < 60
+        ? 'REJECT'
+        : score < 70
+        ? 'WATCHLIST_ONLY'
+        : score < 80
+        ? 'CONDITIONAL_SETUP'
+        : score < 90
+        ? 'HIGH_QUALITY_SETUP'
+        : 'HIGHEST_PRIORITY_SETUP';
+
+    const qualityApproval: 'REJECTED' | 'WATCHLIST_ONLY' | 'APPROVED' | 'LOW_QUALITY' =
+      score < 60 ? 'REJECTED' : score < 70 ? 'WATCHLIST_ONLY' : 'APPROVED';
+
     const isLimitZoneSetup =
       setupType === 'FVG_TAP' ||
       setupType === 'OB_RETEST' ||
@@ -2482,18 +2505,20 @@ export function detectAll16SmcSetups(
       setupType === 'MTF_CONFLUENCE' ||
       setupType === 'THREE_STAGE_REVERSAL' ||
       setupType === 'PREMIUM_DISCOUNT_OTE';
-    let entryExecuted = statusOverride === 'RETESTING' || retestCount > 0 || !isLimitZoneSetup;
+
+    // Retest is only confirmed if a closed bar strictly after formation pulled back to cleanEntry and rejected (retestCount > 0)
+    const retestConfirmed = retestCount > 0 || !isLimitZoneSetup;
     let missedEntry = false;
     let waitingForRetest = false;
 
-    if (!entryExecuted && (tp1Hit || tp2Hit)) {
+    if (!retestConfirmed && (tp1Hit || tp2Hit)) {
       // Price reached target without ever pulling back to fill the entry level
       missedEntry = true;
       tp1Hit = false;
       tp2Hit = false;
       status = 'EXPIRED';
       lifecycleState = 'EXPIRED';
-    } else if (!entryExecuted && lastBar) {
+    } else if (!retestConfirmed && lastBar) {
       const distPastEntry = isBull ? (lastBar.close - cleanEntry) : (cleanEntry - lastBar.close);
       if (distPastEntry >= riskDistance * 0.5) {
         missedEntry = true;
@@ -2504,23 +2529,23 @@ export function detectAll16SmcSetups(
       }
     }
 
-    // Separate structural confirmation from trade-quality approval (threshold >= 60/100)
-    const qualityApproval: 'APPROVED' | 'LOW_QUALITY' = confluence.qualityScore >= 60 ? 'APPROVED' : 'LOW_QUALITY';
-
-    const signalState: 'PENDING' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'CONFIRMED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED' =
-      status === 'INVALIDATED'
+    // Critical rule: signals with Score < 60 (REJECT) or 60-69 (WATCHLIST_ONLY) NEVER receive automatic execution,
+    // and EXECUTED is reserved strictly for confirmed exchange order fills.
+    const confirmedOrderFill = false;
+    const signalState: 'REJECTED' | 'WATCHLIST_ONLY' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_CONFIRMED' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED' =
+      status === 'INVALIDATED' || status === 'EXPIRED'
         ? 'INVALIDATED'
+        : actionTier === 'REJECT'
+        ? 'REJECTED'
         : missedEntry
         ? 'MISSED_ENTRY'
-        : status === 'EXPIRED'
-        ? 'INVALIDATED'
-        : waitingForRetest || !entryExecuted
+        : actionTier === 'WATCHLIST_ONLY'
+        ? 'WATCHLIST_ONLY'
+        : waitingForRetest || !retestConfirmed
         ? 'WAITING_FOR_RETEST'
-        : (tp1Hit || tp2Hit || retestCount > 0 || status === 'RETESTING' || status === 'TARGET_HIT' || status === 'EXITED')
+        : confirmedOrderFill
         ? 'EXECUTED'
-        : qualityApproval === 'LOW_QUALITY'
-        ? 'WAITING_FOR_RETEST'
-        : 'CONFIRMED';
+        : 'RETEST_CONFIRMED';
 
     return {
       id: `${baseId}_${time}`,
@@ -2556,7 +2581,9 @@ export function detectAll16SmcSetups(
       tp2Hit,
       tp2HitIndex,
       signalState,
+      actionTier,
       qualityApproval,
+      confirmedOrderFill,
       entryBasis,
       tp1Source,
       tp2Source,
@@ -2727,23 +2754,10 @@ export function detectAll16SmcSetups(
     const sl = isBull ? ob.bottomPrice * 0.997 : ob.topPrice * 1.003;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
 
-    // Scan if price has actively retested this unmitigated order block
-    let lastRetestIdx = -1;
-    let lastRetestTime = ob.formationTime;
-    for (let k = ob.startIndex + 1; k < candles.length; k++) {
-      const c = candles[k];
-      const isRetest = isBull
-        ? (c.low <= ob.topPrice && c.high >= ob.bottomPrice && c.close >= ob.bottomPrice * 0.995)
-        : (c.high >= ob.bottomPrice && c.low <= ob.topPrice && c.close <= ob.topPrice * 1.005);
-      if (isRetest) {
-        lastRetestIdx = k;
-        lastRetestTime = c.openTime;
-      }
-    }
-
-    const anchorIdx = lastRetestIdx >= 0 ? lastRetestIdx : ob.startIndex;
-    const anchorTime = lastRetestIdx >= 0 ? lastRetestTime : ob.formationTime;
-    const statusOverride = lastRetestIdx >= 0 ? 'RETESTING' : undefined;
+    // Anchor OB at its confirmation bar (impulse bar startIndex + 1); makeSetup's closed-bar loop
+    // verifies whether a subsequent bar after the break actually pulled back to the 50% midpoint entry and rejected.
+    const anchorIdx = ob.confirmationIndex ?? Math.min(candles.length - 1, ob.startIndex + 1);
+    const anchorTime = candles[anchorIdx]?.openTime ?? ob.formationTime;
 
     // Directional validation engine audit
     const validation = validateSetupDirectionalConfirmation(
@@ -2768,8 +2782,7 @@ export function detectAll16SmcSetups(
       entry,
       sl,
       tp,
-      `High-volume ${isBull ? 'Demand' : 'Supply'} order block [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] ${lastRetestIdx >= 0 ? 'actively retested' : 'confirmed'}. ${validation.reason}`,
-      statusOverride
+      `High-volume ${isBull ? 'Demand' : 'Supply'} order block [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] confirmed. ${validation.reason}`
     ));
   }
 
@@ -2782,23 +2795,8 @@ export function detectAll16SmcSetups(
     const sl = isBull ? brk.bottomPrice * 0.997 : brk.topPrice * 1.003;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
 
-    // Scan if price has actively retested this breaker block after formation/breakout
-    let lastRetestIdx = -1;
-    let lastRetestTime = brk.formationTime;
-    for (let k = brk.startIndex + 1; k < candles.length; k++) {
-      const c = candles[k];
-      const isRetest = isBull
-        ? (c.low <= brk.topPrice && c.high >= brk.bottomPrice && c.close >= brk.bottomPrice * 0.995)
-        : (c.high >= brk.bottomPrice && c.low <= brk.topPrice && c.close <= brk.topPrice * 1.005);
-      if (isRetest) {
-        lastRetestIdx = k;
-        lastRetestTime = c.openTime;
-      }
-    }
-
-    const anchorIdx = lastRetestIdx >= 0 ? lastRetestIdx : brk.startIndex;
-    const anchorTime = lastRetestIdx >= 0 ? lastRetestTime : brk.formationTime;
-    const statusOverride = lastRetestIdx >= 0 ? 'RETESTING' : undefined;
+    const anchorIdx = brk.confirmationIndex ?? Math.min(candles.length - 1, brk.endIndex);
+    const anchorTime = candles[anchorIdx]?.openTime ?? brk.formationTime;
 
     // Directional validation engine audit
     const validation = validateSetupDirectionalConfirmation(
@@ -2823,8 +2821,7 @@ export function detectAll16SmcSetups(
       entry,
       sl,
       tp,
-      `Failed order block flipped polarity at [${brk.bottomPrice.toFixed(2)} - ${brk.topPrice.toFixed(2)}] ${lastRetestIdx >= 0 ? 'actively retested' : 'confirmed'}. ${validation.reason}`,
-      statusOverride
+      `Failed order block flipped polarity at [${brk.bottomPrice.toFixed(2)} - ${brk.topPrice.toFixed(2)}] confirmed. ${validation.reason}`
     ));
   }
 
