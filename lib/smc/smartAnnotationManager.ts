@@ -167,9 +167,19 @@ export class SmartAnnotationManager {
       }
     }
 
-    // If candidate has very high priority (> 80), displace colliding lower-priority boxes
+    // CH-012: Horizontal placement fallback when vertical lanes are saturated
+    const hStep = Math.max(24 * this.dpr, box.w + 8 * this.dpr);
+    for (const dx of [-hStep, hStep]) {
+      const testBox: AnnotationBox = { ...box, x: box.x + dx };
+      if (this.canPlaceLabel(testBox)) {
+        this.placedLabels.push(testBox);
+        return { placed: true, x: testBox.x, y: testBox.y };
+      }
+    }
+
+    // If candidate has very high priority (>= 80), displace colliding lower-priority boxes
+    // and attempt to re-place them via vertical/horizontal nudging instead of dropping them (CH-011)
     if (box.priority >= 80) {
-      // Find colliding items with strictly lower priority
       const colliders = this.placedLabels.filter(p => {
         const xOverlap = box.x < p.x + p.w && box.x + box.w > p.x;
         const yOverlap = box.y < p.y + p.h && box.y + box.h > p.y;
@@ -178,9 +188,11 @@ export class SmartAnnotationManager {
 
       const allLower = colliders.every(c => c.priority < box.priority);
       if (allLower && colliders.length <= 2) {
-        // Displace lower priority items
         this.placedLabels = this.placedLabels.filter(p => !colliders.includes(p));
         this.placedLabels.push(box);
+        for (const displaced of colliders) {
+          this.tryPlaceLabel(displaced, nudgeStep, 1);
+        }
         return { placed: true, x: box.x, y: box.y };
       }
     }

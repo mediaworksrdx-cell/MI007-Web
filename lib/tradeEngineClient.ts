@@ -221,6 +221,9 @@ export async function fetchCandles(
       low: Number(item.low || 0),
       close: Number(item.close || 0),
       volume: Number(item.volume || 0),
+      // CH-002: preserve closed-candle state
+      ...(item.isClosed !== undefined ? { isClosed: Boolean(item.isClosed) } : {}),
+      ...(item.volumeEstimated ? { volumeEstimated: true } : {}),
     }));
   } catch (err) {
     console.warn(`[TradeEngineClient] fetchCandles error for ${symbol}:`, err);

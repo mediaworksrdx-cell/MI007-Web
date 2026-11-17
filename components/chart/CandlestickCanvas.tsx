@@ -892,6 +892,12 @@ export function CandlestickCanvas({
   const orderFlowConfigRef = useRef(orderFlowConfig);
   const orderFlowDataRef = useRef(orderFlowData);
 
+  // CH-017: Memoize SMC computation by its actual inputs instead of recomputing on every layout effect
+  const memoizedSmcData = useMemo(() => {
+    if (!(smcConfig?.enabled || showSmcOverlay)) return null;
+    return calculateSMC(cleanCandles, smcConfig, undefined, timeframe);
+  }, [cleanCandles, smcConfig, showSmcOverlay, timeframe]);
+
   // Keep latest-value refs in sync before paint (avoids writing refs during render)
   useLayoutEffect(() => {
     cleanCandlesRef.current = cleanCandles;
@@ -913,11 +919,7 @@ export function CandlestickCanvas({
     showOrderFlowRef.current = showOrderFlow;
     orderFlowConfigRef.current = orderFlowConfig;
     orderFlowDataRef.current = orderFlowData;
-    if (smcConfigRef.current?.enabled || showSmcOverlayRef.current) {
-      smcDataRef.current = calculateSMC(cleanCandles, smcConfigRef.current, undefined, timeframeRef.current);
-    } else {
-      smcDataRef.current = null;
-    }
+    smcDataRef.current = memoizedSmcData;
     drawingsRef.current = drawings;
     drawingInProgressRef.current = drawingInProgress;
     selectedDrawingIdRef.current = selectedDrawingId;

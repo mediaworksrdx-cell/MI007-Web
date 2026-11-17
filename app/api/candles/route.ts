@@ -139,11 +139,17 @@ function getYahooParams(timeframe: string, rangeOverride?: string | null): { int
   }
 }
 
+/**
+ * CH-007: Session-aligned 4H aggregation. Hourly candles are grouped per trading
+ * session (a new session starts after any gap > 2h, e.g. overnight/weekend), and
+ * 4-bar buckets are counted from each session's first bar rather than from the
+ * start of the array. This keeps buckets aligned to the exchange open.
+ */
 function aggregateTo4H(candles: Candle[], _timeframe: string): Candle[] {
   const result: Candle[] = [];
-  for (let i = 0; i < candles.length; i += 4) {
-    const chunk = candles.slice(i, i + 4);
-    if (chunk.length === 0) continue;
+  let chunk: Candle[] = [];
+  const flush = () => {
+    if (chunk.length === 0) return;
     const first = chunk[0];
     const last = chunk[chunk.length - 1];
     result.push({
@@ -153,8 +159,25 @@ function aggregateTo4H(candles: Candle[], _timeframe: string): Candle[] {
       low: Math.min(...chunk.map(c => c.low)),
       close: last.close,
       volume: chunk.reduce((acc, c) => acc + c.volume, 0),
+      // A 4H bucket is closed only if it is complete (4 bars) or followed by a session break, and its last bar is closed
       isClosed: last.isClosed,
+      ...(chunk.some(c => c.volumeEstimated) ? { volumeEstimated: true } : {}),
     });
+    chunk = [];
+  };
+  for (let i = 0; i < candles.length; i++) {
+    const c = candles[i];
+    const prev = candles[i - 1];
+    const sessionBreak = prev && c.openTime - prev.openTime > 2 * 3600_000;
+    if (sessionBreak) flush();
+    chunk.push(c);
+    if (chunk.length === 4) flush();
+  }
+  // Trailing partial bucket: still forming unless the data ends with a closed bar AND it's the final bar of a session (unknown) → mark forming
+  if (chunk.length > 0) {
+    flush();
+    const tail = result[result.length - 1];
+    if (tail && candles.length > 0 && candles[candles.length - 1].isClosed !== true) tail.isClosed = false;
   }
   return result;
 }
@@ -245,6 +268,7 @@ function loadPrecomputed5YrHistory(cleanSym: string, timeframe: string = '1D'): 
         for (const c of parsed) {
           if (!c.volume || c.volume <= 0) {
             c.volume = getSynthesizedVolume(cleanSym, timeframe, c.open, c.high, c.low, c.close, c.openTime);
+            c.volumeEstimated = true;
           }
         }
         return parsed;
@@ -324,13 +348,16 @@ async function fetchYahooFinanceCandles(symbol: string, timeframe: string, marke
       const dec = getInstrumentDecimals(symbol, sampleClose);
 
       let finalVol = 0;
+      let volEstimated = false;
       if (hasAuthenticVolume && volumes[i] && volumes[i]! > 0) {
         finalVol = Math.round(volumes[i]!);
       } else if (hasAuthenticVolume) {
         const range = Math.max(h - l, Math.abs(c - o), o * 0.0005);
         finalVol = Math.round(avgAuthenticVol * Math.max(0.35, Math.min(2.5, range / Math.max(0.001, o * 0.003))));
+        volEstimated = true;
       } else {
         finalVol = getSynthesizedVolume(symbol, timeframe, o, h, l, c, openTime);
+        volEstimated = true;
       }
 
       candles.push({
@@ -341,6 +368,7 @@ async function fetchYahooFinanceCandles(symbol: string, timeframe: string, marke
         close: +c.toFixed(dec),
         volume: finalVol,
         isClosed,
+        ...(volEstimated ? { volumeEstimated: true } : {}),
       });
     }
 
@@ -450,39 +478,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 5. Calibrated realistic candles anchored precisely to authentic market price
-  const candles = getMockCandles(market, symbol, timeframe, 800);
-  if (candles.length > 0) {
-    const yahooSym = YAHOO_GLOBAL_MAP[cleanSym] || YAHOO_GLOBAL_MAP[symbol] || (cleanSym.includes('.') ? cleanSym : `${cleanSym}.NS`);
-    try {
-      const yRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1m&range=5d`, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        cache: 'no-store',
-        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(1800) : undefined,
-      });
-      if (yRes.ok) {
-        const yData = await yRes.json();
-        const meta = yData?.chart?.result?.[0]?.meta;
-        if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
-          const ltp = meta.regularMarketPrice;
-          const dec = getInstrumentDecimals(cleanSym, ltp);
-          const last = candles[candles.length - 1];
-          if (last && last.close > 0 && Math.abs(last.close - ltp) > 0.0001) {
-            const scale = ltp / last.close;
-            for (let j = 0; j < candles.length; j++) {
-              candles[j].open = +(candles[j].open * scale).toFixed(dec);
-              candles[j].high = +(candles[j].high * scale).toFixed(dec);
-              candles[j].low = +(candles[j].low * scale).toFixed(dec);
-              candles[j].close = +(candles[j].close * scale).toFixed(dec);
-            }
-          }
-          candles[candles.length - 1].close = +ltp.toFixed(dec);
-        }
-      }
-    } catch (_yErr) {
-      // Graceful fallback
-    }
-  }
-
-  return NextResponse.json(candles);
+  // 5. CH-008: All real data sources exhausted. Never return fabricated candles as market data.
+  return NextResponse.json([], {
+    headers: { 'X-MI007-Data-Warning': 'NO_REAL_DATA_AVAILABLE' },
+  });
 }

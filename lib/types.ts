@@ -12,6 +12,8 @@ export interface Candle {
   volume: number;
   time?: string;
   isClosed?: boolean;
+  /** True when volume was synthesized/estimated rather than reported by the exchange. */
+  volumeEstimated?: boolean;
 }
 
 export type ChartType = 'CANDLESTICK' | 'LINE' | 'AREA' | 'HEIKIN_ASHI' | 'HOLLOW_CANDLE';

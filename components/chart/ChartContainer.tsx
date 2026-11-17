@@ -173,11 +173,12 @@ function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[
       const high = Math.max(rawHigh, open, close);
       const low = Math.min(rawLow, open, close);
       const range = Math.max(high - low, close * 0.0006);
-      const volume = (Number.isFinite(c.volume) && c.volume > 0)
+      const hasRealVolume = Number.isFinite(c.volume) && c.volume > 0;
+      const volume = hasRealVolume
         ? Number(c.volume)
         : Math.round(Math.max(100, (range / Math.max(1, close)) * 5_000_000));
 
-      return {
+      const cleaned: Candle = {
         openTime: c.openTime,
         open,
         high,
@@ -185,6 +186,11 @@ function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[
         close,
         volume,
       };
+      // CH-001: preserve closed-candle state for non-repainting detection
+      if (c.isClosed !== undefined) cleaned.isClosed = c.isClosed;
+      // CH-003: flag synthesized volume so it is never treated as exchange volume
+      if (!hasRealVolume || c.volumeEstimated) cleaned.volumeEstimated = true;
+      return cleaned;
     })
     .sort((a, b) => a.openTime - b.openTime);
 
@@ -935,6 +941,7 @@ export function ChartContainer({
             const dislocation = Math.abs(engineLast.close - expectedPrice) / expectedPrice;
             if (dislocation > dislocationThreshold) {
               const scaleMultiplier = expectedPrice / engineLast.close;
+              console.warn(`[MI007] Price rescaling applied to ${selectedSymbol}: engine close ${engineLast.close} → expected ${expectedPrice} (dislocation ${(dislocation * 100).toFixed(1)}%). Historical prices are adjusted, not raw.`);
               cleanEngine = rescaleCandleArray(cleanEngine, scaleMultiplier, expectedPrice);
             }
           }
@@ -1117,24 +1124,33 @@ export function ChartContainer({
               high: Math.max(prevHigh, tick.price, open),
               low: Math.min(prevLow, tick.price, open),
               volume: (currentLast.volume || 1000) + incVol,
+              isClosed: false,
+              ...(isIncremental ? {} : { volumeEstimated: true }),
             };
             next = [...prev];
             next[next.length - 1] = updated;
           } else {
             // Case 2: Genuine new time bucket started (e.g. next day or next hour)
+            // CH-005: use the actual current UTC day, not previous + 24h (skips weekends/holidays)
             const newBarOpenTime = timeframe === '1D'
-              ? currentLast.openTime + tfMs
+              ? Math.floor(now / 86_400_000) * 86_400_000
               : Math.floor(now / tfMs) * tfMs;
             const baseStartVol = Math.max(10, Math.round((currentLast.volume || 1000) * 0.03));
+            const tickVolReal = tick.volume > 0 && tick.volume < 2000;
+            // Previous bar is now complete
+            next = [...prev];
+            next[next.length - 1] = { ...currentLast, isClosed: true };
             const newBar: Candle = {
               openTime: newBarOpenTime,
               open: tick.price,
               high: tick.price,
               low: tick.price,
               close: tick.price,
-              volume: (tick.volume > 0 && tick.volume < 2000) ? tick.volume : baseStartVol,
+              volume: tickVolReal ? tick.volume : baseStartVol,
+              isClosed: false,
+              ...(tickVolReal ? {} : { volumeEstimated: true }),
             };
-            next = [...prev.slice(-5999), newBar];
+            next = [...next.slice(-5999), newBar];
           }
 
           // Throttle save to storage every 4 seconds
@@ -1593,6 +1609,7 @@ export function ChartContainer({
       smcConfig,
       showVolumeProfile,
       showVolume,
+      showVolumePanel,
       updatedAt: Date.now(),
     };
     const savedList = saveTemplate(updated);
@@ -1601,7 +1618,7 @@ export function ChartContainer({
     setActiveTemplateId(slotId);
     setSaveStatus('saved');
     setTimeout(() => setSaveStatus('idle'), 2000);
-  }, [timeframe, chartType, activeIndicators, indicatorConfigs, showSmcOverlay, smcConfig, showVolumeProfile, showVolume, templates]);
+  }, [timeframe, chartType, activeIndicators, indicatorConfigs, showSmcOverlay, smcConfig, showVolumeProfile, showVolume, showVolumePanel, templates]);
 
   const handleSaveChartLayout = useCallback(() => {
     const slotId = activeTemplateId || 'tpl_1';
@@ -1778,6 +1795,15 @@ export function ChartContainer({
       setTimeout(() => setSnapshotStatus('idle'), 2500);
     } else if (mode === 'clipboard') {
       exportCanvas.toBlob(async (blob) => {
+        const triggerDownload = () => {
+          const dataUrl = exportCanvas.toDataURL('image/png');
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = `${selectedSymbol}_${timeframe}.png`;
+          a.click();
+          setSnapshotStatus('captured');
+          setTimeout(() => setSnapshotStatus('idle'), 2500);
+        };
         if (blob && navigator.clipboard && window.ClipboardItem) {
           try {
             await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
@@ -1785,14 +1811,10 @@ export function ChartContainer({
             setTimeout(() => setSnapshotStatus('idle'), 2500);
           } catch (e) {
             console.warn('Clipboard write failed, downloading instead:', e);
-            const dataUrl = exportCanvas.toDataURL('image/png');
-            const a = document.createElement('a');
-            a.href = dataUrl;
-            a.download = `${selectedSymbol}_${timeframe}.png`;
-            a.click();
-            setSnapshotStatus('captured');
-            setTimeout(() => setSnapshotStatus('idle'), 2500);
+            triggerDownload();
           }
+        } else {
+          triggerDownload();
         }
       }, 'image/png');
     }

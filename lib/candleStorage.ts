@@ -246,7 +246,24 @@ export function mergeCandleArrays(base: Candle[], incoming: Candle[], timeframeM
   const bucketMs = (inferredMs && inferredMs >= 60_000) ? inferredMs : 3_600_000;
 
   const candleMap = new Map<number, Candle>();
-  const getBucket = (ts: number) => Math.floor(ts / bucketMs) * bucketMs;
+  // CH-006: calendar-aligned buckets for weekly / monthly data. Fixed-duration Unix
+  // flooring misaligns weeks (epoch starts on Thursday) and months (variable length).
+  const DAY = 86_400_000;
+  const isMonthly = bucketMs >= 27 * DAY;
+  const isWeekly = !isMonthly && bucketMs >= 6 * DAY;
+  const getBucket = (ts: number) => {
+    if (isMonthly) {
+      const d = new Date(ts);
+      return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+    }
+    if (isWeekly) {
+      const dayStart = Math.floor(ts / DAY) * DAY;
+      const dow = new Date(dayStart).getUTCDay(); // 0=Sun..6=Sat
+      const daysSinceMonday = (dow + 6) % 7;
+      return dayStart - daysSinceMonday * DAY;
+    }
+    return Math.floor(ts / bucketMs) * bucketMs;
+  };
 
   // Insert base candles mapped to their calendar interval bucket
   for (const c of base) {
@@ -269,6 +286,8 @@ export function mergeCandleArrays(base: Candle[], incoming: Candle[], timeframeM
           high: Math.max(existing.high, c.high),
           low: (existing.low > 0 && c.low > 0) ? Math.min(existing.low, c.low) : (c.low || existing.low),
           volume: Math.max(existing.volume, c.volume),
+          isClosed: c.isClosed ?? existing.isClosed,
+          volumeEstimated: c.volumeEstimated ?? existing.volumeEstimated,
         });
       } else {
         candleMap.set(bTime, { ...c, openTime: bTime });

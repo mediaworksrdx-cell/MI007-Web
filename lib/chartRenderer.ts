@@ -16,7 +16,7 @@ import {
   CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN, calculateDynamicPanelHeight,
   getInstrumentDecimals,
 } from './types';
-import { calculateSMC, DEFAULT_SMC_CONFIG, type SmcConfig } from './smcEngine';
+import { calculateSMC, DEFAULT_SMC_CONFIG, SMC_TRADE_LIFESPAN_BARS, type SmcConfig } from './smcEngine';
 import { SmartAnnotationManager, type SmcVisualizationMode } from './smc/smartAnnotationManager';
 import { renderOrderFlowFootprint, formatVol } from './orderflow/orderFlowRenderer';
 import { renderQuantumAiOverlays } from './quantumai/quantumAiRenderer';
@@ -1207,7 +1207,8 @@ export function renderChart(
   if (smcCfg && smcCfg.enabled) {
     const sym = (options as any).symbol || 'NIFTY';
     const tf = options.timeframe || '1H';
-    const smcData = calculateSMC(candles, smcCfg, sym, tf);
+    // CH-017: reuse precomputed smcData when provided instead of recomputing on every render
+    const smcData = options.smcData || calculateSMC(candles, smcCfg, sym, tf);
     const isBullishMaster = smcCfg.showBullishSetups !== false;
     const isBearishMaster = smcCfg.showBearishSetups !== false;
 
@@ -2348,39 +2349,40 @@ export function renderChart(
 
       for (const st of setupsToRender) {
         const isBull = st.direction === 'BULLISH';
-        const maxLifespan = 20; // 20 bars maximum trading timeframe
+        // RR-005: shared lifespan constant matching smcEngine
+        const maxLifespan = SMC_TRADE_LIFESPAN_BARS;
         let endCandleIdx = Math.min(candles.length - 1, st.candleIndex + maxLifespan);
         let isTradeOver = false;
         let tradeOutcome = 'ACTIVE';
 
-        // Check subsequent candles to identify exact resolution candle (TP, SL, or lifespan expiration)
+        // RR-006: Check SL BEFORE TP on every bar (worst-case ordering, matching smcEngine)
         for (let ci = st.candleIndex + 1; ci < candles.length; ci++) {
           const c = candles[ci];
           if (!c) continue;
           if (isBull) {
-            if (c.high >= st.targetPrice) {
-              endCandleIdx = ci;
-              isTradeOver = true;
-              tradeOutcome = 'TP1 HIT';
-              break;
-            }
             if (c.low <= st.stopLoss) {
               endCandleIdx = ci;
               isTradeOver = true;
               tradeOutcome = 'SL HIT';
               break;
             }
-          } else {
-            if (c.low <= st.targetPrice) {
+            if (c.high >= st.targetPrice) {
               endCandleIdx = ci;
               isTradeOver = true;
               tradeOutcome = 'TP1 HIT';
               break;
             }
+          } else {
             if (c.high >= st.stopLoss) {
               endCandleIdx = ci;
               isTradeOver = true;
               tradeOutcome = 'SL HIT';
+              break;
+            }
+            if (c.low <= st.targetPrice) {
+              endCandleIdx = ci;
+              isTradeOver = true;
+              tradeOutcome = 'TP1 HIT';
               break;
             }
           }
@@ -2486,12 +2488,18 @@ export function renderChart(
               : Math.min(chartH - 6 * dpr, finalTpY + 16 * dpr);
           }
 
+          const trueTp2Y = priceToY(st.targetPrice2!);
           ctx.setLineDash([3 * dpr, 3 * dpr]);
           ctx.strokeStyle = 'rgba(5, 150, 105, 0.75)';
           ctx.lineWidth = 1 * dpr;
           ctx.beginPath();
-          ctx.moveTo(x, priceToY(st.targetPrice2!));
-          ctx.lineTo(x + boxW, priceToY(st.targetPrice2!));
+          ctx.moveTo(x, trueTp2Y);
+          ctx.lineTo(x + boxW, trueTp2Y);
+          if (Math.abs(finalTp2Y - trueTp2Y) >= 2 * dpr) {
+            // Leader line linking the shifted TP2 badge back to its true price line
+            ctx.moveTo(x + boxW, trueTp2Y);
+            ctx.lineTo(x + boxW, finalTp2Y);
+          }
           ctx.stroke();
           ctx.setLineDash([]);
 
