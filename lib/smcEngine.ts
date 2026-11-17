@@ -2059,6 +2059,21 @@ export function detectAll16SmcSetups(
       }
     }
 
+    // 1c. Liquidity-Sweep & Premium/Discount Confluence Guard:
+    // Do not confirm a BULLISH setup deep in Premium right after a BSL sweep (or BEARISH deep in Discount after SSL sweep)
+    if (dealingRange && dealingRange.highPrice > dealingRange.lowPrice) {
+      const drSpan = dealingRange.highPrice - dealingRange.lowPrice;
+      const deepPremium = dealingRange.equilibriumPrice + drSpan * 0.25;
+      const deepDiscount = dealingRange.equilibriumPrice - drSpan * 0.25;
+      if (isBull && entryPrice > deepPremium) {
+        const recentBslSweep = sweeps.some(s => s.isHighSweep && candleIndex - s.candleIndex >= 0 && candleIndex - s.candleIndex <= 6);
+        if (recentBslSweep) statusOverride = 'INVALIDATED';
+      } else if (!isBull && entryPrice < deepDiscount) {
+        const recentSslSweep = sweeps.some(s => !s.isHighSweep && candleIndex - s.candleIndex >= 0 && candleIndex - s.candleIndex <= 6);
+        if (recentSslSweep) statusOverride = 'INVALIDATED';
+      }
+    }
+
     // 2. RR-001: Directional Risk Ordering — flag & invalidate broken stops instead of silently replacing them
     let cleanStopLoss = stopLoss;
     let stopLossAdjusted = false;

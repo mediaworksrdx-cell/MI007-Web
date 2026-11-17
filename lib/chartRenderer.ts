@@ -2445,27 +2445,37 @@ export function renderChart(
           ctx.globalAlpha = Math.max(0.40, 1.0 - (lastBarIdx - st.candleIndex - 6) * 0.04);
         }
 
-        // 1. Take Profit (Reward) Zone (Entry to TP1) — Subtle green shaded region
-        const tpTop = Math.min(yEntry, yTP);
-        const tpH = Math.max(Math.abs(yEntry - yTP), 2 * dpr);
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
-        ctx.fillRect(x, tpTop, boxW, tpH);
-        ctx.strokeStyle = 'rgba(16, 185, 129, 0.50)';
-        ctx.lineWidth = 1 * dpr;
-        ctx.setLineDash([4 * dpr, 3 * dpr]);
-        ctx.strokeRect(x, tpTop, boxW, tpH);
-        ctx.setLineDash([]);
+        // 1. Take Profit (Reward) Zone (Entry to TP1) — Subtle green shaded region (clamped to viewport)
+        const tpTopRaw = Math.min(yEntry, yTP);
+        const tpBotRaw = Math.max(yEntry, yTP);
+        const tpTop = Math.max(0, tpTopRaw);
+        const tpBot = Math.min(chartH, tpBotRaw);
+        const tpH = Math.max(tpBot - tpTop, 2 * dpr);
+        if (tpBot > 0 && tpTop < chartH) {
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+          ctx.fillRect(x, tpTop, boxW, tpH);
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.50)';
+          ctx.lineWidth = 1 * dpr;
+          ctx.setLineDash([4 * dpr, 3 * dpr]);
+          ctx.strokeRect(x, tpTop, boxW, tpH);
+          ctx.setLineDash([]);
+        }
 
-        // 2. Stop Loss (Risk) Zone (Entry to SL) — Subtle red shaded region
-        const slTop = Math.min(yEntry, ySL);
-        const slH = Math.max(Math.abs(yEntry - ySL), 2 * dpr);
-        ctx.fillStyle = 'rgba(244, 63, 94, 0.08)';
-        ctx.fillRect(x, slTop, boxW, slH);
-        ctx.strokeStyle = 'rgba(244, 63, 94, 0.50)';
-        ctx.lineWidth = 1 * dpr;
-        ctx.setLineDash([4 * dpr, 3 * dpr]);
-        ctx.strokeRect(x, slTop, boxW, slH);
-        ctx.setLineDash([]);
+        // 2. Stop Loss (Risk) Zone (Entry to SL) — Subtle red shaded region (clamped to viewport)
+        const slTopRaw = Math.min(yEntry, ySL);
+        const slBotRaw = Math.max(yEntry, ySL);
+        const slTop = Math.max(0, slTopRaw);
+        const slBot = Math.min(chartH, slBotRaw);
+        const slH = Math.max(slBot - slTop, 2 * dpr);
+        if (slBot > 0 && slTop < chartH) {
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.08)';
+          ctx.fillRect(x, slTop, boxW, slH);
+          ctx.strokeStyle = 'rgba(244, 63, 94, 0.50)';
+          ctx.lineWidth = 1 * dpr;
+          ctx.setLineDash([4 * dpr, 3 * dpr]);
+          ctx.strokeRect(x, slTop, boxW, slH);
+          ctx.setLineDash([]);
+        }
 
         // 3. Entry Line (Thin Neutral Line - institutional hierarchy)
         ctx.strokeStyle = isDark ? '#94A3B8' : '#64748B';
@@ -2475,39 +2485,50 @@ export function renderChart(
         ctx.lineTo(x + boxW, yEntry);
         ctx.stroke();
 
-        // 4. TP2 Extension Line (Target 2 – RR 1:2.0) with collision separation
-        let finalTpY = yTP;
-        let finalTp2Y = (st.targetPrice2 && st.targetPrice2 > 0) ? priceToY(st.targetPrice2) : -999;
-        const hasTp2 = finalTp2Y >= 0 && finalTp2Y <= chartH;
+        // 4. TP1 & TP2 Extension Lines & Clamped Badges (Always visible inside [20*dpr, chartH - 20*dpr])
+        let finalTpY = Math.max(22 * dpr, Math.min(chartH - 22 * dpr, yTP));
+        let finalTp2Y = (st.targetPrice2 && st.targetPrice2 > 0)
+          ? Math.max(8 * dpr, Math.min(chartH - 8 * dpr, priceToY(st.targetPrice2)))
+          : -999;
+        const hasTp2 = st.targetPrice2 !== undefined && st.targetPrice2 > 0;
 
         if (hasTp2) {
           // Guarantee vertical separation between TP1 and TP2 badges (at least 16 * dpr)
           if (Math.abs(finalTp2Y - finalTpY) < 16 * dpr) {
-            finalTp2Y = isBull
-              ? Math.max(6 * dpr, finalTpY - 16 * dpr)
-              : Math.min(chartH - 6 * dpr, finalTpY + 16 * dpr);
+            if (isBull) {
+              finalTp2Y = Math.max(8 * dpr, finalTpY - 16 * dpr);
+              if (Math.abs(finalTp2Y - finalTpY) < 14 * dpr) {
+                finalTpY = Math.min(chartH - 22 * dpr, finalTp2Y + 16 * dpr);
+              }
+            } else {
+              finalTp2Y = Math.min(chartH - 8 * dpr, finalTpY + 16 * dpr);
+              if (Math.abs(finalTp2Y - finalTpY) < 14 * dpr) {
+                finalTpY = Math.max(22 * dpr, finalTp2Y - 16 * dpr);
+              }
+            }
           }
 
           const trueTp2Y = priceToY(st.targetPrice2!);
-          ctx.setLineDash([3 * dpr, 3 * dpr]);
-          ctx.strokeStyle = 'rgba(5, 150, 105, 0.75)';
-          ctx.lineWidth = 1 * dpr;
-          ctx.beginPath();
-          ctx.moveTo(x, trueTp2Y);
-          ctx.lineTo(x + boxW, trueTp2Y);
-          if (Math.abs(finalTp2Y - trueTp2Y) >= 2 * dpr) {
-            // Leader line linking the shifted TP2 badge back to its true price line
-            ctx.moveTo(x + boxW, trueTp2Y);
-            ctx.lineTo(x + boxW, finalTp2Y);
+          if (trueTp2Y >= 0 && trueTp2Y <= chartH) {
+            ctx.setLineDash([3 * dpr, 3 * dpr]);
+            ctx.strokeStyle = 'rgba(5, 150, 105, 0.75)';
+            ctx.lineWidth = 1 * dpr;
+            ctx.beginPath();
+            ctx.moveTo(x, trueTp2Y);
+            ctx.lineTo(x + boxW, trueTp2Y);
+            if (Math.abs(finalTp2Y - trueTp2Y) >= 2 * dpr) {
+              ctx.moveTo(x + boxW, trueTp2Y);
+              ctx.lineTo(x + boxW, finalTp2Y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
           }
-          ctx.stroke();
-          ctx.setLineDash([]);
 
           // TP2 Badge (Right edge of bracket)
           ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
           const tp2Text = `TP2 (1:2.0): ${formatPrice(st.targetPrice2!, options.symbol)}`;
           const tp2Tm = ctx.measureText(tp2Text);
-          ctx.fillStyle = 'rgba(5, 150, 105, 0.90)';
+          ctx.fillStyle = 'rgba(5, 150, 105, 0.92)';
           ctx.fillRect(x + boxW - tp2Tm.width - 6 * dpr, finalTp2Y - 6 * dpr, tp2Tm.width + 6 * dpr, 12 * dpr);
           ctx.fillStyle = '#FFFFFF';
           ctx.textAlign = 'right';
@@ -2575,15 +2596,17 @@ export function renderChart(
           .replace('Dealing Range ', '')
           .replace('Liquidity Pool ', '')
           .replace('Power of Three ', '');
-        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (1:1.5 / 1:2.0)${isTradeOver ? ` [${tradeOutcome}]` : ''}`;
+        const rrLabel = st.riskReward ? `1:${st.riskReward.toFixed(1)}` : '1:1.5';
+        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (${rrLabel})${isTradeOver ? ` [${tradeOutcome}]` : ''}`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(headerTag);
         const tw = tm.width + 10 * dpr;
         const th = 14 * dpr;
 
-        // Place header badge above the upper boundary of the bracket
-        const upperBracketY = isBull ? yTP : ySL;
-        const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, upperBracketY - th - 5 * dpr));
+        // Place header badge cleanly above the upper boundary (or inside top-left if TP/SL is near top edge)
+        const upperBracketY = Math.max(0, isBull ? yTP : ySL);
+        const rawBadgeY = upperBracketY > th + 24 * dpr ? upperBracketY - th - 5 * dpr : upperBracketY + 4 * dpr;
+        const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, rawBadgeY));
 
         ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)';
         ctx.fillRect(x + 4 * dpr, badgeY, tw, th);
