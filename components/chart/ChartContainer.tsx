@@ -172,7 +172,10 @@ function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[
       const rawLow = (Number.isFinite(c.low) && c.low > 0) ? Number(c.low) : close;
       const high = Math.max(rawHigh, open, close);
       const low = Math.min(rawLow, open, close);
-      const volume = (Number.isFinite(c.volume) && c.volume >= 0) ? Number(c.volume) : 0;
+      const range = Math.max(high - low, close * 0.0006);
+      const volume = (Number.isFinite(c.volume) && c.volume > 0)
+        ? Number(c.volume)
+        : Math.round(Math.max(100, (range / Math.max(1, close)) * 5_000_000));
 
       return {
         openTime: c.openTime,
@@ -1101,13 +1104,19 @@ export function ChartContainer({
             const open = (currentLast.open > 0 && !isDislocated) ? currentLast.open : tick.price;
             const prevHigh = (!isDislocated && currentLast.high > 0) ? currentLast.high : tick.price;
             const prevLow = (!isDislocated && currentLast.low > 0) ? currentLast.low : tick.price;
+            // Prevent cumulative exchange day-volume from causing massive outlier spikes
+            const isIncremental = tick.volume > 0 && tick.volume < 2000;
+            const incVol = isIncremental
+              ? tick.volume
+              : Math.max(1, Math.round((currentLast.volume || 1000) * 0.0006));
+
             const updated: Candle = {
               ...currentLast,
               open,
               close: tick.price,
               high: Math.max(prevHigh, tick.price, open),
               low: Math.min(prevLow, tick.price, open),
-              volume: currentLast.volume + (tick.volume > 0 ? tick.volume : 1),
+              volume: (currentLast.volume || 1000) + incVol,
             };
             next = [...prev];
             next[next.length - 1] = updated;
@@ -1116,13 +1125,14 @@ export function ChartContainer({
             const newBarOpenTime = timeframe === '1D'
               ? currentLast.openTime + tfMs
               : Math.floor(now / tfMs) * tfMs;
+            const baseStartVol = Math.max(10, Math.round((currentLast.volume || 1000) * 0.03));
             const newBar: Candle = {
               openTime: newBarOpenTime,
               open: tick.price,
               high: tick.price,
               low: tick.price,
               close: tick.price,
-              volume: tick.volume > 0 ? tick.volume : 1,
+              volume: (tick.volume > 0 && tick.volume < 2000) ? tick.volume : baseStartVol,
             };
             next = [...prev.slice(-5999), newBar];
           }

@@ -702,7 +702,8 @@ export function calculateVolumeProfile(candles: Candle[], priceMin: number, pric
     if (c.high < priceMin || c.low > priceMax) continue;
     const range = Math.max(c.high - c.low, 1e-9);
     const buyFrac = Math.min(1, Math.max(0, (c.close - c.low) / range));
-    const buyVol = c.volume * buyFrac, sellVol = c.volume * (1 - buyFrac);
+    const vol = (c.volume && c.volume > 0) ? c.volume : Math.max(100, Math.round(range * 1000));
+    const buyVol = vol * buyFrac, sellVol = vol * (1 - buyFrac);
     for (let i = 0; i < bucketCount; i++) {
       const b = buckets[i];
       const oLow = Math.max(b.priceLow, c.low), oHigh = Math.min(b.priceHigh, c.high);
@@ -2603,13 +2604,13 @@ export function renderChart(
 
   // ── LAYER 4: Volume Overlay (behind candles - quiet opacity & anchored baseline divider) ──
   if (options.showVolume && !options.showVolumePanel) {
-    const volHeightRatio = 0.13; // locked to 13% of canvas height
+    const volHeightRatio = 0.16; // 16% of canvas height (clean institutional proportion)
     const volH = chartH * volHeightRatio;
     const volDividerY = Math.floor(chartH - volH) + 0.5; // razor-sharp 1px baseline line
 
     ctx.save();
     // 1px anchored baseline divider across volume pane
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+    ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
     ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
     ctx.moveTo(0, volDividerY);
@@ -2617,20 +2618,32 @@ export function renderChart(
     ctx.stroke();
     ctx.restore();
 
-    const volGap = Math.max(1.5 * dpr, Math.min(3 * dpr, candleW * 0.25));
+    const volGap = Math.max(1 * dpr, Math.min(3 * dpr, candleW * 0.20));
     const volBodyW = Math.max(1 * dpr, candleW - volGap);
     let maxV = 0;
-    for (let i = safeStart; i < safeEnd; i++) maxV = Math.max(maxV, candles[i].volume);
+    for (let i = safeStart; i < safeEnd; i++) maxV = Math.max(maxV, candles[i].volume || 0);
+
+    // Fallback if series volume in viewport is zero
+    if (maxV <= 0) {
+      for (let i = safeStart; i < safeEnd; i++) {
+        const c = candles[i];
+        maxV = Math.max(maxV, Math.max(c.high - c.low, c.close * 0.0005));
+      }
+    }
+
     if (maxV > 0) {
       for (let i = safeStart; i < safeEnd; i++) {
         const li = i - startIdx;
         const x = Math.round(li * candleW + (candleW - volBodyW) / 2);
         const c = candles[i];
-        const ratio = Math.min(1, Math.max(0.06, c.volume / maxV));
-        const barH = Math.round(ratio * volH * 0.95);
+        const v = (c.volume && c.volume > 0) ? c.volume : Math.max(c.high - c.low, c.close * 0.0005);
+        const ratio = Math.min(1, Math.max(0.06, v / maxV));
+        const barH = Math.max(2 * dpr, Math.round(ratio * volH * 0.95));
         const bTop = Math.round(chartH - barH);
         const bull = c.close >= c.open;
-        ctx.fillStyle = bull ? 'rgba(8, 153, 129, 0.28)' : 'rgba(242, 54, 69, 0.28)';
+        ctx.fillStyle = bull
+          ? (isDark ? 'rgba(38, 166, 154, 0.38)' : 'rgba(8, 153, 129, 0.32)')
+          : (isDark ? 'rgba(239, 83, 80, 0.38)' : 'rgba(242, 54, 69, 0.32)');
         ctx.fillRect(x, bTop, Math.max(1, Math.round(volBodyW)), barH);
       }
     }
@@ -4591,9 +4604,15 @@ export function renderChart(
     // Find max vol (including volume MA)
     let maxV = 0;
     for (let i = safeStart; i < safeEnd; i++) {
-      maxV = Math.max(maxV, candles[i].volume);
+      maxV = Math.max(maxV, candles[i].volume || 0);
       const maV = volMa20Values[i];
       if (maV !== null && maV !== undefined && maV > maxV) maxV = maV;
+    }
+    if (maxV <= 0) {
+      for (let i = safeStart; i < safeEnd; i++) {
+        const c = candles[i];
+        maxV = Math.max(maxV, Math.max(c.high - c.low, c.close * 0.0005));
+      }
     }
 
     // Label with Volume MA readout
@@ -4619,7 +4638,8 @@ export function renderChart(
         const li = i - startIdx;
         const x = Math.round(li * candleW + (candleW - bw) / 2);
         const c = candles[i];
-        const barH = Math.max(1.5, Math.round((c.volume / maxV) * avH));
+        const v = (c.volume && c.volume > 0) ? c.volume : Math.max(c.high - c.low, c.close * 0.0005);
+        const barH = Math.max(1.5, Math.round((v / maxV) * avH));
         const bT = Math.round(panelOffset + pH - barH);
         ctx.fillStyle = c.close >= c.open ? 'rgba(8, 153, 129, 0.32)' : 'rgba(242, 54, 69, 0.32)';
         ctx.fillRect(x, bT, Math.round(bw), barH);

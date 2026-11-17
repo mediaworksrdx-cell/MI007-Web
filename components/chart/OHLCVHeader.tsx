@@ -26,6 +26,13 @@ export function OHLCVHeader({ symbol, candle, currency, timeframe, currentPrice 
     maximumFractionDigits: dec,
   });
 
+  const fmtVol = (v: number) => {
+    if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
+    if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+    if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+    return v.toLocaleString();
+  };
+
   return (
     <div
       className="flex items-center gap-x-2.5 sm:gap-x-4 overflow-x-auto scrollbar-none whitespace-nowrap bg-white dark:bg-[#0B0F19] border-b border-slate-200 dark:border-slate-800 px-3 sm:px-4 py-1 sm:py-1.5 font-mono text-xs sm:text-[13px] text-slate-800 dark:text-slate-200 shadow-xs tabular-nums select-none"
@@ -59,9 +66,9 @@ export function OHLCVHeader({ symbol, candle, currency, timeframe, currentPrice 
           {currency}{fmt(price)}
         </span>
       </span>
-      <span className="tabular-nums shrink-0 hidden xs:inline" style={{ fontVariantNumeric: 'tabular-nums' }}>
+      <span className="tabular-nums shrink-0 inline-flex items-center" style={{ fontVariantNumeric: 'tabular-nums' }}>
         <span className="text-slate-400 dark:text-slate-500 font-extrabold text-[11px] mr-1">V</span>
-        <span className="text-slate-700 dark:text-slate-300 font-semibold tabular-nums">{candle.volume.toLocaleString()}</span>
+        <span className="text-slate-700 dark:text-slate-300 font-semibold tabular-nums">{fmtVol(candle.volume)}</span>
       </span>
 
       <span
