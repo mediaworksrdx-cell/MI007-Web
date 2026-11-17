@@ -416,3 +416,37 @@ export const INSTRUMENTS: Record<MarketType, Instrument[]> = {
     { symbol: 'DEWA', name: 'Dubai Electricity & Water', exchange: 'DFM', currency: 'AED', market: 'UAE' },
   ],
 };
+
+/**
+ * Universal decimal precision calculator across Forex, Crypto, Commodities, Stocks, and Indices
+ */
+export function getInstrumentDecimals(symbol?: string, samplePrice?: number): number {
+  if (symbol) {
+    const s = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
+    if (['EURUSD', 'GBPUSD', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'EURJPY', 'GBPJPY'].includes(s)) return 4;
+    if (['USDJPY', 'USDINR'].includes(s)) return 2;
+    if (['SHIB', 'PEPE'].includes(s)) return 8;
+    if (['DOGE', 'ADA', 'XRP', 'MATIC', 'DOT', 'TRX'].includes(s)) return 4;
+  }
+  if (samplePrice !== undefined && Number.isFinite(samplePrice)) {
+    if (samplePrice === 0) return 2;
+    if (samplePrice < 0.0001) return 8;
+    if (samplePrice < 0.01) return 6;
+    if (samplePrice < 2.5) return 4;
+    if (samplePrice < 10) return 3;
+  }
+  return 2;
+}
+
+/**
+ * Institutional price formatter respecting exact asset class precision
+ */
+export function formatPriceValue(price: number, symbol?: string, forceDecimals?: number): string {
+  if (isNaN(price) || !Number.isFinite(price)) return '0.00';
+  const dec = forceDecimals !== undefined ? forceDecimals : getInstrumentDecimals(symbol, price);
+  if (price >= 10000 && dec <= 2) {
+    return price.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+  return price.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+

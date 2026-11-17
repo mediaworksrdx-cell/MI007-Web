@@ -18,7 +18,7 @@ export interface LivePriceResponse {
 // In-memory cache for fast sub-50ms responses and upstream rate-limit protection
 let cachedPayload: LivePriceResponse[] | null = null;
 let lastCacheTimestamp = 0;
-const CACHE_TTL_MS = 2500;
+const CACHE_TTL_MS = 6000;
 
 // Yahoo Finance Indian Market mapping
 const INDIAN_YAHOO_MAP: Record<string, string> = {

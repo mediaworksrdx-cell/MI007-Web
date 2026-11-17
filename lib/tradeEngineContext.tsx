@@ -388,6 +388,11 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             const key = normalizeSymbolKey(m.symbol);
             const prevEntry = next.get(key) || next.get(m.symbol);
 
+            // Guard: If symbol was recently updated by live exchange quote or tick stream (< 90s), do not overwrite with static baseline
+            if (prevEntry && now - prevEntry.lastUpdated < 90_000 && Math.abs(prevEntry.price - numVal) > 0.0001) {
+              continue;
+            }
+
             const chg = typeof (m as any).change === 'number' ? (m as any).change : (prevEntry?.change || 0);
             const chgPct = typeof (m as any).changePercent === 'number' ? (m as any).changePercent : (prevEntry?.changePct || 0);
 
@@ -507,8 +512,8 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     syncCryptoPrices();
     syncMacroData();
 
-    // Fast 2-second polling strictly for live Indian equities & indices (Zerodha Kite)
-    const pricesInterval = setInterval(syncLivePrices, 2000);
+    // Institutional 4-second cadence for equities & indices quote reconciliation
+    const pricesInterval = setInterval(syncLivePrices, 4000);
     // 5-second polling strictly for live Crypto prices (CoinGecko / Trade Engine / Yahoo failover)
     const cryptoInterval = setInterval(syncCryptoPrices, 5000);
     // 60-second polling cadence for macro, commodities, and forex

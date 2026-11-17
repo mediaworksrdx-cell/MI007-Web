@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Timeframe, IndicatorType, IndicatorConfig, INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES } from '@/lib/types';
+import { Timeframe, IndicatorType, IndicatorConfig, INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, getInstrumentDecimals } from '@/lib/types';
 import type { ChartType } from '@/lib/types';
 import { ChartTemplate } from '@/lib/chartTemplates';
 import { SmcConfig, DEFAULT_SMC_CONFIG } from '@/lib/smcEngine';
@@ -64,6 +64,7 @@ interface ChartToolbarProps {
   engineStatus?: string;
   isLiveFromEngine?: boolean;
   isMarketOpen?: boolean;
+  symbol?: string;
   currency?: string;
   displayPrice?: number;
   displayChange?: number;
@@ -178,6 +179,7 @@ export function ChartToolbar({
   engineStatus,
   isLiveFromEngine,
   isMarketOpen = true,
+  symbol,
   currency = '₹',
   displayPrice,
   displayChange,
@@ -1615,31 +1617,34 @@ export function ChartToolbar({
         )}
 
         {/* Price Tracker */}
-        {displayPrice !== undefined && displayPrice > 0 && (
-          <div
-            className="flex items-center gap-1.5 sm:gap-2.5 font-mono tabular-nums bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/80 px-2 sm:px-2.5 py-0.5 rounded-lg shadow-xs"
-            style={{ fontVariantNumeric: 'tabular-nums' }}
-          >
-            <span className="text-[14px] sm:text-[16px] font-black text-slate-900 dark:text-white tracking-tight tabular-nums">
-              {currency}
-              {displayPrice.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </span>
-            {displayChange !== undefined && displayChangePct !== undefined && (
-              <span
-                className={`text-[12px] sm:text-[13px] font-extrabold tabular-nums hidden xs:inline ${
-                  displayChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                }`}
-              >
-                {displayChange >= 0 ? '+' : ''}
-                {displayChange.toFixed(2)} ({displayChangePct >= 0 ? '+' : ''}
-                {displayChangePct.toFixed(2)}%)
+        {displayPrice !== undefined && displayPrice > 0 && (() => {
+          const dec = getInstrumentDecimals(symbol, displayPrice);
+          return (
+            <div
+              className="flex items-center gap-1.5 sm:gap-2.5 font-mono tabular-nums bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/80 px-2 sm:px-2.5 py-0.5 rounded-lg shadow-xs"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              <span className="text-[14px] sm:text-[16px] font-black text-slate-900 dark:text-white tracking-tight tabular-nums">
+                {currency}
+                {displayPrice.toLocaleString(undefined, {
+                  minimumFractionDigits: dec,
+                  maximumFractionDigits: dec,
+                })}
               </span>
-            )}
-          </div>
-        )}
+              {displayChange !== undefined && displayChangePct !== undefined && (
+                <span
+                  className={`text-[12px] sm:text-[13px] font-extrabold tabular-nums hidden xs:inline ${
+                    displayChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                  }`}
+                >
+                  {displayChange >= 0 ? '+' : ''}
+                  {displayChange.toFixed(dec)} ({displayChangePct >= 0 ? '+' : ''}
+                  {displayChangePct.toFixed(2)}%)
+                </span>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

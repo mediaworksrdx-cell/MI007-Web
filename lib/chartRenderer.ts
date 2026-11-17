@@ -14,6 +14,7 @@ import {
   ChartOptions, ViewState, Crosshair, MagnetReticle, ScaleState,
   INDICATOR_DEFAULTS, OVERLAY_TYPES, PANEL_TYPES, isOverlay, formatIndicatorBadgeLabel,
   CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN, calculateDynamicPanelHeight,
+  getInstrumentDecimals,
 } from './types';
 import { calculateSMC, DEFAULT_SMC_CONFIG, type SmcConfig } from './smcEngine';
 import { SmartAnnotationManager, type SmcVisualizationMode } from './smc/smartAnnotationManager';
@@ -150,21 +151,48 @@ const VOL_AXIS = '#64748B';
 // TradingView standard typography stack
 export const TV_FONT_STACK = '-apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif';
 
+export interface PriceTick {
+  price: number;
+  label: string;
+}
+
 // ── Formatters ────────────────────────────────────────────────────────────
-export function formatPrice(p: number): string {
+export function formatPrice(p: number, symbol?: string, forceDecimals?: number): string {
+  if (forceDecimals !== undefined) {
+    return p.toLocaleString(undefined, {
+      minimumFractionDigits: forceDecimals,
+      maximumFractionDigits: forceDecimals,
+    });
+  }
+  if (symbol) {
+    const dec = getInstrumentDecimals(symbol, p);
+    return p.toLocaleString(undefined, {
+      minimumFractionDigits: dec,
+      maximumFractionDigits: dec,
+    });
+  }
   if (p >= 10000) return p.toLocaleString(undefined, { maximumFractionDigits: 0 });
   if (p >= 100) return p.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 });
-  if (p >= 1) return p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return p.toFixed(4);
+  if (p >= 2) return p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (p >= 0.01) return p.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+  return p.toFixed(6);
 }
 
 /**
  * Institutional "Nice Numbers" algorithm for price axis intervals.
- * Snaps levels to clean, rounded numbers like 52,000, 52,500, 53,000.
+ * Snaps levels to clean, rounded numbers like 52,000, 52,500, 53,000,
+ * and guarantees distinct, non-repeating labels with appropriate instrument precision.
  */
-export function computeNicePriceTicks(pMin: number, pMax: number, targetTicks: number = 6): number[] {
+export function computeNicePriceTicks(
+  pMin: number,
+  pMax: number,
+  targetTicks: number = 6,
+  symbol?: string
+): PriceTick[] {
   const range = pMax - pMin;
-  if (range <= 0 || !Number.isFinite(range)) return [pMin];
+  if (range <= 0 || !Number.isFinite(range)) {
+    return [{ price: pMin, label: formatPrice(pMin, symbol) }];
+  }
 
   const rawStep = range / Math.max(2, targetTicks);
   const exponent = Math.floor(Math.log10(rawStep));
@@ -179,18 +207,31 @@ export function computeNicePriceTicks(pMin: number, pMax: number, targetTicks: n
   const step = niceFraction * Math.pow(10, exponent);
   const startTick = Math.ceil(pMin / step) * step;
 
-  const ticks: number[] = [];
-  const decimals = exponent < 0 ? Math.min(6, Math.abs(exponent) + 1) : 0;
+  const ticks: PriceTick[] = [];
+  const minDecimals = exponent < 0 ? Math.min(6, Math.abs(exponent) + 1) : 0;
+  const symDecimals = symbol ? getInstrumentDecimals(symbol, (pMin + pMax) / 2) : 0;
+  const stepDecimals = Math.max(minDecimals, symDecimals);
 
   for (let p = startTick; p <= pMax + step * 0.001; p += step) {
-    const cleanP = Number(p.toFixed(decimals));
+    const cleanP = Number(p.toFixed(stepDecimals));
     if (cleanP >= pMin - step * 0.05 && cleanP <= pMax + step * 0.05) {
-      ticks.push(cleanP);
+      ticks.push({
+        price: cleanP,
+        label: cleanP.toLocaleString(undefined, {
+          minimumFractionDigits: stepDecimals,
+          maximumFractionDigits: stepDecimals,
+        }),
+      });
     }
   }
 
   if (ticks.length < 2) {
-    return [pMin, (pMin + pMax) / 2, pMax];
+    const mid = (pMin + pMax) / 2;
+    return [
+      { price: pMin, label: formatPrice(pMin, symbol, stepDecimals) },
+      { price: mid, label: formatPrice(mid, symbol, stepDecimals) },
+      { price: pMax, label: formatPrice(pMax, symbol, stepDecimals) },
+    ];
   }
 
   return ticks;
@@ -1052,15 +1093,15 @@ export function renderChart(
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
 
-  const priceTicks = computeNicePriceTicks(pMin, pMax, 6);
-  for (const price of priceTicks) {
-    const y = Math.round(priceToY(price));
+  const priceTicks = computeNicePriceTicks(pMin, pMax, 6, options.symbol);
+  for (const tick of priceTicks) {
+    const y = Math.round(priceToY(tick.price));
     if (y < 8 * dpr || y > chartH - 8 * dpr) continue;
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(chartW, y);
     ctx.stroke();
-    ctx.fillText(formatPrice(price), W - 8 * dpr, y);
+    ctx.fillText(tick.label, W - 8 * dpr, y);
   }
 
   // Vertical grid + uniform calendar-aligned date/time labels
@@ -1333,7 +1374,7 @@ export function renderChart(
       ctx.setLineDash([]);
 
       // Single minimalist midpoint pill docked on the left margin
-      const eqText = `50% EQ: ${formatPrice(smcData.equilibriumPrice)}`;
+      const eqText = `50% EQ: ${formatPrice(smcData.equilibriumPrice, options.symbol)}`;
       ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
       const tm = ctx.measureText(eqText);
       const tw = tm.width + 8 * dpr;
@@ -1621,7 +1662,7 @@ export function renderChart(
       const baseTag = ob.isBreaker
         ? (ob.isBullish ? '+BRK' : '-BRK')
         : (ob.isBullish ? '+OB' : '-OB');
-      const priceSpan = `${formatPrice(ob.bottomPrice)} - ${formatPrice(ob.topPrice)}`;
+      const priceSpan = `${formatPrice(ob.bottomPrice, options.symbol)} - ${formatPrice(ob.topPrice, options.symbol)}`;
       const text = bw > 90 * dpr ? `${baseTag} · ${priceSpan}` : baseTag;
 
       ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
@@ -2033,7 +2074,7 @@ export function renderChart(
         ctx.stroke();
         ctx.setLineDash([]);
 
-        const text = `${lvl.label} ($$$): ${formatPrice(lvl.price)}`;
+        const text = `${lvl.label} ($$$): ${formatPrice(lvl.price, options.symbol)}`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(text);
         const tw = tm.width + 8 * dpr;
@@ -2161,6 +2202,7 @@ export function renderChart(
     // 9. Session Levels (PDH, PDL)
     if (smcCfg.showPdhPdl && smcData.sessionLevels) {
       const { pdh, pdl } = smcData.sessionLevels;
+      const pdStopX = isCleanMode ? Math.min(chartW - 65 * dpr, lastCandleX - 16 * dpr) : chartW;
       ctx.save();
       if (pdh && pdh > 0) {
         const yPdh = priceToY(pdh);
@@ -2171,13 +2213,13 @@ export function renderChart(
           ctx.lineWidth = 1.3 * dpr;
           ctx.beginPath();
           ctx.moveTo(0, clampedY);
-          ctx.lineTo(chartW, clampedY);
+          ctx.lineTo(pdStopX, clampedY);
           ctx.stroke();
           ctx.setLineDash([]);
           ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
           ctx.fillStyle = '#2563EB';
           ctx.textAlign = 'left';
-          ctx.fillText(`PDH: ${formatPrice(pdh)}`, 12 * dpr, clampedY - 3 * dpr);
+          ctx.fillText(`PDH: ${formatPrice(pdh, options.symbol)}`, 12 * dpr, clampedY - 3 * dpr);
         }
       }
       if (pdl && pdl > 0) {
@@ -2189,13 +2231,13 @@ export function renderChart(
           ctx.lineWidth = 1.3 * dpr;
           ctx.beginPath();
           ctx.moveTo(0, clampedY);
-          ctx.lineTo(chartW, clampedY);
+          ctx.lineTo(pdStopX, clampedY);
           ctx.stroke();
           ctx.setLineDash([]);
           ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
           ctx.fillStyle = '#2563EB';
           ctx.textAlign = 'left';
-          ctx.fillText(`PDL: ${formatPrice(pdl)}`, 12 * dpr, clampedY + 11 * dpr);
+          ctx.fillText(`PDL: ${formatPrice(pdl, options.symbol)}`, 12 * dpr, clampedY + 11 * dpr);
         }
       }
       ctx.restore();
@@ -2204,6 +2246,7 @@ export function renderChart(
     // 9b. Previous Week High & Low (PWH, PWL)
     if (smcCfg.showPwhPwl && smcData.sessionLevels) {
       const { pwh, pwl } = smcData.sessionLevels;
+      const pwStopX = isCleanMode ? Math.min(chartW - 65 * dpr, lastCandleX - 16 * dpr) : chartW;
       ctx.save();
       if (pwh && pwh > 0) {
         const yPwh = priceToY(pwh);
@@ -2214,13 +2257,13 @@ export function renderChart(
           ctx.lineWidth = 1.4 * dpr;
           ctx.beginPath();
           ctx.moveTo(0, clampedY);
-          ctx.lineTo(chartW, clampedY);
+          ctx.lineTo(pwStopX, clampedY);
           ctx.stroke();
           ctx.setLineDash([]);
           ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
           ctx.fillStyle = '#4F46E5';
           ctx.textAlign = 'left';
-          ctx.fillText(`PWH: ${formatPrice(pwh)}`, 12 * dpr, clampedY - 4 * dpr);
+          ctx.fillText(`PWH: ${formatPrice(pwh, options.symbol)}`, 12 * dpr, clampedY - 4 * dpr);
         }
       }
       if (pwl && pwl > 0) {
@@ -2232,13 +2275,13 @@ export function renderChart(
           ctx.lineWidth = 1.4 * dpr;
           ctx.beginPath();
           ctx.moveTo(0, clampedY);
-          ctx.lineTo(chartW, clampedY);
+          ctx.lineTo(pwStopX, clampedY);
           ctx.stroke();
           ctx.setLineDash([]);
           ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
           ctx.fillStyle = '#4F46E5';
           ctx.textAlign = 'left';
-          ctx.fillText(`PWL: ${formatPrice(pwl)}`, 12 * dpr, clampedY + 12 * dpr);
+          ctx.fillText(`PWL: ${formatPrice(pwl, options.symbol)}`, 12 * dpr, clampedY + 12 * dpr);
         }
       }
       ctx.restore();
@@ -2365,13 +2408,16 @@ export function renderChart(
           boxW = Math.max(minBracketW, rawEndX - x);
         } else {
           // Setup is actively live right now: strictly stop BEFORE the current forming candle
+          const maxAllowedRightX = isCleanMode
+            ? Math.min(chartW - 65 * dpr, currentCandleX - (candleW / 2 + 10 * dpr))
+            : Math.min(chartW - 65 * dpr, currentCandleX - (candleW / 2 + 4 * dpr));
+
           if (rawX < 15 * dpr) {
             x = Math.max(8 * dpr, currentCandleX - 120 * dpr);
-            boxW = Math.max(minBracketW, Math.min(chartW - x - 65 * dpr, currentCandleX - x - 6 * dpr));
+            boxW = Math.max(minBracketW, maxAllowedRightX - x);
           } else {
-            x = Math.max(5 * dpr, Math.min(rawX, chartW - minBracketW - 65 * dpr));
-            const targetW = Math.max(minBracketW, currentCandleX - x - 6 * dpr);
-            boxW = Math.min(chartW - x - 65 * dpr, targetW);
+            x = Math.max(5 * dpr, Math.min(rawX, maxAllowedRightX - minBracketW));
+            boxW = Math.max(minBracketW, maxAllowedRightX - x);
           }
         }
 
@@ -2432,7 +2478,7 @@ export function renderChart(
 
             // TP2 Badge (Right edge of bracket)
             ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-            const tp2Text = `TP2: ${formatPrice(st.targetPrice2)}`;
+            const tp2Text = `TP2: ${formatPrice(st.targetPrice2, options.symbol)}`;
             const tp2Tm = ctx.measureText(tp2Text);
             ctx.fillStyle = 'rgba(5, 150, 105, 0.85)';
             ctx.fillRect(x + boxW - tp2Tm.width - 6 * dpr, yTP2 - 6 * dpr, tp2Tm.width + 6 * dpr, 12 * dpr);
@@ -2447,7 +2493,7 @@ export function renderChart(
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
 
         // TP1 Badge (Right edge of bracket)
-        const tpText = `TP1: ${formatPrice(st.targetPrice)}`;
+        const tpText = `TP1: ${formatPrice(st.targetPrice, options.symbol)}`;
         const tpTm = ctx.measureText(tpText);
         ctx.fillStyle = 'rgba(16, 185, 129, 0.90)';
         ctx.fillRect(x + boxW - tpTm.width - 8 * dpr, yTP - 7 * dpr, tpTm.width + 8 * dpr, 14 * dpr);
@@ -2458,7 +2504,7 @@ export function renderChart(
 
         // SL Badge (Right edge of bracket)
         // Collision prevention: If SL is too close to Entry (< 18px) or Current Price (< 14px), nudge SL badge away
-        const slText = `SL: ${formatPrice(st.stopLoss)}`;
+        const slText = `SL: ${formatPrice(st.stopLoss, options.symbol)}`;
         const slTm = ctx.measureText(slText);
         let slOffset = 0;
         if (Math.abs(ySL - yEntry) < 18 * dpr) {
@@ -2476,7 +2522,7 @@ export function renderChart(
         ctx.fillText(slText, x + boxW - 4 * dpr, finalSlY);
 
         // Entry Badge (Anchored strictly to the LEFT side of the bracket, away from right-side price axis)
-        const entryText = `Entry: ${formatPrice(st.entryPrice)}`;
+        const entryText = `Entry: ${formatPrice(st.entryPrice, options.symbol)}`;
         const entryTm = ctx.measureText(entryText);
         const entryBadgeH = 14 * dpr;
         let entryBadgeY = yEntry - entryBadgeH / 2;
@@ -2777,7 +2823,7 @@ export function renderChart(
     ctx.restore();
 
     // Pill badge on right axis
-    const prStr = formatPrice(curPrice);
+    const prStr = formatPrice(curPrice, options.symbol);
     ctx.font = `bold ${11.5 * dpr}px ${TV_FONT_STACK}`;
     const tm = ctx.measureText(prStr);
     const padH = 6 * dpr, padV = 3.5 * dpr, dotR = 2.5 * dpr;
@@ -4835,7 +4881,7 @@ export function renderChart(
     // Price label on right (only when inside main chart)
     if (cy <= chartH) {
       const price = pMax - (cy / chartH) * pRange;
-      const pTxt = formatPrice(price);
+      const pTxt = formatPrice(price, options.symbol);
       ctx.font = `600 ${11.5 * dpr}px ${TV_FONT_STACK}`;
       const pMeas = ctx.measureText(pTxt);
       const pLW = Math.min(W - chartW, pMeas.width + 16 * dpr);
@@ -5148,7 +5194,7 @@ export function renderOverlay(
       }
 
       const price = pMax - (cy / chartH) * pRange;
-      const pTxt = formatPrice(price);
+      const pTxt = formatPrice(price, options.symbol);
       ctx.font = `600 ${11.5 * dpr}px ${TV_FONT_STACK}`;
       const pMeas = ctx.measureText(pTxt);
       const pLW = Math.min(W - chartW, pMeas.width + 16 * dpr);

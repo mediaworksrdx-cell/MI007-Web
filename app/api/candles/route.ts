@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { getMockCandles } from '@/lib/mockData';
-import { MarketType, Candle } from '@/lib/types';
+import { MarketType, Candle, getInstrumentDecimals } from '@/lib/types';
 import { fetchTwelveDataCandles } from '@/lib/twelveDataService';
 import { isMarketOpen } from '@/lib/marketHours';
 
@@ -248,12 +248,15 @@ async function fetchYahooFinanceCandles(symbol: string, timeframe: string, marke
       const closeTime = openTime + intervalSec * 1000;
       const isClosed = (i < timestamps.length - 1) && (now >= closeTime);
 
+      const sampleClose = Number(c || 0);
+      const dec = getInstrumentDecimals(symbol, sampleClose);
+
       candles.push({
         openTime,
-        open: +o.toFixed(2),
-        high: +Math.max(h, o, c).toFixed(2),
-        low: +Math.min(l, o, c).toFixed(2),
-        close: +c.toFixed(2),
+        open: +o.toFixed(dec),
+        high: +Math.max(h, o, c).toFixed(dec),
+        low: +Math.min(l, o, c).toFixed(dec),
+        close: +c.toFixed(dec),
         volume: volumes[i] ? Math.round(volumes[i]!) : 0,
         isClosed,
       });
@@ -264,7 +267,8 @@ async function fetchYahooFinanceCandles(symbol: string, timeframe: string, marke
     // Sync latest forming candle's close with real-time exchange quote during market hours
     const meta = result.meta;
     if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
-      const ltp = +meta.regularMarketPrice.toFixed(2);
+      const dec = getInstrumentDecimals(symbol, meta.regularMarketPrice);
+      const ltp = +meta.regularMarketPrice.toFixed(dec);
       const last = candles[candles.length - 1];
       if (now - last.openTime < intervalSec * 2500) {
         last.close = ltp;
@@ -379,17 +383,18 @@ export async function GET(req: NextRequest) {
         const meta = yData?.chart?.result?.[0]?.meta;
         if (meta && typeof meta.regularMarketPrice === 'number' && meta.regularMarketPrice > 0) {
           const ltp = meta.regularMarketPrice;
+          const dec = getInstrumentDecimals(cleanSym, ltp);
           const last = candles[candles.length - 1];
-          if (last && last.close > 0 && Math.abs(last.close - ltp) > 0.001) {
+          if (last && last.close > 0 && Math.abs(last.close - ltp) > 0.0001) {
             const scale = ltp / last.close;
             for (let j = 0; j < candles.length; j++) {
-              candles[j].open = +(candles[j].open * scale).toFixed(2);
-              candles[j].high = +(candles[j].high * scale).toFixed(2);
-              candles[j].low = +(candles[j].low * scale).toFixed(2);
-              candles[j].close = +(candles[j].close * scale).toFixed(2);
+              candles[j].open = +(candles[j].open * scale).toFixed(dec);
+              candles[j].high = +(candles[j].high * scale).toFixed(dec);
+              candles[j].low = +(candles[j].low * scale).toFixed(dec);
+              candles[j].close = +(candles[j].close * scale).toFixed(dec);
             }
           }
-          candles[candles.length - 1].close = ltp;
+          candles[candles.length - 1].close = +ltp.toFixed(dec);
         }
       }
     } catch (_yErr) {

@@ -67,8 +67,8 @@ export const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: 
   { symbol: 'MATIC', price: 0.126, change: 0.001, changePct: 0.80 },
 
   // Macro Commodities (Twelve Data Real Benchmark Feeds)
-  { symbol: 'GOLD', price: 3876.58, change: 12.14, changePct: 0.31 },
-  { symbol: 'XAU/USD', price: 3876.58, change: 12.14, changePct: 0.31 },
+  { symbol: 'GOLD', price: 3879.20, change: -6.10, changePct: -0.16 },
+  { symbol: 'XAU/USD', price: 3879.20, change: -6.10, changePct: -0.16 },
   { symbol: 'XAG/USD', price: 42.39, change: -0.42, changePct: -0.98 },
   { symbol: 'SILVER', price: 42.39, change: -0.42, changePct: -0.98 },
   { symbol: 'BRENT', price: 58.67, change: 0.45, changePct: 0.55 },
@@ -80,8 +80,8 @@ export const INITIAL_SEED_ITEMS: Array<{ symbol: string; price: number; change: 
   { symbol: 'GBPUSD', price: 1.3190, change: 0.0003, changePct: 0.02 },
   { symbol: 'USD/JPY', price: 159.37, change: -0.10, changePct: -0.06 },
   { symbol: 'USDJPY', price: 159.37, change: -0.10, changePct: -0.06 },
-  { symbol: 'USD/INR', price: 93.84, change: -0.06, changePct: -0.07 },
-  { symbol: 'USDINR', price: 93.84, change: -0.06, changePct: -0.07 },
+  { symbol: 'USD/INR', price: 84.15, change: 0.05, changePct: 0.06 },
+  { symbol: 'USDINR', price: 84.15, change: 0.05, changePct: 0.06 },
   { symbol: 'USD/CAD', price: 1.4092, change: 0.0021, changePct: 0.15 },
   { symbol: 'USDCAD', price: 1.4092, change: 0.0021, changePct: 0.15 },
   { symbol: 'AUD/USD', price: 0.6650, change: 0.0008, changePct: 0.12 },

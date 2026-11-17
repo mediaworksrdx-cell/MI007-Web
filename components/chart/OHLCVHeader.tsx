@@ -1,6 +1,6 @@
 'use client';
 
-import { Candle } from '@/lib/types';
+import { Candle, getInstrumentDecimals } from '@/lib/types';
 
 interface OHLCVHeaderProps {
   symbol?: string;
@@ -20,9 +20,10 @@ export function OHLCVHeader({ symbol, candle, currency, timeframe, currentPrice 
   const change = price - candle.open;
   const changePct = (change / candle.open) * 100;
 
+  const dec = getInstrumentDecimals(symbol, price);
   const fmt = (v: number) => v.toLocaleString(undefined, {
-    minimumFractionDigits: v > 100 ? 0 : 2,
-    maximumFractionDigits: v > 100 ? 2 : 2,
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec,
   });
 
   return (

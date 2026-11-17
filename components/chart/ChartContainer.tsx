@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Timeframe, MarketType, INSTRUMENTS } from '@/lib/types';
 import type { Candle, ChartType, IndicatorType, IndicatorConfig } from '@/lib/types';
+import { getInstrumentDecimals, formatPriceValue } from '@/lib/types';
 import type { DrawingItem, DrawingToolType } from '@/lib/drawingTypes';
 import {
   INDICATOR_DEFAULTS,
@@ -45,8 +46,8 @@ import { ChartSymbolSearch, type ChartInstrumentItem } from './ChartSymbolSearch
 import { getStrategyIndicatorSetup } from '@/lib/screener/strategyIndicatorMap';
 import { isSymbolMarketOpen } from '@/lib/marketHours';
 
-function rescaleCandleArray(candles: Candle[], ratio: number, targetPrice: number): Candle[] {
-  const decimals = targetPrice < 0.01 ? 6 : targetPrice < 2 ? 4 : targetPrice < 10 ? 3 : 2;
+function rescaleCandleArray(candles: Candle[], ratio: number, targetPrice: number, symbol?: string): Candle[] {
+  const decimals = getInstrumentDecimals(symbol, targetPrice);
   return candles.map(c => ({
     ...c,
     open: +(c.open * ratio).toFixed(decimals),
@@ -859,7 +860,7 @@ export function ChartContainer({
     const sym = selectedSymbol.toUpperCase().replace(/[\s\/-]+/g, '');
     if (['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX', 'LINK', 'MATIC', 'DOT'].includes(sym)) return '$';
     if (['GOLD', 'XAU', 'XAUUSD', 'SILVER', 'XAG', 'XAGUSD', 'CRUDEOIL', 'BRENT', 'WTI', 'NATGAS', 'COPPER', 'PLATINUM'].includes(sym)) return '$';
-    if (['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'AUDCAD', 'UADCAD', 'USDCHF', 'NZDUSD'].includes(sym)) return '$';
+    if (['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'AUDCAD', 'UADCAD', 'USDCHF', 'NZDUSD'].includes(sym)) return '';
     if (['USDINR'].includes(sym)) return '₹';
     if (['USDAED'].includes(sym)) return 'AED ';
     if (['DFMGI', 'ADXGI', 'EMAAR', 'FAB', 'DEWA', 'ALDAR', 'ENBD', 'ADNOC', 'AIRARABIA', 'SALIK'].includes(sym)) return 'AED ';
@@ -991,20 +992,26 @@ export function ChartContainer({
   // Track last save timestamp to throttle IndexedDB writes during active ticks
   const lastSaveTimeRef = useRef<number>(0);
 
+  const candlesRef = useRef<Candle[]>(candles);
+  useEffect(() => {
+    candlesRef.current = candles;
+  }, [candles]);
+
   // Sync current price immediately from Trade Engine if available (with scale dislocation protection)
   useEffect(() => {
     const live = liveSymbolData || getSymbolPrice(selectedSymbol);
     if (live && live.price > 0) {
-      if (candles.length > 0) {
-        const lastC = candles[candles.length - 1];
+      const currentCandles = candlesRef.current;
+      if (currentCandles.length > 0) {
+        const lastC = currentCandles[currentCandles.length - 1];
         if (lastC && lastC.close > 0) {
           const dis = Math.abs(live.price - lastC.close) / lastC.close;
           const openDis = Math.abs(live.price - lastC.open) / Math.max(1, lastC.open);
-          if (dis > 0.15 || openDis > 0.15) {
+          if (dis > 0.20 || openDis > 0.20) {
             // Re-anchor candles to verified live price scale
             const ratio = live.price / lastC.close;
             setCandles(cPrev => {
-              const rescaled = rescaleCandleArray(cPrev, ratio, live.price);
+              const rescaled = rescaleCandleArray(cPrev, ratio, live.price, selectedSymbol);
               if (rescaled.length > 0) {
                 rescaled[rescaled.length - 1].close = live.price;
               }
@@ -1016,7 +1023,7 @@ export function ChartContainer({
       setCurrentPrice(live.price);
       setIsLiveFromEngine(true);
     }
-  }, [selectedSymbol, liveSymbolData, getSymbolPrice, candles]);
+  }, [selectedSymbol, liveSymbolData, getSymbolPrice]);
 
   // Listen to live WebSocket ticks from the Trade Engine with robust session-aware candle formation
   useEffect(() => {
@@ -1176,15 +1183,16 @@ export function ChartContainer({
       return candles;
     }
 
+    const dec = getInstrumentDecimals(selectedSymbol, targetClose);
     const updated = [...candles];
     updated[updated.length - 1] = {
       ...last,
-      close: targetClose,
-      high: Math.max(last.high, targetClose),
-      low: (last.low > 0) ? Math.min(last.low, targetClose) : targetClose,
+      close: +targetClose.toFixed(dec),
+      high: +Math.max(last.high, targetClose).toFixed(dec),
+      low: (last.low > 0) ? +Math.min(last.low, targetClose).toFixed(dec) : +targetClose.toFixed(dec),
     };
     return updated;
-  }, [candles, currentPrice, displayPrice]);
+  }, [candles, currentPrice, displayPrice, selectedSymbol]);
 
   const lastCandle = activeCandles[activeCandles.length - 1] ?? null;
 
@@ -1840,6 +1848,7 @@ export function ChartContainer({
         engineStatus={status}
         isLiveFromEngine={isLiveFromEngine}
         isMarketOpen={isSymbolMarketOpen(selectedSymbol)}
+        symbol={selectedSymbol}
         currency={currency}
         displayPrice={displayPrice}
         displayChange={displayChange}
