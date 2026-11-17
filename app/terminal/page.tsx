@@ -86,10 +86,10 @@ const DEFAULT_INDIA_WATCHLIST: WatchlistItem[] = [
 ];
 
 const DEFAULT_USA_INDICES: IndexItem[] = [
-  { symbol: 'SPX', name: 'S&P 500', base: 7399.50, changePct: -1.91 },
-  { symbol: 'NDX', name: 'NASDAQ 100', base: 27131.75, changePct: -2.67 },
-  { symbol: 'DJI', name: 'DOW JONES', base: 51568.00, changePct: -1.43 },
-  { symbol: 'VIX', name: 'Volatility Index', base: 19.57, changePct: 9.21 },
+  { symbol: 'SPX', name: 'S&P 500', base: 7416.59, changePct: -1.92 },
+  { symbol: 'NASDAQ', name: 'NASDAQ Composite', base: 24509.76, changePct: -2.49 },
+  { symbol: 'DJI', name: 'DOW JONES', base: 51608.17, changePct: -1.41 },
+  { symbol: 'VIX', name: 'Volatility Index', base: 22.91, changePct: 18.70 },
 ];
 
 const DEFAULT_USA_WATCHLIST: WatchlistItem[] = [
@@ -162,10 +162,11 @@ const KNOWN_INDICES: Record<string, { name: string; base: number; market: Market
   MIDCPNIFTY: { name: 'NIFTY MIDCAP SELECT', base: 12958.45, market: 'INDIA' },
   BANKEX: { name: 'BSE BANKEX', base: 61083.33, market: 'INDIA' },
   NIFTYNXT50: { name: 'NIFTY NEXT 50', base: 67200.00, market: 'INDIA' },
-  SPX: { name: 'S&P 500', base: 7399.50, market: 'USA' },
-  NDX: { name: 'NASDAQ 100', base: 27131.75, market: 'USA' },
-  DJI: { name: 'DOW JONES', base: 51568.00, market: 'USA' },
-  VIX: { name: 'Volatility Index', base: 19.57, market: 'USA' },
+  SPX: { name: 'S&P 500', base: 7416.59, market: 'USA' },
+  NASDAQ: { name: 'NASDAQ Composite', base: 24509.76, market: 'USA' },
+  NDX: { name: 'NASDAQ Composite', base: 24509.76, market: 'USA' },
+  DJI: { name: 'DOW JONES', base: 51608.17, market: 'USA' },
+  VIX: { name: 'Volatility Index', base: 22.91, market: 'USA' },
   RUT: { name: 'Russell 2000', base: 2721.37, market: 'USA' },
   DFMGI: { name: 'DFM General', base: 4850.0, market: 'UAE' },
   ADX: { name: 'ADX General', base: 9250.0, market: 'UAE' },

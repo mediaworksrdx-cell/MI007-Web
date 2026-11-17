@@ -10,7 +10,7 @@ const BASELINE_MACROS = [
   { symbol: 'XAG/USD', value: '42.39', change: -0.42, changePercent: -0.98 },
   { symbol: 'US10Y', value: '4.24%', change: 0.01, changePercent: 0.24 },
   { symbol: 'BRENT', value: '58.67', change: 0.45, changePercent: 0.55 },
-  { symbol: 'VIX', value: '19.57', change: 0.85, changePercent: 4.80 },
+  { symbol: 'VIX', value: '22.91', change: 3.61, changePercent: 18.70 },
   { symbol: 'EUR/USD', value: '1.0997', change: -0.0007, changePercent: -0.06 },
   { symbol: 'GBP/USD', value: '1.3388', change: 0.0013, changePct: 0.10 },
   { symbol: 'USD/JPY', value: '157.28', change: -0.37, changePercent: -0.23 },

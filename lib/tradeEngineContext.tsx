@@ -152,7 +152,7 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
     { symbol: 'XAG/USD', value: '42.39' },
     { symbol: 'US10Y', value: '4.24%' },
     { symbol: 'BRENT', value: '58.67' },
-    { symbol: 'VIX', value: '19.57' },
+    { symbol: 'VIX', value: '22.91' },
   ]);
   const [lastTick, setLastTick] = useState<TradeEngineTick | null>(null);
   const lastTickRef = useRef<TradeEngineTick | null>(null);

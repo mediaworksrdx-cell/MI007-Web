@@ -81,10 +81,11 @@ function resolveTwelveDataTicker(symClean: string): { ticker: string; multiplier
 
 // Calibrated baseline prices matching actual live market scales
 const BASELINE_PRICES: Record<string, { price: number; change: number; changePct: number }> = {
-  SPX: { price: 7399.50, change: -144.20, changePct: -1.91 },
-  NDX: { price: 27131.75, change: -743.74, changePct: -2.67 },
-  DJI: { price: 51568.00, change: -750.00, changePct: -1.43 },
-  VIX: { price: 19.57, change: 1.65, changePct: 9.21 },
+  SPX: { price: 7416.59, change: -145.08, changePct: -1.92 },
+  NASDAQ: { price: 24509.76, change: -626.51, changePct: -2.49 },
+  NDX: { price: 24509.76, change: -626.51, changePct: -2.49 },
+  DJI: { price: 51608.17, change: -739.43, changePct: -1.41 },
+  VIX: { price: 22.91, change: 3.61, changePct: 18.70 },
   QQQ: { price: 661.75, change: -18.14, changePct: -2.67 },
   SPY: { price: 739.95, change: -14.42, changePct: -1.91 },
   DIA: { price: 515.68, change: -7.50, changePct: -1.43 },

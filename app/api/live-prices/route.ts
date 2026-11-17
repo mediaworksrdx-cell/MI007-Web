@@ -275,59 +275,58 @@ export async function GET() {
     })());
   }
 
-  // 6. USA Market (Only fetch live quotes when US market is open; when closed, keep static closing prices)
-  if (isMarketOpen('USA')) {
-    const US_YAHOO_MAP: Record<string, { yahoo: string; mult: number }> = {
-      'SPX': { yahoo: 'SPY', mult: 10.0 },
-      'S&P 500': { yahoo: 'SPY', mult: 10.0 },
-      'NDX': { yahoo: 'QQQ', mult: 41.0 },
-      'NASDAQ 100': { yahoo: 'QQQ', mult: 41.0 },
-      'DJI': { yahoo: 'DIA', mult: 100.0 },
-      'DOW JONES': { yahoo: 'DIA', mult: 100.0 },
-      'VIX': { yahoo: '^VIX', mult: 1.0 },
-      'NVDA': { yahoo: 'NVDA', mult: 1.0 },
-      'AAPL': { yahoo: 'AAPL', mult: 1.0 },
-      'MSFT': { yahoo: 'MSFT', mult: 1.0 },
-      'TSLA': { yahoo: 'TSLA', mult: 1.0 },
-      'AMZN': { yahoo: 'AMZN', mult: 1.0 },
-      'META': { yahoo: 'META', mult: 1.0 },
-      'GOOGL': { yahoo: 'GOOGL', mult: 1.0 },
-    };
+  // 6. USA Cash Indices & Equities (Fetch official closing benchmarks when closed, live ticks when open)
+  const US_YAHOO_MAP: Record<string, { yahoo: string; mult: number }> = {
+    'SPX': { yahoo: '^GSPC', mult: 1.0 },
+    'S&P 500': { yahoo: '^GSPC', mult: 1.0 },
+    'DJI': { yahoo: '^DJI', mult: 1.0 },
+    'DOW JONES': { yahoo: '^DJI', mult: 1.0 },
+    'NASDAQ': { yahoo: '^IXIC', mult: 1.0 },
+    'NDX': { yahoo: '^IXIC', mult: 1.0 },
+    'NASDAQ 100': { yahoo: '^IXIC', mult: 1.0 },
+    'VIX': { yahoo: '^VIX', mult: 1.0 },
+    'NVDA': { yahoo: 'NVDA', mult: 1.0 },
+    'AAPL': { yahoo: 'AAPL', mult: 1.0 },
+    'MSFT': { yahoo: 'MSFT', mult: 1.0 },
+    'TSLA': { yahoo: 'TSLA', mult: 1.0 },
+    'AMZN': { yahoo: 'AMZN', mult: 1.0 },
+    'META': { yahoo: 'META', mult: 1.0 },
+    'GOOGL': { yahoo: 'GOOGL', mult: 1.0 },
+  };
 
-    fetchPromises.push((async () => {
-      const usFetches = Object.entries(US_YAHOO_MAP).map(async ([symbol, { yahoo, mult }], idx) => {
-        try {
-          const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahoo)}?interval=1m`, {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
-            cache: 'no-store',
-            signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
-          });
-          if (!res.ok) return;
-          const data = await res.json();
-          const meta = data?.chart?.result?.[0]?.meta;
-          if (!meta || typeof meta.regularMarketPrice !== 'number' || meta.regularMarketPrice <= 0) return;
-          const rawPrice = meta.regularMarketPrice * mult;
-          const rawPrev = (meta.chartPreviousClose || meta.regularMarketPrice) * mult;
-          const ltp = +rawPrice.toFixed(2);
-          const change = +(rawPrice - rawPrev).toFixed(2);
-          const changePercent = +(((rawPrice - rawPrev) / Math.max(0.01, rawPrev)) * 100).toFixed(2);
-          const timestamp = (meta.regularMarketTime || Math.floor(now / 1000)) * 1000;
+  fetchPromises.push((async () => {
+    const usFetches = Object.entries(US_YAHOO_MAP).map(async ([symbol, { yahoo, mult }], idx) => {
+      try {
+        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahoo)}?interval=1d`, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          cache: 'no-store',
+          signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(2500) : undefined,
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (!meta || typeof meta.regularMarketPrice !== 'number' || meta.regularMarketPrice <= 0) return;
+        const rawPrice = meta.regularMarketPrice * mult;
+        const rawPrev = (meta.chartPreviousClose || meta.regularMarketPrice) * mult;
+        const ltp = +rawPrice.toFixed(2);
+        const change = +(rawPrice - rawPrev).toFixed(2);
+        const changePercent = +(((rawPrice - rawPrev) / Math.max(0.01, rawPrev)) * 100).toFixed(2);
+        const timestamp = (meta.regularMarketTime || Math.floor(now / 1000)) * 1000;
 
-          pricesMap.set(symbol.toUpperCase(), {
-            instrumentToken: 600000 + idx,
-            symbol,
-            ltp,
-            change,
-            changePercent,
-            timestamp,
-          });
-        } catch (_err) {
-          // Graceful skip
-        }
-      });
-      await Promise.all(usFetches);
-    })());
-  }
+        pricesMap.set(symbol.toUpperCase(), {
+          instrumentToken: 600000 + idx,
+          symbol,
+          ltp,
+          change,
+          changePercent,
+          timestamp,
+        });
+      } catch (_err) {
+        // Graceful skip
+      }
+    });
+    await Promise.all(usFetches);
+  })());
 
   await Promise.all(fetchPromises);
 
