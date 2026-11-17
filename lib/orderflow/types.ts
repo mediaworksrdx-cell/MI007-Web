@@ -39,6 +39,8 @@ export interface PriceLevelFootprint {
   hasBuyImbalance: boolean;  // Ask >= Bid(below) * ratio
   hasSellImbalance: boolean; // Bid >= Ask(above) * ratio
   imbalanceRatio: number;
+  buyImbalanceRatio?: number;
+  sellImbalanceRatio?: number;
   isPoc: boolean;
   isValueArea: boolean;
 }

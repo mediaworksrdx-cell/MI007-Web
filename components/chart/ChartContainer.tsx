@@ -736,8 +736,8 @@ export function ChartContainer({
 
   const orderFlowData = useMemo(() => {
     if (candles.length === 0) return undefined;
-    return analyzeOrderFlow(candles, orderFlowConfig, ticksPerCandleRef.current);
-  }, [candles, orderFlowConfig]);
+    return analyzeOrderFlow(candles, orderFlowConfig, ticksPerCandleRef.current, selectedSymbol, market);
+  }, [candles, orderFlowConfig, selectedSymbol, market]);
 
   const quantumAiData = useMemo(() => {
     if (!quantumAiConfig.enabled || candles.length === 0) return undefined;

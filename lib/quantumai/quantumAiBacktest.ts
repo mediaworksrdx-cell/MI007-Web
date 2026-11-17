@@ -9,6 +9,7 @@ import {
   QuantumBacktestTrade,
 } from './types';
 import {
+  calculateAtr,
   calculateDealingRange,
   calculateMomentum,
   calculateAdx,
@@ -19,12 +20,22 @@ import {
   calculateConfluence,
 } from './quantumAiEngine';
 
+export interface QuantumBacktestCosts {
+  commissionPct?: number; // per side (default 0.0004 = 4 bps)
+  slippagePct?: number;   // per side (default 0.0005 = 5 bps)
+}
+
 export function runQuantumBacktest(
-  candles: Candle[],
+  rawCandles: Candle[],
   config: QuantumAiConfig,
   initialCapital: number = 100000,
-  riskPerTradePct: number = 0.01 // 1% risk per trade
+  riskPerTradePct: number = 0.01, // 1% risk per trade
+  costs: QuantumBacktestCosts = {}
 ): QuantumBacktestMetrics {
+  const commissionPct = costs.commissionPct ?? 0.0004;
+  const slippagePct = costs.slippagePct ?? 0.0005;
+  const candles = (rawCandles || []).filter(c => c && c.isClosed !== false);
+
   const emptyMetrics: QuantumBacktestMetrics = {
     initialCapital,
     endingCapital: initialCapital,
@@ -47,14 +58,26 @@ export function runQuantumBacktest(
 
   const closes = candles.map(c => c.close);
   const ema20Series = calculateEma(closes, 20);
+  const atrSeries = calculateAtr(candles, 14);
   const swings = detectSwings(candles, 5);
-  const structures = detectStructureBreaks(candles, swings);
-  const orderBlocks = detectOrderBlocks(candles, structures);
+  // Q2: Uncapped structure breaks & order blocks so full history is backtested
+  const structures = detectStructureBreaks(candles, swings, null);
+  const orderBlocks = detectOrderBlocks(candles, structures, null);
 
   let capital = initialCapital;
   let peakCapital = initialCapital;
   let maxDrawdown = 0;
   let maxDrawdownPct = 0;
+  let totalCostsPaid = 0;
+
+  const updateDrawdown = (equity: number) => {
+    if (equity > peakCapital) peakCapital = equity;
+    const dd = peakCapital - equity;
+    if (dd > maxDrawdown) {
+      maxDrawdown = dd;
+      maxDrawdownPct = peakCapital > 0 ? +((dd / peakCapital) * 100).toFixed(2) : 0;
+    }
+  };
 
   const trades: QuantumBacktestTrade[] = [];
   let inPosition: {
@@ -81,71 +104,101 @@ export function runQuantumBacktest(
     if (inPosition) {
       const pos = inPosition;
       let exitPrice = 0;
-      let exitReason: 'SL' | 'BREAK_EVEN' | 'TP1' | 'TP2' | 'TP3' | null = null;
+      let exitReason: 'SL' | 'BREAK_EVEN' | 'TP1' | 'TP2' | 'TP3' | 'OPEN_MTM' | null = null;
+
+      // Track intrabar worst-case equity drawdown while position is open
+      const remFracBefore = 1 - (pos.tp1Hit ? 0.33 : 0) - (pos.tp2Hit ? 0.33 : 0);
+      const worstUnrealized = pos.type === 'LONG'
+        ? (c.low - pos.entryPrice) * (pos.shares * remFracBefore)
+        : (pos.entryPrice - c.high) * (pos.shares * remFracBefore);
+      updateDrawdown(capital + worstUnrealized);
 
       if (pos.type === 'LONG') {
-        // 1. Check Stop Loss
+        // 1. Check Stop Loss first (worst-case intrabar ordering)
         if (c.low <= pos.slPrice) {
-          exitPrice = pos.slPrice;
+          exitPrice = pos.slPrice * (1 - slippagePct);
           exitReason = pos.tp1Hit && config.enableBreakEven ? 'BREAK_EVEN' : 'SL';
-        }
-        // 2. Check TP3 (remaining 34%)
-        else if (c.high >= pos.tp3Price) {
-          exitPrice = pos.tp3Price;
-          exitReason = 'TP3';
-        }
-        // 3. Check TP2 (33%)
-        else if (c.high >= pos.tp2Price && !pos.tp2Hit) {
-          pos.tp2Hit = true;
-          const pnl2 = (pos.tp2Price - pos.entryPrice) * (pos.shares * 0.33);
-          pos.realizedPnL += pnl2;
-          capital += pnl2;
-        }
-        // 4. Check TP1 (33% exit + Move SL to Break-Even)
-        else if (c.high >= pos.tp1Price && !pos.tp1Hit) {
-          pos.tp1Hit = true;
-          const pnl1 = (pos.tp1Price - pos.entryPrice) * (pos.shares * 0.33);
-          pos.realizedPnL += pnl1;
-          capital += pnl1;
-          if (config.enableBreakEven) {
-            pos.slPrice = pos.entryPrice; // SL moves to entry
+        } else {
+          // 2. Process targets sequentially in one bar (if, not else if) with explicit 33/33/34 tranche sizing
+          if (!pos.tp1Hit && c.high >= pos.tp1Price) {
+            pos.tp1Hit = true;
+            const trancheShares = pos.shares * 0.33;
+            const execPrice = pos.tp1Price * (1 - slippagePct);
+            const fee = execPrice * trancheShares * commissionPct;
+            totalCostsPaid += fee;
+            const pnl1 = (execPrice - pos.entryPrice) * trancheShares - fee;
+            pos.realizedPnL += pnl1;
+            capital += pnl1;
+            if (config.enableBreakEven) {
+              pos.slPrice = pos.entryPrice;
+            }
+          }
+          if (!pos.tp2Hit && c.high >= pos.tp2Price) {
+            pos.tp2Hit = true;
+            const trancheShares = pos.shares * 0.33;
+            const execPrice = pos.tp2Price * (1 - slippagePct);
+            const fee = execPrice * trancheShares * commissionPct;
+            totalCostsPaid += fee;
+            const pnl2 = (execPrice - pos.entryPrice) * trancheShares - fee;
+            pos.realizedPnL += pnl2;
+            capital += pnl2;
+          }
+          if (c.high >= pos.tp3Price) {
+            exitPrice = pos.tp3Price * (1 - slippagePct);
+            exitReason = 'TP3';
           }
         }
       } else {
         // SHORT Position
         if (c.high >= pos.slPrice) {
-          exitPrice = pos.slPrice;
+          exitPrice = pos.slPrice * (1 + slippagePct);
           exitReason = pos.tp1Hit && config.enableBreakEven ? 'BREAK_EVEN' : 'SL';
-        } else if (c.low <= pos.tp3Price) {
-          exitPrice = pos.tp3Price;
-          exitReason = 'TP3';
-        } else if (c.low <= pos.tp2Price && !pos.tp2Hit) {
-          pos.tp2Hit = true;
-          const pnl2 = (pos.entryPrice - pos.tp2Price) * (pos.shares * 0.33);
-          pos.realizedPnL += pnl2;
-          capital += pnl2;
-        } else if (c.low <= pos.tp1Price && !pos.tp1Hit) {
-          pos.tp1Hit = true;
-          const pnl1 = (pos.entryPrice - pos.tp1Price) * (pos.shares * 0.33);
-          pos.realizedPnL += pnl1;
-          capital += pnl1;
-          if (config.enableBreakEven) {
-            pos.slPrice = pos.entryPrice;
+        } else {
+          if (!pos.tp1Hit && c.low <= pos.tp1Price) {
+            pos.tp1Hit = true;
+            const trancheShares = pos.shares * 0.33;
+            const execPrice = pos.tp1Price * (1 + slippagePct);
+            const fee = execPrice * trancheShares * commissionPct;
+            totalCostsPaid += fee;
+            const pnl1 = (pos.entryPrice - execPrice) * trancheShares - fee;
+            pos.realizedPnL += pnl1;
+            capital += pnl1;
+            if (config.enableBreakEven) {
+              pos.slPrice = pos.entryPrice;
+            }
+          }
+          if (!pos.tp2Hit && c.low <= pos.tp2Price) {
+            pos.tp2Hit = true;
+            const trancheShares = pos.shares * 0.33;
+            const execPrice = pos.tp2Price * (1 + slippagePct);
+            const fee = execPrice * trancheShares * commissionPct;
+            totalCostsPaid += fee;
+            const pnl2 = (pos.entryPrice - execPrice) * trancheShares - fee;
+            pos.realizedPnL += pnl2;
+            capital += pnl2;
+          }
+          if (c.low <= pos.tp3Price) {
+            exitPrice = pos.tp3Price * (1 + slippagePct);
+            exitReason = 'TP3';
           }
         }
       }
 
-      // Close trade if stopped out or TP3 hit
+      // Close remaining shares if stopped out or TP3 hit
       if (exitReason) {
-        const remainingShares = pos.tp2Hit ? pos.shares * 0.34 : pos.tp1Hit ? pos.shares * 0.67 : pos.shares;
-        const finalPnL = pos.type === 'LONG'
+        const remainingFrac = 1 - (pos.tp1Hit ? 0.33 : 0) - (pos.tp2Hit ? 0.33 : 0);
+        const remainingShares = pos.shares * remainingFrac;
+        const exitFee = exitPrice * remainingShares * commissionPct;
+        totalCostsPaid += exitFee;
+        const finalPnL = (pos.type === 'LONG'
           ? (exitPrice - pos.entryPrice) * remainingShares
-          : (pos.entryPrice - exitPrice) * remainingShares;
+          : (pos.entryPrice - exitPrice) * remainingShares) - exitFee;
 
         const totalPnL = pos.realizedPnL + finalPnL;
         capital += finalPnL;
 
-        const returnR = +(totalPnL / (pos.initialRisk * pos.shares)).toFixed(2);
+        const riskDollars = Math.max(1e-9, pos.initialRisk * pos.shares);
+        const returnR = +(totalPnL / riskDollars).toFixed(4);
         const profitPct = +((totalPnL / initialCapital) * 100).toFixed(2);
 
         trades.push({
@@ -162,20 +215,13 @@ export function runQuantumBacktest(
           exitTime: c.openTime,
           exitPrice,
           exitReason,
-          returnR,
+          returnR: +returnR.toFixed(2),
           profitPct,
-          realizedPnL: +totalPnL.toFixed(2),
-          status: totalPnL > 10 ? 'WIN' : totalPnL < -10 ? 'LOSS' : 'BREAK_EVEN',
+          realizedPnL: +totalPnL.toFixed(4),
+          status: returnR > 0.05 ? 'WIN' : returnR < -0.05 ? 'LOSS' : 'BREAK_EVEN',
         });
 
-        // Track peak capital & drawdown
-        if (capital > peakCapital) peakCapital = capital;
-        const dd = peakCapital - capital;
-        if (dd > maxDrawdown) {
-          maxDrawdown = dd;
-          maxDrawdownPct = +((dd / peakCapital) * 100).toFixed(2);
-        }
-
+        updateDrawdown(capital);
         inPosition = null;
       }
     }
@@ -186,65 +232,123 @@ export function runQuantumBacktest(
       const dRange = calculateDealingRange(subCandles, 40);
       const mom = calculateMomentum(subCandles);
       const trend = calculateAdx(subCandles, 14);
-      const subOBs = orderBlocks.filter(o => o.startIndex < i && (!o.invalidationIndex || o.invalidationIndex >= i));
+      // Q1: Strict point-in-time OB filter (alive at bar i by construction, zero future hindsight)
+      const subOBs = orderBlocks
+        .filter(o => (o.confirmationIndex ?? o.startIndex + 1) < i)
+        .filter(o => o.invalidationIndex === undefined || o.invalidationIndex > i)
+        .map(o => ({
+          ...o,
+          isInvalidated: false,
+          isMitigated: o.mitigationIndex !== undefined && o.mitigationIndex < i,
+        }));
 
-      const conf = calculateConfluence(subCandles, dRange, subOBs, mom, trend, ema20Series[i], config.confluenceThreshold);
+      const conf = calculateConfluence(subCandles, dRange, subOBs, mom, trend, ema20Series[i], config.confluenceThreshold, atrSeries[i]);
+      const atrPad = Math.max((atrSeries[i] ?? 0) * 0.25, c.close * 0.0005);
 
       // Long Entry: Bullish qualification & prior candle was red
       if (conf.isLongQualified && prevC.close <= prevC.open) {
         const recentLow = Math.min(...subCandles.slice(-10).map(b => b.low));
-        const entry = c.close;
-        const sl = +(recentLow * 0.998).toFixed(2);
+        const entry = c.close * (1 + slippagePct);
+        const sl = recentLow - atrPad;
         const initialRisk = entry - sl;
 
         if (initialRisk > 0) {
           const dollarRisk = capital * riskPerTradePct;
-          const shares = Math.max(1, Math.floor(dollarRisk / initialRisk));
+          const shares = Math.max(1e-6, dollarRisk / initialRisk);
+          const entryFee = entry * shares * commissionPct;
+          totalCostsPaid += entryFee;
+          capital -= entryFee;
           inPosition = {
             type: 'LONG',
             entryIndex: i,
             entryTime: c.openTime,
             entryPrice: entry,
             slPrice: sl,
-            tp1Price: +(entry + initialRisk * config.riskReward1).toFixed(2),
-            tp2Price: +(entry + initialRisk * config.riskReward2).toFixed(2),
-            tp3Price: +(entry + initialRisk * config.riskReward3).toFixed(2),
+            tp1Price: entry + initialRisk * config.riskReward1,
+            tp2Price: entry + initialRisk * config.riskReward2,
+            tp3Price: entry + initialRisk * config.riskReward3,
             initialRisk,
             shares,
             tp1Hit: false,
             tp2Hit: false,
-            realizedPnL: 0,
+            realizedPnL: -entryFee,
           };
         }
       }
       // Short Entry: Bearish qualification & prior candle was green
       else if (conf.isShortQualified && prevC.close >= prevC.open) {
         const recentHigh = Math.max(...subCandles.slice(-10).map(b => b.high));
-        const entry = c.close;
-        const sl = +(recentHigh * 1.002).toFixed(2);
+        const entry = c.close * (1 - slippagePct);
+        const sl = recentHigh + atrPad;
         const initialRisk = sl - entry;
 
         if (initialRisk > 0) {
           const dollarRisk = capital * riskPerTradePct;
-          const shares = Math.max(1, Math.floor(dollarRisk / initialRisk));
+          const shares = Math.max(1e-6, dollarRisk / initialRisk);
+          const entryFee = entry * shares * commissionPct;
+          totalCostsPaid += entryFee;
+          capital -= entryFee;
           inPosition = {
             type: 'SHORT',
             entryIndex: i,
             entryTime: c.openTime,
             entryPrice: entry,
             slPrice: sl,
-            tp1Price: +(entry - initialRisk * config.riskReward1).toFixed(2),
-            tp2Price: +(entry - initialRisk * config.riskReward2).toFixed(2),
-            tp3Price: +(entry - initialRisk * config.riskReward3).toFixed(2),
+            tp1Price: entry - initialRisk * config.riskReward1,
+            tp2Price: entry - initialRisk * config.riskReward2,
+            tp3Price: entry - initialRisk * config.riskReward3,
             initialRisk,
             shares,
             tp1Hit: false,
             tp2Hit: false,
-            realizedPnL: 0,
+            realizedPnL: -entryFee,
           };
         }
       }
     }
+  }
+
+  // Q3: Close / mark-to-market any open position at the final closed bar so sum(trade.realizedPnL) === netProfit
+  if (inPosition) {
+    const pos = inPosition;
+    const lastIdx = candles.length - 1;
+    const lastBar = candles[lastIdx];
+    const remainingFrac = 1 - (pos.tp1Hit ? 0.33 : 0) - (pos.tp2Hit ? 0.33 : 0);
+    const remainingShares = pos.shares * remainingFrac;
+    const mtmExitPrice = pos.type === 'LONG'
+      ? lastBar.close * (1 - slippagePct)
+      : lastBar.close * (1 + slippagePct);
+    const exitFee = mtmExitPrice * remainingShares * commissionPct;
+    totalCostsPaid += exitFee;
+    const finalPnL = (pos.type === 'LONG'
+      ? (mtmExitPrice - pos.entryPrice) * remainingShares
+      : (pos.entryPrice - mtmExitPrice) * remainingShares) - exitFee;
+    const totalPnL = pos.realizedPnL + finalPnL;
+    capital += finalPnL;
+
+    const riskDollars = Math.max(1e-9, pos.initialRisk * pos.shares);
+    const returnR = +(totalPnL / riskDollars).toFixed(4);
+    trades.push({
+      id: `trade-${pos.entryIndex}`,
+      type: pos.type,
+      entryIndex: pos.entryIndex,
+      entryTime: pos.entryTime,
+      entryPrice: pos.entryPrice,
+      slPrice: pos.slPrice,
+      tp1Price: pos.tp1Price,
+      tp2Price: pos.tp2Price,
+      tp3Price: pos.tp3Price,
+      exitIndex: lastIdx,
+      exitTime: lastBar.openTime,
+      exitPrice: mtmExitPrice,
+      exitReason: 'OPEN_MTM',
+      returnR: +returnR.toFixed(2),
+      profitPct: +((totalPnL / initialCapital) * 100).toFixed(2),
+      realizedPnL: +totalPnL.toFixed(4),
+      status: returnR > 0.05 ? 'WIN' : returnR < -0.05 ? 'LOSS' : 'BREAK_EVEN',
+    });
+    updateDrawdown(capital);
+    inPosition = null;
   }
 
   // Final Summary Calculations
@@ -283,6 +387,9 @@ export function runQuantumBacktest(
     averageR,
     expectancy,
     trades: trades.reverse(), // Newest first
+    tradedStartTime: candles[25]?.openTime,
+    tradedEndTime: candles[candles.length - 1]?.openTime,
+    totalCostsPaid: +totalCostsPaid.toFixed(2),
   };
 }
 
@@ -290,7 +397,7 @@ export function runQuantumBacktest(
 
 export function generatePineScriptCode(config: QuantumAiConfig): string {
   return `//@version=5
-strategy("Quantum AI – Multi-Timeframe SMC & Resonance Engine", overlay=true, initial_capital=100000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+strategy("Quantitative SMC Rule Engine (1% Risk)", overlay=true, initial_capital=100000, default_qty_type=strategy.percent_of_equity, default_qty_value=1, commission_type=strategy.commission.percent, commission_value=0.04, slippage=1)
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. INPUT PARAMETERS

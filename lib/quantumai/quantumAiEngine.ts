@@ -152,14 +152,17 @@ export function detectSwings(candles: Candle[], lookback: number = 5): QuantumSw
         price: cur.high,
         isHigh: true,
         isConfirmed: true,
+        confirmationIndex: i + lookback,
       });
-    } else if (isLow) {
+    }
+    if (isLow) {
       swings.push({
         index: i,
         time: cur.openTime,
         price: cur.low,
         isHigh: false,
         isConfirmed: true,
+        confirmationIndex: i + lookback,
       });
     }
   }
@@ -171,7 +174,7 @@ export function detectSwings(candles: Candle[], lookback: number = 5): QuantumSw
 
 export function calculateDealingRange(candles: Candle[], lookback: number = 40): QuantumDealingRange {
   if (candles.length === 0) {
-    return { swingHigh: 100, swingLow: 100, equilibrium: 100, currentZone: 'EQUILIBRIUM' };
+    return { swingHigh: 0, swingLow: 0, equilibrium: 0, currentZone: 'EQUILIBRIUM' };
   }
 
   const sample = candles.slice(-lookback);
@@ -183,7 +186,7 @@ export function calculateDealingRange(candles: Candle[], lookback: number = 40):
     if (c.low < swingLow) swingLow = c.low;
   }
 
-  const equilibrium = +( (swingHigh + swingLow) / 2 ).toFixed(2);
+  const equilibrium = (swingHigh + swingLow) / 2;
   const currentClose = candles[candles.length - 1].close;
 
   const eqTolerance = (swingHigh - swingLow) * 0.02; // +/- 2% around equilibrium
@@ -200,21 +203,33 @@ export function calculateDealingRange(candles: Candle[], lookback: number = 40):
 
 // ── 3. Market Structure Breaks (BOS & CHoCH) ───────────────────────────────
 
-export function detectStructureBreaks(candles: Candle[], swings: QuantumSwingPoint[]): QuantumStructureBreak[] {
+export function detectStructureBreaks(
+  candles: Candle[],
+  swings: QuantumSwingPoint[],
+  maxResults: number | null = 25
+): QuantumStructureBreak[] {
   const breaks: QuantumStructureBreak[] = [];
   if (swings.length === 0 || candles.length === 0) return breaks;
 
-  const brokenHighIndices = new Set<number>();
-  const brokenLowIndices = new Set<number>();
+  const confIdxOf = (s: QuantumSwingPoint) => s.confirmationIndex ?? s.index + 5;
+  const orderedSwings = [...swings].sort((a, b) => confIdxOf(a) - confIdxOf(b));
+  const activeHighs: QuantumSwingPoint[] = [];
+  const activeLows: QuantumSwingPoint[] = [];
+  let swingPtr = 0;
   let trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = 'NEUTRAL';
 
   for (let i = 0; i < candles.length; i++) {
     const c = candles[i];
 
-    // Swings confirmed before bar i
-    const confirmedSwings = swings.filter(s => s.index < i);
-    const lastHigh = confirmedSwings.filter(s => s.isHigh && !brokenHighIndices.has(s.index)).pop() || null;
-    const lastLow = confirmedSwings.filter(s => !s.isHigh && !brokenLowIndices.has(s.index)).pop() || null;
+    while (swingPtr < orderedSwings.length && confIdxOf(orderedSwings[swingPtr]) < i) {
+      const s = orderedSwings[swingPtr];
+      if (s.isHigh) activeHighs.push(s);
+      else activeLows.push(s);
+      swingPtr++;
+    }
+
+    const lastHigh = activeHighs[activeHighs.length - 1] || null;
+    const lastLow = activeLows[activeLows.length - 1] || null;
 
     if (lastHigh && c.close > lastHigh.price) {
       const isChoch = trend === 'BEARISH';
@@ -229,7 +244,9 @@ export function detectStructureBreaks(candles: Candle[], swings: QuantumSwingPoi
         originPrice: lastHigh.price,
       });
       trend = 'BULLISH';
-      brokenHighIndices.add(lastHigh.index);
+      while (activeHighs.length > 0 && c.close > activeHighs[activeHighs.length - 1].price) {
+        activeHighs.pop();
+      }
     } else if (lastLow && c.close < lastLow.price) {
       const isChoch = trend === 'BULLISH';
       breaks.push({
@@ -243,16 +260,22 @@ export function detectStructureBreaks(candles: Candle[], swings: QuantumSwingPoi
         originPrice: lastLow.price,
       });
       trend = 'BEARISH';
-      brokenLowIndices.add(lastLow.index);
+      while (activeLows.length > 0 && c.close < activeLows[activeLows.length - 1].price) {
+        activeLows.pop();
+      }
     }
   }
 
-  return breaks.slice(-25);
+  return maxResults !== null ? breaks.slice(-maxResults) : breaks;
 }
 
 // ── 4. Order Blocks Construction & Invalidation ────────────────────────────
 
-export function detectOrderBlocks(candles: Candle[], breaks: QuantumStructureBreak[]): QuantumOrderBlock[] {
+export function detectOrderBlocks(
+  candles: Candle[],
+  breaks: QuantumStructureBreak[],
+  maxResults: number | null = 50
+): QuantumOrderBlock[] {
   const obs: QuantumOrderBlock[] = [];
   if (candles.length < 5) return obs;
 
@@ -269,42 +292,48 @@ export function detectOrderBlocks(candles: Candle[], breaks: QuantumStructureBre
     const rollingAvg = pastSum / Math.max(1, i - startIdx);
     const isImpulse = cRange >= rollingAvg * 1.25;
 
-    // Bullish OB: Impulsive green candle breaking upwards, preceded by red candle
+    // Bullish OB: Impulsive green candle preceded by red candle, linked to bullish structure break when breaks exist
     const isBullImpulse = c.close > c.open && isImpulse && prevC.close <= prevC.open;
     if (isBullImpulse) {
-      const top = prevC.high;
-      const bottom = prevC.low;
-      obs.push({
-        id: `ob-bull-${i}`,
-        isBullish: true,
-        startIndex: i - 1,
-        endIndex: Math.min(candles.length - 1, i + 25),
-        time: prevC.openTime,
-        top,
-        bottom,
-        impulseVolume: c.volume,
-        isMitigated: false,
-        isInvalidated: false,
-      });
+      const hasLinkedBreak = breaks.length === 0 || breaks.some(b => b.isBullish && b.candleIndex >= i && b.candleIndex <= i + 8);
+      if (hasLinkedBreak) {
+        obs.push({
+          id: `ob-bull-${i}`,
+          isBullish: true,
+          startIndex: i - 1,
+          endIndex: Math.min(candles.length - 1, i + 60),
+          time: prevC.openTime,
+          top: prevC.high,
+          bottom: prevC.low,
+          impulseVolume: c.volume,
+          isMitigated: false,
+          isInvalidated: false,
+          confirmationIndex: i,
+          retestCount: 0,
+        });
+      }
     }
 
-    // Bearish OB: Impulsive red candle breaking downwards, preceded by green candle
+    // Bearish OB: Impulsive red candle preceded by green candle, linked to bearish structure break when breaks exist
     const isBearImpulse = c.close < c.open && isImpulse && prevC.close >= prevC.open;
     if (isBearImpulse) {
-      const top = prevC.high;
-      const bottom = prevC.low;
-      obs.push({
-        id: `ob-bear-${i}`,
-        isBullish: false,
-        startIndex: i - 1,
-        endIndex: Math.min(candles.length - 1, i + 25),
-        time: prevC.openTime,
-        top,
-        bottom,
-        impulseVolume: c.volume,
-        isMitigated: false,
-        isInvalidated: false,
-      });
+      const hasLinkedBreak = breaks.length === 0 || breaks.some(b => !b.isBullish && b.candleIndex >= i && b.candleIndex <= i + 8);
+      if (hasLinkedBreak) {
+        obs.push({
+          id: `ob-bear-${i}`,
+          isBullish: false,
+          startIndex: i - 1,
+          endIndex: Math.min(candles.length - 1, i + 60),
+          time: prevC.openTime,
+          top: prevC.high,
+          bottom: prevC.low,
+          impulseVolume: c.volume,
+          isMitigated: false,
+          isInvalidated: false,
+          confirmationIndex: i,
+          retestCount: 0,
+        });
+      }
     }
   }
 
@@ -330,24 +359,31 @@ export function detectOrderBlocks(candles: Candle[], breaks: QuantumStructureBre
       // Retest / Mitigation: Price enters the zone without invalidating
       if (ob.isBullish && bar.low <= ob.top && bar.high >= ob.bottom) {
         ob.isMitigated = true;
+        ob.retestCount = (ob.retestCount ?? 0) + 1;
         if (!ob.mitigationIndex) ob.mitigationIndex = j;
       } else if (!ob.isBullish && bar.high >= ob.bottom && bar.low <= ob.top) {
         ob.isMitigated = true;
+        ob.retestCount = (ob.retestCount ?? 0) + 1;
         if (!ob.mitigationIndex) ob.mitigationIndex = j;
       }
     }
   }
 
-  return obs.slice(-50);
+  return maxResults !== null ? obs.slice(-maxResults) : obs;
 }
 
 // ── 5. Liquidity Pools & Sweeps ────────────────────────────────────────────
 
-export function detectLiquidity(candles: Candle[], swings: QuantumSwingPoint[]): QuantumLiquidityPool[] {
+export function detectLiquidity(
+  candles: Candle[],
+  swings: QuantumSwingPoint[],
+  maxSwings: number | null = 15
+): QuantumLiquidityPool[] {
   const pools: QuantumLiquidityPool[] = [];
   if (swings.length === 0 || candles.length === 0) return pools;
 
-  for (const sw of swings.slice(-15)) {
+  const targetSwings = maxSwings !== null ? swings.slice(-maxSwings) : swings;
+  for (const sw of targetSwings) {
     let isSwept = false;
     let sweepIndex: number | undefined;
     let sweepPrice: number | undefined;
@@ -418,12 +454,12 @@ export function calculateVolatility(candles: Candle[]): QuantumVolatilityMetrics
   const variance = slice20.reduce((acc, val) => acc + Math.pow(val - basis, 2), 0) / 20;
   const stdev = Math.sqrt(variance);
 
-  const bbUpper = +(basis + 2 * stdev).toFixed(2);
-  const bbLower = +(basis - 2 * stdev).toFixed(2);
-  const kcUpper = +(kcBasis + 1.5 * atr).toFixed(2);
-  const kcLower = +(kcBasis - 1.5 * atr).toFixed(2);
+  const bbUpper = basis + 2 * stdev;
+  const bbLower = basis - 2 * stdev;
+  const kcUpper = kcBasis + 1.5 * atr;
+  const kcLower = kcBasis - 1.5 * atr;
 
-  // Squeeze: BB inside KC
+  // Squeeze: BB strictly inside KC (full precision — avoids false ties on low-priced FX instruments)
   const isSqueeze = bbUpper <= kcUpper && bbLower >= kcLower;
 
   // Track streak
@@ -453,10 +489,10 @@ export function calculateVolatility(candles: Candle[]): QuantumVolatilityMetrics
   return {
     bbUpper,
     bbLower,
-    bbBasis: +basis.toFixed(2),
+    bbBasis: basis,
     kcUpper,
     kcLower,
-    kcBasis: +kcBasis.toFixed(2),
+    kcBasis,
     isSqueeze,
     squeezeLength,
   };
@@ -466,7 +502,7 @@ export function calculateVolatility(candles: Candle[]): QuantumVolatilityMetrics
 
 export function calculateMomentum(candles: Candle[]): QuantumMomentumMetrics {
   if (candles.length < 20) {
-    return { rawDiff: 0, linRegMomentum: 0, isPositive: true };
+    return { rawDiff: 0, linRegMomentum: 0, isPositive: false };
   }
 
   const closes = candles.map(c => c.close);
@@ -479,9 +515,11 @@ export function calculateMomentum(candles: Candle[]): QuantumMomentumMetrics {
     diffSeries.push(closes[i] - basis);
   }
 
-  const rawDiff = +(diffSeries[diffSeries.length - 1] || 0).toFixed(2);
-  const linRegMomentum = +calculateLinRegAtZero(diffSeries, 20).toFixed(2);
-  const isPositive = linRegMomentum >= 0;
+  // Keep full floating-point precision so FX / low-priced instruments do not collapse to 0;
+  // zero momentum is neutral (neither positive nor negative).
+  const rawDiff = diffSeries[diffSeries.length - 1] || 0;
+  const linRegMomentum = calculateLinRegAtZero(diffSeries, 20);
+  const isPositive = linRegMomentum > 0;
 
   return { rawDiff, linRegMomentum, isPositive };
 }
@@ -490,9 +528,9 @@ export function calculateMomentum(candles: Candle[]): QuantumMomentumMetrics {
 
 export function calculateAdx(candles: Candle[], length: number = 14): QuantumTrendMetrics {
   const defaultRes: QuantumTrendMetrics = {
-    adx: 20,
-    plusDI: 20,
-    minusDI: 20,
+    adx: 0,
+    plusDI: 0,
+    minusDI: 0,
     isTrending: false,
     directionalAlignment: 'NEUTRAL',
   };
@@ -580,32 +618,54 @@ export function calculateConfluence(
   momentum: QuantumMomentumMetrics,
   trend: QuantumTrendMetrics,
   ema20: number | null,
-  threshold: number = 7.0
+  threshold: number = 7.0,
+  atrValue?: number | null
 ): QuantumConfluenceScore {
-  const lastCandle = candles[candles.length - 1];
-  const curPrice = lastCandle ? lastCandle.close : 1000;
+  const lastIdx = candles.length - 1;
+  const lastCandle = candles[lastIdx];
+  const curPrice = lastCandle ? lastCandle.close : 0;
 
   let bullDiscount = 0;
   let bearPremium = 0;
   if (dealingRange.currentZone === 'DISCOUNT') bullDiscount = 2.0;
   if (dealingRange.currentZone === 'PREMIUM') bearPremium = 2.0;
 
-  // Active Order Block proximity
+  // Compute ATR-based proximity buffer instead of fixed percentage
+  let atr = atrValue ?? 0;
+  if (!atr && candles.length >= 2) {
+    const slice = candles.slice(-14);
+    let trSum = 0;
+    for (let k = 1; k < slice.length; k++) {
+      trSum += Math.max(
+        slice[k].high - slice[k].low,
+        Math.abs(slice[k].high - slice[k - 1].close),
+        Math.abs(slice[k].low - slice[k - 1].close)
+      );
+    }
+    atr = trSum / Math.max(1, slice.length - 1);
+  }
+  const proxPad = Math.max(atr * 0.5, curPrice * 0.001);
+
+  // Active Order Block proximity: require un-invalidated OB, age <= 60 bars, and retestCount <= 2
   let bullOB = 0;
   let bearOB = 0;
-  const recentBullOB = orderBlocks.filter(o => o.isBullish && !o.isInvalidated).pop();
-  const recentBearOB = orderBlocks.filter(o => !o.isBullish && !o.isInvalidated).pop();
+  const recentBullOB = orderBlocks
+    .filter(o => o.isBullish && !o.isInvalidated && lastIdx - o.startIndex <= 60 && (o.retestCount ?? 0) <= 2)
+    .pop();
+  const recentBearOB = orderBlocks
+    .filter(o => !o.isBullish && !o.isInvalidated && lastIdx - o.startIndex <= 60 && (o.retestCount ?? 0) <= 2)
+    .pop();
 
-  if (recentBullOB && curPrice >= recentBullOB.bottom * 0.998 && curPrice <= recentBullOB.top * 1.008) {
+  if (recentBullOB && curPrice >= recentBullOB.bottom - proxPad && curPrice <= recentBullOB.top + proxPad) {
     bullOB = 3.0;
   }
-  if (recentBearOB && curPrice <= recentBearOB.top * 1.002 && curPrice >= recentBearOB.bottom * 0.992) {
+  if (recentBearOB && curPrice <= recentBearOB.top + proxPad && curPrice >= recentBearOB.bottom - proxPad) {
     bearOB = 3.0;
   }
 
-  // Momentum
-  const bullMom = momentum.isPositive ? 2.0 : 0;
-  const bearMom = !momentum.isPositive ? 2.0 : 0;
+  // Momentum: zero momentum is neutral (awards 0 to both)
+  const bullMom = momentum.linRegMomentum > 0 ? 2.0 : 0;
+  const bearMom = momentum.linRegMomentum < 0 ? 2.0 : 0;
 
   // EMA 20 confirmation
   let bullEma = 0;
@@ -659,37 +719,45 @@ export function calculateConfluence(
 export function calculateResonance(
   candles: Candle[],
   confluence: QuantumConfluenceScore,
-  dealingRange: QuantumDealingRange
+  dealingRange: QuantumDealingRange,
+  htfCandles?: Candle[],
+  ltfCandles?: Candle[]
 ): QuantumResonanceMetrics {
-  // Layer 1: HTF (Higher Timeframe) Bias
+  const hasRealHtf = Boolean(htfCandles && htfCandles.length >= 10);
+  const hasRealLtf = Boolean(ltfCandles && ltfCandles.length >= 10);
+  const htfDr = hasRealHtf ? calculateDealingRange(htfCandles!, 40) : dealingRange;
+
+  // Layer 1: HTF Bias (real HTF dealing range if supplied, otherwise honestly labeled as Macro 40-Bar Single-TF)
   const htfBias: 'BULLISH' | 'BEARISH' | 'NEUTRAL' =
-    dealingRange.currentZone === 'DISCOUNT' ? 'BULLISH' : dealingRange.currentZone === 'PREMIUM' ? 'BEARISH' : 'NEUTRAL';
+    htfDr.currentZone === 'DISCOUNT' ? 'BULLISH' : htfDr.currentZone === 'PREMIUM' ? 'BEARISH' : 'NEUTRAL';
   const htfLayer = {
-    timeframe: 'Daily (HTF)',
+    timeframe: hasRealHtf ? 'HTF' : 'Macro 40-Bar (Single-TF)',
     bias: htfBias,
-    zone: dealingRange.currentZone,
+    zone: htfDr.currentZone,
     structure: htfBias === 'BULLISH' ? ('BOS_BULL' as const) : ('BOS_BEAR' as const),
     score: htfBias === 'BULLISH' ? 8.5 : 2.5,
   };
 
-  // Layer 2: MTF (Intermediate Timeframe) Structure
+  // Layer 2: MTF Structure
   const mtfBias: 'BULLISH' | 'BEARISH' | 'NEUTRAL' =
     confluence.bullScore > confluence.bearScore ? 'BULLISH' : confluence.bearScore > confluence.bullScore ? 'BEARISH' : 'NEUTRAL';
   const mtfLayer = {
-    timeframe: '1H (MTF)',
+    timeframe: 'Chart TF (Rule Score)',
     bias: mtfBias,
     zone: dealingRange.currentZone,
     structure: mtfBias === 'BULLISH' ? ('BOS_BULL' as const) : ('BOS_BEAR' as const),
     score: Math.max(confluence.bullScore, confluence.bearScore),
   };
 
-  // Layer 3: LTF (Lower Timeframe) Trigger
-  const ltfBias: 'BULLISH' | 'BEARISH' | 'NEUTRAL' =
-    confluence.isLongQualified ? 'BULLISH' : confluence.isShortQualified ? 'BEARISH' : 'NEUTRAL';
+  // Layer 3: LTF Trigger
+  const ltfDr = hasRealLtf ? calculateDealingRange(ltfCandles!, 20) : dealingRange;
+  const ltfBias: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = hasRealLtf
+    ? (ltfDr.currentZone === 'DISCOUNT' ? 'BULLISH' : ltfDr.currentZone === 'PREMIUM' ? 'BEARISH' : 'NEUTRAL')
+    : (confluence.isLongQualified ? 'BULLISH' : confluence.isShortQualified ? 'BEARISH' : 'NEUTRAL');
   const ltfLayer = {
-    timeframe: '5m (LTF)',
+    timeframe: hasRealLtf ? 'LTF' : 'Trigger Bar (Single-TF)',
     bias: ltfBias,
-    zone: dealingRange.currentZone,
+    zone: ltfDr.currentZone,
     structure: ltfBias === 'BULLISH' ? ('CHOCH_BULL' as const) : ('CHOCH_BEAR' as const),
     score: +(Math.max(confluence.bullScore, confluence.bearScore) * 1.05).toFixed(1),
   };
@@ -732,28 +800,36 @@ export function generateSetups(
   if (candles.length < 25) return setups;
 
   const closes = candles.map(c => c.close);
-  const sma20Series = calculateSma(closes, 20);
   const ema20Series = calculateEma(closes, 20);
+  const atrSeries = calculateAtr(candles, 14);
 
   for (let i = 25; i < candles.length; i++) {
     const c = candles[i];
     const prevC = candles[i - 1];
 
-    // Compute confluence at bar i
+    // Compute confluence strictly point-in-time at bar i (zero look-ahead)
     const subCandles = candles.slice(0, i + 1);
     const dRange = calculateDealingRange(subCandles, 40);
     const mom = calculateMomentum(subCandles);
     const trend = calculateAdx(subCandles, 14);
-    const subOBs = orderBlocks.filter(o => o.startIndex < i && (!o.invalidationIndex || o.invalidationIndex >= i));
+    const subOBs = orderBlocks
+      .filter(o => (o.confirmationIndex ?? o.startIndex + 1) < i)
+      .filter(o => o.invalidationIndex === undefined || o.invalidationIndex > i)
+      .map(o => ({
+        ...o,
+        isInvalidated: false,
+        isMitigated: o.mitigationIndex !== undefined && o.mitigationIndex < i,
+      }));
 
-    const conf = calculateConfluence(subCandles, dRange, subOBs, mom, trend, ema20Series[i], confluenceThreshold);
+    const conf = calculateConfluence(subCandles, dRange, subOBs, mom, trend, ema20Series[i], confluenceThreshold, atrSeries[i]);
+    const atrPad = Math.max((atrSeries[i] ?? 0) * 0.25, c.close * 0.0005);
 
     if (conf.isLongQualified && prevC.close <= prevC.open) {
-      // Find nearest protective swing low or OB bottom
+      // Find nearest protective swing low + ATR buffer (full precision)
       const recentLow = Math.min(...subCandles.slice(-10).map(b => b.low));
       const entry = c.close;
-      const sl = +(recentLow * 0.998).toFixed(2);
-      const risk = +(entry - sl).toFixed(2);
+      const sl = recentLow - atrPad;
+      const risk = entry - sl;
 
       if (risk > 0) {
         setups.push({
@@ -764,16 +840,16 @@ export function generateSetups(
           entryPrice: entry,
           stopLossPrice: sl,
           initialRisk: risk,
-          tp1Price: +(entry + risk * rr1).toFixed(2),
-          tp2Price: +(entry + risk * rr2).toFixed(2),
-          tp3Price: +(entry + risk * rr3).toFixed(2),
+          tp1Price: entry + risk * rr1,
+          tp2Price: entry + risk * rr2,
+          tp3Price: entry + risk * rr3,
           confluenceScore: conf.bullScore,
           isBreakEvenActivated: false,
           status: 'ACTIVE',
           conditions: [
             `Confluence Score: ${conf.bullScore}/9.5 (Threshold: ${confluenceThreshold})`,
             `Market Zone: ${dRange.currentZone}`,
-            `LinReg Momentum: +${mom.linRegMomentum}`,
+            `LinReg Momentum: +${mom.linRegMomentum.toFixed(4)}`,
             `ADX: ${trend.adx} (${trend.directionalAlignment})`,
           ],
         });
@@ -781,8 +857,8 @@ export function generateSetups(
     } else if (conf.isShortQualified && prevC.close >= prevC.open) {
       const recentHigh = Math.max(...subCandles.slice(-10).map(b => b.high));
       const entry = c.close;
-      const sl = +(recentHigh * 1.002).toFixed(2);
-      const risk = +(sl - entry).toFixed(2);
+      const sl = recentHigh + atrPad;
+      const risk = sl - entry;
 
       if (risk > 0) {
         setups.push({
@@ -793,16 +869,16 @@ export function generateSetups(
           entryPrice: entry,
           stopLossPrice: sl,
           initialRisk: risk,
-          tp1Price: +(entry - risk * rr1).toFixed(2),
-          tp2Price: +(entry - risk * rr2).toFixed(2),
-          tp3Price: +(entry - risk * rr3).toFixed(2),
+          tp1Price: entry - risk * rr1,
+          tp2Price: entry - risk * rr2,
+          tp3Price: entry - risk * rr3,
           confluenceScore: conf.bearScore,
           isBreakEvenActivated: false,
           status: 'ACTIVE',
           conditions: [
             `Confluence Score: ${conf.bearScore}/9.5 (Threshold: ${confluenceThreshold})`,
             `Market Zone: ${dRange.currentZone}`,
-            `LinReg Momentum: ${mom.linRegMomentum}`,
+            `LinReg Momentum: ${mom.linRegMomentum.toFixed(4)}`,
             `ADX: ${trend.adx} (${trend.directionalAlignment})`,
           ],
         });
@@ -816,14 +892,16 @@ export function generateSetups(
 // ── 12. Master Quantum AI Analysis ─────────────────────────────────────────
 
 export function analyzeQuantumAi(
-  candles: Candle[],
+  rawCandles: Candle[],
   config: QuantumAiConfig = DEFAULT_QUANTUM_AI_CONFIG
 ): QuantumAiAnalysisResult {
+  // Q8: Filter out forming/unclosed candles so live ticks do not flip signals mid-bar
+  const candles = (rawCandles || []).filter(c => c && c.isClosed !== false);
   if (!candles || candles.length === 0) {
     const emptyDealingRange: QuantumDealingRange = { swingHigh: 0, swingLow: 0, equilibrium: 0, currentZone: 'EQUILIBRIUM' };
     const emptyVol: QuantumVolatilityMetrics = { bbUpper: 0, bbLower: 0, bbBasis: 0, kcUpper: 0, kcLower: 0, kcBasis: 0, isSqueeze: false, squeezeLength: 0 };
-    const emptyMom: QuantumMomentumMetrics = { rawDiff: 0, linRegMomentum: 0, isPositive: true };
-    const emptyTrend: QuantumTrendMetrics = { adx: 20, plusDI: 20, minusDI: 20, isTrending: false, directionalAlignment: 'NEUTRAL' };
+    const emptyMom: QuantumMomentumMetrics = { rawDiff: 0, linRegMomentum: 0, isPositive: false };
+    const emptyTrend: QuantumTrendMetrics = { adx: 0, plusDI: 0, minusDI: 0, isTrending: false, directionalAlignment: 'NEUTRAL' };
     const emptyConf: QuantumConfluenceScore = {
       bullScore: 0,
       bearScore: 0,
@@ -840,7 +918,7 @@ export function analyzeQuantumAi(
       },
     };
     const emptyDashboard: QuantumStrategyDashboard = {
-      strategy: 'Quantum AI',
+      strategy: 'Quantitative SMC Rule Engine',
       marketRegime: 'RANGING',
       volatility: 'EXPANSION',
       marketZone: 'EQUILIBRIUM',
@@ -935,7 +1013,7 @@ export function analyzeQuantumAi(
     : 'WAIT';
 
   const dashboard: QuantumStrategyDashboard = {
-    strategy: 'Quantum AI',
+    strategy: 'Quantitative SMC Rule Engine',
     marketRegime: trend.isTrending ? 'TRENDING' : 'RANGING',
     volatility: volatility.isSqueeze ? 'SQUEEZE' : 'EXPANSION',
     marketZone: dealingRange.currentZone,

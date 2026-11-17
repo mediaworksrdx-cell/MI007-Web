@@ -477,7 +477,8 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
 
   // ── 4. Footprint Data Source Watermark Badge ──────────────────────────────
   // Critical requirement: Distinguish verified exchange L2 vs inferred microstructure
-  const isVerified = config.dataSource === 'VERIFIED_L2';
+  const verifiedBars = footprints.filter(fp => fp.classification === 'VERIFIED_EXCHANGE_DATA').length;
+  const isVerified = footprints.length > 0 && verifiedBars >= Math.ceil(footprints.length * 0.5);
   const badgeText = isVerified
     ? '● ORDER FLOW: L2 VERIFIED TRADES (EXCHANGE AGGRESSOR)'
     : '◌ ORDER FLOW: INFERRED MICROSTRUCTURE (ESTIMATED — NO L2 AGGRESSOR FEED)';

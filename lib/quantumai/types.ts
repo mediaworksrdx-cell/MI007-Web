@@ -27,6 +27,7 @@ export interface QuantumSwingPoint {
   price: number;
   isHigh: boolean;
   isConfirmed: boolean;
+  confirmationIndex?: number;
 }
 
 export interface QuantumStructureBreak {
@@ -53,6 +54,8 @@ export interface QuantumOrderBlock {
   mitigationIndex?: number;
   isInvalidated: boolean;
   invalidationIndex?: number;
+  confirmationIndex?: number;
+  retestCount?: number;
 }
 
 export interface QuantumLiquidityPool {
@@ -160,7 +163,7 @@ export interface QuantumBacktestTrade {
   exitIndex: number;
   exitTime: number;
   exitPrice: number;
-  exitReason: 'SL' | 'BREAK_EVEN' | 'TP1' | 'TP2' | 'TP3';
+  exitReason: 'SL' | 'BREAK_EVEN' | 'TP1' | 'TP2' | 'TP3' | 'OPEN_MTM';
   returnR: number;     // Return measured in initial R units
   profitPct: number;   // Realized percentage return
   realizedPnL: number; // Dollar / currency P&L
@@ -183,10 +186,13 @@ export interface QuantumBacktestMetrics {
   averageR: number;     // Average return in initial risk units
   expectancy: number;   // Average expected P&L per trade
   trades: QuantumBacktestTrade[];
+  tradedStartTime?: number;
+  tradedEndTime?: number;
+  totalCostsPaid?: number;
 }
 
 export interface QuantumStrategyDashboard {
-  strategy: 'Quantum AI';
+  strategy: string;
   marketRegime: QuantumMarketRegime;
   volatility: QuantumVolatilityState;
   marketZone: QuantumMarketZone;

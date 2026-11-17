@@ -92,7 +92,7 @@ def generate_synthetic_market_data(symbol: str, num_bars: int = 500, initial_pri
 class QuantumSmcResonanceBacktester:
     def __init__(self, symbol: str = "RELIANCE", strategy: str = "quantum_smc",
                  initial_capital: float = 100000.0, min_resonance: int = 75,
-                 slippage_pct: float = 0.0005, fee_pct: float = 0.0003):
+                 slippage_pct: float = 0.0005, fee_pct: float = 0.0004):
         self.symbol = symbol
         self.strategy = strategy.lower()
         self.initial_capital = initial_capital
@@ -170,7 +170,7 @@ class QuantumSmcResonanceBacktester:
                 continue
 
             # ── 2. Strategy Signal Detection ──
-            risk_capital = self.capital * 0.02 # 2% risk per trade
+            risk_capital = self.capital * 0.01 # 1% risk per trade
 
             # Common Indicator Math
             closes_20 = [x.close for x in candles[i - 20 : i]]

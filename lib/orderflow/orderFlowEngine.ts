@@ -16,7 +16,7 @@
 // 12. Institutional Signal Generation with Entry, SL, TP, R:R
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { Candle } from '../types';
+import { Candle, getInstrumentDecimals } from '../types';
 import {
   CandleFootprint,
   FootprintDataSource,
@@ -63,37 +63,78 @@ export function toIstDateComponents(timestampMs: number): IstDateComponents {
   return { year, month, date, hours, minutes, dayOfWeek, dateKey };
 }
 
+function getTimeZoneComponents(
+  timestampMs: number,
+  timeZone: string
+): { dateKey: string; minuteOfDay: number } {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date(timestampMs));
+  const map: Record<string, string> = {};
+  for (const p of parts) {
+    if (p.type !== 'literal') map[p.type] = p.value;
+  }
+  const hour = Number(map.hour ?? 0) % 24;
+  const minute = Number(map.minute ?? 0);
+  const dateKey = `${map.year}-${map.month}-${map.day}`;
+  return { dateKey, minuteOfDay: hour * 60 + minute };
+}
+
 /**
- * Checks whether the current timestamp marks the start of a new NSE trading session.
- * Regular NSE trading session opens at 09:15 IST (555 minutes into the day).
- * A new session is triggered on:
- * - A date change in IST
- * - Crossing the 09:15 IST market open threshold
- * - An overnight gap exceeding 10 hours
+ * Checks whether the current timestamp marks the start of a new market session
+ * for the given market/timezone (fixing OF5: per-market CVD session reset).
+ * - INDIA: Asia/Kolkata, 09:15 open
+ * - USA: America/New_York, 09:30 open (handles EST/EDT DST automatically)
+ * - UAE: Asia/Dubai, 10:00 open
+ * - CRYPTO / FOREX / 24h continuous: UTC 00:00 daily boundary (no intrabar market-open reset)
  */
-export function isNewNseSession(currentTimestampMs: number, prevTimestampMs?: number): boolean {
+export function isNewMarketSession(
+  currentTimestampMs: number,
+  prevTimestampMs?: number,
+  market: string = 'INDIA',
+  isContinuous24h: boolean = false
+): boolean {
   if (!prevTimestampMs) return true;
-  const curr = toIstDateComponents(currentTimestampMs);
-  const prev = toIstDateComponents(prevTimestampMs);
 
-  // Calendar date transition in IST
+  const upperMarket = market.toUpperCase();
+  if (isContinuous24h || upperMarket === 'CRYPTO' || upperMarket === 'FOREX' || upperMarket === 'FX') {
+    const currUtc = new Date(currentTimestampMs).toISOString().slice(0, 10);
+    const prevUtc = new Date(prevTimestampMs).toISOString().slice(0, 10);
+    return currUtc !== prevUtc;
+  }
+
+  let timeZone = 'Asia/Kolkata';
+  let openMinute = 9 * 60 + 15; // 09:15 IST
+  if (upperMarket === 'USA' || upperMarket === 'US' || upperMarket === 'NASDAQ' || upperMarket === 'NYSE') {
+    timeZone = 'America/New_York';
+    openMinute = 9 * 60 + 30; // 09:30 ET
+  } else if (upperMarket === 'UAE' || upperMarket === 'DFM' || upperMarket === 'ADX') {
+    timeZone = 'Asia/Dubai';
+    openMinute = 10 * 60; // 10:00 GST
+  }
+
+  const curr = getTimeZoneComponents(currentTimestampMs, timeZone);
+  const prev = getTimeZoneComponents(prevTimestampMs, timeZone);
+
   if (curr.dateKey !== prev.dateKey) return true;
-
-  // NSE 09:15 IST session opening transition
-  const currMinuteOfDay = curr.hours * 60 + curr.minutes;
-  const prevMinuteOfDay = prev.hours * 60 + prev.minutes;
-  const nseOpenMinute = 9 * 60 + 15; // 09:15 IST = 555 minutes
-
-  if (prevMinuteOfDay < nseOpenMinute && currMinuteOfDay >= nseOpenMinute) {
-    return true;
-  }
-
-  // Large session break (> 10 hours)
-  if (currentTimestampMs - prevTimestampMs > 10 * 60 * 60 * 1000) {
-    return true;
-  }
+  if (prev.minuteOfDay < openMinute && curr.minuteOfDay >= openMinute) return true;
+  if (currentTimestampMs - prevTimestampMs > 10 * 60 * 60 * 1000) return true;
 
   return false;
+}
+
+/**
+ * Checks whether the current timestamp marks the start of a new NSE trading session.
+ */
+export function isNewNseSession(currentTimestampMs: number, prevTimestampMs?: number): boolean {
+  return isNewMarketSession(currentTimestampMs, prevTimestampMs, 'INDIA', false);
 }
 
 // ── 2. Trade-Side Classification (Lee-Ready Algorithm) ──────────────────────
@@ -144,62 +185,57 @@ export function classifyTradeTick(
 
 // ── 3. Adaptive Tick Size & Discretization ──────────────────────────────────
 
-export function calculateAdaptiveTickSize(candles: Candle[], configTick: number | 'auto'): number {
+export function calculateAdaptiveTickSize(
+  candles: Candle[],
+  configTick: number | 'auto',
+  symbol?: string
+): number {
   if (typeof configTick === 'number' && configTick > 0) {
     return configTick;
   }
   if (!candles || candles.length === 0) return 1.0;
 
-  // Compute median candle range over the last 30 bars
   const sample = candles.slice(-30);
-  const ranges = sample.map(c => Math.max(0.01, c.high - c.low));
-  ranges.sort((a, b) => a - b);
-  const medianRange = ranges[Math.floor(ranges.length / 2)] || 1.0;
   const lastPrice = sample[sample.length - 1]?.close || 1000;
+  const decimals = getInstrumentDecimals(symbol || '', lastPrice);
+  const minTick = Math.pow(10, -decimals);
 
-  // Target roughly 15 to 25 price slices per candle
-  const rawStep = medianRange / 18;
+  // Compute median positive candle range without clamping to 0.01 (fixing OF4 for FX)
+  const ranges = sample
+    .map(c => Math.max(0, c.high - c.low))
+    .filter(r => r > 0)
+    .sort((a, b) => a - b);
+  const medianRange =
+    ranges.length > 0 ? ranges[Math.floor(ranges.length / 2)] : Math.max(minTick * 10, Math.abs(lastPrice) * 0.002);
 
-  // Pick clean human-readable step sizes tailored for Indian & global markets
-  if (lastPrice >= 20000) {
-    if (rawStep > 25) return 50.0;
-    if (rawStep > 15) return 20.0;
-    if (rawStep > 7) return 10.0;
-    if (rawStep > 3) return 5.0;
-    return 2.0;
-  } else if (lastPrice >= 2000) {
-    if (rawStep > 10) return 10.0;
-    if (rawStep > 4) return 5.0;
-    if (rawStep > 1.5) return 2.0;
-    if (rawStep > 0.7) return 1.0;
-    return 0.5;
-  } else if (lastPrice >= 200) {
-    if (rawStep > 2) return 2.0;
-    if (rawStep > 0.8) return 1.0;
-    if (rawStep > 0.3) return 0.5;
-    if (rawStep > 0.15) return 0.25;
-    return 0.1;
-  } else if (lastPrice >= 20) {
-    if (rawStep > 0.2) return 0.25;
-    if (rawStep > 0.08) return 0.1;
-    return 0.05;
-  } else {
-    if (rawStep > 0.02) return 0.05;
-    if (rawStep > 0.008) return 0.01;
-    return 0.005;
-  }
+  // Target roughly 15 to 25 price slices per candle, snapped to clean 1 / 2 / 2.5 / 5 * 10^k
+  const rawStep = Math.max(minTick, medianRange / 18);
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const normalized = rawStep / magnitude;
+
+  let cleanFactor = 1;
+  if (normalized >= 5) cleanFactor = 5;
+  else if (normalized >= 2.5) cleanFactor = 2.5;
+  else if (normalized >= 2) cleanFactor = 2;
+  else if (normalized >= 1) cleanFactor = 1;
+
+  const tick = +(cleanFactor * magnitude).toFixed(Math.min(8, decimals + 2));
+  return Math.max(minTick, tick);
 }
 
 export function roundToTick(price: number, tickSize: number): number {
   if (tickSize <= 0) return price;
   const factor = 1 / tickSize;
-  const decimals = tickSize < 0.01 ? 4 : tickSize < 0.1 ? 3 : tickSize < 1 ? 2 : 1;
+  const decimals = Math.max(0, Math.min(8, Math.ceil(-Math.log10(tickSize)) + 1));
   return +(Math.round(price * factor) / factor).toFixed(decimals);
 }
 
-function roundSignalPrice(price: number): number {
-  const abs = Math.abs(price);
-  const decimals = abs > 0 && abs < 1 ? 4 : abs < 10 ? 3 : 2;
+function roundSignalPrice(price: number, symbol?: string): number {
+  const decimals = symbol
+    ? getInstrumentDecimals(symbol, price)
+    : Math.abs(price) > 0 && Math.abs(price) < 2
+      ? 4
+      : 2;
   return +price.toFixed(decimals);
 }
 
@@ -208,8 +244,8 @@ function roundSignalPrice(price: number): number {
 /**
  * Institutional Market Profile / Steidlmayer Dual-Expansion Value Area:
  * 1. Starts at the POC (price level with highest traded volume).
- * 2. Sums outward from POC, comparing volume above vs volume below.
- * 3. Expands until total VA volume reaches totalCandleVolume * (valueAreaPct / 100).
+ * 2. Compares the sum of the next 2 levels above vs the next 2 levels below.
+ * 3. Expands on the higher-volume side until total VA volume reaches totalVolume * (valueAreaPct / 100).
  */
 export function calculateValueArea(
   sortedAsc: PriceLevelFootprint[],
@@ -222,31 +258,51 @@ export function calculateValueArea(
   }
 
   const targetVaVol = totalVolume * (Math.max(10, Math.min(95, valueAreaPct)) / 100);
-  const pocLevel = sortedAsc.find(l => l.price === pocPrice);
-  if (pocLevel) pocLevel.isValueArea = true;
-
-  let curVaVol = pocLevel ? pocLevel.totalVolume : 0;
   const pocIdx = sortedAsc.findIndex(l => l.price === pocPrice);
-  let upIdx = pocIdx >= 0 ? pocIdx + 1 : 0;
-  let downIdx = pocIdx >= 0 ? pocIdx - 1 : 0;
+  if (pocIdx < 0) {
+    return { vahPrice: pocPrice, valPrice: pocPrice };
+  }
+
+  sortedAsc[pocIdx].isValueArea = true;
+  let curVaVol = sortedAsc[pocIdx].totalVolume;
+  let upIdx = pocIdx + 1;
+  let downIdx = pocIdx - 1;
 
   let valPrice = pocPrice;
   let vahPrice = pocPrice;
+  let upSteps = 0;
+  let downSteps = 0;
 
   while (curVaVol < targetVaVol && (upIdx < sortedAsc.length || downIdx >= 0)) {
-    const upVol = upIdx < sortedAsc.length ? sortedAsc[upIdx].totalVolume : -1;
-    const downVol = downIdx >= 0 ? sortedAsc[downIdx].totalVolume : -1;
+    const canUp = upIdx < sortedAsc.length;
+    const canDown = downIdx >= 0;
 
-    if (upVol >= downVol && upIdx < sortedAsc.length) {
-      curVaVol += sortedAsc[upIdx].totalVolume;
-      sortedAsc[upIdx].isValueArea = true;
-      vahPrice = sortedAsc[upIdx].price;
-      upIdx++;
-    } else if (downIdx >= 0) {
-      curVaVol += sortedAsc[downIdx].totalVolume;
-      sortedAsc[downIdx].isValueArea = true;
-      valPrice = sortedAsc[downIdx].price;
-      downIdx--;
+    const up2Vol = canUp
+      ? sortedAsc[upIdx].totalVolume + (upIdx + 1 < sortedAsc.length ? sortedAsc[upIdx + 1].totalVolume : 0)
+      : -1;
+    const down2Vol = canDown
+      ? sortedAsc[downIdx].totalVolume + (downIdx - 1 >= 0 ? sortedAsc[downIdx - 1].totalVolume : 0)
+      : -1;
+
+    const chooseUp =
+      canUp && (!canDown || up2Vol > down2Vol || (up2Vol === down2Vol && upSteps <= downSteps));
+
+    if (chooseUp) {
+      for (let step = 0; step < 2 && upIdx < sortedAsc.length && curVaVol < targetVaVol; step++) {
+        curVaVol += sortedAsc[upIdx].totalVolume;
+        sortedAsc[upIdx].isValueArea = true;
+        vahPrice = sortedAsc[upIdx].price;
+        upIdx++;
+        upSteps++;
+      }
+    } else if (canDown) {
+      for (let step = 0; step < 2 && downIdx >= 0 && curVaVol < targetVaVol; step++) {
+        curVaVol += sortedAsc[downIdx].totalVolume;
+        sortedAsc[downIdx].isValueArea = true;
+        valPrice = sortedAsc[downIdx].price;
+        downIdx--;
+        downSteps++;
+      }
     } else {
       break;
     }
@@ -261,7 +317,8 @@ export function calculateDiagonalImbalances(
   sortedAsc: PriceLevelFootprint[],
   candleIndex: number,
   openTime: number,
-  config: OrderFlowConfig
+  config: OrderFlowConfig,
+  tickSize?: number
 ): {
   buyImbalances: number[];
   sellImbalances: number[];
@@ -270,129 +327,112 @@ export function calculateDiagonalImbalances(
   const buyImbalances: number[] = [];
   const sellImbalances: number[] = [];
 
-  // Diagonal comparison:
-  // Buy imbalance at level i: Ask[i] >= Bid[i - 1] * ratio (aggressive buyers lifting ask above previous bid)
-  // Sell imbalance at level i: Bid[i] >= Ask[i + 1] * ratio (aggressive sellers hitting bid below next ask)
+  // Infer tickSize from minimum positive price delta if not explicitly provided
+  let effectiveTick = tickSize && tickSize > 0 ? tickSize : 0;
+  if (effectiveTick === 0 && sortedAsc.length >= 2) {
+    let minGap = Infinity;
+    for (let i = 1; i < sortedAsc.length; i++) {
+      const gap = sortedAsc[i].price - sortedAsc[i - 1].price;
+      if (gap > 0 && gap < minGap) minGap = gap;
+    }
+    if (Number.isFinite(minGap)) effectiveTick = minGap;
+  }
+
+  const isAdjacentTick = (lowPrice: number, highPrice: number): boolean => {
+    if (effectiveTick <= 0) return true;
+    const diff = highPrice - lowPrice;
+    return diff > 0 && diff <= effectiveTick * 1.25;
+  };
+
+  // Diagonal comparison across adjacent price ticks ONLY (fixing OF3 price-gap bug):
+  // Buy imbalance at level p: Ask[p] >= Bid[p - tick] * ratio (including zero-bid sweep)
+  // Sell imbalance at level p: Bid[p] >= Ask[p + tick] * ratio (including zero-ask sweep)
   for (let i = 0; i < sortedAsc.length; i++) {
     const curr = sortedAsc[i];
 
-    // Diagonal buy imbalance with level below (i - 1)
     if (i > 0) {
       const below = sortedAsc[i - 1];
-      if (
-        curr.askVolume >= config.minImbalanceVolume &&
-        below.bidVolume > 0 &&
-        curr.askVolume / below.bidVolume >= config.imbalanceRatio
-      ) {
-        curr.hasBuyImbalance = true;
-        curr.imbalanceRatio = +(curr.askVolume / below.bidVolume).toFixed(1);
-        buyImbalances.push(curr.price);
+      if (isAdjacentTick(below.price, curr.price) && curr.askVolume >= config.minImbalanceVolume) {
+        const ratio = below.bidVolume === 0 ? 999.9 : +(curr.askVolume / below.bidVolume).toFixed(1);
+        if (ratio >= config.imbalanceRatio) {
+          curr.hasBuyImbalance = true;
+          curr.buyImbalanceRatio = ratio;
+          curr.imbalanceRatio = Math.max(curr.imbalanceRatio || 0, ratio);
+          buyImbalances.push(curr.price);
+        }
       }
     }
 
-    // Diagonal sell imbalance with level above (i + 1)
     if (i < sortedAsc.length - 1) {
       const above = sortedAsc[i + 1];
-      if (
-        curr.bidVolume >= config.minImbalanceVolume &&
-        above.askVolume > 0 &&
-        curr.bidVolume / above.askVolume >= config.imbalanceRatio
-      ) {
-        curr.hasSellImbalance = true;
-        curr.imbalanceRatio = +(curr.bidVolume / above.askVolume).toFixed(1);
-        sellImbalances.push(curr.price);
+      if (isAdjacentTick(curr.price, above.price) && curr.bidVolume >= config.minImbalanceVolume) {
+        const ratio = above.askVolume === 0 ? 999.9 : +(curr.bidVolume / above.askVolume).toFixed(1);
+        if (ratio >= config.imbalanceRatio) {
+          curr.hasSellImbalance = true;
+          curr.sellImbalanceRatio = ratio;
+          curr.imbalanceRatio = Math.max(curr.imbalanceRatio || 0, ratio);
+          sellImbalances.push(curr.price);
+        }
       }
     }
   }
 
-  // Stacked Imbalance Zones (contiguous >= threshold)
+  // Stacked Imbalance Zones (contiguous adjacent levels >= threshold)
   const stackedZones: StackedImbalanceZone[] = [];
+  const levelByPrice = new Map<number, PriceLevelFootprint>();
+  for (const lvl of sortedAsc) levelByPrice.set(lvl.price, lvl);
+
+  const pushStackedZone = (streak: number[], isBuy: boolean) => {
+    if (streak.length < config.stackedImbalanceThreshold) return;
+    stackedZones.push({
+      id: `stack-${isBuy ? 'buy' : 'sell'}-${candleIndex}-${streak[0]}`,
+      startIndex: candleIndex,
+      endIndex: candleIndex + 12,
+      openTime,
+      bottomPrice: streak[0],
+      topPrice: streak[streak.length - 1],
+      isBuy,
+      levelCount: streak.length,
+      totalVolume: streak.reduce((acc, p) => acc + (levelByPrice.get(p)?.totalVolume || 0), 0),
+      isMitigated: false,
+    });
+  };
+
   let currentBuyStreak: number[] = [];
   let currentSellStreak: number[] = [];
 
   for (const lvl of sortedAsc) {
     if (lvl.hasBuyImbalance) {
+      if (
+        currentBuyStreak.length > 0 &&
+        !isAdjacentTick(currentBuyStreak[currentBuyStreak.length - 1], lvl.price)
+      ) {
+        pushStackedZone(currentBuyStreak, true);
+        currentBuyStreak = [];
+      }
       currentBuyStreak.push(lvl.price);
     } else {
-      if (currentBuyStreak.length >= config.stackedImbalanceThreshold) {
-        stackedZones.push({
-          id: `stack-buy-${candleIndex}-${currentBuyStreak[0]}`,
-          startIndex: candleIndex,
-          endIndex: candleIndex + 12,
-          openTime,
-          bottomPrice: currentBuyStreak[0],
-          topPrice: currentBuyStreak[currentBuyStreak.length - 1],
-          isBuy: true,
-          levelCount: currentBuyStreak.length,
-          totalVolume: currentBuyStreak.reduce((acc, p) => {
-            const found = sortedAsc.find(l => l.price === p);
-            return acc + (found?.totalVolume || 0);
-          }, 0),
-          isMitigated: false,
-        });
-      }
+      pushStackedZone(currentBuyStreak, true);
       currentBuyStreak = [];
     }
 
     if (lvl.hasSellImbalance) {
+      if (
+        currentSellStreak.length > 0 &&
+        !isAdjacentTick(currentSellStreak[currentSellStreak.length - 1], lvl.price)
+      ) {
+        pushStackedZone(currentSellStreak, false);
+        currentSellStreak = [];
+      }
       currentSellStreak.push(lvl.price);
     } else {
-      if (currentSellStreak.length >= config.stackedImbalanceThreshold) {
-        stackedZones.push({
-          id: `stack-sell-${candleIndex}-${currentSellStreak[0]}`,
-          startIndex: candleIndex,
-          endIndex: candleIndex + 12,
-          openTime,
-          bottomPrice: currentSellStreak[0],
-          topPrice: currentSellStreak[currentSellStreak.length - 1],
-          isBuy: false,
-          levelCount: currentSellStreak.length,
-          totalVolume: currentSellStreak.reduce((acc, p) => {
-            const found = sortedAsc.find(l => l.price === p);
-            return acc + (found?.totalVolume || 0);
-          }, 0),
-          isMitigated: false,
-        });
-      }
+      pushStackedZone(currentSellStreak, false);
       currentSellStreak = [];
     }
   }
 
-  // Trailing streak checks
-  if (currentBuyStreak.length >= config.stackedImbalanceThreshold) {
-    stackedZones.push({
-      id: `stack-buy-${candleIndex}-${currentBuyStreak[0]}`,
-      startIndex: candleIndex,
-      endIndex: candleIndex + 12,
-      openTime,
-      bottomPrice: currentBuyStreak[0],
-      topPrice: currentBuyStreak[currentBuyStreak.length - 1],
-      isBuy: true,
-      levelCount: currentBuyStreak.length,
-      totalVolume: currentBuyStreak.reduce((acc, p) => {
-        const found = sortedAsc.find(l => l.price === p);
-        return acc + (found?.totalVolume || 0);
-      }, 0),
-      isMitigated: false,
-    });
-  }
-  if (currentSellStreak.length >= config.stackedImbalanceThreshold) {
-    stackedZones.push({
-      id: `stack-sell-${candleIndex}-${currentSellStreak[0]}`,
-      startIndex: candleIndex,
-      endIndex: candleIndex + 12,
-      openTime,
-      bottomPrice: currentSellStreak[0],
-      topPrice: currentSellStreak[currentSellStreak.length - 1],
-      isBuy: false,
-      levelCount: currentSellStreak.length,
-      totalVolume: currentSellStreak.reduce((acc, p) => {
-        const found = sortedAsc.find(l => l.price === p);
-        return acc + (found?.totalVolume || 0);
-      }, 0),
-      isMitigated: false,
-    });
-  }
+  pushStackedZone(currentBuyStreak, true);
+  pushStackedZone(currentSellStreak, false);
 
   return { buyImbalances, sellImbalances, stackedZones };
 }
@@ -424,9 +464,9 @@ export function detectAbsorption(
     const priceDisplacement = Math.max(0.0001, candle.close - candle.low);
     const displacementRatio = +(priceDisplacement / (aggressiveSells + 1)).toFixed(4);
     const lowerWick = Math.min(candle.open, candle.close) - candle.low;
-    const isWickRejection = lowerWick >= rawRange * 0.30;
-    const hasHeavyAggressiveSelling = aggressiveSells >= avgLevelVol * 0.75;
-    const strongCloseRecovery = candle.close >= candle.low + rawRange * 0.40;
+    const isWickRejection = lowerWick >= rawRange * 0.35;
+    const hasHeavyAggressiveSelling = aggressiveSells >= avgLevelVol * 1.5;
+    const strongCloseRecovery = candle.close >= candle.low + rawRange * 0.45;
 
     if (hasHeavyAggressiveSelling && isWickRejection && strongCloseRecovery) {
       const absorptionRatio = +((aggressiveSells / avgLevelVol) * (lowerWick / rawRange) * 2.0).toFixed(2);
@@ -453,9 +493,9 @@ export function detectAbsorption(
     const priceDisplacement = Math.max(0.0001, candle.high - candle.close);
     const displacementRatio = +(priceDisplacement / (aggressiveBuys + 1)).toFixed(4);
     const upperWick = candle.high - Math.max(candle.open, candle.close);
-    const isWickRejection = upperWick >= rawRange * 0.30;
-    const hasHeavyAggressiveBuying = aggressiveBuys >= avgLevelVol * 0.75;
-    const strongCloseRejection = candle.close <= candle.high - rawRange * 0.40;
+    const isWickRejection = upperWick >= rawRange * 0.35;
+    const hasHeavyAggressiveBuying = aggressiveBuys >= avgLevelVol * 1.5;
+    const strongCloseRejection = candle.close <= candle.high - rawRange * 0.45;
 
     if (hasHeavyAggressiveBuying && isWickRejection && strongCloseRejection) {
       const absorptionRatio = +((aggressiveBuys / avgLevelVol) * (upperWick / rawRange) * 2.0).toFixed(2);
@@ -497,20 +537,18 @@ export function detectExhaustion(
   const highestLevel = sortedAsc[sortedAsc.length - 1];
 
   // 1. Bullish Exhaustion (Sellers Exhausted at Low):
-  // Price sweeps or prints a candle low, but aggressive sell volume (bidVolume) drops drastically
-  // (e.g. <= 20% of avgLevelVol or zero-print), indicating aggressive seller exhaustion.
-  if (lowestLevel && lowestLevel.bidVolume <= Math.max(2, avgLevelVol * 0.20)) {
-    const volumeDropPct = Math.round((1 - (lowestLevel.bidVolume / Math.max(1, avgLevelVol))) * 100);
+  // Unit-independent proportional threshold (<= 12% of bar average) + both wick & close rejection
+  if (lowestLevel && avgLevelVol > 0 && lowestLevel.bidVolume <= avgLevelVol * 0.12) {
+    const volumeDropPct = Math.round((1 - lowestLevel.bidVolume / avgLevelVol) * 100);
     const lowerWick = Math.min(candle.open, candle.close) - candle.low;
-    // Must close off the absolute low to confirm drying up of sellers
-    if (candle.close > candle.low + rawRange * 0.25 || lowerWick >= rawRange * 0.20) {
+    if (candle.close > candle.low + rawRange * 0.40 && lowerWick >= rawRange * 0.30) {
       return {
         candleIndex,
         time: candle.openTime,
         price: lowestLevel.price,
         isBullish: true,
         extremeVolume: lowestLevel.totalVolume,
-        avgLevelVolume: Math.round(avgLevelVol),
+        avgLevelVolume: +avgLevelVol.toFixed(2),
         volumeDropPct,
         description: `Aggressive selling dried up at candle low (${lowestLevel.bidVolume} sells, ${volumeDropPct}% below bar average)`,
       };
@@ -518,20 +556,18 @@ export function detectExhaustion(
   }
 
   // 2. Bearish Exhaustion (Buyers Exhausted at High):
-  // Price tests candle high, but aggressive buy volume (askVolume) drops drastically
-  // (e.g. <= 20% of avgLevelVol or zero-print), indicating aggressive buyer exhaustion.
-  if (highestLevel && highestLevel.askVolume <= Math.max(2, avgLevelVol * 0.20)) {
-    const volumeDropPct = Math.round((1 - (highestLevel.askVolume / Math.max(1, avgLevelVol))) * 100);
+  // Unit-independent proportional threshold (<= 12% of bar average) + both wick & close rejection
+  if (highestLevel && avgLevelVol > 0 && highestLevel.askVolume <= avgLevelVol * 0.12) {
+    const volumeDropPct = Math.round((1 - highestLevel.askVolume / avgLevelVol) * 100);
     const upperWick = candle.high - Math.max(candle.open, candle.close);
-    // Must close off the absolute high to confirm drying up of buyers
-    if (candle.close < candle.high - rawRange * 0.25 || upperWick >= rawRange * 0.20) {
+    if (candle.close < candle.high - rawRange * 0.40 && upperWick >= rawRange * 0.30) {
       return {
         candleIndex,
         time: candle.openTime,
         price: highestLevel.price,
         isBullish: false,
         extremeVolume: highestLevel.totalVolume,
-        avgLevelVolume: Math.round(avgLevelVol),
+        avgLevelVolume: +avgLevelVol.toFixed(2),
         volumeDropPct,
         description: `Aggressive buying dried up at candle high (${highestLevel.askVolume} buys, ${volumeDropPct}% below bar average)`,
       };
@@ -561,10 +597,14 @@ export function buildFootprintFromTicks(
   let runningDelta = 0;
   let minDelta = 0;
   let maxDelta = 0;
+  let exchangeAggressorCount = 0;
 
   for (const tick of ticks) {
     const priceTick = roundToTick(tick.price, effectiveTick);
-    const { side } = classifyTradeTick(tick, prevPrice, prevSide);
+    const { side, method } = classifyTradeTick(tick, prevPrice, prevSide);
+    if (method === 'EXCHANGE_FLAG' || method === 'QUOTE_MIDPOINT') {
+      exchangeAggressorCount++;
+    }
 
     let lvl = levels.get(priceTick);
     if (!lvl) {
@@ -602,18 +642,22 @@ export function buildFootprintFromTicks(
     prevSide = side;
   }
 
-  // Volume Reconciliation
+  // Volume Reconciliation & Exchange Aggressor Verification (fixing OF1)
   const reportedVolume = candle.volume || tickTotalVolume;
   const discrepancy = Math.abs(tickTotalVolume - reportedVolume);
   const discrepancyPct = reportedVolume > 0 ? (discrepancy / reportedVolume) * 100 : 0;
+  const reconciled = reportedVolume > 0 ? discrepancyPct <= 5 : discrepancy === 0;
+  const hasExchangeAggressorData = ticks.length > 0 && exchangeAggressorCount >= ticks.length * 0.5;
+  const classification: FeedClassification =
+    hasExchangeAggressorData && reconciled ? 'VERIFIED_EXCHANGE_DATA' : 'INFERRED_ESTIMATE';
 
   const validation: FootprintDataValidation = {
-    reconciled: discrepancy === 0,
+    reconciled,
     exchangeVolume: reportedVolume,
     footprintVolume: tickTotalVolume,
     discrepancy,
     discrepancyPct: +discrepancyPct.toFixed(2),
-    classification: 'VERIFIED_EXCHANGE_DATA',
+    classification,
   };
 
   const sortedAsc = Array.from(levels.values()).sort((a, b) => a.price - b.price);
@@ -638,7 +682,8 @@ export function buildFootprintFromTicks(
     sortedAsc,
     candleIndex,
     candle.openTime,
-    config
+    config,
+    effectiveTick
   );
 
   // Absorption & Exhaustion
@@ -701,7 +746,7 @@ export function buildFootprintFromTicks(
     validation,
     isNewSession,
     sessionDate: istDate.dateKey,
-    classification: 'VERIFIED_EXCHANGE_DATA',
+    classification,
     unfinishedBusiness,
   };
 }
@@ -859,7 +904,8 @@ export function generateMicrostructureFootprint(
     sortedAsc,
     candleIndex,
     candle.openTime,
-    config
+    config,
+    effectiveTick
   );
 
   // 4. True Absorption & Exhaustion
@@ -928,7 +974,9 @@ export function generateMicrostructureFootprint(
 export function analyzeOrderFlow(
   candles: Candle[],
   config: OrderFlowConfig = DEFAULT_ORDER_FLOW_CONFIG,
-  ticksPerCandle?: Map<number, ExchangeTradeTick[]>
+  ticksPerCandle?: Map<number, ExchangeTradeTick[]>,
+  symbol?: string,
+  market?: string
 ): OrderFlowAnalysisResult {
   if (!candles || candles.length === 0) {
     return {
@@ -941,18 +989,18 @@ export function analyzeOrderFlow(
     };
   }
 
-  const tickSizeUsed = calculateAdaptiveTickSize(candles, config.tickSize);
+  const tickSizeUsed = calculateAdaptiveTickSize(candles, config.tickSize, symbol);
   const footprints: CandleFootprint[] = [];
   const activeZones: StackedImbalanceZone[] = [];
   const signals: OrderFlowSignal[] = [];
 
-  let overallFeedClassification: FeedClassification = 'INFERRED_ESTIMATE';
+  let verifiedCandleCount = 0;
 
-  // Process all candles with session boundary awareness
+  // Process all candles with per-market session boundary awareness (fixing OF5)
   for (let i = 0; i < candles.length; i++) {
     const c = candles[i];
     const prevC = i > 0 ? candles[i - 1] : undefined;
-    const isNewSession = isNewNseSession(c.openTime, prevC?.openTime);
+    const isNewSession = isNewMarketSession(c.openTime, prevC?.openTime, market || 'INDIA');
 
     const prevCum = footprints.length > 0 ? footprints[footprints.length - 1].cumDelta : 0;
     const ticksForCandle = ticksPerCandle?.get(c.openTime);
@@ -960,7 +1008,9 @@ export function analyzeOrderFlow(
     let fp: CandleFootprint;
     if (ticksForCandle && ticksForCandle.length > 0) {
       fp = buildFootprintFromTicks(c, i, ticksForCandle, tickSizeUsed, prevCum, config, isNewSession);
-      overallFeedClassification = 'VERIFIED_EXCHANGE_DATA';
+      if (fp.classification === 'VERIFIED_EXCHANGE_DATA') {
+        verifiedCandleCount++;
+      }
     } else {
       fp = generateMicrostructureFootprint(c, i, tickSizeUsed, prevCum, config, isNewSession);
     }
@@ -969,9 +1019,16 @@ export function analyzeOrderFlow(
 
     // Collect stacked zones
     for (const z of fp.stackedZones) {
+      z.endIndex = Math.min(candles.length - 1, z.endIndex);
       activeZones.push(z);
     }
   }
+
+  // Only label the chart VERIFIED_EXCHANGE_DATA if >= 50% of bars have verified exchange aggressor ticks (fixing OF1)
+  const overallFeedClassification: FeedClassification =
+    verifiedCandleCount > 0 && verifiedCandleCount >= Math.ceil(footprints.length * 0.5)
+      ? 'VERIFIED_EXCHANGE_DATA'
+      : 'INFERRED_ESTIMATE';
 
   // Update mitigation status of active zones
   const buyZonesByMitigation = new Map<number, StackedImbalanceZone>();
@@ -997,19 +1054,38 @@ export function analyzeOrderFlow(
     }
   }
 
+  // Precompute 14-bar ATR for volatility-normalized stop placement (fixing OF7)
+  const atrByIdx: number[] = new Array(candles.length).fill(0);
+  for (let i = 0; i < candles.length; i++) {
+    const tr =
+      i === 0
+        ? candles[0].high - candles[0].low
+        : Math.max(
+            candles[i].high - candles[i].low,
+            Math.abs(candles[i].high - candles[i - 1].close),
+            Math.abs(candles[i].low - candles[i - 1].close)
+          );
+    atrByIdx[i] = i === 0 ? tr : i < 14 ? (atrByIdx[i - 1] * i + tr) / (i + 1) : (atrByIdx[i - 1] * 13 + tr) / 14;
+  }
+
   // ── 11. Institutional Signal Generation ──────────────────────────────────
+  // Gated strictly to closed bars with verified exchange aggressor data (fixing OF2 & OF7)
   if (config.showSignals && footprints.length >= 5) {
     for (let i = 3; i < footprints.length; i++) {
+      if (candles[i]?.isClosed === false) continue;
       const curr = footprints[i];
+      if (curr.classification !== 'VERIFIED_EXCHANGE_DATA') continue;
+
       const prev = footprints[i - 1];
       const prev2 = footprints[i - 2];
-      const range = Math.max(tickSizeUsed, curr.high - curr.low);
+      const atrPad = Math.max(tickSizeUsed * 2, atrByIdx[i] * 0.5);
+      const rrRatio = 2.0;
 
       // Signal 1: Bullish Absorption (Aggressive sellers absorbed by passive limit buyers)
       if (config.showAbsorption && curr.absorption && curr.absorption.isBullish) {
-        const inv = curr.low - range * 0.15;
+        const inv = curr.low - atrPad;
         const entry = curr.close;
-        const target = curr.close + (curr.close - inv) * 2.5;
+        const target = curr.close + (curr.close - inv) * rrRatio;
         signals.push({
           id: `sig-bull-abs-${curr.openTime}`,
           type: 'BULLISH_ABSORPTION',
@@ -1018,10 +1094,10 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: roundSignalPrice(entry),
-          invalidationPrice: roundSignalPrice(inv),
-          targetPrice: roundSignalPrice(target),
-          riskReward: 2.5,
+          entryPrice: roundSignalPrice(entry, symbol),
+          invalidationPrice: roundSignalPrice(inv, symbol),
+          targetPrice: roundSignalPrice(target, symbol),
+          riskReward: rrRatio,
           conditions: [
             `Aggressive sells absorbed: ${curr.absorption.aggressiveVolume.toLocaleString()}`,
             `Price displacement ratio: ${curr.absorption.displacementRatio} (low displacement under heavy volume)`,
@@ -1033,9 +1109,9 @@ export function analyzeOrderFlow(
 
       // Signal 2: Bearish Absorption (Aggressive buyers absorbed by passive limit sellers)
       if (config.showAbsorption && curr.absorption && !curr.absorption.isBullish) {
-        const inv = curr.high + range * 0.15;
+        const inv = curr.high + atrPad;
         const entry = curr.close;
-        const target = curr.close - (inv - curr.close) * 2.5;
+        const target = curr.close - (inv - curr.close) * rrRatio;
         signals.push({
           id: `sig-bear-abs-${curr.openTime}`,
           type: 'BEARISH_ABSORPTION',
@@ -1044,10 +1120,10 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: roundSignalPrice(entry),
-          invalidationPrice: roundSignalPrice(inv),
-          targetPrice: roundSignalPrice(target),
-          riskReward: 2.5,
+          entryPrice: roundSignalPrice(entry, symbol),
+          invalidationPrice: roundSignalPrice(inv, symbol),
+          targetPrice: roundSignalPrice(target, symbol),
+          riskReward: rrRatio,
           conditions: [
             `Aggressive buys absorbed: ${curr.absorption.aggressiveVolume.toLocaleString()}`,
             `Price displacement ratio: ${curr.absorption.displacementRatio} (ceiling hit under heavy volume)`,
@@ -1059,9 +1135,9 @@ export function analyzeOrderFlow(
 
       // Signal 3: Bullish Exhaustion (Aggressive sellers drying up at candle low)
       if (config.showExhaustion && curr.exhaustion && curr.exhaustion.isBullish) {
-        const inv = curr.low - range * 0.15;
+        const inv = curr.low - atrPad;
         const entry = curr.close;
-        const target = curr.close + (curr.close - inv) * 2.4;
+        const target = curr.close + (curr.close - inv) * rrRatio;
         signals.push({
           id: `sig-bull-exh-${curr.openTime}`,
           type: 'BULLISH_EXHAUSTION',
@@ -1070,10 +1146,10 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: roundSignalPrice(entry),
-          invalidationPrice: roundSignalPrice(inv),
-          targetPrice: roundSignalPrice(target),
-          riskReward: 2.4,
+          entryPrice: roundSignalPrice(entry, symbol),
+          invalidationPrice: roundSignalPrice(inv, symbol),
+          targetPrice: roundSignalPrice(target, symbol),
+          riskReward: rrRatio,
           conditions: [
             `Extreme low aggressive volume dried up (${curr.exhaustion.volumeDropPct}% below bar avg)`,
             'Zero or minimal market seller participation at low',
@@ -1084,9 +1160,9 @@ export function analyzeOrderFlow(
 
       // Signal 4: Bearish Exhaustion (Aggressive buyers drying up at candle high)
       if (config.showExhaustion && curr.exhaustion && !curr.exhaustion.isBullish) {
-        const inv = curr.high + range * 0.15;
+        const inv = curr.high + atrPad;
         const entry = curr.close;
-        const target = curr.close - (inv - curr.close) * 2.4;
+        const target = curr.close - (inv - curr.close) * rrRatio;
         signals.push({
           id: `sig-bear-exh-${curr.openTime}`,
           type: 'BEARISH_EXHAUSTION',
@@ -1095,10 +1171,10 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: roundSignalPrice(entry),
-          invalidationPrice: roundSignalPrice(inv),
-          targetPrice: roundSignalPrice(target),
-          riskReward: 2.4,
+          entryPrice: roundSignalPrice(entry, symbol),
+          invalidationPrice: roundSignalPrice(inv, symbol),
+          targetPrice: roundSignalPrice(target, symbol),
+          riskReward: rrRatio,
           conditions: [
             `Extreme high aggressive volume dried up (${curr.exhaustion.volumeDropPct}% below bar avg)`,
             'Zero or minimal market buyer participation at high',
@@ -1110,9 +1186,9 @@ export function analyzeOrderFlow(
       // Signal 5: Stacked Buy Imbalance Retest
       const buyZoneRetest = buyZonesByMitigation.get(i);
       if (buyZoneRetest && curr.close > curr.open) {
-        const inv = buyZoneRetest.bottomPrice - range * 0.1;
+        const inv = buyZoneRetest.bottomPrice - atrPad;
         const entry = curr.close;
-        const target = curr.close + (curr.close - inv) * 2.8;
+        const target = curr.close + (curr.close - inv) * rrRatio;
         signals.push({
           id: `sig-bull-stack-${curr.openTime}`,
           type: 'BULLISH_STACKED_IMBALANCE',
@@ -1121,10 +1197,10 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: roundSignalPrice(entry),
-          invalidationPrice: roundSignalPrice(inv),
-          targetPrice: roundSignalPrice(target),
-          riskReward: 2.8,
+          entryPrice: roundSignalPrice(entry, symbol),
+          invalidationPrice: roundSignalPrice(inv, symbol),
+          targetPrice: roundSignalPrice(target, symbol),
+          riskReward: rrRatio,
           conditions: [
             `${buyZoneRetest.levelCount}-level stacked buy imbalance confirmed`,
             'Clean test and buyer response off order flow demand zone',
@@ -1136,9 +1212,9 @@ export function analyzeOrderFlow(
       // Signal 6: Stacked Sell Imbalance Retest
       const sellZoneRetest = sellZonesByMitigation.get(i);
       if (sellZoneRetest && curr.close < curr.open) {
-        const inv = sellZoneRetest.topPrice + range * 0.1;
+        const inv = sellZoneRetest.topPrice + atrPad;
         const entry = curr.close;
-        const target = curr.close - (inv - curr.close) * 2.8;
+        const target = curr.close - (inv - curr.close) * rrRatio;
         signals.push({
           id: `sig-bear-stack-${curr.openTime}`,
           type: 'BEARISH_STACKED_IMBALANCE',
@@ -1147,10 +1223,10 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: roundSignalPrice(entry),
-          invalidationPrice: roundSignalPrice(inv),
-          targetPrice: roundSignalPrice(target),
-          riskReward: 2.8,
+          entryPrice: roundSignalPrice(entry, symbol),
+          invalidationPrice: roundSignalPrice(inv, symbol),
+          targetPrice: roundSignalPrice(target, symbol),
+          riskReward: rrRatio,
           conditions: [
             `${sellZoneRetest.levelCount}-level stacked sell imbalance confirmed`,
             'Rejection off order flow supply zone',
@@ -1169,9 +1245,9 @@ export function analyzeOrderFlow(
         minPrevDelta < 0 &&
         curr.cumDelta > Math.min(prev.cumDelta, prev2.cumDelta)
       ) {
-        const inv = curr.low - range * 0.1;
+        const inv = curr.low - atrPad;
         const entry = curr.close;
-        const target = curr.close + (curr.close - inv) * 2.2;
+        const target = curr.close + (curr.close - inv) * rrRatio;
         signals.push({
           id: `sig-bull-div-${curr.openTime}`,
           type: 'CVD_DIVERGENCE_BULL',
@@ -1180,10 +1256,10 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: roundSignalPrice(entry),
-          invalidationPrice: roundSignalPrice(inv),
-          targetPrice: roundSignalPrice(target),
-          riskReward: 2.2,
+          entryPrice: roundSignalPrice(entry, symbol),
+          invalidationPrice: roundSignalPrice(inv, symbol),
+          targetPrice: roundSignalPrice(target, symbol),
+          riskReward: rrRatio,
           conditions: [
             'Price swept 3-bar low while CVD & bar delta flipped positive',
             'Seller exhaustion confirmed with bullish close recovery',
@@ -1202,9 +1278,9 @@ export function analyzeOrderFlow(
         maxPrevDelta > 0 &&
         curr.cumDelta < Math.max(prev.cumDelta, prev2.cumDelta)
       ) {
-        const inv = curr.high + range * 0.1;
+        const inv = curr.high + atrPad;
         const entry = curr.close;
-        const target = curr.close - (inv - curr.close) * 2.2;
+        const target = curr.close - (inv - curr.close) * rrRatio;
         signals.push({
           id: `sig-bear-div-${curr.openTime}`,
           type: 'CVD_DIVERGENCE_BEAR',
@@ -1213,10 +1289,10 @@ export function analyzeOrderFlow(
           candleIndex: i,
           time: curr.openTime,
           price: curr.close,
-          entryPrice: roundSignalPrice(entry),
-          invalidationPrice: roundSignalPrice(inv),
-          targetPrice: roundSignalPrice(target),
-          riskReward: 2.2,
+          entryPrice: roundSignalPrice(entry, symbol),
+          invalidationPrice: roundSignalPrice(inv, symbol),
+          targetPrice: roundSignalPrice(target, symbol),
+          riskReward: rrRatio,
           conditions: [
             'Price swept 3-bar high while CVD & bar delta turned negative',
             'Buyer exhaustion confirmed with bearish close rejection',
