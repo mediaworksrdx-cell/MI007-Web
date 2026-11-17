@@ -153,7 +153,9 @@ export async function GET() {
         const gcpPrices = await res.json();
         if (Array.isArray(gcpPrices) && gcpPrices.length > 0) {
           const maxTs = Math.max(...gcpPrices.map((x: any) => x.timestamp || 0));
-          if (now - maxTs < 120_000) {
+          // Only trust GCP if timestamp is within last 120s AND has active live price changes
+          const hasActiveChanges = gcpPrices.some((x: any) => typeof x.changePercent === 'number' && x.changePercent !== 0);
+          if (now - maxTs < 120_000 && hasActiveChanges) {
             for (const item of gcpPrices) {
               if (!item.symbol || typeof item.ltp !== 'number' || item.ltp <= 0) continue;
               const rawSym = String(item.symbol).toUpperCase();
@@ -165,12 +167,19 @@ export async function GET() {
               gcpFresh = true;
               const existing = pricesMap.get(cleanSym) || pricesMap.get(rawSym);
 
+              const effChange = (typeof item.change === 'number' && item.change !== 0)
+                ? item.change
+                : (existing?.change ?? 0);
+              const effChangePct = (typeof item.changePercent === 'number' && item.changePercent !== 0)
+                ? item.changePercent
+                : (existing?.changePercent ?? 0);
+
               pricesMap.set(cleanSym, {
                 instrumentToken: item.instrumentToken || (existing?.instrumentToken ?? 200000),
                 symbol: item.symbol,
                 ltp: item.ltp,
-                change: item.change ?? existing?.change ?? 0,
-                changePercent: item.changePercent ?? existing?.changePercent ?? 0,
+                change: effChange,
+                changePercent: effChangePct,
                 timestamp: item.timestamp || now,
               });
               if (rawSym.includes('.NS') || rawSym.includes('.BO')) {
@@ -178,8 +187,8 @@ export async function GET() {
                   instrumentToken: item.instrumentToken || 200000,
                   symbol: item.symbol,
                   ltp: item.ltp,
-                  change: item.change ?? 0,
-                  changePercent: item.changePercent ?? 0,
+                  change: effChange,
+                  changePercent: effChangePct,
                   timestamp: item.timestamp || now,
                 });
               }
