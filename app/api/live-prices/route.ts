@@ -407,8 +407,6 @@ export async function GET() {
     }
 
     // 2. Authentic Spot Benchmarks for Cash Indices (^GSPC, ^IXIC, ^DJI, ^VIX)
-
-    // 2. Authentic Spot Benchmarks for Cash Indices (^GSPC, ^IXIC, ^DJI, ^VIX)
     const indexFetches = Object.entries(US_INDEX_YAHOO).map(async ([symbol, yahooSym], idx) => {
       try {
         const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=2d`, {
@@ -440,7 +438,7 @@ export async function GET() {
       } catch (_err) {}
     });
 
-    await Promise.all([...stockFetches, ...indexFetches]);
+    await Promise.all(indexFetches);
   })());
 
   // ══════════════════════════════════════════════════════════════════════════
