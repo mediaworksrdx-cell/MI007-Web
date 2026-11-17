@@ -2348,7 +2348,7 @@ export function detectAll16SmcSetups(
     if (swings && swings.length > 0) {
       const localLookbackStart = Math.max(0, effectiveConfirmIdx - 12);
       if (!isBull) {
-        // Find the nearest confirmed swing high above cleanEntry within a tight structural window (<= 1.8x ATR)
+        // Find the confirmed swing high and the actual impulse-leg structural high (<= 3.0x ATR) so SL is above the true invalidation high
         const confSwingHigh = [...swings]
           .filter(
             s =>
@@ -2356,31 +2356,37 @@ export function detectAll16SmcSetups(
               (s.confirmationIndex ?? s.index) <= effectiveConfirmIdx &&
               s.index >= localLookbackStart &&
               s.price > cleanEntry &&
-              (s.price - cleanEntry) <= atrVal * 1.8
+              (s.price - cleanEntry) <= atrVal * 3.0
           )
-          .sort((a, b) => a.price - b.price)[0];
+          .sort((a, b) => b.price - a.price)[0];
 
-        const zoneHighValid = Number.isFinite(cleanStopLoss) && cleanStopLoss > cleanEntry && (cleanStopLoss - cleanEntry) <= atrVal * 1.8;
-        if (confSwingHigh) {
-          cleanStopLoss = roundSmcPrice(confSwingHigh.price + atrBuffer);
-          invalidationBasis = 'Confirmed Swing High + ATR';
-        } else if (zoneHighValid) {
-          cleanStopLoss = roundSmcPrice(cleanStopLoss + atrBuffer * 0.25);
-          invalidationBasis = 'POI Invalidation High + ATR';
-        } else {
-          // Use break candle or immediate 4-bar structure high + ATR buffer
-          let nearHigh = candles[effectiveConfirmIdx]?.high ?? cleanEntry;
-          for (let k = Math.max(0, effectiveConfirmIdx - 4); k <= effectiveConfirmIdx; k++) {
-            if (candles[k] && candles[k].high > nearHigh && (candles[k].high - cleanEntry) <= atrVal * 1.8) {
-              nearHigh = candles[k].high;
-            }
+        let legStructuralHigh = -Infinity;
+        for (let k = Math.max(0, effectiveConfirmIdx - 10); k <= effectiveConfirmIdx; k++) {
+          if (candles[k] && candles[k].high > legStructuralHigh && candles[k].high > cleanEntry && (candles[k].high - cleanEntry) <= atrVal * 3.0) {
+            legStructuralHigh = candles[k].high;
           }
-          const baseHigh = nearHigh > cleanEntry ? nearHigh : cleanEntry + atrVal * 1.0;
-          cleanStopLoss = roundSmcPrice(baseHigh + atrBuffer);
+        }
+
+        const zoneHighValid = Number.isFinite(cleanStopLoss) && cleanStopLoss > cleanEntry && (cleanStopLoss - cleanEntry) <= atrVal * 3.0;
+        const trueInvalidationHigh = Math.max(
+          confSwingHigh ? confSwingHigh.price : -Infinity,
+          Number.isFinite(legStructuralHigh) ? legStructuralHigh : -Infinity,
+          zoneHighValid ? cleanStopLoss : -Infinity
+        );
+
+        if (Number.isFinite(trueInvalidationHigh) && trueInvalidationHigh > cleanEntry) {
+          cleanStopLoss = roundSmcPrice(trueInvalidationHigh + atrBuffer);
+          invalidationBasis = confSwingHigh && confSwingHigh.price >= (legStructuralHigh || 0)
+            ? 'Confirmed Swing High + ATR'
+            : Number.isFinite(legStructuralHigh) && legStructuralHigh >= (zoneHighValid ? cleanStopLoss : 0)
+            ? 'Structural High + ATR'
+            : 'POI Invalidation High + ATR';
+        } else {
+          cleanStopLoss = roundSmcPrice(cleanEntry + atrVal * 1.2 + atrBuffer);
           invalidationBasis = 'Structure High + ATR';
         }
       } else {
-        // Find the nearest confirmed swing low below cleanEntry within a tight structural window (<= 1.8x ATR)
+        // Find the confirmed swing low and the actual impulse-leg structural low (<= 3.0x ATR) so SL is below the true invalidation low
         const confSwingLow = [...swings]
           .filter(
             s =>
@@ -2388,26 +2394,33 @@ export function detectAll16SmcSetups(
               (s.confirmationIndex ?? s.index) <= effectiveConfirmIdx &&
               s.index >= localLookbackStart &&
               s.price < cleanEntry &&
-              (cleanEntry - s.price) <= atrVal * 1.8
+              (cleanEntry - s.price) <= atrVal * 3.0
           )
-          .sort((a, b) => b.price - a.price)[0];
+          .sort((a, b) => a.price - b.price)[0];
 
-        const zoneLowValid = Number.isFinite(cleanStopLoss) && cleanStopLoss < cleanEntry && (cleanEntry - cleanStopLoss) <= atrVal * 1.8;
-        if (confSwingLow) {
-          cleanStopLoss = roundSmcPrice(confSwingLow.price - atrBuffer);
-          invalidationBasis = 'Confirmed Swing Low - ATR';
-        } else if (zoneLowValid) {
-          cleanStopLoss = roundSmcPrice(cleanStopLoss - atrBuffer * 0.25);
-          invalidationBasis = 'POI Invalidation Low - ATR';
-        } else {
-          let nearLow = candles[effectiveConfirmIdx]?.low ?? cleanEntry;
-          for (let k = Math.max(0, effectiveConfirmIdx - 4); k <= effectiveConfirmIdx; k++) {
-            if (candles[k] && candles[k].low < nearLow && (cleanEntry - candles[k].low) <= atrVal * 1.8) {
-              nearLow = candles[k].low;
-            }
+        let legStructuralLow = Infinity;
+        for (let k = Math.max(0, effectiveConfirmIdx - 10); k <= effectiveConfirmIdx; k++) {
+          if (candles[k] && candles[k].low < legStructuralLow && candles[k].low < cleanEntry && (cleanEntry - candles[k].low) <= atrVal * 3.0) {
+            legStructuralLow = candles[k].low;
           }
-          const baseLow = nearLow < cleanEntry ? nearLow : cleanEntry - atrVal * 1.0;
-          cleanStopLoss = roundSmcPrice(baseLow - atrBuffer);
+        }
+
+        const zoneLowValid = Number.isFinite(cleanStopLoss) && cleanStopLoss < cleanEntry && (cleanEntry - cleanStopLoss) <= atrVal * 3.0;
+        const trueInvalidationLow = Math.min(
+          confSwingLow ? confSwingLow.price : Infinity,
+          Number.isFinite(legStructuralLow) ? legStructuralLow : Infinity,
+          zoneLowValid ? cleanStopLoss : Infinity
+        );
+
+        if (Number.isFinite(trueInvalidationLow) && trueInvalidationLow < cleanEntry) {
+          cleanStopLoss = roundSmcPrice(trueInvalidationLow - atrBuffer);
+          invalidationBasis = confSwingLow && confSwingLow.price <= (legStructuralLow || Infinity)
+            ? 'Confirmed Swing Low - ATR'
+            : Number.isFinite(legStructuralLow) && legStructuralLow <= (zoneLowValid ? cleanStopLoss : Infinity)
+            ? 'Structural Low - ATR'
+            : 'POI Invalidation Low - ATR';
+        } else {
+          cleanStopLoss = roundSmcPrice(cleanEntry - atrVal * 1.2 - atrBuffer);
           invalidationBasis = 'Structure Low - ATR';
         }
       }
@@ -2493,10 +2506,11 @@ export function detectAll16SmcSetups(
     }
 
     const minTp1Dist = riskDistance * rp.target1R;
-    const structuralTp1 = candidatePools.find(p => {
+    const poolsAbove2R = candidatePools.filter(p => {
       const d = Math.abs(p.price - cleanEntry);
-      return d >= minTp1Dist && d <= riskDistance * 2.8;
+      return d >= minTp1Dist && d <= riskDistance * 4.5;
     });
+    const structuralTp1 = poolsAbove2R[0];
     const effectiveTarget1 = roundSmcPrice(
       structuralTp1 ? structuralTp1.price : (isBull ? cleanEntry + minTp1Dist : cleanEntry - minTp1Dist)
     );
@@ -2504,15 +2518,29 @@ export function detectAll16SmcSetups(
     const rewardDistance = Math.abs(effectiveTarget1 - cleanEntry);
     const computedRr = Number((rewardDistance / Math.max(1e-9, riskDistance)).toFixed(2));
 
-    const minTp2Dist = Math.max(rewardDistance + riskDistance * 0.5, riskDistance * rp.target2R);
-    const structuralTp2 = candidatePools.find(p => {
-      const d = Math.abs(p.price - cleanEntry);
-      return d >= minTp2Dist && d <= riskDistance * 4.5;
-    });
+    const minTp2Dist = Math.max(rewardDistance + Math.max(riskDistance * 0.35, atrVal * 0.4), riskDistance * rp.target2R);
+    const structuralTp2 =
+      poolsAbove2R.find(p => {
+        const d = Math.abs(p.price - cleanEntry);
+        return d >= minTp2Dist && d <= riskDistance * 4.5;
+      }) ??
+      poolsAbove2R.find(p => {
+        const d = Math.abs(p.price - cleanEntry);
+        return d >= rewardDistance + Math.max(riskDistance * 0.35, atrVal * 0.4);
+      });
+    // Never project a synthetic TP2 past the deepest confirmed liquidity pool on the chart when structuralTp1 is already at Range Low / High
     const targetPrice2 = roundSmcPrice(
-      structuralTp2 ? structuralTp2.price : (isBull ? cleanEntry + riskDistance * rp.target2R : cleanEntry - riskDistance * rp.target2R)
+      structuralTp2
+        ? structuralTp2.price
+        : structuralTp1
+        ? structuralTp1.price
+        : (isBull ? cleanEntry + riskDistance * rp.target2R : cleanEntry - riskDistance * rp.target2R)
     );
-    const tp2Source = structuralTp2 ? structuralTp2.label : `${rp.target2R.toFixed(1)}R (${isBull ? 'BSL' : 'SSL'} Target)`;
+    const tp2Source = structuralTp2
+      ? structuralTp2.label
+      : structuralTp1
+      ? `${structuralTp1.label} (Max Confirmed Liquidity)`
+      : `${rp.target2R.toFixed(1)}R (${isBull ? 'BSL' : 'SSL'} Target)`;
     if (computedRr < rp.minRiskReward && !statusOverride) {
       statusOverride = 'INVALIDATED';
     }
@@ -2710,11 +2738,19 @@ export function detectAll16SmcSetups(
         status = 'EXPIRED';
         lifecycleState = 'EXPIRED';
       } else {
-        // Check if current price has recovered above short entry or dropped below long entry:
-        // If so, rejection is NOT confirmed — mark as RETEST_TOUCHED awaiting a completed rejection candle.
+        // Check if current price has recovered above short entry or dropped below long entry,
+        // or if recent candles show strong opposing recovery momentum:
+        // If so, rejection is NOT confirmed — keep setup conditional as RETEST_TOUCHED awaiting a completed rejection candle.
+        const prevClosedBar = candles.length >= 2 ? candles[candles.length - 2] : undefined;
+        const twoBarOpposingRecovery = Boolean(
+          prevClosedBar &&
+          (isBull
+            ? (prevClosedBar.close < prevClosedBar.open && lastBar.close < lastBar.open && lastBar.close < cleanEntry)
+            : (prevClosedBar.close > prevClosedBar.open && lastBar.close > lastBar.open && lastBar.close > cleanEntry))
+        );
         const recoveredPastEntryNow = isBull ? lastBar.close < cleanEntry : lastBar.close > cleanEntry;
         const touchingZoneNow = lastBar.high > lastBar.low && (isBull ? lastBar.low <= entryZoneHigh : lastBar.high >= entryZoneLow);
-        if (recoveredPastEntryNow) {
+        if (recoveredPastEntryNow || twoBarOpposingRecovery) {
           rejectionConfirmed = false;
           if (hasDepartedZone || touchingZoneNow) {
             retestTouched = true;

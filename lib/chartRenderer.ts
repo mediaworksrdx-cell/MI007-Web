@@ -2600,7 +2600,7 @@ export function renderChart(
         let finalTp2Y = (st.targetPrice2 && st.targetPrice2 > 0)
           ? Math.max(8 * dpr, Math.min(chartH - 8 * dpr, priceToY(st.targetPrice2)))
           : -999;
-        const hasTp2 = st.targetPrice2 !== undefined && st.targetPrice2 > 0;
+        const hasTp2 = st.targetPrice2 !== undefined && st.targetPrice2 > 0 && Math.abs(st.targetPrice2 - st.targetPrice) > 1e-6;
 
         if (hasTp2) {
           // Guarantee vertical separation between TP1 and TP2 badges (at least 16 * dpr)
@@ -2753,7 +2753,10 @@ export function renderChart(
           isTradeOver && st.confirmedOrderFill
             ? tradeOutcome
             : effectiveSignalState;
-        const statusLabel = rawStatus.replace(/_/g, ' ');
+        const statusLabel =
+          rawStatus === 'RETEST_TOUCHED'
+            ? 'RETEST TOUCHED • AWAITING REJECTION'
+            : rawStatus.replace(/_/g, ' ');
         const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName}${bosLabel} (${rrLabel}${scoreLabel}) [${statusLabel}]`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(headerTag);
