@@ -2613,9 +2613,11 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(tpText, x + boxW - 4 * dpr, finalTpY);
 
-        // SL Badge (Right edge of bracket, displaying exact SL price and Risk %)
-        const riskPct = ((Math.abs(st.entryPrice - st.stopLoss) / Math.max(1e-9, st.entryPrice)) * 100).toFixed(2);
-        const slText = `SL: ${formatPrice(st.stopLoss, options.symbol)} (${riskPct}% Risk)`;
+        // SL Badge (Right edge of bracket, displaying exact SL price, risk per unit, risk %, and 1%-risk position size)
+        const riskPerUnit = Math.abs(st.entryPrice - st.stopLoss);
+        const riskPct = ((riskPerUnit / Math.max(1e-9, st.entryPrice)) * 100).toFixed(2);
+        const posSizeUnits = (1000 / Math.max(1e-9, riskPerUnit)).toFixed(1);
+        const slText = `SL: ${formatPrice(st.stopLoss, options.symbol)} (Risk/u: ${formatPrice(riskPerUnit, options.symbol)} • ${riskPct}% • Qty: ${posSizeUnits}u)`;
         const slTm = ctx.measureText(slText);
         let slOffset = 0;
         if (Math.abs(ySL - yEntry) < 18 * dpr) {
@@ -2674,8 +2676,12 @@ export function renderChart(
         const bosLabel = st.validatingBreak
           ? ` • ${st.validatingBreak.breakType} @ ${formatPrice(st.validatingBreak.price, options.symbol)}`
           : '';
-        const scoreLabel = st.qualityScore ? ` • Score ${Math.round(st.qualityScore)}/100` : '';
-        const rawStatus = isTradeOver && st.signalState !== 'MISSED_ENTRY'
+        const qualityTag = st.qualityApproval === 'LOW_QUALITY' ? 'LOW QUALITY' : 'APPROVED';
+        const scoreLabel = st.qualityScore ? ` • Score ${Math.round(st.qualityScore)}/100 ${qualityTag}` : '';
+        const isUnexecutedZone = st.signalState === 'MISSED_ENTRY' || st.signalState === 'WAITING_FOR_RETEST' || st.signalState === 'PENDING_RETEST';
+        const rawStatus = isUnexecutedZone
+          ? st.signalState!
+          : isTradeOver
           ? tradeOutcome
           : (st.signalState || st.status || 'CONFIRMED');
         const statusLabel = rawStatus.replace(/_/g, ' ');

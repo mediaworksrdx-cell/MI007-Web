@@ -252,8 +252,10 @@ export interface SmcConfirmedSetup {
   resolutionIndeterminate?: boolean;
   /** Exact structural break (BOS / CHoCH) that validates this setup */
   validatingBreak?: { breakType: SmcBreakType; price: number; candleIndex: number };
-  /** Explicit execution state distinguishing PENDING_RETEST, CONFIRMED, EXECUTED, MISSED_ENTRY, and INVALIDATED signals */
-  signalState?: 'PENDING' | 'PENDING_RETEST' | 'CONFIRMED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED';
+  /** Explicit execution state distinguishing WAITING_FOR_RETEST, CONFIRMED, EXECUTED, MISSED_ENTRY, and INVALIDATED signals */
+  signalState?: 'PENDING' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'CONFIRMED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED';
+  /** Separate trade-quality approval from structural confirmation */
+  qualityApproval?: 'APPROVED' | 'LOW_QUALITY';
   /** Explicit entry basis label (e.g. 'BOS Level', 'Breaker 50%', 'OB 50%', 'FVG CE') */
   entryBasis?: string;
   /** Structural liquidity source for TP1 (e.g. 'Swing', 'PDL', '2.0R') */
@@ -2058,7 +2060,8 @@ export function detectAll16SmcSetups(
   options?: SmcFilterOptions,
   biasOverride?: { htfBias?: 'BULLISH' | 'BEARISH' | 'RANGE'; ltfBias?: 'BULLISH' | 'BEARISH' | 'RANGE' },
   riskProfile?: Partial<SmcRiskProfile>,
-  ltfCandles?: Candle[]
+  ltfCandles?: Candle[],
+  liquidityLevels?: SmcLiquidityLevel[]
 ): SmcConfirmedSetup[] {
   if (!isValidVerifiedCandleDataset(candles)) return [];
 
@@ -2078,7 +2081,8 @@ export function detectAll16SmcSetups(
       swingsOrConfig?.filters,
       { htfBias: analysis.htfBias, ltfBias: analysis.ltfBias },
       swingsOrConfig?.riskProfile,
-      swingsOrConfig?.ltfCandles
+      swingsOrConfig?.ltfCandles,
+      analysis.liquidityLevels
     );
   }
 
@@ -2244,10 +2248,23 @@ export function detectAll16SmcSetups(
     const rawRisk = isBull ? (cleanEntry - cleanStopLoss) : (cleanStopLoss - cleanEntry);
     const riskDistance = rawRisk > 0 ? rawRisk : Math.max(Math.abs(cleanEntry - cleanStopLoss), cleanEntry * 0.005);
 
-    // 3. Target Calculation: Anchor TP1 & TP2 to named structural liquidity pools within institutional R:R bounds,
-    // otherwise use exact 1:2 (TP1) and 1:3 (TP2) calculated from the actual cleanEntry and cleanStopLoss.
+    // 3. Target Calculation: Anchor TP1 & TP2 to independently detected opposing liquidity levels (SSL/BSL/EQH/EQL/PDL/PDH/Swings)
+    // within institutional R:R bounds, otherwise use exact 1:2 (TP1) and 1:3 (TP2) calculated from cleanEntry and cleanStopLoss.
     const rp: SmcRiskProfile = { ...DEFAULT_SMC_RISK_PROFILE, ...riskProfile };
     const candidatePools: { price: number; label: string }[] = [];
+    if (liquidityLevels && liquidityLevels.length > 0) {
+      for (const lvl of liquidityLevels) {
+        if (lvl.isSwept) continue;
+        const maxPoolIdx = Math.max(...lvl.candleIndices);
+        if (maxPoolIdx <= candleIndex) {
+          if (isBull && (lvl.type === 'BSL' || lvl.type === 'EQH') && lvl.price > cleanEntry) {
+            candidatePools.push({ price: lvl.price, label: `${lvl.type} Liquidity` });
+          } else if (!isBull && (lvl.type === 'SSL' || lvl.type === 'EQL') && lvl.price < cleanEntry) {
+            candidatePools.push({ price: lvl.price, label: `${lvl.type} Liquidity` });
+          }
+        }
+      }
+    }
     for (const s of swings) {
       if ((s.confirmationIndex ?? s.index) <= candleIndex) {
         if (isBull && s.isHigh && s.price > cleanEntry) candidatePools.push({ price: s.price, label: 'BSL Swing' });
@@ -2384,11 +2401,21 @@ export function detectAll16SmcSetups(
           break;
         }
 
+        // Automatic structural invalidation: expire/invalidate setup if an opposing External/Major BOS/CHoCH occurs
+        const opposingBreakOccurred = (breaks || []).some(
+          b => b.isBullish !== isBull && b.candleIndex === k && (b.structureType === 'EXTERNAL' || b.significance === 'MAJOR')
+        );
+        if (opposingBreakOccurred) {
+          status = 'INVALIDATED';
+          lifecycleState = 'INVALIDATED';
+          break;
+        }
+
         // Retest Validation: Confirm candle-close rejection at broken S/R / POI zone before entry
-        const tappedZone = isBull ? bar.low <= entryPrice : bar.high >= entryPrice;
+        const tappedZone = isBull ? bar.low <= cleanEntry : bar.high >= cleanEntry;
         const confirmedRejection = isBull
-          ? (bar.close > cleanStopLoss && (bar.close >= entryPrice || bar.close > bar.open))
-          : (bar.close < cleanStopLoss && (bar.close <= entryPrice || bar.close < bar.open));
+          ? (bar.close > cleanStopLoss && (bar.close >= cleanEntry || bar.close > bar.open))
+          : (bar.close < cleanStopLoss && (bar.close <= cleanEntry || bar.close < bar.open));
         if (!tp1Hit && tappedZone && confirmedRejection) {
           status = 'RETESTING';
           lifecycleState = 'RETESTED';
@@ -2444,12 +2471,21 @@ export function detectAll16SmcSetups(
       }
     );
 
-    // Distinguish active retested trades from pending-retest or missed-entry signals (where price ran to TP1 without retesting entry)
-    const formBarTouchedEntry = formBar
-      ? (isBull ? formBar.low <= cleanEntry && formBar.close >= cleanStopLoss : formBar.high >= cleanEntry && formBar.close <= cleanStopLoss)
-      : false;
-    let entryExecuted = statusOverride === 'RETESTING' || retestCount > 0 || formBarTouchedEntry;
+    // Distinguish active retested trades from waiting-for-retest or missed-entry signals:
+    // Limit-zone setups (FVG_TAP, OB_RETEST, BREAKER_RETEST, etc.) are NEVER executed on their own formation candle;
+    // they require a subsequent closed bar (retestCount > 0) to pull back into cleanEntry and reject.
+    const isLimitZoneSetup =
+      setupType === 'FVG_TAP' ||
+      setupType === 'OB_RETEST' ||
+      setupType === 'BREAKER_RETEST' ||
+      setupType === 'BOS_FVG_RETEST' ||
+      setupType === 'MTF_CONFLUENCE' ||
+      setupType === 'THREE_STAGE_REVERSAL' ||
+      setupType === 'PREMIUM_DISCOUNT_OTE';
+    let entryExecuted = statusOverride === 'RETESTING' || retestCount > 0 || !isLimitZoneSetup;
     let missedEntry = false;
+    let waitingForRetest = false;
+
     if (!entryExecuted && (tp1Hit || tp2Hit)) {
       // Price reached target without ever pulling back to fill the entry level
       missedEntry = true;
@@ -2459,24 +2495,31 @@ export function detectAll16SmcSetups(
       lifecycleState = 'EXPIRED';
     } else if (!entryExecuted && lastBar) {
       const distPastEntry = isBull ? (lastBar.close - cleanEntry) : (cleanEntry - lastBar.close);
-      if (distPastEntry > riskDistance * 1.2) {
+      if (distPastEntry >= riskDistance * 0.5) {
         missedEntry = true;
+        status = 'PENDING';
+      } else {
+        waitingForRetest = true;
+        status = 'PENDING';
       }
     }
 
-    const signalState: 'PENDING' | 'PENDING_RETEST' | 'CONFIRMED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED' =
+    // Separate structural confirmation from trade-quality approval (threshold >= 60/100)
+    const qualityApproval: 'APPROVED' | 'LOW_QUALITY' = confluence.qualityScore >= 60 ? 'APPROVED' : 'LOW_QUALITY';
+
+    const signalState: 'PENDING' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'CONFIRMED' | 'EXECUTED' | 'MISSED_ENTRY' | 'INVALIDATED' =
       status === 'INVALIDATED'
         ? 'INVALIDATED'
         : missedEntry
         ? 'MISSED_ENTRY'
         : status === 'EXPIRED'
         ? 'INVALIDATED'
+        : waitingForRetest || !entryExecuted
+        ? 'WAITING_FOR_RETEST'
         : (tp1Hit || tp2Hit || retestCount > 0 || status === 'RETESTING' || status === 'TARGET_HIT' || status === 'EXITED')
         ? 'EXECUTED'
-        : !entryExecuted
-        ? 'PENDING_RETEST'
-        : status === 'PENDING'
-        ? 'PENDING'
+        : qualityApproval === 'LOW_QUALITY'
+        ? 'WAITING_FOR_RETEST'
         : 'CONFIRMED';
 
     return {
@@ -2513,6 +2556,7 @@ export function detectAll16SmcSetups(
       tp2Hit,
       tp2HitIndex,
       signalState,
+      qualityApproval,
       entryBasis,
       tp1Source,
       tp2Source,
@@ -2645,10 +2689,18 @@ export function detectAll16SmcSetups(
     ));
   }
 
-  // ── Strategy 5: Fair Value Gap (FVG) Retracement
-  const activeFvgs = fvgs.filter((f) => !f.isInverse && !f.isInvalidated && !f.isMitigated && f.state !== 'MITIGATED' && f.state !== 'INVALIDATED').slice(-8);
+  // ── Strategy 5: Fair Value Gap (FVG) Retracement (Genuine unmitigated gap with ATR displacement)
+  const activeFvgs = fvgs.filter((f) => !f.isInverse && !f.isInvalidated && !f.isMitigated && f.state === 'FRESH').slice(-8);
   for (const fvg of activeFvgs) {
     const isBull = fvg.isBullish;
+    const impulseBar = candles[fvg.startIndex + 1];
+    if (!impulseBar || !isCandleClosed(impulseBar)) continue;
+    const impulseBody = isBull ? (impulseBar.close - impulseBar.open) : (impulseBar.open - impulseBar.close);
+    const localAtr = atrSeries[Math.min(fvg.startIndex + 1, atrSeries.length - 1)] || fvg.cePrice * 0.002;
+    if (impulseBody < localAtr * 0.6) continue;
+
+    const confIdx = fvg.confirmationIndex ?? Math.min(candles.length - 1, fvg.startIndex + 2);
+    const confTime = candles[confIdx]?.openTime ?? fvg.formationTime;
     const entry = fvg.cePrice; // 50% CE entry
     const sl = isBull ? fvg.bottomPrice * 0.998 : fvg.topPrice * 1.002;
     const tp = isBull ? dealingRange.highPrice : dealingRange.lowPrice;
@@ -2657,12 +2709,12 @@ export function detectAll16SmcSetups(
       isBull ? 'Bullish FVG 50% CE Retracement' : 'Bearish FVG 50% CE Retracement',
       'FVG_TAP',
       isBull ? 'BULLISH' : 'BEARISH',
-      fvg.startIndex,
-      fvg.formationTime,
+      confIdx,
+      confTime,
       entry,
       sl,
       tp,
-      `Imbalance gap [${fvg.bottomPrice.toFixed(2)} - ${fvg.topPrice.toFixed(2)}] with Consequent Encroachment at ${fvg.cePrice.toFixed(2)}.`
+      `Unmitigated displacement FVG [${fvg.bottomPrice.toFixed(2)} - ${fvg.topPrice.toFixed(2)}] with Consequent Encroachment at ${fvg.cePrice.toFixed(2)}.`
     ));
   }
 
@@ -3309,7 +3361,8 @@ export function calculateSMC(
     opt,
     { htfBias, ltfBias },
     config?.riskProfile,
-    config?.ltfCandles
+    config?.ltfCandles,
+    liquidityLevels
   );
 
   // Directional filtering across all enabled SMC strategies
