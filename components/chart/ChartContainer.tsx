@@ -928,6 +928,7 @@ export function ChartContainer({
             const lastC = cleanMerged[cleanMerged.length - 1];
             if (lastC?.close) {
               setCurrentPrice(lastC.close);
+              lastTickTsRef.current = Math.max(lastTickTsRef.current, lastC.openTime);
             }
             setIsLiveFromEngine(true);
             saveStoredCandles(selectedSymbol, timeframe, cleanMerged);
@@ -988,7 +989,8 @@ export function ChartContainer({
           }
           if (isSymbolMarketOpen(selectedSymbol)) {
             const now = Date.now();
-            if (now >= lastC.openTime && (!live.timestamp || live.timestamp >= lastC.openTime)) {
+            if (now >= lastC.openTime && live.timestamp && live.timestamp > lastTickTsRef.current) {
+              lastTickTsRef.current = live.timestamp;
               setCandles(cPrev => {
                 if (cPrev.length === 0) return cPrev;
                 const next = [...cPrev];
