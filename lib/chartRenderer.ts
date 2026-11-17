@@ -2394,10 +2394,7 @@ export function renderChart(
           }
         }
 
-        // In Institutional Clean Mode, hide expired or concluded trades to preserve maximum chart clarity
-        if (isCleanMode && isTradeOver) {
-          continue;
-        }
+        // Show concluded trades within the visible viewport (bounded to endCandleIdx) so the chart isn't left blank after TP1/SL hit
 
         // If trade concluded prior to the visible viewport start, don't draw it
         if (isTradeOver && endCandleIdx < startIdx) {
