@@ -12,6 +12,7 @@ import {
   fetchQuote,
   normalizeSymbolKey,
 } from './tradeEngineClient';
+import { isSymbolMarketOpen } from './marketHours';
 
 export interface LiveSymbolData {
   symbol: string;
@@ -217,7 +218,8 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
           if (prevEntry && prevEntry.price === p.ltp && prevEntry.changePct === p.changePercent) {
             continue;
           }
-          const tickDirection = prevEntry
+          const isOpen = isSymbolMarketOpen(p.symbol);
+          const tickDirection = (isOpen && prevEntry)
             ? p.ltp > prevEntry.price ? 'up' : p.ltp < prevEntry.price ? 'down' : 'neutral'
             : 'neutral';
 
@@ -256,7 +258,8 @@ export function TradeEngineProvider({ children }: { children: React.ReactNode })
             next.set('BSE SENSEX', entry);
           }
 
-          if (!prevEntry || prevEntry.price !== p.ltp) {
+          // Emit ticks ONLY when the official market for this symbol is actively OPEN
+          if (isOpen && (!prevEntry || prevEntry.price !== p.ltp)) {
             const tick: TradeEngineTick = {
               symbol: p.symbol,
               price: p.ltp,

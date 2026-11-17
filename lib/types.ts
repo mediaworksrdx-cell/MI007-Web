@@ -195,6 +195,8 @@ export interface ChartOptions {
   indicatorResults: Map<string, unknown>;
   currentPriceOverride?: number;
   timeframe: string;
+  isMarketOpen?: boolean;
+  symbol?: string;
   cursorMode?: string;
   drawings?: import('./drawingTypes').DrawingItem[];
   activeDrawing?: import('./drawingTypes').DrawingItem | null;

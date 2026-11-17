@@ -43,6 +43,7 @@ import { DrawingsManagerModal } from './DrawingsManagerModal';
 import { ChartHotkeysModal } from './ChartHotkeysModal';
 import { ChartSymbolSearch, type ChartInstrumentItem } from './ChartSymbolSearch';
 import { getStrategyIndicatorSetup } from '@/lib/screener/strategyIndicatorMap';
+import { isSymbolMarketOpen } from '@/lib/marketHours';
 
 function rescaleCandleArray(candles: Candle[], ratio: number, targetPrice: number): Candle[] {
   const decimals = targetPrice < 0.01 ? 6 : targetPrice < 2 ? 4 : targetPrice < 10 ? 3 : 2;
@@ -923,18 +924,18 @@ export function ChartContainer({
           if (cleanEngine.length > 0) {
             let finalCandles: Candle[];
             // Only merge older cached candles if they are on a continuous price scale with engine data
-            if (cleanCached.length > 0 && cleanCached[cleanCached.length - 1].openTime < cleanEngine[0].openTime) {
+            if (cleanCached.length > 0) {
               const cachedLast = cleanCached[cleanCached.length - 1].close;
               const engineFirst = cleanEngine[0].open;
               const scaleDiff = Math.abs(cachedLast - engineFirst) / Math.max(1, engineFirst);
-              if (scaleDiff < 0.15) {
+              if (scaleDiff < 0.15 && cleanCached[cleanCached.length - 1].openTime < cleanEngine[0].openTime) {
                 finalCandles = mergeCandleArrays(cleanCached, cleanEngine, tfMs);
               } else {
                 finalCandles = cleanEngine;
                 purgeStoredCandles(selectedSymbol, timeframe);
               }
             } else {
-              finalCandles = mergeCandleArrays(cleanCached, cleanEngine, tfMs);
+              finalCandles = cleanEngine;
             }
 
             const cleanMerged = validateAndCleanCandles(finalCandles, timeframe);
@@ -1011,6 +1012,10 @@ export function ChartContainer({
   // Listen to live WebSocket ticks from the Trade Engine with robust session-aware candle formation
   useEffect(() => {
     const unsub = subscribeToTicks((tick) => {
+      // If official exchange market is closed, STOP COMPLETELY: no new candles, no tick mutations
+      if (!isSymbolMarketOpen(selectedSymbol)) {
+        return;
+      }
       if (areSymbolsEqual(tick.symbol, selectedSymbol) && tick.price > 0) {
         setIsLiveFromEngine(true);
         setCurrentPrice(tick.price);
@@ -1154,6 +1159,10 @@ export function ChartContainer({
   // Synchronize terminal candle with live tick price for continuous edge-to-edge tracking
   const activeCandles = useMemo(() => {
     if (!candles || candles.length === 0) return candles;
+    // When market is closed, candles are strictly frozen at the official exchange close
+    if (!isSymbolMarketOpen(selectedSymbol)) {
+      return candles;
+    }
     const targetClose = (displayPrice && displayPrice > 0) ? displayPrice : currentPrice;
     if (!targetClose || targetClose <= 0) return candles;
     const last = candles[candles.length - 1];
@@ -1828,6 +1837,7 @@ export function ChartContainer({
         indicators={indicatorConfigs}
         engineStatus={status}
         isLiveFromEngine={isLiveFromEngine}
+        isMarketOpen={isSymbolMarketOpen(selectedSymbol)}
         currency={currency}
         displayPrice={displayPrice}
         displayChange={displayChange}
@@ -1924,6 +1934,8 @@ export function ChartContainer({
             indicatorResults={indicatorResults}
             currentPriceOverride={displayPrice}
             timeframe={timeframe}
+            isMarketOpen={isSymbolMarketOpen(selectedSymbol)}
+            symbol={selectedSymbol}
             showMagnifier={isMagnifierActive}
             onToggleMagnifier={handleToggleMagnifier}
             targetCandleTime={targetCandleTime}

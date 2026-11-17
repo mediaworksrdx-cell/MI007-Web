@@ -63,6 +63,7 @@ interface ChartToolbarProps {
   indicators?: IndicatorConfig[];
   engineStatus?: string;
   isLiveFromEngine?: boolean;
+  isMarketOpen?: boolean;
   currency?: string;
   displayPrice?: number;
   displayChange?: number;
@@ -176,6 +177,7 @@ export function ChartToolbar({
   indicators,
   engineStatus,
   isLiveFromEngine,
+  isMarketOpen = true,
   currency = '₹',
   displayPrice,
   displayChange,
@@ -1588,8 +1590,16 @@ export function ChartToolbar({
 
       {/* ── Right Controls: Live Beacon & Quote ── */}
       <div className="flex items-center gap-2.5 shrink-0 ml-auto">
-        {/* Beacon — reflects real data source (engine vs. offline demo fallback) */}
-        {isLiveFromEngine ? (
+        {/* Beacon — reflects real market open/closed status & engine connection */}
+        {!isMarketOpen ? (
+          <div
+            title="Official exchange market is currently closed. Live trading and real-time candle creation are paused."
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 shadow-xs"
+          >
+            <span className="w-2 h-2 rounded-full bg-slate-400" />
+            <span className="hidden sm:inline">MARKET CLOSED</span>
+          </div>
+        ) : isLiveFromEngine ? (
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="hidden sm:inline">CONNECTED</span>

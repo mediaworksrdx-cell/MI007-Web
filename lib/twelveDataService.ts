@@ -1,4 +1,5 @@
 import { Candle } from './types';
+import { isSymbolMarketOpen } from './marketHours';
 
 // Twelve Data API Keys (Primary & Fallback)
 const TWELVE_DATA_KEYS = [
@@ -185,7 +186,7 @@ export async function fetchTwelveDataQuote(rawSymbol: string): Promise<{
           const price = +(rawClose * multiplier).toFixed(queryTicker.includes('/') ? 4 : 2);
           const change = +(rawChange * multiplier).toFixed(queryTicker.includes('/') ? 4 : 2);
           const changePct = +rawChangePct.toFixed(2);
-          const isMarketOpen = Boolean(data.is_market_open);
+          const isMarketOpen = Boolean(data.is_market_open) && isSymbolMarketOpen(rawSymbol);
 
           const result = {
             symbol: rawSymbol,
@@ -209,16 +210,13 @@ export async function fetchTwelveDataQuote(rawSymbol: string): Promise<{
 
 function getFallbackQuote(rawSymbol: string, symClean: string) {
   const base = BASELINE_PRICES[symClean] || BASELINE_PRICES[rawSymbol] || { price: 100.0, change: 0, changePct: 0 };
-  // Add realistic micro jitter (0.01% - 0.04%) so terminal actively ticks smoothly
-  const jitter = (Math.random() - 0.49) * 0.0006 * base.price;
-  const price = +(base.price + jitter).toFixed(symClean.includes('/') ? 4 : 2);
-  const change = +(base.change + jitter).toFixed(symClean.includes('/') ? 4 : 2);
+  const isOpen = isSymbolMarketOpen(rawSymbol);
   return {
     symbol: rawSymbol,
-    price,
-    change,
+    price: base.price,
+    change: base.change,
     changePct: base.changePct,
-    isMarketOpen: true,
+    isMarketOpen: isOpen,
   };
 }
 

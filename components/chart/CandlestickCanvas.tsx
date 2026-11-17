@@ -35,6 +35,8 @@ interface CandlestickCanvasProps {
   indicatorResults: Map<string, unknown>;
   currentPriceOverride?: number;
   timeframe: string;
+  isMarketOpen?: boolean;
+  symbol?: string;
   showMagnifier?: boolean;
   onToggleMagnifier?: () => void;
   targetCandleTime?: number;
@@ -166,7 +168,7 @@ export function CandlestickCanvas({
   showQuantumAi = false, quantumAiConfig, quantumAiData,
   showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
-  currentPriceOverride, timeframe, showMagnifier = false, onToggleMagnifier, targetCandleTime, targetSetupId, targetSmcSetup, className = '',
+  currentPriceOverride, timeframe, isMarketOpen = true, symbol, showMagnifier = false, onToggleMagnifier, targetCandleTime, targetSetupId, targetSmcSetup, className = '',
   activeDrawingTool = 'NONE',
   cursorMode = 'crosshair',
   drawings = [],
@@ -383,13 +385,14 @@ export function CandlestickCanvas({
     };
   }, []);
 
-  // 1-second tick for real-time countdown timer
+  // 1-second tick for real-time countdown timer (only runs when market is actively open)
   useEffect(() => {
+    if (isMarketOpen === false) return;
     const timer = setInterval(() => {
       setClockTick(c => (c + 1) % 10000);
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isMarketOpen]);
 
   useLayoutEffect(() => { setDpr(window.devicePixelRatio || 1); }, []);
 
@@ -1188,7 +1191,7 @@ export function CandlestickCanvas({
           showFnoOverlay, fnoLevels,
           strategyOverlay,
           indicators, indicatorResults,
-          currentPriceOverride, timeframe,
+          currentPriceOverride, timeframe, isMarketOpen, symbol,
           drawings: isAllDrawingsHidden ? [] : drawings,
           activeDrawing: null, // Overlay canvas handles active drawing rubber-band
           selectedDrawingId: null, // Overlay canvas handles selection rings

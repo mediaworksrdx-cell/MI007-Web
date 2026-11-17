@@ -2738,77 +2738,116 @@ export function renderChart(
     ctx.fillText(prStr, bL + padH + dotR * 2 + 3 * dpr, Math.round(bT + bH2 / 2));
 
     // ── Real-time Candle Countdown Timer (Clean stacked container with boundary clamping) ──
-    const TF_DURATIONS: Record<string, number> = {
-      '1M': 60_000,
-      '5M': 300_000,
-      '15M': 900_000,
-      '30M': 1_800_000,
-      '1H': 3_600_000,
-      '4H': 14_400_000,
-      '1D': 86_400_000,
-      '1W': 604_800_000,
-      'MONTH': 2_592_000_000,
-    };
-    const upperTf = options.timeframe.toUpperCase();
-    const durKey = upperTf === '1M' && isDailyOrHigher ? 'MONTH' : upperTf;
-    const barDuration = TF_DURATIONS[durKey] || (isDailyOrHigher ? 86_400_000 : 3_600_000);
-    const nextClose = lastC.openTime + barDuration;
-    const now = Date.now();
-    const remainingMs = Math.max(0, nextClose - now);
+    const isMarketClosed = options.isMarketOpen === false;
+    if (isMarketClosed) {
+      // Market is closed: show a clean static CLOSED badge, never tick or show countdown
+      const closedBadgeStr = 'CLOSED';
+      const tPadV = 2.5 * dpr;
+      const tH = Math.round(9 * dpr + tPadV * 2);
+      const tW = bW;
+      const tL = bL;
+      const marginGap = Math.round(3 * dpr);
+      let tT = bT + bH2 + marginGap;
+      if (tT + tH > chartH - 8 * dpr) {
+        tT = bT - tH - marginGap;
+      }
+      if (tT >= 2 * dpr && tT + tH <= H) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(71, 85, 105, 0.90)';
+        ctx.beginPath();
+        const tcr = 3 * dpr;
+        ctx.moveTo(tL + tcr, tT);
+        ctx.lineTo(tL + tW - tcr, tT);
+        ctx.arcTo(tL + tW, tT, tL + tW, tT + tcr, tcr);
+        ctx.lineTo(tL + tW, tT + tH - tcr);
+        ctx.arcTo(tL + tW, tT + tH, tL + tW - tcr, tT + tH, tcr);
+        ctx.lineTo(tL + tcr, tT + tH);
+        ctx.arcTo(tL, tT + tH, tL, tT + tH - tcr, tcr);
+        ctx.lineTo(tL, tT + tcr);
+        ctx.arcTo(tL, tT, tL + tcr, tT, tcr);
+        ctx.closePath();
+        ctx.fill();
 
-    const totSecs = Math.floor(remainingMs / 1000);
-    const cdDays = Math.floor(totSecs / 86400);
-    const cdHours = Math.floor((totSecs % 86400) / 3600);
-    const cdMins = Math.floor((totSecs % 3600) / 60);
-    const cdSecs = totSecs % 60;
-
-    let timerText = '';
-    if (cdDays > 0) {
-      timerText = `${cdDays}d ${cdHours}h`;
-    } else if (cdHours > 0) {
-      timerText = `${String(cdHours).padStart(2, '0')}:${String(cdMins).padStart(2, '0')}:${String(cdSecs).padStart(2, '0')}`;
+        ctx.fillStyle = 'rgba(241, 245, 249, 0.85)';
+        ctx.font = `700 ${8.5 * dpr}px ${TV_FONT_STACK}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(closedBadgeStr, tL + tW / 2, tT + tH / 2);
+        ctx.restore();
+      }
     } else {
-      timerText = `${String(cdMins).padStart(2, '0')}:${String(cdSecs).padStart(2, '0')}`;
-    }
+      const TF_DURATIONS: Record<string, number> = {
+        '1M': 60_000,
+        '5M': 300_000,
+        '15M': 900_000,
+        '30M': 1_800_000,
+        '1H': 3_600_000,
+        '4H': 14_400_000,
+        '1D': 86_400_000,
+        '1W': 604_800_000,
+        'MONTH': 2_592_000_000,
+      };
+      const upperTf = options.timeframe.toUpperCase();
+      const durKey = upperTf === '1M' && isDailyOrHigher ? 'MONTH' : upperTf;
+      const barDuration = TF_DURATIONS[durKey] || (isDailyOrHigher ? 86_400_000 : 3_600_000);
+      const nextClose = lastC.openTime + barDuration;
+      const now = Date.now();
+      const remainingMs = Math.max(0, nextClose - now);
 
-    const timerBadgeStr = `⏱ ${timerText}`;
-    const tPadV = 2.5 * dpr;
-    const tH = Math.round(9 * dpr + tPadV * 2);
-    const tW = bW; // Perfectly matches width of price pill for clean vertical stacking
-    const tL = bL;
+      const totSecs = Math.floor(remainingMs / 1000);
+      const cdDays = Math.floor(totSecs / 86400);
+      const cdHours = Math.floor((totSecs % 86400) / 3600);
+      const cdMins = Math.floor((totSecs % 3600) / 60);
+      const cdSecs = totSecs % 60;
 
-    // Position 3px below price pill, or flip 3px above if near bottom scale
-    const marginGap = Math.round(3 * dpr);
-    let tT = bT + bH2 + marginGap;
-    if (tT + tH > chartH - 8 * dpr) {
-      tT = bT - tH - marginGap;
-    }
+      let timerText = '';
+      if (cdDays > 0) {
+        timerText = `${cdDays}d ${cdHours}h`;
+      } else if (cdHours > 0) {
+        timerText = `${String(cdHours).padStart(2, '0')}:${String(cdMins).padStart(2, '0')}:${String(cdSecs).padStart(2, '0')}`;
+      } else {
+        timerText = `${String(cdMins).padStart(2, '0')}:${String(cdSecs).padStart(2, '0')}`;
+      }
 
-    if (tT >= 2 * dpr && tT + tH <= H) {
-      ctx.save();
-      // Subtle deep slate pill
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
-      ctx.beginPath();
-      const tcr = 3 * dpr;
-      ctx.moveTo(tL + tcr, tT);
-      ctx.lineTo(tL + tW - tcr, tT);
-      ctx.arcTo(tL + tW, tT, tL + tW, tT + tcr, tcr);
-      ctx.lineTo(tL + tW, tT + tH - tcr);
-      ctx.arcTo(tL + tW, tT + tH, tL + tW - tcr, tT + tH, tcr);
-      ctx.lineTo(tL + tcr, tT + tH);
-      ctx.arcTo(tL, tT + tH, tL, tT + tH - tcr, tcr);
-      ctx.lineTo(tL, tT + tcr);
-      ctx.arcTo(tL, tT, tL + tcr, tT, tcr);
-      ctx.closePath();
-      ctx.fill();
+      const timerBadgeStr = `⏱ ${timerText}`;
+      const tPadV = 2.5 * dpr;
+      const tH = Math.round(9 * dpr + tPadV * 2);
+      const tW = bW; // Perfectly matches width of price pill for clean vertical stacking
+      const tL = bL;
 
-      // Clean muted tabular typography for countdown
-      ctx.fillStyle = 'rgba(241, 245, 249, 0.78)';
-      ctx.font = `600 ${9.5 * dpr}px ${TV_FONT_STACK}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(timerBadgeStr, tL + tW / 2, tT + tH / 2);
-      ctx.restore();
+      // Position 3px below price pill, or flip 3px above if near bottom scale
+      const marginGap = Math.round(3 * dpr);
+      let tT = bT + bH2 + marginGap;
+      if (tT + tH > chartH - 8 * dpr) {
+        tT = bT - tH - marginGap;
+      }
+
+      if (tT >= 2 * dpr && tT + tH <= H) {
+        ctx.save();
+        // Subtle deep slate pill
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        ctx.beginPath();
+        const tcr = 3 * dpr;
+        ctx.moveTo(tL + tcr, tT);
+        ctx.lineTo(tL + tW - tcr, tT);
+        ctx.arcTo(tL + tW, tT, tL + tW, tT + tcr, tcr);
+        ctx.lineTo(tL + tW, tT + tH - tcr);
+        ctx.arcTo(tL + tW, tT + tH, tL + tW - tcr, tT + tH, tcr);
+        ctx.lineTo(tL + tcr, tT + tH);
+        ctx.arcTo(tL, tT + tH, tL, tT + tH - tcr, tcr);
+        ctx.lineTo(tL, tT + tcr);
+        ctx.arcTo(tL, tT, tL + tcr, tT, tcr);
+        ctx.closePath();
+        ctx.fill();
+
+        // Clean muted tabular typography for countdown
+        ctx.fillStyle = 'rgba(241, 245, 249, 0.78)';
+        ctx.font = `600 ${9.5 * dpr}px ${TV_FONT_STACK}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(timerBadgeStr, tL + tW / 2, tT + tH / 2);
+        ctx.restore();
+      }
     }
   }
 
