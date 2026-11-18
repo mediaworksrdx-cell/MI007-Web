@@ -2426,7 +2426,7 @@ export function renderChart(
 
         for (let ci = st.candleIndex + 1; ci < candles.length; ci++) {
           const c = candles[ci];
-          if (!c || c.isClosed !== true) break;
+          if (!c || !isCandleClosed(c, barIntervalMs)) break;
           if (isIntradayChart && stDayKey && getSmcTradingDayKey(c.openTime, options.symbol) !== stDayKey) {
             endCandleIdx = Math.max(st.candleIndex, ci - 1);
             isTradeOver = true;
@@ -2514,15 +2514,15 @@ export function renderChart(
 
         const lastCandleIdx = Math.min(endIdx - 1, candles.length - 1);
         const currentCandleX = (lastCandleIdx - startIdx) * candleW + candleW / 2;
-        const maxRightX = chartW - 65 * dpr;
+        const maxRightX = chartW - 2 * dpr;
 
         // Lock bracket start strictly at the setup/breakout candle (st.candleIndex) so it never shifts when new candles form,
-        // and grow its right edge with every new candle until the strategy concludes (endCandleIdx) or reaches the live candle.
+        // and expand its right edge with every new candle until the strategy concludes (endCandleIdx) or reaches the live candle.
         const bracketStartIdx = isIntradayChart ? Math.max(st.candleIndex, firstTodayIdx) : st.candleIndex;
         const startX = (bracketStartIdx - startIdx) * candleW + candleW / 2;
         const endX = isTradeOver
           ? (endCandleIdx - startIdx) * candleW + candleW / 2
-          : currentCandleX + candleW;
+          : currentCandleX + candleW * 0.5;
 
         const minBracketW = Math.max(36 * dpr, candleW * 2);
         const x = Math.max(8 * dpr, Math.min(startX, maxRightX - minBracketW));
