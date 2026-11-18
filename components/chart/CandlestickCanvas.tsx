@@ -10,7 +10,7 @@ import { DrawingSettingsModal } from './DrawingSettingsModal';
 import { DrawingContextMenu } from './DrawingContextMenu';
 import type { CursorMode } from './DrawingToolbar';
 import type { SmcConfig } from '@/lib/smcEngine';
-import { calculateSMC } from '@/lib/smcEngine';
+import { calculateSMC, isCandleClosed, timeframeToMs } from '@/lib/smcEngine';
 import { SmcInspectorModal, type SmcInspectorData } from './SmcInspectorModal';
 import { useAppTheme } from '@/lib/themeContext';
 
@@ -892,12 +892,14 @@ export function CandlestickCanvas({
   const orderFlowConfigRef = useRef(orderFlowConfig);
   const orderFlowDataRef = useRef(orderFlowData);
 
-  // Fix 11: Extract closed bars only and key memo on last closed bar's openTime so live ticks never recompute SMC
+  // Fix 11: Extract closed bars only (falling back to openTime + tfMs when isClosed is omitted) and key memo on last closed bar's openTime
   const closedSmcKey = useMemo(() => {
+    const tfMs = timeframeToMs(timeframe);
+    const nowMs = Date.now();
     let count = 0;
     let lastOpen = 0;
     for (let i = cleanCandles.length - 1; i >= 0; i--) {
-      if (cleanCandles[i]?.isClosed === true) {
+      if (isCandleClosed(cleanCandles[i], tfMs, nowMs)) {
         if (lastOpen === 0) lastOpen = cleanCandles[i].openTime;
         count++;
       }
@@ -906,7 +908,9 @@ export function CandlestickCanvas({
   }, [cleanCandles, symbol, timeframe]);
 
   const closedCandlesForSmc = useMemo(() => {
-    return cleanCandles.filter(c => c.isClosed === true);
+    const tfMs = timeframeToMs(timeframe);
+    const nowMs = Date.now();
+    return cleanCandles.filter(c => isCandleClosed(c, tfMs, nowMs));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [closedSmcKey]);
 

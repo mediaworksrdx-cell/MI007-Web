@@ -683,7 +683,7 @@ export function detectSwingPoints(
 
     const confIdx = i + lookback;
     // SMC-002: the confirming bar must be closed, otherwise the swing can still repaint
-    if (!isCandleClosed(candles[confIdx])) continue;
+    if (!isCandleClosed(candles[confIdx], ivMs)) continue;
     // SMC-007: confirmation is the CLOSE of the right-most lookback bar, not its open
     const confirmationTime = candleCloseTime(candles, confIdx, ivMs);
 
@@ -800,7 +800,7 @@ export function detectStructureBreaks(
 
   for (let i = 0; i < candles.length; i++) {
     // SMC-002: never generate structure on a forming candle
-    if (!isCandleClosed(candles[i])) break;
+    if (!isCandleClosed(candles[i], ivMs)) break;
     while (swingPtr < orderedSwings.length && swingConfIdx(orderedSwings[swingPtr]) <= i) {
       const sw = orderedSwings[swingPtr];
       if (sw.isHigh) {
@@ -3982,10 +3982,20 @@ export function calculateSMC(
   const opt = config?.filters;
   const swingLen: number = (config?.swingLength ?? DEFAULT_SMC_CONFIG.swingLength) ?? 5;
 
-  // 1. Detect Swings (Major External Swings & Sub-Structure Internal Swings)
-  const majorLookback = Math.max(7, swingLen);
+  // 1. Detect Swings (Adaptive to dataset length so all timeframes including 1W / 1M / 1m work cleanly)
+  const majorLookback =
+    candles.length < 35
+      ? 2
+      : candles.length < 70
+      ? 3
+      : candles.length < 120
+      ? Math.min(5, Math.max(3, swingLen))
+      : Math.max(5, swingLen);
   const majorSwings = detectSwingPoints(candles, majorLookback, true);
-  const minorLookback = Math.max(3, Math.floor(swingLen / 2));
+  const minorLookback =
+    candles.length < 35
+      ? 1
+      : Math.max(2, Math.floor(majorLookback / 2));
   const minorSwings = detectSwingPoints(candles, minorLookback, false);
 
   const swings = [...majorSwings];

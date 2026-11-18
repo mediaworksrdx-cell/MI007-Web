@@ -1398,8 +1398,8 @@ export function renderChart(
         if (!isBullishMaster && !isBearishMaster) return false;
         if (!isBullishMaster && (sw.type === 'HH' || sw.type === 'HL')) return false;
         if (!isBearishMaster && (sw.type === 'LH' || sw.type === 'LL')) return false;
-        // Institutional clean mode: strictly prioritize major external swing pivots
-        if (isCleanMode && (smcCfg.showMajorStructureOnly ?? true) && sw.significance === 'MINOR') return false;
+        // Institutional clean mode: hide MINOR swings unless Internal Market Structure is enabled or Major Structure Only is off
+        if (isCleanMode && (smcCfg.showMajorStructureOnly ?? true) && !smcCfg.showInternalStructure && sw.significance === 'MINOR') return false;
         return true;
       });
 
@@ -1549,8 +1549,7 @@ export function renderChart(
     const allCandidateDemand = (showDemandBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
     const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 1 : Math.max(2, baseQuota));
-    // In Clean Mode, mitigated order blocks are strictly hidden to ensure zero chart clutter
-    const mitigatedDemand = (smcCfg.showMitigatedOb && !isCleanMode)
+    const mitigatedDemand = smcCfg.showMitigatedOb
       ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, mitigatedQuota)
       : [];
     const demandBlocks = [...unmitigatedDemand, ...mitigatedDemand];
@@ -1558,14 +1557,13 @@ export function renderChart(
     const allCandidateSupply = (showSupplyBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && !ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
     const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 1 : Math.max(2, baseQuota));
-    // In Clean Mode, mitigated order blocks are strictly hidden
-    const mitigatedSupply = (smcCfg.showMitigatedOb && !isCleanMode)
+    const mitigatedSupply = smcCfg.showMitigatedOb
       ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, mitigatedQuota)
       : [];
     const supplyBlocks = [...unmitigatedSupply, ...mitigatedSupply];
 
     // Breaker Blocks (+BRK Support & -BRK Resistance)
-    const shouldCheckBreakers = smcCfg.showBreakers || smcCfg.showBullishBreakers || smcCfg.showBearishBreakers;
+    const shouldCheckBreakers = smcCfg.showBreakers !== false && (smcCfg.showBreakers || smcCfg.showBullishBreakers || smcCfg.showBearishBreakers);
     const allCandidateBreakers = (shouldCheckBreakers ? smcData.breakers : []).filter((brk) => {
       if (brk.isBullish) {
         if (smcCfg.showBullishBreakers === false) return false;
@@ -1574,7 +1572,7 @@ export function renderChart(
         if (smcCfg.showBearishBreakers === false) return false;
         if (!smcCfg.showBearishBreakers && !smcCfg.showBreakers) return false;
       }
-      if (brk.isMitigated && (isCleanMode || !smcCfg.showMitigatedOb)) return false;
+      if (brk.isMitigated && !smcCfg.showMitigatedOb) return false;
       if (brk.startIndex > endIdx) return false;
       if (brk.isMitigated && brk.endIndex < startIdx) return false;
       return true;
@@ -1710,11 +1708,10 @@ export function renderChart(
 
     // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG) — Dedicated Quota Pools & High Visibility
     const fvgBaseQuota = isTargetedMode ? 1 : (isCleanMode ? 1 : Math.max(2, Math.floor((smcCfg.maxVisibleZones || 6) / 2)));
-    const fvgMitigatedQuota = (smcCfg.showMitigatedFvg && !isCleanMode) ? 2 : 0;
+    const fvgMitigatedQuota = smcCfg.showMitigatedFvg ? 2 : 0;
 
     const inWindowFvgs = smcData.fvgs.filter((fvg) => {
       if (fvg.isInverse) {
-        if (isCleanMode) return false; // IFVGs hidden by default in clean mode
         if (fvg.isBullish && smcCfg.showBullishIfvg === false) return false;
         if (!fvg.isBullish && smcCfg.showBearishIfvg === false) return false;
         if (!smcCfg.showBullishIfvg && !smcCfg.showBearishIfvg) return false;
@@ -1722,8 +1719,8 @@ export function renderChart(
       } else {
         if (fvg.isBullish && smcCfg.showBullishFvg === false) return false;
         if (!fvg.isBullish && smcCfg.showBearishFvg === false) return false;
-        if (fvg.isMitigated && (isCleanMode || !smcCfg.showMitigatedFvg)) return false;
-        if (fvg.isInvalidated && (isCleanMode || !smcCfg.showMitigatedFvg)) return false;
+        if (fvg.isMitigated && !smcCfg.showMitigatedFvg) return false;
+        if (fvg.isInvalidated && !smcCfg.showMitigatedFvg) return false;
       }
       if (fvg.startIndex > endIdx) return false;
       const isMit = fvg.isMitigated || fvg.isInvalidated;
@@ -1734,7 +1731,7 @@ export function renderChart(
     const getFvgGroup = (filterFn: (f: SmcFvg) => boolean) => {
       const candidates = inWindowFvgs.filter(filterFn);
       const unmit = sortZonesByProximity(candidates.filter(f => !f.isMitigated && !f.isInvalidated)).slice(0, fvgBaseQuota);
-      const mit = (smcCfg.showMitigatedFvg && !isCleanMode)
+      const mit = smcCfg.showMitigatedFvg
         ? sortZonesByProximity(candidates.filter(f => (f.isMitigated || f.isInvalidated) && f.endIndex >= startIdx)).slice(0, Math.max(1, fvgMitigatedQuota))
         : [];
       return [...unmit, ...mit];
@@ -1742,8 +1739,8 @@ export function renderChart(
 
     const bullishFvgs = getFvgGroup((f) => f.isBullish && !f.isInverse);
     const bearishFvgs = getFvgGroup((f) => !f.isBullish && !f.isInverse);
-    const bullishIfvgs = isCleanMode ? [] : getFvgGroup((f) => f.isBullish && Boolean(f.isInverse));
-    const bearishIfvgs = isCleanMode ? [] : getFvgGroup((f) => !f.isBullish && Boolean(f.isInverse));
+    const bullishIfvgs = getFvgGroup((f) => f.isBullish && Boolean(f.isInverse));
+    const bearishIfvgs = getFvgGroup((f) => !f.isBullish && Boolean(f.isInverse));
 
     const fvgsToRender = [...bullishFvgs, ...bearishFvgs, ...bullishIfvgs, ...bearishIfvgs];
 
@@ -2052,8 +2049,8 @@ export function renderChart(
       }
     }
 
-    // 7b. Equal Highs & Equal Lows (EQH / EQL) — Handled separately only in non-clean modes
-    if (!isCleanMode && smcCfg.showEqualHighLow && smcData.liquidityLevels) {
+    // 7b. Equal Highs & Equal Lows (EQH / EQL)
+    if (smcCfg.showEqualHighLow && smcData.liquidityLevels) {
       const eqLevels = smcData.liquidityLevels.filter((lvl) => (lvl.type === 'EQH' || lvl.type === 'EQL') && (!lvl.isSwept || smcCfg.showSweeps));
       const consolidatedEq = sam.consolidateLiquidityLevels(eqLevels, lastPrice, 0.0025);
       const eqhLevels = consolidatedEq.filter((l) => l.type === 'EQH').slice(-2);
@@ -2099,7 +2096,7 @@ export function renderChart(
     }
 
     // 8. Liquidity Sweeps (SSL & BSL) — Aggregated Clusters & Collision-Safe
-    const shouldRenderSweeps = (smcCfg.showSweeps ?? true) || smcCfg.showBslSweeps || smcCfg.showSslSweeps;
+    const shouldRenderSweeps = smcCfg.showSweeps !== false && ((smcCfg.showSweeps ?? true) || smcCfg.showBslSweeps || smcCfg.showSslSweeps);
     if (shouldRenderSweeps && smcData.sweeps) {
       const visibleSweeps = smcData.sweeps.filter((sw) => {
         if (sw.isHighSweep) {
