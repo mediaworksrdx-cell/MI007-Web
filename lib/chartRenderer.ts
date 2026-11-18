@@ -16,7 +16,7 @@ import {
   CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN, calculateDynamicPanelHeight,
   getInstrumentDecimals,
 } from './types';
-import { calculateSMC, DEFAULT_SMC_CONFIG, SMC_TRADE_LIFESPAN_BARS, resolveSameBarTpSlOrder, inferCandleIntervalMs, type SmcConfig } from './smcEngine';
+import { calculateSMC, DEFAULT_SMC_CONFIG, SMC_TRADE_LIFESPAN_BARS, resolveSameBarTpSlOrder, inferCandleIntervalMs, getSmcTradingDayKey, type SmcConfig } from './smcEngine';
 import { SmartAnnotationManager, type SmcVisualizationMode } from './smc/smartAnnotationManager';
 import { renderOrderFlowFootprint, formatVol } from './orderflow/orderFlowRenderer';
 import { renderQuantumAiOverlays } from './quantumai/quantumAiRenderer';
@@ -2296,6 +2296,23 @@ export function renderChart(
     // 10. Confirmed Directional SMC Setups (Only Quality >= 70 Accepted; < 70 Strictly Excluded from Active Trade List)
     if (smcData.confirmedSetups || smcData.allSetups || smcData.rejectedSetups) {
       const terminalClose = candles[candles.length - 1]?.close ?? 0;
+      const barIntervalMs = inferCandleIntervalMs(candles);
+      const isIntradayChart = barIntervalMs > 0 && barIntervalMs <= 3_600_000;
+      const latestDayKey =
+        isIntradayChart && candles.length > 0
+          ? getSmcTradingDayKey(candles[candles.length - 1].openTime, options.symbol)
+          : '';
+      let firstTodayIdx = 0;
+      if (isIntradayChart && latestDayKey) {
+        for (let i = candles.length - 1; i >= 0; i--) {
+          if (getSmcTradingDayKey(candles[i].openTime, options.symbol) === latestDayKey) {
+            firstTodayIdx = i;
+          } else {
+            break;
+          }
+        }
+      }
+
       const isActiveSetup = (s: SmcConfirmedSetup) =>
         (s.qualityScore ?? 0) >= 70 &&
         !s.isRejectedPermanently &&
@@ -2304,6 +2321,7 @@ export function renderChart(
         s.signalState !== 'RETEST_FAILED' &&
         s.signalState !== 'INVALIDATED' &&
         s.actionTier !== 'REJECT' &&
+        (!isIntradayChart || s.candleIndex >= firstTodayIdx) &&
         (terminalClose <= 0 || Math.abs(s.entryPrice - terminalClose) / terminalClose <= 0.05) &&
         (s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED' || s.status === 'PENDING');
 
@@ -2377,13 +2395,14 @@ export function renderChart(
           }
         }
 
-        // If no currently open setup exists, show most recent TARGET_HIT setup from allSetups (only if qualityScore >= 70)
+        // If no currently open setup exists, show most recent TARGET_HIT setup from today's session only (only if qualityScore >= 70)
         if (setupsToRender.length === 0 && smcData.allSetups && smcData.allSetups.length > 0) {
           const recentCompleted = smcData.allSetups
             .filter((s) =>
               s.status === 'TARGET_HIT' &&
               (s.qualityScore ?? 0) >= 70 &&
               !s.isRejectedPermanently &&
+              (!isIntradayChart || s.candleIndex >= firstTodayIdx) &&
               (lastBarIdx - s.candleIndex <= 60) &&
               ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence && isBullishMaster) ||
                (s.direction === 'BEARISH' && smcCfg.showBearishConfluence && isBearishMaster))
@@ -2395,9 +2414,11 @@ export function renderChart(
         }
       }
 
-      const barIntervalMs = inferCandleIntervalMs(candles);
       for (const st of setupsToRender) {
         const isBull = st.direction === 'BULLISH';
+        const stDayKey = isIntradayChart
+          ? getSmcTradingDayKey(candles[st.candleIndex]?.openTime ?? st.time, options.symbol)
+          : '';
         // RR-005 / RR-006: Reproduce smcEngine's exact independent TP1 / TP2 / SL lifecycle on closed bars
         const maxLifespan = SMC_TRADE_LIFESPAN_BARS;
         let endCandleIdx = Math.min(candles.length - 1, st.candleIndex + maxLifespan);
@@ -2409,6 +2430,12 @@ export function renderChart(
         for (let ci = st.candleIndex + 1; ci < candles.length; ci++) {
           const c = candles[ci];
           if (!c || c.isClosed !== true) break;
+          if (isIntradayChart && stDayKey && getSmcTradingDayKey(c.openTime, options.symbol) !== stDayKey) {
+            endCandleIdx = Math.max(st.candleIndex, ci - 1);
+            isTradeOver = true;
+            tradeOutcome = tp1Reached ? 'TP1 HIT' : 'EXPIRED';
+            break;
+          }
 
           const slTouched = isBull
             ? (c.low <= st.stopLoss || c.close <= st.stopLoss)
@@ -2494,7 +2521,8 @@ export function renderChart(
 
         // Lock bracket start strictly at the setup/breakout candle (st.candleIndex) so it never shifts when new candles form,
         // and grow its right edge with every new candle until the strategy concludes (endCandleIdx) or reaches the live candle.
-        const startX = (st.candleIndex - startIdx) * candleW + candleW / 2;
+        const bracketStartIdx = isIntradayChart ? Math.max(st.candleIndex, firstTodayIdx) : st.candleIndex;
+        const startX = (bracketStartIdx - startIdx) * candleW + candleW / 2;
         const endX = isTradeOver
           ? (endCandleIdx - startIdx) * candleW + candleW / 2
           : currentCandleX + candleW;

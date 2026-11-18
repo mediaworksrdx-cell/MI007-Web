@@ -13,6 +13,7 @@ import {
   isValidVerifiedCandleDataset,
   resolveSameBarTpSlOrder,
   timeframeToMs,
+  getSmcTradingDayKey,
   DEFAULT_SMC_CONFIG,
   SmcConfig,
 } from '../lib/smcEngine';
@@ -380,6 +381,20 @@ console.log('\n--- Test 5: Regression Suite (Closed-Bar Fallback, Volume Isolati
   );
   assert(activeFailedBos.length === 0, 'Fix 12: Confirmed close below bullish BOS invalidates/fails setup and removes from active setups');
   assert((smcFailed.executableSetups || []).filter(s => s.direction === 'BULLISH' && s.candleIndex >= 30).length === 0, 'Fix 12: Failed BOS retest is excluded from executableSetups');
+
+  // 6. Daily Session Reset: Yesterday's intraday strategy must expire when a new trading day starts
+  const nextDayOpenTime = niftyBase[niftyBase.length - 1].openTime + 24 * hour;
+  const niftyNextDay = [
+    ...niftyBase,
+    makeCandle(nextDayOpenTime, 25495, 25510, 25480, 25505, 2_000_000),
+    makeCandle(nextDayOpenTime + hour, 25505, 25520, 25490, 25515, 2_100_000),
+  ];
+  const latestDay = getSmcTradingDayKey(niftyNextDay[niftyNextDay.length - 1].openTime, 'NIFTY');
+  const smcNextDay = calculateSMC(niftyNextDay, undefined, 'NIFTY', '1H');
+  const yesterdayActiveSetups = smcNextDay.confirmedSetups.filter(
+    s => getSmcTradingDayKey(niftyNextDay[s.candleIndex]?.openTime ?? s.time, 'NIFTY') !== latestDay
+  );
+  assert(yesterdayActiveSetups.length === 0, 'Fix 13: Every day SMC starts fresh — zero yesterday strategies remain active in today confirmedSetups');
 }
 
 console.log('\n======================================================================');

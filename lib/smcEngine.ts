@@ -2170,6 +2170,57 @@ export function validateSetupDirectionalConfirmation(
 
 // ── 8. Complete 16 Institutional SMC Strategy Detectors ─────────────────────
 
+const US_EQUITY_SYMBOLS = new Set([
+  'SPX', 'NDX', 'DJI', 'SPY', 'QQQ', 'IWM', 'DIA', 'VIX',
+  'AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'GOOG', 'META', 'TSLA', 'NFLX', 'AMD',
+  'INTC', 'JPM', 'V', 'MA', 'WMT', 'DIS', 'BA', 'GS', 'MS', 'BAC', 'XOM', 'CVX',
+]);
+
+/**
+ * Returns the local trading session date key (YYYY-MM-DD) for a timestamp:
+ * - Crypto / Forex / Commodities: UTC date
+ * - US equities & indices: America/New_York date
+ * - Indian / NSE / default: Asia/Kolkata (IST = UTC + 5:30) date
+ */
+export function getSmcTradingDayKey(timestampMs: number, symbol?: string): string {
+  if (!timestampMs || timestampMs <= 0) return '';
+  const sym = (symbol || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const isCryptoOrFx =
+    sym.endsWith('USDT') ||
+    sym.endsWith('USD') ||
+    sym === 'BTC' ||
+    sym === 'ETH' ||
+    sym === 'SOL' ||
+    sym === 'BNB' ||
+    sym === 'XRP' ||
+    sym === 'DOGE' ||
+    sym === 'ADA' ||
+    sym === 'AVAX' ||
+    sym === 'EURUSD' ||
+    sym === 'GBPUSD' ||
+    sym === 'USDJPY' ||
+    sym === 'AUDUSD' ||
+    sym === 'USDCAD' ||
+    sym === 'USDCHF' ||
+    sym === 'XAUUSD' ||
+    sym === 'XAGUSD' ||
+    sym === 'WTI' ||
+    sym === 'BRENT';
+  if (isCryptoOrFx) {
+    return new Date(timestampMs).toISOString().slice(0, 10);
+  }
+  if (US_EQUITY_SYMBOLS.has(sym)) {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date(timestampMs));
+  }
+  // Default: IST (UTC + 05:30)
+  return new Date(timestampMs + 5.5 * 3600_000).toISOString().slice(0, 10);
+}
+
 export function detectAll16SmcSetups(
   candles: Candle[],
   swingsOrConfig?: SmcSwingPoint[] | Partial<SmcConfig>,
@@ -2238,6 +2289,18 @@ export function detectAll16SmcSetups(
   const lastCandle = candles[candles.length - 1];
   const atrSeries = computeAtrSeries(candles, 14);
   const intervalMs = inferCandleIntervalMs(candles);
+  const isIntradaySession = intervalMs > 0 && intervalMs <= 3_600_000;
+  const latestDayKey = isIntradaySession ? getSmcTradingDayKey(lastCandle.openTime, symbol) : '';
+  let firstTodayIdx = 0;
+  if (isIntradaySession && latestDayKey) {
+    for (let i = candles.length - 1; i >= 0; i--) {
+      if (getSmcTradingDayKey(candles[i].openTime, symbol) === latestDayKey) {
+        firstTodayIdx = i;
+      } else {
+        break;
+      }
+    }
+  }
 
   // Helper to construct setup with deterministic ID
   const makeSetup = (
@@ -2603,10 +2666,19 @@ export function detectAll16SmcSetups(
       validatingBreak || (formBar && (isBull ? formBar.close >= cleanEntry : formBar.close <= cleanEntry))
     );
 
+    const setupDayKey = isIntradaySession ? getSmcTradingDayKey(effectiveConfirmTime, symbol) : '';
+
     if (status !== 'INVALIDATED') {
       for (let k = effectiveConfirmIdx + 1; k < candles.length; k++) {
         const bar = candles[k];
         if (!isCandleClosed(bar)) break;
+
+        // Every trading day starts fresh on intraday charts: expire yesterday's strategy at the new day boundary
+        if (isIntradaySession && setupDayKey && getSmcTradingDayKey(bar.openTime, symbol) !== setupDayKey) {
+          status = tp1Hit ? 'EXITED' : 'EXPIRED';
+          lifecycleState = tp1Hit ? 'EXITED' : 'EXPIRED';
+          break;
+        }
 
         const slTouched = isBull ? (bar.low <= cleanStopLoss || bar.close <= cleanStopLoss) : (bar.high >= cleanStopLoss || bar.close >= cleanStopLoss);
         const tp1Touched = isBull ? bar.high >= effectiveTarget1 : bar.low <= effectiveTarget1;
@@ -2768,8 +2840,12 @@ export function detectAll16SmcSetups(
     // 3. Current Bar Reality Invariant Check (governed strictly by setup stopLoss, current price recovery, retest expiry & lifespan)
     const maxRetestWaitBars = options?.maxRetestWaitBars ?? SMC_RETEST_EXPIRY_BARS;
     const lastBar = candles[candles.length - 1];
-    if (lastBar && (status === 'CONFIRMED' || status === 'RETESTING' || status === 'ENTRY_ZONE_REACHED')) {
-      if (isBull && (lastBar.low <= cleanStopLoss || lastBar.close <= cleanStopLoss)) {
+    if (lastBar && (status === 'CONFIRMED' || status === 'RETESTING' || status === 'ENTRY_ZONE_REACHED' || status === 'PENDING')) {
+      if (isIntradaySession && setupDayKey && latestDayKey && setupDayKey !== latestDayKey) {
+        // New trading day started: yesterday's strategy does not carry over into today
+        status = tp1Hit ? 'EXITED' : 'EXPIRED';
+        lifecycleState = tp1Hit ? 'EXITED' : 'EXPIRED';
+      } else if (isBull && (lastBar.low <= cleanStopLoss || lastBar.close <= cleanStopLoss)) {
         status = 'INVALIDATED';
         lifecycleState = 'INVALIDATED';
       } else if (!isBull && (lastBar.high >= cleanStopLoss || lastBar.close >= cleanStopLoss)) {
@@ -3236,7 +3312,17 @@ export function detectAll16SmcSetups(
     const localAtr = atrSeries[Math.min(fvg.startIndex + 1, atrSeries.length - 1)] || fvg.cePrice * 0.002;
     if (impulseBody < localAtr * 0.6) continue;
 
-    const confIdx = fvg.confirmationIndex ?? Math.min(candles.length - 1, fvg.startIndex + 2);
+    let confIdx = fvg.confirmationIndex ?? Math.min(candles.length - 1, fvg.startIndex + 2);
+    if (isIntradaySession && confIdx < firstTodayIdx) {
+      let todayTap = -1;
+      for (let k = firstTodayIdx; k < candles.length; k++) {
+        if (candles[k].low <= fvg.topPrice && candles[k].high >= fvg.bottomPrice) {
+          todayTap = k;
+          break;
+        }
+      }
+      if (todayTap >= firstTodayIdx) confIdx = todayTap;
+    }
     const confTime = candles[confIdx]?.openTime ?? fvg.formationTime;
     const entry = fvg.cePrice; // 50% CE entry
     const buf = atrBufferAt(confIdx);
@@ -3261,7 +3347,17 @@ export function detectAll16SmcSetups(
   for (const ob of activeObs) {
     const isBull = ob.isBullish;
 
-    const anchorIdx = ob.confirmationIndex ?? Math.min(candles.length - 1, ob.startIndex + 1);
+    let anchorIdx = ob.confirmationIndex ?? Math.min(candles.length - 1, ob.startIndex + 1);
+    if (isIntradaySession && anchorIdx < firstTodayIdx) {
+      let todayTap = -1;
+      for (let k = firstTodayIdx; k < candles.length; k++) {
+        if (candles[k].low <= ob.topPrice && candles[k].high >= ob.bottomPrice) {
+          todayTap = k;
+          break;
+        }
+      }
+      if (todayTap >= firstTodayIdx) anchorIdx = todayTap;
+    }
     const anchorTime = candles[anchorIdx]?.openTime ?? ob.formationTime;
     const entry = (ob.topPrice + ob.bottomPrice) / 2;
     const buf = atrBufferAt(anchorIdx);
@@ -3300,7 +3396,17 @@ export function detectAll16SmcSetups(
   for (const brk of activeBreakers) {
     const isBull = brk.label.includes('Bull') || (brk.isBreaker ? brk.isBullish : !brk.isBullish);
 
-    const anchorIdx = brk.confirmationIndex ?? Math.min(candles.length - 1, brk.endIndex);
+    let anchorIdx = brk.confirmationIndex ?? Math.min(candles.length - 1, brk.endIndex);
+    if (isIntradaySession && anchorIdx < firstTodayIdx) {
+      let todayTap = -1;
+      for (let k = firstTodayIdx; k < candles.length; k++) {
+        if (candles[k].low <= brk.topPrice && candles[k].high >= brk.bottomPrice) {
+          todayTap = k;
+          break;
+        }
+      }
+      if (todayTap >= firstTodayIdx) anchorIdx = todayTap;
+    }
     const anchorTime = candles[anchorIdx]?.openTime ?? brk.formationTime;
     const entry = (brk.topPrice + brk.bottomPrice) / 2;
     const buf = atrBufferAt(anchorIdx);
