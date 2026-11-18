@@ -2299,7 +2299,10 @@ export function renderChart(
       const isActiveSetup = (s: SmcConfirmedSetup) =>
         (s.qualityScore ?? 0) >= 70 &&
         !s.isRejectedPermanently &&
+        !s.retestFailed &&
         s.signalState !== 'REJECTED' &&
+        s.signalState !== 'RETEST_FAILED' &&
+        s.signalState !== 'INVALIDATED' &&
         s.actionTier !== 'REJECT' &&
         (terminalClose <= 0 || Math.abs(s.entryPrice - terminalClose) / terminalClose <= 0.05) &&
         (s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED' || s.status === 'PENDING');
@@ -2327,8 +2330,8 @@ export function renderChart(
           const aApproved = (a.qualityScore ?? 0) >= 70 ? 1 : 0;
           const bApproved = (b.qualityScore ?? 0) >= 70 ? 1 : 0;
           if (aApproved !== bApproved) return bApproved - aApproved;
-          const aValidState = a.signalState !== 'MISSED_ENTRY' && a.signalState !== 'EXPIRED' && a.signalState !== 'INVALIDATED' && a.signalState !== 'REJECTED' ? 1 : 0;
-          const bValidState = b.signalState !== 'MISSED_ENTRY' && b.signalState !== 'EXPIRED' && b.signalState !== 'INVALIDATED' && b.signalState !== 'REJECTED' ? 1 : 0;
+          const aValidState = !a.retestFailed && a.signalState !== 'RETEST_FAILED' && a.signalState !== 'MISSED_ENTRY' && a.signalState !== 'EXPIRED' && a.signalState !== 'INVALIDATED' && a.signalState !== 'REJECTED' ? 1 : 0;
+          const bValidState = !b.retestFailed && b.signalState !== 'RETEST_FAILED' && b.signalState !== 'MISSED_ENTRY' && b.signalState !== 'EXPIRED' && b.signalState !== 'INVALIDATED' && b.signalState !== 'REJECTED' ? 1 : 0;
           if (aValidState !== bValidState) return bValidState - aValidState;
           const stateScore = (stState?: string) =>
             stState === 'EXECUTED' ? 5 :
@@ -2736,14 +2739,19 @@ export function renderChart(
           : '';
         const tierText = (st.actionTier || (st.qualityScore && st.qualityScore < 70 ? 'REJECT' : 'CONDITIONAL_SETUP')).replace(/_/g, ' ');
         const scoreLabel = st.qualityScore ? ` • Quality ${Math.round(st.qualityScore)}/100 (${tierText})` : '';
-        // Separate RETEST TOUCHED, REJECTION CONFIRMED, and ENTRY READY into three independent states;
-        // if live price has recovered above short entry (or dropped below long entry), rejection is not holding -> RETEST TOUCHED.
-        const priceRecoveredAgainstEntry = curPrice > 0 && (isBull ? curPrice < st.entryPrice : curPrice > st.entryPrice);
-        const hasVerifiedRejection = Boolean(st.rejectionConfirmed && (st.retestCount ?? 0) > 0 && !priceRecoveredAgainstEntry);
+        // Separate RETEST TOUCHED, RETEST FAILED, REJECTION CONFIRMED, and ENTRY READY into independent states;
+        // if live price has recovered above short entry (or dropped below long entry / BOS), rejection is not holding.
+        const bosHoldRef = st.validatingBreak
+          ? (isBull ? Math.max(st.entryPrice, st.validatingBreak.price) : Math.min(st.entryPrice, st.validatingBreak.price))
+          : st.entryPrice;
+        const priceRecoveredAgainstEntry = curPrice > 0 && (isBull ? curPrice < bosHoldRef : curPrice > bosHoldRef);
+        const hasVerifiedRejection = Boolean(st.rejectionConfirmed && !st.retestFailed && (st.retestCount ?? 0) > 0 && !priceRecoveredAgainstEntry);
         const hasRetestTouch = Boolean(st.retestTouched || priceRecoveredAgainstEntry);
         const effectiveSignalState =
-          priceRecoveredAgainstEntry && hasRetestTouch
-            ? 'RETEST_TOUCHED'
+          st.retestFailed || st.signalState === 'RETEST_FAILED'
+            ? 'RETEST_FAILED'
+            : priceRecoveredAgainstEntry && hasRetestTouch
+            ? 'RETEST_BELOW_BOS'
             : hasVerifiedRejection
             ? (options.isMarketOpen === false || st.signalState !== 'ENTRY_READY' ? 'REJECTION_CONFIRMED' : 'ENTRY_READY')
             : hasRetestTouch
@@ -2756,8 +2764,14 @@ export function renderChart(
             ? tradeOutcome
             : effectiveSignalState;
         const statusLabel =
-          rawStatus === 'RETEST_TOUCHED'
-            ? 'RETEST TOUCHED • AWAITING REJECTION'
+          rawStatus === 'RETEST_FAILED'
+            ? 'RETEST FAILED • DO NOT EXECUTE'
+            : rawStatus === 'RETEST_BELOW_BOS'
+            ? (isBull ? 'BELOW BOS • RECLAIM & REJECTION REQUIRED (DO NOT EXECUTE)' : 'ABOVE BOS • RECLAIM & REJECTION REQUIRED (DO NOT EXECUTE)')
+            : rawStatus === 'RETEST_TOUCHED'
+            ? 'RETEST TOUCHED • AWAITING REJECTION (DO NOT EXECUTE)'
+            : rawStatus === 'CONDITIONAL_SETUP'
+            ? 'CONDITIONAL SETUP • AWAITING RETEST (DO NOT EXECUTE)'
             : rawStatus.replace(/_/g, ' ');
         const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName}${bosLabel} (${rrLabel}${scoreLabel}) [${statusLabel}]`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;

@@ -354,6 +354,32 @@ console.log('\n--- Test 5: Regression Suite (Closed-Bar Fallback, Volume Isolati
   const smcTick2 = calculateSMC([...baseChart, formingTick2], undefined, 'TEST', '1H');
   assert(smcTick1.datasetFingerprint === smcTick2.datasetFingerprint, 'Fix 11: Forming-bar ticks share the same closed-bar cache fingerprint');
   assert(smcTick1 === smcTick2, 'Fix 11: Forming-bar ticks return cached SmcAnalysis in O(1)');
+
+  // 5. Retest Failure vs Completed Rejection Reclaim on BOS Setup (NIFTY 25,424.35 scenario)
+  const niftyBase: Candle[] = [];
+  for (let i = 0; i < 30; i++) {
+    const p = 25200 + Math.sin(i / 2.5) * 150;
+    niftyBase.push(makeCandle(pastStart + i * hour, p - 20, p + 45, p - 45, p + 15, 2_000_000));
+  }
+  // Create clear swing high at 25,424.35 and swing low at 25,153.32, then bullish BOS breakout
+  niftyBase.push(makeCandle(pastStart + 30 * hour, 25300, 25424.35, 25280, 25380, 2_500_000));
+  niftyBase.push(makeCandle(pastStart + 31 * hour, 25380, 25390, 25220, 25240, 2_200_000));
+  niftyBase.push(makeCandle(pastStart + 32 * hour, 25240, 25260, 25153.32, 25180, 2_200_000));
+  niftyBase.push(makeCandle(pastStart + 33 * hour, 25180, 25320, 25170, 25300, 2_500_000));
+  niftyBase.push(makeCandle(pastStart + 34 * hour, 25300, 25500, 25290, 25490, 4_000_000)); // Bullish BOS above 25,424.35
+
+  // Case A: Confirmed candles close below BOS (25,424.35) down to 25,303.20 -> must fail/invalidate and NOT be executable
+  const niftyFailed = [
+    ...niftyBase,
+    makeCandle(pastStart + 35 * hour, 25490, 25495, 25380, 25395, 2_800_000),
+    makeCandle(pastStart + 36 * hour, 25395, 25420, 25290, 25303.20, 3_100_000),
+  ];
+  const smcFailed = calculateSMC(niftyFailed, undefined, 'NIFTY', '1H');
+  const activeFailedBos = smcFailed.confirmedSetups.filter(
+    s => s.direction === 'BULLISH' && s.setupType === 'BOS_CONTINUATION' && s.candleIndex >= 30
+  );
+  assert(activeFailedBos.length === 0, 'Fix 12: Confirmed close below bullish BOS invalidates/fails setup and removes from active setups');
+  assert((smcFailed.executableSetups || []).filter(s => s.direction === 'BULLISH' && s.candleIndex >= 30).length === 0, 'Fix 12: Failed BOS retest is excluded from executableSetups');
 }
 
 console.log('\n======================================================================');

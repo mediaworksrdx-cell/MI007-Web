@@ -257,12 +257,16 @@ export interface SmcConfirmedSetup {
     swingIndex?: number;
     brokenSwingPrice?: number;
   };
-  /** Explicit execution state separating CONDITIONAL_SETUP, RETEST_TOUCHED, REJECTION_CONFIRMED, ENTRY_READY, and EXECUTED */
-  signalState?: 'REJECTED' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_TOUCHED' | 'REJECTION_CONFIRMED' | 'RETEST_CONFIRMED' | 'ENTRY_READY' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'EXPIRED' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED';
+  /** Explicit execution state separating CONDITIONAL_SETUP, RETEST_TOUCHED, RETEST_FAILED, REJECTION_CONFIRMED, ENTRY_READY, and EXECUTED */
+  signalState?: 'REJECTED' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_TOUCHED' | 'RETEST_FAILED' | 'REJECTION_CONFIRMED' | 'RETEST_CONFIRMED' | 'ENTRY_READY' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'EXPIRED' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED';
   /** True when price has revisited/touched the entry zone after the structural break */
   retestTouched?: boolean;
+  /** True when a confirmed candle closed beyond the BOS/entry reference against the trade direction */
+  retestFailed?: boolean;
   /** True only when a completed directional rejection candle closed at the entry zone and price remains rejected */
   rejectionConfirmed?: boolean;
+  /** True only after a completed rejection candle reclaims and holds the BOS/entry level; false for all conditional/touched setups */
+  isExecutable?: boolean;
   /** Structural invalidation reference used for stop-loss placement */
   invalidationBasis?: string;
   /** Score-based system action tier (<60 Reject, 60-69 Watchlist only, 70-79 Conditional, 80-89 High-quality, 90-100 Highest-priority) */
@@ -298,6 +302,7 @@ export interface SmcAnalysis {
   dealingRange: SmcDealingRange;
   sessionLevels: SmcSessionLevels;
   confirmedSetups: SmcConfirmedSetup[];
+  executableSetups?: SmcConfirmedSetup[];
   allSetups: SmcConfirmedSetup[];
   rejectedSetups?: SmcConfirmedSetup[];
   equilibriumPrice: number;
@@ -2567,6 +2572,8 @@ export function detectAll16SmcSetups(
       : statusOverride === 'CONFIRMED' ? 'CONFIRMED' : (status === 'RETESTING' ? 'RETESTED' : 'CONFIRMED');
     let retestCount = 0;
     let retestTouched = false;
+    let retestFailed = false;
+    let closedBelowBosCount = 0;
     let rejectionConfirmed = false;
     let lastRejectionBarIdx = -1;
     let tp1Hit = false;
@@ -2574,6 +2581,9 @@ export function detectAll16SmcSetups(
     let tp2Hit = false;
     let tp2HitIndex: number | undefined;
     let resolutionIndeterminate = false;
+
+    const bosRefLevel = validatingBreak ? validatingBreak.price : cleanEntry;
+    const requiredHoldLevel = isBull ? Math.max(cleanEntry, bosRefLevel) : Math.min(cleanEntry, bosRefLevel);
 
     // 1. Confirmation bar validation
     const formBar = candles[effectiveConfirmIdx];
@@ -2590,7 +2600,7 @@ export function detectAll16SmcSetups(
     const entryZoneLow = isBull ? cleanEntry - zoneHalfWidth : cleanEntry - zoneHalfWidth * 0.5;
     const entryZoneHigh = isBull ? cleanEntry + zoneHalfWidth * 0.5 : cleanEntry + zoneHalfWidth;
     let hasDepartedZone = Boolean(
-      formBar && (isBull ? formBar.close > entryZoneHigh : formBar.close < entryZoneLow)
+      validatingBreak || (formBar && (isBull ? formBar.close >= cleanEntry : formBar.close <= cleanEntry))
     );
 
     if (status !== 'INVALIDATED') {
@@ -2692,30 +2702,48 @@ export function detectAll16SmcSetups(
         const closePosInBar = (bar.close - bar.low) / barRange;
 
         const confirmedRejection = hasRealRange && (isBull
-          ? (bar.close > cleanStopLoss && bar.close >= cleanEntry && bar.close > bar.open && (closePosInBar >= 0.50 || lowerWickRatio >= 0.25))
-          : (bar.close < cleanStopLoss && bar.close <= cleanEntry && bar.close < bar.open && (closePosInBar <= 0.50 || upperWickRatio >= 0.25)));
+          ? (bar.close > cleanStopLoss && bar.close >= requiredHoldLevel && bar.close > bar.open && (closePosInBar >= 0.50 || lowerWickRatio >= 0.25))
+          : (bar.close < cleanStopLoss && bar.close <= requiredHoldLevel && bar.close < bar.open && (closePosInBar <= 0.50 || upperWickRatio >= 0.25)));
 
-        if (!tp1Hit && tappedZone) {
+        const closedBelowBosOrEntry = isBull ? bar.close < requiredHoldLevel : bar.close > requiredHoldLevel;
+        const closedBeyondZone = isBull ? bar.close < entryZoneLow : bar.close > entryZoneHigh;
+
+        if (!tp1Hit && tappedZone && confirmedRejection) {
           retestTouched = true;
-          if (confirmedRejection) {
-            rejectionConfirmed = true;
-            lastRejectionBarIdx = k;
-            status = 'RETESTING';
-            lifecycleState = 'RETESTED';
-            retestCount++;
-          } else if (!rejectionConfirmed) {
+          rejectionConfirmed = true;
+          retestFailed = false;
+          closedBelowBosCount = 0;
+          lastRejectionBarIdx = k;
+          status = 'RETESTING';
+          lifecycleState = 'RETESTED';
+          retestCount++;
+        } else if (!tp1Hit && closedBelowBosOrEntry) {
+          // Confirmed candle closed below bullish BOS/entry (or above bearish BOS/entry) -> retest failed
+          retestTouched = true;
+          rejectionConfirmed = false;
+          retestFailed = true;
+          closedBelowBosCount++;
+          if (closedBeyondZone || closedBelowBosCount >= 2) {
+            status = 'INVALIDATED';
+            lifecycleState = 'INVALIDATED';
+            break;
+          } else {
             status = 'ENTRY_ZONE_REACHED';
             lifecycleState = 'ENTRY_ZONE_REACHED';
           }
+        } else if (!tp1Hit && tappedZone && !rejectionConfirmed) {
+          retestTouched = true;
+          status = 'ENTRY_ZONE_REACHED';
+          lifecycleState = 'ENTRY_ZONE_REACHED';
         }
 
-        // If price subsequently closes back beyond cleanEntry against the trade direction, any prior rejection is negated
-        // and the setup reverts to RETEST_TOUCHED awaiting a fresh rejection candle close.
+        // If price subsequently closes back beyond requiredHoldLevel against the trade direction, any prior rejection is negated
         if (rejectionConfirmed && k > lastRejectionBarIdx) {
-          const recoveredAgainstTrade = isBull ? bar.close < cleanEntry : bar.close > cleanEntry;
+          const recoveredAgainstTrade = isBull ? bar.close < requiredHoldLevel : bar.close > requiredHoldLevel;
           if (recoveredAgainstTrade) {
             rejectionConfirmed = false;
             retestTouched = true;
+            retestFailed = true;
             status = 'ENTRY_ZONE_REACHED';
             lifecycleState = 'ENTRY_ZONE_REACHED';
           }
@@ -2871,24 +2899,92 @@ export function detectAll16SmcSetups(
       }
     }
 
-    // Separate independent states: CONDITIONAL_SETUP, RETEST_TOUCHED, REJECTION_CONFIRMED, ENTRY_READY, and EXECUTED
+    // If a confirmed candle closed beyond BOS/entry and price never reclaimed it with a rejection candle, mark retest as FAILED / INVALIDATED
+    if (retestFailed && !rejectionConfirmed) {
+      status = 'INVALIDATED';
+      lifecycleState = 'INVALIDATED';
+    }
+
+    // Requirement 5: Recalculate entry, stop-loss and targets after confirmation from the actual confirmed rejection candle
+    let finalEntry = cleanEntry;
+    let finalSl = roundSmcPrice(cleanStopLoss);
+    let finalRisk = riskDistance;
+    let finalTp1 = effectiveTarget1;
+    let finalTp2 = targetPrice2;
+    let finalReward = rewardDistance;
+    let finalRr = computedRr;
+
+    if (rejectionConfirmed && !retestFailed && lastRejectionBarIdx >= 0 && status !== 'INVALIDATED' && status !== 'EXPIRED') {
+      const rejBar = candles[lastRejectionBarIdx];
+      if (rejBar) {
+        const recalcEntry = roundSmcPrice(
+          isBull ? Math.max(requiredHoldLevel, rejBar.close) : Math.min(requiredHoldLevel, rejBar.close)
+        );
+        const recalcSl = roundSmcPrice(
+          isBull
+            ? Math.min(cleanStopLoss, rejBar.low - atrVal * 0.25)
+            : Math.max(cleanStopLoss, rejBar.high + atrVal * 0.25)
+        );
+        const recalcRisk = Math.max(Math.abs(recalcEntry - recalcSl), atrVal * 0.25);
+        const recalcMinTp1 = recalcRisk * rp.target1R;
+        const recalcPools = candidatePools.filter(p => {
+          const inDir = isBull ? p.price > recalcEntry : p.price < recalcEntry;
+          const d = Math.abs(p.price - recalcEntry);
+          return inDir && d >= recalcMinTp1 && d <= recalcRisk * 4.5;
+        });
+        const recalcStructTp1 = recalcPools[0];
+        const recalcTp1 = roundSmcPrice(
+          recalcStructTp1
+            ? recalcStructTp1.price
+            : isBull
+              ? recalcEntry + recalcMinTp1
+              : recalcEntry - recalcMinTp1
+        );
+        const recalcReward = Math.abs(recalcTp1 - recalcEntry);
+        const recalcRr = Number((recalcReward / Math.max(1e-9, recalcRisk)).toFixed(2));
+        if (recalcRr >= rp.minRiskReward) {
+          finalEntry = recalcEntry;
+          finalSl = recalcSl;
+          finalRisk = recalcRisk;
+          finalTp1 = recalcTp1;
+          finalReward = recalcReward;
+          finalRr = recalcRr;
+          const recalcMinTp2 = Math.max(recalcReward + Math.max(recalcRisk * 0.35, atrVal * 0.4), recalcRisk * rp.target2R);
+          const recalcStructTp2 = recalcPools.find(p => Math.abs(p.price - recalcEntry) >= recalcMinTp2);
+          finalTp2 = roundSmcPrice(
+            recalcStructTp2
+              ? recalcStructTp2.price
+              : isBull
+                ? recalcEntry + recalcRisk * rp.target2R
+                : recalcEntry - recalcRisk * rp.target2R
+          );
+        }
+      }
+    }
+
+    // Separate independent states: CONDITIONAL_SETUP, RETEST_TOUCHED, RETEST_FAILED, REJECTION_CONFIRMED, ENTRY_READY, and EXECUTED
     const confirmedOrderFill = false;
     const lastClosedIdx = candles[candles.length - 1]?.isClosed === true ? candles.length - 1 : Math.max(0, candles.length - 2);
-    const distInTradeDir = lastBar ? (isBull ? (lastBar.close - cleanEntry) : (cleanEntry - lastBar.close)) : -1;
+    const distInTradeDir = lastBar ? (isBull ? (lastBar.close - finalEntry) : (finalEntry - lastBar.close)) : -1;
+    const holdingAboveBosNow = lastBar ? (isBull ? lastBar.close >= requiredHoldLevel : lastBar.close <= requiredHoldLevel) : false;
     const isEntryReadyNow = Boolean(
       !isRejectedPermanently &&
+      !retestFailed &&
       rejectionConfirmed &&
+      holdingAboveBosNow &&
       lastBar &&
       lastBar.high > lastBar.low &&
       distInTradeDir >= 0 &&
-      distInTradeDir <= riskDistance * 0.30 &&
+      distInTradeDir <= finalRisk * 0.30 &&
       lastRejectionBarIdx >= 0 &&
       (lastClosedIdx - lastRejectionBarIdx <= 3)
     );
 
-    const signalState: 'REJECTED' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_TOUCHED' | 'REJECTION_CONFIRMED' | 'RETEST_CONFIRMED' | 'ENTRY_READY' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'EXPIRED' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED' =
+    const signalState: 'REJECTED' | 'WATCHLIST_ONLY' | 'CONDITIONAL_SETUP' | 'WAITING_FOR_RETEST' | 'PENDING_RETEST' | 'RETEST_TOUCHED' | 'RETEST_FAILED' | 'REJECTION_CONFIRMED' | 'RETEST_CONFIRMED' | 'ENTRY_READY' | 'ORDER_SUBMITTED' | 'EXECUTED' | 'MISSED_ENTRY' | 'EXPIRED' | 'INVALIDATED' | 'PENDING' | 'CONFIRMED' =
       isRejectedPermanently || actionTier === 'REJECT'
         ? 'REJECTED'
+        : retestFailed && closedBelowBosCount === 1
+        ? 'RETEST_FAILED'
         : status === 'INVALIDATED'
         ? 'INVALIDATED'
         : status === 'EXPIRED'
@@ -2897,13 +2993,23 @@ export function detectAll16SmcSetups(
         ? 'MISSED_ENTRY'
         : confirmedOrderFill
         ? 'EXECUTED'
-        : rejectionConfirmed
+        : rejectionConfirmed && holdingAboveBosNow
         ? (score >= 75 && isEntryReadyNow ? 'ENTRY_READY' : 'REJECTION_CONFIRMED')
         : retestTouched
         ? 'RETEST_TOUCHED'
         : waitingForRetest
         ? 'CONDITIONAL_SETUP'
         : 'CONDITIONAL_SETUP';
+
+    const isExecutable = Boolean(
+      !isRejectedPermanently &&
+      !retestFailed &&
+      rejectionConfirmed &&
+      holdingAboveBosNow &&
+      (signalState === 'ENTRY_READY' || signalState === 'REJECTION_CONFIRMED' || signalState === 'EXECUTED') &&
+      status !== 'INVALIDATED' &&
+      status !== 'EXPIRED'
+    );
 
     return {
       id: `${baseId}_${effectiveConfirmTime}`,
@@ -2912,19 +3018,21 @@ export function detectAll16SmcSetups(
       direction,
       candleIndex: effectiveConfirmIdx,
       time: effectiveConfirmTime,
-      entryPrice: cleanEntry,
-      stopLoss: roundSmcPrice(cleanStopLoss),
-      targetPrice: effectiveTarget1,
-      targetPrice2,
-      riskReward: computedRr,
+      entryPrice: finalEntry,
+      stopLoss: finalSl,
+      targetPrice: finalTp1,
+      targetPrice2: finalTp2,
+      riskReward: finalRr,
       status: isRejectedPermanently ? 'INVALIDATED' : status,
       lifecycleState: isRejectedPermanently ? 'INVALIDATED' : lifecycleState,
       retestCount,
       retestTouched,
+      retestFailed,
       rejectionConfirmed,
+      isExecutable,
       invalidationBasis,
       description,
-      invalidationLevel: roundSmcPrice(cleanStopLoss),
+      invalidationLevel: finalSl,
       formationTime: effectiveConfirmTime,
       confirmationTime,
       qualityScore: confluence.qualityScore,
@@ -2934,8 +3042,8 @@ export function detectAll16SmcSetups(
       auditReasons: confluence.auditReasons,
       htfBias,
       ltfBias,
-      riskDistance: roundSmcPrice(riskDistance),
-      rewardDistance: roundSmcPrice(rewardDistance),
+      riskDistance: roundSmcPrice(finalRisk),
+      rewardDistance: roundSmcPrice(finalReward),
       confluenceScore: confluence.qualityScore,
       tp1Hit,
       tp1HitIndex,
@@ -3820,9 +3928,14 @@ export function calculateSMC(
       (s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED') &&
       s.qualityScore >= 70 &&
       !s.isRejectedPermanently &&
+      !s.retestFailed &&
       s.signalState !== 'REJECTED' &&
+      s.signalState !== 'RETEST_FAILED' &&
+      s.signalState !== 'INVALIDATED' &&
       s.actionTier !== 'REJECT'
   );
+
+  const executableSetups = confirmedSetups.filter((s) => s.isExecutable === true);
 
   const result: SmcAnalysis = {
     swings,
@@ -3835,6 +3948,7 @@ export function calculateSMC(
     dealingRange,
     sessionLevels,
     confirmedSetups,
+    executableSetups,
     allSetups: filteredSetups,
     rejectedSetups,
     equilibriumPrice: dealingRange.equilibriumPrice,
