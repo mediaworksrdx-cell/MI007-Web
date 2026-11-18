@@ -983,7 +983,24 @@ export function ChartToolbar({
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleUpdateSmc({ visualizationMode: 'advanced', showMajorStructureOnly: false, showInternalStructure: true, enableCollisionControl: true, enableHistoricalFading: true })}
+                    onClick={() => handleUpdateSmc({
+                      enabled: true,
+                      visualizationMode: 'advanced',
+                      showMajorStructureOnly: false,
+                      showInternalStructure: true,
+                      enableCollisionControl: true,
+                      enableHistoricalFading: true,
+                      showBos: true,
+                      showChoch: true,
+                      showSwings: true,
+                      showLiquidityLevels: true,
+                      showBullishOb: true,
+                      showBearishOb: true,
+                      showBullishFvg: true,
+                      showBearishFvg: true,
+                      showBullishConfluence: true,
+                      showBearishConfluence: true,
+                    })}
                     className={`px-1.5 py-1 text-[10.5px] font-bold rounded border text-center transition-colors cursor-pointer ${
                       activeSmcConfig.visualizationMode === 'advanced'
                         ? 'bg-blue-500/15 border-blue-500/50 text-blue-600 dark:text-blue-400 shadow-xs'
@@ -994,7 +1011,30 @@ export function ChartToolbar({
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleUpdateSmc({ visualizationMode: 'analysis', showMajorStructureOnly: false, showInternalStructure: true, showPremiumDiscount: true, showOte: true, enableCollisionControl: true, enableHistoricalFading: false })}
+                    onClick={() => handleUpdateSmc({
+                      enabled: true,
+                      visualizationMode: 'analysis',
+                      showMajorStructureOnly: false,
+                      showInternalStructure: true,
+                      showPremiumDiscount: true,
+                      showEquilibrium: true,
+                      showOte: true,
+                      enableCollisionControl: true,
+                      enableHistoricalFading: false,
+                      showBos: true,
+                      showChoch: true,
+                      showSwings: true,
+                      showLiquidityLevels: true,
+                      showSweeps: true,
+                      showSslSweeps: true,
+                      showBslSweeps: true,
+                      showBullishOb: true,
+                      showBearishOb: true,
+                      showBullishFvg: true,
+                      showBearishFvg: true,
+                      showBullishConfluence: true,
+                      showBearishConfluence: true,
+                    })}
                     className={`px-1.5 py-1 text-[10.5px] font-bold rounded border text-center transition-colors cursor-pointer ${
                       activeSmcConfig.visualizationMode === 'analysis'
                         ? 'bg-purple-500/15 border-purple-500/50 text-purple-600 dark:text-purple-400 shadow-xs'
