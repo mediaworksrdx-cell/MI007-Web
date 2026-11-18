@@ -14,7 +14,7 @@ import {
   getSectors,
 } from '@/lib/screener/data';
 import { findZerodhaStockBySymbol, generateFundamentalFromZerodha, getZerodhaStockPrice, isFinancialEntity } from '@/lib/screener/zerodhaStocks';
-import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
+import { parseQuery, evaluateNode, computeExcludedForMissingData } from '@/lib/screener/queryEngine';
 import {
   getSavedScreens,
   saveUserScreen,
@@ -326,18 +326,18 @@ export function ScreenerWorkspace() {
   // SC15: Memoize base universes so price ticks only enrich symbols that actually have a live tick
   const baseMarketCompanies = useMemo(() => getCompaniesByMarket(market), [market]);
   const baseAllCompanies = useMemo(() => getAllCompanies(), []);
-  const hasLiveTicks = Boolean(livePrices && Object.keys(livePrices).length > 0);
+  const hasLiveTicks = Boolean(livePrices && livePrices.size > 0);
 
   // Companies for current market enriched with live Zerodha Kite streaming ticks
   const marketCompanies = useMemo(() => {
     if (!hasLiveTicks) return baseMarketCompanies;
-    return baseMarketCompanies.map((c) => (livePrices[c.symbol] ? enrichCompanyWithLiveTick(c) : c));
+    return baseMarketCompanies.map((c) => (livePrices.has(c.symbol) ? enrichCompanyWithLiveTick(c) : c));
   }, [baseMarketCompanies, hasLiveTicks, livePrices, enrichCompanyWithLiveTick]);
 
   // Master list of all companies enriched with live Zerodha Kite ticks
   const allCompaniesEnriched = useMemo(() => {
     if (!hasLiveTicks) return baseAllCompanies;
-    return baseAllCompanies.map((c) => (livePrices[c.symbol] ? enrichCompanyWithLiveTick(c) : c));
+    return baseAllCompanies.map((c) => (livePrices.has(c.symbol) ? enrichCompanyWithLiveTick(c) : c));
   }, [baseAllCompanies, hasLiveTicks, livePrices, enrichCompanyWithLiveTick]);
 
   const availableSectors = useMemo(() => {
@@ -345,7 +345,7 @@ export function ScreenerWorkspace() {
   }, [market]);
 
   // Execute Query in Real Time
-  const { filteredCompanies, executionTimeMs, queryValid } = useMemo(() => {
+  const { filteredCompanies, executionTimeMs, queryValid, excludedInfo } = useMemo(() => {
     const start = performance.now();
     let comps = marketCompanies;
 
@@ -371,8 +371,10 @@ export function ScreenerWorkspace() {
       }
     }
 
+    let excludedInfo = { totalExcludedForMissingData: 0, excludedForMissingData: {} as Record<string, number> };
     if (parsedAst) {
       comps = comps.filter((c) => evaluateNode(parsedAst, c));
+      excludedInfo = computeExcludedForMissingData(parsedAst, marketCompanies);
     }
 
     // Sort
@@ -391,6 +393,7 @@ export function ScreenerWorkspace() {
       filteredCompanies: sorted,
       executionTimeMs: elapsed,
       queryValid: isValid,
+      excludedInfo,
     };
   }, [marketCompanies, sectorFilter, currentQuery, sortColumn, sortDirection]);
 
@@ -520,6 +523,21 @@ export function ScreenerWorkspace() {
             onOpenSaveScreen={() => setSaveScreenModalOpen(true)}
             matchCount={filteredCompanies.length}
           />
+
+          {/* Missing Metric Exclusion and Coverage Banner (SC6, SC7) */}
+          {excludedInfo && excludedInfo.totalExcludedForMissingData > 0 && (
+            <div className="mb-2.5 px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-800 dark:text-amber-300 flex items-center justify-between flex-wrap gap-2 shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-amber-600 dark:text-amber-400">ℹ️ Data Coverage Notice:</span>
+                <span>
+                  <strong>{excludedInfo.totalExcludedForMissingData}</strong> companies excluded due to missing metric data in this query ({Object.entries(excludedInfo.excludedForMissingData).map(([k, v]) => `${k.toUpperCase()}: ${v}`).join(', ')}).
+                </span>
+              </div>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold">
+                Screen Coverage: {((1 - excludedInfo.totalExcludedForMissingData / Math.max(1, marketCompanies.length)) * 100).toFixed(1)}% ({marketCompanies.length - excludedInfo.totalExcludedForMissingData}/{marketCompanies.length})
+              </span>
+            </div>
+          )}
 
           {/* Screening Results Table */}
           <ResultsTable

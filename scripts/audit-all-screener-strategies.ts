@@ -207,7 +207,7 @@ async function runMasterAudit() {
 
         case 'inv_beneish_m_score': {
           const mScore = calculateBeneishMScore(c).score;
-          return { sortVal: mScore, label: 'Beneish M-Score', text: `${mScore.toFixed(2)}` };
+          return { sortVal: mScore ?? 999, label: 'Beneish M-Score', text: mScore !== null ? `${mScore.toFixed(2)}` : 'N/A' };
         }
 
         case 'inv_institutional_accumulation':

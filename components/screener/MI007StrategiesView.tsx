@@ -447,12 +447,13 @@ export function MI007StrategiesView({
         if (candles.length < 30) {
           try {
             const res = await fetch(
-              `/api/candles?symbol=${encodeURIComponent(targetSym)}&timeframe=1D&market=${encodeURIComponent(market)}&count=240`
+              `/api/candles?symbol=${encodeURIComponent(targetSym)}&timeframe=1D&market=${encodeURIComponent(market)}&count=500`
             );
             if (res.ok) {
               const json = await res.json();
-              if (Array.isArray(json.candles) && json.candles.length >= 30) {
-                candles = json.candles;
+              const raw = Array.isArray(json) ? json : (Array.isArray(json?.candles) ? json.candles : []);
+              if (raw.length >= 30) {
+                candles = raw;
                 setRealCandlesMap((prev) => ({ ...prev, [targetSym]: candles }));
               }
             }
@@ -469,7 +470,7 @@ export function MI007StrategiesView({
             undefined,
             2000000,
             (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA',
-            220,
+            500,
             { allowSyntheticDemo: demoMode }
           );
         }

@@ -82,6 +82,7 @@ export function ScreeningAlertsView({
       metricKey: triggerType === 'METRIC_CROSS' ? metricKey : undefined,
       threshold: triggerType === 'METRIC_CROSS' ? threshold : undefined,
       recentTriggers: [],
+      createdAt: new Date().toISOString(),
     };
     const evaluated = evaluateAlertAgainstUniverse(newAlert, universe).slice(0, 5);
     newAlert.recentTriggers = evaluated.map((m) => ({

@@ -32,7 +32,7 @@ const SORTED_METRIC_ALIASES: { aliasLower: string; key: string }[] = (() => {
   };
   for (const m of METRIC_DEFINITIONS) {
     add(m.key, m.key);
-    add(m.name, m.key);
+    add((m as any).name || m.label, m.key);
     add((m as any).shortName, m.key);
     if (Array.isArray(m.aliases)) {
       for (const a of m.aliases) add(a, m.key);
@@ -306,10 +306,10 @@ export function evaluateCustomRatio(
         ) {
           val = Number((company.marketCap / company.pe).toFixed(2));
         } else if (
-          typeof company.annualSales === 'number' &&
+          typeof (company as any).revenue === 'number' &&
           typeof company.npm === 'number'
         ) {
-          val = Number(((company.annualSales * company.npm) / 100).toFixed(2));
+          val = Number(((((company as any).revenue ?? 0) * company.npm) / 100).toFixed(2));
         }
       } else {
         val = getMetricValue(company, token.metricKey || '');

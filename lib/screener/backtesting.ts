@@ -27,8 +27,10 @@ export interface BacktestTrade {
   symbol: string;
   strategyId: StrategyId;
   entryDate: string;
+  entryIndex?: number;
   entryPrice: number;
   exitDate: string;
+  exitIndex?: number;
   exitPrice: number;
   shares: number;
   returnPct: number;
@@ -62,6 +64,7 @@ export interface BacktestResult {
   sharpeRatio: number;
   totalCostsPaid: number;
   lowSampleWarning: boolean;
+  sampleWarningReason?: string;
   dataProvenance: 'real' | 'demo_synthetic' | 'missing';
   finalEquity: number;
   trades: BacktestTrade[];
@@ -87,13 +90,13 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
     (c) => c.symbol.toUpperCase() === symbol.trim().toUpperCase()
   );
   const fallbackBasePrice = matchedCompany?.currentPrice || 2500;
-  const fallbackChangePct = matchedCompany?.changePct ?? 0.5;
+  const fallbackChangePct = matchedCompany?.priceChangePct ?? 0.5;
   const marketType = (matchedCompany?.market || 'INDIA') as any;
 
   const hasProvidedCandles = Boolean(config.candles && config.candles.length >= 30);
   const candles = hasProvidedCandles
     ? config.candles!
-    : generateCandlesForSymbol(symbol, fallbackBasePrice, fallbackChangePct, 260, marketType, {
+    : generateCandlesForSymbol(symbol, fallbackBasePrice, fallbackChangePct, 500, marketType, {
         allowSyntheticDemo: config.allowSyntheticDemo,
       });
 
@@ -138,10 +141,43 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
   const bb = calculateBollinger(candles, 20, 2);
   const smcAnalysis = strategyId.startsWith('smc_') ? calculateSMC(candles, undefined, symbol, '1D') : null;
 
-  // Warmup offset
-  const warmup = strategyId.includes('200') || strategyId === 'golden_cross' || strategyId === 'death_cross' || strategyId === 'ma_alignment'
-    ? Math.min(200, Math.max(20, Math.floor(n * 0.4)))
+  const isSma200Strategy =
+    strategyId.includes('200') ||
+    strategyId === 'golden_cross' ||
+    strategyId === 'death_cross' ||
+    strategyId === 'ma_alignment' ||
+    strategyId === 'smc_mtf_confluence';
+
+  // Warmup offset: For any strategy using SMA200, warmup MUST be at least 200 so bar 199 is never entered without valid indicator history
+  const warmup = isSma200Strategy
+    ? 200
     : Math.min(50, Math.max(15, Math.floor(n * 0.2)));
+
+  if (n <= warmup) {
+    return {
+      config,
+      totalTrades: 0,
+      winningTrades: 0,
+      losingTrades: 0,
+      winRate: 0,
+      profitFactor: 0,
+      totalReturnPct: 0,
+      benchmarkReturnPct: 0,
+      alphaPct: 0,
+      maxDrawdownPct: 0,
+      avgWinPct: 0,
+      avgLossPct: 0,
+      riskRewardRatio: 0,
+      sharpeRatio: 0,
+      totalCostsPaid: 0,
+      finalEquity: initialCapital,
+      trades: [],
+      equityCurve: [],
+      dataProvenance,
+      lowSampleWarning: true,
+      sampleWarningReason: `Insufficient candle history (${n} bars). Strategy "${strategyId}" requires at least ${warmup + 1} bars for indicator warmup.`,
+    };
+  }
 
   let cash = initialCapital;
   let shares = 0;
@@ -169,9 +205,14 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
 
     switch (strategyId) {
       case 'ma_alignment': {
-        const s50 = sma50[i] || currentPrice * 0.98;
-        const s200 = sma200[i] || currentPrice * 0.92;
-        const prevS50 = sma50[i - 1] || prevC.close * 0.98;
+        const s50 = sma50[i];
+        const s200 = sma200[i];
+        const prevS50 = sma50[i - 1];
+        const prevS200 = sma200[i - 1];
+        // Skip bars where SMA50 or SMA200 is null (never fall back to 0 or fabricated price)
+        if (s50 === null || s200 === null || prevS50 === null || prevS200 === null) {
+          break;
+        }
         // Entry: Crosses into bullish alignment OR pullbacks to 50 SMA in confirmed trend
         if (
           (currentPrice > s50 && s50 > s200 && (prevC.close <= prevS50 || prevC.close < s200)) ||
@@ -187,10 +228,13 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       }
 
       case 'golden_cross': {
-        const s50 = sma50[i] || 0;
-        const s200 = sma200[i] || 0;
-        const prevS50 = sma50[i - 1] || 0;
-        const prevS200 = sma200[i - 1] || 0;
+        const s50 = sma50[i];
+        const s200 = sma200[i];
+        const prevS50 = sma50[i - 1];
+        const prevS200 = sma200[i - 1];
+        if (s50 === null || s200 === null || prevS50 === null || prevS200 === null) {
+          break;
+        }
         if (
           (prevS50 <= prevS200 && s50 > s200) ||
           (s50 > s200 && prevC.close <= s50 && currentPrice > s50) ||
@@ -198,17 +242,20 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
         ) {
           isEntrySignal = true;
         }
-        if (currentPrice < (sma200[i] || 0) * 0.97) {
+        if (currentPrice < s200 * 0.97) {
           isExitSignal = true;
         }
         break;
       }
 
       case 'death_cross': {
-        const s50 = sma50[i] || 0;
-        const s200 = sma200[i] || 0;
-        const prevS50 = sma50[i - 1] || 0;
-        const prevS200 = sma200[i - 1] || 0;
+        const s50 = sma50[i];
+        const s200 = sma200[i];
+        const prevS50 = sma50[i - 1];
+        const prevS200 = sma200[i - 1];
+        if (s50 === null || s200 === null || prevS50 === null || prevS200 === null) {
+          break;
+        }
         // Short/Hedge proxy or bounce reversal
         if (prevS50 >= prevS200 && s50 < s200) {
           isExitSignal = true;
@@ -380,7 +427,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       // ── Legacy Aliases & Genuine SMC Structural Strategies ──
       case 'smc_bos': {
         const bosBreak = smcAnalysis?.structureBreaks.some(
-          (sb) => sb.type === 'BOS' && sb.direction === 'BULLISH' && sb.breakIndex === i
+          (sb) => sb.breakType === 'BOS' && sb.isBullish && sb.candleIndex === i
         );
         const swingHigh = Math.max(...candles.slice(Math.max(0, i - 12), i).map((x) => x.high));
         const priorSwingHigh = Math.max(...candles.slice(Math.max(0, i - 24), Math.max(1, i - 12)).map((x) => x.high));
@@ -397,7 +444,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       case 'smc_choch': {
         // Genuine CHoCH (Change of Character): first bullish break of a lower-high swing after a downtrend
         const chochBreak = smcAnalysis?.structureBreaks.some(
-          (sb) => sb.type === 'CHoCH' && sb.direction === 'BULLISH' && sb.breakIndex === i
+          (sb) => sb.breakType === 'CHoCH' && sb.isBullish && sb.candleIndex === i
         );
         const recentWindow = candles.slice(Math.max(0, i - 10), i);
         const priorWindow = candles.slice(Math.max(0, i - 20), Math.max(1, i - 10));
@@ -411,7 +458,7 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
           isEntrySignal = true;
         }
         const bearishChoch = smcAnalysis?.structureBreaks.some(
-          (sb) => sb.type === 'CHoCH' && sb.direction === 'BEARISH' && sb.breakIndex === i
+          (sb) => sb.breakType === 'CHoCH' && !sb.isBullish && sb.candleIndex === i
         );
         if (bearishChoch || currentPrice < recentLow) {
           isExitSignal = true;
@@ -470,19 +517,19 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
         // Genuine Bullish Order Block: last bearish candle before a displacement break, retested at bar i
         const obRetest = smcAnalysis?.orderBlocks.some(
           (ob) =>
-            ob.type === 'BULLISH' &&
+            ob.isBullish &&
             !ob.isBreaker &&
-            ob.impulseIndex < i &&
-            i - ob.impulseIndex <= 25 &&
-            c.low <= ob.high &&
-            currentPrice >= ob.low &&
+            ob.startIndex < i &&
+            i - ob.startIndex <= 25 &&
+            c.low <= ob.topPrice &&
+            currentPrice >= ob.bottomPrice &&
             currentPrice > c.open
         );
         if (obRetest) {
           isEntrySignal = true;
         }
         const obBroken = smcAnalysis?.orderBlocks.some(
-          (ob) => ob.type === 'BULLISH' && ob.impulseIndex < i && currentPrice < ob.low * 0.99
+          (ob) => ob.isBullish && ob.startIndex < i && currentPrice < ob.bottomPrice * 0.99
         );
         if (obBroken) {
           isExitSignal = true;
@@ -495,9 +542,9 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
         const breakerHit = smcAnalysis?.orderBlocks.some(
           (ob) =>
             ob.isBreaker &&
-            ob.breakerDirection === 'BULLISH' &&
-            (ob.breakerIndex === i ||
-              (ob.breakerIndex !== undefined && ob.breakerIndex < i && c.low <= ob.high && currentPrice >= ob.low))
+            ob.isBullish &&
+            (ob.startIndex === i ||
+              (ob.startIndex < i && c.low <= ob.topPrice && currentPrice >= ob.bottomPrice))
         );
         if (breakerHit) {
           isEntrySignal = true;
@@ -525,11 +572,15 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
       }
 
       case 'smc_mtf_confluence': {
-        const s50 = sma50[i] || 0;
-        const s200 = sma200[i] || 0;
-        const e9 = ema9[i] || 0;
-        const e21 = ema21[i] || 0;
-        if (currentPrice > s50 && s50 > s200 && e9 > e21 && prevC.close <= (ema9[i - 1] || 0)) {
+        const s50 = sma50[i];
+        const s200 = sma200[i];
+        const e9 = ema9[i];
+        const e21 = ema21[i];
+        const prevE9 = ema9[i - 1];
+        if (s50 === null || s200 === null || e9 === null || e21 === null || prevE9 === null) {
+          break;
+        }
+        if (currentPrice > s50 && s50 > s200 && e9 > e21 && prevC.close <= prevE9) {
           isEntrySignal = true;
         }
         if (currentPrice < s50) {
@@ -682,8 +733,10 @@ export function runBacktest(config: BacktestConfig): BacktestResult {
           symbol,
           strategyId,
           entryDate: candles[entryIndex].time || new Date(candles[entryIndex].openTime).toISOString().slice(0, 10),
+          entryIndex,
           entryPrice: Number(entryPrice.toFixed(2)),
           exitDate: currentDate,
+          exitIndex: i,
           exitPrice: Number(rawExitPrice.toFixed(2)),
           shares,
           returnPct: Math.round(netReturnPct * 100) / 100,

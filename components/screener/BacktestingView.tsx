@@ -175,12 +175,13 @@ export function BacktestingView({
     (async () => {
       try {
         const res = await fetch(
-          `/api/candles?symbol=${encodeURIComponent(activeCompany.symbol)}&timeframe=1D&market=${encodeURIComponent(activeCompany.market || 'INDIA')}&count=300`
+          `/api/candles?symbol=${encodeURIComponent(activeCompany.symbol)}&timeframe=1D&market=${encodeURIComponent(activeCompany.market || 'INDIA')}&count=500`
         );
         if (!res.ok) return;
         const json = await res.json();
-        if (!cancelled && Array.isArray(json.candles) && json.candles.length >= 30) {
-          setRealCandles(json.candles);
+        const raw = Array.isArray(json) ? json : (Array.isArray(json?.candles) ? json.candles : []);
+        if (!cancelled && raw.length >= 30) {
+          setRealCandles(raw);
         }
       } catch {
         // Ignore network errors
@@ -200,7 +201,7 @@ export function BacktestingView({
             activeCompany.symbol,
             activeCompany.currentPrice,
             activeCompany.priceChangePct,
-            300,
+            500,
             (activeCompany.market || 'INDIA') as any,
             { allowSyntheticDemo: demoMode }
           );

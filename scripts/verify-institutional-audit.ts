@@ -155,7 +155,7 @@ console.log('\n── [3] FINANCIAL SCORECARDS AUDIT: Piotroski F-Score & Altman
 const tcsPiotroski = calculatePiotroskiScore(tcsComp);
 assert(tcsPiotroski.maxScore === 9, 'Piotroski maximum score is 9');
 assert(tcsPiotroski.criteria.length === 9, 'Piotroski evaluates all 9 required fundamental criteria');
-assert(tcsPiotroski.score >= 7, `TCS qualifies as Strong Compounder (Score: ${tcsPiotroski.score}/9)`);
+assert(tcsPiotroski.score !== null && tcsPiotroski.score >= 7, `TCS qualifies as Strong Compounder (Score: ${tcsPiotroski.score}/9)`);
 assert(tcsPiotroski.classification === 'Strong Compounder', `TCS classified as Strong Compounder`);
 
 // Verify Altman Z-Score on Manufacturing (RELIANCE: 5 components) and Non-Manufacturing (TCS: 4 components)

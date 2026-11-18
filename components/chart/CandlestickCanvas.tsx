@@ -907,12 +907,9 @@ export function CandlestickCanvas({
     return `${symbol}:${timeframe}:${count}:${lastOpen}`;
   }, [cleanCandles, symbol, timeframe]);
 
-  const closedCandlesForSmc = useMemo(() => {
-    const tfMs = timeframeToMs(timeframe);
-    const nowMs = Date.now();
-    return cleanCandles.filter(c => isCandleClosed(c, tfMs, nowMs));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closedSmcKey]);
+  // Clean candles are passed directly to preserve 1:1 candle index alignment;
+  // smcEngine already safely detects and isolates unclosed/forming bars internally.
+  const closedCandlesForSmc = cleanCandles;
 
   const [workerSmcData, setWorkerSmcData] = useState<import('@/lib/smcEngine').SmcAnalysis | null>(null);
   const smcWorkerRef = useRef<Worker | null>(null);
@@ -926,6 +923,12 @@ export function CandlestickCanvas({
       worker.onmessage = (e: MessageEvent<{ requestId: number; result: import('@/lib/smcEngine').SmcAnalysis }>) => {
         if (e.data && e.data.requestId === smcWorkerReqIdRef.current) {
           setWorkerSmcData(e.data.result);
+        }
+      };
+      worker.onerror = () => {
+        smcWorkerRef.current = null;
+        if (cleanCandlesRef.current) {
+          setWorkerSmcData(calculateSMC(cleanCandlesRef.current, smcConfigRef.current, symbol, timeframe));
         }
       };
       return () => {

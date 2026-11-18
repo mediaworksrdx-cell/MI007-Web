@@ -1548,7 +1548,7 @@ export function renderChart(
 
     const allCandidateDemand = (showDemandBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
-    const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 1 : Math.max(2, baseQuota));
+    const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 2 : Math.max(4, baseQuota));
     const mitigatedDemand = smcCfg.showMitigatedOb
       ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, mitigatedQuota)
       : [];
@@ -1556,7 +1556,7 @@ export function renderChart(
 
     const allCandidateSupply = (showSupplyBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && !ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
-    const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 1 : Math.max(2, baseQuota));
+    const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 2 : Math.max(4, baseQuota));
     const mitigatedSupply = smcCfg.showMitigatedOb
       ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, mitigatedQuota)
       : [];
@@ -1868,8 +1868,8 @@ export function renderChart(
       return true;
     });
 
-    // In Clean mode: maximum 2 major structure breaks in the entire viewport (zero line clutter)
-    const maxBreaks = isCleanMode ? 2 : 6;
+    // Display major structure breaks across the viewport: clean mode up to 8, advanced/analysis up to 20
+    const maxBreaks = isCleanMode ? 8 : 20;
     const breaksToRender = inWindowBreaks.slice(-maxBreaks);
 
     for (let sbi = 0; sbi < breaksToRender.length; sbi++) {
@@ -1924,48 +1924,38 @@ export function renderChart(
         ? Math.max(35 * dpr, Math.min(chartW - 35 * dpr, (x1 + x2) / 2))
         : Math.max(35 * dpr, Math.min(chartW - 35 * dpr, Math.max(x2, 40 * dpr)));
 
-      if (isLatestBreak || isChoch) {
-        const text = sb.type;
-        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
-        const tm = ctx.measureText(text);
-        const tw = tm.width + 8 * dpr;
-        const th = 13 * dpr;
-        let badgeY = y - th / 2;
+      const text = sb.type || (sb.isBullish ? `+${sb.breakType}` : `-${sb.breakType}`);
+      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+      const tm = ctx.measureText(text);
+      const tw = tm.width + 8 * dpr;
+      const th = 13 * dpr;
+      let badgeY = y - th / 2;
 
-        if (enableCollisionControl) {
-          const placement = sam.tryPlaceLabel({
-            x: midX - tw / 2,
-            y: badgeY,
-            w: tw,
-            h: th,
-            priority: isChoch ? 75 : 45,
-          });
-          if (placement.placed) {
-            badgeY = placement.y;
-          }
+      if (enableCollisionControl) {
+        const placement = sam.tryPlaceLabel({
+          x: midX - tw / 2,
+          y: badgeY,
+          w: tw,
+          h: th,
+          priority: isChoch ? 75 : 50,
+        });
+        if (placement.placed) {
+          badgeY = placement.y;
         }
-
-        ctx.fillStyle = isChoch
-          ? (sb.isBullish ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)')
-          : (sb.isBullish ? 'rgba(5, 150, 105, 0.85)' : 'rgba(220, 38, 38, 0.85)');
-        ctx.fillRect(midX - tw / 2, badgeY, tw, th);
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 0.8 * dpr;
-        ctx.strokeRect(midX - tw / 2, badgeY, tw, th);
-
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(text, midX, badgeY + th / 2);
-      } else {
-        // Subtle label directly on the line without heavy filled box
-        const text = sb.breakType.toLowerCase();
-        ctx.font = `600 ${7.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = color;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(text, midX, y - 2 * dpr);
       }
+
+      ctx.fillStyle = isChoch
+        ? (sb.isBullish ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)')
+        : (sb.isBullish ? 'rgba(5, 150, 105, 0.88)' : 'rgba(220, 38, 38, 0.88)');
+      ctx.fillRect(midX - tw / 2, badgeY, tw, th);
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 0.8 * dpr;
+      ctx.strokeRect(midX - tw / 2, badgeY, tw, th);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, midX, badgeY + th / 2);
 
       ctx.restore();
     }
@@ -2297,16 +2287,16 @@ export function renderChart(
       }
 
       const isActiveSetup = (s: SmcConfirmedSetup) =>
-        (s.qualityScore ?? 0) >= 70 &&
+        (s.qualityScore ?? 0) >= 60 &&
         !s.isRejectedPermanently &&
         !s.retestFailed &&
         s.signalState !== 'REJECTED' &&
         s.signalState !== 'RETEST_FAILED' &&
         s.signalState !== 'INVALIDATED' &&
         s.actionTier !== 'REJECT' &&
-        (!isIntradayChart || s.candleIndex >= firstTodayIdx) &&
-        (terminalClose <= 0 || Math.abs(s.entryPrice - terminalClose) / terminalClose <= 0.05) &&
-        (s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED' || s.status === 'PENDING');
+        (lastBarIdx - s.candleIndex <= 80) &&
+        (terminalClose <= 0 || Math.abs(s.entryPrice - terminalClose) / terminalClose <= 0.15) &&
+        (s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED' || s.status === 'PENDING' || s.status === 'TARGET_HIT');
 
       let setupsToRender: SmcConfirmedSetup[] = [];
 
@@ -2382,11 +2372,10 @@ export function renderChart(
         if (setupsToRender.length === 0 && smcData.allSetups && smcData.allSetups.length > 0) {
           const recentCompleted = smcData.allSetups
             .filter((s) =>
-              s.status === 'TARGET_HIT' &&
-              (s.qualityScore ?? 0) >= 70 &&
+              (s.status === 'TARGET_HIT' || s.status === 'CONFIRMED' || s.status === 'RETESTING') &&
+              (s.qualityScore ?? 0) >= 60 &&
               !s.isRejectedPermanently &&
-              (!isIntradayChart || s.candleIndex >= firstTodayIdx) &&
-              (lastBarIdx - s.candleIndex <= 60) &&
+              (lastBarIdx - s.candleIndex <= 80) &&
               ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence && isBullishMaster) ||
                (s.direction === 'BEARISH' && smcCfg.showBearishConfluence && isBearishMaster))
             )
@@ -2502,13 +2491,14 @@ export function renderChart(
         const currentCandleX = (lastCandleIdx - startIdx) * candleW + candleW / 2;
         const maxRightX = chartW - 2 * dpr;
 
-        // Lock bracket start strictly at the setup/breakout candle (st.candleIndex) so it never shifts when new candles form,
-        // and expand its right edge with every new candle until the strategy concludes (endCandleIdx) or reaches the live candle.
-        const bracketStartIdx = isIntradayChart ? Math.max(st.candleIndex, firstTodayIdx) : st.candleIndex;
+        // Lock bracket start strictly at the setup/breakout candle (st.candleIndex)
+        const bracketStartIdx = st.candleIndex;
         const startX = (bracketStartIdx - startIdx) * candleW + candleW / 2;
-        const endX = isTradeOver
-          ? (endCandleIdx - startIdx) * candleW + candleW / 2
-          : currentCandleX + candleW * 0.5;
+        // Dynamic horizontal bracket expansion: bracket dynamically expands with every new candle that forms
+        const endX = Math.max(
+          (endCandleIdx - startIdx) * candleW + candleW / 2,
+          currentCandleX + candleW * 0.5
+        );
 
         const minBracketW = Math.max(36 * dpr, candleW * 2);
         const x = Math.max(8 * dpr, Math.min(startX, maxRightX - minBracketW));

@@ -1263,8 +1263,8 @@ export function evaluateInvestmentStrategyForCompany(
 
     case 'inv_beneish_m_score': {
       const beneish = calculateBeneishMScore(company);
-      if (beneish.score < -2.22) matched.push(`Beneish M-Score ${beneish.score.toFixed(2)} (< -2.22 non-manipulator)`);
-      else failed.push(`Beneish M-Score ${beneish.score.toFixed(2)} indicates earnings manipulation risk`);
+      if (beneish.score !== null && beneish.score < -2.22) matched.push(`Beneish M-Score ${beneish.score.toFixed(2)} (< -2.22 non-manipulator)`);
+      else failed.push(beneish.score !== null ? `Beneish M-Score ${beneish.score.toFixed(2)} indicates earnings manipulation risk` : 'Beneish M-Score missing required financial statements');
       if (cfo > 0) matched.push('Positive cash from operations');
       else failed.push('CFO is negative');
       if (de <= 1.0) matched.push(`Debt/Equity ${de.toFixed(2)} (<= 1.0)`);

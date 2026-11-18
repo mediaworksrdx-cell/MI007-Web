@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { QUERY_BUILDER_METRICS, findExcludedQueryBuilderMetrics, getDefaultConditionForMetric } from '@/lib/screener/metrics';
-import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
+import { parseQuery, evaluateNode, computeExcludedForMissingData } from '@/lib/screener/queryEngine';
 import { MASTER_COMPANIES } from '@/lib/screener/data';
 import { CompanyFundamental, SavedScreen, MarketRegion } from '@/lib/screener/types';
 import { DEFAULT_COLUMNS, deduplicateScreens } from '@/lib/screener/persistence';
@@ -39,6 +39,7 @@ export function CustomQueryBuilderView({
 
   // In-Tab Test Execution State
   const [testResults, setTestResults] = useState<CompanyFundamental[]>([]);
+  const [testExcludedInfo, setTestExcludedInfo] = useState<{ totalExcludedForMissingData: number; excludedForMissingData: Record<string, number> } | null>(null);
   const [hasExecutedTest, setHasExecutedTest] = useState(false);
   const [testDurationMs, setTestDurationMs] = useState<number>(0);
   const [resultsSearch, setResultsSearch] = useState('');
@@ -96,8 +97,10 @@ export function CustomQueryBuilderView({
     const t0 = performance.now();
     try {
       const matched = companies.filter((c) => evaluateNode(res.ast!, c));
+      const excluded = computeExcludedForMissingData(res.ast!, companies);
       const t1 = performance.now();
       setTestResults(matched);
+      setTestExcludedInfo(excluded);
       setTestDurationMs(Math.max(1, Math.round(t1 - t0)));
       setHasExecutedTest(true);
     } catch (err) {
@@ -544,6 +547,21 @@ export function CustomQueryBuilderView({
 
       {/* ── Interactive In-Tab Test Execution Results Section ── */}
       <div className="p-6 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-md flex flex-col gap-4">
+        {/* Missing Metric Exclusion and Coverage Banner (SC6, SC7) */}
+        {testExcludedInfo && testExcludedInfo.totalExcludedForMissingData > 0 && (
+          <div className="px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-800 dark:text-amber-300 flex items-center justify-between flex-wrap gap-2 shadow-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-amber-600 dark:text-amber-400">ℹ️ Data Coverage Notice:</span>
+              <span>
+                <strong>{testExcludedInfo.totalExcludedForMissingData}</strong> companies excluded due to missing metric data ({Object.entries(testExcludedInfo.excludedForMissingData).map(([k, v]) => `${k.toUpperCase()}: ${v}`).join(', ')}).
+              </span>
+            </div>
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold">
+              Query Coverage: {((1 - testExcludedInfo.totalExcludedForMissingData / Math.max(1, (testResults?.length || 0) + testExcludedInfo.totalExcludedForMissingData)) * 100).toFixed(1)}% (${(testResults?.length || 0)}/${(testResults?.length || 0) + testExcludedInfo.totalExcludedForMissingData})
+            </span>
+          </div>
+        )}
+
         {/* Test Results Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--theme-card-border)]">
           <div className="flex items-center gap-3 flex-wrap">

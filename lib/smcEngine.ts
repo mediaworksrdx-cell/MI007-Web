@@ -2394,13 +2394,7 @@ export function detectAll16SmcSetups(
       breaks.length > 0 &&
       (setupType === 'BOS_CONTINUATION' ||
        setupType === 'CHOCH_REVERSAL' ||
-       setupType === 'OB_RETEST' ||
-       setupType === 'BREAKER_RETEST' ||
-       setupType === 'BOS_FVG_RETEST' ||
-       setupType === 'MTF_CONFLUENCE' ||
-       setupType === 'THREE_STAGE_REVERSAL' ||
-       setupType === 'PREMIUM_DISCOUNT_OTE' ||
-       setupType === 'SESSION_LIQUIDITY')
+       setupType === 'BOS_FVG_RETEST')
     ) {
       statusOverride = 'INVALIDATED';
     }
@@ -2434,9 +2428,9 @@ export function detectAll16SmcSetups(
       const drSpan = pitDr.highPrice - pitDr.lowPrice;
       const deepPremium = pitDr.equilibriumPrice + drSpan * 0.20;
       const deepDiscount = pitDr.equilibriumPrice - drSpan * 0.20;
-      if (isBull && cleanEntry > deepPremium && setupType !== 'CHOCH_REVERSAL') {
+      if (isBull && cleanEntry > deepPremium && setupType !== 'CHOCH_REVERSAL' && setupType !== 'BOS_CONTINUATION') {
         statusOverride = 'INVALIDATED';
-      } else if (!isBull && cleanEntry < deepDiscount && setupType !== 'CHOCH_REVERSAL') {
+      } else if (!isBull && cleanEntry < deepDiscount && setupType !== 'CHOCH_REVERSAL' && setupType !== 'BOS_CONTINUATION') {
         statusOverride = 'INVALIDATED';
       }
     }
@@ -2696,7 +2690,7 @@ export function detectAll16SmcSetups(
         if (!isCandleClosed(bar)) break;
 
         // Every trading day starts fresh on intraday charts: expire yesterday's strategy at the new day boundary
-        if (isIntradaySession && setupDayKey && getSmcTradingDayKey(bar.openTime, symbol) !== setupDayKey) {
+        if (setupType === 'SESSION_LIQUIDITY' && isIntradaySession && setupDayKey && getSmcTradingDayKey(bar.openTime, symbol) !== setupDayKey) {
           status = tp1Hit ? 'EXITED' : 'EXPIRED';
           lifecycleState = tp1Hit ? 'EXITED' : 'EXPIRED';
           break;
@@ -2873,7 +2867,7 @@ export function detectAll16SmcSetups(
     const maxRetestWaitBars = options?.maxRetestWaitBars ?? SMC_RETEST_EXPIRY_BARS;
     const lastBar = candles[candles.length - 1];
     if (lastBar && (status === 'CONFIRMED' || status === 'RETESTING' || status === 'ENTRY_ZONE_REACHED' || status === 'PENDING')) {
-      if (isIntradaySession && setupDayKey && latestDayKey && setupDayKey !== latestDayKey) {
+      if (setupType === 'SESSION_LIQUIDITY' && isIntradaySession && setupDayKey && latestDayKey && setupDayKey !== latestDayKey) {
         // New trading day started: yesterday's strategy does not carry over into today
         status = tp1Hit ? 'EXITED' : 'EXPIRED';
         lifecycleState = tp1Hit ? 'EXITED' : 'EXPIRED';
@@ -3495,7 +3489,7 @@ export function detectAll16SmcSetups(
 
     // Scan forward over closed candles in the current window so the initial OTE anchor does not jump on every new bar
     const lookback = Math.min(candles.length, 12);
-    const startOteScanIdx = isIntradaySession ? Math.max(firstTodayIdx, candles.length - lookback) : Math.max(0, candles.length - lookback);
+    const startOteScanIdx = Math.max(0, candles.length - lookback);
 
     // Bullish: Price tapped Discount OTE zone (deep discount retracement)
     for (let i = startOteScanIdx; i < candles.length; i++) {
@@ -3531,7 +3525,7 @@ export function detectAll16SmcSetups(
             `Price tapped institutional Discount OTE zone (62%-79% retracement [${dOteMin.toFixed(2)} - ${dOteMax.toFixed(2)}]), targeting range high. ${validation.reason}`
           );
           setups.push(st);
-          if (st.qualityScore >= 70 && st.status !== 'INVALIDATED' && st.status !== 'EXPIRED') {
+          if (st.qualityScore >= 60 && st.status !== 'INVALIDATED' && st.status !== 'EXPIRED') {
             break; // Lock to first valid active OTE tap in current window so entry does not shift on newer bars
           }
         }
@@ -3572,7 +3566,7 @@ export function detectAll16SmcSetups(
             `Price tapped institutional Premium OTE zone (62%-79% retracement [${pOteMin.toFixed(2)} - ${pOteMax.toFixed(2)}]), targeting range low. ${validation.reason}`
           );
           setups.push(st);
-          if (st.qualityScore >= 70 && st.status !== 'INVALIDATED' && st.status !== 'EXPIRED') {
+          if (st.qualityScore >= 60 && st.status !== 'INVALIDATED' && st.status !== 'EXPIRED') {
             break; // Lock to first valid active OTE tap in current window so entry does not shift on newer bars
           }
         }
@@ -3800,7 +3794,7 @@ export function detectAll16SmcSetups(
 
     // Keep REJECTED signals (< 70 score) strictly out of the active/accepted trade list,
     // while recording them in rejectedOut with their exact rejection reason, timestamp, and invalidation level.
-    if (st.isRejectedPermanently || st.qualityScore < 70 || st.signalState === 'REJECTED' || st.actionTier === 'REJECT') {
+    if (st.isRejectedPermanently || st.qualityScore < 60 || st.signalState === 'REJECTED' || st.actionTier === 'REJECT') {
       if (st.isRejectedPermanently && rejectedOut) {
         rejectedOut.push(st);
       }
@@ -4084,7 +4078,7 @@ export function calculateSMC(
   const filteredSetups = allSetups.filter((s) => {
     if (s.direction === 'BULLISH' && !isBullAllowed) return false;
     if (s.direction === 'BEARISH' && !isBearAllowed) return false;
-    if (s.qualityScore < 70 || s.isRejectedPermanently || s.signalState === 'REJECTED' || s.actionTier === 'REJECT') return false;
+    if (s.qualityScore < 60 || s.isRejectedPermanently || s.signalState === 'REJECTED' || s.actionTier === 'REJECT') return false;
     return true;
   });
 
@@ -4097,7 +4091,7 @@ export function calculateSMC(
   const confirmedSetups = filteredSetups.filter(
     (s) =>
       (s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED') &&
-      s.qualityScore >= 70 &&
+      s.qualityScore >= 60 &&
       !s.isRejectedPermanently &&
       !s.retestFailed &&
       s.signalState !== 'REJECTED' &&
