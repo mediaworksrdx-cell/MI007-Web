@@ -1398,8 +1398,8 @@ export function renderChart(
         if (!isBullishMaster && !isBearishMaster) return false;
         if (!isBullishMaster && (sw.type === 'HH' || sw.type === 'HL')) return false;
         if (!isBearishMaster && (sw.type === 'LH' || sw.type === 'LL')) return false;
-        // Institutional clean mode: hide MINOR swings unless Internal Market Structure is enabled or Major Structure Only is off
-        if (isCleanMode && (smcCfg.showMajorStructureOnly ?? true) && !smcCfg.showInternalStructure && sw.significance === 'MINOR') return false;
+        // Respect Major Structure Only / Internal Market Structure across all interface modes
+        if ((smcCfg.showMajorStructureOnly ?? isCleanMode) && !smcCfg.showInternalStructure && sw.significance === 'MINOR') return false;
         return true;
       });
 
@@ -1860,8 +1860,8 @@ export function renderChart(
       if (sb.isBullish && smcCfg.showBullishStructure === false) return false;
       if (!sb.isBullish && smcCfg.showBearishStructure === false) return false;
 
-      // In institutional clean mode, prioritize major structural breaks
-      if (isCleanMode && (smcCfg.showMajorStructureOnly ?? true) && !smcCfg.showInternalStructure && sb.significance === 'MINOR') {
+      // Respect Major Structure Only / Internal Market Structure across all interface modes
+      if ((smcCfg.showMajorStructureOnly ?? isCleanMode) && !smcCfg.showInternalStructure && sb.significance === 'MINOR') {
         return false;
       }
 
