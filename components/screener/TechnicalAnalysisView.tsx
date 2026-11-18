@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental } from '@/lib/screener/types';
 import { Candle } from '@/lib/types';
@@ -36,16 +36,50 @@ export function TechnicalAnalysisView({
   const [showRSI, setShowRSI] = useState(true);
   const [showMACD, setShowMACD] = useState(true);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [demoMode, setDemoMode] = useState<boolean>(false);
+  const [realCandles, setRealCandles] = useState<Candle[]>([]);
 
   const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
   const live = getSymbolPrice(company.symbol);
   const currentPrice = live?.price ?? company.currentPrice;
   const changePct = live?.changePct ?? company.priceChangePct;
 
-  // Generate historical candle series
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/candles?symbol=${encodeURIComponent(company.symbol)}&timeframe=1D&market=${encodeURIComponent(company.market)}&count=240`
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled && Array.isArray(json.candles) && json.candles.length >= 30) {
+          setRealCandles(json.candles);
+        }
+      } catch {
+        // Ignore network errors
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [company.symbol, company.market]);
+
+  // Resolve real historical candle series (or synthetic demo only when demoMode === true)
   const candles = useMemo(() => {
-    return generateCandlesForSymbol(company.symbol, currentPrice, changePct, parseInt(timeframe, 10));
-  }, [company.symbol, currentPrice, changePct, timeframe]);
+    const count = parseInt(timeframe, 10);
+    if (realCandles.length >= 30) {
+      return realCandles.slice(-count);
+    }
+    return generateCandlesForSymbol(
+      company.symbol,
+      currentPrice,
+      changePct,
+      count,
+      company.market as any,
+      { allowSyntheticDemo: demoMode }
+    );
+  }, [company.symbol, company.market, currentPrice, changePct, timeframe, realCandles, demoMode]);
 
   // Indicator Calculations
   const sma50 = useMemo(() => calculateSMA(candles, 50), [candles]);
@@ -58,18 +92,32 @@ export function TechnicalAnalysisView({
 
   // Active Signals for this stock
   const signals = useMemo(() => {
-    return evaluateAllStrategiesForStock(company.symbol, company.name, company.market, currentPrice, candles);
-  }, [company.symbol, company.name, company.market, currentPrice, candles]);
+    return evaluateAllStrategiesForStock(
+      company.symbol,
+      company.name,
+      company.market,
+      currentPrice,
+      candles,
+      { allowSyntheticDemo: demoMode }
+    );
+  }, [company.symbol, company.name, company.market, currentPrice, candles, demoMode]);
 
   // Active bar for tooltip
-  const activeBarIndex = hoveredIndex !== null ? hoveredIndex : candles.length - 1;
-  const activeCandle = candles[activeBarIndex] || candles[candles.length - 1];
+  const activeBarIndex = hoveredIndex !== null ? hoveredIndex : Math.max(0, candles.length - 1);
+  const activeCandle = candles[activeBarIndex] || candles[candles.length - 1] || {
+    openTime: Date.now(),
+    open: currentPrice,
+    high: currentPrice,
+    low: currentPrice,
+    close: currentPrice,
+    volume: 0,
+  };
 
   // Chart Geometry Math
   const chartHeight = 280;
   const chartWidth = 800; // viewBox width
-  const minPrice = Math.min(...candles.map((c) => c.low)) * 0.985;
-  const maxPrice = Math.max(...candles.map((c) => c.high)) * 1.015;
+  const minPrice = candles.length > 0 ? Math.min(...candles.map((c) => c.low)) * 0.985 : currentPrice * 0.95;
+  const maxPrice = candles.length > 0 ? Math.max(...candles.map((c) => c.high)) * 1.015 : currentPrice * 1.05;
   const priceRange = maxPrice - minPrice || 1;
 
   const getY = (val: number | null) => {
@@ -77,7 +125,7 @@ export function TechnicalAnalysisView({
     return chartHeight - ((val - minPrice) / priceRange) * chartHeight;
   };
 
-  const candleWidth = chartWidth / candles.length;
+  const candleWidth = chartWidth / Math.max(1, candles.length);
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-200">

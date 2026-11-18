@@ -17,11 +17,52 @@ export interface FormulaValidationResult {
   referencedMetrics: string[];
 }
 
+// Build a longest-first list of known metric names and aliases so names containing
+// "/" or "-" (e.g. "P/E", "P/B", "EV/EBITDA", "Debt-to-Equity") are matched intact
+// before arithmetic operators split them.
+const SORTED_METRIC_ALIASES: { aliasLower: string; key: string }[] = (() => {
+  const entries: { aliasLower: string; key: string }[] = [];
+  const seen = new Set<string>();
+  const add = (alias: string | undefined, key: string) => {
+    if (!alias || typeof alias !== 'string') return;
+    const clean = alias.trim().toLowerCase();
+    if (!clean || seen.has(clean)) return;
+    seen.add(clean);
+    entries.push({ aliasLower: clean, key });
+  };
+  for (const m of METRIC_DEFINITIONS) {
+    add(m.key, m.key);
+    add(m.name, m.key);
+    add((m as any).shortName, m.key);
+    if (Array.isArray(m.aliases)) {
+      for (const a of m.aliases) add(a, m.key);
+    }
+  }
+  const extraAliases: [string, string][] = [
+    ['p/e', 'pe'],
+    ['p/b', 'pb'],
+    ['p/s', 'ps'],
+    ['ev/ebitda', 'evEbitda'],
+    ['ev/ebit', 'evEbitda'],
+    ['debt-to-equity', 'debtToEquity'],
+    ['debt/equity', 'debtToEquity'],
+    ['debt to equity', 'debtToEquity'],
+    ['net profit', 'netProfit'],
+    ['pat', 'netProfit'],
+    ['profit after tax', 'netProfit'],
+    ['annual net profit', 'netProfit'],
+  ];
+  for (const [a, k] of extraAliases) add(a, k);
+  entries.sort((a, b) => b.aliasLower.length - a.aliasLower.length);
+  return entries;
+})();
+
 /** Tokenize a formula like "Free Cash Flow / Market Capitalization * 100" */
 export function tokenizeFormula(formulaStr: string): { tokens: RatioToken[]; error?: string } {
   const str = formulaStr.trim();
   const tokens: RatioToken[] = [];
   let i = 0;
+  let expectOperand = true;
 
   while (i < str.length) {
     if (/\s/.test(str[i])) {
@@ -32,31 +73,91 @@ export function tokenizeFormula(formulaStr: string): { tokens: RatioToken[]; err
     if (str[i] === '(') {
       tokens.push({ type: 'LPAREN', value: '(' });
       i++;
+      expectOperand = true;
       continue;
     }
 
     if (str[i] === ')') {
       tokens.push({ type: 'RPAREN', value: ')' });
       i++;
+      expectOperand = false;
+      continue;
+    }
+
+    // Unary plus/minus when an operand is expected (e.g. "-5 + ROE", "ROE - -5", "-ROE")
+    if (expectOperand && (str[i] === '-' || str[i] === '+')) {
+      const sign = str[i] === '-' ? -1 : 1;
+      const unaryNumMatch = str.slice(i + 1).match(/^\s*(\d+(\.\d+)?)/);
+      if (unaryNumMatch) {
+        const numVal = sign * parseFloat(unaryNumMatch[1]);
+        tokens.push({ type: 'NUMBER', value: numVal });
+        i += 1 + unaryNumMatch[0].length;
+        expectOperand = false;
+        continue;
+      }
+      if (sign === -1) {
+        tokens.push({ type: 'NUMBER', value: 0 });
+        tokens.push({ type: 'OPERATOR', value: '-' });
+      }
+      i++;
+      expectOperand = true;
+      continue;
+    }
+
+    if (!expectOperand && ['+', '-', '*', '/'].includes(str[i])) {
+      tokens.push({ type: 'OPERATOR', value: str[i] });
+      i++;
+      expectOperand = true;
+      continue;
+    }
+
+    // Number literal
+    const numMatch = str.slice(i).match(/^\d+(\.\d+)?/);
+    if (numMatch && expectOperand) {
+      const numVal = parseFloat(numMatch[0]);
+      tokens.push({ type: 'NUMBER', value: numVal });
+      i += numMatch[0].length;
+      expectOperand = false;
+      continue;
+    }
+
+    // Try longest-match known metric name/alias first (handles P/E, Debt-to-Equity, etc.)
+    const remainingLower = str.slice(i).toLowerCase();
+    let matchedAlias: { aliasLower: string; key: string } | null = null;
+    for (const cand of SORTED_METRIC_ALIASES) {
+      if (remainingLower.startsWith(cand.aliasLower)) {
+        const afterIdx = i + cand.aliasLower.length;
+        if (
+          afterIdx >= str.length ||
+          /\s/.test(str[afterIdx]) ||
+          ['(', ')', '+', '-', '*', '/'].includes(str[afterIdx])
+        ) {
+          matchedAlias = cand;
+          break;
+        }
+      }
+    }
+
+    if (matchedAlias) {
+      const rawText = str.slice(i, i + matchedAlias.aliasLower.length).trim();
+      tokens.push({
+        type: 'METRIC',
+        value: rawText,
+        metricKey: matchedAlias.key,
+      });
+      i += matchedAlias.aliasLower.length;
+      expectOperand = false;
       continue;
     }
 
     if (['+', '-', '*', '/'].includes(str[i])) {
       tokens.push({ type: 'OPERATOR', value: str[i] });
       i++;
+      expectOperand = true;
       continue;
     }
 
-    // Number literal
-    const numMatch = str.slice(i).match(/^-?\d+(\.\d+)?/);
-    if (numMatch && (i === 0 || /[\s(+\-*/]/.test(str[i - 1]))) {
-      const numVal = parseFloat(numMatch[0]);
-      tokens.push({ type: 'NUMBER', value: numVal });
-      i += numMatch[0].length;
-      continue;
-    }
-
-    // Metric text
+    // Fallback metric text up to next operator/paren
     let metricBuffer = '';
     while (i < str.length && !['(', ')', '+', '-', '*', '/'].includes(str[i])) {
       metricBuffer += str[i];
@@ -77,6 +178,7 @@ export function tokenizeFormula(formulaStr: string): { tokens: RatioToken[]; err
       value: trimmed,
       metricKey: key,
     });
+    expectOperand = false;
   }
 
   return { tokens };
@@ -191,7 +293,27 @@ export function evaluateCustomRatio(
     if (token.type === 'NUMBER') {
       evalStack.push(Number(token.value));
     } else if (token.type === 'METRIC') {
-      const val = getMetricValue(company, token.metricKey || '');
+      let val: number | null | undefined = null;
+      if (token.metricKey === 'netProfit') {
+        const reportedPat = company.annualProfitLoss?.[0]?.netProfit;
+        if (typeof reportedPat === 'number' && Number.isFinite(reportedPat) && reportedPat !== 0) {
+          val = reportedPat;
+        } else if (
+          typeof company.marketCap === 'number' &&
+          company.marketCap > 0 &&
+          typeof company.pe === 'number' &&
+          company.pe > 0
+        ) {
+          val = Number((company.marketCap / company.pe).toFixed(2));
+        } else if (
+          typeof company.annualSales === 'number' &&
+          typeof company.npm === 'number'
+        ) {
+          val = Number(((company.annualSales * company.npm) / 100).toFixed(2));
+        }
+      } else {
+        val = getMetricValue(company, token.metricKey || '');
+      }
       if (val === null || val === undefined) {
         return null; // Missing metric data returns null
       }
@@ -246,7 +368,7 @@ export const DEFAULT_CUSTOM_RATIOS: CustomRatio[] = [
     id: 'cfo-to-pat',
     name: 'CFO to Net Profit',
     code: 'CFO_PAT',
-    formula: 'Cash from Operations / Net Profit Margin',
+    formula: 'Cash from Operations / Net Profit',
     unit: 'x',
     decimals: 2,
     description: 'Quality of earnings: measures cash generation against accounting book profit.',

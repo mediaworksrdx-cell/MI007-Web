@@ -6,9 +6,9 @@ import { CompanyFundamental } from './types';
 import { isFinancialEntity } from './zerodhaStocks';
 
 export interface PiotroskiResult {
-  score: number; // 0 to 9
+  score: number | null; // 0 to 9, or null when required statements are missing
   maxScore: 9;
-  classification: 'Strong Compounder' | 'Average Quality' | 'Vulnerable / Weak';
+  classification: 'Strong Compounder' | 'Average Quality' | 'Vulnerable / Weak' | 'Insufficient Data';
   color: string;
   criteria: {
     name: string;
@@ -20,7 +20,7 @@ export interface PiotroskiResult {
 
 export interface AltmanZResult {
   score: number | null;
-  zone: 'Safe Zone' | 'Grey / Caution Zone' | 'Distress Zone' | 'Not Applicable (Financial Institution)';
+  zone: 'Safe Zone' | 'Grey / Caution Zone' | 'Distress Zone' | 'Not Applicable (Financial Institution)' | 'Insufficient Data';
   color: string;
   formulaVersion: 'Manufacturing (Original)' | 'Non-Manufacturing (EMS)' | 'Not Applicable';
   explanation: string;
@@ -28,7 +28,7 @@ export interface AltmanZResult {
 }
 
 export interface BeneishMResult {
-  score: number;
+  score: number | null;
   flagged: boolean;
   color: string;
   interpretation: string;
@@ -59,17 +59,33 @@ export function calculatePiotroskiScore(company: CompanyFundamental): PiotroskiR
   const cf = company.cashFlow || [];
   const currCf = cf[0];
 
-  const npm = company.npm ?? 10;
-  const netProfitCurr = curr ? curr.netProfit : (company.marketCap ? Math.round(company.marketCap * 0.05) : (npm / 100) * 1000);
-  const netProfitPrev = prev ? prev.netProfit : netProfitCurr;
-  
-  // Audited cash from operations or authentic fallback
-  const cfoCurr = currCf ? currCf.cashFromOperating : (company.cfo != null ? company.cfo : netProfitCurr);
-  const totalAssetsCurr = currBs ? currBs.totalAssets : (company.marketCap ? Math.round(company.marketCap * 0.8) : 1000);
-  const totalAssetsPrev = prevBs ? prevBs.totalAssets : totalAssetsCurr;
+  // SC4: Return null ("Insufficient Data") when required 2-year P&L, 2-year Balance Sheet, or Cash Flow statements are missing
+  if (!curr || !prev || !currBs || !prevBs || (!currCf && company.cfo == null)) {
+    return {
+      score: null,
+      maxScore: 9,
+      classification: 'Insufficient Data',
+      color: 'text-neutral-400 bg-neutral-500/10 border-neutral-500/30',
+      criteria: [],
+    };
+  }
 
-  const roaCurr = curr && currBs ? (curr.netProfit / Math.max(1, currBs.totalAssets)) * 100 : (company.roa ?? 8.5);
-  const roaPrev = prev && prevBs ? (prev.netProfit / Math.max(1, prevBs.totalAssets)) * 100 : roaCurr;
+  const netProfitCurr = curr.netProfit;
+  const cfoCurr = currCf ? currCf.cashFromOperating : (company.cfo as number);
+  const totalAssetsCurr = currBs.totalAssets;
+  const totalAssetsPrev = prevBs.totalAssets;
+  if (!totalAssetsCurr || totalAssetsCurr <= 0 || !totalAssetsPrev || totalAssetsPrev <= 0) {
+    return {
+      score: null,
+      maxScore: 9,
+      classification: 'Insufficient Data',
+      color: 'text-neutral-400 bg-neutral-500/10 border-neutral-500/30',
+      criteria: [],
+    };
+  }
+
+  const roaCurr = (curr.netProfit / totalAssetsCurr) * 100;
+  const roaPrev = (prev.netProfit / totalAssetsPrev) * 100;
 
   const criteria: PiotroskiResult['criteria'] = [];
   const scale = company.market === 'INDIA' ? 'Cr' : 'B';
@@ -92,18 +108,13 @@ export function calculatePiotroskiScore(company: CompanyFundamental): PiotroskiR
     explanation: `Generated ${company.currencySymbol}${cfoCurr.toLocaleString()} ${scale} in operating cash flow.`,
   });
 
-  // 3. Increasing Return on Assets (ΔROA > 0)
-  const isCoalIndia = company.symbol === 'COALINDIA';
-  const c3 = isCoalIndia ? false : (prev && prevBs ? roaCurr > roaPrev : (company.profitGrowth1Y != null ? company.profitGrowth1Y > 0 : roaCurr > 0));
+  // 3. Increasing Return on Assets (ΔROA > 0) — strictly computed from statements (no hard-coded symbols)
+  const c3 = roaCurr > roaPrev;
   criteria.push({
     name: 'Expanding Return on Assets (ΔROA > 0)',
     category: 'Profitability',
     passed: c3,
-    explanation: isCoalIndia
-      ? 'ROA shifted from 32.1% to 26.4% YoY due to softer FSA and e-auction realizations.'
-      : (prev && prevBs
-        ? `ROA shifted from ${roaPrev.toFixed(1)}% to ${roaCurr.toFixed(1)}% YoY.`
-        : `Return on assets is healthy at ${roaCurr.toFixed(1)}%.`),
+    explanation: `ROA shifted from ${roaPrev.toFixed(1)}% to ${roaCurr.toFixed(1)}% YoY.`,
   });
 
   // 4. Quality of Earnings: CFO > Net Income (Accrual < 0)
@@ -117,112 +128,63 @@ export function calculatePiotroskiScore(company: CompanyFundamental): PiotroskiR
       : 'Net income exceeds operating cash flows, indicating non-cash accruals.',
   });
 
-  // 5. Decreasing / Stable Long-Term Leverage (ΔLeverage <= 0)
-  let c5 = true;
-  let c5Explanation = 'Debt-to-assets ratio maintained at conservative levels.';
-  if (currBs && prevBs) {
-    const levCurr = currBs.borrowings / Math.max(1, currBs.totalAssets);
-    const levPrev = prevBs.borrowings / Math.max(1, prevBs.totalAssets);
-    c5 = levCurr <= levPrev + 0.001;
-    c5Explanation = `Debt/Assets changed from ${(levPrev * 100).toFixed(1)}% to ${(levCurr * 100).toFixed(1)}% YoY.`;
-  } else if (company.debtReduction3Y != null) {
-    c5 = company.debtReduction3Y >= 0 || (company.debtToEquity != null && company.debtToEquity < 0.4);
-    c5Explanation = `3-Year debt change stands at ${company.debtReduction3Y > 0 ? '-' : '+'}${Math.abs(company.debtReduction3Y)}%.`;
-  } else if (company.debtToEquity != null) {
-    c5 = company.debtToEquity <= 0.5;
-    c5Explanation = `Debt-to-equity is conservative at ${company.debtToEquity.toFixed(2)}x.`;
-  }
+  // 5. Decreasing / Stable Long-Term Leverage (ΔLeverage <= 0) — never default to true
+  const levCurr = currBs.borrowings / totalAssetsCurr;
+  const levPrev = prevBs.borrowings / totalAssetsPrev;
+  const c5 = levCurr <= levPrev + 0.001;
   criteria.push({
     name: 'Prudent Balance Sheet Leverage (ΔLeverage <= 0)',
     category: 'Leverage & Liquidity',
     passed: c5,
-    explanation: c5Explanation,
+    explanation: `Debt/Assets changed from ${(levPrev * 100).toFixed(1)}% to ${(levCurr * 100).toFixed(1)}% YoY.`,
   });
 
-  // 6. Improving Liquidity (ΔCurrentRatio > 0)
-  let c6 = true;
-  let c6Explanation = 'Adequate short-term liquidity buffer maintained.';
-  if (isCoalIndia) {
-    c6 = false;
-    c6Explanation = 'Liquidity ratio compressed from 1.75x to 1.52x YoY due to provisions for wage revisions.';
-  } else if (currBs && prevBs) {
-    const caCurr = currBs.otherAssets + currBs.investments;
-    const clCurr = Math.max(1, currBs.otherLiabilities);
-    const caPrev = prevBs.otherAssets + prevBs.investments;
-    const clPrev = Math.max(1, prevBs.otherLiabilities);
-    const crCurr = caCurr / clCurr;
-    const crPrev = caPrev / clPrev;
-    c6 = crCurr >= crPrev - 0.01;
-    c6Explanation = `Liquidity ratio transitioned from ${crPrev.toFixed(2)}x to ${crCurr.toFixed(2)}x YoY.`;
-  } else if (company.currentRatio != null) {
-    c6 = company.currentRatio >= 1.25;
-    c6Explanation = `Current ratio stands at ${company.currentRatio.toFixed(2)}x (benchmark >= 1.25x).`;
-  }
+  // 6. Improving Liquidity (ΔCurrentRatio > 0) — never default to true
+  const caCurr = currBs.otherAssets + currBs.investments;
+  const clCurr = Math.max(1, currBs.otherLiabilities);
+  const caPrev = prevBs.otherAssets + prevBs.investments;
+  const clPrev = Math.max(1, prevBs.otherLiabilities);
+  const crCurr = caCurr / clCurr;
+  const crPrev = caPrev / clPrev;
+  const c6 = crCurr >= crPrev - 0.01;
   criteria.push({
     name: 'Improving Liquidity (ΔCurrent Ratio > 0)',
     category: 'Leverage & Liquidity',
     passed: c6,
-    explanation: c6Explanation,
+    explanation: `Liquidity ratio transitioned from ${crPrev.toFixed(2)}x to ${crCurr.toFixed(2)}x YoY.`,
   });
 
   // 7. No Share Dilution (Zero New Shares Issued)
-  let c7 = true;
-  let c7Explanation = 'No new equity shares issued; zero shareholder dilution.';
-  if (currBs && prevBs) {
-    c7 = currBs.equityCapital <= prevBs.equityCapital + 0.001;
-    c7Explanation = c7
-      ? `Share capital remained stable at ${company.currencySymbol}${currBs.equityCapital.toLocaleString()} ${scale}.`
-      : `Share capital expanded from ${company.currencySymbol}${prevBs.equityCapital} to ${currBs.equityCapital} ${scale} (equity dilution).`;
-  }
+  const c7 = currBs.equityCapital <= prevBs.equityCapital + 0.001;
   criteria.push({
     name: 'Zero Equity Dilution (ΔShares <= 0)',
     category: 'Leverage & Liquidity',
     passed: c7,
-    explanation: c7Explanation,
+    explanation: c7
+      ? `Share capital remained stable at ${company.currencySymbol}${currBs.equityCapital.toLocaleString()} ${scale}.`
+      : `Share capital expanded from ${company.currencySymbol}${prevBs.equityCapital} to ${currBs.equityCapital} ${scale} (equity dilution).`,
   });
 
   // 8. Expanding Operating / Gross Margin (ΔMargin > 0)
-  let c8 = false;
-  let c8Explanation = 'Margin compressed versus prior fiscal year.';
-  if (isCoalIndia) {
-    c8 = false;
-    c8Explanation = 'Operating margin shifted from 31.4% to 24.2% YoY due to production cost escalation.';
-  } else if (curr && prev) {
-    const gmCurr = ((curr.sales - curr.expenses) / Math.max(1, curr.sales)) * 100;
-    const gmPrev = ((prev.sales - prev.expenses) / Math.max(1, prev.sales)) * 100;
-    c8 = gmCurr >= gmPrev - 0.05;
-    c8Explanation = `Operating margin shifted from ${gmPrev.toFixed(1)}% to ${gmCurr.toFixed(1)}% YoY.`;
-  } else if (company.opm != null) {
-    c8 = company.opm >= 15;
-    c8Explanation = `Operating margin is healthy at ${company.opm.toFixed(1)}%.`;
-  }
+  const gmCurr = ((curr.sales - curr.expenses) / Math.max(1, curr.sales)) * 100;
+  const gmPrev = ((prev.sales - prev.expenses) / Math.max(1, prev.sales)) * 100;
+  const c8 = gmCurr >= gmPrev - 0.05;
   criteria.push({
     name: 'Expanding Operating Margin (ΔMargin > 0)',
     category: 'Operating Efficiency',
     passed: c8,
-    explanation: c8Explanation,
+    explanation: `Operating margin shifted from ${gmPrev.toFixed(1)}% to ${gmCurr.toFixed(1)}% YoY.`,
   });
 
   // 9. Increasing Asset Turnover (ΔAssetTurnover > 0)
-  let c9 = false;
-  let c9Explanation = 'Asset utilization efficiency declined versus prior fiscal year.';
-  if (isCoalIndia) {
-    c9 = false;
-    c9Explanation = 'Asset turnover contracted from 0.88x to 0.74x YoY as mining capex outpaced revenue.';
-  } else if (curr && prev && currBs && prevBs) {
-    const atCurr = curr.sales / Math.max(1, currBs.totalAssets);
-    const atPrev = prev.sales / Math.max(1, prevBs.totalAssets);
-    c9 = atCurr >= atPrev - 0.01;
-    c9Explanation = `Asset turnover changed from ${atPrev.toFixed(2)}x to ${atCurr.toFixed(2)}x YoY.`;
-  } else if (company.salesGrowth1Y != null) {
-    c9 = company.salesGrowth1Y > 0;
-    c9Explanation = `Annual revenue expansion of ${company.salesGrowth1Y.toFixed(1)}% supports turnover.`;
-  }
+  const atCurr = curr.sales / totalAssetsCurr;
+  const atPrev = prev.sales / totalAssetsPrev;
+  const c9 = atCurr >= atPrev - 0.01;
   criteria.push({
     name: 'Increasing Asset Turnover (ΔTurnover > 0)',
     category: 'Operating Efficiency',
     passed: c9,
-    explanation: c9Explanation,
+    explanation: `Asset turnover changed from ${atPrev.toFixed(2)}x to ${atCurr.toFixed(2)}x YoY.`,
   });
 
   const score = criteria.filter((c) => c.passed).length;
@@ -267,17 +229,19 @@ export function calculateAltmanZScore(company: CompanyFundamental): AltmanZResul
   const bs = company.balanceSheet || [];
   const currBs = bs[0];
 
-  const mcap = company.marketCap || 1000;
-
-  // Compute Total Assets
-  let totalAssets = currBs ? currBs.totalAssets : 0;
-  if (!totalAssets || totalAssets <= 0) {
-    const netWorth = company.pb && company.pb > 0 ? mcap / company.pb : mcap * 0.4;
-    const totalDebt = company.netDebt && company.netDebt > 0
-      ? company.netDebt
-      : (company.debtToEquity ? netWorth * company.debtToEquity : netWorth * 0.25);
-    totalAssets = Math.round(netWorth + totalDebt);
+  if (!currPnl || !currBs || !currBs.totalAssets || currBs.totalAssets <= 0) {
+    return {
+      score: null,
+      zone: 'Insufficient Data',
+      color: 'text-neutral-400 bg-neutral-500/10 border-neutral-500/30',
+      formulaVersion: 'Not Applicable',
+      explanation: 'Insufficient audited balance sheet and income statement data to compute Altman Z-Score.',
+      components: [],
+    };
   }
+
+  const mcap = company.marketCap || 0;
+  const totalAssets = currBs.totalAssets;
 
   // Working Capital = Current Assets - Current Liabilities
   let workingCapital = 0;
@@ -405,6 +369,15 @@ export function calculateBeneishMScore(company: CompanyFundamental): BeneishMRes
   const prevBs = bs[1];
   const cf = company.cashFlow || [];
   const currCf = cf[0];
+
+  if (!currPnl || !prevPnl || !currBs || !prevBs || (!currCf && company.cfo == null)) {
+    return {
+      score: null,
+      flagged: false,
+      color: 'text-neutral-400 bg-neutral-500/10 border-neutral-500/30',
+      interpretation: 'Insufficient multi-year audited financial statements to compute Beneish M-Score.',
+    };
+  }
 
   const salesCurr = currPnl ? currPnl.sales : (company.revenue || 1000);
   const salesPrev = prevPnl ? prevPnl.sales : Math.round(salesCurr * 0.88);

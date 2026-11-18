@@ -832,6 +832,9 @@ export function findExcludedQueryBuilderMetrics(node: QueryNode): string[] {
     const right = findExcludedQueryBuilderMetrics(node.right);
     return Array.from(new Set([...left, ...right]));
   }
+  if (node.type === 'NOT') {
+    return findExcludedQueryBuilderMetrics(node.node);
+  }
   return [];
 }
 
@@ -882,34 +885,29 @@ export function getMetricValue(
   if (canonical === 'beneishMScore') {
     return calculateBeneishMScore(company).score;
   }
+  // SC2: Return null for technical indicators unless real precomputed values exist on the record
   if (canonical === 'rsi14') {
-    const seed = company.symbol.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
-    const rsi = 48 + ((seed % 28) + (company.priceChangePct * 2.2));
-    return Math.max(22, Math.min(84, Math.round(rsi * 10) / 10));
+    const v = (company as any).rsi14;
+    return typeof v === 'number' && !Number.isNaN(v) ? v : null;
   }
   if (canonical === 'sma50') {
-    if (typeof (company as any).sma50 === 'number' && (company as any).sma50 > 0) return (company as any).sma50;
-    const h = company.high52W || (company.currentPrice * 1.15);
-    const l = company.low52W || (company.currentPrice * 0.85);
-    return Math.round((h * 0.35 + l * 0.65) * 10) / 10;
+    const v = (company as any).sma50;
+    return typeof v === 'number' && !Number.isNaN(v) && v > 0 ? v : null;
   }
   if (canonical === 'sma200') {
-    if (typeof (company as any).sma200 === 'number' && (company as any).sma200 > 0) return (company as any).sma200;
-    const h = company.high52W || (company.currentPrice * 1.25);
-    const l = company.low52W || (company.currentPrice * 0.75);
-    return Math.round(((h + l) / 2) * 10) / 10;
+    const v = (company as any).sma200;
+    return typeof v === 'number' && !Number.isNaN(v) && v > 0 ? v : null;
   }
   if (canonical === 'distanceSma200Pct') {
-    if (typeof (company as any).distanceSma200Pct === 'number' && !Number.isNaN((company as any).distanceSma200Pct) && (company as any).distanceSma200Pct !== 0) {
-      return (company as any).distanceSma200Pct;
+    const sma200 = (company as any).sma200;
+    if (typeof sma200 === 'number' && sma200 > 0 && company.currentPrice > 0) {
+      return Math.round((((company.currentPrice - sma200) / sma200) * 100) * 10) / 10;
     }
-    const h = company.high52W || (company.currentPrice * 1.25);
-    const l = company.low52W || (company.currentPrice * 0.75);
-    const sma200 = (h + l) / 2;
-    return sma200 > 0 ? Math.round((((company.currentPrice - sma200) / sma200) * 100) * 10) / 10 : 0.0;
+    return null;
   }
   if (canonical === 'macd') {
-    return Math.round(company.currentPrice * 0.007 * 100) / 100;
+    const v = (company as any).macd;
+    return typeof v === 'number' && !Number.isNaN(v) ? v : null;
   }
   if (canonical === 'debtToEquity') {
     if (isFin) return null;
@@ -918,13 +916,8 @@ export function getMetricValue(
     }
     const totalDebt = (company as any).totalDebt;
     const netDebt = company.netDebt;
-    if (totalDebt === 0 || (netDebt != null && netDebt <= 0 && (!totalDebt || totalDebt === 0))) {
+    if (totalDebt === 0 || (netDebt != null && netDebt <= 0 && totalDebt === 0)) {
       return 0.0;
-    }
-    if (typeof totalDebt === 'number' && totalDebt > 0 && company.marketCap > 0) {
-      const pb = company.pb && company.pb > 0 ? company.pb : 2.0;
-      const equity = company.marketCap / pb;
-      return +(totalDebt / equity).toFixed(2);
     }
     return null;
   }
@@ -932,7 +925,7 @@ export function getMetricValue(
     if (isFin) return null;
     const debt = (company as any).totalDebt;
     if (typeof debt === 'number') return debt;
-    if (company.netDebt != null && company.netDebt <= 0 && (!debt || debt === 0)) return 0;
+    if (company.netDebt != null && company.netDebt <= 0 && debt === 0) return 0;
     return null;
   }
 
@@ -941,6 +934,44 @@ export function getMetricValue(
     return null;
   }
   return typeof raw === 'number' ? raw : null;
+}
+
+/**
+ * SC6: Returns the display/storage unit for a metric in the given market
+ * (India stores currency scale in 'Cr', USA/UAE in 'B').
+ */
+export function getMetricUnitForMarket(metricKey: string, market: string = 'INDIA'): string {
+  const def = getMetricDefinition(metricKey);
+  if (!def) return '';
+  if (def.unit === 'Cr' && market.toUpperCase() !== 'INDIA') {
+    return 'B';
+  }
+  return def.unit || '';
+}
+
+/**
+ * SC7: Computes coverage statistics across a company universe for all defined metrics.
+ */
+export function computeMetricCoverage(
+  companies: CompanyFundamental[]
+): Record<string, { count: number; total: number; coveragePct: number }> {
+  const total = companies.length;
+  const out: Record<string, { count: number; total: number; coveragePct: number }> = {};
+  for (const def of METRIC_DEFINITIONS) {
+    let count = 0;
+    for (let i = 0; i < total; i++) {
+      const val = getMetricValue(companies[i], def.key);
+      if (val !== null && val !== undefined && !Number.isNaN(val)) {
+        count++;
+      }
+    }
+    out[def.key] = {
+      count,
+      total,
+      coveragePct: total > 0 ? Math.round((count / total) * 1000) / 10 : 0,
+    };
+  }
+  return out;
 }
 
 /** Institutional Number Formatter */

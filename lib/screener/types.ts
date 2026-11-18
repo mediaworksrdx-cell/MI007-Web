@@ -204,10 +204,26 @@ export interface CompanyFundamental {
   low52W: number;
   priceTo52WHighPct: number | null;
   distanceSma200Pct?: number | null;
+  rsi14?: number | null;
+  sma50?: number | null;
+  sma200?: number | null;
+  macd?: number | null;
   priceReturn1M: number | null;
   priceReturn1Y: number | null;
   volume: number;
   beta: number | null;
+
+  // Provenance & Data Quality Metadata (SC3, SC8, SC14)
+  dataProvenance?: 'reported' | 'estimated' | 'missing';
+  statementProvenance?: {
+    annualProfitLoss: 'reported' | 'estimated' | 'missing';
+    quarterlyResults: 'reported' | 'estimated' | 'missing';
+    balanceSheet: 'reported' | 'estimated' | 'missing';
+    cashFlow: 'reported' | 'estimated' | 'missing';
+    shareholdingPattern: 'reported' | 'estimated' | 'missing';
+  };
+  dataQualityNotes?: string[];
+  asOfDate?: string;
 
   // Automated Institutional Insights (Screener.in style)
   pros: string[];
@@ -250,6 +266,10 @@ export type QueryNode =
       operator: ComparisonOperator;
       value: number;
       value2?: number;
+      rawValue?: number;
+      rawValue2?: number;
+      unitSuffix?: string;
+      unitSuffix2?: string;
       rawMetricName: string;
     }
   | {

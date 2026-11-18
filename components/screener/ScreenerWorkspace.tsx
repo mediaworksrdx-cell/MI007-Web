@@ -323,15 +323,22 @@ export function ScreenerWorkspace() {
     };
   }, [getSymbolPrice]);
 
+  // SC15: Memoize base universes so price ticks only enrich symbols that actually have a live tick
+  const baseMarketCompanies = useMemo(() => getCompaniesByMarket(market), [market]);
+  const baseAllCompanies = useMemo(() => getAllCompanies(), []);
+  const hasLiveTicks = Boolean(livePrices && Object.keys(livePrices).length > 0);
+
   // Companies for current market enriched with live Zerodha Kite streaming ticks
   const marketCompanies = useMemo(() => {
-    return getCompaniesByMarket(market).map(enrichCompanyWithLiveTick);
-  }, [market, livePrices, enrichCompanyWithLiveTick]);
+    if (!hasLiveTicks) return baseMarketCompanies;
+    return baseMarketCompanies.map((c) => (livePrices[c.symbol] ? enrichCompanyWithLiveTick(c) : c));
+  }, [baseMarketCompanies, hasLiveTicks, livePrices, enrichCompanyWithLiveTick]);
 
   // Master list of all companies enriched with live Zerodha Kite ticks
   const allCompaniesEnriched = useMemo(() => {
-    return getAllCompanies().map(enrichCompanyWithLiveTick);
-  }, [livePrices, enrichCompanyWithLiveTick]);
+    if (!hasLiveTicks) return baseAllCompanies;
+    return baseAllCompanies.map((c) => (livePrices[c.symbol] ? enrichCompanyWithLiveTick(c) : c));
+  }, [baseAllCompanies, hasLiveTicks, livePrices, enrichCompanyWithLiveTick]);
 
   const availableSectors = useMemo(() => {
     return getSectors(market);

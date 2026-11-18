@@ -2,10 +2,10 @@
 // Server-side evaluation of financial screening expressions and visual filters
 
 import { NextRequest, NextResponse } from 'next/server';
-import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
+import { parseQuery, evaluateNode, computeExcludedForMissingData } from '@/lib/screener/queryEngine';
 import { getCompaniesByMarket } from '@/lib/screener/data';
 import { CompanyFundamental, MarketRegion } from '@/lib/screener/types';
-import { getMetricValue } from '@/lib/screener/metrics';
+import { getMetricValue, resolveMetricKey, computeMetricCoverage } from '@/lib/screener/metrics';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
       pageSize = 50,
     } = body;
 
-    // Filter by market
-    let companies: CompanyFundamental[] = getCompaniesByMarket((market || 'INDIA') as any);
+    // Filter by market (work on a fresh copy so shared cache is never mutated)
+    let companies: CompanyFundamental[] = [...getCompaniesByMarket((market || 'INDIA') as any)];
 
     // Filter by index (e.g. SP500, NASDAQ100, DOW30)
     if (index && index !== 'ALL') {
@@ -48,8 +48,6 @@ export async function POST(request: NextRequest) {
 
     // Parse query expression
     let parsedAst: any = null;
-    let queryValid = true;
-    let parseError = '';
 
     if (query && query.trim()) {
       const parseRes = parseQuery(query);
@@ -66,18 +64,23 @@ export async function POST(request: NextRequest) {
       parsedAst = parseRes.ast;
     }
 
-    // Evaluate against each company
-    let matches = companies;
+    // Evaluate against each company (on a fresh copy)
+    let matches = [...companies];
+    let excludedInfo = { excludedForMissingData: {} as Record<string, number>, totalExcludedForMissingData: 0 };
     if (parsedAst) {
       matches = companies.filter((comp) => evaluateNode(parsedAst, comp));
+      excludedInfo = computeExcludedForMissingData(parsedAst, companies);
     }
 
-    // Sort matches
-    if (sortColumn) {
+    // Validate sortColumn against known metrics
+    const validSortKey = sortColumn ? resolveMetricKey(String(sortColumn)) : 'marketCap';
+    const safeSortDirection = sortDirection === 'asc' ? 'asc' : 'desc';
+
+    if (validSortKey) {
       matches.sort((a, b) => {
-        const valA = getMetricValue(a, sortColumn) ?? -Infinity;
-        const valB = getMetricValue(b, sortColumn) ?? -Infinity;
-        if (sortDirection === 'asc') {
+        const valA = getMetricValue(a, validSortKey) ?? -Infinity;
+        const valB = getMetricValue(b, validSortKey) ?? -Infinity;
+        if (safeSortDirection === 'asc') {
           return valA > valB ? 1 : valA < valB ? -1 : 0;
         } else {
           return valA < valB ? 1 : valA > valB ? -1 : 0;
@@ -85,21 +88,31 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Pagination
+    // Clamp pagination parameters (SC9: page >= 1, 1 <= pageSize <= 200)
+    const safePage = Math.max(1, Math.floor(Number(page) || 1));
+    const safePageSize = Math.max(1, Math.min(200, Math.floor(Number(pageSize) || 50)));
+
     const totalMatches = matches.length;
-    const startIndex = (page - 1) * pageSize;
-    const paginated = matches.slice(startIndex, startIndex + pageSize);
+    const startIndex = (safePage - 1) * safePageSize;
+    const paginated = matches.slice(startIndex, startIndex + safePageSize);
 
     const executionTimeMs = Date.now() - startTime;
+    const asOfDate = companies[0]?.asOfDate || '2026-10-31';
 
     return NextResponse.json({
       valid: true,
       totalMatches,
-      page,
-      pageSize,
+      totalUniverse: companies.length,
+      excludedForMissingData: excludedInfo.excludedForMissingData,
+      totalExcludedForMissingData: excludedInfo.totalExcludedForMissingData,
+      metricCoverage: computeMetricCoverage(companies),
+      page: safePage,
+      pageSize: safePageSize,
       executionTimeMs,
       companies: paginated,
-      dataTimestamp: 'Live / Synchronized Fundamental Feed',
+      asOfDate,
+      isStale: true,
+      dataTimestamp: `Cached Fundamentals (as of ${asOfDate})`,
     });
   } catch (error: any) {
     return NextResponse.json(

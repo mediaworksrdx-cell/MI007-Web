@@ -1,8 +1,47 @@
 // ─── Screening Alerts & Scheduled Notification Workspace ────────────────────
 'use client';
 
-import React, { useState } from 'react';
-import { ScreeningAlert, MarketRegion } from '@/lib/screener/types';
+import React, { useState, useMemo } from 'react';
+import { ScreeningAlert, MarketRegion, CompanyFundamental } from '@/lib/screener/types';
+import { getCompaniesByMarket } from '@/lib/screener/data';
+import { getMetricValue } from '@/lib/screener/metrics';
+import { parseQuery, evaluateNode } from '@/lib/screener/queryEngine';
+
+export function evaluateAlertAgainstUniverse(
+  alert: ScreeningAlert,
+  companies: CompanyFundamental[]
+): { symbol: string; name: string; value?: number | null; message: string }[] {
+  if (!alert.enabled) return [];
+  const matches: { symbol: string; name: string; value?: number | null; message: string }[] = [];
+
+  if (alert.triggerType === 'METRIC_CROSS' && alert.metricKey && typeof alert.threshold === 'number') {
+    for (const comp of companies) {
+      const val = getMetricValue(comp, alert.metricKey);
+      if (val !== null && val > alert.threshold) {
+        matches.push({
+          symbol: comp.symbol,
+          name: comp.name,
+          value: val,
+          message: `${alert.metricKey.toUpperCase()} is ${val.toFixed(2)} (threshold > ${alert.threshold})`,
+        });
+      }
+    }
+  } else if ((alert as any).query) {
+    const parsed = parseQuery((alert as any).query);
+    if (parsed.valid && parsed.ast) {
+      for (const comp of companies) {
+        if (evaluateNode(parsed.ast, comp)) {
+          matches.push({
+            symbol: comp.symbol,
+            name: comp.name,
+            message: `Matches screen condition: ${(alert as any).query}`,
+          });
+        }
+      }
+    }
+  }
+  return matches;
+}
 
 interface ScreeningAlertsViewProps {
   alerts: ScreeningAlert[];
@@ -28,12 +67,13 @@ export function ScreeningAlertsView({
   const [metricKey, setMetricKey] = useState('roce');
   const [threshold, setThreshold] = useState(25);
 
+  const universe = useMemo(() => getCompaniesByMarket(market), [market]);
+
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const defaultSymbol = market === 'USA' ? 'AAPL' : market === 'UAE' ? 'EMAAR' : 'TCS';
-    onCreateAlert({
+    const newAlert: ScreeningAlert = {
       id: `alert-${Date.now()}`,
       name: name.trim(),
       triggerType,
@@ -41,14 +81,16 @@ export function ScreeningAlertsView({
       enabled: true,
       metricKey: triggerType === 'METRIC_CROSS' ? metricKey : undefined,
       threshold: triggerType === 'METRIC_CROSS' ? threshold : undefined,
-      recentTriggers: [
-        {
-          timestamp: new Date().toLocaleString(),
-          symbol: defaultSymbol,
-          message: `Alert activated: Monitoring for ${triggerType === 'METRIC_CROSS' ? `${metricKey} > ${threshold}` : 'screen entry'} on financial report release.`,
-        },
-      ],
-    });
+      recentTriggers: [],
+    };
+    const evaluated = evaluateAlertAgainstUniverse(newAlert, universe).slice(0, 5);
+    newAlert.recentTriggers = evaluated.map((m) => ({
+      timestamp: `Snapshot (${universe[0]?.asOfDate || '2026-10-31'})`,
+      symbol: m.symbol,
+      message: m.message,
+    }));
+
+    onCreateAlert(newAlert);
 
     setName('');
     setModalOpen(false);
@@ -126,33 +168,62 @@ export function ScreeningAlertsView({
                 Type: {alert.triggerType === 'SCREEN_ENTRY_EXIT' ? 'Screen Entry / Exit' : `Fundamental Metric Cross`}
               </div>
 
-              {/* Recent Triggers */}
+              {/* Live Snapshot Matches & Trigger History */}
               <div className="mt-4 pt-3 border-t border-[var(--theme-card-border)]/60">
-                <span className="mono text-[10.5px] font-bold text-[var(--theme-card-text-muted)] uppercase tracking-wider block mb-2">
-                  Recent Trigger History
-                </span>
-                <div className="flex flex-col gap-2">
-                  {alert.recentTriggers?.map((trig, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[12px]"
-                    >
-                      <div className="flex items-center justify-between mono text-[10.5px] text-[var(--theme-card-text-muted)] mb-0.5">
-                        <button
-                          type="button"
-                          onClick={() => onSelectCompany(trig.symbol)}
-                          className="font-bold text-emerald-400 hover:underline"
-                        >
-                          {trig.symbol}
-                        </button>
-                        <span>{trig.timestamp}</span>
-                      </div>
-                      <p className="text-[12px] text-[var(--theme-card-text)]">
-                        {trig.message}
-                      </p>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="mono text-[10.5px] font-bold text-[var(--theme-card-text-muted)] uppercase tracking-wider">
+                    In-App Snapshot Evaluation (Push Delivery: Coming Soon)
+                  </span>
                 </div>
+                {(() => {
+                  const liveMatches = evaluateAlertAgainstUniverse(alert, universe);
+                  const displayList =
+                    liveMatches.length > 0
+                      ? liveMatches.slice(0, 5).map((m) => ({
+                          symbol: m.symbol,
+                          timestamp: `Snapshot (${universe[0]?.asOfDate || '2026-10-31'})`,
+                          message: m.message,
+                        }))
+                      : alert.recentTriggers || [];
+                  if (displayList.length === 0) {
+                    return (
+                      <div className="p-2.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[11.5px] text-[var(--theme-card-text-muted)] mono">
+                        {alert.enabled
+                          ? '0 companies currently match this alert threshold in the loaded fundamental snapshot.'
+                          : 'Alert is paused.'}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="flex flex-col gap-2">
+                      {liveMatches.length > 0 && (
+                        <div className="text-[11px] mono font-bold text-emerald-400">
+                          {liveMatches.length} matching companies in {market} universe (showing top {Math.min(5, liveMatches.length)}):
+                        </div>
+                      )}
+                      {displayList.map((trig, idx) => (
+                        <div
+                          key={idx}
+                          className="p-2 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[12px]"
+                        >
+                          <div className="flex items-center justify-between mono text-[10.5px] text-[var(--theme-card-text-muted)] mb-0.5">
+                            <button
+                              type="button"
+                              onClick={() => onSelectCompany(trig.symbol)}
+                              className="font-bold text-emerald-400 hover:underline"
+                            >
+                              {trig.symbol}
+                            </button>
+                            <span>{trig.timestamp}</span>
+                          </div>
+                          <p className="text-[12px] text-[var(--theme-card-text)]">
+                            {trig.message}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>

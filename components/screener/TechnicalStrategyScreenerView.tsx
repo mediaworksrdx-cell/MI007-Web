@@ -44,6 +44,8 @@ export function TechnicalStrategyScreenerView({
   // Interactive Pagination state (prevents DOM overload and main thread freeze)
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [demoMode, setDemoMode] = useState(false);
+  const [realCandlesMap, setRealCandlesMap] = useState<Record<string, any[]>>({});
 
   const { getSymbolPrice, status: tradeEngineStatus } = useTradeEngine();
 
@@ -77,9 +79,41 @@ export function TechnicalStrategyScreenerView({
     return Array.from(map.values());
   }, [companies, searchQuery]);
 
-  // Memoized evaluation cache: skips re-generating candles and indicator math if price is identical
+  // Fetch real candles from /api/candles for the scan batch (SC1)
+  useEffect(() => {
+    let cancelled = false;
+    const missing = targetUniverse.slice(0, 20).filter((c) => !realCandlesMap[c.symbol]);
+    if (missing.length === 0) return;
 
-  // Evaluate all 10 quantitative models across the target universe
+    (async () => {
+      const fetched: Record<string, any[]> = {};
+      await Promise.all(
+        missing.map(async (comp) => {
+          try {
+            const res = await fetch(
+              `/api/candles?symbol=${encodeURIComponent(comp.symbol)}&timeframe=1D&market=${encodeURIComponent(comp.market)}&count=220`
+            );
+            if (!res.ok) return;
+            const json = await res.json();
+            if (Array.isArray(json.candles) && json.candles.length >= 30) {
+              fetched[comp.symbol] = json.candles;
+            }
+          } catch {
+            // Ignore individual fetch errors
+          }
+        })
+      );
+      if (!cancelled && Object.keys(fetched).length > 0) {
+        setRealCandlesMap((prev) => ({ ...prev, ...fetched }));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [targetUniverse]);
+
+  // Evaluate quantitative models across the target universe using real candles (or Demo Mode when explicitly enabled)
   const scanResults = useMemo(() => {
     const list: StrategySignalResult[] = [];
     const cache = TECH_EVAL_CACHE;
@@ -88,17 +122,25 @@ export function TechnicalStrategyScreenerView({
     targetUniverse.forEach((comp) => {
       const live = getSymbolPrice(comp.symbol);
       const price = live?.price ?? comp.currentPrice;
-      const cacheKey = `${comp.market}:${comp.symbol}:${price}`;
+      const realSeries = realCandlesMap[comp.symbol];
+      const cacheKey = `${comp.market}:${comp.symbol}:${price}:${realSeries?.length || 0}:${demoMode ? 'demo' : 'real'}`;
 
       let results = cache.get(cacheKey);
       if (!results) {
-        results = evaluateCombinedStrategiesForStock(comp.symbol, comp.name, comp.market, price);
+        results = evaluateCombinedStrategiesForStock(
+          comp.symbol,
+          comp.name,
+          comp.market,
+          price,
+          realSeries,
+          { allowSyntheticDemo: demoMode }
+        );
         cache.set(cacheKey, results);
       }
       list.push(...results);
     });
     return list;
-  }, [targetUniverse, getSymbolPrice]);
+  }, [targetUniverse, getSymbolPrice, realCandlesMap, demoMode]);
 
   // Categories (including 'Smart Money Concepts')
   const categories = useMemo(() => {

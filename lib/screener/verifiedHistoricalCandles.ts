@@ -33,10 +33,10 @@ export function getHistoricalTradingDates(days: number, referenceDate: Date = ne
 }
 
 /**
- * Verified real historical price trajectories for core equity benchmarks.
- * Pegged to actual 52-week price ranges, earnings dates, and historical closing trajectories.
+ * Synthetic demo daily series generator (SC1: ONLY used when allowSyntheticDemo === true is explicitly requested).
+ * Does NOT seed from ticker characters so two symbols with identical price inputs never diverge.
  */
-function createVerifiedDailySeries(
+export function generateDemoCandles(
   symbol: string,
   startPrice: number,
   high52W: number,
@@ -49,8 +49,8 @@ function createVerifiedDailySeries(
   const dates = getHistoricalTradingDates(totalDays);
   const candles: Candle[] = [];
 
-  // Deterministic seed for reproducible intra-day variations
-  const seed = symbol.split('').reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
+  // Seed purely from numeric price parameters (never from ticker string)
+  const seed = Math.round((currentPrice + high52W + low52W) * 100) % 10000;
 
   // Key historical inflection milestones (approx quarterly reporting & trend inflection)
   const q1Idx = Math.floor(totalDays * 0.25);
@@ -118,52 +118,16 @@ function createVerifiedDailySeries(
   return candles;
 }
 
-// ── Verified Pre-Computed Institutional Equities Database ─────────────────────
-export const VERIFIED_HISTORICAL_MARKET_CANDLES: Record<string, Candle[]> = {
-  // Reliance Industries (NSE: RELIANCE)
-  RELIANCE: createVerifiedDailySeries('RELIANCE', 1180.0, 1608.8, 1115.2, 1265.4, 7850000, 'INDIA'),
-
-  // Tata Consultancy Services (NSE: TCS)
-  TCS: createVerifiedDailySeries('TCS', 3850.0, 4585.0, 3720.0, 4245.8, 2400000, 'INDIA'),
-
-  // HDFC Bank (NSE: HDFCBANK)
-  HDFCBANK: createVerifiedDailySeries('HDFCBANK', 1480.0, 1794.0, 1363.5, 1724.5, 14200000, 'INDIA'),
-
-  // Infosys (NSE: INFY)
-  INFY: createVerifiedDailySeries('INFY', 1450.0, 1991.4, 1358.3, 1912.6, 6800000, 'INDIA'),
-
-  // ICICI Bank (NSE: ICICIBANK)
-  ICICIBANK: createVerifiedDailySeries('ICICIBANK', 1010.0, 1345.0, 980.0, 1285.5, 11500000, 'INDIA'),
-
-  // Dixon Technologies (NSE: DIXON)
-  DIXON: createVerifiedDailySeries('DIXON', 6200.0, 15900.0, 5800.0, 14250.0, 850000, 'INDIA'),
-
-  // Central Depository Services India (NSE: CDSL)
-  CDSL: createVerifiedDailySeries('CDSL', 890.0, 1850.0, 820.0, 1640.0, 1900000, 'INDIA'),
-
-  // Titan Company (NSE: TITAN)
-  TITAN: createVerifiedDailySeries('TITAN', 3200.0, 3886.9, 3055.0, 3450.0, 1100000, 'INDIA'),
-
-  // Bajaj Finance (NSE: BAJFINANCE)
-  BAJFINANCE: createVerifiedDailySeries('BAJFINANCE', 6800.0, 7850.0, 6360.0, 7120.0, 1350000, 'INDIA'),
-
-  // Apple Inc (NASDAQ: AAPL)
-  AAPL: createVerifiedDailySeries('AAPL', 185.0, 237.2, 164.0, 228.6, 48000000, 'USA'),
-
-  // Microsoft Corp (NASDAQ: MSFT)
-  MSFT: createVerifiedDailySeries('MSFT', 390.0, 468.3, 385.0, 432.8, 21000000, 'USA'),
-
-  // Nvidia Corp (NASDAQ: NVDA)
-  NVDA: createVerifiedDailySeries('NVDA', 480.0, 974.0, 450.0, 875.4, 52000000, 'USA'),
-
-  // Emaar Properties (DFM: EMAAR)
-  EMAAR: createVerifiedDailySeries('EMAAR', 7.20, 9.45, 6.80, 8.48, 8500000, 'UAE'),
-};
+// ── Real Pre-Computed Historical Equities Cache ───────────────────────────────
+// SC1 remediation: Synthetic series have been removed from the verified dictionary.
+// Real candles must be fetched from /api/candles or passed explicitly.
+export const VERIFIED_HISTORICAL_MARKET_CANDLES: Record<string, Candle[]> = {};
 
 /**
- * Universal candle resolver:
- * 1. Returns verified institutional history if present
- * 2. If symbol not in pre-computed dictionary, derives verified daily series from actual company fundamental bounds
+ * Universal candle resolver (SC1 remediated):
+ * Returns real historical candles if present in cache or options.realCandles.
+ * Returns [] when real candles are unavailable, UNLESS options.allowSyntheticDemo === true
+ * is explicitly passed for demo mode.
  */
 export function getVerifiedHistoricalCandles(
   symbol: string,
@@ -172,12 +136,26 @@ export function getVerifiedHistoricalCandles(
   low52W: number = currentPrice * 0.8,
   avgVolume: number = 2000000,
   market: 'INDIA' | 'USA' | 'UAE' = 'INDIA',
-  days: number = 240
+  days: number = 240,
+  options?: { allowSyntheticDemo?: boolean; realCandles?: Candle[] }
 ): Candle[] {
+  if (options?.realCandles && options.realCandles.length > 0) {
+    return options.realCandles.slice(-days);
+  }
+
   const upper = symbol.toUpperCase();
+  if (VERIFIED_HISTORICAL_MARKET_CANDLES[upper] && VERIFIED_HISTORICAL_MARKET_CANDLES[upper].length > 0) {
+    const existing = VERIFIED_HISTORICAL_MARKET_CANDLES[upper];
+    return existing.length >= days ? existing.slice(existing.length - days) : existing;
+  }
+
+  // SC1: Do NOT fabricate synthetic candles unless explicitly opted into demo mode
+  if (!options?.allowSyntheticDemo) {
+    return [];
+  }
+
   const validCurrentPrice = Number.isFinite(currentPrice) && currentPrice > 0 ? currentPrice : 100;
 
-  // Sanitize 52-week bounds: they must reasonably bound currentPrice
   let safeHigh52W = high52W;
   let safeLow52W = low52W;
   if (!Number.isFinite(safeHigh52W) || safeHigh52W <= validCurrentPrice * 1.02 || safeHigh52W > validCurrentPrice * 3.5) {
@@ -191,36 +169,6 @@ export function getVerifiedHistoricalCandles(
     safeLow52W = Number((validCurrentPrice * 0.75).toFixed(2));
   }
 
-  if (VERIFIED_HISTORICAL_MARKET_CANDLES[upper]) {
-    const existing = VERIFIED_HISTORICAL_MARKET_CANDLES[upper];
-    const targetSlice = existing.length >= days ? existing.slice(existing.length - days) : existing;
-    const lastExistingClose = targetSlice[targetSlice.length - 1]?.close || validCurrentPrice;
-    const ratio = validCurrentPrice / (lastExistingClose || 1);
-
-    // If live price has drifted > 5% from static pre-computed base, scale entire series smoothly
-    const shouldScale = Math.abs(ratio - 1) > 0.05;
-
-    return targetSlice.map((c, idx) => {
-      const isClosed = c.isClosed ?? (idx < targetSlice.length - 1);
-      if (shouldScale) {
-        const open = Number((c.open * ratio).toFixed(2));
-        const close = idx === targetSlice.length - 1 ? validCurrentPrice : Number((c.close * ratio).toFixed(2));
-        const high = Math.max(open, close, Number((c.high * ratio).toFixed(2)));
-        const low = Math.min(open, close, Number((c.low * ratio).toFixed(2)));
-        return { ...c, open, close, high, low, isClosed };
-      }
-      if (idx === targetSlice.length - 1) {
-        const open = c.open;
-        const close = validCurrentPrice;
-        const high = Math.max(c.high, open, close);
-        const low = Math.min(c.low, open, close);
-        return { ...c, close, high, low, isClosed };
-      }
-      return { ...c, isClosed };
-    });
-  }
-
-  // Derive verified bounded sequence using company's real audited 52W range
   const startPrice = safeLow52W + (safeHigh52W - safeLow52W) * 0.4;
-  return createVerifiedDailySeries(upper, startPrice, safeHigh52W, safeLow52W, validCurrentPrice, avgVolume, market, days);
+  return generateDemoCandles(upper, startPrice, safeHigh52W, safeLow52W, validCurrentPrice, avgVolume, market, days);
 }

@@ -1,31 +1,41 @@
 // ─── Market Intelligence MI-007 — Technical Indicator Math ──────────────────
 import { Candle } from './types';
 
-/** Simple Moving Average with adaptive warmup */
+/** Simple Moving Average (returns null until period bars exist — SC11) */
 export function calculateSMA(candles: Candle[], period: number): (number | null)[] {
   if (!candles || candles.length === 0) return [];
   const p = Math.max(1, period);
-  return candles.map((_, i) => {
-    const effPeriod = Math.min(p, i + 1);
-    let sum = 0;
-    for (let j = i - effPeriod + 1; j <= i; j++) {
-      sum += candles[j].close;
+  const result: (number | null)[] = new Array(candles.length).fill(null);
+  let rollingSum = 0;
+  for (let i = 0; i < candles.length; i++) {
+    rollingSum += candles[i].close;
+    if (i >= p) {
+      rollingSum -= candles[i - p].close;
     }
-    return sum / effPeriod;
-  });
+    if (i >= p - 1) {
+      result[i] = rollingSum / p;
+    }
+  }
+  return result;
 }
 
-/** Exponential Moving Average with adaptive warmup */
+/** Exponential Moving Average (returns null until period bars exist — SC11) */
 export function calculateEMA(candles: Candle[], period: number): (number | null)[] {
   if (!candles || candles.length === 0) return [];
   const p = Math.max(1, period);
   const result: (number | null)[] = new Array(candles.length).fill(null);
-  result[0] = candles[0].close;
-  for (let i = 1; i < candles.length; i++) {
-    const effPeriod = Math.min(p, i + 1);
-    const mult = 2 / (effPeriod + 1);
-    const prev = result[i - 1]!;
-    result[i] = (candles[i].close - prev) * mult + prev;
+  if (candles.length < p) return result;
+
+  let seedSum = 0;
+  for (let i = 0; i < p; i++) {
+    seedSum += candles[i].close;
+  }
+  let prev = seedSum / p;
+  result[p - 1] = prev;
+  const mult = 2 / (p + 1);
+  for (let i = p; i < candles.length; i++) {
+    prev = (candles[i].close - prev) * mult + prev;
+    result[i] = prev;
   }
   return result;
 }

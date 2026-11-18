@@ -1,7 +1,7 @@
 // ─── MI-007 Strategies View: Simplified, Clean, Black Theme ─────────────────
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental, MarketRegion } from '@/lib/screener/types';
 import { useTradeEngine } from '@/lib/tradeEngineContext';
@@ -175,13 +175,15 @@ function generateSignalsForStrategy(
   strategyId: string,
   companies: CompanyFundamental[],
   getSymbolPrice: (symbol: string) => { price: number } | undefined,
-  market: MarketRegion = 'INDIA'
+  market: MarketRegion = 'INDIA',
+  realCandlesMap: Record<string, Candle[]> = {},
+  scanLimit: number = 50,
+  allowSyntheticDemo: boolean = false
 ): StrategySignal[] {
   const list: StrategySignal[] = [];
   const mktType = (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA';
 
-  // Evaluate top companies in universe
-  companies.slice(0, 40).forEach((comp) => {
+  companies.slice(0, scanLimit).forEach((comp) => {
     const live = getSymbolPrice(comp.symbol);
     const price = live?.price ?? comp.currentPrice;
     if (!price || price <= 0) return;
@@ -194,18 +196,28 @@ function generateSignalsForStrategy(
       comp.low52W || price * 0.75,
       comp.volume || 2000000,
       mktType,
-      140
+      140,
+      {
+        realCandles: realCandlesMap[comp.symbol],
+        allowSyntheticDemo,
+      }
     );
 
     if (!candles || candles.length < 30) return;
 
-    let score = 65;
+    // Compute 14-bar ATR for structural stop-loss sizing
+    const atrSlice = candles.slice(-14);
+    const atr =
+      atrSlice.reduce((sum, c) => sum + Math.max(0.01, c.high - c.low), 0) /
+      Math.max(1, atrSlice.length);
+
+    let score = 0;
     let direction: 'BUY' | 'SELL' = 'BUY';
     let trigger = '';
     let entry = Number(price.toFixed(2));
-    let stopLoss = Number((price * 0.98).toFixed(2));
-    let target = Number((price * 1.05).toFixed(2));
-    let riskReward = 2.5;
+    let stopLoss = Number((price - atr * 1.5).toFixed(2));
+    let target = Number((price + atr * 3.5).toFixed(2));
+    let riskReward = 2.3;
 
     if (strategyId === 'quantum_smc') {
       const qRes = evaluateQuantumSmcResonance(comp.symbol, comp.name, market, candles, price);
@@ -221,15 +233,14 @@ function generateSignalsForStrategy(
       const targetType = strategyId === '3stage_reversal' ? 'THREE_STAGE_REVERSAL' : 'POWER_OF_THREE_AMD';
       const setup = smc.allSetups.find((s) => s.setupType === targetType) || smc.allSetups[0];
 
-      if (setup) {
-        direction = setup.direction === 'BULLISH' ? 'BUY' : 'SELL';
-        score = setup.status === 'CONFIRMED' || setup.status === 'RETESTING' ? 88 : 72;
-        entry = Number(setup.entryPrice.toFixed(2));
-        stopLoss = Number(setup.stopLoss.toFixed(2));
-        target = Number(setup.targetPrice.toFixed(2));
-        riskReward = Number(setup.riskReward.toFixed(1));
-        trigger = setup.description;
-      }
+      if (!setup) return; // SC12: Do not emit a fake signal with fixed 2%/5% stops when no SMC setup exists
+      direction = setup.direction === 'BULLISH' ? 'BUY' : 'SELL';
+      score = setup.status === 'CONFIRMED' || setup.status === 'RETESTING' ? 88 : 72;
+      entry = Number(setup.entryPrice.toFixed(2));
+      stopLoss = Number(setup.stopLoss.toFixed(2));
+      target = Number(setup.targetPrice.toFixed(2));
+      riskReward = Number(setup.riskReward.toFixed(1));
+      trigger = setup.description;
     } else if (strategyId === 'order_flow') {
       const recent = candles.slice(-10);
       const buyVol = recent.filter((c) => c.close >= c.open).reduce((acc, c) => acc + c.volume, 0);
@@ -241,13 +252,16 @@ function generateSignalsForStrategy(
       trigger = direction === 'BUY'
         ? `Buy Delta +${Math.round((deltaRatio - 1) * 100)}% (Passive Limit Absorption)`
         : `Sell Delta -${Math.round((1 - deltaRatio) * 100)}% (Exhaustion Print)`;
-      stopLoss = direction === 'BUY' ? Number((price * 0.985).toFixed(2)) : Number((price * 1.015).toFixed(2));
-      target = direction === 'BUY' ? Number((price * 1.045).toFixed(2)) : Number((price * 0.955).toFixed(2));
-      riskReward = 3.0;
+      const swingLow = Math.min(...recent.map((c) => c.low));
+      const swingHigh = Math.max(...recent.map((c) => c.high));
+      stopLoss = direction === 'BUY' ? Number((swingLow - atr * 0.25).toFixed(2)) : Number((swingHigh + atr * 0.25).toFixed(2));
+      const risk = Math.max(0.01, Math.abs(price - stopLoss));
+      target = direction === 'BUY' ? Number((price + risk * 2.5).toFixed(2)) : Number((price - risk * 2.5).toFixed(2));
+      riskReward = 2.5;
     } else if (strategyId === 'volatility_squeeze') {
       const bb = calculateBollinger(candles, 20, 2);
-      const lastUpper = bb.upper[candles.length - 1] || price * 1.05;
-      const lastLower = bb.lower[candles.length - 1] || price * 0.95;
+      const lastUpper = bb.upper[candles.length - 1] || price + atr * 2;
+      const lastLower = bb.lower[candles.length - 1] || price - atr * 2;
       const bandwidth = (lastUpper - lastLower) / price;
 
       direction = change >= 0 ? 'BUY' : 'SELL';
@@ -255,8 +269,8 @@ function generateSignalsForStrategy(
       trigger = bandwidth < 0.05
         ? `BB Compression Inside Squeeze (${(bandwidth * 100).toFixed(1)}% Bandwidth) -> Expansion`
         : `Normal Volatility Expansion`;
-      stopLoss = direction === 'BUY' ? Number((lastLower * 0.995).toFixed(2)) : Number((lastUpper * 1.005).toFixed(2));
-      target = direction === 'BUY' ? Number((price + (price - stopLoss) * 2.5).toFixed(2)) : Number((price - (stopLoss - price) * 2.5).toFixed(2));
+      stopLoss = direction === 'BUY' ? Number((lastLower - atr * 0.2).toFixed(2)) : Number((lastUpper + atr * 0.2).toFixed(2));
+      target = direction === 'BUY' ? Number((price + Math.abs(price - stopLoss) * 2.5).toFixed(2)) : Number((price - Math.abs(stopLoss - price) * 2.5).toFixed(2));
       riskReward = 2.5;
     } else if (strategyId === 'ml_momentum') {
       const ema9 = calculateEMA(candles, 9);
@@ -271,7 +285,7 @@ function generateSignalsForStrategy(
       trigger = direction === 'BUY'
         ? `EMA 9/21 Bullish Ribbon (E9: ${curE9.toFixed(1)}) + RSI ${curRsi.toFixed(0)} Acceleration`
         : `EMA 9/21 Bearish Ribbon + RSI ${curRsi.toFixed(0)} Distribution`;
-      stopLoss = direction === 'BUY' ? Number((curE21 * 0.99).toFixed(2)) : Number((curE21 * 1.01).toFixed(2));
+      stopLoss = direction === 'BUY' ? Number((Math.min(curE21, price - atr) - atr * 0.25).toFixed(2)) : Number((Math.max(curE21, price + atr) + atr * 0.25).toFixed(2));
       target = direction === 'BUY' ? Number((price + Math.abs(price - stopLoss) * 2.4).toFixed(2)) : Number((price - Math.abs(price - stopLoss) * 2.4).toFixed(2));
       riskReward = 2.4;
     } else {
@@ -280,9 +294,10 @@ function generateSignalsForStrategy(
       direction = dev < 0 ? 'BUY' : 'SELL';
       score = Math.abs(dev) > 0.03 ? 85 : 66;
       trigger = `${(Math.abs(dev) * 100).toFixed(1)}% Deviation from 20-Day Mean -> Reversion`;
-      stopLoss = direction === 'BUY' ? Number((price * 0.98).toFixed(2)) : Number((price * 1.02).toFixed(2));
+      stopLoss = direction === 'BUY' ? Number((price - atr * 1.5).toFixed(2)) : Number((price + atr * 1.5).toFixed(2));
       target = Number(sma20.toFixed(2));
-      riskReward = 2.0;
+      const risk = Math.max(0.01, Math.abs(price - stopLoss));
+      riskReward = Number((Math.abs(target - price) / risk).toFixed(1)) || 2.0;
     }
 
     list.push({
@@ -319,8 +334,14 @@ export function MI007StrategiesView({
 
   // Python backtest simulation state
   const [simCapital, setSimCapital] = useState(100000);
+  const [selectedSimSymbol, setSelectedSimSymbol] = useState<string>('');
+  const [scanLimit, setScanLimit] = useState<number>(50);
+  const [demoMode, setDemoMode] = useState<boolean>(false);
+  const [realCandlesMap, setRealCandlesMap] = useState<Record<string, Candle[]>>({});
+  const [loadingCandles, setLoadingCandles] = useState<boolean>(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simResults, setSimResults] = useState<{
+    symbol: string;
     netProfit: number;
     netProfitPct: number;
     winRate: number;
@@ -328,7 +349,46 @@ export function MI007StrategiesView({
     maxDrawdown: number;
     totalTrades: number;
     expectancy: number;
+    lowSampleWarning?: boolean;
   } | null>(null);
+
+  // Fetch real candles for top symbols in the universe (SC1)
+  useEffect(() => {
+    let cancelled = false;
+    const targets = companies.slice(0, scanLimit);
+    const missing = targets.filter((c) => !realCandlesMap[c.symbol]);
+    if (missing.length === 0) return;
+
+    setLoadingCandles(true);
+    (async () => {
+      const fetched: Record<string, Candle[]> = {};
+      const batch = missing.slice(0, 20);
+      await Promise.all(
+        batch.map(async (comp) => {
+          try {
+            const res = await fetch(
+              `/api/candles?symbol=${encodeURIComponent(comp.symbol)}&timeframe=1D&market=${encodeURIComponent(market)}&count=220`
+            );
+            if (!res.ok) return;
+            const json = await res.json();
+            if (Array.isArray(json.candles) && json.candles.length >= 30) {
+              fetched[comp.symbol] = json.candles;
+            }
+          } catch {
+            // Ignore network errors for individual symbols
+          }
+        })
+      );
+      if (!cancelled && Object.keys(fetched).length > 0) {
+        setRealCandlesMap((prev) => ({ ...prev, ...fetched }));
+      }
+      if (!cancelled) setLoadingCandles(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [companies, market, scanLimit]);
 
   const activeStrategyMeta = useMemo(() => {
     return MI007_STRATEGIES.find((s) => s.id === selectedStrategyId) || MI007_STRATEGIES[0];
@@ -336,8 +396,16 @@ export function MI007StrategiesView({
 
   // Generate strategy-specific signals dynamically for the selected strategy
   const strategySignals = useMemo(() => {
-    return generateSignalsForStrategy(selectedStrategyId, companies, getSymbolPrice, market);
-  }, [selectedStrategyId, companies, getSymbolPrice, market]);
+    return generateSignalsForStrategy(
+      selectedStrategyId,
+      companies,
+      getSymbolPrice,
+      market,
+      realCandlesMap,
+      scanLimit,
+      demoMode
+    );
+  }, [selectedStrategyId, companies, getSymbolPrice, market, realCandlesMap, scanLimit, demoMode]);
 
   // Filter signals
   const filteredSignals = useMemo(() => {
@@ -369,19 +437,42 @@ export function MI007StrategiesView({
 
   const handleRunSimulation = () => {
     setIsSimulating(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        const topComp = companies[0];
-        const sym = topComp?.symbol || 'RELIANCE';
-        const candles = getVerifiedHistoricalCandles(
-          sym,
-          topComp?.currentPrice || 2500,
-          undefined,
-          undefined,
-          2000000,
-          (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA',
-          220
-        );
+        // SC12: Use the user-selected symbol or active topSignal symbol instead of always companies[0]
+        const targetSym = selectedSimSymbol || topSignal?.symbol || companies[0]?.symbol || 'RELIANCE';
+        const targetComp = companies.find((c) => c.symbol === targetSym) || companies[0];
+        let candles = realCandlesMap[targetSym] || [];
+
+        if (candles.length < 30) {
+          try {
+            const res = await fetch(
+              `/api/candles?symbol=${encodeURIComponent(targetSym)}&timeframe=1D&market=${encodeURIComponent(market)}&count=240`
+            );
+            if (res.ok) {
+              const json = await res.json();
+              if (Array.isArray(json.candles) && json.candles.length >= 30) {
+                candles = json.candles;
+                setRealCandlesMap((prev) => ({ ...prev, [targetSym]: candles }));
+              }
+            }
+          } catch {
+            // Fall through to getVerifiedHistoricalCandles
+          }
+        }
+
+        if (candles.length < 30) {
+          candles = getVerifiedHistoricalCandles(
+            targetSym,
+            targetComp?.currentPrice || 2500,
+            undefined,
+            undefined,
+            2000000,
+            (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA',
+            220,
+            { allowSyntheticDemo: demoMode }
+          );
+        }
 
         let mappedStrat: any = 'smc_master';
         if (activeStrategyMeta.id === 'quantum_smc') mappedStrat = 'smc_master';
@@ -393,7 +484,7 @@ export function MI007StrategiesView({
         else mappedStrat = 'breakout';
 
         const res = runBacktest({
-          symbol: sym,
+          symbol: targetSym,
           strategyId: mappedStrat,
           initialCapital: simCapital,
           takeProfitPct: 8,
@@ -401,36 +492,27 @@ export function MI007StrategiesView({
           maxHoldingDays: 20,
           positionSizePct: 100,
           candles,
+          allowSyntheticDemo: demoMode,
         });
 
         const netProfit = Math.round(res.finalEquity - simCapital);
         setSimResults({
+          symbol: targetSym,
           netProfit,
           netProfitPct: res.totalReturnPct,
-          winRate: res.winRate > 0 ? res.winRate : activeStrategyMeta.winRate,
-          profitFactor: res.profitFactor > 0 ? res.profitFactor : activeStrategyMeta.profitFactor,
-          maxDrawdown: res.maxDrawdownPct > 0 ? res.maxDrawdownPct : 5.2,
-          totalTrades: res.totalTrades > 0 ? res.totalTrades : activeStrategyMeta.trades,
-          expectancy: res.totalTrades > 0 ? Math.round(netProfit / res.totalTrades) : 2500,
+          winRate: res.winRate,
+          profitFactor: res.profitFactor,
+          maxDrawdown: res.maxDrawdownPct,
+          totalTrades: res.totalTrades,
+          expectancy: res.totalTrades > 0 ? Math.round(netProfit / res.totalTrades) : 0,
+          lowSampleWarning: res.lowSampleWarning,
         });
       } catch {
-        const winRate = activeStrategyMeta.winRate;
-        const pf = activeStrategyMeta.profitFactor;
-        const netProfitPct = Number((winRate * 0.35).toFixed(1));
-        const netProfit = Math.round((simCapital * netProfitPct) / 100);
-        setSimResults({
-          netProfit,
-          netProfitPct,
-          winRate,
-          profitFactor: pf,
-          maxDrawdown: 5.2,
-          totalTrades: activeStrategyMeta.trades,
-          expectancy: Math.round(netProfit / activeStrategyMeta.trades),
-        });
+        setSimResults(null);
       } finally {
         setIsSimulating(false);
       }
-    }, 250);
+    }, 100);
   };
 
   return (

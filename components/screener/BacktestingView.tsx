@@ -80,6 +80,8 @@ export function BacktestingView({
   const [stopLossPct, setStopLossPct] = useState(5);
   const [maxHoldingDays, setMaxHoldingDays] = useState(30);
   const [positionSizePct, setPositionSizePct] = useState(100);
+  const [demoMode, setDemoMode] = useState(false);
+  const [realCandles, setRealCandles] = useState<any[]>([]);
 
   // Saved Portfolios State & Modal
   const [savedPortfolios, setSavedPortfolios] = useState<SavedPortfolio[]>([]);
@@ -166,14 +168,42 @@ export function BacktestingView({
     } as unknown as CompanyFundamental);
   }, [companies, symbol]);
 
-  // Run Backtest
+  // Fetch real candles from /api/candles for the selected backtest symbol (SC1)
+  useEffect(() => {
+    let cancelled = false;
+    setRealCandles([]);
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/candles?symbol=${encodeURIComponent(activeCompany.symbol)}&timeframe=1D&market=${encodeURIComponent(activeCompany.market || 'INDIA')}&count=300`
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled && Array.isArray(json.candles) && json.candles.length >= 30) {
+          setRealCandles(json.candles);
+        }
+      } catch {
+        // Ignore network errors
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCompany.symbol, activeCompany.market]);
+
+  // Run Backtest using real candles (or synthetic demo only when demoMode === true)
   const backtestResult = useMemo<BacktestResult>(() => {
-    const candles = generateCandlesForSymbol(
-      activeCompany.symbol,
-      activeCompany.currentPrice,
-      activeCompany.priceChangePct,
-      300
-    );
+    const candles =
+      realCandles.length >= 30
+        ? realCandles
+        : generateCandlesForSymbol(
+            activeCompany.symbol,
+            activeCompany.currentPrice,
+            activeCompany.priceChangePct,
+            300,
+            (activeCompany.market || 'INDIA') as any,
+            { allowSyntheticDemo: demoMode }
+          );
     return runBacktest({
       symbol: activeCompany.symbol,
       strategyId,
@@ -183,8 +213,9 @@ export function BacktestingView({
       maxHoldingDays,
       positionSizePct,
       candles,
+      allowSyntheticDemo: demoMode,
     });
-  }, [activeCompany, strategyId, initialCapital, takeProfitPct, stopLossPct, maxHoldingDays, positionSizePct]);
+  }, [activeCompany, strategyId, initialCapital, takeProfitPct, stopLossPct, maxHoldingDays, positionSizePct, realCandles, demoMode]);
 
   const activeStrategy = COMBINED_STRATEGY_DEFINITIONS.find((s) => s.id === strategyId);
 

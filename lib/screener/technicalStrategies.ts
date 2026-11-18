@@ -445,9 +445,19 @@ export function generateCandlesForSymbol(
   currentPrice: number,
   changePct: number = 0.5,
   days: number = 220,
-  market: MarketType = 'INDIA'
+  market: MarketType = 'INDIA',
+  options?: { allowSyntheticDemo?: boolean; realCandles?: Candle[] }
 ): Candle[] {
-  return getVerifiedHistoricalCandles(symbol, currentPrice, currentPrice * 1.25, currentPrice * 0.75, 2500000, market, days);
+  return getVerifiedHistoricalCandles(
+    symbol,
+    currentPrice,
+    currentPrice * 1.25,
+    currentPrice * 0.75,
+    2500000,
+    market as 'INDIA' | 'USA' | 'UAE',
+    days,
+    options
+  );
 }
 
 /**
@@ -458,12 +468,17 @@ export function evaluateAllStrategiesForStock(
   companyName: string,
   market: string,
   currentPrice: number,
-  candles?: Candle[]
+  candles?: Candle[],
+  options?: { allowSyntheticDemo?: boolean }
 ): StrategySignalResult[] {
   const mktType = (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA';
-  const data = candles && candles.length >= 200
+  const data = candles && candles.length >= 30
     ? candles
-    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType);
+    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType, options);
+
+  if (!data || data.length < 30) {
+    return [];
+  }
 
   const n = data.length;
   const last = data[n - 1];
@@ -497,9 +512,24 @@ export function evaluateAllStrategiesForStock(
 
   const results: StrategySignalResult[] = [];
 
-  // 1. Moving Average Trend Alignment
-  const isBullAlignment = currentPrice > currSma50 && currSma50 > currSma200;
-  const isBearAlignment = currentPrice < currSma50 && currSma50 < currSma200;
+  // 1. Moving Average Trend Alignment (requires valid 200-SMA, 4-tier hierarchy, and rising 50-SMA)
+  const hasSma200 = sma200[n - 1] !== null && sma50[n - 1] !== null && sma20[n - 1] !== null;
+  const sma50SlopeUp = (sma50[n - 1] ?? 0) > (sma50[Math.max(0, n - 6)] ?? 0);
+  const distSma200Pct = currSma200 > 0 ? ((currentPrice - currSma200) / currSma200) * 100 : 0;
+  const isBullAlignment =
+    hasSma200 &&
+    currentPrice > currSma20 &&
+    currSma20 > currSma50 &&
+    currSma50 > currSma200 &&
+    sma50SlopeUp &&
+    distSma200Pct >= 3.0;
+  const isBearAlignment =
+    hasSma200 &&
+    currentPrice < currSma20 &&
+    currSma20 < currSma50 &&
+    currSma50 < currSma200 &&
+    !sma50SlopeUp &&
+    distSma200Pct <= -3.0;
   results.push({
     symbol,
     companyName,
@@ -507,7 +537,7 @@ export function evaluateAllStrategiesForStock(
     strategyId: 'ma_alignment',
     strategyName: 'MA Trend Alignment',
     direction: isBullAlignment ? 'bullish' : isBearAlignment ? 'bearish' : 'neutral',
-    signalTriggered: isBullAlignment || isBearAlignment,
+    signalTriggered: isBullAlignment,
     signalDate: dateStr,
     currentPrice,
     triggerPrice: currSma50,
@@ -526,11 +556,11 @@ export function evaluateAllStrategiesForStock(
     historicalWinRate: 68.4,
   });
 
-  // 2. Golden Cross (50 SMA crosses above 200 SMA within last 25 candles)
+  // 2. Golden Cross (50 SMA crosses above 200 SMA within last 5 candles)
   let goldenCrossTriggered = false;
   let goldenCrossPrice = currentPrice;
   let goldenCrossDate = dateStr;
-  for (let i = Math.max(1, n - 25); i < n; i++) {
+  for (let i = Math.max(1, n - 5); i < n; i++) {
     const s50Prev = sma50[i - 1];
     const s200Prev = sma200[i - 1];
     const s50Curr = sma50[i];
@@ -544,8 +574,7 @@ export function evaluateAllStrategiesForStock(
       }
     }
   }
-  // If overall in strong bull regime, mark as confirmed or ongoing
-  const isGoldenRegime = goldenCrossTriggered || currSma50 > currSma200;
+  const isGoldenRegime = goldenCrossTriggered;
   results.push({
     symbol,
     companyName,
@@ -569,12 +598,12 @@ export function evaluateAllStrategiesForStock(
     historicalWinRate: 72.1,
   });
 
-  // 3. Death Cross (50 SMA crosses below 200 SMA within last 25 candles)
+  // 3. Death Cross (50 SMA crosses below 200 SMA within last 5 candles)
   let deathCrossTriggered = false;
   let deathCrossPrice = currentPrice;
   let deathCrossDate = dateStr;
   if (currSma50 > 0 && currSma200 > 0) {
-    for (let i = Math.max(1, n - 25); i < n; i++) {
+    for (let i = Math.max(1, n - 5); i < n; i++) {
       const s50Prev = sma50[i - 1];
       const s200Prev = sma200[i - 1];
       const s50Curr = sma50[i];
@@ -617,9 +646,20 @@ export function evaluateAllStrategiesForStock(
     historicalWinRate: 64.8,
   });
 
-  // 4. 20/50 Moving Average Crossover
+  // 4. 20/50 Moving Average Crossover (actual crossover within last 5 candles)
+  let cross2050Bull = false;
+  for (let i = Math.max(1, n - 5); i < n; i++) {
+    const s20Prev = sma20[i - 1];
+    const s50Prev = sma50[i - 1];
+    const s20Curr = sma20[i];
+    const s50Curr = sma50[i];
+    if (s20Prev && s50Prev && s20Curr && s50Curr && s20Prev <= s50Prev && s20Curr > s50Curr) {
+      cross2050Bull = true;
+      break;
+    }
+  }
   const ma2050Spread = currSma50 > 0 ? ((currSma20 - currSma50) / currSma50) * 100 : 0;
-  const is2050Bull = currSma20 > currSma50 && currSma50 > 0 && Math.abs(ma2050Spread) >= 0.10;
+  const is2050Bull = cross2050Bull && currSma20 > currSma50 && currSma50 > 0;
   results.push({
     symbol,
     companyName,
@@ -643,9 +683,20 @@ export function evaluateAllStrategiesForStock(
     historicalWinRate: 63.5,
   });
 
-  // 5. EMA 9/21 Crossover
+  // 5. EMA 9/21 Crossover (actual crossover within last 3 candles)
+  let crossEmaBull = false;
+  for (let i = Math.max(1, n - 3); i < n; i++) {
+    const e9Prev = ema9[i - 1];
+    const e21Prev = ema21[i - 1];
+    const e9Curr = ema9[i];
+    const e21Curr = ema21[i];
+    if (e9Prev && e21Prev && e9Curr && e21Curr && e9Prev <= e21Prev && e9Curr > e21Curr) {
+      crossEmaBull = true;
+      break;
+    }
+  }
   const emaSpread = currEma21 > 0 ? ((currEma9 - currEma21) / currEma21) * 100 : 0;
-  const isEmaBull = currEma9 > currEma21 && currEma21 > 0 && Math.abs(emaSpread) >= 0.10;
+  const isEmaBull = crossEmaBull && currEma9 > currEma21 && currEma21 > 0;
   results.push({
     symbol,
     companyName,
@@ -669,13 +720,11 @@ export function evaluateAllStrategiesForStock(
     historicalWinRate: 59.8,
   });
 
-  // 6. RSI Momentum Strategy
-  const rsiOversold = currRsi < 32 && currRsi > 10;
-  const rsiBullRecovery = prevRsi <= 32 && currRsi > 32;
-  const rsiOverbought = currRsi > 70 && currRsi < 95;
-  const rsiMarkup = currRsi >= 58 && currRsi <= 72;
-  const isValidRsi = currRsi > 0 && Math.abs(currRsi - 50.0) >= 0.5;
-  const rsiTriggered = isValidRsi && (rsiOversold || rsiBullRecovery || rsiOverbought || rsiMarkup);
+  // 6. RSI Momentum Strategy (oversold recovery crossing above 30 or overbought exhaustion crossing below 70)
+  const rsiBullRecovery = prevRsi <= 30 && currRsi > 30;
+  const rsiBearExhaustion = prevRsi >= 70 && currRsi < 70;
+  const rsiOverbought = rsiBearExhaustion;
+  const rsiTriggered = rsiBullRecovery || rsiBearExhaustion;
   results.push({
     symbol,
     companyName,
@@ -701,8 +750,17 @@ export function evaluateAllStrategiesForStock(
     historicalWinRate: 67.2,
   });
 
-  // 7. MACD Signal Crossover
-  const isMacdBull = currMacd > currSignal && currHist > 0;
+  // 7. MACD Signal Crossover (actual crossover within last 3 candles)
+  let macdBullCross = false;
+  for (let i = Math.max(1, n - 3); i < n; i++) {
+    const hPrev = macdData.histogram[i - 1];
+    const hCurr = macdData.histogram[i];
+    if (hPrev !== null && hCurr !== null && hPrev <= 0 && hCurr > 0) {
+      macdBullCross = true;
+      break;
+    }
+  }
+  const isMacdBull = macdBullCross && currMacd > currSignal && currHist > 0;
   results.push({
     symbol,
     companyName,
@@ -839,7 +897,7 @@ export function evaluateAllStrategiesForStock(
   const adxVal = Number(rawAdx.toFixed(1));
   const plusDiVal = Number(lastPlusDi.toFixed(1));
   const minusDiVal = Number(lastMinusDi.toFixed(1));
-  const isStrongTrend = adxVal >= 20 && (plusDiVal > minusDiVal || isBullAlignment);
+  const isStrongTrend = adxVal >= 25 && plusDiVal > minusDiVal * 1.25 && isBullAlignment;
   const adxDirection = plusDiVal >= minusDiVal ? 'bullish' : 'bearish';
   results.push({
     symbol,
@@ -876,13 +934,18 @@ export function evaluateSmcStrategiesForStock(
   companyName: string,
   market: string,
   currentPrice: number,
-  candles?: Candle[]
+  candles?: Candle[],
+  options?: { allowSyntheticDemo?: boolean }
 ): StrategySignalResult[] {
   const mktType = (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA';
   const currSym = market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : (market === 'CRYPTO' ? '$' : '₹');
   const data = candles && candles.length >= 10
     ? candles
-    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType);
+    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType, options);
+
+  if (!data || data.length < 10) {
+    return [];
+  }
 
   const n = data.length;
   const last = data[n - 1];
@@ -962,13 +1025,18 @@ export function evaluateSmcConfluenceStrategiesForStock(
   companyName: string,
   market: string,
   currentPrice: number,
-  candles?: Candle[]
+  candles?: Candle[],
+  options?: { allowSyntheticDemo?: boolean }
 ): StrategySignalResult[] {
   const mktType = (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA';
   const currSym = market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : (market === 'CRYPTO' ? '$' : '₹');
   const data = candles && candles.length >= 10
     ? candles
-    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType);
+    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType, options);
+
+  if (!data || data.length < 10) {
+    return [];
+  }
 
   const n = data.length;
   const last = data[n - 1];
@@ -1371,13 +1439,18 @@ export function evaluateQuantumSmcStrategyForStock(
   companyName: string,
   market: string,
   currentPrice: number,
-  candles?: Candle[]
+  candles?: Candle[],
+  options?: { allowSyntheticDemo?: boolean }
 ): StrategySignalResult[] {
   const mktType = (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA';
   const currSym = market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : (market === 'CRYPTO' ? '$' : '₹');
   const data = candles && candles.length >= 10
     ? candles
-    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType);
+    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType, options);
+
+  if (!data || data.length < 10) {
+    return [];
+  }
 
   const n = data.length;
   const last = data[n - 1];
@@ -1423,13 +1496,18 @@ export function evaluateOrderFlowStrategiesForStock(
   companyName: string,
   market: string,
   currentPrice: number,
-  candles?: Candle[]
+  candles?: Candle[],
+  options?: { allowSyntheticDemo?: boolean }
 ): StrategySignalResult[] {
   const mktType = (market === 'USA' || market === 'UAE' || market === 'INDIA') ? market : 'INDIA';
   const currSym = market === 'USA' ? '$' : market === 'UAE' ? 'AED ' : (market === 'CRYPTO' ? '$' : '₹');
   const data = candles && candles.length >= 10
     ? candles
-    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType);
+    : generateCandlesForSymbol(symbol, currentPrice, 0.5, 220, mktType as MarketType, options);
+
+  if (!data || data.length < 10) {
+    return [];
+  }
 
   const n = data.length;
   const last = data[n - 1];
@@ -1670,13 +1748,16 @@ export function evaluateCombinedStrategiesForStock(
   companyName: string,
   market: string,
   currentPrice: number,
-  candles?: Candle[]
+  candles?: Candle[],
+  options?: { allowSyntheticDemo?: boolean }
 ): StrategySignalResult[] {
-  const classic = evaluateAllStrategiesForStock(symbol, companyName, market, currentPrice, candles);
-  const smcConfluence = evaluateSmcConfluenceStrategiesForStock(symbol, companyName, market, currentPrice, candles);
-  const legacySmc = evaluateSmcStrategiesForStock(symbol, companyName, market, currentPrice, candles);
-  const orderFlow = evaluateOrderFlowStrategiesForStock(symbol, companyName, market, currentPrice, candles);
-  const quantum = evaluateQuantumSmcStrategyForStock(symbol, companyName, market, currentPrice, candles);
+  const classic = evaluateAllStrategiesForStock(symbol, companyName, market, currentPrice, candles, options);
+  const smcConfluence = evaluateSmcConfluenceStrategiesForStock(symbol, companyName, market, currentPrice, candles, options);
+  const legacySmc = evaluateSmcStrategiesForStock(symbol, companyName, market, currentPrice, candles, options);
+  const orderFlow = evaluateOrderFlowStrategiesForStock(symbol, companyName, market, currentPrice, candles, options);
+  const quantum = evaluateQuantumSmcStrategyForStock(symbol, companyName, market, currentPrice, candles, options);
 
   return [...quantum, ...classic, ...smcConfluence, ...orderFlow, ...legacySmc];
 }
+
+export const evaluateTechnicalStrategiesForStock = evaluateAllStrategiesForStock;

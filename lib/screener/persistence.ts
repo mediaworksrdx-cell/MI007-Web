@@ -278,30 +278,8 @@ const DEFAULT_ALERTS: ScreeningAlert[] = [
     enabled: true,
     triggerType: 'SCREEN_ENTRY_EXIT',
     frequency: 'STATEMENT_RELEASE',
-    lastTriggered: '2025-01-20T10:30:00Z',
     createdAt: new Date().toISOString(),
-    recentTriggers: [
-      {
-        timestamp: '2025-01-20 10:30 IST',
-        symbol: 'POLYCAB',
-        message: 'Polycab India entered Quality Compounders: ROCE expanded to 32.5% and Debt/Equity dropped to 0.04.',
-      },
-      {
-        timestamp: '2025-01-18 14:15 IST',
-        symbol: 'CDSL',
-        message: 'CDSL reconfirmed in Quality Compounders with 0 debt and 42.5% ROCE.',
-      },
-      {
-        timestamp: '2025-01-22 16:00 EST',
-        symbol: 'NVDA',
-        message: 'NVIDIA Corp reconfirmed in Quality Compounders with 72.8% ROCE and exceptional free cash flow.',
-      },
-      {
-        timestamp: '2025-01-21 12:00 GST',
-        symbol: 'SALIK',
-        message: 'Salik Company PJSC entered Quality Compounders: Net margin 41.2% with steady cash generation.',
-      },
-    ],
+    recentTriggers: [],
   },
   {
     id: 'alert-roce-cross',
@@ -312,20 +290,8 @@ const DEFAULT_ALERTS: ScreeningAlert[] = [
     enabled: true,
     triggerType: 'METRIC_CROSS',
     frequency: 'STATEMENT_RELEASE',
-    lastTriggered: '2025-01-22T09:00:00Z',
     createdAt: new Date().toISOString(),
-    recentTriggers: [
-      {
-        timestamp: '2025-01-22 09:00 IST',
-        symbol: 'DIXON',
-        message: 'Dixon Technologies ROCE reached 34.8% on Q3 results release.',
-      },
-      {
-        timestamp: '2025-01-22 17:30 EST',
-        symbol: 'AAPL',
-        message: 'Apple Inc ROCE sustained above 54.2% on record services revenue.',
-      },
-    ],
+    recentTriggers: [],
   },
 ];
 
