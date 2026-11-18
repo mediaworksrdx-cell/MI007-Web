@@ -292,11 +292,12 @@ export function detectOrderBlocks(
     const rollingAvg = pastSum / Math.max(1, i - startIdx);
     const isImpulse = cRange >= rollingAvg * 1.25;
 
-    // Bullish OB: Impulsive green candle preceded by red candle, linked to bullish structure break when breaks exist
+    // Bullish OB: Impulsive green candle preceded by red candle. Only confirmed (point-in-time)
+    // at the bar of the first qualifying bullish structure break within 8 bars.
     const isBullImpulse = c.close > c.open && isImpulse && prevC.close <= prevC.open;
     if (isBullImpulse) {
-      const hasLinkedBreak = breaks.length === 0 || breaks.some(b => b.isBullish && b.candleIndex >= i && b.candleIndex <= i + 8);
-      if (hasLinkedBreak) {
+      const linkedBreak = breaks.find(b => b.isBullish && b.candleIndex >= i && b.candleIndex <= i + 8);
+      if (linkedBreak) {
         obs.push({
           id: `ob-bull-${i}`,
           isBullish: true,
@@ -308,17 +309,17 @@ export function detectOrderBlocks(
           impulseVolume: c.volume,
           isMitigated: false,
           isInvalidated: false,
-          confirmationIndex: i,
+          confirmationIndex: linkedBreak.candleIndex,
           retestCount: 0,
         });
       }
     }
 
-    // Bearish OB: Impulsive red candle preceded by green candle, linked to bearish structure break when breaks exist
+    // Bearish OB: Impulsive red candle preceded by green candle, confirmed at first bearish break within 8 bars
     const isBearImpulse = c.close < c.open && isImpulse && prevC.close >= prevC.open;
     if (isBearImpulse) {
-      const hasLinkedBreak = breaks.length === 0 || breaks.some(b => !b.isBullish && b.candleIndex >= i && b.candleIndex <= i + 8);
-      if (hasLinkedBreak) {
+      const linkedBreak = breaks.find(b => !b.isBullish && b.candleIndex >= i && b.candleIndex <= i + 8);
+      if (linkedBreak) {
         obs.push({
           id: `ob-bear-${i}`,
           isBullish: false,
@@ -330,7 +331,7 @@ export function detectOrderBlocks(
           impulseVolume: c.volume,
           isMitigated: false,
           isInvalidated: false,
-          confirmationIndex: i,
+          confirmationIndex: linkedBreak.candleIndex,
           retestCount: 0,
         });
       }
@@ -731,7 +732,7 @@ export function calculateResonance(
   const htfBias: 'BULLISH' | 'BEARISH' | 'NEUTRAL' =
     htfDr.currentZone === 'DISCOUNT' ? 'BULLISH' : htfDr.currentZone === 'PREMIUM' ? 'BEARISH' : 'NEUTRAL';
   const htfLayer = {
-    timeframe: hasRealHtf ? 'HTF' : 'Macro 40-Bar (Single-TF)',
+    timeframe: hasRealHtf ? `HTF (${htfCandles!.length} closed bars)` : 'Macro 40-Bar (Single-TF)',
     bias: htfBias,
     zone: htfDr.currentZone,
     structure: htfBias === 'BULLISH' ? ('BOS_BULL' as const) : ('BOS_BEAR' as const),
@@ -893,10 +894,15 @@ export function generateSetups(
 
 export function analyzeQuantumAi(
   rawCandles: Candle[],
-  config: QuantumAiConfig = DEFAULT_QUANTUM_AI_CONFIG
+  config: QuantumAiConfig = DEFAULT_QUANTUM_AI_CONFIG,
+  mtf?: { htfCandles?: Candle[]; ltfCandles?: Candle[] }
 ): QuantumAiAnalysisResult {
   // Q8: Filter out forming/unclosed candles so live ticks do not flip signals mid-bar
   const candles = (rawCandles || []).filter(c => c && c.isClosed !== false);
+  // Q6: Real HTF/LTF candles (closed only, and no later than the last chart bar) feed resonance when supplied
+  const lastChartTime = candles.length > 0 ? candles[candles.length - 1].openTime : 0;
+  const htfCandles = mtf?.htfCandles?.filter(c => c && c.isClosed !== false && c.openTime <= lastChartTime);
+  const ltfCandles = mtf?.ltfCandles?.filter(c => c && c.isClosed !== false && c.openTime <= lastChartTime);
   if (!candles || candles.length === 0) {
     const emptyDealingRange: QuantumDealingRange = { swingHigh: 0, swingLow: 0, equilibrium: 0, currentZone: 'EQUILIBRIUM' };
     const emptyVol: QuantumVolatilityMetrics = { bbUpper: 0, bbLower: 0, bbBasis: 0, kcUpper: 0, kcLower: 0, kcBasis: 0, isSqueeze: false, squeezeLength: 0 };
@@ -988,7 +994,7 @@ export function analyzeQuantumAi(
   );
 
   // 7. Multi-Timeframe Resonance
-  const resonance = calculateResonance(candles, confluence, dealingRange);
+  const resonance = calculateResonance(candles, confluence, dealingRange, htfCandles, ltfCandles);
 
   // 8. Trade Setups
   const setups = generateSetups(

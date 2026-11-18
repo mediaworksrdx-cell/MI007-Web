@@ -37,6 +37,29 @@ class Candle:
         self.close = close
         self.volume = volume
 
+def load_candles_from_csv(path: str) -> List[Candle]:
+    """Load real OHLCV candles from CSV with header: time,open,high,low,close,volume.
+    Rows are sorted by time; rows with impossible OHLC are rejected."""
+    import csv
+    out: List[Candle] = []
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            r = {k.strip().lower(): v for k, v in row.items() if k}
+            try:
+                t = int(float(r["time"]))
+                o, h, l, c = float(r["open"]), float(r["high"]), float(r["low"]), float(r["close"])
+                v = float(r.get("volume", 0) or 0)
+            except (KeyError, ValueError):
+                continue
+            if h < max(o, c) or l > min(o, c) or l <= 0:
+                continue
+            out.append(Candle(t, o, h, l, c, v))
+    out.sort(key=lambda x: x.time)
+    if len(out) < 50:
+        raise SystemExit(f"CSV {path} has only {len(out)} valid candles; need at least 50.")
+    return out
+
 class Trade:
     def __init__(self, entry_bar: int, entry_time: int, symbol: str, direction: str,
                  entry_price: float, sl: float, tp: float, size: float, resonance_score: int):
@@ -451,9 +474,20 @@ if __name__ == "__main__":
     parser.add_argument("--bars", type=int, default=600, help="Number of candles")
     parser.add_argument("--capital", type=float, default=100000.0, help="Initial capital in INR")
     parser.add_argument("--resonance", type=int, default=75, help="Minimum resonance score")
+    parser.add_argument("--csv", type=str, default=None,
+                        help="Path to real OHLCV CSV (columns: time,open,high,low,close,volume). Strongly recommended.")
+    parser.add_argument("--synthetic", action="store_true",
+                        help="Explicitly allow generated demo candles (results are NOT market evidence)")
     args = parser.parse_args()
 
-    candles = generate_synthetic_market_data(args.symbol, args.bars, 2450.0)
+    if args.csv:
+        candles = load_candles_from_csv(args.csv)
+        print(f"Loaded {len(candles)} real candles from {args.csv}")
+    elif args.synthetic:
+        print("WARNING: running on SYNTHETIC generated candles. Results are not evidence of real-market performance.")
+        candles = generate_synthetic_market_data(args.symbol, args.bars, 2450.0)
+    else:
+        parser.error("Provide --csv <file> with real OHLCV data (or pass --synthetic for a demo run).")
     backtester = QuantumSmcResonanceBacktester(
         symbol=args.symbol,
         strategy=args.strategy,

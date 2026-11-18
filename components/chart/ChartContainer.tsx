@@ -741,7 +741,22 @@ export function ChartContainer({
 
   const quantumAiData = useMemo(() => {
     if (!quantumAiConfig.enabled || candles.length === 0) return undefined;
-    return analyzeQuantumAi(candles, quantumAiConfig);
+    // Q6: Build a real 4x higher timeframe from complete groups of closed chart bars
+    const closed = candles.filter(c => c.isClosed !== false);
+    const htfCandles: Candle[] = [];
+    for (let k = 0; k + 4 <= closed.length; k += 4) {
+      const grp = closed.slice(k, k + 4);
+      htfCandles.push({
+        openTime: grp[0].openTime,
+        open: grp[0].open,
+        high: Math.max(...grp.map(g => g.high)),
+        low: Math.min(...grp.map(g => g.low)),
+        close: grp[3].close,
+        volume: grp.reduce((a, g) => a + (g.volume || 0), 0),
+        isClosed: true,
+      });
+    }
+    return analyzeQuantumAi(candles, quantumAiConfig, { htfCandles });
   }, [candles, quantumAiConfig]);
   const [currentPrice, setCurrentPrice] = useState<number | undefined>();
   const [isLoadingCandles, setIsLoadingCandles] = useState(false);

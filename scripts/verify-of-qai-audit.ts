@@ -8,6 +8,8 @@ import {
   analyzeQuantumAi,
   calculateMomentum,
   detectSwings,
+  detectStructureBreaks,
+  detectOrderBlocks,
 } from '../lib/quantumai/quantumAiEngine';
 import { runQuantumBacktest } from '../lib/quantumai/quantumAiBacktest';
 import { DEFAULT_ORDER_FLOW_CONFIG, ExchangeTradeTick, PriceLevelFootprint } from '../lib/orderflow/types';
@@ -307,6 +309,54 @@ function runTests() {
     const exhPct = (exhCount / ofRes.footprints.length) * 100;
     console.log(`[Bonus] Exhaustion rate on 200 random bars: ${exhCount}/200 (${exhPct.toFixed(1)}%)`);
     assert.ok(exhPct < 10, `Exhaustion firing too frequently: ${exhPct.toFixed(1)}%`);
+  }
+
+  // ── Re-test follow-ups ────────────────────────────────────────────────────
+  {
+    // R1: OB is usable only from the bar of its first qualifying structure break
+    const candles = generateRandomWalk(2000, 2024, 1000, 0.01);
+    const swings = detectSwings(candles);
+    const breaks = detectStructureBreaks(candles, swings, null);
+    const obs = detectOrderBlocks(candles, breaks, null);
+    let early = 0;
+    for (const ob of obs) {
+      const impulseIdx = ob.startIndex + 1;
+      const firstBreak = breaks.find(
+        b => b.isBullish === ob.isBullish && b.candleIndex >= impulseIdx && b.candleIndex <= impulseIdx + 8
+      );
+      assert.ok(firstBreak, `OB ${ob.id} has no linked structure break`);
+      if ((ob.confirmationIndex ?? -1) < firstBreak.candleIndex) early++;
+    }
+    assert.equal(early, 0, `${early} order blocks confirmed before their structure break`);
+    assert.equal(detectOrderBlocks(candles, [], null).length, 0, 'No breaks must mean no order blocks');
+    console.log(`[R1] OB confirmation at break bar: ${obs.length} OBs, 0 early`);
+
+    // R2: Inferred footprints draw no imbalances, zones, absorption or exhaustion
+    const of = analyzeOrderFlow(generateRandomWalk(800, 321, 100, 0.005), DEFAULT_ORDER_FLOW_CONFIG, undefined, 'AAPL', 'USA');
+    const imbBars = of.footprints.filter(
+      f => f.buyImbalancePrices.length + f.sellImbalancePrices.length > 0 || f.absorption || f.exhaustion
+    ).length;
+    assert.equal(imbBars, 0, `${imbBars} inferred bars still carry imbalances/absorption/exhaustion`);
+    assert.equal(of.activeZones.length, 0, 'Inferred data must not create stacked zones');
+    console.log('[R2] Inferred footprints: 0 imbalance/absorption/exhaustion bars, 0 zones');
+
+    // R3: Real HTF candles change the resonance label; without them it stays Single-TF
+    const chart = generateRandomWalk(200, 99, 100, 0.005);
+    const htf: Candle[] = [];
+    for (let k = 0; k + 4 <= chart.length; k += 4) {
+      const g = chart.slice(k, k + 4);
+      htf.push({
+        openTime: g[0].openTime, open: g[0].open, close: g[3].close, volume: 0, isClosed: true,
+        high: Math.max(...g.map(x => x.high)), low: Math.min(...g.map(x => x.low)),
+      });
+    }
+    const single = analyzeQuantumAi(chart, DEFAULT_QUANTUM_AI_CONFIG);
+    const multi = analyzeQuantumAi(chart, DEFAULT_QUANTUM_AI_CONFIG, { htfCandles: htf });
+    const singleLabel = JSON.stringify(single.resonance);
+    const multiLabel = JSON.stringify(multi.resonance);
+    assert.ok(singleLabel.includes('Single-TF'), 'Without HTF candles resonance must be labelled Single-TF');
+    assert.ok(multiLabel.includes('HTF ('), 'With HTF candles resonance must use the real HTF layer');
+    console.log('[R3] Resonance HTF wiring: Single-TF without HTF, real HTF layer with HTF candles');
   }
 
   console.log('\nALL AUDIT REGRESSION TESTS PASSED.');

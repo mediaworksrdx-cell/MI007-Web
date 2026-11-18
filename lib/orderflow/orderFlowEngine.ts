@@ -899,18 +899,15 @@ export function generateMicrostructureFootprint(
   // 2. Identify Value Area using Configurable %
   const { vahPrice, valPrice } = calculateValueArea(sortedAsc, pocPrice, accumulatedVol, config.valueAreaPct);
 
-  // 3. Diagonal Imbalances & Stacked Zones
-  const { buyImbalances, sellImbalances, stackedZones } = calculateDiagonalImbalances(
-    sortedAsc,
-    candleIndex,
-    candle.openTime,
-    config,
-    effectiveTick
-  );
+  // 3. Diagonal Imbalances & Stacked Zones — NOT computed on inferred data (OF2 follow-up):
+  // CLV-distributed volume carries no aggressor information, so imbalances would be fabricated.
+  const buyImbalances: number[] = [];
+  const sellImbalances: number[] = [];
+  const stackedZones: StackedImbalanceZone[] = [];
 
-  // 4. True Absorption & Exhaustion
-  const absorption = detectAbsorption(candle, candleIndex, sortedAsc, accumulatedVol, effectiveTick);
-  const exhaustion = detectExhaustion(candle, candleIndex, sortedAsc, accumulatedVol, effectiveTick);
+  // 4. Absorption & Exhaustion — also disabled on inferred data (require real aggressor volume)
+  const absorption: AbsorptionEvent | null = null;
+  const exhaustion: ExhaustionEvent | null = null;
 
   // 5. Cumulative Delta with Session Reset
   const cumDelta = isNewSession && config.sessionReset === 'DAILY'

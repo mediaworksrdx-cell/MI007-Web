@@ -394,15 +394,20 @@ export function renderOrderFlowFootprint(options: OrderFlowRenderOptions): void 
       ctx.fillStyle = isDark ? '#94A3B8' : '#64748B';
       ctx.fillText(formatVol(fp.totalVolume), barMidX, footerY);
 
-      // Delta (+ / -)
-      ctx.fillStyle = fp.totalDelta >= 0 ? '#10B981' : '#EF4444';
-      ctx.fillText(formatDelta(fp.totalDelta), barMidX, footerY + 10 * dpr);
+      // Delta (+ / -). Inferred bars are drawn muted with a "~" prefix (estimate, not real aggressor flow)
+      const isEst = fp.classification !== 'VERIFIED_EXCHANGE_DATA';
+      ctx.fillStyle = isEst
+        ? (isDark ? 'rgba(148, 163, 184, 0.6)' : 'rgba(100, 116, 139, 0.6)')
+        : fp.totalDelta >= 0 ? '#10B981' : '#EF4444';
+      ctx.fillText(`${isEst ? '~' : ''}${formatDelta(fp.totalDelta)}`, barMidX, footerY + 10 * dpr);
 
       // Cumulative Volume Delta (CVD) with session reset flag
       if (effectiveW >= 24) {
         ctx.font = `${7 * dpr}px "JetBrains Mono", monospace`;
-        ctx.fillStyle = fp.cumDelta >= 0 ? (isDark ? '#34D399' : '#059669') : (isDark ? '#F87171' : '#DC2626');
-        const cvdText = `${fp.isNewSession ? '↺ ' : ''}${formatDelta(fp.cumDelta)}`;
+        ctx.fillStyle = isEst
+          ? (isDark ? 'rgba(148, 163, 184, 0.5)' : 'rgba(100, 116, 139, 0.5)')
+          : fp.cumDelta >= 0 ? (isDark ? '#34D399' : '#059669') : (isDark ? '#F87171' : '#DC2626');
+        const cvdText = `${fp.isNewSession ? '↺ ' : ''}${isEst ? '~' : ''}${formatDelta(fp.cumDelta)}`;
         ctx.fillText(cvdText, barMidX, footerY + 20 * dpr);
       }
 
