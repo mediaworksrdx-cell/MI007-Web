@@ -34,7 +34,7 @@ import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG, ExchangeTradeTick } from '@
 import { analyzeOrderFlow } from '@/lib/orderflow/orderFlowEngine';
 import { OrderFlowSignalsModal } from './OrderFlowSignalsModal';
 import { QuantumAiConfig, DEFAULT_QUANTUM_AI_CONFIG, QuantumAiAnalysisResult } from '@/lib/quantumai/types';
-import { analyzeQuantumAi } from '@/lib/quantumai/quantumAiEngine';
+import { analyzeQuantumAi, aggregateSessionAwareHtf } from '@/lib/quantumai/quantumAiEngine';
 import { ChartToolbar } from './ChartToolbar';
 import { CandlestickCanvas } from './CandlestickCanvas';
 import { OHLCVHeader } from './OHLCVHeader';
@@ -739,40 +739,55 @@ export function ChartContainer({
     return analyzeOrderFlow(candles, orderFlowConfig, ticksPerCandleRef.current, selectedSymbol, market);
   }, [candles, orderFlowConfig, selectedSymbol, market]);
 
+  const [apiHtfCandles, setApiHtfCandles] = useState<{ tf: Timeframe; candles: Candle[] } | null>(null);
+
+  useEffect(() => {
+    if (!quantumAiConfig.enabled) return;
+    const htfMap: Record<Timeframe, Timeframe> = {
+      '1m': '15m',
+      '5m': '15m',
+      '15m': '1H',
+      '30m': '1H',
+      '1H': '4H',
+      '4H': '1D',
+      '1D': '1W',
+      '1W': '1M',
+      '1M': '1M',
+    };
+    const targetHtf = htfMap[timeframe] || '4H';
+    if (targetHtf === timeframe) {
+      setApiHtfCandles(null);
+      return;
+    }
+    let cancelled = false;
+    fetchCandles(selectedSymbol, targetHtf, undefined, undefined, market)
+      .then(res => {
+        if (!cancelled && res && res.length >= 10) {
+          setApiHtfCandles({ tf: targetHtf, candles: res });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setApiHtfCandles(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [quantumAiConfig.enabled, selectedSymbol, timeframe, market]);
+
   const quantumAiData = useMemo(() => {
     if (!quantumAiConfig.enabled || candles.length === 0) return undefined;
-    // Q6: Build a 4× higher timeframe from closed chart bars, bucketed on UTC clock boundaries
-    // (floor(openTime / 4·tf)). Only complete buckets (all 4 bars present) are kept, so buckets
-    // never straddle session gaps and don't shift with where the loaded history starts.
-    const closed = candles.filter(c => c.isClosed !== false);
-    const diffs: number[] = [];
-    for (let k = 1; k < closed.length; k++) diffs.push(closed[k].openTime - closed[k - 1].openTime);
-    diffs.sort((a, b) => a - b);
-    const tfMs = diffs.length > 0 ? diffs[Math.floor(diffs.length / 2)] : 0;
-    const htfCandles: Candle[] = [];
-    if (tfMs > 0) {
-      const bucketMs = tfMs * 4;
-      const buckets = new Map<number, Candle[]>();
-      for (const c of closed) {
-        const key = Math.floor(c.openTime / bucketMs) * bucketMs;
-        const arr = buckets.get(key);
-        if (arr) arr.push(c); else buckets.set(key, [c]);
-      }
-      for (const [key, grp] of Array.from(buckets.entries()).sort((a, b) => a[0] - b[0])) {
-        if (grp.length !== 4) continue;
-        htfCandles.push({
-          openTime: key,
-          open: grp[0].open,
-          high: Math.max(...grp.map(g => g.high)),
-          low: Math.min(...grp.map(g => g.low)),
-          close: grp[3].close,
-          volume: grp.reduce((a, g) => a + (g.volume || 0), 0),
-          isClosed: true,
-        });
-      }
+    if (apiHtfCandles && apiHtfCandles.candles.length >= 10) {
+      return analyzeQuantumAi(candles, quantumAiConfig, {
+        htfCandles: apiHtfCandles.candles,
+        htfLabel: `${apiHtfCandles.tf} (/api/candles)`,
+      });
     }
-    return analyzeQuantumAi(candles, quantumAiConfig, { htfCandles, htfLabel: '4× chart bars (UTC-aligned)' });
-  }, [candles, quantumAiConfig]);
+    const aggregated = aggregateSessionAwareHtf(candles, market);
+    return analyzeQuantumAi(candles, quantumAiConfig, {
+      htfCandles: aggregated.candles,
+      htfLabel: aggregated.label,
+    });
+  }, [candles, quantumAiConfig, apiHtfCandles, market]);
   const [currentPrice, setCurrentPrice] = useState<number | undefined>();
   const [isLoadingCandles, setIsLoadingCandles] = useState(false);
   const [isLiveFromEngine, setIsLiveFromEngine] = useState(false);

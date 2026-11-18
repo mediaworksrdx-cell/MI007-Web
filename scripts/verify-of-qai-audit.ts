@@ -6,6 +6,7 @@ import {
 } from '../lib/quantumai/types';
 import {
   analyzeQuantumAi,
+  aggregateSessionAwareHtf,
   calculateMomentum,
   detectSwings,
   detectStructureBreaks,
@@ -365,6 +366,62 @@ function runTests() {
     assert.ok(singleLabel.includes('Single-TF'), 'Without HTF candles resonance must be labelled Single-TF');
     assert.ok(multiLabel.includes('HTF:'), 'With HTF candles resonance must use the real HTF layer');
     console.log('[R3] Resonance HTF wiring: Single-TF without HTF, real HTF layer with HTF candles');
+
+    // R4: Session-aware HTF aggregation across Crypto 1H, NSE 15m, Weekday Daily, NSE 1H (:45), US 1H (:30)
+    const mkBar = (t: number): Candle => ({
+      openTime: t, open: 100, high: 101, low: 99, close: 100.5, volume: 1000, isClosed: true,
+    });
+    // 1) Crypto 1H 24/7: 300 bars -> 75 buckets
+    const crypto1H = Array.from({ length: 300 }, (_, i) => mkBar(Date.UTC(2026, 0, 1, 0, 0) + i * 3600_000));
+    const aggCrypto = aggregateSessionAwareHtf(crypto1H, 'CRYPTO');
+    assert.equal(aggCrypto.candles.length, 75, `Crypto 1H expected 75 buckets, got ${aggCrypto.candles.length}`);
+
+    // 2) NSE 15m: 20 trading days * 25 bars (03:45 UTC = 09:15 IST) = 500 bars -> 120 buckets
+    const nse15m: Candle[] = [];
+    for (let d = 0; d < 28 && nse15m.length < 500; d++) {
+      const day0 = Date.UTC(2026, 0, 5 + d, 3, 45);
+      const dow = new Date(day0).getUTCDay();
+      if (dow === 0 || dow === 6) continue;
+      for (let b = 0; b < 25; b++) nse15m.push(mkBar(day0 + b * 15 * 60_000));
+    }
+    const aggNse15m = aggregateSessionAwareHtf(nse15m, 'INDIA');
+    assert.equal(aggNse15m.candles.length, 120, `NSE 15m expected 120 buckets, got ${aggNse15m.candles.length}`);
+
+    // 3) Weekday-only Daily: 60 weeks * 5 days = 300 bars -> 60 weekly buckets (not 30)
+    const dailyWk: Candle[] = [];
+    for (let w = 0; w < 60; w++) {
+      for (let d = 0; d < 5; d++) {
+        dailyWk.push(mkBar(Date.UTC(2025, 0, 6 + w * 7 + d, 0, 0)));
+      }
+    }
+    const aggDaily = aggregateSessionAwareHtf(dailyWk, 'USA');
+    assert.equal(aggDaily.candles.length, 60, `Weekday daily expected 60 weekly buckets, got ${aggDaily.candles.length}`);
+
+    // 4) NSE 1H (:45 start, 20 days * 7 bars = 140 bars) -> 40 session-4H buckets (2 per day)
+    const nse1H: Candle[] = [];
+    for (let d = 0; d < 28 && nse1H.length < 140; d++) {
+      const day0 = Date.UTC(2026, 0, 5 + d, 3, 45);
+      const dow = new Date(day0).getUTCDay();
+      if (dow === 0 || dow === 6) continue;
+      for (let b = 0; b < 7; b++) nse1H.push(mkBar(day0 + b * 3600_000));
+    }
+    const aggNse1H = aggregateSessionAwareHtf(nse1H, 'INDIA');
+    assert.equal(aggNse1H.candles.length, 40, `NSE 1H expected 40 session-4H buckets, got ${aggNse1H.candles.length}`);
+
+    // 5) US 1H (:30 start, 20 days * 7 bars = 140 bars) -> 40 session-4H buckets (2 per day)
+    const us1H: Candle[] = [];
+    for (let d = 0; d < 28 && us1H.length < 140; d++) {
+      const day0 = Date.UTC(2026, 0, 5 + d, 14, 30);
+      const dow = new Date(day0).getUTCDay();
+      if (dow === 0 || dow === 6) continue;
+      for (let b = 0; b < 7; b++) us1H.push(mkBar(day0 + b * 3600_000));
+    }
+    const aggUs1H = aggregateSessionAwareHtf(us1H, 'USA');
+    assert.equal(aggUs1H.candles.length, 40, `US 1H expected 40 session-4H buckets, got ${aggUs1H.candles.length}`);
+
+    console.log(
+      `[R4] Session HTF buckets: Crypto1H=${aggCrypto.candles.length}, NSE15m=${aggNse15m.candles.length}, Daily=${aggDaily.candles.length}, NSE1H=${aggNse1H.candles.length}, US1H=${aggUs1H.candles.length}`
+    );
   }
 
   console.log('\nALL AUDIT REGRESSION TESTS PASSED.');

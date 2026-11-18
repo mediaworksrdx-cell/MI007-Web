@@ -717,6 +717,152 @@ export function calculateConfluence(
 
 // ── 10. Multi-Timeframe Resonance Engine ────────────────────────────────────
 
+function getSessionDateKey(timestampMs: number, timeZone: string): string {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return fmt.format(new Date(timestampMs));
+}
+
+function mergeCandleGroup(grp: Candle[], openTimeOverride?: number): Candle {
+  let high = -Infinity;
+  let low = Infinity;
+  let volume = 0;
+  for (const g of grp) {
+    if (g.high > high) high = g.high;
+    if (g.low < low) low = g.low;
+    volume += g.volume || 0;
+  }
+  return {
+    openTime: openTimeOverride ?? grp[0].openTime,
+    open: grp[0].open,
+    high,
+    low,
+    close: grp[grp.length - 1].close,
+    volume,
+    isClosed: true,
+  };
+}
+
+/**
+ * Builds a session-aware higher-timeframe candle series from closed chart candles:
+ * - Daily bars with weekend gaps -> ISO trading weeks (1W, keeping weeks with >= 4 trading days)
+ * - Intraday 1H–2H bars with session gaps (e.g. NSE :45, US :30) -> Session 4H blocks (first 4 bars + remaining >= 3 bars of each completed session day)
+ * - Intraday <45m bars with session gaps (e.g. 15m) -> 4-bar blocks anchored at each session day's open
+ * - Continuous 24/7 bars (Crypto/FX) -> 4-bar UTC-aligned buckets
+ */
+export function aggregateSessionAwareHtf(
+  rawCandles: Candle[],
+  market: string = 'INDIA'
+): { candles: Candle[]; label: string } {
+  const closed = (rawCandles || []).filter(c => c && c.isClosed !== false);
+  if (closed.length < 8) return { candles: [], label: 'Single-TF' };
+
+  const diffs: number[] = [];
+  let maxDiff = 0;
+  for (let i = 1; i < closed.length; i++) {
+    const d = closed[i].openTime - closed[i - 1].openTime;
+    if (d > 0) {
+      diffs.push(d);
+      if (d > maxDiff) maxDiff = d;
+    }
+  }
+  if (diffs.length === 0) return { candles: [], label: 'Single-TF' };
+  diffs.sort((a, b) => a - b);
+  // Use 30th percentile so overnight/weekend gaps never skew the base bar interval
+  const tfMs = diffs[Math.floor(diffs.length * 0.3)];
+  const hasSessionOrWeekendGaps = maxDiff > tfMs * 2.2;
+  const upperMarket = (market || 'INDIA').toUpperCase();
+  const isContinuous = !hasSessionOrWeekendGaps && (upperMarket === 'CRYPTO' || upperMarket === 'FOREX' || upperMarket === 'FX');
+
+  // 1. Daily bars (with weekend gaps or weekday-only stocks) -> ISO Weekly (1W)
+  if (tfMs >= 20 * 3600_000) {
+    const weekMs = 7 * 86400_000;
+    // 1970-01-01 was Thursday; +3 days aligns floor buckets to Monday 00:00 UTC
+    const weeks = new Map<number, Candle[]>();
+    for (const c of closed) {
+      const wkKey = Math.floor((c.openTime + 3 * 86400_000) / weekMs) * weekMs - 3 * 86400_000;
+      const arr = weeks.get(wkKey);
+      if (arr) arr.push(c);
+      else weeks.set(wkKey, [c]);
+    }
+    const minDays = hasSessionOrWeekendGaps ? 4 : 6;
+    const htf: Candle[] = [];
+    for (const [wkKey, grp] of Array.from(weeks.entries()).sort((a, b) => a[0] - b[0])) {
+      if (grp.length >= minDays) {
+        htf.push(mergeCandleGroup(grp, wkKey));
+      }
+    }
+    return { candles: htf, label: '1W (Session Weekly)' };
+  }
+
+  // 2. Continuous 24/7 intraday (Crypto) -> 4× UTC-aligned buckets
+  if (isContinuous || !hasSessionOrWeekendGaps) {
+    const bucketMs = tfMs * 4;
+    const buckets = new Map<number, Candle[]>();
+    for (const c of closed) {
+      const key = Math.floor(c.openTime / bucketMs) * bucketMs;
+      const arr = buckets.get(key);
+      if (arr) arr.push(c);
+      else buckets.set(key, [c]);
+    }
+    const htf: Candle[] = [];
+    for (const [key, grp] of Array.from(buckets.entries()).sort((a, b) => a[0] - b[0])) {
+      if (grp.length === 4) {
+        htf.push(mergeCandleGroup(grp, key));
+      }
+    }
+    return { candles: htf, label: '4× chart bars (UTC-aligned)' };
+  }
+
+  // 3. Session-based intraday (NSE, USA, UAE) -> group by local trading day first
+  const timeZone =
+    upperMarket === 'USA' || upperMarket === 'US' || upperMarket === 'NASDAQ' || upperMarket === 'NYSE'
+      ? 'America/New_York'
+      : upperMarket === 'UAE' || upperMarket === 'DFM' || upperMarket === 'ADX'
+        ? 'Asia/Dubai'
+        : 'Asia/Kolkata';
+
+  const bySessionDay = new Map<string, Candle[]>();
+  for (const c of closed) {
+    const dayKey = getSessionDateKey(c.openTime, timeZone);
+    const arr = bySessionDay.get(dayKey);
+    if (arr) arr.push(c);
+    else bySessionDay.set(dayKey, [c]);
+  }
+
+  const dayEntries = Array.from(bySessionDay.entries());
+  const htf: Candle[] = [];
+
+  if (tfMs >= 45 * 60_000) {
+    // 1H / 2H session bars (e.g. NSE :45 or US :30 with ~7 bars/day):
+    // Split each session day into morning 4-bar block [0..3] and afternoon block [4..end] (when >= 3 bars, or completed prior session day >= 2 bars)
+    for (let dIdx = 0; dIdx < dayEntries.length; dIdx++) {
+      const [, dayBars] = dayEntries[dIdx];
+      const isLastDay = dIdx === dayEntries.length - 1;
+      if (dayBars.length >= 4) {
+        htf.push(mergeCandleGroup(dayBars.slice(0, 4)));
+        const rem = dayBars.slice(4);
+        if (rem.length >= 3 || (!isLastDay && rem.length >= 2)) {
+          htf.push(mergeCandleGroup(rem));
+        }
+      }
+    }
+    return { candles: htf, label: 'Session 4H (session-anchored)' };
+  }
+
+  // Sub-hourly session bars (5m, 15m, 30m): 4-bar blocks anchored at each session day's open
+  for (const [, dayBars] of dayEntries) {
+    for (let k = 0; k + 4 <= dayBars.length; k += 4) {
+      htf.push(mergeCandleGroup(dayBars.slice(k, k + 4)));
+    }
+  }
+  return { candles: htf, label: '4× session bars (session-anchored)' };
+}
+
 export function calculateResonance(
   candles: Candle[],
   confluence: QuantumConfluenceScore,
