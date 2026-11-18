@@ -740,9 +740,15 @@ export function ChartContainer({
   }, [candles, orderFlowConfig, selectedSymbol, market]);
 
   const [apiHtfCandles, setApiHtfCandles] = useState<{ tf: Timeframe; candles: Candle[] } | null>(null);
+  const lastClosedOpenTime = useMemo(() => {
+    for (let i = candles.length - 1; i >= 0; i--) {
+      if (candles[i]?.isClosed !== false) return candles[i].openTime;
+    }
+    return 0;
+  }, [candles]);
 
   useEffect(() => {
-    if (!quantumAiConfig.enabled) return;
+    if (!quantumAiConfig.enabled || lastClosedOpenTime === 0) return;
     const htfMap: Record<Timeframe, Timeframe> = {
       '1m': '15m',
       '5m': '15m',
@@ -772,7 +778,7 @@ export function ChartContainer({
     return () => {
       cancelled = true;
     };
-  }, [quantumAiConfig.enabled, selectedSymbol, timeframe, market]);
+  }, [quantumAiConfig.enabled, selectedSymbol, timeframe, market, lastClosedOpenTime]);
 
   const quantumAiData = useMemo(() => {
     if (!quantumAiConfig.enabled || candles.length === 0) return undefined;

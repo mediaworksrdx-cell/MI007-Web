@@ -812,27 +812,27 @@ export function aggregateSessionAwareHtf(
     return { candles: htf, label: '4× chart bars (UTC-aligned)' };
   };
 
-  // 1. Daily bars (with weekend gaps or weekday-only stocks) -> ISO Weekly (1W)
+  // 1. Daily bars (Forex Sunday-Friday, weekday-only stocks, or gapped daily) -> Weekly (1W)
+  // Only continuous 7-day-a-week Crypto daily uses 4-day UTC buckets
   if (tfMs >= 20 * 3600_000) {
-    if (isCryptoOrFx && !hasSessionOrWeekendGaps) {
+    if (upperMarket === 'CRYPTO' && maxDiff <= tfMs * 1.5) {
       return buildUtc4xBuckets();
     }
     const weekMs = 7 * 86400_000;
-    // 1970-01-01 was Thursday; +3 days aligns floor buckets to Monday 00:00 UTC
+    // 1970-01-01 was Thursday; +4 days aligns floor buckets to Sunday 00:00 UTC .. Saturday 23:59 UTC
+    // so both Sunday-Friday Forex weeks and Monday-Friday stock weeks land in a single week bucket.
     const weeks = new Map<number, Candle[]>();
     for (const c of closed) {
-      const wkKey = Math.floor((c.openTime + 3 * 86400_000) / weekMs) * weekMs - 3 * 86400_000;
+      const wkKey = Math.floor((c.openTime + 4 * 86400_000) / weekMs) * weekMs - 4 * 86400_000;
       const arr = weeks.get(wkKey);
       if (arr) arr.push(c);
       else weeks.set(wkKey, [c]);
     }
     const htf: Candle[] = [];
     for (const [wkKey, grp] of Array.from(weeks.entries()).sort((a, b) => a[0] - b[0])) {
-      // Sanity cap: 4 to 5 weekday trading bars per week
-      if (grp.length >= 4 && grp.length <= 5) {
-        htf.push(mergeCandleGroup(grp, wkKey));
-      } else if (grp.length > 5) {
-        htf.push(mergeCandleGroup(grp.slice(0, 5), wkKey));
+      // Sanity cap: 4 to 6 daily trading bars per week (handles holidays & Sunday-Friday FX)
+      if (grp.length >= 4) {
+        htf.push(mergeCandleGroup(grp.slice(0, 6), wkKey));
       }
     }
     return { candles: htf, label: '1W (Session Weekly)' };

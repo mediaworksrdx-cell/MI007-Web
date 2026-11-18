@@ -442,8 +442,19 @@ function runTests() {
     assert.equal(aggFxUsa.candles.length, 72, `Forex 1H under USA expected 72 buckets, got ${aggFxUsa.candles.length}`);
     assert.ok(aggFx.candles.every(c => c.volume === 4000), 'Every Forex HTF candle must merge exactly 4 bars');
 
+    // 8) Forex Daily Sunday-Friday (50 weeks * 5 days = 250 bars -> 50 weekly buckets, not 31)
+    const fxDaily: Candle[] = [];
+    for (let w = 0; w < 50; w++) {
+      // Sunday (2025-01-05) through Thursday (5 daily bars per FX week)
+      for (let d = 0; d < 5; d++) {
+        fxDaily.push(mkBar(Date.UTC(2025, 0, 5 + w * 7 + d, 0, 0)));
+      }
+    }
+    const aggFxDaily = aggregateSessionAwareHtf(fxDaily, 'FOREX');
+    assert.equal(aggFxDaily.candles.length, 50, `Forex Daily 250-bar expected 50 weekly buckets, got ${aggFxDaily.candles.length}`);
+
     console.log(
-      `[R4] Session HTF buckets: Crypto1H=${aggCrypto.candles.length}, GappedCrypto=${aggGappedCrypto.candles.length}, FX1H=${aggFx.candles.length}, NSE15m=${aggNse15m.candles.length}, Daily=${aggDaily.candles.length}, NSE1H=${aggNse1H.candles.length}, US1H=${aggUs1H.candles.length}`
+      `[R4] Session HTF buckets: Crypto1H=${aggCrypto.candles.length}, GappedCrypto=${aggGappedCrypto.candles.length}, FX1H=${aggFx.candles.length}, FXDaily=${aggFxDaily.candles.length}, NSE15m=${aggNse15m.candles.length}, Daily=${aggDaily.candles.length}, NSE1H=${aggNse1H.candles.length}, US1H=${aggUs1H.candles.length}`
     );
   }
 
