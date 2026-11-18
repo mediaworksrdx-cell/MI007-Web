@@ -2720,9 +2720,11 @@ export function renderChart(
         ctx.textBaseline = 'middle';
         ctx.fillText(slText, x + boxW - 4 * dpr, finalSlY);
 
-        // Entry Badge (Explicitly states entry basis, e.g. BOS Level, Breaker 50%, OB 50%, FVG 50% CE)
-        const entryBasisTag = st.entryBasis ? ` (${st.entryBasis})` : '';
-        const entryText = `Entry${entryBasisTag}: ${formatPrice(st.entryPrice, options.symbol)}`;
+        // Entry Badge: Distinguishes Provisional Entry (before confirmation) vs Locked Entry (once ENTRY_READY / REJECTION_CONFIRMED)
+        const verTag = st.setupVersion && st.setupVersion > 1 ? ` • v${st.setupVersion}` : '';
+        const entryBasisTag = st.entryBasis ? ` (${st.entryBasis}${verTag})` : verTag ? ` (${verTag.slice(3)})` : '';
+        const entryPrefix = st.isEntryLocked ? 'Locked Entry' : 'Provisional Entry';
+        const entryText = `${entryPrefix}${entryBasisTag}: ${formatPrice(st.entryPrice, options.symbol)}`;
         const entryTm = ctx.measureText(entryText);
         const entryBadgeW = entryTm.width + 8 * dpr;
         const entryBadgeH = 14 * dpr;
@@ -2769,7 +2771,8 @@ export function renderChart(
         const scoreLabel = st.qualityScore ? ` • Quality ${Math.round(st.qualityScore)}/100 (${tierText})` : '';
         // Separate RETEST TOUCHED, RETEST FAILED, REJECTION CONFIRMED, and ENTRY READY into independent states;
         // if live price has recovered above short entry (or dropped below long entry / BOS), rejection is not holding.
-        const bosHoldRef = st.validatingBreak
+        const isBreakSetup = st.setupType === 'BOS_CONTINUATION' || st.setupType === 'CHOCH_REVERSAL';
+        const bosHoldRef = isBreakSetup && st.validatingBreak
           ? (isBull ? Math.max(st.entryPrice, st.validatingBreak.price) : Math.min(st.entryPrice, st.validatingBreak.price))
           : st.entryPrice;
         const priceRecoveredAgainstEntry = curPrice > 0 && (isBull ? curPrice < bosHoldRef : curPrice > bosHoldRef);

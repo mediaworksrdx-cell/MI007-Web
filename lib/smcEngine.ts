@@ -267,6 +267,10 @@ export interface SmcConfirmedSetup {
   rejectionConfirmed?: boolean;
   /** True only after a completed rejection candle reclaims and holds the BOS/entry level; false for all conditional/touched setups */
   isExecutable?: boolean;
+  /** True once entry confirmation (REJECTION_CONFIRMED / ENTRY_READY) freezes entryPrice, stopLoss, and targets */
+  isEntryLocked?: boolean;
+  /** Incremented (1, 2, ...) whenever a previously locked setup is invalidated and re-confirms on a new rejection bar */
+  setupVersion?: number;
   /** Structural invalidation reference used for stop-loss placement */
   invalidationBasis?: string;
   /** Score-based system action tier (<60 Reject, 60-69 Watchlist only, 70-79 Conditional, 80-89 High-quality, 90-100 Highest-priority) */
@@ -2638,14 +2642,18 @@ export function detectAll16SmcSetups(
     let retestFailed = false;
     let closedBelowBosCount = 0;
     let rejectionConfirmed = false;
+    let firstLockedRejectionBarIdx = -1;
     let lastRejectionBarIdx = -1;
+    let setupVersion = 1;
+    let hadPriorLockedRejection = false;
     let tp1Hit = false;
     let tp1HitIndex: number | undefined;
     let tp2Hit = false;
     let tp2HitIndex: number | undefined;
     let resolutionIndeterminate = false;
 
-    const bosRefLevel = validatingBreak ? validatingBreak.price : cleanEntry;
+    const isBreakLevelSetup = setupType === 'BOS_CONTINUATION' || setupType === 'CHOCH_REVERSAL';
+    const bosRefLevel = isBreakLevelSetup && validatingBreak ? validatingBreak.price : cleanEntry;
     const requiredHoldLevel = isBull ? Math.max(cleanEntry, bosRefLevel) : Math.min(cleanEntry, bosRefLevel);
 
     // 1. Confirmation bar validation
@@ -2782,10 +2790,18 @@ export function detectAll16SmcSetups(
 
         if (!tp1Hit && tappedZone && confirmedRejection) {
           retestTouched = true;
+          // Freeze at the first confirmed rejection bar; only create a new version if a prior locked rejection was negated
+          if (firstLockedRejectionBarIdx < 0) {
+            if (hadPriorLockedRejection) {
+              setupVersion++;
+            }
+            firstLockedRejectionBarIdx = k;
+            hadPriorLockedRejection = true;
+          }
           rejectionConfirmed = true;
           retestFailed = false;
           closedBelowBosCount = 0;
-          lastRejectionBarIdx = k;
+          lastRejectionBarIdx = firstLockedRejectionBarIdx;
           status = 'RETESTING';
           lifecycleState = 'RETESTED';
           retestCount++;
@@ -2793,6 +2809,7 @@ export function detectAll16SmcSetups(
           // Confirmed candle closed below bullish BOS/entry (or above bearish BOS/entry) -> retest failed
           retestTouched = true;
           rejectionConfirmed = false;
+          firstLockedRejectionBarIdx = -1;
           retestFailed = true;
           closedBelowBosCount++;
           if (closedBeyondZone || closedBelowBosCount >= 2) {
@@ -2814,6 +2831,7 @@ export function detectAll16SmcSetups(
           const recoveredAgainstTrade = isBull ? bar.close < requiredHoldLevel : bar.close > requiredHoldLevel;
           if (recoveredAgainstTrade) {
             rejectionConfirmed = false;
+            firstLockedRejectionBarIdx = -1;
             retestTouched = true;
             retestFailed = true;
             status = 'ENTRY_ZONE_REACHED';
@@ -3087,9 +3105,21 @@ export function detectAll16SmcSetups(
       status !== 'EXPIRED'
     );
 
+    const isEntryLocked = Boolean(
+      !isRejectedPermanently &&
+      !retestFailed &&
+      rejectionConfirmed &&
+      firstLockedRejectionBarIdx >= 0 &&
+      (signalState === 'ENTRY_READY' || signalState === 'REJECTION_CONFIRMED' || signalState === 'EXECUTED') &&
+      status !== 'INVALIDATED' &&
+      status !== 'EXPIRED'
+    );
+
+    const versionSuffix = setupVersion > 1 ? `_v${setupVersion}` : '';
+
     return {
-      id: `${baseId}_${effectiveConfirmTime}`,
-      name,
+      id: `${baseId}${versionSuffix}_${effectiveConfirmTime}`,
+      name: setupVersion > 1 ? `${name} (v${setupVersion})` : name,
       setupType,
       direction,
       candleIndex: effectiveConfirmIdx,
@@ -3106,6 +3136,8 @@ export function detectAll16SmcSetups(
       retestFailed,
       rejectionConfirmed,
       isExecutable,
+      isEntryLocked,
+      setupVersion,
       invalidationBasis,
       description,
       invalidationLevel: finalSl,
@@ -3447,12 +3479,14 @@ export function detectAll16SmcSetups(
     const pOteMin = dealingRange.premiumOteRange ? dealingRange.premiumOteRange[0] : dealingRange.lowPrice + (dealingRange.highPrice - dealingRange.lowPrice) * 0.618;
     const pOteMax = dealingRange.premiumOteRange ? dealingRange.premiumOteRange[1] : dealingRange.lowPrice + (dealingRange.highPrice - dealingRange.lowPrice) * 0.786;
 
-    // Scan recent candles (up to 12 bars back) for confirmed OTE entries
+    // Scan forward over closed candles in the current window so the initial OTE anchor does not jump on every new bar
     const lookback = Math.min(candles.length, 12);
+    const startOteScanIdx = isIntradaySession ? Math.max(firstTodayIdx, candles.length - lookback) : Math.max(0, candles.length - lookback);
 
     // Bullish: Price tapped Discount OTE zone (deep discount retracement)
-    for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
+    for (let i = startOteScanIdx; i < candles.length; i++) {
       const c = candles[i];
+      if (!isCandleClosed(c)) continue;
       if (c.low <= dOteMax && c.high >= dOteMin && c.close >= dealingRange.lowPrice) {
         const validation = validateSetupDirectionalConfirmation(
           'BULLISH',
@@ -3470,7 +3504,7 @@ export function detectAll16SmcSetups(
         const sl = dealingRange.lowPrice - atrBufferAt(i);
         const tp = dealingRange.highPrice;
         if (entry > sl && tp > entry) {
-          setups.push(makeSetup(
+          const st = makeSetup(
             `setup_dr_ote_bull_${i}`,
             'Discount Dealing Range OTE Long',
             'PREMIUM_DISCOUNT_OTE',
@@ -3481,15 +3515,19 @@ export function detectAll16SmcSetups(
             sl,
             tp,
             `Price tapped institutional Discount OTE zone (62%-79% retracement [${dOteMin.toFixed(2)} - ${dOteMax.toFixed(2)}]), targeting range high. ${validation.reason}`
-          ));
-          break; // Retain most recent confirmed tap
+          );
+          setups.push(st);
+          if (st.qualityScore >= 70 && st.status !== 'INVALIDATED' && st.status !== 'EXPIRED') {
+            break; // Lock to first valid active OTE tap in current window so entry does not shift on newer bars
+          }
         }
       }
     }
 
     // Bearish: Price tapped Premium OTE zone (high premium retracement)
-    for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
+    for (let i = startOteScanIdx; i < candles.length; i++) {
       const c = candles[i];
+      if (!isCandleClosed(c)) continue;
       if (c.high >= pOteMin && c.low <= pOteMax && c.close <= dealingRange.highPrice) {
         const validation = validateSetupDirectionalConfirmation(
           'BEARISH',
@@ -3507,7 +3545,7 @@ export function detectAll16SmcSetups(
         const sl = dealingRange.highPrice + atrBufferAt(i);
         const tp = dealingRange.lowPrice;
         if (entry < sl && tp < entry) {
-          setups.push(makeSetup(
+          const st = makeSetup(
             `setup_dr_ote_bear_${i}`,
             'Premium Dealing Range OTE Short',
             'PREMIUM_DISCOUNT_OTE',
@@ -3518,8 +3556,11 @@ export function detectAll16SmcSetups(
             sl,
             tp,
             `Price tapped institutional Premium OTE zone (62%-79% retracement [${pOteMin.toFixed(2)} - ${pOteMax.toFixed(2)}]), targeting range low. ${validation.reason}`
-          ));
-          break; // Retain most recent confirmed tap
+          );
+          setups.push(st);
+          if (st.qualityScore >= 70 && st.status !== 'INVALIDATED' && st.status !== 'EXPIRED') {
+            break; // Lock to first valid active OTE tap in current window so entry does not shift on newer bars
+          }
         }
       }
     }

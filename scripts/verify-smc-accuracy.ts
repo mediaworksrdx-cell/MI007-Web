@@ -395,6 +395,20 @@ console.log('\n--- Test 5: Regression Suite (Closed-Bar Fallback, Volume Isolati
     s => getSmcTradingDayKey(niftyNextDay[s.candleIndex]?.openTime ?? s.time, 'NIFTY') !== latestDay
   );
   assert(yesterdayActiveSetups.length === 0, 'Fix 13: Every day SMC starts fresh — zero yesterday strategies remain active in today confirmedSetups');
+
+  // 7. Freeze Entry, SL & TP once confirmed (isEntryLocked), and increment setupVersion on re-confirmation
+  // Use same-day candles after bar 34 (Bullish BOS at 25,424.35)
+  const rejCandle1 = makeCandle(pastStart + 35 * hour, 25420, 25455, 25405, 25445, 3_200_000); // Wicks into 25,424.35, closes bullish at 25,445
+  const rejCandle2 = makeCandle(pastStart + 36 * hour, 25430, 25470, 25415, 25465, 3_500_000); // Another touch & higher close at 25,465
+  const smcLocked1 = calculateSMC([...niftyBase, rejCandle1], undefined, 'BTC', '1D');
+  const smcLocked2 = calculateSMC([...niftyBase, rejCandle1, rejCandle2], undefined, 'BTC', '1D');
+  const bos1 = smcLocked1.allSetups.find(s => s.setupType === 'BOS_CONTINUATION' && s.direction === 'BULLISH' && s.candleIndex === 34);
+  const bos2 = smcLocked2.allSetups.find(s => s.setupType === 'BOS_CONTINUATION' && s.direction === 'BULLISH' && s.candleIndex === 34);
+  if (bos1 && bos2 && bos1.rejectionConfirmed && bos2.rejectionConfirmed) {
+    assert(bos1.entryPrice === bos2.entryPrice, `Fix 14: Locked entryPrice does not move after confirmation (${bos1.entryPrice} === ${bos2.entryPrice})`);
+    assert(bos1.stopLoss === bos2.stopLoss, `Fix 14: Locked stopLoss does not move after confirmation (${bos1.stopLoss} === ${bos2.stopLoss})`);
+    assert(bos1.targetPrice === bos2.targetPrice, `Fix 14: Locked targetPrice does not move after confirmation (${bos1.targetPrice} === ${bos2.targetPrice})`);
+  }
 }
 
 console.log('\n======================================================================');
