@@ -776,31 +776,24 @@ export function aggregateSessionAwareHtf(
   const tfMs = diffs[Math.floor(diffs.length * 0.3)];
   const hasSessionOrWeekendGaps = maxDiff > tfMs * 2.2;
   const upperMarket = (market || 'INDIA').toUpperCase();
-  const isContinuous = !hasSessionOrWeekendGaps && (upperMarket === 'CRYPTO' || upperMarket === 'FOREX' || upperMarket === 'FX');
+  const isCryptoOrFx =
+    upperMarket === 'CRYPTO' ||
+    upperMarket === 'FOREX' ||
+    upperMarket === 'FX' ||
+    upperMarket === 'COMMODITIES';
+  const isStockSessionMarket =
+    upperMarket === 'INDIA' ||
+    upperMarket === 'NSE' ||
+    upperMarket === 'BSE' ||
+    upperMarket === 'USA' ||
+    upperMarket === 'US' ||
+    upperMarket === 'NASDAQ' ||
+    upperMarket === 'NYSE' ||
+    upperMarket === 'UAE' ||
+    upperMarket === 'DFM' ||
+    upperMarket === 'ADX';
 
-  // 1. Daily bars (with weekend gaps or weekday-only stocks) -> ISO Weekly (1W)
-  if (tfMs >= 20 * 3600_000) {
-    const weekMs = 7 * 86400_000;
-    // 1970-01-01 was Thursday; +3 days aligns floor buckets to Monday 00:00 UTC
-    const weeks = new Map<number, Candle[]>();
-    for (const c of closed) {
-      const wkKey = Math.floor((c.openTime + 3 * 86400_000) / weekMs) * weekMs - 3 * 86400_000;
-      const arr = weeks.get(wkKey);
-      if (arr) arr.push(c);
-      else weeks.set(wkKey, [c]);
-    }
-    const minDays = hasSessionOrWeekendGaps ? 4 : 6;
-    const htf: Candle[] = [];
-    for (const [wkKey, grp] of Array.from(weeks.entries()).sort((a, b) => a[0] - b[0])) {
-      if (grp.length >= minDays) {
-        htf.push(mergeCandleGroup(grp, wkKey));
-      }
-    }
-    return { candles: htf, label: '1W (Session Weekly)' };
-  }
-
-  // 2. Continuous 24/7 intraday (Crypto) -> 4× UTC-aligned buckets
-  if (isContinuous || !hasSessionOrWeekendGaps) {
+  const buildUtc4xBuckets = (): { candles: Candle[]; label: string } => {
     const bucketMs = tfMs * 4;
     const buckets = new Map<number, Candle[]>();
     for (const c of closed) {
@@ -811,14 +804,46 @@ export function aggregateSessionAwareHtf(
     }
     const htf: Candle[] = [];
     for (const [key, grp] of Array.from(buckets.entries()).sort((a, b) => a[0] - b[0])) {
+      // Sanity cap: exactly 4 bars per UTC bucket
       if (grp.length === 4) {
-        htf.push(mergeCandleGroup(grp, key));
+        htf.push(mergeCandleGroup(grp.slice(0, 4), key));
       }
     }
     return { candles: htf, label: '4× chart bars (UTC-aligned)' };
+  };
+
+  // 1. Daily bars (with weekend gaps or weekday-only stocks) -> ISO Weekly (1W)
+  if (tfMs >= 20 * 3600_000) {
+    if (isCryptoOrFx && !hasSessionOrWeekendGaps) {
+      return buildUtc4xBuckets();
+    }
+    const weekMs = 7 * 86400_000;
+    // 1970-01-01 was Thursday; +3 days aligns floor buckets to Monday 00:00 UTC
+    const weeks = new Map<number, Candle[]>();
+    for (const c of closed) {
+      const wkKey = Math.floor((c.openTime + 3 * 86400_000) / weekMs) * weekMs - 3 * 86400_000;
+      const arr = weeks.get(wkKey);
+      if (arr) arr.push(c);
+      else weeks.set(wkKey, [c]);
+    }
+    const htf: Candle[] = [];
+    for (const [wkKey, grp] of Array.from(weeks.entries()).sort((a, b) => a[0] - b[0])) {
+      // Sanity cap: 4 to 5 weekday trading bars per week
+      if (grp.length >= 4 && grp.length <= 5) {
+        htf.push(mergeCandleGroup(grp, wkKey));
+      } else if (grp.length > 5) {
+        htf.push(mergeCandleGroup(grp.slice(0, 5), wkKey));
+      }
+    }
+    return { candles: htf, label: '1W (Session Weekly)' };
   }
 
-  // 3. Session-based intraday (NSE, USA, UAE) -> group by local trading day first
+  // 2. Crypto / Forex / non-stock markets (even with missing bars or weekend gaps) ALWAYS use UTC-aligned 4-bar buckets
+  if (isCryptoOrFx || !isStockSessionMarket || !hasSessionOrWeekendGaps) {
+    return buildUtc4xBuckets();
+  }
+
+  // 3. Session-based intraday (INDIA, USA, UAE) -> group by local trading day first
   const timeZone =
     upperMarket === 'USA' || upperMarket === 'US' || upperMarket === 'NASDAQ' || upperMarket === 'NYSE'
       ? 'America/New_York'
@@ -827,11 +852,24 @@ export function aggregateSessionAwareHtf(
         : 'Asia/Kolkata';
 
   const bySessionDay = new Map<string, Candle[]>();
+  let maxBarsInDay = 0;
   for (const c of closed) {
     const dayKey = getSessionDateKey(c.openTime, timeZone);
     const arr = bySessionDay.get(dayKey);
-    if (arr) arr.push(c);
-    else bySessionDay.set(dayKey, [c]);
+    if (arr) {
+      arr.push(c);
+      if (arr.length > maxBarsInDay) maxBarsInDay = arr.length;
+    } else {
+      bySessionDay.set(dayKey, [c]);
+      if (1 > maxBarsInDay) maxBarsInDay = 1;
+    }
+  }
+
+  // Sanity guard: a regular equity session has <= 8 hourly bars/day (or <= 30 15m bars/day).
+  // If a 24h series (e.g. gapped crypto/FX) was passed with market='USA'/'INDIA', use UTC-aligned 4-bar buckets.
+  const maxSessionBarsAllowed = Math.ceil((8.5 * 3600_000) / tfMs);
+  if (maxBarsInDay > maxSessionBarsAllowed) {
+    return buildUtc4xBuckets();
   }
 
   const dayEntries = Array.from(bySessionDay.entries());
@@ -839,22 +877,21 @@ export function aggregateSessionAwareHtf(
 
   if (tfMs >= 45 * 60_000) {
     // 1H / 2H session bars (e.g. NSE :45 or US :30 with ~7 bars/day):
-    // Split each session day into morning 4-bar block [0..3] and afternoon block [4..end] (when >= 3 bars, or completed prior session day >= 2 bars)
+    // Chunk in blocks of at most 4 bars; never merge > 4 chart bars into one HTF candle
     for (let dIdx = 0; dIdx < dayEntries.length; dIdx++) {
       const [, dayBars] = dayEntries[dIdx];
       const isLastDay = dIdx === dayEntries.length - 1;
-      if (dayBars.length >= 4) {
-        htf.push(mergeCandleGroup(dayBars.slice(0, 4)));
-        const rem = dayBars.slice(4);
-        if (rem.length >= 3 || (!isLastDay && rem.length >= 2)) {
-          htf.push(mergeCandleGroup(rem));
+      for (let k = 0; k < dayBars.length; k += 4) {
+        const chunk = dayBars.slice(k, k + 4);
+        if (chunk.length === 4 || (chunk.length === 3 && (!isLastDay || k > 0))) {
+          htf.push(mergeCandleGroup(chunk));
         }
       }
     }
     return { candles: htf, label: 'Session 4H (session-anchored)' };
   }
 
-  // Sub-hourly session bars (5m, 15m, 30m): 4-bar blocks anchored at each session day's open
+  // Sub-hourly session bars (5m, 15m, 30m): strict 4-bar blocks anchored at each session day's open
   for (const [, dayBars] of dayEntries) {
     for (let k = 0; k + 4 <= dayBars.length; k += 4) {
       htf.push(mergeCandleGroup(dayBars.slice(k, k + 4)));

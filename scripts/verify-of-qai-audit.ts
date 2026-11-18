@@ -419,8 +419,31 @@ function runTests() {
     const aggUs1H = aggregateSessionAwareHtf(us1H, 'USA');
     assert.equal(aggUs1H.candles.length, 40, `US 1H expected 40 session-4H buckets, got ${aggUs1H.candles.length}`);
 
+    // 6) Gapped Crypto 1H (296 bars: 300 bars minus a 4-hour stretch at bars 80..83)
+    const gappedCrypto = crypto1H.filter((_, idx) => idx < 80 || idx >= 84);
+    assert.equal(gappedCrypto.length, 296);
+    const aggGappedCrypto = aggregateSessionAwareHtf(gappedCrypto, 'CRYPTO');
+    const aggGappedAsUsa = aggregateSessionAwareHtf(gappedCrypto, 'USA');
+    assert.equal(aggGappedCrypto.candles.length, 74, `Gapped Crypto expected 74 buckets, got ${aggGappedCrypto.candles.length}`);
+    assert.equal(aggGappedAsUsa.candles.length, 74, `Gapped 24h series under USA expected 74 buckets, got ${aggGappedAsUsa.candles.length}`);
+    assert.ok(aggGappedCrypto.candles.every(c => c.volume === 4000), 'Every gapped crypto HTF candle must merge exactly 4 bars');
+
+    // 7) Forex 1H with weekend gaps (12 trading days * 24 bars = 288 bars -> 72 4H buckets)
+    const fx1H: Candle[] = [];
+    for (let d = 0; d < 20 && fx1H.length < 288; d++) {
+      const day0 = Date.UTC(2026, 0, 5 + d, 0, 0);
+      const dow = new Date(day0).getUTCDay();
+      if (dow === 0 || dow === 6) continue;
+      for (let b = 0; b < 24; b++) fx1H.push(mkBar(day0 + b * 3600_000));
+    }
+    const aggFx = aggregateSessionAwareHtf(fx1H, 'FOREX');
+    const aggFxUsa = aggregateSessionAwareHtf(fx1H, 'USA');
+    assert.equal(aggFx.candles.length, 72, `Forex 1H with weekends expected 72 buckets, got ${aggFx.candles.length}`);
+    assert.equal(aggFxUsa.candles.length, 72, `Forex 1H under USA expected 72 buckets, got ${aggFxUsa.candles.length}`);
+    assert.ok(aggFx.candles.every(c => c.volume === 4000), 'Every Forex HTF candle must merge exactly 4 bars');
+
     console.log(
-      `[R4] Session HTF buckets: Crypto1H=${aggCrypto.candles.length}, NSE15m=${aggNse15m.candles.length}, Daily=${aggDaily.candles.length}, NSE1H=${aggNse1H.candles.length}, US1H=${aggUs1H.candles.length}`
+      `[R4] Session HTF buckets: Crypto1H=${aggCrypto.candles.length}, GappedCrypto=${aggGappedCrypto.candles.length}, FX1H=${aggFx.candles.length}, NSE15m=${aggNse15m.candles.length}, Daily=${aggDaily.candles.length}, NSE1H=${aggNse1H.candles.length}, US1H=${aggUs1H.candles.length}`
     );
   }
 
