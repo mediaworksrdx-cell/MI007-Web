@@ -101,8 +101,12 @@ function runTests() {
 
   // ── Test 2: Point-in-Time Prefix Invariance (N vs N+K) (Q1, Q8) ───────────
   {
-    const full = generateRandomWalk(220, 4242, 500, 0.01);
-    const prefixN = 150;
+    // Stronger version: 40 independent series, prefix N=600 vs full N+K=800
+    let totalCompared = 0;
+    let totalSwings = 0;
+    for (let seed = 0; seed < 40; seed++) {
+    const full = generateRandomWalk(800, 4242 + seed, 500, 0.01);
+    const prefixN = 600;
     const prefix = full.slice(0, prefixN);
 
     const cfg: QuantumAiConfig = {
@@ -122,7 +126,7 @@ function runTests() {
     assert.equal(
       closedPrefix.length,
       closedFullBeforeN.length,
-      `Closed trade count changed with future bars: ${closedPrefix.length} vs ${closedFullBeforeN.length}`
+      `Seed ${seed}: closed trade count changed with future bars: ${closedPrefix.length} vs ${closedFullBeforeN.length}`
     );
 
     for (let i = 0; i < closedPrefix.length; i++) {
@@ -140,7 +144,11 @@ function runTests() {
       s => (s.confirmationIndex ?? s.index) < prefixN
     );
     assert.equal(swingsPrefix.length, swingsFull.length, 'Confirmed swings changed with future bars');
-    console.log(`[Test 2] Point-in-Time Invariance: ${closedPrefix.length} closed trades & ${swingsPrefix.length} swings identical`);
+    totalCompared += closedPrefix.length;
+    totalSwings += swingsPrefix.length;
+    }
+    assert.ok(totalCompared >= 50, `Point-in-time test too weak: only ${totalCompared} trades compared`);
+    console.log(`[Test 2] Point-in-Time Invariance (40 series): ${totalCompared} closed trades & ${totalSwings} swings identical`);
   }
 
   // ── Test 3: Accounting Identity (sum(trade P&L) == netProfit) (Q3, Q4) ─────
@@ -355,7 +363,7 @@ function runTests() {
     const singleLabel = JSON.stringify(single.resonance);
     const multiLabel = JSON.stringify(multi.resonance);
     assert.ok(singleLabel.includes('Single-TF'), 'Without HTF candles resonance must be labelled Single-TF');
-    assert.ok(multiLabel.includes('HTF ('), 'With HTF candles resonance must use the real HTF layer');
+    assert.ok(multiLabel.includes('HTF:'), 'With HTF candles resonance must use the real HTF layer');
     console.log('[R3] Resonance HTF wiring: Single-TF without HTF, real HTF layer with HTF candles');
   }
 

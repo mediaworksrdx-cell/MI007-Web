@@ -722,7 +722,8 @@ export function calculateResonance(
   confluence: QuantumConfluenceScore,
   dealingRange: QuantumDealingRange,
   htfCandles?: Candle[],
-  ltfCandles?: Candle[]
+  ltfCandles?: Candle[],
+  htfLabel?: string
 ): QuantumResonanceMetrics {
   const hasRealHtf = Boolean(htfCandles && htfCandles.length >= 10);
   const hasRealLtf = Boolean(ltfCandles && ltfCandles.length >= 10);
@@ -732,7 +733,7 @@ export function calculateResonance(
   const htfBias: 'BULLISH' | 'BEARISH' | 'NEUTRAL' =
     htfDr.currentZone === 'DISCOUNT' ? 'BULLISH' : htfDr.currentZone === 'PREMIUM' ? 'BEARISH' : 'NEUTRAL';
   const htfLayer = {
-    timeframe: hasRealHtf ? `HTF (${htfCandles!.length} closed bars)` : 'Macro 40-Bar (Single-TF)',
+    timeframe: hasRealHtf ? `HTF: ${htfLabel ?? 'supplied'} (${htfCandles!.length} closed bars)` : 'Macro 40-Bar (Single-TF)',
     bias: htfBias,
     zone: htfDr.currentZone,
     structure: htfBias === 'BULLISH' ? ('BOS_BULL' as const) : ('BOS_BEAR' as const),
@@ -895,7 +896,7 @@ export function generateSetups(
 export function analyzeQuantumAi(
   rawCandles: Candle[],
   config: QuantumAiConfig = DEFAULT_QUANTUM_AI_CONFIG,
-  mtf?: { htfCandles?: Candle[]; ltfCandles?: Candle[] }
+  mtf?: { htfCandles?: Candle[]; ltfCandles?: Candle[]; htfLabel?: string }
 ): QuantumAiAnalysisResult {
   // Q8: Filter out forming/unclosed candles so live ticks do not flip signals mid-bar
   const candles = (rawCandles || []).filter(c => c && c.isClosed !== false);
@@ -994,7 +995,7 @@ export function analyzeQuantumAi(
   );
 
   // 7. Multi-Timeframe Resonance
-  const resonance = calculateResonance(candles, confluence, dealingRange, htfCandles, ltfCandles);
+  const resonance = calculateResonance(candles, confluence, dealingRange, htfCandles, ltfCandles, mtf?.htfLabel);
 
   // 8. Trade Setups
   const setups = generateSetups(

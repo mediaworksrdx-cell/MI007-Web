@@ -741,22 +741,37 @@ export function ChartContainer({
 
   const quantumAiData = useMemo(() => {
     if (!quantumAiConfig.enabled || candles.length === 0) return undefined;
-    // Q6: Build a real 4x higher timeframe from complete groups of closed chart bars
+    // Q6: Build a 4× higher timeframe from closed chart bars, bucketed on UTC clock boundaries
+    // (floor(openTime / 4·tf)). Only complete buckets (all 4 bars present) are kept, so buckets
+    // never straddle session gaps and don't shift with where the loaded history starts.
     const closed = candles.filter(c => c.isClosed !== false);
+    const diffs: number[] = [];
+    for (let k = 1; k < closed.length; k++) diffs.push(closed[k].openTime - closed[k - 1].openTime);
+    diffs.sort((a, b) => a - b);
+    const tfMs = diffs.length > 0 ? diffs[Math.floor(diffs.length / 2)] : 0;
     const htfCandles: Candle[] = [];
-    for (let k = 0; k + 4 <= closed.length; k += 4) {
-      const grp = closed.slice(k, k + 4);
-      htfCandles.push({
-        openTime: grp[0].openTime,
-        open: grp[0].open,
-        high: Math.max(...grp.map(g => g.high)),
-        low: Math.min(...grp.map(g => g.low)),
-        close: grp[3].close,
-        volume: grp.reduce((a, g) => a + (g.volume || 0), 0),
-        isClosed: true,
-      });
+    if (tfMs > 0) {
+      const bucketMs = tfMs * 4;
+      const buckets = new Map<number, Candle[]>();
+      for (const c of closed) {
+        const key = Math.floor(c.openTime / bucketMs) * bucketMs;
+        const arr = buckets.get(key);
+        if (arr) arr.push(c); else buckets.set(key, [c]);
+      }
+      for (const [key, grp] of Array.from(buckets.entries()).sort((a, b) => a[0] - b[0])) {
+        if (grp.length !== 4) continue;
+        htfCandles.push({
+          openTime: key,
+          open: grp[0].open,
+          high: Math.max(...grp.map(g => g.high)),
+          low: Math.min(...grp.map(g => g.low)),
+          close: grp[3].close,
+          volume: grp.reduce((a, g) => a + (g.volume || 0), 0),
+          isClosed: true,
+        });
+      }
     }
-    return analyzeQuantumAi(candles, quantumAiConfig, { htfCandles });
+    return analyzeQuantumAi(candles, quantumAiConfig, { htfCandles, htfLabel: '4× chart bars (UTC-aligned)' });
   }, [candles, quantumAiConfig]);
   const [currentPrice, setCurrentPrice] = useState<number | undefined>();
   const [isLoadingCandles, setIsLoadingCandles] = useState(false);
