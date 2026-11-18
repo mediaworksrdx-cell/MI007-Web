@@ -16,7 +16,7 @@ import {
   CHART_RIGHT_MARGIN, CHART_BOTTOM_MARGIN, calculateDynamicPanelHeight,
   getInstrumentDecimals,
 } from './types';
-import { calculateSMC, DEFAULT_SMC_CONFIG, SMC_TRADE_LIFESPAN_BARS, resolveSameBarTpSlOrder, inferCandleIntervalMs, getSmcTradingDayKey, type SmcConfig } from './smcEngine';
+import { calculateSMC, DEFAULT_SMC_CONFIG, SMC_TRADE_LIFESPAN_BARS, resolveSameBarTpSlOrder, inferCandleIntervalMs, getSmcTradingDayKey, isCandleClosed, type SmcConfig } from './smcEngine';
 import { SmartAnnotationManager, type SmcVisualizationMode } from './smc/smartAnnotationManager';
 import { renderOrderFlowFootprint, formatVol } from './orderflow/orderFlowRenderer';
 import { renderQuantumAiOverlays } from './quantumai/quantumAiRenderer';
