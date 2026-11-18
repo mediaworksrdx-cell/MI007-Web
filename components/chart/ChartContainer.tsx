@@ -739,7 +739,13 @@ export function ChartContainer({
     return analyzeOrderFlow(candles, orderFlowConfig, ticksPerCandleRef.current, selectedSymbol, market);
   }, [candles, orderFlowConfig, selectedSymbol, market]);
 
-  const [apiHtfCandles, setApiHtfCandles] = useState<{ tf: Timeframe; candles: Candle[] } | null>(null);
+  const [apiHtfCandles, setApiHtfCandles] = useState<{
+    symbol: string;
+    chartTf: Timeframe;
+    market: MarketType;
+    tf: Timeframe;
+    candles: Candle[];
+  } | null>(null);
   const lastClosedOpenTime = useMemo(() => {
     for (let i = candles.length - 1; i >= 0; i--) {
       if (candles[i]?.isClosed !== false) return candles[i].openTime;
@@ -748,6 +754,12 @@ export function ChartContainer({
   }, [candles]);
 
   useEffect(() => {
+    // Clear stale HTF state immediately if symbol, timeframe, or market changed
+    setApiHtfCandles(prev =>
+      prev && prev.symbol === selectedSymbol && prev.chartTf === timeframe && prev.market === market
+        ? prev
+        : null
+    );
     if (!quantumAiConfig.enabled || lastClosedOpenTime === 0) return;
     const htfMap: Record<Timeframe, Timeframe> = {
       '1m': '15m',
@@ -768,8 +780,17 @@ export function ChartContainer({
     let cancelled = false;
     fetchCandles(selectedSymbol, targetHtf, undefined, undefined, market)
       .then(res => {
-        if (!cancelled && res && res.length >= 10) {
-          setApiHtfCandles({ tf: targetHtf, candles: res });
+        if (cancelled) return;
+        if (res && res.length >= 10) {
+          setApiHtfCandles({
+            symbol: selectedSymbol,
+            chartTf: timeframe,
+            market,
+            tf: targetHtf,
+            candles: res,
+          });
+        } else {
+          setApiHtfCandles(null);
         }
       })
       .catch(() => {
@@ -782,7 +803,13 @@ export function ChartContainer({
 
   const quantumAiData = useMemo(() => {
     if (!quantumAiConfig.enabled || candles.length === 0) return undefined;
-    if (apiHtfCandles && apiHtfCandles.candles.length >= 10) {
+    if (
+      apiHtfCandles &&
+      apiHtfCandles.symbol === selectedSymbol &&
+      apiHtfCandles.chartTf === timeframe &&
+      apiHtfCandles.market === market &&
+      apiHtfCandles.candles.length >= 10
+    ) {
       return analyzeQuantumAi(candles, quantumAiConfig, {
         htfCandles: apiHtfCandles.candles,
         htfLabel: `${apiHtfCandles.tf} (/api/candles)`,
@@ -793,7 +820,7 @@ export function ChartContainer({
       htfCandles: aggregated.candles,
       htfLabel: aggregated.label,
     });
-  }, [candles, quantumAiConfig, apiHtfCandles, market]);
+  }, [candles, quantumAiConfig, apiHtfCandles, selectedSymbol, timeframe, market]);
   const [currentPrice, setCurrentPrice] = useState<number | undefined>();
   const [isLoadingCandles, setIsLoadingCandles] = useState(false);
   const [isLiveFromEngine, setIsLiveFromEngine] = useState(false);
