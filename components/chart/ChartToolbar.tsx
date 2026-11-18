@@ -1082,27 +1082,15 @@ export function ChartToolbar({
                       label="Break of Structure (BOS)"
                       sublabel="Trend continuation breaks"
                       checked={activeSmcConfig.showBos}
-                      onChange={(v) => handleUpdateSmc({ showBos: v })}
+                      onChange={(v) => handleUpdateSmc({ showBos: v, showBullishStructure: true, showBearishStructure: true })}
                       badge="BOS"
                     />
                     <SmcToggleRow
                       label="Change of Character (CHoCH)"
                       sublabel="Trend reversal character shifts"
                       checked={activeSmcConfig.showChoch}
-                      onChange={(v) => handleUpdateSmc({ showChoch: v })}
+                      onChange={(v) => handleUpdateSmc({ showChoch: v, showBullishStructure: true, showBearishStructure: true })}
                       badge="CHoCH"
-                    />
-                    <SmcToggleRow
-                      label="Bullish Structure (+BOS / +CHoCH)"
-                      sublabel="Demand-side structure shifts"
-                      checked={activeSmcConfig.showBullishStructure}
-                      onChange={(v) => handleUpdateSmc({ showBullishStructure: v })}
-                    />
-                    <SmcToggleRow
-                      label="Bearish Structure (-BOS / -CHoCH)"
-                      sublabel="Supply-side structure shifts"
-                      checked={activeSmcConfig.showBearishStructure}
-                      onChange={(v) => handleUpdateSmc({ showBearishStructure: v })}
                     />
                     <SmcToggleRow
                       label="Swing Points"
@@ -1132,22 +1120,10 @@ export function ChartToolbar({
                       onChange={(v) => handleUpdateSmc({ showEqualHighLow: v })}
                     />
                     <SmcToggleRow
-                      label="Liquidity Sweeps (Master)"
-                      sublabel="Stop hunt & rejection wicks"
+                      label="Liquidity Sweeps"
+                      sublabel="Stop hunt & rejection wicks (BSL & SSL)"
                       checked={activeSmcConfig.showSweeps}
-                      onChange={(v) => handleUpdateSmc({ showSweeps: v })}
-                    />
-                    <SmcToggleRow
-                      label="Bullish Sweeps (SSL)"
-                      sublabel="Sell-side sweep with bullish reclaim"
-                      checked={activeSmcConfig.showSslSweeps}
-                      onChange={(v) => handleUpdateSmc({ showSslSweeps: v })}
-                    />
-                    <SmcToggleRow
-                      label="Bearish Sweeps (BSL)"
-                      sublabel="Buy-side sweep with bearish rejection"
-                      checked={activeSmcConfig.showBslSweeps}
-                      onChange={(v) => handleUpdateSmc({ showBslSweeps: v })}
+                      onChange={(v) => handleUpdateSmc({ showSweeps: v, showSslSweeps: v, showBslSweeps: v })}
                     />
                   </div>
                 </div>
@@ -1171,22 +1147,10 @@ export function ChartToolbar({
                       onChange={(v) => handleUpdateSmc({ showBearishOb: v })}
                     />
                     <SmcToggleRow
-                      label="Breaker Blocks (Master)"
+                      label="Breaker Blocks"
                       sublabel="Violated order blocks flipped into opposite role"
                       checked={activeSmcConfig.showBreakers}
-                      onChange={(v) => handleUpdateSmc({ showBreakers: v })}
-                    />
-                    <SmcToggleRow
-                      label="Bullish Breakers (+BRK Support)"
-                      sublabel="Failed supply OB converted to support"
-                      checked={activeSmcConfig.showBullishBreakers}
-                      onChange={(v) => handleUpdateSmc({ showBullishBreakers: v })}
-                    />
-                    <SmcToggleRow
-                      label="Bearish Breakers (-BRK Resistance)"
-                      sublabel="Failed demand OB converted to resistance"
-                      checked={activeSmcConfig.showBearishBreakers}
-                      onChange={(v) => handleUpdateSmc({ showBearishBreakers: v })}
+                      onChange={(v) => handleUpdateSmc({ showBreakers: v, showBullishBreakers: v, showBearishBreakers: v })}
                     />
                     <SmcToggleRow
                       label="Show Mitigated Blocks"
@@ -1216,16 +1180,10 @@ export function ChartToolbar({
                       onChange={(v) => handleUpdateSmc({ showBearishFvg: v })}
                     />
                     <SmcToggleRow
-                      label="Bullish Inverse FVG (+IFVG)"
-                      sublabel="Violated bearish FVG flipped to support"
-                      checked={activeSmcConfig.showBullishIfvg}
-                      onChange={(v) => handleUpdateSmc({ showBullishIfvg: v })}
-                    />
-                    <SmcToggleRow
-                      label="Bearish Inverse FVG (-IFVG)"
-                      sublabel="Violated bullish FVG flipped to resistance"
-                      checked={activeSmcConfig.showBearishIfvg}
-                      onChange={(v) => handleUpdateSmc({ showBearishIfvg: v })}
+                      label="Inverse FVG (IFVG)"
+                      sublabel="Violated FVGs flipped into support/resistance"
+                      checked={Boolean(activeSmcConfig.showBullishIfvg || activeSmcConfig.showBearishIfvg)}
+                      onChange={(v) => handleUpdateSmc({ showBullishIfvg: v, showBearishIfvg: v })}
                     />
                     <SmcToggleRow
                       label="Consequent Encroachment (50% CE)"

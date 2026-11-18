@@ -482,6 +482,12 @@ export function getStoredSmcConfig(): SmcConfig {
       // System decides Bullish vs. Bearish automatically from market structure & HTF bias
       showBullishSetups: true,
       showBearishSetups: true,
+      showBullishStructure: true,
+      showBearishStructure: true,
+      showSslSweeps: parsed.showSweeps ?? true,
+      showBslSweeps: parsed.showSweeps ?? true,
+      showBullishBreakers: parsed.showBreakers ?? true,
+      showBearishBreakers: parsed.showBreakers ?? true,
       showBullishConfluence: true,
       showBearishConfluence: true,
       // Suppress legacy unconstrained IFVG clutter on first upgrade to v2
