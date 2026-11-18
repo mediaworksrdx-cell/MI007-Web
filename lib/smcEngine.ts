@@ -457,12 +457,12 @@ export const DEFAULT_SMC_CONFIG: SmcConfig = {
   maxVisibleZones: 6,               // Production grade: max 6 active proximity zones
   filters: {
     requireDisplacement: true,
-    displacementAtrMultiple: 1.0,
+    displacementAtrMultiple: 0.5,   // Institutional standard: 0.5x ATR(14) displacement body
     requireVolumeExpansion: true,
     volumeSmaMultiple: 1.10,
     requireBreakDisplacement: false,
     requireBreakVolume: false,
-    obStructureLinkBars: 6,
+    obStructureLinkBars: 10,
   },
 };
 
@@ -479,6 +479,14 @@ export function getStoredSmcConfig(): SmcConfig {
     return {
       ...DEFAULT_SMC_CONFIG,
       ...parsed,
+      filters: {
+        ...DEFAULT_SMC_CONFIG.filters,
+        ...(parsed.filters || {}),
+        displacementAtrMultiple: parsed.filters?.displacementAtrMultiple && parsed.filters.displacementAtrMultiple < 1.0
+          ? parsed.filters.displacementAtrMultiple
+          : 0.5,
+        obStructureLinkBars: Math.max(10, parsed.filters?.obStructureLinkBars || 10),
+      },
       // System decides Bullish vs. Bearish automatically from market structure & HTF bias
       showBullishSetups: true,
       showBearishSetups: true,
@@ -805,8 +813,8 @@ export function detectStructureBreaks(
   const orderedSwings = [...swings].sort((a, b) => swingConfIdx(a) - swingConfIdx(b));
 
   for (let i = 0; i < candles.length; i++) {
-    // SMC-002: never generate structure on a forming candle
-    if (!isCandleClosed(candles[i], ivMs)) break;
+    // SMC-002: never generate structure on a forming candle (only break if the latest candle is forming)
+    if (i === candles.length - 1 && !isCandleClosed(candles[i], ivMs)) break;
     while (swingPtr < orderedSwings.length && swingConfIdx(orderedSwings[swingPtr]) <= i) {
       const sw = orderedSwings[swingPtr];
       if (sw.isHigh) {
@@ -1121,9 +1129,9 @@ export function detectOrderBlocksAndBreakers(
   if (candles.length < 5) return { orderBlocks, breakers };
 
   const reqDisp = options?.requireDisplacement ?? true;
-  const dispMult = options?.displacementAtrMultiple ?? 1.0;
+  const dispMult = options?.displacementAtrMultiple ?? 0.5;
   const volMult = options?.volumeSmaMultiple ?? 1.10;
-  const linkBars = Math.max(1, options?.obStructureLinkBars ?? 6);
+  const linkBars = Math.max(1, options?.obStructureLinkBars ?? 10);
   const reqVolSetting = options?.requireVolumeExpansion ?? true;
   const atr = computeAtrSeries(candles, 14);
 
@@ -1137,8 +1145,8 @@ export function detectOrderBlocksAndBreakers(
   const build = (i: number, isBull: boolean) => {
     const candle = candles[i];
     const next = candles[i + 1];
-    // SMC-002: the impulse candle must be closed
-    if (!isCandleClosed(next)) return;
+    // SMC-002: the impulse candle must be closed (only check forming bar for the latest candle)
+    if (i + 1 === candles.length - 1 && !isCandleClosed(next)) return;
     const isOpposing = isBull ? candle.close < candle.open : candle.close > candle.open;
     if (!isOpposing) return;
 
@@ -1849,9 +1857,9 @@ export function evaluateInstitutionalConfluence(
     } else if (bestMult >= 1.0 && bestBodyRatio >= 0.45) {
       dispScore = 8;
       dispReason = `Displacement: Validated impulse expansion (${bestMult.toFixed(1)}x ATR14) (+8/10)`;
-    } else if (bestMult >= 0.75) {
-      dispScore = 4;
-      dispReason = `Displacement: Moderate candle body (${bestMult.toFixed(1)}x ATR14) (+4/10)`;
+    } else if (bestMult >= 0.70) {
+      dispScore = 6;
+      dispReason = `Displacement: Moderate candle body (${bestMult.toFixed(1)}x ATR14) (+6/10)`;
       failedFactors.push(`Weak Displacement (${bestMult.toFixed(1)}x ATR)`);
     } else {
       failedFactors.push(`No Displacement (${bestMult.toFixed(1)}x ATR)`);
@@ -1911,8 +1919,8 @@ export function evaluateInstitutionalConfluence(
     failedFactors.push('Unconfirmed Target Liquidity');
   }
   if (volEstimated) {
-    volScore = targetLiqPts;
-    volReason = `Volume & Liquidity: Estimated volume (0/3) + Confirmed Target Pool (+${targetLiqPts}/2) (+${volScore}/5)`;
+    volScore = 2 + targetLiqPts;
+    volReason = `Volume & Liquidity: Estimated volume (2/3) + Confirmed Target Pool (+${targetLiqPts}/2) (+${volScore}/5)`;
     failedFactors.push('Unverified Exchange Volume');
   } else if (idx >= 10) {
     let vSum = 0;

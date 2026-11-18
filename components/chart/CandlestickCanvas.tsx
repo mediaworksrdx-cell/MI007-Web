@@ -1241,6 +1241,7 @@ export function CandlestickCanvas({
           chartType, showVolume, showVolumePanel,
           showSmcOverlay: smcConfig ? smcConfig.enabled : showSmcOverlay,
           smcConfig,
+          smcData: memoizedSmcData || undefined,
           targetSetupId: targetSetupIdRef.current || targetSetupId,
           targetSmcSetup: resolvedSmcSetup,
           showOrderFlow,
@@ -1272,7 +1273,7 @@ export function CandlestickCanvas({
         chartRafIdRef.current = null;
       }
     };
-  }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, smcConfig, showOrderFlow, orderFlowConfig, orderFlowData,
+  }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, smcConfig, memoizedSmcData, showOrderFlow, orderFlowConfig, orderFlowData,
       showQuantumAi, quantumAiConfig, quantumAiData, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
@@ -1720,9 +1721,7 @@ export function CandlestickCanvas({
     for (const ob of allBlocks) {
       if (ob.endIndex < startIdx || ob.startIndex > endIdx) continue;
       if (ob.isBreaker) {
-        if (smcConfig?.showBreakers === false && smcConfig?.showBullishBreakers === false && smcConfig?.showBearishBreakers === false) continue;
-        if (ob.isBullish && smcConfig?.showBullishBreakers === false) continue;
-        if (!ob.isBullish && smcConfig?.showBearishBreakers === false) continue;
+        if (smcConfig?.showBreakers === false) continue;
       } else {
         if (ob.isBullish && smcConfig?.showBullishOb === false) continue;
         if (!ob.isBullish && smcConfig?.showBearishOb === false) continue;
@@ -1813,10 +1812,9 @@ export function CandlestickCanvas({
 
     // 3. Structure Breaks (BOS / CHoCH)
     for (const sb of smc.structureBreaks) {
-      if (sb.isBullish && smcConfig?.showBullishStructure === false) continue;
-      if (!sb.isBullish && smcConfig?.showBearishStructure === false) continue;
       if (sb.breakType === 'BOS' && smcConfig?.showBos === false) continue;
       if (sb.breakType === 'CHoCH' && smcConfig?.showChoch === false) continue;
+      if (smcConfig?.showBos === false && smcConfig?.showChoch === false) continue;
 
       const lineY = priceToY(sb.price);
       if (Math.abs(y - lineY) <= 8 && x < chartW) {
@@ -1838,12 +1836,10 @@ export function CandlestickCanvas({
     }
 
     // 3.5. Liquidity Sweeps
-    const shouldCheckSweeps = (smcConfig?.showSweeps ?? true) || smcConfig?.showBslSweeps || smcConfig?.showSslSweeps;
+    const shouldCheckSweeps = smcConfig?.showSweeps !== false;
     if (shouldCheckSweeps && smc.sweeps) {
       for (const sw of smc.sweeps) {
         if (sw.candleIndex < startIdx || sw.candleIndex > endIdx) continue;
-        if (sw.isHighSweep && smcConfig?.showBslSweeps === false) continue;
-        if (!sw.isHighSweep && smcConfig?.showSslSweeps === false) continue;
 
         const li = sw.candleIndex - startIdx;
         const sweepX = li * candleW + candleW / 2;

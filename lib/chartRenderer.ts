@@ -1512,8 +1512,8 @@ export function renderChart(
           // In Institutional Clean Mode, discard ancient or extreme outlier zones far from active trading action
           const midP = (z.topPrice + z.bottomPrice) / 2;
           const distPct = Math.abs(midP - lastPrice) / Math.max(1, lastPrice);
-          if (distPct > 0.05) return false;
-          if (candles.length - 1 - z.startIndex > 45) return false;
+          if (distPct > 0.15) return false;
+          if (candles.length - 1 - z.startIndex > 90) return false;
           return true;
         })
         .slice()
@@ -1563,15 +1563,9 @@ export function renderChart(
     const supplyBlocks = [...unmitigatedSupply, ...mitigatedSupply];
 
     // Breaker Blocks (+BRK Support & -BRK Resistance)
-    const shouldCheckBreakers = smcCfg.showBreakers !== false && (smcCfg.showBreakers || smcCfg.showBullishBreakers || smcCfg.showBearishBreakers);
+    const shouldCheckBreakers = smcCfg.showBreakers !== false;
     const allCandidateBreakers = (shouldCheckBreakers ? smcData.breakers : []).filter((brk) => {
-      if (brk.isBullish) {
-        if (smcCfg.showBullishBreakers === false) return false;
-        if (!smcCfg.showBullishBreakers && !smcCfg.showBreakers) return false;
-      } else {
-        if (smcCfg.showBearishBreakers === false) return false;
-        if (!smcCfg.showBearishBreakers && !smcCfg.showBreakers) return false;
-      }
+      if (!smcCfg.showBreakers) return false;
       if (brk.isMitigated && !smcCfg.showMitigatedOb) return false;
       if (brk.startIndex > endIdx) return false;
       if (brk.isMitigated && brk.endIndex < startIdx) return false;
@@ -1857,8 +1851,6 @@ export function renderChart(
       if (isBos && smcCfg.showBos === false) return false;
       if (isChoch && smcCfg.showChoch === false) return false;
       if (!smcCfg.showBos && !smcCfg.showChoch) return false;
-      if (sb.isBullish && smcCfg.showBullishStructure === false) return false;
-      if (!sb.isBullish && smcCfg.showBearishStructure === false) return false;
 
       // Respect Major Structure Only / Internal Market Structure across all interface modes
       if ((smcCfg.showMajorStructureOnly ?? isCleanMode) && !smcCfg.showInternalStructure && sb.significance === 'MINOR') {
@@ -2096,16 +2088,10 @@ export function renderChart(
     }
 
     // 8. Liquidity Sweeps (SSL & BSL) — Aggregated Clusters & Collision-Safe
-    const shouldRenderSweeps = smcCfg.showSweeps !== false && ((smcCfg.showSweeps ?? true) || smcCfg.showBslSweeps || smcCfg.showSslSweeps);
+    const shouldRenderSweeps = smcCfg.showSweeps !== false && Boolean(smcCfg.showSweeps);
     if (shouldRenderSweeps && smcData.sweeps) {
       const visibleSweeps = smcData.sweeps.filter((sw) => {
-        if (sw.isHighSweep) {
-          if (smcCfg.showBslSweeps === false) return false;
-          if (!smcCfg.showBslSweeps && !smcCfg.showSweeps) return false;
-        } else {
-          if (smcCfg.showSslSweeps === false) return false;
-          if (!smcCfg.showSslSweeps && !smcCfg.showSweeps) return false;
-        }
+        if (!smcCfg.showSweeps) return false;
         // In Clean mode, only show recent sweeps within 25 bars
         if (isCleanMode && (lastBarIdx - sw.candleIndex > 25)) return false;
         return sw.candleIndex >= startIdx - 5 && sw.candleIndex <= endIdx;
