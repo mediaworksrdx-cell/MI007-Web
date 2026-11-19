@@ -1511,8 +1511,8 @@ export function renderChart(
     // 4. Order Blocks & Breakers (Demand, Supply, Breakers) — Dedicated Quota Pools & High Contrast
     const lastPrice = candles[candles.length - 1]?.close || (pMin + pMax) / 2;
     const isTargetedMode = Boolean(options.targetSetupId);
-    const baseQuota = isTargetedMode ? 1 : 10;
-    const mitigatedQuota = smcCfg.showMitigatedOb ? 10 : 0;
+    const baseQuota = isTargetedMode ? 1 : 3;
+    const mitigatedQuota = smcCfg.showMitigatedOb ? 2 : 0;
 
     const sortZonesByProximity = <T extends { topPrice: number; bottomPrice: number; startIndex: number; isMitigated?: boolean }>(zones: T[]): T[] => {
       return zones
@@ -2364,62 +2364,54 @@ export function renderChart(
           return (b.qualityScore ?? 0) - (a.qualityScore ?? 0);
         };
 
-        // Full-history SMC setups across ALL days & timeframes visible in current viewport (plus latest active setup)
-        const allCandidates = (smcData.allSetups && smcData.allSetups.length > 0 ? smcData.allSetups : (smcData.confirmedSetups || []))
-          .filter((s) =>
-            (s.qualityScore ?? 0) >= 60 &&
-            !s.isRejectedPermanently &&
-            s.setupType !== 'SESSION_LIQUIDITY' &&
-            s.signalState !== 'REJECTED' &&
-            ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence && isBullishMaster) ||
-             (s.direction === 'BEARISH' && smcCfg.showBearishConfluence && isBearishMaster))
-          );
-
-        // 1. Primary active live setup (not SL-violated)
         const activeBullish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBullishConfluence && isBullishMaster)
+          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBullishConfluence && isBullishMaster && (lastBarIdx - s.candleIndex <= 60))
           .sort(rankSetup)[0];
 
         const activeBearish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBearishConfluence && isBearishMaster)
+          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBearishConfluence && isBearishMaster && (lastBarIdx - s.candleIndex <= 60))
           .sort(rankSetup)[0];
 
-        const primaryActive: SmcConfirmedSetup | undefined =
-          activeBullish && activeBearish
-            ? (smcData.htfBias === 'BULLISH'
-                ? activeBullish
-                : smcData.htfBias === 'BEARISH'
-                ? activeBearish
-                : activeBullish.qualityScore >= activeBearish.qualityScore
-                ? activeBullish
-                : activeBearish)
-            : activeBullish || activeBearish;
-
-        if (primaryActive) {
-          setupsToRender.push(primaryActive);
-        }
-
-        // 2. Historical SMC setups across ALL past days overlapping the visible chart window
-        const histWindowStart = Math.max(0, startIdx - SMC_TRADE_LIFESPAN_BARS);
-        const historicalPool = allCandidates
-          .filter((s) =>
-            s.candleIndex >= histWindowStart &&
-            s.candleIndex <= endIdx &&
-            (!primaryActive || s.id !== primaryActive.id)
-          )
-          .sort((a, b) => b.candleIndex - a.candleIndex || (b.qualityScore ?? 0) - (a.qualityScore ?? 0));
-
-        const maxVisibleSetups = isCleanMode ? 3 : 16;
-        const minBarGap = isCleanMode ? 18 : Math.max(10, Math.floor((endIdx - startIdx) / 14));
-        for (const h of historicalPool) {
-          if (setupsToRender.length >= maxVisibleSetups) break;
-          const tooClose = setupsToRender.some((existing) => Math.abs(existing.candleIndex - h.candleIndex) < minBarGap);
-          if (!tooClose) {
-            setupsToRender.push(h);
+        if (activeBullish && activeBearish) {
+          // Strictly adhere to Higher-Timeframe Bias to eliminate conflicting simultaneous signals
+          if (smcData.htfBias === 'BULLISH') {
+            setupsToRender = [activeBullish];
+          } else if (smcData.htfBias === 'BEARISH') {
+            setupsToRender = [activeBearish];
+          } else if (activeBullish.qualityScore !== activeBearish.qualityScore) {
+            setupsToRender = [activeBullish.qualityScore > activeBearish.qualityScore ? activeBullish : activeBearish];
+          } else {
+            setupsToRender = [activeBullish.candleIndex >= activeBearish.candleIndex ? activeBullish : activeBearish];
+          }
+        } else if (activeBullish) {
+          if (smcData.htfBias !== 'BEARISH' || activeBullish.setupType === 'CHOCH_REVERSAL') {
+            setupsToRender = [activeBullish];
+          }
+        } else if (activeBearish) {
+          if (smcData.htfBias !== 'BULLISH' || activeBearish.setupType === 'CHOCH_REVERSAL') {
+            setupsToRender = [activeBearish];
           }
         }
-        // Render oldest-to-newest so the latest setup always sits cleanly on top
-        setupsToRender.sort((a, b) => a.candleIndex - b.candleIndex);
+
+        // If no currently open setup exists, show most recent valid/TARGET_HIT setup (never SL-violated dead setups)
+        if (setupsToRender.length === 0 && smcData.allSetups && smcData.allSetups.length > 0) {
+          const recentCompleted = smcData.allSetups
+            .filter((s) =>
+              (s.status === 'TARGET_HIT' || (!isSlViolatedByPrice(s) && (s.status === 'CONFIRMED' || s.status === 'RETESTING'))) &&
+              (s.qualityScore ?? 0) >= 60 &&
+              !s.isRejectedPermanently &&
+              !s.retestFailed &&
+              s.signalState !== 'INVALIDATED' &&
+              s.signalState !== 'RETEST_FAILED' &&
+              (lastBarIdx - s.candleIndex <= 80) &&
+              ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence && isBullishMaster) ||
+               (s.direction === 'BEARISH' && smcCfg.showBearishConfluence && isBearishMaster))
+            )
+            .sort((a, b) => b.candleIndex - a.candleIndex)[0];
+          if (recentCompleted) {
+            setupsToRender = [recentCompleted];
+          }
+        }
       }
 
       for (const st of setupsToRender) {
