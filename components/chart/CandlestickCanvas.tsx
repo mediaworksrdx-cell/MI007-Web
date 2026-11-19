@@ -40,6 +40,7 @@ interface CandlestickCanvasProps {
   showMagnifier?: boolean;
   onToggleMagnifier?: () => void;
   targetCandleTime?: number;
+  goToRange?: { fromMs: number; toMs: number; reset?: boolean; nonce: number } | null;
   targetSetupId?: string;
   targetSmcSetup?: any;
   className?: string;
@@ -168,7 +169,7 @@ export function CandlestickCanvas({
   showMi007 = false, mi007Config, mi007Data,
   showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
-  currentPriceOverride, timeframe, isMarketOpen = true, symbol, showMagnifier = false, onToggleMagnifier, targetCandleTime, targetSetupId, targetSmcSetup, className = '',
+  currentPriceOverride, timeframe, isMarketOpen = true, symbol, showMagnifier = false, onToggleMagnifier, targetCandleTime, goToRange, targetSetupId, targetSmcSetup, className = '',
   activeDrawingTool = 'NONE',
   cursorMode = 'crosshair',
   drawings = [],
@@ -558,6 +559,61 @@ export function CandlestickCanvas({
     }, 4000);
     return () => clearTimeout(timer);
   }, [alignmentWarning]);
+
+  // Go to Date/Time Range navigation
+  const lastGoToNonceRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!goToRange || cleanCandles.length === 0) return;
+    if (lastGoToNonceRef.current === goToRange.nonce) return;
+    lastGoToNonceRef.current = goToRange.nonce;
+
+    if (goToRange.reset) {
+      setZoom(1);
+      setScrollOffset(0);
+      setPriceOffset(0);
+      setPriceScaleRatio(1);
+      return;
+    }
+
+    const { fromMs, toMs } = goToRange;
+    let fromIdx = cleanCandles.findIndex((c) => c.openTime >= fromMs);
+    if (fromIdx === -1) fromIdx = cleanCandles.length - 1;
+
+    let toIdx = -1;
+    for (let i = cleanCandles.length - 1; i >= 0; i--) {
+      if (cleanCandles[i].openTime <= toMs) {
+        toIdx = i;
+        break;
+      }
+    }
+    if (toIdx === -1) toIdx = 0;
+    if (toIdx < fromIdx) {
+      let nearest = 0;
+      let minDiff = Math.abs(cleanCandles[0].openTime - fromMs);
+      for (let i = 1; i < cleanCandles.length; i++) {
+        const diff = Math.abs(cleanCandles[i].openTime - fromMs);
+        if (diff < minDiff) {
+          minDiff = diff;
+          nearest = i;
+        }
+      }
+      fromIdx = Math.max(0, nearest - 8);
+      toIdx = Math.min(cleanCandles.length - 1, nearest + 8);
+    }
+
+    const spanBars = Math.max(8, toIdx - fromIdx + 1);
+    const desiredVisible = Math.max(12, spanBars + 4);
+    const targetZoom = Math.max(0.15, Math.min(8, baseVisible / desiredVisible));
+    const actualVisible = Math.max(8, Math.round(baseVisible / targetZoom));
+    const centerIdx = (fromIdx + toIdx) / 2;
+    const targetEndIdx = centerIdx + actualVisible / 2;
+    const targetScroll = cleanCandles.length + RIGHT_BUFFER_BARS - targetEndIdx;
+
+    setZoom(targetZoom);
+    setScrollOffset(Math.max(minScrollOffset, Math.min(maxScrollOffset, targetScroll)));
+    setPriceOffset(0);
+    setPriceScaleRatio(1);
+  }, [goToRange, cleanCandles, baseVisible, minScrollOffset, maxScrollOffset]);
 
   // Helper to map mouse coordinate to price and candle with Smart Magnet & Axis Scale support
   const getPointFromEvent = useCallback((clientX: number, clientY: number, snapMagnet = true) => {

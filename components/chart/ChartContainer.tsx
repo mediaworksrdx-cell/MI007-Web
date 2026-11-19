@@ -374,6 +374,14 @@ export function ChartContainer({
     }
     return undefined;
   });
+  const [goToRange, setGoToRange] = useState<{ fromMs: number; toMs: number; reset?: boolean; nonce: number } | null>(null);
+  const handleGoToRange = useCallback((range: { fromMs: number; toMs: number; reset?: boolean } | null) => {
+    if (!range) {
+      setGoToRange(null);
+      return;
+    }
+    setGoToRange({ ...range, nonce: Date.now() });
+  }, []);
   const [targetSetupId, setTargetSetupId] = useState<string | undefined>(initialSetupId);
   const [targetSmcSetup, setTargetSmcSetup] = useState<any | undefined>(() => {
     if (initialEntry && initialSl && initialTp && initialDir) {
@@ -1969,6 +1977,8 @@ export function ChartContainer({
         snapshotStatus={snapshotStatus}
         isFullscreen={isFullscreen}
         onToggleFullscreen={handleToggleFullscreen}
+        candleRangeMs={candles.length > 0 ? { minMs: candles[0].openTime, maxMs: candles[candles.length - 1].openTime } : null}
+        onGoToRange={handleGoToRange}
         onTimeframeChange={setTimeframe}
         onChartTypeChange={setChartType}
         onToggleVolume={() => setShowVolume(v => !v)}
@@ -2060,6 +2070,7 @@ export function ChartContainer({
             showMagnifier={isMagnifierActive}
             onToggleMagnifier={handleToggleMagnifier}
             targetCandleTime={targetCandleTime}
+            goToRange={goToRange}
             targetSetupId={targetSetupId}
             targetSmcSetup={targetSmcSetup}
             activeDrawingTool={activeDrawingTool}
