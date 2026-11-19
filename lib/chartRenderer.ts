@@ -1406,7 +1406,7 @@ export function renderChart(
       // Density control: institutional pivot spacing
       const minBarSpacing = isCleanMode ? 14 : (candleW < 8 * dpr ? 8 : candleW < 14 * dpr ? 6 : 4);
       const minPixelSpacing = isCleanMode ? 85 * dpr : 45 * dpr;
-      const maxSwingsAllowed = isCleanMode ? 6 : 10;
+      const maxSwingsAllowed = isCleanMode ? 6 : 14;
 
       if (visibleSwings.length > maxSwingsAllowed) {
         // Keep the most recent key swings in the viewport
@@ -1868,8 +1868,8 @@ export function renderChart(
       return true;
     });
 
-    // Balanced structure break density: clean mode up to 4, advanced/analysis up to 8
-    const maxBreaks = isCleanMode ? 4 : 8;
+    // Display major structure breaks across the viewport: clean mode up to 8, advanced/analysis up to 20
+    const maxBreaks = isCleanMode ? 8 : 20;
     const breaksToRender = inWindowBreaks.slice(-maxBreaks);
 
     for (let sbi = 0; sbi < breaksToRender.length; sbi++) {
@@ -1937,12 +1937,8 @@ export function renderChart(
           y: badgeY,
           w: tw,
           h: th,
-          priority: isLatestBreak ? 78 : (isChoch ? 68 : 48),
+          priority: isChoch ? 75 : 50,
         });
-        if (!placement.placed && !isLatestBreak) {
-          ctx.restore();
-          continue;
-        }
         if (placement.placed) {
           badgeY = placement.y;
         }
@@ -2093,7 +2089,7 @@ export function renderChart(
 
       // Cluster adjacent sweeps to eliminate stacked repeated badges
       const aggregatedSweeps = sam.aggregateSweeps(visibleSweeps, 4);
-      const maxSweeps = isCleanMode ? 2 : 5;
+      const maxSweeps = isCleanMode ? 2 : 8;
       const sweepsToRender = aggregatedSweeps.slice(-maxSweeps);
 
       for (const sw of sweepsToRender) {
@@ -2567,67 +2563,188 @@ export function renderChart(
         ctx.lineTo(x + boxW, yEntry);
         ctx.stroke();
 
-        // 3b. Subtle Validating Structural Break Line (line only — avoids duplicating Section 6's BOS/CHoCH badge)
-        if (!smcCfg.showBos && st.validatingBreak && st.validatingBreak.swingIndex !== undefined && st.validatingBreak.price > 0) {
+        // 3b. Validating Structural Break Line (Confirmed Swing -> Break Candle)
+        if (st.validatingBreak && st.validatingBreak.swingIndex !== undefined && st.validatingBreak.price > 0) {
           const vb = st.validatingBreak;
           const yVb = Math.max(12 * dpr, Math.min(chartH - 12 * dpr, priceToY(vb.price)));
           const xSw = Math.max(4 * dpr, Math.min(maxRightX, (vb.swingIndex! - startIdx) * candleW + candleW / 2));
           const xBrk = Math.max(4 * dpr, Math.min(maxRightX, (vb.candleIndex - startIdx) * candleW + candleW / 2));
           if (xBrk > xSw) {
+            const vbColor = isBull ? '#059669' : '#DC2626';
             ctx.save();
             ctx.setLineDash([4 * dpr, 2 * dpr]);
-            ctx.strokeStyle = isBull ? 'rgba(5, 150, 105, 0.65)' : 'rgba(220, 38, 38, 0.65)';
-            ctx.lineWidth = 1 * dpr;
+            ctx.strokeStyle = vbColor;
+            ctx.lineWidth = 1.3 * dpr;
             ctx.beginPath();
             ctx.moveTo(xSw, yVb);
             ctx.lineTo(xBrk, yVb);
+            ctx.moveTo(xSw, yVb - 3.5 * dpr);
+            ctx.lineTo(xSw, yVb + 3.5 * dpr);
+            ctx.moveTo(xBrk, yVb - 3.5 * dpr);
+            ctx.lineTo(xBrk, yVb + 3.5 * dpr);
             ctx.stroke();
             ctx.setLineDash([]);
+
+            const vbLabel = `${vb.breakType} ${isBull ? '↑' : '↓'} (${isBull ? 'Swing High' : 'Swing Low'}: ${formatPrice(vb.price, options.symbol)})`;
+            ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+            const vbTm = ctx.measureText(vbLabel);
+            const vbW = vbTm.width + 8 * dpr;
+            const vbH = 12 * dpr;
+            const vbMidX = Math.max(8 * dpr, Math.min(maxRightX - vbW, (xSw + xBrk) / 2 - vbW / 2));
+            const vbBoxY = isBull ? yVb - vbH - 3 * dpr : yVb + 3 * dpr;
+            ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.90)' : 'rgba(220, 38, 38, 0.90)';
+            ctx.fillRect(vbMidX, vbBoxY, vbW, vbH);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(vbLabel, vbMidX + 4 * dpr, vbBoxY + vbH / 2);
             ctx.restore();
           }
         }
 
-        // 4. Compute compact, non-overlapping Trade Setup Badges (Header, SL, Entry, TP1, TP2)
-        //    All full audit details remain available in the interactive hover inspector card.
-        const actualRiskDist = Math.max(1e-9, Math.abs(st.entryPrice - st.stopLoss));
-        const riskPct = ((actualRiskDist / Math.max(1e-9, st.entryPrice)) * 100).toFixed(2);
-        const tp1Rr = (Math.abs(st.targetPrice - st.entryPrice) / actualRiskDist).toFixed(1);
+        // 4. TP1 & TP2 Extension Lines & Clamped Badges (Always visible inside [20*dpr, chartH - 20*dpr])
+        let finalTpY = Math.max(22 * dpr, Math.min(chartH - 22 * dpr, yTP));
+        let finalTp2Y = (st.targetPrice2 && st.targetPrice2 > 0)
+          ? Math.max(8 * dpr, Math.min(chartH - 8 * dpr, priceToY(st.targetPrice2)))
+          : -999;
         const hasTp2 = st.targetPrice2 !== undefined && st.targetPrice2 > 0 && Math.abs(st.targetPrice2 - st.targetPrice) > 1e-6;
-        const tp2Rr = hasTp2 ? (Math.abs(st.targetPrice2! - st.entryPrice) / actualRiskDist).toFixed(1) : '';
 
         if (hasTp2) {
+          // Guarantee vertical separation between TP1 and TP2 badges (at least 16 * dpr)
+          if (Math.abs(finalTp2Y - finalTpY) < 16 * dpr) {
+            if (isBull) {
+              finalTp2Y = Math.max(8 * dpr, finalTpY - 16 * dpr);
+              if (Math.abs(finalTp2Y - finalTpY) < 14 * dpr) {
+                finalTpY = Math.min(chartH - 22 * dpr, finalTp2Y + 16 * dpr);
+              }
+            } else {
+              finalTp2Y = Math.min(chartH - 8 * dpr, finalTpY + 16 * dpr);
+              if (Math.abs(finalTp2Y - finalTpY) < 14 * dpr) {
+                finalTpY = Math.max(22 * dpr, finalTp2Y - 16 * dpr);
+              }
+            }
+          }
+
           const trueTp2Y = priceToY(st.targetPrice2!);
           if (trueTp2Y >= 0 && trueTp2Y <= chartH) {
             ctx.setLineDash([3 * dpr, 3 * dpr]);
-            ctx.strokeStyle = 'rgba(5, 150, 105, 0.65)';
+            ctx.strokeStyle = 'rgba(5, 150, 105, 0.75)';
             ctx.lineWidth = 1 * dpr;
             ctx.beginPath();
             ctx.moveTo(x, trueTp2Y);
             ctx.lineTo(x + boxW, trueTp2Y);
+            if (Math.abs(finalTp2Y - trueTp2Y) >= 2 * dpr) {
+              ctx.moveTo(x + boxW, trueTp2Y);
+              ctx.lineTo(x + boxW, finalTp2Y);
+            }
             ctx.stroke();
             ctx.setLineDash([]);
           }
+
+          // TP2 Badge (Right edge of bracket – structural liquidity target & exact R:R from Entry/SL)
+          const actualRiskDist2 = Math.max(1e-9, Math.abs(st.entryPrice - st.stopLoss));
+          const tp2Rr = (Math.abs(st.targetPrice2! - st.entryPrice) / actualRiskDist2).toFixed(1);
+          const tp2Src = st.tp2Source ? ` • ${st.tp2Source}` : '';
+          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          const tp2Text = `TP2 (1:${tp2Rr}${tp2Src}): ${formatPrice(st.targetPrice2!, options.symbol)}`;
+          const tp2Tm = ctx.measureText(tp2Text);
+          ctx.fillStyle = 'rgba(5, 150, 105, 0.92)';
+          ctx.fillRect(x + boxW - tp2Tm.width - 6 * dpr, finalTp2Y - 6 * dpr, tp2Tm.width + 6 * dpr, 12 * dpr);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(tp2Text, x + boxW - 3 * dpr, finalTp2Y);
         }
 
-        // Derive concise, non-repeating status label
+        // 5. Distinct Non-Overlapping Price Badges (Entry + Basis, SL + Risk %, TP1, TP2, Signal Status)
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+
+        // TP1 Badge (Target 1 – structural liquidity target & exact R:R from Entry/SL)
+        const actualRiskDist1 = Math.max(1e-9, Math.abs(st.entryPrice - st.stopLoss));
+        const tp1Rr = (Math.abs(st.targetPrice - st.entryPrice) / actualRiskDist1).toFixed(1);
+        const tp1Src = st.tp1Source ? ` • ${st.tp1Source}` : '';
+        const tpText = `TP1 (1:${tp1Rr}${tp1Src}): ${formatPrice(st.targetPrice, options.symbol)}`;
+        const tpTm = ctx.measureText(tpText);
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.92)';
+        ctx.fillRect(x + boxW - tpTm.width - 8 * dpr, finalTpY - 7 * dpr, tpTm.width + 8 * dpr, 14 * dpr);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(tpText, x + boxW - 4 * dpr, finalTpY);
+
+        // SL Badge (Right edge of bracket, displaying exact SL price, structural invalidation basis, risk/u, risk %, and 1%-risk position size)
+        const riskPerUnit = Math.abs(st.entryPrice - st.stopLoss);
+        const riskPct = ((riskPerUnit / Math.max(1e-9, st.entryPrice)) * 100).toFixed(2);
+        const posSizeUnits = (1000 / Math.max(1e-9, riskPerUnit)).toFixed(1);
+        const slBasis = st.invalidationBasis ? `${st.invalidationBasis} • ` : '';
+        const slText = `SL: ${formatPrice(st.stopLoss, options.symbol)} (${slBasis}Risk/u: ${formatPrice(riskPerUnit, options.symbol)} • ${riskPct}% • Qty: ${posSizeUnits}u)`;
+        const slTm = ctx.measureText(slText);
+        let slOffset = 0;
+        if (Math.abs(ySL - yEntry) < 18 * dpr) {
+          slOffset += isBull ? 10 * dpr : -10 * dpr;
+        }
+        if (yCur > 0 && Math.abs((ySL + slOffset) - yCur) < 14 * dpr) {
+          slOffset += isBull ? 12 * dpr : -12 * dpr;
+        }
+        const finalSlY = Math.max(8 * dpr, Math.min(chartH - 8 * dpr, ySL + slOffset));
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.92)';
+        ctx.fillRect(x + boxW - slTm.width - 8 * dpr, finalSlY - 7 * dpr, slTm.width + 8 * dpr, 14 * dpr);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(slText, x + boxW - 4 * dpr, finalSlY);
+
+        // Entry Badge: Distinguishes Provisional Entry (before confirmation) vs Locked Entry (once ENTRY_READY / REJECTION_CONFIRMED)
+        const verTag = st.setupVersion && st.setupVersion > 1 ? ` • v${st.setupVersion}` : '';
+        const entryBasisTag = st.entryBasis ? ` (${st.entryBasis}${verTag})` : verTag ? ` (${verTag.slice(3)})` : '';
+        const entryPrefix = st.isEntryLocked ? 'Locked Entry' : 'Provisional Entry';
+        const entryText = `${entryPrefix}${entryBasisTag}: ${formatPrice(st.entryPrice, options.symbol)}`;
+        const entryTm = ctx.measureText(entryText);
+        const entryBadgeW = entryTm.width + 8 * dpr;
+        const entryBadgeH = 14 * dpr;
+        let entryBadgeY = yEntry - entryBadgeH / 2;
+        if (yCur > 0 && Math.abs(yEntry - yCur) < 14 * dpr) {
+          entryBadgeY += isBull ? -10 * dpr : 10 * dpr;
+        }
+        entryBadgeY = Math.max(4 * dpr, Math.min(chartH - entryBadgeH - 4 * dpr, entryBadgeY));
+        const entryBadgeX = boxW < 170 * dpr
+          ? Math.max(4 * dpr, x - entryBadgeW - 4 * dpr)
+          : x + 4 * dpr;
+
+        ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.94)' : 'rgba(241, 245, 249, 0.94)';
+        ctx.fillRect(entryBadgeX, entryBadgeY, entryBadgeW, entryBadgeH);
+        ctx.strokeStyle = isDark ? '#64748B' : '#94A3B8';
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeRect(entryBadgeX, entryBadgeY, entryBadgeW, entryBadgeH);
+        ctx.fillStyle = isDark ? '#E2E8F0' : '#334155';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(entryText, entryBadgeX + 4 * dpr, entryBadgeY + entryBadgeH / 2);
+
+        // 6. Advanced SMC Header Signal Pill (Direction + Setup + Actual R:R + Setup Quality Score)
         const shortName = st.name
           .replace(/ \(Bullish\)| \(Bearish\)|Bullish |Bearish /g, '')
-          .replace('Inverse Fair Value Gap (IFVG) Resistance', 'IFVG Resistance')
-          .replace('Inverse Fair Value Gap (IFVG) Support', 'IFVG Support')
           .replace('Breaker Block Role Reversal', 'Breaker')
           .replace('Supply Order Block Retest', 'Supply OB')
           .replace('Demand Order Block Retest', 'Demand OB')
-          .replace('BOS Trend Continuation', 'BOS Cont.')
+          .replace('BOS Trend Continuation', 'BOS Continuation')
           .replace('Trend Continuation', 'BOS')
-          .replace('CHoCH Structural Reversal', 'CHoCH Rev.')
-          .replace('MSS Structural Reversal', 'MSS Rev.')
+          .replace('CHoCH Structural Reversal', 'CHoCH Reversal')
+          .replace('MSS Structural Reversal', 'MSS Reversal')
           .replace('Structural Reversal', 'CHoCH')
           .replace('Multi-Timeframe SMC Alignment', 'MTF')
           .replace('50% CE Retracement', 'FVG CE')
           .replace('Dealing Range ', '')
           .replace('Liquidity Pool ', '')
           .replace('Power of Three ', '');
-
+        const rrLabel = `1:${tp1Rr}`;
+        const bosLabel = st.validatingBreak
+          ? ` • ${st.validatingBreak.breakType} @ ${formatPrice(st.validatingBreak.price, options.symbol)}`
+          : '';
+        const tierText = (st.actionTier || (st.qualityScore && st.qualityScore < 70 ? 'REJECT' : 'CONDITIONAL_SETUP')).replace(/_/g, ' ');
+        const scoreLabel = st.qualityScore ? ` • Quality ${Math.round(st.qualityScore)}/100 (${tierText})` : '';
+        // Separate RETEST TOUCHED, RETEST FAILED, REJECTION CONFIRMED, and ENTRY READY into independent states;
+        // if live price has recovered above short entry (or dropped below long entry / BOS), rejection is not holding.
         const isBreakSetup = st.setupType === 'BOS_CONTINUATION' || st.setupType === 'CHOCH_REVERSAL';
         const bosHoldRef = isBreakSetup && st.validatingBreak
           ? (isBull ? Math.max(st.entryPrice, st.validatingBreak.price) : Math.min(st.entryPrice, st.validatingBreak.price))
@@ -2647,141 +2764,43 @@ export function renderChart(
             : (st.signalState === 'RETEST_CONFIRMED' || st.signalState === 'REJECTION_CONFIRMED' || st.signalState === 'ENTRY_READY')
             ? 'CONDITIONAL_SETUP'
             : (st.signalState || 'CONDITIONAL_SETUP');
-        const rawStatus = isTradeOver && st.confirmedOrderFill ? tradeOutcome : effectiveSignalState;
-        const compactStatus =
+        const rawStatus =
+          isTradeOver && st.confirmedOrderFill
+            ? tradeOutcome
+            : effectiveSignalState;
+        const statusLabel =
           rawStatus === 'RETEST_FAILED'
-            ? 'RETEST FAILED'
+            ? 'RETEST FAILED • DO NOT EXECUTE'
             : rawStatus === 'RETEST_BELOW_BOS'
-            ? (isBull ? 'BELOW BOS • WAIT' : 'ABOVE BOS • WAIT')
+            ? (isBull ? 'BELOW BOS • RECLAIM & REJECTION REQUIRED (DO NOT EXECUTE)' : 'ABOVE BOS • RECLAIM & REJECTION REQUIRED (DO NOT EXECUTE)')
             : rawStatus === 'RETEST_TOUCHED'
-            ? 'RETEST • WAIT REJ.'
+            ? 'RETEST TOUCHED • AWAITING REJECTION (DO NOT EXECUTE)'
             : rawStatus === 'CONDITIONAL_SETUP'
-            ? 'WAIT PULLBACK'
-            : rawStatus === 'ENTRY_READY'
-            ? 'ENTRY READY'
+            ? 'CONDITIONAL SETUP • AWAITING RETEST (DO NOT EXECUTE)'
             : rawStatus.replace(/_/g, ' ');
+        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName}${bosLabel} (${rrLabel}${scoreLabel}) [${statusLabel}]`;
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+        const tm = ctx.measureText(headerTag);
+        const tw = tm.width + 10 * dpr;
+        const th = 14 * dpr;
 
-        const scorePart = st.qualityScore ? ` • Q${Math.round(st.qualityScore)}` : '';
-        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'} • ${shortName}${scorePart} • 1:${tp1Rr} • ${compactStatus}`;
-        const waitingForPullback = !st.isEntryLocked && (curPrice > 0 ? (isBull ? curPrice > st.entryPrice : curPrice < st.entryPrice) : true);
-        const entryText = waitingForPullback
-          ? `${isBull ? 'LONG' : 'SHORT'} ENTRY (PULLBACK): ${formatPrice(st.entryPrice, options.symbol)}`
-          : `${isBull ? 'LONG' : 'SHORT'} ENTRY: ${formatPrice(st.entryPrice, options.symbol)}`;
-        const slText = `SL: ${formatPrice(st.stopLoss, options.symbol)} (-${riskPct}%)`;
-        const tp1Text = `TP1: ${formatPrice(st.targetPrice, options.symbol)} (1:${tp1Rr})`;
-        const tp2Text = hasTp2 ? `TP2: ${formatPrice(st.targetPrice2!, options.symbol)} (1:${tp2Rr})` : '';
+        const topMostBadgeY = Math.min(finalTpY, hasTp2 ? finalTp2Y : finalTpY, finalSlY);
+        const botMostBadgeY = Math.max(finalTpY, hasTp2 ? finalTp2Y : finalTpY, finalSlY);
+        const badgeY = topMostBadgeY > th + 20 * dpr
+          ? topMostBadgeY - th - 6 * dpr
+          : Math.min(chartH - th - 4 * dpr, botMostBadgeY + 12 * dpr);
+        const badgeX = Math.max(8 * dpr, Math.min(chartW - tw - 70 * dpr, x + boxW - tw));
 
-        // Vertical non-overlapping badge stacker clamped strictly above volume histogram
-        const minYBound = 16 * dpr;
-        const maxYBound = chartH - 28 * dpr;
-        const badgeH = 14 * dpr;
-        const minGap = 17 * dpr;
+        ctx.fillStyle = isBull ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)';
+        ctx.fillRect(badgeX, badgeY, tw, th);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeRect(badgeX, badgeY, tw, th);
 
-        interface SetupBadgeItem {
-          id: 'header' | 'sl' | 'entry' | 'tp1' | 'tp2';
-          y: number;
-          text: string;
-          bg: string;
-          fg: string;
-          border?: string;
-        }
-
-        const clampY = (val: number) => Math.max(minYBound, Math.min(maxYBound, val));
-        const rawTopY = Math.min(clampY(ySL), clampY(yEntry), clampY(yTP));
-        const headerTargetY = rawTopY > minYBound + minGap + 4 * dpr ? rawTopY - minGap - 4 * dpr : minYBound;
-
-        const badgeItems: SetupBadgeItem[] = [
-          {
-            id: 'header',
-            y: headerTargetY,
-            text: headerTag,
-            bg: isBull ? 'rgba(5, 150, 105, 0.96)' : 'rgba(220, 38, 38, 0.96)',
-            fg: '#FFFFFF',
-            border: '#FFFFFF',
-          },
-          {
-            id: 'sl',
-            y: clampY(ySL),
-            text: slText,
-            bg: 'rgba(244, 63, 94, 0.92)',
-            fg: '#FFFFFF',
-          },
-          {
-            id: 'entry',
-            y: clampY(yEntry),
-            text: entryText,
-            bg: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(241, 245, 249, 0.95)',
-            fg: isDark ? '#E2E8F0' : '#0F172A',
-            border: isBull ? '#059669' : '#DC2626',
-          },
-          {
-            id: 'tp1',
-            y: clampY(yTP),
-            text: tp1Text,
-            bg: 'rgba(16, 185, 129, 0.92)',
-            fg: '#FFFFFF',
-          },
-        ];
-
-        if (hasTp2) {
-          badgeItems.push({
-            id: 'tp2',
-            y: clampY(priceToY(st.targetPrice2!)),
-            text: tp2Text,
-            bg: 'rgba(5, 150, 105, 0.92)',
-            fg: '#FFFFFF',
-          });
-        }
-
-        // Sort top-to-bottom and resolve any vertical collisions cleanly
-        badgeItems.sort((a, b) => a.y - b.y);
-        for (let bi = 1; bi < badgeItems.length; bi++) {
-          if (badgeItems[bi].y - badgeItems[bi - 1].y < minGap) {
-            badgeItems[bi].y = badgeItems[bi - 1].y + minGap;
-          }
-        }
-        // Push back up from bottom bound if needed while preserving separation
-        if (badgeItems[badgeItems.length - 1].y > maxYBound) {
-          badgeItems[badgeItems.length - 1].y = maxYBound;
-          for (let bi = badgeItems.length - 2; bi >= 0; bi--) {
-            if (badgeItems[bi + 1].y - badgeItems[bi].y < minGap) {
-              badgeItems[bi].y = Math.max(minYBound, badgeItems[bi + 1].y - minGap);
-            }
-          }
-        }
-
-        // Draw right-aligned non-overlapping badges with subtle anchor dots on the bracket edge
-        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-        const rightAnchorX = Math.min(chartW - 6 * dpr, x + boxW);
-        for (const item of badgeItems) {
-          const itemTm = ctx.measureText(item.text);
-          const itemW = itemTm.width + 10 * dpr;
-          const itemX = Math.max(8 * dpr, Math.min(chartW - itemW - 6 * dpr, rightAnchorX - itemW));
-          const itemTopY = item.y - badgeH / 2;
-
-          ctx.fillStyle = item.bg;
-          ctx.fillRect(itemX, itemTopY, itemW, badgeH);
-          if (item.border) {
-            ctx.strokeStyle = item.border;
-            ctx.lineWidth = 0.9 * dpr;
-            ctx.strokeRect(itemX, itemTopY, itemW, badgeH);
-          }
-
-          ctx.fillStyle = item.fg;
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(item.text, itemX + 5 * dpr, item.y);
-
-          if (enableCollisionControl) {
-            sam.tryPlaceLabel({
-              x: itemX,
-              y: itemTopY,
-              w: itemW,
-              h: badgeH,
-              priority: item.id === 'header' ? 98 : 92,
-            });
-          }
-        }
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(headerTag, badgeX + 5 * dpr, badgeY + th / 2);
         ctx.restore();
       }
     }
