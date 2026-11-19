@@ -54,7 +54,8 @@ export function detectVolumeQuality(candles: Candle[]): VolumeQuality {
     }
     if (typeof c.volume === 'number' && Number.isFinite(c.volume) && c.volume > 0) {
       positive++;
-      uniqueVols.add(Math.round(c.volume));
+      // Preserve fractional precision for crypto (e.g. 0.528 BTC) so small volumes don't collapse to 0/1
+      uniqueVols.add(Number(c.volume.toFixed(4)));
     }
   }
   const positiveRatio = positive / candles.length;

@@ -157,10 +157,10 @@ function computeVolumeProfiles(
   symbol?: string
 ): Mi007VolumeProfile {
   const n = closedCandles.length;
-  const volumeQuality = detectSharedVolumeQuality(closedCandles);
-
   // 1. Fixed Range Profile (40 bins matching Chart VPVR over last 150 closed bars)
   const frStart = Math.max(0, n - 150);
+  // Evaluate volume quality strictly on the exact profile slice (so ancient Yahoo gaps don't kill live VP)
+  const volumeQuality = detectSharedVolumeQuality(closedCandles.slice(frStart));
   const { summary: fixedRange, bins } = buildRangeProfile(closedCandles, frStart, n - 1, 40);
 
   if (volumeQuality !== 'ACTUAL' || fixedRange.totalVolume <= 0) {
