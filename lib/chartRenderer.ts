@@ -2524,14 +2524,11 @@ export function renderChart(
         // Lock bracket start strictly at the setup/breakout candle (st.candleIndex)
         const bracketStartIdx = st.candleIndex;
         const startX = (bracketStartIdx - startIdx) * candleW + candleW / 2;
-        const rawEndX = (endCandleIdx - startIdx) * candleW + candleW / 2;
-        // Completed historical setups terminate cleanly at their TP/SL/expiry candle; active setups expand dynamically
-        const endX = isTradeOver
-          ? rawEndX
-          : Math.max(rawEndX, currentCandleX + candleW * 0.5);
-
-        // Skip setups completely outside the visible viewport
-        if (endX < 0 || startX > chartW) continue;
+        // Dynamic horizontal bracket expansion: extend cleanly to the latest live candle
+        const endX = Math.max(
+          (endCandleIdx - startIdx) * candleW + candleW / 2,
+          currentCandleX + candleW * 0.5
+        );
 
         const minBracketW = Math.max(36 * dpr, candleW * 2);
         const x = Math.max(8 * dpr, Math.min(startX, maxRightX - minBracketW));
@@ -2550,9 +2547,9 @@ export function renderChart(
         const yCur = curPrice > 0 ? priceToY(curPrice) : -999;
 
         ctx.save();
-        // Keep active setups at full 100% opacity; only soften completed historical trades
-        if (isTradeOver && enableHistoricalFading && (lastBarIdx - st.candleIndex > 6)) {
-          ctx.globalAlpha = 0.70;
+        // Keep live/open setups at full 100% opacity; only soften setups that actually hit SL or TP2
+        if ((tradeOutcome === 'SL HIT' || tradeOutcome === 'TP2 HIT') && enableHistoricalFading) {
+          ctx.globalAlpha = 0.75;
         }
 
         // 1. Take Profit (Reward) Zone (Entry to TP1) — Subtle green shaded region (clamped to viewport)
