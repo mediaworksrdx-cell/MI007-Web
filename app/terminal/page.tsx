@@ -1,5 +1,7 @@
 'use client';
 
+import { SmcAlertsTabView } from '@/components/alerts/SmcAlertsTabView';
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -905,8 +907,8 @@ export default function TerminalPage() {
   const { market, setMarket, currency } = useMarket();
   const { getSymbolPrice } = useTradeEngine();
 
-  // Active terminal module tab: 'all' (Full Dashboard) | 'commodities' | 'forex' | 'crypto' | 'charts'
-  const [activeTab, setActiveTab] = useState<'all' | 'commodities' | 'forex' | 'crypto' | 'charts'>('all');
+  // Active terminal module tab: 'all' (Full Dashboard) | 'commodities' | 'forex' | 'crypto' | 'charts' | 'alerts'
+  const [activeTab, setActiveTab] = useState<'all' | 'commodities' | 'forex' | 'crypto' | 'charts' | 'alerts'>('all');
 
   // State: Edit mode toggle
   const [isEditing, setIsEditing] = useState(false);
@@ -940,6 +942,8 @@ export default function TerminalPage() {
         setTargetCategory('CRYPTO');
       } else if (view === 'charts' || window.location.hash === '#charts') {
         setActiveTab('charts');
+      } else if (view === 'alerts' || window.location.hash === '#alerts') {
+        setActiveTab('alerts');
       }
 
       try {
@@ -1532,13 +1536,25 @@ export default function TerminalPage() {
                   <span>🎯</span>
                   <span>F&amp;O</span>
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('alerts')}
+                  className={`px-4 py-2 rounded-lg mono text-[13px] tracking-wide text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    activeTab === 'alerts'
+                      ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                      : 'font-bold text-[var(--theme-card-text-muted)] hover:text-emerald-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <span>🔔</span>
+                  <span>ALERTS</span>
+                </button>
               </div>
             </div>
 
 
 
             {/* ── Search Bar with Add Button for Stocks, Index, Commodities, Forex, or Crypto ── */}
-            {activeTab !== 'charts' && (
+            {activeTab !== 'charts' && activeTab !== 'alerts' && (
               <div className="p-4 sm:p-5 rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] shadow-md mb-6 relative z-30" ref={searchContainerRef}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
@@ -1686,6 +1702,13 @@ export default function TerminalPage() {
             {activeTab === 'charts' && (
               <div className="w-full rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] shadow-xl overflow-hidden h-[calc(100dvh-9.5rem)] min-h-[480px] sm:min-h-[540px] md:min-h-[600px] lg:min-h-[660px] xl:min-h-[720px] flex flex-col mb-4 sm:mb-8 animate-in fade-in duration-150">
                 <DynamicChartContainer market={market} defaultSymbol={defaultChartSym} />
+              </div>
+            )}
+
+            {/* ── SMC Alerts Module (Shown on ALERTS tab) ── */}
+            {activeTab === 'alerts' && (
+              <div className="mb-8 animate-in fade-in duration-150">
+                <SmcAlertsTabView />
               </div>
             )}
 
