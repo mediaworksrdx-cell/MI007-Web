@@ -6,6 +6,7 @@ import type { ChartType } from '@/lib/types';
 import { ChartTemplate } from '@/lib/chartTemplates';
 import { SmcConfig, DEFAULT_SMC_CONFIG } from '@/lib/smcEngine';
 import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG } from '@/lib/orderflow/types';
+import { Mi007Config, DEFAULT_MI007_CONFIG } from '@/lib/mi007/types';
 import { OrderFlowToolbarMenu } from './OrderFlowToolbarMenu';
 
 import { STRATEGY_INDICATOR_MAP } from '@/lib/screener/strategyIndicatorMap';
@@ -50,7 +51,9 @@ interface ChartToolbarProps {
   orderFlowSignalsCount?: number;
   onOpenOrderFlowSignals?: () => void;
   showMi007?: boolean;
+  mi007Config?: Mi007Config;
   onToggleMi007?: () => void;
+  onMi007ConfigChange?: (partial: Partial<Mi007Config>) => void;
   showVolumeProfile: boolean;
   showMagnifier?: boolean;
   onToggleMagnifier?: () => void;
@@ -162,7 +165,9 @@ export function ChartToolbar({
   orderFlowSignalsCount = 0,
   onOpenOrderFlowSignals,
   showMi007 = false,
+  mi007Config,
   onToggleMi007,
+  onMi007ConfigChange,
   showVolumeProfile,
   showMagnifier = false,
   onToggleMagnifier,
@@ -201,7 +206,7 @@ export function ChartToolbar({
   isFullscreen,
   onToggleFullscreen,
 }: ChartToolbarProps) {
-  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | 'SMC' | 'ORDER_FLOW' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | 'SMC' | 'ORDER_FLOW' | 'MI007' | null>(null);
   const [fxTab, setFxTab] = useState<'indicators' | 'strategies'>('indicators');
   const [indicatorSearch, setIndicatorSearch] = useState('');
   const [strategySearch, setStrategySearch] = useState('');
@@ -1173,31 +1178,107 @@ export function ChartToolbar({
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
-        {/* 4.6 MI007 — Institutional SMC + Volume Profile + Fibonacci Strategy (Single Toggle) */}
-        <button
-          type="button"
-          onClick={() => onToggleMi007?.()}
-          title="MI007 — Institutional SMC + Volume Profile + Fibonacci Strategy"
-          className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
-            showMi007
-              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
-              : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
-          }`}
-        >
-          <span
-            className={`font-mono font-black text-xs px-1 rounded ${
-              showMi007
-                ? 'bg-emerald-500 text-slate-950'
-                : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
-            }`}
-          >
-            MI007
-          </span>
-          <span className="hidden sm:inline">SMC+VP+Fib</span>
-          {showMi007 && (
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          )}
-        </button>
+        {/* 4.6 MI-007 Strategy — 1 Main Toggle + 3 Subs (SMC, Vol Pro, Fibo) */}
+        {(() => {
+          const activeMi007: Mi007Config = mi007Config || { ...DEFAULT_MI007_CONFIG, enabled: showMi007 };
+          const updateMi007 = (partial: Partial<Mi007Config>) => {
+            if (onMi007ConfigChange) {
+              onMi007ConfigChange(partial);
+            } else if (partial.enabled !== undefined) {
+              onToggleMi007?.();
+            }
+          };
+          return (
+            <div className="relative flex items-center">
+              <button
+                type="button"
+                onClick={() => updateMi007({ enabled: !activeMi007.enabled })}
+                title="Toggle MI-007 Institutional Strategy (SMC + Volume Profile + Fibonacci)"
+                className={`h-7 flex items-center gap-1.5 px-2.5 rounded-l-lg border-y border-l text-xs font-medium transition-colors cursor-pointer ${
+                  activeMi007.enabled
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
+                }`}
+              >
+                <span
+                  className={`font-mono font-black text-xs px-1 rounded ${
+                    activeMi007.enabled
+                      ? 'bg-emerald-500 text-slate-950'
+                      : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                  }`}
+                >
+                  MI-007
+                </span>
+                {activeMi007.enabled && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpenMenu(openMenu === 'MI007' ? null : 'MI007')}
+                title="MI-007 Layers (SMC, Vol Pro, Fibo)"
+                className={`h-7 px-1.5 rounded-r-lg border text-[10px] transition-colors cursor-pointer ${
+                  openMenu === 'MI007' || activeMi007.enabled
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800'
+                }`}
+              >
+                ▼
+              </button>
+
+              {openMenu === 'MI007' && (
+                <div className="absolute top-full left-0 mt-1.5 w-60 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl z-50 overflow-hidden">
+                  <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/80">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-black text-[10px] px-1.5 py-0.5 rounded bg-emerald-500 text-slate-950">MI-007</span>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-100">Strategy</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setOpenMenu(null)}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* 1 Main Toggle */}
+                  <div className="px-2 py-2 border-b border-slate-100 dark:border-slate-800">
+                    <SmcToggleRow
+                      label="Main Toggle (MI-007)"
+                      sublabel="Master switch for strategy"
+                      checked={activeMi007.enabled}
+                      onChange={(v) => updateMi007({ enabled: v })}
+                      badge="MAIN"
+                    />
+                  </div>
+
+                  {/* 3 Sub Toggles: SMC, Vol Pro, Fibo */}
+                  <div className={`px-2 py-2 space-y-0.5 ${!activeMi007.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                    <SmcToggleRow
+                      label="SMC"
+                      sublabel="Structure, setup bracket & checklist"
+                      checked={activeMi007.showSmc}
+                      onChange={(v) => updateMi007({ showSmc: v })}
+                    />
+                    <SmcToggleRow
+                      label="Vol Pro"
+                      sublabel="Volume Profile, POC, VAH & VAL"
+                      checked={activeMi007.showVolPro}
+                      onChange={(v) => updateMi007({ showVolPro: v })}
+                    />
+                    <SmcToggleRow
+                      label="Fibo"
+                      sublabel="Major-swing OTE & extension levels"
+                      checked={activeMi007.showFibo}
+                      onChange={(v) => updateMi007({ showFibo: v })}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
         

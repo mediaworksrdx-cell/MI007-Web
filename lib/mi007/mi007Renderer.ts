@@ -1,9 +1,10 @@
 import { Candle } from '../types';
-import { Mi007AnalysisResult } from './types';
+import { Mi007AnalysisResult, Mi007Config } from './types';
 
 export interface RenderMi007Params {
   ctx: CanvasRenderingContext2D;
   data: Mi007AnalysisResult;
+  config?: Mi007Config;
   candles: Candle[];
   startIdx: number;
   endIdx: number;
@@ -19,6 +20,7 @@ export interface RenderMi007Params {
 export function renderMi007Overlay({
   ctx,
   data,
+  config,
   candles,
   startIdx,
   endIdx,
@@ -32,11 +34,15 @@ export function renderMi007Overlay({
 }: RenderMi007Params) {
   if (!data || candles.length === 0) return;
 
+  const showSmc = config?.showSmc !== false;
+  const showVolPro = config?.showVolPro !== false;
+  const showFibo = config?.showFibo !== false;
+
   ctx.save();
 
   // ── 1. Institutional Volume Profile (Fixed Range Histogram + POC / VAH / VAL) ──
   const vp = data.volumeProfile;
-  if (vp.bins.length > 0 && vp.fixedRange.totalVolume > 0) {
+  if (showVolPro && vp.bins.length > 0 && vp.fixedRange.totalVolume > 0) {
     const maxBinVol = Math.max(...vp.bins.map((b) => b.volume), 1);
     const maxBarW = Math.min(92 * dpr, chartW * 0.14);
     const rightEdge = chartW - 2 * dpr;
@@ -89,7 +95,7 @@ export function renderMi007Overlay({
 
   // ── 2. Fibonacci Confluence (Confirmed Major Swing Anchor + OTE Zone) ─────────
   const fib = data.fibonacci;
-  if (fib) {
+  if (showFibo && fib) {
     const anchorStartIdx = Math.min(fib.swingHigh.index, fib.swingLow.index);
     const fibStartX = Math.max(8 * dpr, (anchorStartIdx - startIdx) * candleW + candleW / 2);
     const fibEndX = Math.min(chartW - 4 * dpr, (candles.length - 1 - startIdx) * candleW + candleW * 0.5);
@@ -136,7 +142,7 @@ export function renderMi007Overlay({
 
   // ── 3. Active Institutional Setup Bracket (Entry / SL / TP1 / TP2 / TP3) ──────
   const st = data.activeSetup;
-  if (st && st.isTradeable) {
+  if (showSmc && st && st.isTradeable) {
     const isBull = st.direction === 'BULLISH';
     const lastCandleIdx = Math.min(endIdx - 1, candles.length - 1);
     const currentCandleX = (lastCandleIdx - startIdx) * candleW + candleW / 2;
@@ -259,7 +265,7 @@ export function renderMi007Overlay({
   const cardX = 12 * dpr;
   const cardY = 34 * dpr;
 
-  if (chartW >= 360 * dpr && chartH >= cardY + cardH + 20 * dpr) {
+  if (showSmc && chartW >= 360 * dpr && chartH >= cardY + cardH + 20 * dpr) {
     ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.94)';
     ctx.strokeStyle = isDark ? 'rgba(51, 65, 85, 0.9)' : 'rgba(203, 213, 225, 0.95)';
     ctx.lineWidth = 1 * dpr;
@@ -274,7 +280,7 @@ export function renderMi007Overlay({
     ctx.fillStyle = isDark ? '#94A3B8' : '#64748B';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('MI007 INSTITUTIONAL SETUP', cardX + pad, cy);
+    ctx.fillText('MI-007 INSTITUTIONAL SETUP', cardX + pad, cy);
 
     if (setup) {
       const isBull = setup.direction === 'BULLISH';

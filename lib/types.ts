@@ -187,6 +187,7 @@ export interface ChartOptions {
   orderFlowConfig?: import('./orderflow/types').OrderFlowConfig;
   orderFlowData?: import('./orderflow/types').OrderFlowAnalysisResult;
   showMi007?: boolean;
+  mi007Config?: import('./mi007/types').Mi007Config;
   mi007Data?: import('./mi007/types').Mi007AnalysisResult | null;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;

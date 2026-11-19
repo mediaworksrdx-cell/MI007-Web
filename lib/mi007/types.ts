@@ -1,5 +1,19 @@
 import { SmcAnalysis, SmcOrderBlock, SmcFvg, SmcStructureBreak, SmcLiquiditySweep, SmcSwingPoint } from '../smcEngine';
 
+export interface Mi007Config {
+  enabled: boolean;
+  showSmc: boolean;
+  showVolPro: boolean;
+  showFibo: boolean;
+}
+
+export const DEFAULT_MI007_CONFIG: Mi007Config = {
+  enabled: false,
+  showSmc: true,
+  showVolPro: true,
+  showFibo: true,
+};
+
 export type Mi007RegimeType = 'TRENDING_UP' | 'TRENDING_DOWN' | 'RANGING';
 export type Mi007VolatilityState = 'LOW' | 'NORMAL' | 'HIGH';
 export type Mi007Bias = 'BULLISH' | 'BEARISH' | 'NEUTRAL';

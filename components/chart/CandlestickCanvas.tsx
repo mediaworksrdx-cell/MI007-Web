@@ -25,6 +25,7 @@ interface CandlestickCanvasProps {
   orderFlowConfig?: import("../../lib/orderflow/types").OrderFlowConfig;
   orderFlowData?: import("../../lib/orderflow/types").OrderFlowAnalysisResult;
   showMi007?: boolean;
+  mi007Config?: import("../../lib/mi007/types").Mi007Config;
   mi007Data?: import("../../lib/mi007/types").Mi007AnalysisResult | null;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
@@ -164,7 +165,7 @@ const VISIBLE_CANDLES_BASE = 60;
 export function CandlestickCanvas({
   candles, chartType, showVolume, showVolumePanel,
   showSmcOverlay, smcConfig, showOrderFlow = false, orderFlowConfig, orderFlowData,
-  showMi007 = false, mi007Data,
+  showMi007 = false, mi007Config, mi007Data,
   showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
   currentPriceOverride, timeframe, isMarketOpen = true, symbol, showMagnifier = false, onToggleMagnifier, targetCandleTime, targetSetupId, targetSmcSetup, className = '',
@@ -885,6 +886,7 @@ export function CandlestickCanvas({
   const showMagnifierRef = useRef(showMagnifier);
   const smcDataRef = useRef<import('@/lib/smcEngine').SmcAnalysis | null>(null);
   const showMi007Ref = useRef(showMi007);
+  const mi007ConfigRef = useRef(mi007Config);
   const mi007DataRef = useRef(mi007Data);
   const showOrderFlowRef = useRef(showOrderFlow);
   const orderFlowConfigRef = useRef(orderFlowConfig);
@@ -975,6 +977,7 @@ export function CandlestickCanvas({
     cursorModeRef.current = cursorMode;
     showMagnifierRef.current = showMagnifier;
     showMi007Ref.current = showMi007;
+    mi007ConfigRef.current = mi007Config;
     mi007DataRef.current = mi007Data;
     showOrderFlowRef.current = showOrderFlow;
     orderFlowConfigRef.current = orderFlowConfig;
@@ -1026,6 +1029,7 @@ export function CandlestickCanvas({
         showMagnifier: Boolean(showMagnifierRef.current),
         mainCanvas: canvasRef.current,
         showMi007: showMi007Ref.current,
+        mi007Config: mi007ConfigRef.current,
         mi007Data: mi007DataRef.current,
         drawings: isAllDrawingsHiddenRef.current ? [] : drawingsRef.current,
         activeDrawing: isAllDrawingsHiddenRef.current ? null : drawingInProgressRef.current,
@@ -1247,6 +1251,7 @@ export function CandlestickCanvas({
           orderFlowConfig,
           orderFlowData,
           showMi007,
+          mi007Config,
           mi007Data,
           showVolumeProfile,
           showFnoOverlay, fnoLevels,
@@ -1272,7 +1277,7 @@ export function CandlestickCanvas({
       }
     };
   }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, smcConfig, memoizedSmcData, showOrderFlow, orderFlowConfig, orderFlowData,
-      showMi007, mi007Data, showVolumeProfile,
+      showMi007, mi007Config, mi007Data, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, isAllDrawingsHidden, startIdx, endIdx, priceScaleRatio, priceOffset, size, dpr, clockTick, theme]);

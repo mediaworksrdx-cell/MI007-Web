@@ -34,6 +34,7 @@ import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG, ExchangeTradeTick } from '@
 import { analyzeOrderFlow } from '@/lib/orderflow/orderFlowEngine';
 import { OrderFlowSignalsModal } from './OrderFlowSignalsModal';
 import { analyzeMi007Strategy } from '@/lib/mi007/mi007Engine';
+import { Mi007Config, DEFAULT_MI007_CONFIG } from '@/lib/mi007/types';
 import { ChartToolbar } from './ChartToolbar';
 import { CandlestickCanvas } from './CandlestickCanvas';
 import { OHLCVHeader } from './OHLCVHeader';
@@ -324,22 +325,43 @@ export function ChartContainer({
     }
   }, []);
 
-  // MI007 — Institutional SMC + Volume Profile + Fibonacci Strategy (Single Toggle)
-  const [showMi007, setShowMi007] = useState<boolean>(() => {
+  // MI-007 — Institutional SMC + Volume Profile + Fibonacci Strategy (1 Main + 3 Subs)
+  const [mi007Config, setMi007Config] = useState<Mi007Config>(() => {
     if (typeof window !== 'undefined') {
       try {
-        return localStorage.getItem('mi007_institutional_strategy_enabled') === 'true';
+        const stored = localStorage.getItem('mi007_config_v1');
+        if (stored) return { ...DEFAULT_MI007_CONFIG, ...JSON.parse(stored) };
+        if (localStorage.getItem('mi007_institutional_strategy_enabled') === 'true') {
+          return { ...DEFAULT_MI007_CONFIG, enabled: true };
+        }
       } catch (e) {}
     }
-    return false;
+    return DEFAULT_MI007_CONFIG;
   });
-  const handleToggleMi007 = useCallback(() => {
-    setShowMi007(prev => {
-      const next = !prev;
+  const showMi007 = mi007Config.enabled;
+  const setShowMi007 = useCallback((val: boolean) => {
+    setMi007Config(prev => {
+      const next = { ...prev, enabled: val };
       if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('mi007_institutional_strategy_enabled', String(next));
-        } catch (e) {}
+        try { localStorage.setItem('mi007_config_v1', JSON.stringify(next)); } catch (e) {}
+      }
+      return next;
+    });
+  }, []);
+  const handleMi007ConfigChange = useCallback((partial: Partial<Mi007Config>) => {
+    setMi007Config(prev => {
+      const next = { ...prev, ...partial };
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem('mi007_config_v1', JSON.stringify(next)); } catch (e) {}
+      }
+      return next;
+    });
+  }, []);
+  const handleToggleMi007 = useCallback(() => {
+    setMi007Config(prev => {
+      const next = { ...prev, enabled: !prev.enabled };
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem('mi007_config_v1', JSON.stringify(next)); } catch (e) {}
       }
       return next;
     });
@@ -1924,7 +1946,9 @@ export function ChartContainer({
         orderFlowSignalsCount={orderFlowData?.signals.length || 0}
         onOpenOrderFlowSignals={() => setIsOfSignalsOpen(true)}
         showMi007={showMi007}
+        mi007Config={mi007Config}
         onToggleMi007={handleToggleMi007}
+        onMi007ConfigChange={handleMi007ConfigChange}
         showVolumeProfile={showVolumeProfile}
         showMagnifier={isMagnifierActive}
         onToggleMagnifier={handleToggleMagnifier}
@@ -2021,6 +2045,7 @@ export function ChartContainer({
             orderFlowConfig={orderFlowConfig}
             orderFlowData={orderFlowData}
             showMi007={showMi007}
+            mi007Config={mi007Config}
             mi007Data={mi007Data}
             showVolumeProfile={showVolumeProfile}
             showFnoOverlay={false}

@@ -2271,7 +2271,7 @@ export function renderChart(
     }
 
     // 10. Confirmed Directional SMC Setups (auto-suppressed when MI007 single-toggle strategy is rendering its own institutional bracket)
-    const mi007OwnsBracket = Boolean(options.showMi007 && options.mi007Data?.activeSetup?.isTradeable);
+    const mi007OwnsBracket = Boolean(options.showMi007 && options.mi007Config?.showSmc !== false && options.mi007Data?.activeSetup?.isTradeable);
     if (!mi007OwnsBracket && (smcData.confirmedSetups || smcData.allSetups || smcData.rejectedSetups)) {
       const terminalClose = candles[candles.length - 1]?.close ?? 0;
       const barIntervalMs = inferCandleIntervalMs(candles);
@@ -4803,11 +4803,12 @@ export function renderChart(
     }
   }
 
-  // ── LAYER 7.6: MI007 — Institutional SMC + Volume Profile + Fibonacci Strategy ──
+  // ── LAYER 7.6: MI-007 — Institutional SMC + Volume Profile + Fibonacci Strategy ──
   if (options.showMi007 && options.mi007Data) {
     renderMi007Overlay({
       ctx,
       data: options.mi007Data,
+      config: options.mi007Config,
       candles,
       startIdx,
       endIdx,
