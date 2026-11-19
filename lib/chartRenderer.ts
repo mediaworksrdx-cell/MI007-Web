@@ -1143,9 +1143,9 @@ export function renderChart(
   ctx.fillText('SYNTHETIX ANALYTICS', 14 * dpr, 12 * dpr);
   ctx.restore();
 
-  // ── LAYER 2: Volume Profile (VPVR — shared by VPVR button & MI-007 Vol Pro sub-toggle) ──
-  const mi007WantsVolPro = Boolean(options.showMi007 && options.mi007Config?.showVolPro !== false);
-  if (options.showVolumeProfile || mi007WantsVolPro) {
+  // ── LAYER 2: Standalone Volume Profile (VPVR — suppressed when MI-007 Vol Pro is drawing its Split Delta/Vol Profile) ──
+  const mi007OwnsVolPro = Boolean(options.showMi007 && options.mi007Config?.showVolPro !== false && options.mi007Data?.volumeProfile?.volumeQuality === 'ACTUAL');
+  if (options.showVolumeProfile && !mi007OwnsVolPro) {
     const visCandles = candles.slice(safeStart, safeEnd);
     const vpData = calculateVolumeProfile(visCandles, pMin, pMax, 40);
     if (vpData.buckets.length > 0 && vpData.maxBucketVolume > 0) {

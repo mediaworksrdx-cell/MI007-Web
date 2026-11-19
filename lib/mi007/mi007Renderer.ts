@@ -35,12 +35,141 @@ export function renderMi007Overlay({
   if (!data || candles.length === 0) return;
 
   const showSmc = config?.showSmc !== false;
+  const showVolPro = config?.showVolPro !== false;
   const showFibo = config?.showFibo !== false;
   const vp = data.volumeProfile;
 
   ctx.save();
 
-  // ── 1. Volume Profile is rendered via the chart's native VPVR layer (LAYER 2) when MI-007 Vol Pro is ON ──
+  // ── 1A. Split Volume Profile (Blue/White 70% VA) + Estimated Delta Profile (Green/Red) ──
+  if (showVolPro && vp.volumeQuality === 'ACTUAL' && vp.bins.length > 0 && vp.fixedRange.totalVolume > 0) {
+    const maxBinVol = Math.max(...vp.bins.map((b) => b.volume), 1);
+    const maxDelta = Math.max(...vp.bins.map((b) => Math.abs(b.buyVolume - b.sellVolume)), 1);
+    const volMaxW = Math.min(72 * dpr, chartW * 0.10);
+    const deltaMaxW = Math.min(46 * dpr, chartW * 0.065);
+    const rightEdge = chartW - 2 * dpr;
+    const spineX = rightEdge - volMaxW;
+
+    // Subtle vertical spine separating Delta Profile (left) and Volume Profile (right)
+    ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.25)' : 'rgba(71, 85, 105, 0.22)';
+    ctx.lineWidth = 1 * dpr;
+    ctx.beginPath();
+    ctx.moveTo(spineX, 16 * dpr);
+    ctx.lineTo(spineX, chartH - 16 * dpr);
+    ctx.stroke();
+
+    for (const bin of vp.bins) {
+      const yTop = priceToY(bin.priceHigh);
+      const yBot = priceToY(bin.priceLow);
+      if (yBot < 0 || yTop > chartH) continue;
+      const barH = Math.max(1.8 * dpr, Math.abs(yBot - yTop) - 0.8 * dpr);
+      const yRect = Math.min(yTop, yBot);
+      const inVa = bin.priceMid >= vp.fixedRange.val && bin.priceMid <= vp.fixedRange.vah;
+      const isPocBin = Math.abs(bin.priceMid - vp.fixedRange.poc) <= (bin.priceHigh - bin.priceLow) * 0.6;
+
+      // Right side: Volume Profile (Blue inside 70% VA, White/Slate outside VA, Gold on POC)
+      const vW = (bin.volume / maxBinVol) * volMaxW;
+      if (vW > 0.5) {
+        ctx.fillStyle = isPocBin
+          ? '#F59E0B'
+          : inVa
+          ? (isDark ? 'rgba(14, 165, 233, 0.78)' : 'rgba(2, 132, 199, 0.72)')
+          : (isDark ? 'rgba(226, 232, 240, 0.35)' : 'rgba(100, 116, 139, 0.28)');
+        ctx.fillRect(spineX, yRect, vW, barH);
+      }
+
+      // Left side: Estimated Delta Profile (Green positive delta, Red/Orange negative delta)
+      const delta = bin.buyVolume - bin.sellVolume;
+      const dW = (Math.abs(delta) / maxDelta) * deltaMaxW;
+      if (dW > 0.5) {
+        ctx.fillStyle = delta >= 0
+          ? (isDark ? 'rgba(16, 185, 129, 0.78)' : 'rgba(5, 150, 105, 0.72)')
+          : (isDark ? 'rgba(249, 115, 22, 0.82)' : 'rgba(225, 29, 72, 0.74)');
+        ctx.fillRect(spineX - dW, yRect, dW, barH);
+      }
+    }
+
+    // Header micro-label above split profile (transparently marks Estimated Delta)
+    ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
+    ctx.fillStyle = isDark ? 'rgba(148, 163, 184, 0.85)' : 'rgba(71, 85, 105, 0.85)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('EST. DELTA | VOL PRO', spineX, 6 * dpr);
+
+    // Key Institutional Horizontal Bands: POC (Gold), Prior Daily POC (Yellow), VAH & VAL
+    const drawKeyLevel = (price: number, label: string, color: string, dashed: boolean, thick = false) => {
+      if (!price || price <= 0) return;
+      const y = priceToY(price);
+      if (y < 12 * dpr || y > chartH - 12 * dpr) return;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = thick ? 2.0 * dpr : 1.2 * dpr;
+      if (dashed) ctx.setLineDash([5 * dpr, 3 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(thick ? chartW * 0.15 : chartW * 0.38, y);
+      ctx.lineTo(rightEdge, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+      const padX = 4 * dpr;
+      const tw = ctx.measureText(label).width + padX * 2;
+      const th = 13 * dpr;
+      const bx = rightEdge - tw - 3 * dpr;
+      const by = y - th - 2 * dpr;
+      ctx.fillStyle = thick ? color : (isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.94)');
+      ctx.beginPath();
+      ctx.roundRect(bx, by, tw, th, 2.5 * dpr);
+      ctx.fill();
+      if (!thick) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 0.9 * dpr;
+        ctx.stroke();
+      }
+      ctx.fillStyle = thick ? '#0F172A' : color;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, bx + padX, by + th / 2);
+      ctx.restore();
+    };
+
+    drawKeyLevel(vp.fixedRange.poc, `POC ${formatPrice(vp.fixedRange.poc)}`, '#F59E0B', false, true);
+    if (vp.daily && vp.daily.poc > 0 && Math.abs(vp.daily.poc - vp.fixedRange.poc) > (vp.fixedRange.vah - vp.fixedRange.val) * 0.05) {
+      drawKeyLevel(vp.daily.poc, `PD-POC ${formatPrice(vp.daily.poc)}`, '#EAB308', true, false);
+    }
+    drawKeyLevel(vp.fixedRange.vah, `VAH ${formatPrice(vp.fixedRange.vah)}`, isDark ? '#38BDF8' : '#0284C7', true);
+    drawKeyLevel(vp.fixedRange.val, `VAL ${formatPrice(vp.fixedRange.val)}`, isDark ? '#38BDF8' : '#0284C7', true);
+  }
+
+  // ── 1B. Order Flow Volume Bubbles (Big Trades + Gold Ring on Passive Absorption) ──
+  if (showVolPro && data.volumeBubbles && data.volumeBubbles.length > 0) {
+    ctx.save();
+    for (const b of data.volumeBubbles) {
+      if (b.candleIndex < startIdx || b.candleIndex >= endIdx) continue;
+      const bx = (b.candleIndex - startIdx) * candleW + candleW / 2;
+      const by = priceToY(b.price);
+      if (by < 8 * dpr || by > chartH - 8 * dpr) continue;
+
+      const radius = Math.max(4.5 * dpr, Math.min(15 * dpr, (3.5 + b.relVolume * 2.4) * dpr));
+      const isBuy = b.side === 'BUY';
+
+      ctx.fillStyle = isBuy
+        ? (isDark ? 'rgba(16, 185, 129, 0.42)' : 'rgba(5, 150, 105, 0.36)')
+        : (isDark ? 'rgba(244, 63, 94, 0.46)' : 'rgba(225, 29, 72, 0.38)');
+      ctx.beginPath();
+      ctx.arc(bx, by, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = b.isAbsorption
+        ? '#FACC15'
+        : isBuy
+        ? (isDark ? 'rgba(52, 211, 153, 0.90)' : 'rgba(4, 120, 87, 0.85)')
+        : (isDark ? 'rgba(251, 113, 133, 0.90)' : 'rgba(190, 18, 60, 0.85)');
+      ctx.lineWidth = b.isAbsorption ? 2.0 * dpr : 1.1 * dpr;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   // ── 2. Fibonacci Retracement & Extension (Clean Thick Black Lines Only — No Color Fills) ──
   const fib = data.fibonacci;

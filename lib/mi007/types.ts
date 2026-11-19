@@ -93,6 +93,16 @@ export interface Mi007FibonacciConfluence {
   inOteZone: boolean;
 }
 
+export interface Mi007VolumeBubble {
+  candleIndex: number;
+  time: number;
+  price: number;
+  volume: number;
+  relVolume: number;       // volume / SMA(volume, 20)
+  side: 'BUY' | 'SELL';    // Estimated aggressive flow direction from bar delta
+  isAbsorption: boolean;   // High volume + rejection wick / small body (passive absorption)
+}
+
 export interface Mi007OrderFlowConfirmation {
   volumeQuality: Mi007VolumeQuality;
   confirmed: boolean;
@@ -158,6 +168,7 @@ export interface Mi007AnalysisResult {
   volumeProfile: Mi007VolumeProfile;
   fibonacci: Mi007FibonacciConfluence | null;
   orderFlow: Mi007OrderFlowConfirmation;
+  volumeBubbles: Mi007VolumeBubble[];
   activeSetup: Mi007TradeSetup | null;
   swings: SmcSwingPoint[];
 }
