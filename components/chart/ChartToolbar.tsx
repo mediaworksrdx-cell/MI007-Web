@@ -902,26 +902,43 @@ export function ChartToolbar({
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
-        {/* 4. SMC Analysis Dropdown (Dedicated Smart Money Concepts Mode) */}
-        <div className="relative">
+        {/* 4. SMC Analysis Split Button (1-Click Toggle + Dropdown Settings) */}
+        <div className="relative flex items-center">
           <button
             type="button"
-            onClick={() => setOpenMenu(openMenu === 'SMC' ? null : 'SMC')}
-            title="Smart Money Concepts (SMC) Analysis Mode"
-            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
-              openMenu === 'SMC'
+            onClick={() => handleUpdateSmc({ enabled: !activeSmcConfig.enabled })}
+            title={activeSmcConfig.enabled ? "Disable SMC Overlays (1-Click)" : "Enable Smart Money Concepts (SMC) Analysis Mode (1-Click)"}
+            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-l-lg border-y border-l text-xs font-medium transition-colors cursor-pointer ${
+              activeSmcConfig.enabled
                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
                 : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
           >
-            <span className="font-mono font-black text-xs px-1 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+            <span
+              className={`font-mono font-black text-xs px-1 rounded ${
+                activeSmcConfig.enabled
+                  ? 'bg-emerald-500 text-slate-950'
+                  : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+              }`}
+            >
               SMC
             </span>
             <span className="hidden sm:inline">Analysis</span>
             {activeSmcConfig.enabled && (
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             )}
-            <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpenMenu(openMenu === 'SMC' ? null : 'SMC')}
+            title="SMC Configuration & Individual Toggles"
+            className={`h-7 px-1.5 rounded-r-lg border text-[10px] transition-colors cursor-pointer ${
+              openMenu === 'SMC' || activeSmcConfig.enabled
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800'
+            }`}
+          >
+            ▼
           </button>
 
           {openMenu === 'SMC' && (
@@ -1046,41 +1063,41 @@ export function ChartToolbar({
                     <SmcToggleRow
                       label="Break of Structure (BOS)"
                       sublabel="Confirms trend continuation"
-                      checked={activeSmcConfig.showBos}
-                      onChange={(v) => handleUpdateSmc({ showBos: v, showBullishStructure: true, showBearishStructure: true })}
+                      checked={activeSmcConfig.showBos !== false}
+                      onChange={(v) => handleUpdateSmc({ showBos: v, showBullishStructure: v, showBearishStructure: v })}
                       badge="BOS"
                     />
                     <SmcToggleRow
                       label="Change of Character (CHoCH)"
                       sublabel="Early trend reversal shift"
-                      checked={activeSmcConfig.showChoch}
-                      onChange={(v) => handleUpdateSmc({ showChoch: v, showBullishStructure: true, showBearishStructure: true })}
+                      checked={activeSmcConfig.showChoch !== false}
+                      onChange={(v) => handleUpdateSmc({ showChoch: v, showBullishStructure: v, showBearishStructure: v })}
                       badge="CHoCH"
                     />
                     <SmcToggleRow
                       label="Order Blocks (Buy & Sell)"
                       sublabel="Key institutional demand & supply zones"
-                      checked={Boolean(activeSmcConfig.showBullishOb || activeSmcConfig.showBearishOb)}
+                      checked={Boolean(activeSmcConfig.showBullishOb !== false || activeSmcConfig.showBearishOb !== false)}
                       onChange={(v) => handleUpdateSmc({ showBullishOb: v, showBearishOb: v })}
                       badge="OB"
                     />
                     <SmcToggleRow
                       label="Fair Value Gaps (FVG)"
                       sublabel="3-candle price imbalance zones"
-                      checked={Boolean(activeSmcConfig.showBullishFvg || activeSmcConfig.showBearishFvg)}
+                      checked={Boolean(activeSmcConfig.showBullishFvg !== false || activeSmcConfig.showBearishFvg !== false)}
                       onChange={(v) => handleUpdateSmc({ showBullishFvg: v, showBearishFvg: v })}
                       badge="FVG"
                     />
                     <SmcToggleRow
                       label="Liquidity Sweeps"
                       sublabel="Stop-hunt wicks beyond highs & lows"
-                      checked={activeSmcConfig.showSweeps}
+                      checked={activeSmcConfig.showSweeps !== false}
                       onChange={(v) => handleUpdateSmc({ showSweeps: v, showSslSweeps: v, showBslSweeps: v })}
                     />
                     <SmcToggleRow
                       label="Premium / Discount & OTE"
                       sublabel="Dealing range, 50% EQ & 62–79% OTE"
-                      checked={Boolean(activeSmcConfig.showPremiumDiscount || activeSmcConfig.showEquilibrium || activeSmcConfig.showOte)}
+                      checked={Boolean(activeSmcConfig.showPremiumDiscount !== false || activeSmcConfig.showEquilibrium !== false || activeSmcConfig.showOte !== false)}
                       onChange={(v) => handleUpdateSmc({ showPremiumDiscount: v, showEquilibrium: v, showOte: v })}
                     />
                   </div>
@@ -1101,20 +1118,20 @@ export function ChartToolbar({
                     <SmcToggleRow
                       label="Previous Day High / Low"
                       sublabel="Key intraday PDH / PDL levels"
-                      checked={activeSmcConfig.showPdhPdl}
+                      checked={Boolean(activeSmcConfig.showPdhPdl)}
                       onChange={(v) => handleUpdateSmc({ showPdhPdl: v })}
                       badge="PDH/L"
                     />
                     <SmcToggleRow
                       label="Swing Points (HH / HL / LH / LL)"
                       sublabel="Pivot high and low structure labels"
-                      checked={activeSmcConfig.showSwings}
+                      checked={activeSmcConfig.showSwings !== false}
                       onChange={(v) => handleUpdateSmc({ showSwings: v })}
                     />
                     <SmcToggleRow
                       label="SMC Trade Brackets"
                       sublabel="Auto Entry, SL & TP boxes (hidden when MI007 is ON)"
-                      checked={Boolean(activeSmcConfig.showBullishConfluence || activeSmcConfig.showBearishConfluence)}
+                      checked={Boolean(activeSmcConfig.showBullishConfluence !== false || activeSmcConfig.showBearishConfluence !== false)}
                       onChange={(v) => handleUpdateSmc({ showBullishConfluence: v, showBearishConfluence: v })}
                     />
                   </div>

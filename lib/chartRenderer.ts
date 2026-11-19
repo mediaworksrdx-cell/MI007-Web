@@ -1190,16 +1190,22 @@ export function renderChart(
   }
 
   // ── LAYER 3: Smart Money Concepts (SMC) Overlays (enabled by SMC button OR MI-007 SMC sub-toggle) ──
-  const mi007WantsSmc = Boolean(options.showMi007 && options.mi007Config?.showSmc !== false);
-  const rawSmcCfg = options.smcConfig || (options.showSmcOverlay || mi007WantsSmc ? DEFAULT_SMC_CONFIG : null);
-  const smcCfg = rawSmcCfg
-    ? (mi007WantsSmc && !rawSmcCfg.enabled ? { ...rawSmcCfg, enabled: true, visualizationMode: 'analysis' as const } : rawSmcCfg)
-    : null;
-  if (smcCfg && smcCfg.enabled) {
+  const isSmcActive = options.smcConfig !== undefined
+    ? Boolean(options.smcConfig?.enabled)
+    : Boolean(options.showSmcOverlay || (options.showMi007 && options.mi007Config?.showSmc !== false));
+
+  if (isSmcActive) {
+    const rawSmcCfg = options.smcConfig || DEFAULT_SMC_CONFIG;
+    const smcCfg: SmcConfig = {
+      ...DEFAULT_SMC_CONFIG,
+      ...rawSmcCfg,
+      enabled: true,
+      visualizationMode: rawSmcCfg.visualizationMode || 'analysis',
+    };
     const sym = (options as any).symbol || 'NIFTY';
     const tf = options.timeframe || '1H';
-    // CH-017: reuse precomputed smcData (or mi007Data.smc) instead of recomputing on every render
-    const smcData = options.smcData || options.mi007Data?.smc || calculateSMC(candles, smcCfg, sym, tf);
+    // Use caller-provided smcData computed with active smcCfg, falling back to fresh calculation with smcCfg
+    const smcData = options.smcData || calculateSMC(candles, smcCfg, sym, tf);
     const isBullishMaster = smcCfg.showBullishSetups !== false;
     const isBearishMaster = smcCfg.showBearishSetups !== false;
 
