@@ -40,7 +40,8 @@ interface CandlestickCanvasProps {
   showMagnifier?: boolean;
   onToggleMagnifier?: () => void;
   targetCandleTime?: number;
-  goToRange?: { fromMs: number; toMs: number; reset?: boolean; nonce: number } | null;
+  goToRange?: { fromMs: number; toMs: number; label?: string; reset?: boolean; nonce: number } | null;
+  onClearGoToRange?: () => void;
   targetSetupId?: string;
   targetSmcSetup?: any;
   className?: string;
@@ -169,7 +170,7 @@ export function CandlestickCanvas({
   showMi007 = false, mi007Config, mi007Data,
   showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
-  currentPriceOverride, timeframe, isMarketOpen = true, symbol, showMagnifier = false, onToggleMagnifier, targetCandleTime, goToRange, targetSetupId, targetSmcSetup, className = '',
+  currentPriceOverride, timeframe, isMarketOpen = true, symbol, showMagnifier = false, onToggleMagnifier, targetCandleTime, goToRange, onClearGoToRange, targetSetupId, targetSmcSetup, className = '',
   activeDrawingTool = 'NONE',
   cursorMode = 'crosshair',
   drawings = [],
@@ -448,16 +449,104 @@ export function CandlestickCanvas({
     });
   }, [candles]);
 
+  // Resolve locked Date & Time range indices when Go-To Range Lock is active
+  const lockedRangeInfo = useMemo(() => {
+    if (!goToRange || goToRange.reset || cleanCandles.length === 0) return null;
+    const { fromMs, toMs } = goToRange;
+    const tfMs = timeframeToMs(timeframe);
+    const barDurationMs = tfMs > 0
+      ? tfMs
+      : (cleanCandles.length > 1
+        ? Math.max(60_000, Math.abs(cleanCandles[cleanCandles.length - 1].openTime - cleanCandles[0].openTime) / (cleanCandles.length - 1))
+        : 3_600_000);
+
+    const isDailyOrHigher = timeframe === '1D' || timeframe === '1W' || barDurationMs >= 20 * 3_600_000;
+    const toLocalDateKey = (ms: number) => {
+      const d = new Date(ms);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
+    let fromIdx = -1;
+    let toIdx = -1;
+
+    if (isDailyOrHigher) {
+      const fromKey = toLocalDateKey(fromMs);
+      const toKey = toLocalDateKey(toMs);
+      for (let i = 0; i < cleanCandles.length; i++) {
+        const cKey = toLocalDateKey(cleanCandles[i].openTime);
+        if (cKey >= fromKey && cKey <= toKey) {
+          if (fromIdx === -1) fromIdx = i;
+          toIdx = i;
+        }
+      }
+    } else {
+      for (let i = 0; i < cleanCandles.length; i++) {
+        const cStart = cleanCandles[i].openTime;
+        const cEnd = i < cleanCandles.length - 1
+          ? Math.min(cleanCandles[i + 1].openTime, cStart + barDurationMs)
+          : cStart + barDurationMs;
+        // Include any candle whose interval [cStart, cEnd) overlaps [fromMs, toMs]
+        if (cEnd > fromMs && cStart <= toMs) {
+          if (fromIdx === -1) fromIdx = i;
+          toIdx = i;
+        }
+      }
+    }
+
+    let isNearestFallback = false;
+    if (fromIdx === -1 || toIdx === -1 || toIdx < fromIdx) {
+      isNearestFallback = true;
+      const midMs = (fromMs + toMs) / 2;
+      let nearest = 0;
+      let minDiff = Math.abs(cleanCandles[0].openTime - midMs);
+      for (let i = 1; i < cleanCandles.length; i++) {
+        const diff = Math.abs(cleanCandles[i].openTime - midMs);
+        if (diff < minDiff) {
+          minDiff = diff;
+          nearest = i;
+        }
+      }
+      fromIdx = Math.max(0, nearest - 6);
+      toIdx = Math.min(cleanCandles.length - 1, nearest + 6);
+    }
+
+    const spanBars = Math.max(1, toIdx - fromIdx + 1);
+    const pad = spanBars <= 3 ? 4 : Math.max(1, Math.min(6, Math.round(spanBars * 0.06)));
+    const lockedStartIdx = Math.max(0, fromIdx - pad);
+    const lockedEndIdx = Math.min(cleanCandles.length + 2, toIdx + 1 + pad);
+    const lockedVisibleCount = Math.max(8, lockedEndIdx - lockedStartIdx);
+
+    return {
+      fromIdx,
+      toIdx,
+      barCount: spanBars,
+      fromTime: cleanCandles[fromIdx].openTime,
+      toTime: cleanCandles[toIdx].openTime,
+      lockedStartIdx,
+      lockedEndIdx: lockedStartIdx + lockedVisibleCount,
+      lockedVisibleCount,
+      isNearestFallback,
+      label: goToRange.label,
+    };
+  }, [goToRange, cleanCandles, timeframe]);
+
   // Viewport calculation with responsive zoom, dynamic candle scaling,
-  // and a forward projection empty space buffer of 6 bars (~35-50px) to the right of the latest candle
+  // and a forward projection empty space buffer of 6 bars (~35-50px) to the right of the latest candle.
+  // When Go-To Range Lock is active, viewport stays strictly pinned to the selected range until turned Off / Closed.
   const RIGHT_BUFFER_BARS = 6;
   const baseVisible = size.w < 640 ? 55 : size.w < 1024 ? 90 : 140;
-  const visibleCount = Math.max(8, Math.round(baseVisible / zoom));
   const maxScrollOffset = Math.max(0, cleanCandles.length - 8);
   const minScrollOffset = -RIGHT_BUFFER_BARS * 2;
   const effectiveScroll = Math.max(minScrollOffset, Math.min(maxScrollOffset, scrollOffset));
-  const endIdx = Math.round(cleanCandles.length + RIGHT_BUFFER_BARS - effectiveScroll);
-  const startIdx = endIdx - visibleCount;
+  const visibleCount = lockedRangeInfo
+    ? lockedRangeInfo.lockedVisibleCount
+    : Math.max(8, Math.round(baseVisible / zoom));
+  const endIdx = lockedRangeInfo
+    ? lockedRangeInfo.lockedEndIdx
+    : Math.round(cleanCandles.length + RIGHT_BUFFER_BARS - effectiveScroll);
+  const startIdx = lockedRangeInfo
+    ? lockedRangeInfo.lockedStartIdx
+    : endIdx - visibleCount;
 
   // ── SMC Screener Deep-Link: Canonical Timestamp Alignment & Viewport Centering ──
   const [targetBeaconIndex, setTargetBeaconIndex] = useState<number | null>(null);
@@ -560,60 +649,38 @@ export function CandlestickCanvas({
     return () => clearTimeout(timer);
   }, [alignmentWarning]);
 
-  // Go to Date/Time Range navigation
+  // Go to Date/Time Range navigation & Reset (cancels any pending rAF pan/zoom so jump is clean)
   const lastGoToNonceRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!goToRange || cleanCandles.length === 0) return;
+    if (!goToRange) return;
     if (lastGoToNonceRef.current === goToRange.nonce) return;
     lastGoToNonceRef.current = goToRange.nonce;
+
+    if (panRafIdRef.current !== null) {
+      cancelAnimationFrame(panRafIdRef.current);
+      panRafIdRef.current = null;
+    }
+    pendingScrollRef.current = null;
+    if (zoomRafIdRef.current !== null) {
+      cancelAnimationFrame(zoomRafIdRef.current);
+      zoomRafIdRef.current = null;
+    }
+    pendingZoomRef.current = null;
+    if (wheelRafIdRef.current !== null) {
+      cancelAnimationFrame(wheelRafIdRef.current);
+      wheelRafIdRef.current = null;
+    }
+    pendingWheelDeltaRef.current = { scroll: 0, zoomMult: 1 };
+
+    // Always auto-fit price scale on entering or exiting Go-To Range
+    setPriceOffset(0);
+    setPriceScaleRatio(1);
 
     if (goToRange.reset) {
       setZoom(1);
       setScrollOffset(0);
-      setPriceOffset(0);
-      setPriceScaleRatio(1);
-      return;
     }
-
-    const { fromMs, toMs } = goToRange;
-    let fromIdx = cleanCandles.findIndex((c) => c.openTime >= fromMs);
-    if (fromIdx === -1) fromIdx = cleanCandles.length - 1;
-
-    let toIdx = -1;
-    for (let i = cleanCandles.length - 1; i >= 0; i--) {
-      if (cleanCandles[i].openTime <= toMs) {
-        toIdx = i;
-        break;
-      }
-    }
-    if (toIdx === -1) toIdx = 0;
-    if (toIdx < fromIdx) {
-      let nearest = 0;
-      let minDiff = Math.abs(cleanCandles[0].openTime - fromMs);
-      for (let i = 1; i < cleanCandles.length; i++) {
-        const diff = Math.abs(cleanCandles[i].openTime - fromMs);
-        if (diff < minDiff) {
-          minDiff = diff;
-          nearest = i;
-        }
-      }
-      fromIdx = Math.max(0, nearest - 8);
-      toIdx = Math.min(cleanCandles.length - 1, nearest + 8);
-    }
-
-    const spanBars = Math.max(8, toIdx - fromIdx + 1);
-    const desiredVisible = Math.max(12, spanBars + 4);
-    const targetZoom = Math.max(0.15, Math.min(8, baseVisible / desiredVisible));
-    const actualVisible = Math.max(8, Math.round(baseVisible / targetZoom));
-    const centerIdx = (fromIdx + toIdx) / 2;
-    const targetEndIdx = centerIdx + actualVisible / 2;
-    const targetScroll = cleanCandles.length + RIGHT_BUFFER_BARS - targetEndIdx;
-
-    setZoom(targetZoom);
-    setScrollOffset(Math.max(minScrollOffset, Math.min(maxScrollOffset, targetScroll)));
-    setPriceOffset(0);
-    setPriceScaleRatio(1);
-  }, [goToRange, cleanCandles, baseVisible, minScrollOffset, maxScrollOffset]);
+  }, [goToRange]);
 
   // Helper to map mouse coordinate to price and candle with Smart Magnet & Axis Scale support
   const getPointFromEvent = useCallback((clientX: number, clientY: number, snapMagnet = true) => {
@@ -2700,7 +2767,30 @@ export function CandlestickCanvas({
         </div>
       )}
 
-      {Math.abs(scrollOffset) > 5 && (
+      {/* Go-To Date & Time Range Lock Pill (stays visible until turned Off / Closed) */}
+      {lockedRangeInfo && (
+        <div className="absolute top-3 right-20 z-40 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/92 border border-emerald-500/60 text-emerald-100 shadow-xl backdrop-blur-md pointer-events-auto">
+          <span className="text-xs select-none">📅</span>
+          <div className="text-[10px] font-mono leading-tight">
+            <span className="font-bold text-emerald-300">RANGE LOCKED:</span>{' '}
+            <span>{lockedRangeInfo.label || `${new Date(lockedRangeInfo.fromTime).toLocaleDateString()} – ${new Date(lockedRangeInfo.toTime).toLocaleDateString()}`}</span>{' '}
+            <span className="text-emerald-300/80">
+              ({lockedRangeInfo.barCount} {lockedRangeInfo.barCount === 1 ? 'bar' : 'bars'}
+              {lockedRangeInfo.isNearestFallback ? ' · nearest' : ''})
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onClearGoToRange?.()}
+            className="ml-1 px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white font-mono text-[10px] font-bold transition-colors cursor-pointer"
+            title="Turn Off Range Lock & return to live chart"
+          >
+            ✕ Off
+          </button>
+        </div>
+      )}
+
+      {!lockedRangeInfo && Math.abs(scrollOffset) > 5 && (
         <button
           onClick={() => setScrollOffset(0)}
           className="absolute bottom-8 right-20 rounded-full border border-slate-300 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 px-3 py-1 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:text-emerald-600 hover:border-emerald-500 transition-all font-mono shadow-md cursor-pointer z-20"

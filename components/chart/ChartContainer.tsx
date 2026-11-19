@@ -374,14 +374,20 @@ export function ChartContainer({
     }
     return undefined;
   });
-  const [goToRange, setGoToRange] = useState<{ fromMs: number; toMs: number; reset?: boolean; nonce: number } | null>(null);
-  const handleGoToRange = useCallback((range: { fromMs: number; toMs: number; reset?: boolean } | null) => {
+  const [goToRange, setGoToRange] = useState<{ fromMs: number; toMs: number; label?: string; reset?: boolean; nonce: number } | null>(null);
+  const handleGoToRange = useCallback((range: { fromMs: number; toMs: number; label?: string; reset?: boolean } | null) => {
     if (!range) {
       setGoToRange(null);
       return;
     }
     setGoToRange({ ...range, nonce: Date.now() });
   }, []);
+  const handleClearGoToRange = useCallback(() => {
+    setGoToRange({ fromMs: 0, toMs: 0, reset: true, nonce: Date.now() });
+  }, []);
+  useEffect(() => {
+    setGoToRange(null);
+  }, [selectedSymbol, timeframe]);
   const [targetSetupId, setTargetSetupId] = useState<string | undefined>(initialSetupId);
   const [targetSmcSetup, setTargetSmcSetup] = useState<any | undefined>(() => {
     if (initialEntry && initialSl && initialTp && initialDir) {
@@ -1978,6 +1984,8 @@ export function ChartContainer({
         isFullscreen={isFullscreen}
         onToggleFullscreen={handleToggleFullscreen}
         candleRangeMs={candles.length > 0 ? { minMs: candles[0].openTime, maxMs: candles[candles.length - 1].openTime } : null}
+        isGoToActive={Boolean(goToRange && !goToRange.reset)}
+        activeGoToLabel={goToRange && !goToRange.reset ? goToRange.label : undefined}
         onGoToRange={handleGoToRange}
         onTimeframeChange={setTimeframe}
         onChartTypeChange={setChartType}
@@ -2071,6 +2079,7 @@ export function ChartContainer({
             onToggleMagnifier={handleToggleMagnifier}
             targetCandleTime={targetCandleTime}
             goToRange={goToRange}
+            onClearGoToRange={handleClearGoToRange}
             targetSetupId={targetSetupId}
             targetSmcSetup={targetSmcSetup}
             activeDrawingTool={activeDrawingTool}

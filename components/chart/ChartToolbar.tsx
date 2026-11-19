@@ -95,7 +95,9 @@ interface ChartToolbarProps {
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
   candleRangeMs?: { minMs: number; maxMs: number } | null;
-  onGoToRange?: (range: { fromMs: number; toMs: number; reset?: boolean } | null) => void;
+  isGoToActive?: boolean;
+  activeGoToLabel?: string;
+  onGoToRange?: (range: { fromMs: number; toMs: number; label?: string; reset?: boolean } | null) => void;
 }
 
 function SmcToggleRow({
@@ -208,14 +210,24 @@ export function ChartToolbar({
   isFullscreen,
   onToggleFullscreen,
   candleRangeMs,
+  isGoToActive = false,
+  activeGoToLabel,
   onGoToRange,
 }: ChartToolbarProps) {
   const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | 'GOTO' | 'SMC' | 'ORDER_FLOW' | 'MI007' | null>(null);
   const [goToDateFrom, setGoToDateFrom] = useState('');
   const [goToDateTill, setGoToDateTill] = useState('');
-  const [goToTimeFrom, setGoToTimeFrom] = useState('09:15');
-  const [goToTimeTill, setGoToTimeTill] = useState('15:30');
+  const [goToTimeFrom, setGoToTimeFrom] = useState('00:00');
+  const [goToTimeTill, setGoToTimeTill] = useState('23:59');
   const [goToError, setGoToError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setGoToDateFrom('');
+    setGoToDateTill('');
+    setGoToTimeFrom('00:00');
+    setGoToTimeTill('23:59');
+    setGoToError(null);
+  }, [symbol, timeframe]);
   const [fxTab, setFxTab] = useState<'indicators' | 'strategies'>('indicators');
   const [indicatorSearch, setIndicatorSearch] = useState('');
   const [strategySearch, setStrategySearch] = useState('');
@@ -1438,8 +1450,8 @@ export function ChartToolbar({
           )}
         </div>
 
-        {/* 9. GO TO (DATE FROM/TILL + TIME FROM/TILL) */}
-        <div className="relative">
+        {/* 9. GO TO (DATE FROM/TILL + TIME FROM/TILL — STAYS LOCKED IN RANGE UNTIL CLOSED/OFF) */}
+        <div className="relative flex items-center">
           <button
             type="button"
             onClick={() => {
@@ -1452,144 +1464,235 @@ export function ChartToolbar({
                   const day = String(d.getDate()).padStart(2, '0');
                   return `${y}-${m}-${day}`;
                 };
-                if (!goToDateFrom) setGoToDateFrom(toDateStr(candleRangeMs.maxMs));
-                if (!goToDateTill) setGoToDateTill(toDateStr(candleRangeMs.maxMs));
+                const minStr = toDateStr(candleRangeMs.minMs);
+                const maxStr = toDateStr(candleRangeMs.maxMs);
+                // Initialize or resync if dates are empty or outside newly loaded range
+                if (!goToDateFrom || goToDateFrom < minStr || goToDateFrom > maxStr) {
+                  const oneDayPriorMs = Math.max(candleRangeMs.minMs, candleRangeMs.maxMs - 24 * 3600_000);
+                  setGoToDateFrom(toDateStr(oneDayPriorMs));
+                }
+                if (!goToDateTill || goToDateTill < minStr || goToDateTill > maxStr) {
+                  setGoToDateTill(maxStr);
+                }
                 setGoToError(null);
               }
               setOpenMenu(nextOpen);
             }}
-            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-bold font-mono transition-colors cursor-pointer ${
-              openMenu === 'GOTO'
+            className={`h-7 flex items-center gap-1.5 px-2.5 border text-xs font-bold font-mono transition-colors cursor-pointer ${
+              isGoToActive ? 'rounded-l-lg border-r-0' : 'rounded-lg'
+            } ${
+              openMenu === 'GOTO' || isGoToActive
                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
                 : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
-            title="Go to specific Date & Time range on chart"
+            title={isGoToActive && activeGoToLabel ? `Range locked: ${activeGoToLabel} (click to edit)` : 'Go to & lock a specific Date & Time range on chart'}
           >
             <span>📅</span>
-            <span>Go to</span>
+            <span>{isGoToActive ? 'Range ON' : 'Go to'}</span>
             <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
           </button>
 
-          {openMenu === 'GOTO' && (
-            <div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-72 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-xl p-3 z-[100] animate-in fade-in duration-75">
-              <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-100 dark:border-slate-800">
-                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
-                  Go to Date &amp; Time
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setOpenMenu(null)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold px-1 cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="space-y-2.5">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      Date From
-                    </label>
-                    <input
-                      type="date"
-                      value={goToDateFrom}
-                      onChange={(e) => { setGoToDateFrom(e.target.value); setGoToError(null); }}
-                      className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      Date Till
-                    </label>
-                    <input
-                      type="date"
-                      value={goToDateTill}
-                      onChange={(e) => { setGoToDateTill(e.target.value); setGoToError(null); }}
-                      className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      Time From
-                    </label>
-                    <input
-                      type="time"
-                      value={goToTimeFrom}
-                      onChange={(e) => { setGoToTimeFrom(e.target.value); setGoToError(null); }}
-                      className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      Time Till
-                    </label>
-                    <input
-                      type="time"
-                      value={goToTimeTill}
-                      onChange={(e) => { setGoToTimeTill(e.target.value); setGoToError(null); }}
-                      className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                </div>
-
-                {candleRangeMs && (
-                  <div className="text-[10px] font-mono text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900/60 px-2 py-1 rounded border border-slate-100 dark:border-slate-800">
-                    Loaded: {new Date(candleRangeMs.minMs).toLocaleDateString()} – {new Date(candleRangeMs.maxMs).toLocaleDateString()}
-                  </div>
-                )}
-
-                {goToError && (
-                  <div className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">
-                    {goToError}
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!goToDateFrom) {
-                        setGoToError('Please select Date From.');
-                        return;
-                      }
-                      const tillDate = goToDateTill || goToDateFrom;
-                      const fromT = goToTimeFrom || '00:00';
-                      const tillT = goToTimeTill || '23:59';
-                      const fromMs = new Date(`${goToDateFrom}T${fromT}:00`).getTime();
-                      const toMs = new Date(`${tillDate}T${tillT}:59`).getTime();
-                      if (Number.isNaN(fromMs) || Number.isNaN(toMs)) {
-                        setGoToError('Invalid date or time.');
-                        return;
-                      }
-                      if (toMs < fromMs) {
-                        setGoToError('Till date/time must be after From.');
-                        return;
-                      }
-                      onGoToRange?.({ fromMs, toMs });
-                      setOpenMenu(null);
-                    }}
-                    className="flex-1 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Go to Range
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onGoToRange?.({ fromMs: 0, toMs: 0, reset: true });
-                      setOpenMenu(null);
-                    }}
-                    className="h-7 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
-                  >
-                    Reset
-                  </button>
-                </div>
-              </div>
-            </div>
+          {isGoToActive && (
+            <button
+              type="button"
+              onClick={() => {
+                onGoToRange?.({ fromMs: 0, toMs: 0, reset: true });
+                setOpenMenu(null);
+              }}
+              className="h-7 px-1.5 rounded-r-lg border border-emerald-500 bg-emerald-600 hover:bg-rose-600 hover:border-rose-600 text-white text-[11px] font-bold transition-colors cursor-pointer"
+              title="Turn Off Range Lock & return to live chart"
+            >
+              ✕
+            </button>
           )}
+
+          {openMenu === 'GOTO' && (() => {
+            const toDateStr = (ms: number) => {
+              const d = new Date(ms);
+              const y = d.getFullYear();
+              const m = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              return `${y}-${m}-${day}`;
+            };
+            const isDailyOrHigher = timeframe === '1D' || timeframe === '1W';
+            const minDateStr = candleRangeMs ? toDateStr(candleRangeMs.minMs) : undefined;
+            const maxDateStr = candleRangeMs ? toDateStr(candleRangeMs.maxMs) : undefined;
+            const fmtShort = (ms: number) => {
+              const d = new Date(ms);
+              return isDailyOrHigher
+                ? d.toLocaleDateString([], { day: '2-digit', month: 'short', year: '2-digit' })
+                : d.toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+            };
+
+            const handleApplyGoTo = (e?: React.FormEvent) => {
+              if (e) e.preventDefault();
+              if (!goToDateFrom) {
+                setGoToError('Please select Date From.');
+                return;
+              }
+              const tillDate = goToDateTill || goToDateFrom;
+              const fromT = isDailyOrHigher ? '00:00' : (goToTimeFrom || '00:00');
+              const tillT = isDailyOrHigher ? '23:59' : (goToTimeTill || '23:59');
+              const fromMs = new Date(`${goToDateFrom}T${fromT}:00`).getTime();
+              const toMs = new Date(`${tillDate}T${tillT}:59.999`).getTime();
+              if (Number.isNaN(fromMs) || Number.isNaN(toMs)) {
+                setGoToError('Invalid date or time.');
+                return;
+              }
+              if (toMs < fromMs) {
+                setGoToError('Till date/time must be after From.');
+                return;
+              }
+              if (candleRangeMs) {
+                const padDayMs = isDailyOrHigher ? 24 * 3600_000 : 0;
+                if (toMs < candleRangeMs.minMs - padDayMs || fromMs > candleRangeMs.maxMs + padDayMs) {
+                  setGoToError(
+                    `Outside loaded history (${fmtShort(candleRangeMs.minMs)} – ${fmtShort(candleRangeMs.maxMs)}). Switch to 4H or 1D for older dates.`
+                  );
+                  return;
+                }
+              }
+              const label = isDailyOrHigher
+                ? `${goToDateFrom} → ${tillDate}`
+                : `${goToDateFrom} ${fromT} → ${tillDate} ${tillT}`;
+              onGoToRange?.({ fromMs, toMs, label });
+              setGoToError(null);
+              setOpenMenu(null);
+            };
+
+            return (
+              <form
+                onSubmit={handleApplyGoTo}
+                className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-76 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-xl p-3 z-[100] animate-in fade-in duration-75 select-text"
+              >
+                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                      Go to Date &amp; Time
+                    </span>
+                    {isGoToActive && (
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold uppercase">
+                        Locked
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOpenMenu(null)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold px-1 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                        Date From
+                      </label>
+                      <input
+                        type="date"
+                        min={minDateStr}
+                        max={maxDateStr}
+                        value={goToDateFrom}
+                        onChange={(e) => { setGoToDateFrom(e.target.value); setGoToError(null); }}
+                        className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                        Date Till
+                      </label>
+                      <input
+                        type="date"
+                        min={minDateStr}
+                        max={maxDateStr}
+                        value={goToDateTill}
+                        onChange={(e) => { setGoToDateTill(e.target.value); setGoToError(null); }}
+                        className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  {!isDailyOrHigher ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                          Time From
+                        </label>
+                        <input
+                          type="time"
+                          value={goToTimeFrom}
+                          onChange={(e) => { setGoToTimeFrom(e.target.value); setGoToError(null); }}
+                          className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                          Time Till
+                        </label>
+                        <input
+                          type="time"
+                          value={goToTimeTill}
+                          onChange={(e) => { setGoToTimeTill(e.target.value); setGoToError(null); }}
+                          className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+                      {timeframe} bars match full calendar days automatically.
+                    </div>
+                  )}
+
+                  {candleRangeMs && (
+                    <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 px-2 py-1 rounded border border-slate-100 dark:border-slate-800">
+                      Loaded: {fmtShort(candleRangeMs.minMs)} – {fmtShort(candleRangeMs.maxMs)}
+                    </div>
+                  )}
+
+                  {goToError && (
+                    <div className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 leading-snug">
+                      {goToError}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="submit"
+                      className="flex-1 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      {isGoToActive ? 'Update Range' : 'Lock Range'}
+                    </button>
+                    {isGoToActive ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onGoToRange?.({ fromMs: 0, toMs: 0, reset: true });
+                          setOpenMenu(null);
+                        }}
+                        className="h-7 px-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Off / Close
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onGoToRange?.({ fromMs: 0, toMs: 0, reset: true });
+                          setOpenMenu(null);
+                        }}
+                        className="h-7 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </form>
+            );
+          })()}
         </div>
       </div>
 
