@@ -42,26 +42,25 @@ function roundPrice(v: number): number {
 
 /**
  * Determines whether candle volume represents actual traded volume or missing/constant/estimated data.
- * Critical 1: Zero-tolerance scan across ALL supplied candles (not just latest 120) so no older estimated bar slips through.
+ * Any individual bar with `volumeEstimated === true` is excluded from actual volume counts AND from profile buckets,
+ * so estimated volume NEVER enters the Volume Profile, while real futures/equity feeds with occasional estimated
+ * gap bars (e.g. COMEX Gold 144/150 real bars) remain ACTUAL.
  */
 export function detectVolumeQuality(candles: Candle[]): VolumeQuality {
   if (!candles || candles.length === 0) return 'ESTIMATED';
-  let positive = 0;
+  let actualPositive = 0;
   const uniqueVols = new Set<number>();
   for (const c of candles) {
-    if ((c as any)?.volumeEstimated === true) {
-      return 'ESTIMATED';
-    }
+    if ((c as any)?.volumeEstimated === true) continue;
     if (typeof c.volume === 'number' && Number.isFinite(c.volume) && c.volume > 0) {
-      positive++;
+      actualPositive++;
       // Preserve fractional precision for crypto (e.g. 0.528 BTC) so small volumes don't collapse to 0/1
       uniqueVols.add(Number(c.volume.toFixed(4)));
     }
   }
-  const positiveRatio = positive / candles.length;
-  // Futures feeds (e.g. COMEX Gold GC=F) legitimately have overnight/rollover 0-vol bars (~35-50%);
-  // require >= 35% positive bars with diverse non-constant volumes (and zero volumeEstimated flags).
-  if (positiveRatio < 0.35 || uniqueVols.size < Math.min(8, Math.max(3, Math.floor(positive * 0.4)))) {
+  const actualRatio = actualPositive / candles.length;
+  // Require >= 35% verified non-estimated positive bars with diverse non-constant volumes
+  if (actualRatio < 0.35 || uniqueVols.size < Math.min(8, Math.max(3, Math.floor(actualPositive * 0.4)))) {
     return 'ESTIMATED';
   }
   return 'ACTUAL';
@@ -105,6 +104,7 @@ export function computeVolumeProfile(
   for (const c of candles) {
     if (Number.isFinite(c.low) && c.low < minP) minP = c.low;
     if (Number.isFinite(c.high) && c.high > maxP) maxP = c.high;
+    if ((c as any)?.volumeEstimated === true) continue;
     if (typeof c.volume === 'number' && Number.isFinite(c.volume) && c.volume > 0) {
       rawVolSum += c.volume;
     }
@@ -152,6 +152,7 @@ export function computeVolumeProfile(
   let totalVolume = 0;
 
   for (const c of candles) {
+    if ((c as any)?.volumeEstimated === true) continue;
     const vol = typeof c.volume === 'number' && Number.isFinite(c.volume) && c.volume > 0 ? c.volume : 0;
     if (vol <= 0) continue;
     totalVolume += vol;

@@ -939,7 +939,9 @@ function detectVolumeBubbles(
   let winSum = 0;
   let winCnt = 0;
   const volOf = (idx: number) => {
-    const v = closedCandles[idx]?.volume;
+    const bar = closedCandles[idx];
+    if (!bar || (bar as any).volumeEstimated === true) return 0;
+    const v = bar.volume;
     return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0;
   };
   for (let j = 0; j < 20; j++) {

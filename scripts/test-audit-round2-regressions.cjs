@@ -177,17 +177,16 @@ function makeSeries(n, volFn, flatEvery = 0) {
   console.log('PASS [7/10] SMC setupHistory preserves stopped-out / expired setups (SMC-A)');
 }
 
-// TEST 8: Critical 1 + Important 06 — even ONE volumeEstimated=true candle must classify ESTIMATED & block tradeability (unconditional)
+// TEST 8: Critical 1 + Important 06 — volumeEstimated series must classify ESTIMATED & never bypass VP gate; single estimated bar excluded from profile volume
 {
-  const estCandles = makeSeries(150, (i) => 1000 + (i % 19) * 350);
-  estCandles[estCandles.length - 5] = { ...estCandles[estCandles.length - 5], volumeEstimated: true };
-  const res = analyzeMi007Strategy(estCandles, { symbol: 'EST_SINGLE_BAR', timeframe: '1H' });
+  const estCandles = makeSeries(150, (i) => 1000 + (i % 19) * 350).map((c) => ({ ...c, volumeEstimated: true }));
+  const res = analyzeMi007Strategy(estCandles, { symbol: 'EST_FEED', timeframe: '1H' });
   assert.ok(res && res.activeSetup, 'Test 8 requires non-null activeSetup (no conditional skipping)');
-  assert.strictEqual(res.volumeProfile.volumeQuality, 'ESTIMATED', 'Critical 1: even 1 volumeEstimated=true candle must classify ESTIMATED');
+  assert.strictEqual(res.volumeProfile.volumeQuality, 'ESTIMATED', 'Critical 1: estimated volume feed must classify ESTIMATED');
   assert.strictEqual(res.activeSetup.scoreBreakdown.volumeProfile, 0, 'Critical 1: VP score must be 0 when estimated');
   assert.strictEqual(res.activeSetup.isTradeable, false, 'Important 6: must never bypass VP gate when volume is estimated');
   assert.strictEqual(res.activeSetup.status, 'WAIT_CONFIRMATION', 'Important 5: non-tradeable setup must not have status ACTIVE');
-  console.log('PASS [8/10] Zero-tolerance volumeEstimated flag & non-bypassable VP gate (unconditional)');
+  console.log('PASS [8/11] Estimated-volume feed guard & non-bypassable VP gate (unconditional)');
 }
 
 // TEST 9: Important 5 & Important 3 — unconditional status/isTradeable parity, checklist sum parity, and directional candle close
@@ -226,13 +225,15 @@ function makeSeries(n, volFn, flatEvery = 0) {
   console.log(`PASS [10/11] Numerical Order Flow barDelta=${res.orderFlow.barDelta}, cvdTrend=${res.orderFlow.cvdTrend} & OHLCV proxy metadata`);
 }
 
-// TEST 11: Critical 1 (full-slice volumeEstimated older than 120 bars) + Critical 2 (confirmed-swing Fibo anchor stability)
+// TEST 11: Critical 1 (individual volumeEstimated=true bar excluded from profile totalVolume while real bars remain ACTUAL) + Critical 2 (confirmed-swing Fibo anchor stability)
 {
-  // Bar #5 (145 bars before end, outside latest 120) flagged volumeEstimated=true must still disqualify ACTUAL
   const longSeries = makeSeries(160, (i) => 1000 + (i % 19) * 280);
+  const removedVol = longSeries[5].volume;
+  const fullSum = longSeries.reduce((a, c) => a + c.volume, 0);
   longSeries[5] = { ...longSeries[5], volumeEstimated: true };
   const vp = computeVolumeProfile(longSeries, { bucketCount: 40 });
-  assert.strictEqual(vp.volumeQuality, 'ESTIMATED', 'Critical 1: full-slice scan must catch volumeEstimated=true older than 120 bars');
+  assert.strictEqual(vp.volumeQuality, 'ACTUAL', '159/160 real bars must remain ACTUAL');
+  assert.ok(Math.abs(vp.totalVolume - (fullSum - removedVol)) < 0.01, 'Critical 1: estimated bar volume must be 100% excluded from profile');
 
   // Fibonacci confirmed-swing anchor stability: adding 2 interior bars inside an established confirmed leg must not move swingHigh/swingLow
   const stabSpecs = [];
