@@ -103,26 +103,26 @@ function buildStatementsAndMetrics(byDate, divisor) {
       const operatingProfit = opInc !== null ? opInc : round2((scale(d.annualPretaxIncome) ?? netProfit) + (scale(d.annualInterestExpense) ?? 0));
       const expenses = round2(Math.max(0, sales - operatingProfit));
       const opmPct = sales > 0 ? round1((operatingProfit / sales) * 100) : 0;
-      const interest = scale(d.annualInterestExpense) ?? 0;
-      const depreciation = scale(d.annualDepreciationAndAmortization) ?? 0;
-      const pbt = scale(d.annualPretaxIncome) ?? round2(operatingProfit - interest);
+      const interest = scale(d.annualInterestExpense);
+      const depreciation = scale(d.annualDepreciationAndAmortization);
+      const pbt = scale(d.annualPretaxIncome) ?? round2(operatingProfit - (interest ?? 0));
       const tax = scale(d.annualTaxProvision);
-      const taxPct = pbt > 0 && tax !== null ? round1(Math.max(0, Math.min(100, (tax / pbt) * 100))) : 0;
-      const eps = typeof d.annualBasicEPS === 'number' && Number.isFinite(d.annualBasicEPS) ? round2(d.annualBasicEPS) : 0;
+      const taxPct = pbt > 0 && tax !== null ? round1(Math.max(0, Math.min(100, (tax / pbt) * 100))) : null;
+      const eps = typeof d.annualBasicEPS === 'number' && Number.isFinite(d.annualBasicEPS) ? round2(d.annualBasicEPS) : null;
       annualProfitLoss.push({
         year: yrLabel,
         sales,
         expenses,
         operatingProfit,
         opmPct,
-        otherIncome: 0,
+        otherIncome: null,
         interest,
         depreciation,
         profitBeforeTax: pbt,
         taxPct,
         netProfit,
         eps,
-        dividendPayoutPct: 0,
+        dividendPayoutPct: null,
       });
     }
 
@@ -132,8 +132,8 @@ function buildStatementsAndMetrics(byDate, divisor) {
       const equityCapital = scale(d.annualCommonStock) ?? round2(equity * 0.1);
       const reserves = scale(d.annualRetainedEarnings) ?? round2(equity - equityCapital);
       const borrowings = scale(d.annualTotalDebt) ?? 0;
-      const totalLiabilities = scale(d.annualTotalLiabilitiesNetMinorityInterest) ?? round2(Math.max(0, totalAssets - equity));
-      const otherLiabilities = round2(Math.max(0, totalLiabilities - borrowings));
+      // Include minority interest & all non-debt liabilities in otherLiabilities so Liabilities side reconciles 100% to Total Assets
+      const otherLiabilities = round2(Math.max(0, totalAssets - equityCapital - reserves - borrowings));
       const fixedAssets = scale(d.annualNetPPE) ?? 0;
       const otherAssets = round2(Math.max(0, totalAssets - fixedAssets));
       balanceSheet.push({
@@ -144,8 +144,8 @@ function buildStatementsAndMetrics(byDate, divisor) {
         otherLiabilities,
         totalLiabilities: round2(totalAssets),
         fixedAssets,
-        cwip: 0,
-        investments: 0,
+        cwip: null,
+        investments: null,
         otherAssets,
         totalAssets,
       });
@@ -278,11 +278,25 @@ async function runPool(items, concurrency, worker) {
   return ok;
 }
 
+function hasCurrencyMismatch(entry, annualProfitLoss) {
+  const latestNp = annualProfitLoss?.[0]?.netProfit;
+  const mcap = entry?.marketCap;
+  const pe = entry?.pe;
+  if (typeof latestNp === 'number' && latestNp > 0 && typeof mcap === 'number' && mcap > 0 && typeof pe === 'number' && pe > 0) {
+    const impliedPe = mcap / latestNp;
+    const ratio = impliedPe / pe;
+    if (ratio > 10 || ratio < 0.1) return true;
+  }
+  return false;
+}
+
+const STATEMENT_BACKED_KEYS = new Set(['cfo', 'capex', 'freeCashFlow', 'totalDebt', 'interestCoverage', 'roa', 'grossMargin']);
+
 async function enrichUS() {
   const usPath = path.resolve('lib/screener/usFundamentalsCache.json');
   const usCache = JSON.parse(fs.readFileSync(usPath, 'utf8'));
   const entries = Array.isArray(usCache) ? usCache : Object.values(usCache);
-  console.log(`\n[USA] Fetching real audited filings for ${entries.length} US companies...`);
+  console.log(`\n[USA] Fetching Yahoo Finance reported financials for ${entries.length} US companies...`);
   const t0 = Date.now();
 
   const updated = await runPool(entries, 15, async (entry) => {
@@ -292,11 +306,12 @@ async function enrichUS() {
     const byDate = await fetchYahooTimeseries(yahooSym);
     if (!byDate) return false;
     const { annualProfitLoss, balanceSheet, cashFlow, metrics } = buildStatementsAndMetrics(byDate, 1e9);
+    if (hasCurrencyMismatch(entry, annualProfitLoss)) return false;
     if (annualProfitLoss.length >= 2) entry.annualProfitLoss = annualProfitLoss;
     if (balanceSheet.length >= 2) entry.balanceSheet = balanceSheet;
     if (cashFlow.length >= 1) entry.cashFlow = cashFlow;
     for (const [k, v] of Object.entries(metrics)) {
-      if (v !== null && v !== undefined && (entry[k] === null || entry[k] === undefined || entry[k] === 0)) {
+      if (v !== null && v !== undefined && (STATEMENT_BACKED_KEYS.has(k) || entry[k] === null || entry[k] === undefined || entry[k] === 0)) {
         entry[k] = v;
       }
     }
@@ -304,7 +319,7 @@ async function enrichUS() {
   });
 
   fs.writeFileSync(usPath, JSON.stringify(usCache));
-  console.log(`[USA] Enriched ${updated}/${entries.length} companies with audited balance sheets in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+  console.log(`[USA] Enriched ${updated}/${entries.length} companies with Yahoo Finance reported financials in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 }
 
 async function enrichIndia(limit = 1200) {
@@ -315,7 +330,7 @@ async function enrichIndia(limit = 1200) {
     .sort((a, b) => (inCache[b]?.marketCap || 0) - (inCache[a]?.marketCap || 0))
     .slice(0, limit)
     .filter((sym) => !(Array.isArray(inCache[sym]?.balanceSheet) && inCache[sym].balanceSheet.length >= 2));
-  console.log(`\n[INDIA] Fetching real audited filings for ${symbols.length} additional NSE companies (top ${limit})...`);
+  console.log(`\n[INDIA] Fetching Yahoo Finance reported financials for ${symbols.length} additional NSE companies (top ${limit})...`);
   const t0 = Date.now();
 
   const updated = await runPool(symbols, 15, async (sym) => {
@@ -324,11 +339,12 @@ async function enrichIndia(limit = 1200) {
     if (!byDate) return false;
     const { annualProfitLoss, balanceSheet, cashFlow, metrics } = buildStatementsAndMetrics(byDate, 1e7);
     const entry = inCache[sym];
+    if (hasCurrencyMismatch(entry, annualProfitLoss)) return false;
     if (annualProfitLoss.length >= 2) entry.annualProfitLoss = annualProfitLoss;
     if (balanceSheet.length >= 2) entry.balanceSheet = balanceSheet;
     if (cashFlow.length >= 1) entry.cashFlow = cashFlow;
     for (const [k, v] of Object.entries(metrics)) {
-      if (v !== null && v !== undefined && (entry[k] === null || entry[k] === undefined)) {
+      if (v !== null && v !== undefined && (STATEMENT_BACKED_KEYS.has(k) || entry[k] === null || entry[k] === undefined)) {
         entry[k] = v;
       }
     }
@@ -336,7 +352,7 @@ async function enrichIndia(limit = 1200) {
   });
 
   fs.writeFileSync(inPath, JSON.stringify(inCache));
-  console.log(`[INDIA] Enriched ${updated}/${symbols.length} additional companies with audited balance sheets in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+  console.log(`[INDIA] Enriched ${updated}/${symbols.length} additional companies with Yahoo Finance reported financials in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 }
 
 (async () => {

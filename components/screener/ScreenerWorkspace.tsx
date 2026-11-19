@@ -555,7 +555,7 @@ export function ScreenerWorkspace() {
             dataFreshness={
               targetCompany?.dataFreshness ||
               filteredCompanies[0]?.dataFreshness ||
-              (market === 'USA' ? 'Audited SEC Filings' : market === 'UAE' ? 'DFM / ADX Filings' : 'Q2 FY27 (Sep 2026)')
+              (market === 'USA' ? 'Yahoo Finance Reported Financials' : market === 'UAE' ? 'DFM / ADX Reported Financials' : 'Yahoo Finance Reported Financials')
             }
             tradeEngineStatus={tradeEngineStatus}
             activePreset={activeViewPreset}

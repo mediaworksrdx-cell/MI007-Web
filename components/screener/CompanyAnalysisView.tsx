@@ -889,7 +889,7 @@ export function CompanyAnalysisView({
           </div>
           ) : (
             <div className="p-10 text-center mono text-xs sm:text-sm text-[var(--theme-card-text-muted)] border border-dashed border-[var(--theme-card-border)] rounded-2xl m-5">
-              No audited quarterly results filings reported for {company.name}.
+              No Yahoo Finance reported quarterly financials available for {company.name}.
             </div>
           )
         )}
@@ -954,7 +954,7 @@ export function CompanyAnalysisView({
                   <td className="py-2 px-3 text-[var(--theme-card-text-muted)]">Depreciation</td>
                   {activeFinancials.annualPl.map((pl) => (
                     <td key={pl.year} className="py-2 px-3 text-right">
-                      {pl.depreciation.toLocaleString()}
+                      {pl.depreciation != null ? pl.depreciation.toLocaleString() : '—'}
                     </td>
                   ))}
                 </tr>
@@ -962,7 +962,7 @@ export function CompanyAnalysisView({
                   <td className="py-2.5 px-3">Net Profit</td>
                   {activeFinancials.annualPl.map((pl) => (
                     <td key={pl.year} className="py-2.5 px-3 text-right font-black">
-                      {pl.netProfit.toLocaleString()}
+                      {pl.netProfit != null ? pl.netProfit.toLocaleString() : '—'}
                     </td>
                   ))}
                 </tr>
@@ -970,7 +970,7 @@ export function CompanyAnalysisView({
                   <td className="py-2 px-3 font-bold text-[var(--theme-card-text)]">EPS in {company.currencySymbol}</td>
                   {activeFinancials.annualPl.map((pl) => (
                     <td key={pl.year} className="py-2 px-3 text-right font-bold text-[var(--theme-card-text)]">
-                      {pl.eps.toFixed(2)}
+                      {pl.eps != null ? pl.eps.toFixed(2) : '—'}
                     </td>
                   ))}
                 </tr>
@@ -978,7 +978,7 @@ export function CompanyAnalysisView({
                   <td className="py-2 px-3 text-[var(--theme-card-text-muted)]">Dividend Payout %</td>
                   {activeFinancials.annualPl.map((pl) => (
                     <td key={pl.year} className="py-2 px-3 text-right text-[var(--theme-card-text)] font-semibold">
-                      {pl.dividendPayoutPct.toFixed(1)}%
+                      {pl.dividendPayoutPct != null ? `${pl.dividendPayoutPct.toFixed(1)}%` : '—'}
                     </td>
                   ))}
                 </tr>
@@ -987,7 +987,7 @@ export function CompanyAnalysisView({
           </div>
           ) : (
             <div className="p-10 text-center mono text-xs sm:text-sm text-[var(--theme-card-text-muted)] border border-dashed border-[var(--theme-card-border)] rounded-2xl m-5">
-              No audited annual profit & loss statements reported for {company.name}.
+              No Yahoo Finance reported annual profit &amp; loss financials available for {company.name}.
             </div>
           )
         )}
@@ -1176,7 +1176,7 @@ export function CompanyAnalysisView({
                   <td className="py-2 px-3 text-[var(--theme-card-text-muted)]">CWIP</td>
                   {activeFinancials.balanceSheet.map((bs) => (
                     <td key={bs.year} className="py-2 px-3 text-right">
-                      {bs.cwip.toLocaleString()}
+                      {bs.cwip != null ? bs.cwip.toLocaleString() : '—'}
                     </td>
                   ))}
                 </tr>
@@ -1184,7 +1184,7 @@ export function CompanyAnalysisView({
                   <td className="py-2 px-3 text-[var(--theme-card-text-muted)]">Investments</td>
                   {activeFinancials.balanceSheet.map((bs) => (
                     <td key={bs.year} className="py-2 px-3 text-right">
-                      {bs.investments.toLocaleString()}
+                      {bs.investments != null ? bs.investments.toLocaleString() : '—'}
                     </td>
                   ))}
                 </tr>
@@ -1192,7 +1192,7 @@ export function CompanyAnalysisView({
                   <td className="py-2 px-3 text-[var(--theme-card-text-muted)]">Other Assets</td>
                   {activeFinancials.balanceSheet.map((bs) => (
                     <td key={bs.year} className="py-2 px-3 text-right text-[var(--theme-card-text-muted)]">
-                      {(bs.otherAssets || Math.round(bs.totalAssets - bs.fixedAssets - bs.cwip - bs.investments)).toLocaleString()}
+                      {(bs.otherAssets != null ? bs.otherAssets : Math.round(bs.totalAssets - bs.fixedAssets - (bs.cwip ?? 0) - (bs.investments ?? 0))).toLocaleString()}
                     </td>
                   ))}
                 </tr>
@@ -1209,7 +1209,7 @@ export function CompanyAnalysisView({
           </div>
           ) : (
             <div className="p-10 text-center mono text-xs sm:text-sm text-[var(--theme-card-text-muted)] border border-dashed border-[var(--theme-card-border)] rounded-2xl m-5">
-              No audited balance sheet statements reported for {company.name}.
+              No Yahoo Finance reported balance sheet financials available for {company.name}.
             </div>
           )
         )}
@@ -1290,7 +1290,7 @@ export function CompanyAnalysisView({
           </div>
           ) : (
             <div className="p-10 text-center mono text-xs sm:text-sm text-[var(--theme-card-text-muted)] border border-dashed border-[var(--theme-card-border)] rounded-2xl m-5">
-              No audited cash flow statements reported for {company.name}.
+              No Yahoo Finance reported cash flow financials available for {company.name}.
             </div>
           )
         )}

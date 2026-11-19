@@ -35,39 +35,22 @@ for (const sym of symbols) {
   const sma200 = (high52W + low52W) / 2;
   const distanceSma200Pct = sma200 > 0 ? Number((((price - sma200) / sma200) * 100).toFixed(1)) : 0.0;
 
-  // Operating cash flow & capex
-  const annualSales = item.revenue || (mcap > 0 ? Math.round(mcap * 0.85) : 1000);
-  const cfo = item.cfo != null
-    ? item.cfo
-    : (opm ? Math.round(annualSales * (opm / 100) * 0.75) : Math.round(annualSales * 0.1));
-  const capex = item.capex != null
-    ? item.capex
-    : (isFin ? Math.round(cfo * 0.08) : Math.round(cfo * 0.32));
-  const freeCashFlow = item.freeCashFlow != null ? item.freeCashFlow : (cfo - capex);
-  const fcfYield = item.fcfYield != null
-    ? item.fcfYield
-    : (mcap > 0 && freeCashFlow ? +((freeCashFlow / mcap) * 100).toFixed(2) : 0.0);
+  // Operating cash flow & capex (never synthesize fabricated 0.32x CFO capex or FCF)
+  const annualSales = item.revenue ?? null;
+  const cfo: number | null = item.cfo != null ? item.cfo : null;
+  const capex: number | null = item.capex != null ? item.capex : null;
+  const freeCashFlow: number | null =
+    item.freeCashFlow != null
+      ? item.freeCashFlow
+      : (cfo != null && capex != null ? Number((cfo - Math.abs(capex)).toFixed(2)) : null);
+  const fcfYield: number | null =
+    item.fcfYield != null
+      ? item.fcfYield
+      : (mcap > 0 && freeCashFlow != null ? +((freeCashFlow / mcap) * 100).toFixed(2) : null);
 
-  // Liquidity
-  let currentRatio: number | null = null;
-  let quickRatio: number | null = null;
-  if (!isFin) {
-    if (item.currentRatio != null) {
-      currentRatio = item.currentRatio;
-      quickRatio = item.quickRatio != null ? item.quickRatio : +(Number(currentRatio) * 0.72).toFixed(2);
-    } else {
-      if (debtToEquity !== null && debtToEquity < 0.2) {
-        currentRatio = 1.85;
-        quickRatio = 1.42;
-      } else if (debtToEquity !== null && debtToEquity < 0.8) {
-        currentRatio = 1.45;
-        quickRatio = 1.10;
-      } else {
-        currentRatio = 1.15;
-        quickRatio = 0.82;
-      }
-    }
-  }
+  // Liquidity (never synthesize from hardcoded D/E buckets — return null when unavailable)
+  const currentRatio: number | null = !isFin && item.currentRatio != null ? item.currentRatio : null;
+  const quickRatio: number | null = !isFin && item.quickRatio != null ? item.quickRatio : null;
 
   // Working capital days & cash conversion cycle
   let workingCapitalDays: number | null = null;
