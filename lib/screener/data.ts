@@ -3926,13 +3926,42 @@ export function buildIndiaUniverse(): CompanyFundamental[] {
   return cachedIndiaUniverse;
 }
 
+const US_CACHE_BY_SYMBOL = new Map<string, CompanyFundamental>(
+  US_INDEX_UNIVERSE.map((c) => [c.symbol.toUpperCase(), c])
+);
+
+function enrichCuratedUsCompany(comp: CompanyFundamental): CompanyFundamental {
+  if (comp.market !== 'USA') return comp;
+  const cached = US_CACHE_BY_SYMBOL.get(comp.symbol.toUpperCase());
+  if (!cached) return comp;
+  const merged: any = { ...comp };
+  for (const [k, v] of Object.entries(cached)) {
+    if (v !== null && v !== undefined) {
+      if (Array.isArray(v) && v.length === 0) continue;
+      if (k === 'annualProfitLoss' || k === 'balanceSheet' || k === 'cashFlow') {
+        if (Array.isArray(v) && v.length >= 2) merged[k] = v;
+      } else if (merged[k] === null || merged[k] === undefined || merged[k] === 0) {
+        merged[k] = v;
+      }
+    }
+  }
+  merged.statementProvenance = {
+    annualProfitLoss: merged.annualProfitLoss?.length ? 'reported' : 'missing',
+    quarterlyResults: merged.quarterlyResults?.length ? 'reported' : 'missing',
+    balanceSheet: merged.balanceSheet?.length ? 'reported' : 'missing',
+    cashFlow: merged.cashFlow?.length ? 'reported' : 'missing',
+    shareholdingPattern: merged.shareholdingPattern?.length ? 'reported' : 'missing',
+  };
+  return merged as CompanyFundamental;
+}
+
 /** Fetch all companies for a given market region */
 export function getCompaniesByMarket(market: 'INDIA' | 'USA' | 'UAE'): CompanyFundamental[] {
   if (market === 'INDIA') {
     return [...buildIndiaUniverse()];
   }
   if (market === 'USA') {
-    const curatedUs = MASTER_COMPANIES.filter((c) => c.market === 'USA');
+    const curatedUs = MASTER_COMPANIES.filter((c) => c.market === 'USA').map(enrichCuratedUsCompany);
     const curatedSet = new Set(curatedUs.map((c) => c.symbol.toUpperCase()));
     return [
       ...curatedUs,
@@ -3963,7 +3992,9 @@ export function getCompanyBySymbol(symbol: string, marketPreference?: 'INDIA' | 
   );
   if (existing) {
     if (!marketPreference || existing.market === marketPreference) {
-      return enrichCuratedIndianCompany(existing);
+      return existing.market === 'USA'
+        ? enrichCuratedUsCompany(existing)
+        : enrichCuratedIndianCompany(existing);
     }
   }
 

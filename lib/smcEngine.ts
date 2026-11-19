@@ -739,11 +739,12 @@ export function detectSwingPoints(
     }
     const prev = swings[swings.length - 1];
     if (prev.isHigh === sw.isHigh) {
-      // Consecutive swings in same direction: keep the more extreme peak or trough
+      // Append-only confirmed swings: never retroactively erase an already-confirmed swing
+      // (erasing prev when a later extreme forms causes partial-vs-full break instability).
       if (sw.isHigh && sw.price >= prev.price) {
-        swings[swings.length - 1] = sw;
+        swings.push(sw);
       } else if (!sw.isHigh && sw.price <= prev.price) {
-        swings[swings.length - 1] = sw;
+        swings.push(sw);
       }
     } else {
       swings.push(sw);
@@ -1024,25 +1025,43 @@ export function detectLiquidity(
   // A level is only sweepable after every swing forming it has been CONFIRMED (no look-ahead).
   const confByIndex = new Map<number, number>();
   for (const s of swings) confByIndex.set(s.index, s.confirmationIndex ?? s.index);
-  const levelAvailableFrom = (lvl: SmcLiquidityLevel) =>
-    Math.max(...lvl.candleIndices.map(ix => confByIndex.get(ix) ?? ix));
+
+  const levelItems = levels.map((lvl) => {
+    let avail = 0;
+    for (let k = 0; k < lvl.candleIndices.length; k++) {
+      const ix = lvl.candleIndices[k];
+      const c = confByIndex.get(ix) ?? ix;
+      if (c > avail) avail = c;
+    }
+    return { lvl, avail };
+  });
+  levelItems.sort((a, b) => a.avail - b.avail);
+
+  const activeLevels: SmcLiquidityLevel[] = [];
+  let lvlPtr = 0;
+  const ivMs = inferCandleIntervalMs(candles);
 
   for (let i = 0; i < candles.length; i++) {
     const cur = candles[i];
     // SMC-002: never classify a sweep on a forming candle
-    if (!isCandleClosed(cur)) break;
+    if (!isCandleClosed(cur, ivMs)) break;
+    while (lvlPtr < levelItems.length && levelItems[lvlPtr].avail < i) {
+      activeLevels.push(levelItems[lvlPtr].lvl);
+      lvlPtr++;
+    }
     const totalRange = cur.high - cur.low;
     if (totalRange <= 0) continue;
     const next = candles[i + 1];
 
-    for (const lvl of levels) {
-      if (i <= levelAvailableFrom(lvl)) continue;
-      if (lvl.isSwept) continue;
+    for (let j = activeLevels.length - 1; j >= 0; j--) {
+      const lvl = activeLevels[j];
 
       if (lvl.type === 'BSL' || lvl.type === 'EQH') {
         // If candle body closes above the confirmed swing high, the level was broken (BOS), not swept
         if (cur.close > lvl.price) {
           lvl.isSwept = true;
+          activeLevels[j] = activeLevels[activeLevels.length - 1];
+          activeLevels.pop();
           continue;
         }
         // Buy-Side Liquidity (BSL) Sweep: wick above confirmed swing high, close back below
@@ -1050,7 +1069,7 @@ export function detectLiquidity(
           const upperWick = cur.high - Math.max(cur.open, cur.close);
           const upperWickRatio = upperWick / totalRange;
           const isGenuineSweep = upperWickRatio >= minWickRatio;
-          const rejectionConfirmed = !!next && isCandleClosed(next) && next.close < lvl.price;
+          const rejectionConfirmed = !!next && isCandleClosed(next, ivMs) && next.close < lvl.price;
           if (isGenuineSweep) {
             lvl.isSwept = true;
             lvl.sweepCandleIndex = i;
@@ -1065,12 +1084,16 @@ export function detectLiquidity(
               isGenuineSweep,
               rejectionConfirmed,
             });
+            activeLevels[j] = activeLevels[activeLevels.length - 1];
+            activeLevels.pop();
           }
         }
       } else if (lvl.type === 'SSL' || lvl.type === 'EQL') {
         // If candle body closes below the confirmed swing low, the level was broken (BOS), not swept
         if (cur.close < lvl.price) {
           lvl.isSwept = true;
+          activeLevels[j] = activeLevels[activeLevels.length - 1];
+          activeLevels.pop();
           continue;
         }
         // Sell-Side Liquidity (SSL) Sweep: wick below confirmed swing low, close back above
@@ -1078,7 +1101,7 @@ export function detectLiquidity(
           const lowerWick = Math.min(cur.open, cur.close) - cur.low;
           const lowerWickRatio = lowerWick / totalRange;
           const isGenuineSweep = lowerWickRatio >= minWickRatio;
-          const rejectionConfirmed = !!next && isCandleClosed(next) && next.close > lvl.price;
+          const rejectionConfirmed = !!next && isCandleClosed(next, ivMs) && next.close > lvl.price;
           if (isGenuineSweep) {
             lvl.isSwept = true;
             lvl.sweepCandleIndex = i;
@@ -1093,6 +1116,8 @@ export function detectLiquidity(
               isGenuineSweep,
               rejectionConfirmed,
             });
+            activeLevels[j] = activeLevels[activeLevels.length - 1];
+            activeLevels.pop();
           }
         }
       }
@@ -1442,8 +1467,9 @@ export function detectFairValueGaps(candles: Candle[], minGapThreshold?: number)
 
 // ── 6. Dealing Range & Equilibrium (Premium / Discount / OTE) ───────────────
 
-export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): SmcDealingRange {
-  if (candles.length === 0) {
+export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[], maxLen?: number): SmcDealingRange {
+  const len = maxLen !== undefined ? Math.min(candles.length, maxLen) : candles.length;
+  if (len === 0) {
     return {
       highPrice: 0,
       lowPrice: 0,
@@ -1471,7 +1497,8 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
     highPrice = recentHighs[recentHighs.length - 1].price;
     lowPrice = recentLows[recentLows.length - 1].price;
   } else {
-    for (const c of candles) {
+    for (let i = 0; i < len; i++) {
+      const c = candles[i];
       if (c.high > highPrice) highPrice = c.high;
       if (c.low < lowPrice) lowPrice = c.low;
     }
@@ -1482,17 +1509,17 @@ export function detectDealingRange(candles: Candle[], swings: SmcSwingPoint[]): 
   // after the anchor swing points formed (ongoing impulse leg / breakout),
   // the dealing range dynamically incorporates the active impulse expansion high and low.
   const anchorStart = Math.min(
-    recentHighs[recentHighs.length - 1]?.index ?? (candles.length - 1),
-    recentLows[recentLows.length - 1]?.index ?? (candles.length - 1)
+    recentHighs[recentHighs.length - 1]?.index ?? (len - 1),
+    recentLows[recentLows.length - 1]?.index ?? (len - 1)
   );
-  for (let i = anchorStart; i < candles.length; i++) {
+  for (let i = anchorStart; i < len; i++) {
     const bar = candles[i];
     if (bar.high > highPrice) highPrice = bar.high;
     if (bar.low < lowPrice && bar.low > 0) lowPrice = bar.low;
   }
 
   if (highPrice === lowPrice || highPrice <= 0) {
-    const p = candles[candles.length - 1]?.close || 100;
+    const p = candles[len - 1]?.close || 100;
     highPrice = p * 1.05;
     lowPrice = p * 0.95;
   }
@@ -1558,7 +1585,22 @@ export function detectSessionLevels(candles: Candle[]): SmcSessionLevels {
   const intervalMs = inferCandleIntervalMs(candles);
   const isIntraday = intervalMs < 86_400_000;
 
-  for (const c of candles) {
+  // PDH/PDL, PWH/PWL, and latest session ranges only depend on recent history (last ~21 days)
+  const lastTime = candles[candles.length - 1].openTime;
+  const cutoffTime = lastTime - 21 * 86_400_000;
+  let startIdx = 0;
+  if (candles.length > 400 && candles[0].openTime < cutoffTime) {
+    let lo = 0, hi = candles.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (candles[mid].openTime < cutoffTime) lo = mid + 1;
+      else hi = mid;
+    }
+    startIdx = Math.max(0, lo - 2);
+  }
+
+  for (let ci = startIdx; ci < candles.length; ci++) {
+    const c = candles[ci];
     const d = new Date(c.openTime);
     const dayKey = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
     const dayOfWeek = (d.getUTCDay() + 6) % 7; // 0 = Monday
@@ -1666,6 +1708,8 @@ export function evaluateInstitutionalConfluence(
     sessionLevels?: SmcSessionLevels;
     htfBias?: 'BULLISH' | 'BEARISH' | 'RANGE';
     hasConfirmedTargetPool?: boolean;
+    atrSeries?: number[];
+    precomputedMacroSwings?: SmcSwingPoint[];
   }
 ): {
   qualityScore: number;
@@ -1690,13 +1734,20 @@ export function evaluateInstitutionalConfluence(
   const pitFvgs = context.fvgs.filter(f => (f.confirmationIndex ?? f.startIndex + 1) <= idx && zoneActiveAt(f, idx));
   const pitDealingRange = idx >= candles.length - 1
     ? context.dealingRange
-    : detectDealingRange(candles.slice(0, idx + 1), pitSwings);
+    : detectDealingRange(candles, pitSwings, idx + 1);
 
   // 1. Higher-Timeframe Alignment (Max 20%) — point-in-time as of bar idx (no future hindsight)
   let htfScore = 0;
   let htfReason = 'HTF Bias: Unconfirmed (0/20)';
-  const macroCandles = aggregateMacroCandles(candles.slice(0, idx + 1), 4);
-  const macroSwings = macroCandles.length >= 12 ? detectSwingPoints(macroCandles, 2, true) : pitSwings.filter(s => s.significance === 'MAJOR');
+  const barTimeAtIdx = candles[idx]?.openTime ?? 0;
+  let macroSwings: SmcSwingPoint[];
+  if (context.precomputedMacroSwings && context.precomputedMacroSwings.length > 0) {
+    const pitMacro = context.precomputedMacroSwings.filter(ms => (ms.confirmationTime ?? ms.time) <= barTimeAtIdx);
+    macroSwings = pitMacro.length >= 3 ? pitMacro : pitSwings.filter(s => s.significance === 'MAJOR');
+  } else {
+    const macroCandles = aggregateMacroCandles(candles.slice(0, idx + 1), 4);
+    macroSwings = macroCandles.length >= 12 ? detectSwingPoints(macroCandles, 2, true) : pitSwings.filter(s => s.significance === 'MAJOR');
+  }
   const pitHtfBias: 'BULLISH' | 'BEARISH' | 'RANGE' = macroSwings.length >= 3 ? (() => {
     const recent = macroSwings.slice(-4);
     const highs = recent.filter(s => s.isHigh);
@@ -1836,8 +1887,9 @@ export function evaluateInstitutionalConfluence(
   let dispScore = 0;
   let dispReason = 'Displacement: Insufficient impulse body expansion (0/10)';
   if (candles.length > 10 && idx >= 5) {
-    const atrSeries = computeAtrSeries(candles.slice(0, idx), 14);
-    const atr = atrSeries[atrSeries.length - 1] || 0.001;
+    const atr = (context.atrSeries && context.atrSeries[idx - 1])
+      ? context.atrSeries[idx - 1]
+      : (computeAtrSeries(candles.slice(0, idx), 14).slice(-1)[0] || 0.001);
     let bestMult = 0;
     let bestBodyRatio = 0;
     for (let k = Math.max(0, idx - 2); k <= idx; k++) {
@@ -2306,6 +2358,8 @@ export function detectAll16SmcSetups(
   const setups: SmcConfirmedSetup[] = [];
   const lastCandle = candles[candles.length - 1];
   const atrSeries = computeAtrSeries(candles, 14);
+  const fullMacroCandles = aggregateMacroCandles(candles, 4);
+  const precomputedMacroSwings = fullMacroCandles.length >= 12 ? detectSwingPoints(fullMacroCandles, 2, true) : [];
   const intervalMs = inferCandleIntervalMs(candles);
   const isIntradaySession = intervalMs > 0 && intervalMs <= 3_600_000;
   const latestDayKey = isIntradaySession ? getSmcTradingDayKey(lastCandle.openTime, symbol) : '';
@@ -2423,7 +2477,7 @@ export function detectAll16SmcSetups(
     const pitSwingsAtSetup = swings.filter(s => (s.confirmationIndex ?? s.index) <= effectiveConfirmIdx);
     const pitDr = effectiveConfirmIdx >= candles.length - 1
       ? dealingRange
-      : detectDealingRange(candles.slice(0, effectiveConfirmIdx + 1), pitSwingsAtSetup);
+      : detectDealingRange(candles, pitSwingsAtSetup, effectiveConfirmIdx + 1);
     if (pitDr && pitDr.highPrice > pitDr.lowPrice) {
       const drSpan = pitDr.highPrice - pitDr.lowPrice;
       const deepPremium = pitDr.equilibriumPrice + drSpan * 0.20;
@@ -2681,6 +2735,12 @@ export function detectAll16SmcSetups(
     let hasDepartedZone = Boolean(
       validatingBreak || (formBar && (isBull ? formBar.close >= cleanEntry : formBar.close <= cleanEntry))
     );
+    // Entry fill tracking: if the confirmation bar already closed beyond the entry zone in the
+    // profitable direction (e.g. CHoCH/BOS breakout pullback entry), a limit order at cleanEntry
+    // is NOT filled until a subsequent bar actually retests the entry zone.
+    let entryFilled = Boolean(
+      formBar && (isBull ? formBar.close <= entryZoneHigh : formBar.close >= entryZoneLow)
+    );
 
     const setupDayKey = isIntradaySession ? getSmcTradingDayKey(effectiveConfirmTime, symbol) : '';
 
@@ -2696,9 +2756,26 @@ export function detectAll16SmcSetups(
           break;
         }
 
+        // Check if a pending pullback limit order got filled on this bar before evaluating TP
+        if (!entryFilled) {
+          const barFilledEntry = isBull
+            ? (bar.low <= entryZoneHigh && bar.high >= cleanStopLoss)
+            : (bar.high >= entryZoneLow && bar.low <= cleanStopLoss);
+          if (barFilledEntry) {
+            entryFilled = true;
+          }
+        }
+
         const slTouched = isBull ? (bar.low <= cleanStopLoss || bar.close <= cleanStopLoss) : (bar.high >= cleanStopLoss || bar.close >= cleanStopLoss);
         const tp1Touched = isBull ? bar.high >= effectiveTarget1 : bar.low <= effectiveTarget1;
         const tp2Touched = isBull ? bar.high >= targetPrice2 : bar.low <= targetPrice2;
+
+        // If price reaches TP1 before a pending pullback limit entry was ever filled, it is a missed entry (EXPIRED), not TARGET_HIT
+        if (!entryFilled && tp1Touched) {
+          status = 'EXPIRED';
+          lifecycleState = 'EXPIRED';
+          break;
+        }
 
         // Trade Management: Resolve same-candle TP & SL conflict using LTF data when available
         if (slTouched && (tp1Touched || tp2Touched)) {
@@ -2936,6 +3013,8 @@ export function detectAll16SmcSetups(
         sessionLevels,
         htfBias,
         hasConfirmedTargetPool: Boolean(structuralTp1),
+        atrSeries,
+        precomputedMacroSwings,
       }
     );
 

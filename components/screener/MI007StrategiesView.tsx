@@ -1,6 +1,8 @@
 // ─── MI-007 Strategies View: Simplified, Clean, Black Theme ─────────────────
 'use client';
 
+import { fetchCandlesBatch } from '@/lib/screener/candleClientCache';
+
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental, MarketRegion } from '@/lib/screener/types';
@@ -352,41 +354,27 @@ export function MI007StrategiesView({
     lowSampleWarning?: boolean;
   } | null>(null);
 
-  // Fetch real candles for top symbols in the universe (SC1)
+  // Fetch real candles for top symbols via shared deduplicated cache & concurrency cap (SC1)
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     const targets = companies.slice(0, scanLimit);
     const missing = targets.filter((c) => !realCandlesMap[c.symbol]);
     if (missing.length === 0) return;
 
     setLoadingCandles(true);
     (async () => {
-      const fetched: Record<string, Candle[]> = {};
-      const batch = missing.slice(0, 20);
-      await Promise.all(
-        batch.map(async (comp) => {
-          try {
-            const res = await fetch(
-              `/api/candles?symbol=${encodeURIComponent(comp.symbol)}&timeframe=1D&market=${encodeURIComponent(market)}&count=220`
-            );
-            if (!res.ok) return;
-            const json = await res.json();
-            if (Array.isArray(json.candles) && json.candles.length >= 30) {
-              fetched[comp.symbol] = json.candles;
-            }
-          } catch {
-            // Ignore network errors for individual symbols
-          }
-        })
-      );
-      if (!cancelled && Object.keys(fetched).length > 0) {
+      const batch = missing.slice(0, 20).map((c) => ({ symbol: c.symbol, market }));
+      const batchMap = await fetchCandlesBatch(batch, '1D', 260, 6, controller.signal);
+      if (!controller.signal.aborted && batchMap.size > 0) {
+        const fetched: Record<string, Candle[]> = {};
+        batchMap.forEach((v, k) => { fetched[k] = v; });
         setRealCandlesMap((prev) => ({ ...prev, ...fetched }));
       }
-      if (!cancelled) setLoadingCandles(false);
+      if (!controller.signal.aborted) setLoadingCandles(false);
     })();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [companies, market, scanLimit]);
 

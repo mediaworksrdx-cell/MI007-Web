@@ -4,6 +4,8 @@
 
 'use client';
 
+import { fetchCachedCandles } from '@/lib/screener/candleClientCache';
+
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental } from '@/lib/screener/types';
@@ -45,23 +47,15 @@ export function TechnicalAnalysisView({
   const changePct = live?.changePct ?? company.priceChangePct;
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     (async () => {
-      try {
-        const res = await fetch(
-          `/api/candles?symbol=${encodeURIComponent(company.symbol)}&timeframe=1D&market=${encodeURIComponent(company.market)}&count=240`
-        );
-        if (!res.ok) return;
-        const json = await res.json();
-        if (!cancelled && Array.isArray(json.candles) && json.candles.length >= 30) {
-          setRealCandles(json.candles);
-        }
-      } catch {
-        // Ignore network errors
+      const arr = await fetchCachedCandles(company.symbol, '1D', company.market, 260, controller.signal);
+      if (!controller.signal.aborted && arr.length >= 30) {
+        setRealCandles(arr);
       }
     })();
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [company.symbol, company.market]);
 

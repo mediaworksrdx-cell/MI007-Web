@@ -631,12 +631,38 @@ async function fetchYahooFinanceCandles(symbol: string, timeframe: string, marke
   return null;
 }
 
+// Server-side in-memory TTL cache & in-flight deduplication to avoid hammering Yahoo/Binance
+// during multi-stock screener scans and concurrent tab switches.
+interface ServerCandleCacheEntry {
+  candles: Candle[];
+  fetchedAt: number;
+}
+const serverCandleCache = new Map<string, ServerCandleCacheEntry>();
+const inFlightCandleFetches = new Map<string, Promise<Candle[] | null>>();
+const MAX_SERVER_CANDLE_CACHE = 400;
+
+function getCandleTtlMs(timeframe: string): number {
+  switch (timeframe) {
+    case '1m':
+    case '5m':
+      return 20_000;
+    case '15m':
+    case '30m':
+    case '1H':
+    case '4H':
+      return 60_000;
+    default:
+      return 5 * 60_000; // 5 minutes for 1D, 1W, 1M
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const rawSymbol = searchParams.get('symbol') || 'NIFTY';
   const symbol = rawSymbol.toUpperCase().trim();
   const timeframe = searchParams.get('timeframe') || '1H';
   const rangeParam = searchParams.get('range');
+  const countParam = Number(searchParams.get('count') || 0);
   const marketParam = searchParams.get('market')?.toUpperCase() as MarketType | undefined;
   const cleanSym = symbol.replace(/[\s\/-]+/g, '');
 
@@ -649,26 +675,67 @@ export async function GET(req: NextRequest) {
     market = 'UAE';
   }
 
-  // 1. Crypto -> Direct Binance Spot Exchange Klines (matches live Binance ticker & WebSocket)
-  if (isCrypto) {
-    const binanceCandles = await fetchBinanceCandles(symbol, timeframe);
-    if (binanceCandles && binanceCandles.length > 0) {
-      return NextResponse.json(binanceCandles);
-    }
+  const cacheKey = `${symbol}|${timeframe}|${market}|${rangeParam || ''}`;
+  const ttlMs = getCandleTtlMs(timeframe);
+  const maxAgeSec = Math.round(ttlMs / 1000);
+  const respond = (candles: Candle[], cacheStatus: 'HIT' | 'MISS') => {
+    const out =
+      Number.isFinite(countParam) && countParam >= 50 && candles.length > countParam
+        ? candles.slice(-Math.floor(countParam))
+        : candles;
+    return NextResponse.json(out, {
+      headers: {
+        'Cache-Control': `public, s-maxage=${maxAgeSec}, stale-while-revalidate=${maxAgeSec * 4}`,
+        'X-MI007-Candle-Cache': cacheStatus,
+      },
+    });
+  };
+
+  const cached = serverCandleCache.get(cacheKey);
+  if (cached && Date.now() - cached.fetchedAt < ttlMs && cached.candles.length > 0) {
+    return respond(cached.candles, 'HIT');
   }
 
-  // 2. All Markets (US, India, UAE, Forex, Commodities, & Crypto fallback) -> Direct Yahoo Finance Exchange OHLCV
-  const yahooCandles = await fetchYahooFinanceCandles(symbol, timeframe, market, rangeParam);
-  if (yahooCandles && yahooCandles.length > 0) {
-    return NextResponse.json(yahooCandles);
+  let fetchPromise = inFlightCandleFetches.get(cacheKey);
+  if (!fetchPromise) {
+    fetchPromise = (async (): Promise<Candle[] | null> => {
+      // 1. Crypto -> Direct Binance Spot Exchange Klines (matches live Binance ticker & WebSocket)
+      if (isCrypto) {
+        const binanceCandles = await fetchBinanceCandles(symbol, timeframe);
+        if (binanceCandles && binanceCandles.length > 0) {
+          return binanceCandles;
+        }
+      }
+
+      // 2. All Markets (US, India, UAE, Forex, Commodities, & Crypto fallback) -> Direct Yahoo Finance Exchange OHLCV
+      const yahooCandles = await fetchYahooFinanceCandles(symbol, timeframe, market, rangeParam);
+      if (yahooCandles && yahooCandles.length > 0) {
+        return yahooCandles;
+      }
+
+      // 3. Offline fallback ONLY for 5Y/1D if Yahoo Finance is unreachable
+      if (timeframe === '1D' || rangeParam === '5y') {
+        const precomputed = loadPrecomputed5YrHistory(cleanSym);
+        if (precomputed && precomputed.length > 0) {
+          return precomputed;
+        }
+      }
+
+      return null;
+    })().finally(() => {
+      inFlightCandleFetches.delete(cacheKey);
+    });
+    inFlightCandleFetches.set(cacheKey, fetchPromise);
   }
 
-  // 3. Offline fallback ONLY for 5Y/1D if Yahoo Finance is unreachable
-  if (timeframe === '1D' || rangeParam === '5y') {
-    const precomputed = loadPrecomputed5YrHistory(cleanSym);
-    if (precomputed && precomputed.length > 0) {
-      return NextResponse.json(precomputed);
+  const resolved = await fetchPromise;
+  if (resolved && resolved.length > 0) {
+    if (serverCandleCache.size >= MAX_SERVER_CANDLE_CACHE) {
+      const oldest = serverCandleCache.keys().next().value;
+      if (oldest) serverCandleCache.delete(oldest);
     }
+    serverCandleCache.set(cacheKey, { candles: resolved, fetchedAt: Date.now() });
+    return respond(resolved, 'MISS');
   }
 
   return NextResponse.json([], {

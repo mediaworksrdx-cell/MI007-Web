@@ -4,6 +4,8 @@
 
 'use client';
 
+import { fetchCachedCandles } from '@/lib/screener/candleClientCache';
+
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental } from '@/lib/screener/types';
@@ -170,25 +172,22 @@ export function BacktestingView({
 
   // Fetch real candles from /api/candles for the selected backtest symbol (SC1)
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     setRealCandles([]);
     (async () => {
-      try {
-        const res = await fetch(
-          `/api/candles?symbol=${encodeURIComponent(activeCompany.symbol)}&timeframe=1D&market=${encodeURIComponent(activeCompany.market || 'INDIA')}&count=500`
-        );
-        if (!res.ok) return;
-        const json = await res.json();
-        const raw = Array.isArray(json) ? json : (Array.isArray(json?.candles) ? json.candles : []);
-        if (!cancelled && raw.length >= 30) {
-          setRealCandles(raw);
-        }
-      } catch {
-        // Ignore network errors
+      const raw = await fetchCachedCandles(
+        activeCompany.symbol,
+        '1D',
+        activeCompany.market || 'INDIA',
+        500,
+        controller.signal
+      );
+      if (!controller.signal.aborted && raw.length >= 30) {
+        setRealCandles(raw);
       }
     })();
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [activeCompany.symbol, activeCompany.market]);
 

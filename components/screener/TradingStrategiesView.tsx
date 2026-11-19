@@ -2,6 +2,8 @@
 // Unified cockpit for Flagship Quantum AI, 10 Classic Technical, 16 SMC, and 7 Order Flow models.
 'use client';
 
+import { fetchCandlesBatch } from '@/lib/screener/candleClientCache';
+
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyFundamental, MarketRegion } from '@/lib/screener/types';
@@ -72,37 +74,23 @@ export function TradingStrategiesView({
     return Array.from(map.values());
   }, [companies, searchQuery]);
 
-  // Fetch real candles from /api/candles for the scan batch (SC1)
+  // Fetch real candles from /api/candles via shared deduplicated cache & concurrency cap (SC1)
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     const missing = targetUniverse.slice(0, 20).filter((c) => !realCandlesMap[c.symbol]);
     if (missing.length === 0) return;
 
     (async () => {
-      const fetched: Record<string, any[]> = {};
-      await Promise.all(
-        missing.map(async (comp) => {
-          try {
-            const res = await fetch(
-              `/api/candles?symbol=${encodeURIComponent(comp.symbol)}&timeframe=1D&market=${encodeURIComponent(comp.market)}&count=220`
-            );
-            if (!res.ok) return;
-            const json = await res.json();
-            if (Array.isArray(json.candles) && json.candles.length >= 30) {
-              fetched[comp.symbol] = json.candles;
-            }
-          } catch {
-            // Ignore individual fetch errors
-          }
-        })
-      );
-      if (!cancelled && Object.keys(fetched).length > 0) {
+      const batchMap = await fetchCandlesBatch(missing, '1D', 260, 6, controller.signal);
+      if (!controller.signal.aborted && batchMap.size > 0) {
+        const fetched: Record<string, any[]> = {};
+        batchMap.forEach((v, k) => { fetched[k] = v; });
         setRealCandlesMap((prev) => ({ ...prev, ...fetched }));
       }
     })();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [targetUniverse]);
 
