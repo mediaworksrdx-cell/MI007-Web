@@ -42,7 +42,7 @@ export function renderMi007Overlay({
 
   // ── 1. Volume Profile is rendered via the chart's native VPVR layer (LAYER 2) when MI-007 Vol Pro is ON ──
 
-  // ── 2. Fibonacci Confluence (TradingView-style Shaded Bands + Swing Anchor + OTE Zone) ──
+  // ── 2. Fibonacci Retracement & Extension (Clean Thick Black Lines Only — No Color Fills) ──
   const fib = data.fibonacci;
   if (showFibo && fib && fib.levels.length > 0) {
     const highX = (fib.swingHigh.index - startIdx) * candleW + candleW / 2;
@@ -56,61 +56,12 @@ export function renderMi007Overlay({
     const fibEndX = chartW - 4 * dpr;
 
     if (fibEndX > fibStartX + 20 * dpr) {
-      const levelByRatio = new Map<number, number>();
-      for (const lv of fib.levels) levelByRatio.set(lv.ratio, lv.price);
+      const ink = isDark ? '#F8FAFC' : '#000000';
+      const pillBg = isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.94)';
 
-      // Shaded horizontal Fibonacci bands (TradingView style, high visibility in Light & Dark)
-      const bandSpecs: Array<{ r1: number; r2: number; darkFill: string; lightFill: string }> = [
-        { r1: 0.0,   r2: 0.236, darkFill: 'rgba(148, 163, 184, 0.08)', lightFill: 'rgba(100, 116, 139, 0.09)' },
-        { r1: 0.236, r2: 0.382, darkFill: 'rgba(56, 189, 248, 0.10)',  lightFill: 'rgba(2, 132, 199, 0.10)' },
-        { r1: 0.382, r2: 0.5,   darkFill: 'rgba(16, 185, 129, 0.10)',  lightFill: 'rgba(5, 150, 105, 0.10)' },
-        { r1: 0.5,   r2: 0.618, darkFill: 'rgba(245, 158, 11, 0.12)',  lightFill: 'rgba(217, 119, 6, 0.11)' },
-        { r1: 0.618, r2: 0.786, darkFill: 'rgba(250, 204, 21, 0.22)',  lightFill: 'rgba(234, 179, 8, 0.22)' }, // OTE Golden Zone
-        { r1: 0.786, r2: 1.0,   darkFill: 'rgba(244, 63, 94, 0.11)',   lightFill: 'rgba(225, 29, 72, 0.10)' },
-      ];
-
-      for (const b of bandSpecs) {
-        const p1 = levelByRatio.get(b.r1);
-        const p2 = levelByRatio.get(b.r2);
-        if (p1 === undefined || p2 === undefined) continue;
-        const y1 = priceToY(p1);
-        const y2 = priceToY(p2);
-        const top = Math.max(0, Math.min(y1, y2));
-        const bot = Math.min(chartH, Math.max(y1, y2));
-        if (bot > top) {
-          ctx.fillStyle = isDark ? b.darkFill : b.lightFill;
-          ctx.fillRect(fibStartX, top, fibEndX - fibStartX, bot - top);
-        }
-      }
-
-      // OTE Golden Zone watermark inside 0.618 – 0.786 band (with VP HVN/POC Confluence detection)
-      const yOteTop = priceToY(fib.oteZone[1]);
-      const yOteBot = priceToY(fib.oteZone[0]);
-      const oteMidY = (yOteTop + yOteBot) / 2;
-      if (Math.abs(yOteBot - yOteTop) >= 14 * dpr && oteMidY > 16 * dpr && oteMidY < chartH - 16 * dpr) {
-        const hasVpOteConfluence =
-          (vp.fixedRange.poc >= fib.oteZone[0] && vp.fixedRange.poc <= fib.oteZone[1]) ||
-          vp.hvnPrices.some((p) => p >= fib.oteZone[0] && p <= fib.oteZone[1]);
-        const hudClearX = showSmc ? Math.min(272 * dpr, chartW * 0.36) : 14 * dpr;
-        const oteLabelX = Math.max(fibStartX + 8 * dpr, hudClearX);
-        ctx.save();
-        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = isDark ? 'rgba(253, 224, 71, 0.95)' : 'rgba(146, 64, 14, 0.95)';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(
-          hasVpOteConfluence ? `★ OTE + VP CONFLUENCE (0.618 – 0.786)` : `★ OTE ZONE (0.618 – 0.786)`,
-          oteLabelX,
-          oteMidY
-        );
-        ctx.restore();
-      }
-
-      // Diagonal anchor trendline connecting confirmed Swing Low <-> Swing High
+      // Thick black dashed diagonal anchor line connecting Swing Low <-> Swing High
       ctx.save();
-      ctx.strokeStyle = fib.direction === 'BULLISH'
-        ? (isDark ? 'rgba(16, 185, 129, 0.92)' : 'rgba(5, 150, 105, 0.92)')
-        : (isDark ? 'rgba(244, 63, 94, 0.92)' : 'rgba(225, 29, 72, 0.92)');
+      ctx.strokeStyle = ink;
       ctx.lineWidth = 2.0 * dpr;
       ctx.setLineDash([6 * dpr, 4 * dpr]);
       ctx.beginPath();
@@ -119,30 +70,30 @@ export function renderMi007Overlay({
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Ringed anchor dots + Swing Low / Swing High tags
+      // Black anchor dots on confirmed swing extremes
       for (const pt of [
-        { x: lowX, y: lowY, col: '#10B981', tag: fib.direction === 'BULLISH' ? 'FIB 1.00 LOW' : 'FIB 0.00 LOW', below: true },
-        { x: highX, y: highY, col: '#F43F5E', tag: fib.direction === 'BULLISH' ? 'FIB 0.00 HIGH' : 'FIB 1.00 HIGH', below: false },
+        { x: lowX, y: lowY, tag: fib.direction === 'BULLISH' ? '1.00 LOW' : '0.00 LOW', below: true },
+        { x: highX, y: highY, tag: fib.direction === 'BULLISH' ? '0.00 HIGH' : '1.00 HIGH', below: false },
       ]) {
         if (pt.x >= 0 && pt.x <= chartW && pt.y >= 0 && pt.y <= chartH) {
-          ctx.fillStyle = pt.col;
+          ctx.fillStyle = ink;
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y, 4.5 * dpr, 0, Math.PI * 2);
+          ctx.arc(pt.x, pt.y, 4.2 * dpr, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = isDark ? '#0F172A' : '#FFFFFF';
-          ctx.lineWidth = 1.6 * dpr;
+          ctx.lineWidth = 1.4 * dpr;
           ctx.stroke();
 
-          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
           const tw = ctx.measureText(pt.tag).width + 8 * dpr;
-          const th = 12 * dpr;
+          const th = 13 * dpr;
           const bx = Math.max(6 * dpr, Math.min(pt.x - tw / 2, chartW - tw - 6 * dpr));
           const by = pt.below ? Math.min(chartH - th - 4 * dpr, pt.y + 7 * dpr) : Math.max(4 * dpr, pt.y - th - 7 * dpr);
-          ctx.fillStyle = pt.col;
+          ctx.fillStyle = ink;
           ctx.beginPath();
-          ctx.roundRect(bx, by, tw, th, 3 * dpr);
+          ctx.roundRect(bx, by, tw, th, 2.5 * dpr);
           ctx.fill();
-          ctx.fillStyle = '#FFFFFF';
+          ctx.fillStyle = isDark ? '#0F172A' : '#FFFFFF';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(pt.tag, bx + tw / 2, by + th / 2);
@@ -150,58 +101,43 @@ export function renderMi007Overlay({
       }
       ctx.restore();
 
-      // Horizontal Fibonacci lines + high-contrast pill labels
+      // Thick black horizontal Fibonacci lines + clean black-on-white labels
       const hudClearX = showSmc ? Math.min(272 * dpr, chartW * 0.36) : 14 * dpr;
       const labelX = Math.min(fibEndX - 135 * dpr, Math.max(fibStartX + 6 * dpr, hudClearX));
-      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
 
       for (const lvl of fib.levels) {
         const y = priceToY(lvl.price);
         if (y < 8 * dpr || y > chartH - 8 * dpr) continue;
 
-        const isAnchor = lvl.ratio === 0.0 || lvl.ratio === 1.0;
-        const isEq = lvl.ratio === 0.5;
-        const isShallow = lvl.ratio === 0.236 || lvl.ratio === 0.382;
-
-        const lineColor = isAnchor
-          ? (isDark ? 'rgba(226, 232, 240, 0.90)' : 'rgba(15, 23, 42, 0.85)')
-          : lvl.isOte
-          ? (isDark ? 'rgba(251, 191, 36, 0.95)' : 'rgba(180, 83, 9, 0.95)')
-          : isEq
-          ? (isDark ? 'rgba(52, 211, 153, 0.90)' : 'rgba(5, 150, 105, 0.90)')
-          : lvl.isExtension
-          ? (isDark ? 'rgba(192, 132, 252, 0.90)' : 'rgba(126, 34, 206, 0.88)')
-          : isShallow
-          ? (isDark ? 'rgba(56, 189, 248, 0.65)' : 'rgba(2, 132, 199, 0.68)')
-          : (isDark ? 'rgba(148, 163, 184, 0.78)' : 'rgba(71, 85, 105, 0.78)');
+        const isKey = lvl.ratio === 0.0 || lvl.ratio === 0.5 || lvl.ratio === 0.618 || lvl.ratio === 0.786 || lvl.ratio === 1.0;
 
         ctx.save();
-        ctx.strokeStyle = lineColor;
-        ctx.lineWidth = (isAnchor || lvl.ratio === 0.618 || lvl.ratio === 0.786 || isEq) ? 1.6 * dpr : 1.15 * dpr;
-        ctx.setLineDash(isAnchor || lvl.ratio === 0.618 || lvl.ratio === 0.786 ? [] : [5 * dpr, 3 * dpr]);
+        ctx.strokeStyle = ink;
+        ctx.lineWidth = isKey ? 2.2 * dpr : 1.5 * dpr;
+        ctx.setLineDash(isKey ? [] : [5 * dpr, 3 * dpr]);
         ctx.beginPath();
         ctx.moveTo(fibStartX, y);
         ctx.lineTo(fibEndX, y);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Pill background behind Fib label so it never disappears into candles/white bg
         const text = `${lvl.label} (${formatPrice(lvl.price)})`;
         const padX = 4 * dpr;
         const pillW = ctx.measureText(text).width + padX * 2;
-        const pillH = 12 * dpr;
+        const pillH = 13 * dpr;
         const px = Math.max(fibStartX + 4 * dpr, labelX);
-        const py = y - pillH - 1 * dpr;
+        const py = y - pillH - 2 * dpr;
 
-        ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.84)' : 'rgba(255, 255, 255, 0.90)';
+        ctx.fillStyle = pillBg;
         ctx.beginPath();
-        ctx.roundRect(px, py, pillW, pillH, 2.5 * dpr);
+        ctx.roundRect(px, py, pillW, pillH, 2 * dpr);
         ctx.fill();
-        ctx.strokeStyle = lineColor;
-        ctx.lineWidth = 0.75 * dpr;
+        ctx.strokeStyle = ink;
+        ctx.lineWidth = 1.0 * dpr;
         ctx.stroke();
 
-        ctx.fillStyle = lineColor;
+        ctx.fillStyle = ink;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(text, px + padX, py + pillH / 2);

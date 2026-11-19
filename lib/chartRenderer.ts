@@ -1175,8 +1175,9 @@ export function renderChart(
         const barTW = maxBarW * totalFrac;
         const buyR = b.totalVolume > 0 ? b.buyVolume / b.totalVolume : 0.5;
         const buyW = barTW * buyR, sellW = barTW - buyW;
-        ctx.fillStyle = `rgba(0,230,118,${0.45*alphaM})`; ctx.fillRect(0, y, buyW, barH);
-        ctx.fillStyle = `rgba(255,23,68,${0.45*alphaM})`; ctx.fillRect(buyW, y, sellW, barH);
+        // Right-aligned Volume Profile histogram docked to the right price axis
+        ctx.fillStyle = `rgba(255,23,68,${0.48*alphaM})`; ctx.fillRect(chartW - barTW, y, sellW, barH);
+        ctx.fillStyle = `rgba(0,230,118,${0.48*alphaM})`; ctx.fillRect(chartW - buyW, y, buyW, barH);
       }
       // VAH/VAL/POC lines
       if (vpData.vahPrice >= pMin && vpData.vahPrice <= pMax) {

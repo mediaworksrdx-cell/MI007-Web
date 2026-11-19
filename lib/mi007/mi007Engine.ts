@@ -646,9 +646,25 @@ function evaluateDirectionalSetup(
   const fvgNear = activeFvg ? Math.abs(activeFvg.cePrice - last.close) <= atr * 4.5 : false;
   const obFvgPts = obNear && fvgNear ? 15 : (obNear || fvgNear ? 12 : activeOb || activeFvg ? 8 : 0);
 
-  // 5. Volume Profile Support / Resistance or LVN Alignment with SMC Entry (15 pts — Mandatory Gate)
+  // 5. Align 1:1 with Main SMC Engine's active confirmed setup + check Volume Profile overlap (POC/VAL/VAH/LVN)
+  const matchingSmcSetup = (smc.confirmedSetups || [])
+    .filter(
+      (s) =>
+        s.direction === direction &&
+        (s.qualityScore ?? 0) >= 60 &&
+        !s.isRejectedPermanently &&
+        !s.retestFailed &&
+        s.signalState !== 'INVALIDATED' &&
+        s.signalState !== 'RETEST_FAILED' &&
+        (isBull ? last.close >= s.stopLoss : last.close <= s.stopLoss) &&
+        lastIdx - s.candleIndex <= 60
+    )
+    .sort((a, b) => (b.qualityScore ?? 0) - (a.qualityScore ?? 0) || b.candleIndex - a.candleIndex)[0];
+
   const rawSmcEntry = roundPrice(
-    obNear && activeOb
+    matchingSmcSetup
+      ? matchingSmcSetup.entryPrice
+      : obNear && activeOb
       ? (activeOb.topPrice + activeOb.bottomPrice) / 2
       : fvgNear && activeFvg
       ? activeFvg.cePrice
@@ -673,7 +689,7 @@ function evaluateDirectionalSetup(
     }
   }
 
-  // Strict confluence: SMC Entry (or its OB/FVG zone) must overlap a key Volume Profile level (POC/VAL/VAH/LVN)
+  // Strict confluence: exact SMC Engine Entry (or its OB/FVG zone) must align with a key Volume Profile level
   const vpInsideZone = Boolean(
     (activeOb && keyVpLevels.some((lvl) => lvl >= activeOb.bottomPrice - atr * 0.4 && lvl <= activeOb.topPrice + atr * 0.4)) ||
     (activeFvg && keyVpLevels.some((lvl) => lvl >= activeFvg.bottomPrice - atr * 0.4 && lvl <= activeFvg.topPrice + atr * 0.4))
@@ -706,12 +722,8 @@ function evaluateDirectionalSetup(
   );
   const classification = classifyScore(totalScore);
 
-  // Determine Entry (snapped to SMC + Volume Profile confluence midpoint when overlapping), Structural SL & Targets
-  const entryPrice = roundPrice(
-    vpEntryAligned && nearestVpLevel !== null && nearestVpDist <= atr * 1.0
-      ? (rawSmcEntry + nearestVpLevel) / 2
-      : rawSmcEntry
-  );
+  // Lock Entry / SL / TP1 / TP2 1:1 to our main SMC Engine setup when present so SMC & MI-007 match identically
+  const entryPrice = roundPrice(rawSmcEntry);
 
   // Structural Invalidation Stop Loss
   const structuralInvalidation = isBull
@@ -729,19 +741,27 @@ function evaluateDirectionalSetup(
   // Clamp risk to sane structural bounds [0.6 * ATR, 3.5 * ATR]
   const rawRisk = Math.abs(entryPrice - structuralInvalidation);
   const clampedRisk = Math.max(atr * 0.65, Math.min(atr * 3.5, rawRisk));
-  const stopLoss = roundPrice(isBull ? entryPrice - clampedRisk : entryPrice + clampedRisk);
+  const stopLoss = roundPrice(
+    matchingSmcSetup ? matchingSmcSetup.stopLoss : (isBull ? entryPrice - clampedRisk : entryPrice + clampedRisk)
+  );
   const risk = Math.max(1e-9, Math.abs(entryPrice - stopLoss));
 
-  // Opposing Liquidity Pools for TP1 & TP2 (strictly enforcing >= 1:2 RR for TP1)
+  // Opposing Liquidity Pools for TP1 & TP2 (use exact SMC Engine TP1/TP2 when matched)
   const opposingPools = smc.liquidityLevels
     .filter((lvl) => !lvl.isSwept && (isBull ? lvl.price >= entryPrice + risk * 2.0 : lvl.price <= entryPrice - risk * 2.0))
     .map((lvl) => lvl.price)
     .sort((a, b) => (isBull ? a - b : b - a));
 
-  const target1 = roundPrice(opposingPools[0] ?? (isBull ? entryPrice + risk * 2.0 : entryPrice - risk * 2.0));
+  const target1 = roundPrice(
+    matchingSmcSetup
+      ? matchingSmcSetup.targetPrice
+      : (opposingPools[0] ?? (isBull ? entryPrice + risk * 2.0 : entryPrice - risk * 2.0))
+  );
   const fallbackTp2 = isBull ? Math.max(entryPrice + risk * 3.0, target1 + risk) : Math.min(entryPrice - risk * 3.0, target1 - risk);
   const target2 = roundPrice(
-    opposingPools.find((p) => (isBull ? p >= target1 + risk * 0.8 : p <= target1 - risk * 0.8)) ?? fallbackTp2
+    matchingSmcSetup?.targetPrice2
+      ? matchingSmcSetup.targetPrice2
+      : (opposingPools.find((p) => (isBull ? p >= target1 + risk * 0.8 : p <= target1 - risk * 0.8)) ?? fallbackTp2)
   );
   const fibExtCandidate = fib && fib.direction === direction ? fib.ext1272 : undefined;
   const fibExtValid =
@@ -754,11 +774,13 @@ function evaluateDirectionalSetup(
   const riskReward2 = Number((Math.abs(target2 - entryPrice) / risk).toFixed(2));
   const riskReward3 = Number((Math.abs(target3 - entryPrice) / risk).toFixed(2));
 
-  const anchorBarIdx = Math.max(
-    recentBreak?.candleIndex ?? Math.max(0, lastIdx - 12),
-    recentSweep?.candleIndex ?? Math.max(0, lastIdx - 12),
-    Math.max(0, lastIdx - 18)
-  );
+  const anchorBarIdx = matchingSmcSetup
+    ? matchingSmcSetup.candleIndex
+    : Math.max(
+        recentBreak?.candleIndex ?? Math.max(0, lastIdx - 12),
+        recentSweep?.candleIndex ?? Math.max(0, lastIdx - 12),
+        Math.max(0, lastIdx - 18)
+      );
 
   const checklist: Mi007ChecklistItem[] = [
     {
