@@ -688,12 +688,26 @@ export function detectSwingPoints(
     const cur = candles[i];
     let isHigh = true;
     let isLow = true;
+    let strictlyLowerLeft = false;
+    let strictlyLowerRight = false;
+    let strictlyHigherLeft = false;
+    let strictlyHigherRight = false;
 
     for (let j = i - lookback; j <= i + lookback; j++) {
       if (j === i) continue;
       if (candles[j].high > cur.high) isHigh = false;
       if (candles[j].low < cur.low) isLow = false;
+      if (j < i) {
+        if (candles[j].high < cur.high) strictlyLowerLeft = true;
+        if (candles[j].low > cur.low) strictlyHigherLeft = true;
+      } else {
+        if (candles[j].high < cur.high) strictlyLowerRight = true;
+        if (candles[j].low > cur.low) strictlyHigherRight = true;
+      }
     }
+    // Guard against flat / circuit-locked bars emitting phantom swings on both sides
+    isHigh = isHigh && strictlyLowerLeft && strictlyLowerRight;
+    isLow = isLow && strictlyHigherLeft && strictlyHigherRight;
 
     const confIdx = i + lookback;
     // SMC-002: the confirming bar must be closed, otherwise the swing can still repaint
@@ -2091,15 +2105,29 @@ export function computeStructureBias(
   const macroSrc = htfSeries.length >= 10 ? htfSeries : candles;
   const lookback = Math.min(macroSrc.length, 20);
   let sum = 0;
-  for (let i = macroSrc.length - lookback; i < macroSrc.length; i++) sum += macroSrc[i].close;
+  let pathLen = 0;
+  for (let i = macroSrc.length - lookback; i < macroSrc.length; i++) {
+    sum += macroSrc[i].close;
+    if (i > macroSrc.length - lookback) {
+      pathLen += Math.abs(macroSrc[i].close - macroSrc[i - 1].close);
+    }
+  }
   const sma = sum / lookback;
   const lastHtfClose = macroSrc[macroSrc.length - 1].close;
+  const firstHtfClose = macroSrc[macroSrc.length - lookback].close;
+  const htfEfficiency = pathLen > 0 ? Math.abs(lastHtfClose - firstHtfClose) / pathLen : 0;
+  const distFromSmaPct = sma > 0 ? Math.abs(lastHtfClose - sma) / sma : 0;
+
   if (lastHtfClose > sma * 1.002) bullHtfPoints += 2;
   else if (lastHtfClose < sma * 0.998) bearHtfPoints += 2;
 
   let htfBias: 'BULLISH' | 'BEARISH' | 'RANGE' = 'RANGE';
-  if (bullHtfPoints >= bearHtfPoints + 2) htfBias = 'BULLISH';
-  else if (bearHtfPoints >= bullHtfPoints + 2) htfBias = 'BEARISH';
+  // Suppress directional HTF bias during tight sideways chop (low directional efficiency near SMA)
+  const isSidewaysChop = htfEfficiency < 0.18 && distFromSmaPct < 0.008;
+  if (!isSidewaysChop) {
+    if (bullHtfPoints >= bearHtfPoints + 2) htfBias = 'BULLISH';
+    else if (bearHtfPoints >= bullHtfPoints + 2) htfBias = 'BEARISH';
+  }
 
   // 2. LTF Bias (SMC-005): strictly filter to INTERNAL breaks
   let bullLtfPoints = 0;
@@ -2361,7 +2389,8 @@ export function detectAll16SmcSetups(
   const fullMacroCandles = aggregateMacroCandles(candles, 4);
   const precomputedMacroSwings = fullMacroCandles.length >= 12 ? detectSwingPoints(fullMacroCandles, 2, true) : [];
   const intervalMs = inferCandleIntervalMs(candles);
-  const isIntradaySession = intervalMs > 0 && intervalMs <= 3_600_000;
+  // Single-day intraday expiry applies strictly to sub-1H scalping timeframes (< 1H); 1H+ run as multi-day swing setups
+  const isIntradaySession = intervalMs > 0 && intervalMs < 3_600_000;
   const latestDayKey = isIntradaySession ? getSmcTradingDayKey(lastCandle.openTime, symbol) : '';
   let firstTodayIdx = 0;
   if (isIntradaySession && latestDayKey) {
