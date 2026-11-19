@@ -59,7 +59,9 @@ export function detectVolumeQuality(candles: Candle[]): VolumeQuality {
     }
   }
   const positiveRatio = positive / candles.length;
-  if (positiveRatio < 0.7 || uniqueVols.size < Math.min(8, Math.max(3, Math.floor(positive * 0.4)))) {
+  // Futures feeds (e.g. COMEX Gold GC=F) legitimately have overnight/rollover 0-vol bars (~35-50%);
+  // require >= 35% positive bars with diverse non-constant volumes (and zero volumeEstimated flags).
+  if (positiveRatio < 0.35 || uniqueVols.size < Math.min(8, Math.max(3, Math.floor(positive * 0.4)))) {
     return 'ESTIMATED';
   }
   return 'ACTUAL';
