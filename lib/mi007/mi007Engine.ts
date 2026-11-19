@@ -301,30 +301,76 @@ function computeFibonacciConfluence(
   closedCandles: Candle[],
   majorSwings: SmcSwingPoint[]
 ): Mi007FibonacciConfluence | null {
-  const highs = majorSwings.filter((s) => s.isHigh);
-  const lows = majorSwings.filter((s) => !s.isHigh);
-  if (highs.length === 0 || lows.length === 0) return null;
+  const n = closedCandles.length;
+  if (n < 10) return null;
 
-  const lastHigh = highs[highs.length - 1];
-  const lastLow = lows[lows.length - 1];
-  if (lastHigh.price <= lastLow.price) return null;
+  // Use confirmed major swings within the active structural lookback (last 150 closed bars)
+  const lookbackStart = Math.max(0, n - 150);
+  const recentMajors = majorSwings.filter((s) => s.index >= lookbackStart);
+  const pool = recentMajors.length >= 2 ? recentMajors : majorSwings;
 
-  // Direction of the most recent impulse leg (low -> high = BULLISH impulse, retracing down; high -> low = BEARISH impulse, retracing up)
-  const direction: 'BULLISH' | 'BEARISH' = lastHigh.index > lastLow.index ? 'BULLISH' : 'BEARISH';
-  const span = lastHigh.price - lastLow.price;
-  const lastClose = closedCandles[closedCandles.length - 1].close;
+  const highs = pool.filter((s) => s.isHigh);
+  const lows = pool.filter((s) => !s.isHigh);
 
-  // For BULLISH impulse (Low -> High), retracement pulls down from High toward Low:
-  //   0.50 = High - 0.50 * span, 0.618 = High - 0.618 * span, 0.705 = High - 0.705 * span, 0.786 = High - 0.786 * span
-  //   Extensions project above High: 1.272 = Low + 1.272 * span, 1.618 = Low + 1.618 * span
-  // For BEARISH impulse (High -> Low), retracement pulls up from Low toward High:
-  //   0.50 = Low + 0.50 * span, 0.618 = Low + 0.618 * span, etc.
-  //   Extensions project below Low: 1.272 = High - 1.272 * span, 1.618 = High - 1.618 * span
+  // Pick the highest confirmed major swing high and lowest confirmed major swing low of the active leg
+  let anchorHigh: { index: number; price: number; time: number } | null = null;
+  let anchorLow: { index: number; price: number; time: number } | null = null;
+
+  for (const h of highs) {
+    if (!anchorHigh || h.price >= anchorHigh.price) {
+      anchorHigh = { index: h.index, price: h.price, time: h.time };
+    }
+  }
+  for (const l of lows) {
+    if (!anchorLow || l.price <= anchorLow.price) {
+      anchorLow = { index: l.index, price: l.price, time: l.time };
+    }
+  }
+
+  // Fallback to structural window extreme closed bars if major swings are scarce
+  if (!anchorHigh || !anchorLow) {
+    for (let i = lookbackStart; i < n; i++) {
+      const c = closedCandles[i];
+      if (!anchorHigh || c.high > anchorHigh.price) {
+        anchorHigh = { index: i, price: c.high, time: c.openTime };
+      }
+      if (!anchorLow || c.low < anchorLow.price) {
+        anchorLow = { index: i, price: c.low, time: c.openTime };
+      }
+    }
+  }
+
+  if (!anchorHigh || !anchorLow || anchorHigh.price <= anchorLow.price) return null;
+
+  // If a subsequent closed bar broke beyond the anchor extreme, extend the impulse anchor to that true extreme
+  const legStart = Math.min(anchorHigh.index, anchorLow.index);
+  for (let i = legStart; i < n; i++) {
+    const c = closedCandles[i];
+    if (c.high > anchorHigh.price) {
+      anchorHigh = { index: i, price: c.high, time: c.openTime };
+    }
+    if (c.low < anchorLow.price) {
+      anchorLow = { index: i, price: c.low, time: c.openTime };
+    }
+  }
+
+  // Direction of the primary impulse leg:
+  //   Low before High -> BULLISH impulse (1.00 = Low, 0.00 = High; retraces DOWN from High; extends UP above High)
+  //   High before Low -> BEARISH impulse (1.00 = High, 0.00 = Low; retraces UP from Low; extends DOWN below Low)
+  const direction: 'BULLISH' | 'BEARISH' = anchorHigh.index >= anchorLow.index ? 'BULLISH' : 'BEARISH';
+  const span = anchorHigh.price - anchorLow.price;
+  if (span <= 0) return null;
+
+  const lastClose = closedCandles[n - 1].close;
+
   const retracementPrice = (r: number) =>
-    roundPrice(direction === 'BULLISH' ? lastHigh.price - span * r : lastLow.price + span * r);
+    roundPrice(direction === 'BULLISH' ? anchorHigh!.price - span * r : anchorLow!.price + span * r);
   const extensionPrice = (r: number) =>
-    roundPrice(direction === 'BULLISH' ? lastLow.price + span * r : lastHigh.price - span * r);
+    roundPrice(direction === 'BULLISH' ? anchorLow!.price + span * r : anchorHigh!.price - span * r);
 
+  const p000 = retracementPrice(0.0);
+  const p236 = retracementPrice(0.236);
+  const p382 = retracementPrice(0.382);
   const p050 = retracementPrice(0.5);
   const p618 = retracementPrice(0.618);
   const p705 = retracementPrice(0.705);
@@ -334,11 +380,14 @@ function computeFibonacciConfluence(
   const ext1618 = extensionPrice(1.618);
 
   const levels: Mi007FibLevel[] = [
+    { ratio: 0.0, label: '0.00', price: p000, isExtension: false, isOte: false },
+    { ratio: 0.236, label: '0.236', price: p236, isExtension: false, isOte: false },
+    { ratio: 0.382, label: '0.382', price: p382, isExtension: false, isOte: false },
     { ratio: 0.5, label: '0.50 EQ', price: p050, isExtension: false, isOte: false },
     { ratio: 0.618, label: '0.618 Golden', price: p618, isExtension: false, isOte: true },
     { ratio: 0.705, label: '0.705 OTE', price: p705, isExtension: false, isOte: true },
     { ratio: 0.786, label: '0.786 Deep', price: p786, isExtension: false, isOte: true },
-    { ratio: 1.0, label: '1.00 Full', price: p100, isExtension: false, isOte: false },
+    { ratio: 1.0, label: '1.00', price: p100, isExtension: false, isOte: false },
     { ratio: 1.272, label: '1.272 Ext', price: ext1272, isExtension: true, isOte: false },
     { ratio: 1.618, label: '1.618 Ext', price: ext1618, isExtension: true, isOte: false },
   ];
@@ -351,8 +400,8 @@ function computeFibonacciConfluence(
 
   return {
     direction,
-    swingHigh: { index: lastHigh.index, price: lastHigh.price, time: lastHigh.time },
-    swingLow: { index: lastLow.index, price: lastLow.price, time: lastLow.time },
+    swingHigh: anchorHigh,
+    swingLow: anchorLow,
     levels,
     equilibrium: p050,
     oteZone: [oteLow, oteHigh],

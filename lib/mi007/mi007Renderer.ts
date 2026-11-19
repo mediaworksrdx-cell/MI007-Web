@@ -96,46 +96,88 @@ export function renderMi007Overlay({
   // ── 2. Fibonacci Confluence (Confirmed Major Swing Anchor + OTE Zone) ─────────
   const fib = data.fibonacci;
   if (showFibo && fib) {
+    const highX = (fib.swingHigh.index - startIdx) * candleW + candleW / 2;
+    const lowX = (fib.swingLow.index - startIdx) * candleW + candleW / 2;
+    const highY = priceToY(fib.swingHigh.price);
+    const lowY = priceToY(fib.swingLow.price);
+
     const anchorStartIdx = Math.min(fib.swingHigh.index, fib.swingLow.index);
     const fibStartX = Math.max(8 * dpr, (anchorStartIdx - startIdx) * candleW + candleW / 2);
     const fibEndX = Math.min(chartW - 4 * dpr, (candles.length - 1 - startIdx) * candleW + candleW * 0.5);
 
-    if (fibEndX > fibStartX + 20 * dpr) {
+    if (fibEndX > fibStartX + 16 * dpr) {
+      // Diagonal anchor trendline connecting confirmed Swing Low <-> Swing High
+      ctx.save();
+      ctx.strokeStyle = fib.direction === 'BULLISH' ? 'rgba(16, 185, 129, 0.70)' : 'rgba(244, 63, 94, 0.70)';
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.setLineDash([4 * dpr, 3 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(lowX, lowY);
+      ctx.lineTo(highX, highY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Anchor dots on confirmed swing extremes
+      for (const pt of [
+        { x: lowX, y: lowY, col: '#10B981' },
+        { x: highX, y: highY, col: '#F43F5E' },
+      ]) {
+        if (pt.x >= 0 && pt.x <= chartW && pt.y >= 0 && pt.y <= chartH) {
+          ctx.fillStyle = pt.col;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 3.2 * dpr, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+
       // Soft OTE Zone fill (0.618 – 0.786)
       const yOteTop = priceToY(fib.oteZone[1]);
       const yOteBot = priceToY(fib.oteZone[0]);
       if (yOteBot > 0 && yOteTop < chartH) {
-        ctx.fillStyle = fib.direction === 'BULLISH' ? 'rgba(16, 185, 129, 0.06)' : 'rgba(244, 63, 94, 0.06)';
+        ctx.fillStyle = fib.direction === 'BULLISH' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(244, 63, 94, 0.08)';
         ctx.fillRect(fibStartX, Math.max(0, yOteTop), fibEndX - fibStartX, Math.min(chartH, yOteBot) - Math.max(0, yOteTop));
       }
 
-      // Draw key Fibonacci levels (0.50, 0.618, 0.705, 0.786, 1.272, 1.618)
+      // Draw all standard Fibonacci retracement & extension levels with exact prices
+      // Avoid top-left MI-007 HUD card when placing text labels
+      const hudClearX = showSmc ? Math.min(270 * dpr, chartW * 0.36) : 12 * dpr;
+      const labelX = Math.min(fibEndX - 90 * dpr, Math.max(fibStartX + 4 * dpr, hudClearX));
       ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
+
       for (const lvl of fib.levels) {
-        if (lvl.ratio === 1.0) continue; // avoid cluttering swing extreme
         const y = priceToY(lvl.price);
         if (y < 10 * dpr || y > chartH - 12 * dpr) continue;
-        ctx.strokeStyle = lvl.isOte
-          ? 'rgba(245, 158, 11, 0.55)'
+
+        const isAnchor = lvl.ratio === 0.0 || lvl.ratio === 1.0;
+        const isShallow = lvl.ratio === 0.236 || lvl.ratio === 0.382;
+        ctx.strokeStyle = isAnchor
+          ? (isDark ? 'rgba(226, 232, 240, 0.55)' : 'rgba(71, 85, 105, 0.55)')
+          : lvl.isOte
+          ? 'rgba(245, 158, 11, 0.75)'
           : lvl.isExtension
-          ? 'rgba(16, 185, 129, 0.45)'
-          : 'rgba(148, 163, 184, 0.45)';
-        ctx.lineWidth = lvl.ratio === 0.705 ? 1.1 * dpr : 0.8 * dpr;
-        ctx.setLineDash([3 * dpr, 3 * dpr]);
+          ? 'rgba(16, 185, 129, 0.55)'
+          : isShallow
+          ? 'rgba(148, 163, 184, 0.32)'
+          : 'rgba(148, 163, 184, 0.55)';
+        ctx.lineWidth = lvl.ratio === 0.705 || lvl.ratio === 0.618 || isAnchor ? 1.1 * dpr : 0.8 * dpr;
+        ctx.setLineDash(isAnchor ? [] : [3 * dpr, 3 * dpr]);
         ctx.beginPath();
         ctx.moveTo(fibStartX, y);
         ctx.lineTo(fibEndX, y);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        ctx.fillStyle = lvl.isOte
+        ctx.fillStyle = isAnchor
+          ? (isDark ? '#E2E8F0' : '#334155')
+          : lvl.isOte
           ? (isDark ? '#FBBF24' : '#B45309')
           : lvl.isExtension
           ? (isDark ? '#34D399' : '#047857')
           : (isDark ? '#94A3B8' : '#64748B');
         ctx.textAlign = 'left';
         ctx.textBaseline = 'bottom';
-        ctx.fillText(`${lvl.label}`, fibStartX + 3 * dpr, y - 1.5 * dpr);
+        ctx.fillText(`${lvl.label} (${formatPrice(lvl.price)})`, Math.max(fibStartX + 3 * dpr, labelX), y - 1.5 * dpr);
       }
     }
   }
