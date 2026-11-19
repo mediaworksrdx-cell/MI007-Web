@@ -1256,7 +1256,7 @@ export function renderChart(
       ctx.save();
       // Premium Zone (>50% to High) - Clear visible auction boundary
       if (yEq > yHigh) {
-        ctx.fillStyle = isDark ? 'rgba(244, 63, 94, 0.05)' : 'rgba(244, 63, 94, 0.045)';
+        ctx.fillStyle = isDark ? 'rgba(244, 63, 94, 0.09)' : 'rgba(244, 63, 94, 0.08)';
         ctx.fillRect(0, yHigh, chartW, yEq - yHigh);
 
         // High-contrast right-docked badge
@@ -1265,10 +1265,10 @@ export function renderChart(
         const ptm = ctx.measureText(pBadge);
         const pbw = ptm.width + 10 * dpr;
         const pbh = 16 * dpr;
-        ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(255, 255, 255, 0.94)';
+        ctx.fillStyle = isDark ? '#0F172A' : '#FFFFFF';
         ctx.fillRect(chartW - pbw - 6 * dpr, yHigh + 4 * dpr, pbw, pbh);
-        ctx.strokeStyle = 'rgba(225, 29, 72, 0.75)';
-        ctx.lineWidth = 1 * dpr;
+        ctx.strokeStyle = '#E11D48';
+        ctx.lineWidth = 1.2 * dpr;
         ctx.strokeRect(chartW - pbw - 6 * dpr, yHigh + 4 * dpr, pbw, pbh);
         ctx.fillStyle = isDark ? '#FB7185' : '#BE123C';
         ctx.textAlign = 'right';
@@ -1278,7 +1278,7 @@ export function renderChart(
 
       // Discount Zone (<50% to Low) - Clear visible auction boundary
       if (yLow > yEq) {
-        ctx.fillStyle = isDark ? 'rgba(16, 185, 129, 0.05)' : 'rgba(16, 185, 129, 0.045)';
+        ctx.fillStyle = isDark ? 'rgba(16, 185, 129, 0.09)' : 'rgba(16, 185, 129, 0.08)';
         ctx.fillRect(0, yEq, chartW, yLow - yEq);
 
         // High-contrast right-docked badge
@@ -1287,10 +1287,10 @@ export function renderChart(
         const dtm = ctx.measureText(dBadge);
         const dbw = dtm.width + 10 * dpr;
         const dbh = 16 * dpr;
-        ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(255, 255, 255, 0.94)';
+        ctx.fillStyle = isDark ? '#0F172A' : '#FFFFFF';
         ctx.fillRect(chartW - dbw - 6 * dpr, yLow - dbh - 4 * dpr, dbw, dbh);
-        ctx.strokeStyle = 'rgba(5, 150, 105, 0.75)';
-        ctx.lineWidth = 1 * dpr;
+        ctx.strokeStyle = '#059669';
+        ctx.lineWidth = 1.2 * dpr;
         ctx.strokeRect(chartW - dbw - 6 * dpr, yLow - dbh - 4 * dpr, dbw, dbh);
         ctx.fillStyle = isDark ? '#34D399' : '#047857';
         ctx.textAlign = 'right';
@@ -1301,14 +1301,14 @@ export function renderChart(
       // Range boundaries: stroked only in non-clean modes to eliminate horizontal line clutter
       if (!isCleanMode) {
         ctx.setLineDash([4 * dpr, 4 * dpr]);
-        ctx.lineWidth = 1.1 * dpr;
-        ctx.strokeStyle = 'rgba(225, 29, 72, 0.45)';
+        ctx.lineWidth = 1.4 * dpr;
+        ctx.strokeStyle = 'rgba(225, 29, 72, 0.80)';
         ctx.beginPath();
         ctx.moveTo(0, yHigh);
         ctx.lineTo(chartW, yHigh);
         ctx.stroke();
 
-        ctx.strokeStyle = 'rgba(5, 150, 105, 0.45)';
+        ctx.strokeStyle = 'rgba(5, 150, 105, 0.80)';
         ctx.beginPath();
         ctx.moveTo(0, yLow);
         ctx.lineTo(chartW, yLow);
@@ -1327,18 +1327,18 @@ export function renderChart(
         const oteTop = Math.max(0, Math.min(chartH - 2 * dpr, Math.min(yOte1, yOte2)));
         const oteH = Math.max(Math.abs(yOte1 - yOte2), 2 * dpr);
         ctx.fillStyle = isBull
-          ? (isDark ? 'rgba(16, 185, 129, 0.11)' : 'rgba(16, 185, 129, 0.10)')
-          : (isDark ? 'rgba(244, 63, 94, 0.11)' : 'rgba(244, 63, 94, 0.10)');
+          ? (isDark ? 'rgba(16, 185, 129, 0.20)' : 'rgba(16, 185, 129, 0.18)')
+          : (isDark ? 'rgba(244, 63, 94, 0.20)' : 'rgba(244, 63, 94, 0.18)');
         ctx.fillRect(0, oteTop, chartW, oteH);
         const label = 'OTE (61.8% - 78.6%)';
         ctx.font = `bold ${9.5 * dpr}px "JetBrains Mono",monospace`;
         const lw = ctx.measureText(label).width + 10 * dpr;
-        const lh = 15 * dpr;
+        const lh = 16 * dpr;
         const ly = Math.max(4 * dpr, Math.min(chartH - lh - 4 * dpr, oteTop + oteH / 2 - lh / 2));
-        ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.92)';
+        ctx.fillStyle = isDark ? '#0F172A' : '#FFFFFF';
         ctx.fillRect(8 * dpr, ly, lw, lh);
-        ctx.strokeStyle = isBull ? 'rgba(5, 150, 105, 0.70)' : 'rgba(225, 29, 72, 0.70)';
-        ctx.lineWidth = 0.9 * dpr;
+        ctx.strokeStyle = isBull ? '#059669' : '#E11D48';
+        ctx.lineWidth = 1.2 * dpr;
         ctx.strokeRect(8 * dpr, ly, lw, lh);
         ctx.fillStyle = isBull ? (isDark ? '#34D399' : '#047857') : (isDark ? '#FB7185' : '#BE123C');
         ctx.textAlign = 'left';
@@ -1361,8 +1361,8 @@ export function renderChart(
       const eqStopX = isCleanMode ? Math.min(chartW - 65 * dpr, lastCandleX - 16 * dpr) : chartW;
       ctx.save();
       ctx.setLineDash([6 * dpr, 4 * dpr]);
-      ctx.strokeStyle = isCleanMode ? 'rgba(217, 119, 6, 0.45)' : 'rgba(217, 119, 6, 0.75)';
-      ctx.lineWidth = 1.2 * dpr;
+      ctx.strokeStyle = isCleanMode ? 'rgba(217, 119, 6, 0.75)' : 'rgba(217, 119, 6, 0.95)';
+      ctx.lineWidth = 1.5 * dpr;
       ctx.beginPath();
       ctx.moveTo(eqStartX, eqY);
       ctx.lineTo(eqStopX, eqY);
@@ -1377,10 +1377,10 @@ export function renderChart(
       const th = 16 * dpr;
       const eqBadgeX = Math.max(8 * dpr, eqStartX + 6 * dpr);
 
-      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(255, 255, 255, 0.94)';
+      ctx.fillStyle = isDark ? '#0F172A' : '#FFFFFF';
       ctx.fillRect(eqBadgeX, eqY - th - 2 * dpr, tw, th);
-      ctx.strokeStyle = 'rgba(217, 119, 6, 0.75)';
-      ctx.lineWidth = 1 * dpr;
+      ctx.strokeStyle = '#D97706';
+      ctx.lineWidth = 1.2 * dpr;
       ctx.strokeRect(eqBadgeX, eqY - th - 2 * dpr, tw, th);
 
       ctx.fillStyle = isDark ? '#FBBF24' : '#B45309';
@@ -1477,19 +1477,15 @@ export function renderChart(
         // Clamp yBox within chart viewport
         yBox = Math.max(2 * dpr, Math.min(chartH - th - 2 * dpr, yBox));
 
-        // Age-dependent historical fading (keep readable minimum alpha)
-        const alpha = enableHistoricalFading
-          ? Math.max(0.75, sam.computeHistoricalAlpha(sw.index, lastBarIdx, visMode))
-          : 1.0;
-
+        // Full crisp opacity for visible swing labels
         ctx.save();
-        ctx.globalAlpha = alpha;
+        ctx.globalAlpha = 1.0;
 
-        // High-contrast badge pill behind swing label
-        ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(255, 255, 255, 0.94)';
+        // High-contrast solid badge pill behind swing label
+        ctx.fillStyle = isDark ? '#0F172A' : '#FFFFFF';
         ctx.fillRect(x - tw / 2, yBox, tw, th);
-        ctx.strokeStyle = isH ? 'rgba(225, 29, 72, 0.78)' : 'rgba(5, 150, 105, 0.78)';
-        ctx.lineWidth = 1.0 * dpr;
+        ctx.strokeStyle = isH ? '#E11D48' : '#059669';
+        ctx.lineWidth = 1.3 * dpr;
         ctx.strokeRect(x - tw / 2, yBox, tw, th);
 
         ctx.fillStyle = isH ? (isDark ? '#FB7185' : '#BE123C') : (isDark ? '#34D399' : '#047857');
@@ -1604,39 +1600,39 @@ export function renderChart(
       const isTarget = isTargetZone(ob);
       let obColor = ob.isBullish ? (isDark ? '#38BDF8' : '#0369A1') : (isDark ? '#FB7185' : '#BE123C');
       let obBg = isTarget
-        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.18)' : 'rgba(239, 68, 68, 0.18)')
-        : (ob.isBullish ? 'rgba(2, 132, 199, 0.10)' : 'rgba(239, 68, 68, 0.10)');
+        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.28)' : 'rgba(239, 68, 68, 0.28)')
+        : (ob.isBullish ? 'rgba(2, 132, 199, 0.20)' : 'rgba(239, 68, 68, 0.20)');
       let obBorder = isTarget
-        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.92)' : 'rgba(239, 68, 68, 0.92)')
-        : (ob.isBullish ? 'rgba(2, 132, 199, 0.72)' : 'rgba(239, 68, 68, 0.72)');
+        ? (ob.isBullish ? '#0284C7' : '#DC2626')
+        : (ob.isBullish ? 'rgba(2, 132, 199, 0.95)' : 'rgba(220, 38, 38, 0.95)');
 
       if (ob.isBreaker) {
         obColor = ob.isBullish ? (isDark ? '#34D399' : '#047857') : (isDark ? '#F87171' : '#B91C1C');
         obBg = isTarget
-          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.20)' : 'rgba(239, 68, 68, 0.20)')
-          : (ob.isBullish ? 'rgba(16, 185, 129, 0.11)' : 'rgba(239, 68, 68, 0.11)');
+          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.28)' : 'rgba(239, 68, 68, 0.28)')
+          : (ob.isBullish ? 'rgba(16, 185, 129, 0.20)' : 'rgba(239, 68, 68, 0.20)');
         obBorder = isTarget
-          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.92)' : 'rgba(239, 68, 68, 0.92)')
-          : (ob.isBullish ? 'rgba(16, 185, 129, 0.75)' : 'rgba(239, 68, 68, 0.75)');
+          ? (ob.isBullish ? '#059669' : '#DC2626')
+          : (ob.isBullish ? 'rgba(5, 150, 105, 0.95)' : 'rgba(220, 38, 38, 0.95)');
       }
 
-      // Keep active unmitigated Order Blocks at full visibility; only soften mitigated ones
-      const alpha = ob.isMitigated ? 0.50 : 1.0;
+      // Keep active unmitigated Order Blocks at full visibility; mitigated at 72%
+      const alpha = ob.isMitigated ? 0.72 : 1.0;
 
       ctx.save();
       ctx.globalAlpha = alpha;
 
       ctx.fillStyle = ob.isMitigated
-        ? (ob.isBullish ? (isDark ? 'rgba(2, 132, 199, 0.06)' : 'rgba(2, 132, 199, 0.05)') : (isDark ? 'rgba(239, 68, 68, 0.06)' : 'rgba(239, 68, 68, 0.05)'))
+        ? (ob.isBullish ? (isDark ? 'rgba(2, 132, 199, 0.11)' : 'rgba(2, 132, 199, 0.10)') : (isDark ? 'rgba(239, 68, 68, 0.11)' : 'rgba(239, 68, 68, 0.10)'))
         : obBg;
       ctx.fillRect(lx, bTop, bw, bH);
       if (ob.isBreaker || ob.isMitigated) {
         ctx.setLineDash([5 * dpr, 3 * dpr]);
       }
       ctx.strokeStyle = ob.isMitigated
-        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.45)' : 'rgba(239, 68, 68, 0.45)')
+        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.70)' : 'rgba(220, 38, 38, 0.70)')
         : obBorder;
-      ctx.lineWidth = isTarget ? 1.6 * dpr : 1.2 * dpr;
+      ctx.lineWidth = isTarget ? 1.8 * dpr : 1.5 * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
       if (ob.isBreaker || ob.isMitigated) {
         ctx.setLineDash([]);
@@ -1763,11 +1759,11 @@ export function renderChart(
       const base = fvg.isBullish
         ? (fvg.isInverse ? [6, 182, 212] : [16, 185, 129])
         : (fvg.isInverse ? [168, 85, 247] : [244, 63, 94]);
-      const fa = isMit ? (isDark ? 0.05 : 0.04) : (fvg.isInverse ? 0.13 : 0.11);
-      const ba = isMit ? 0.40 : (fvg.isInverse ? 0.78 : 0.72);
+      const fa = isMit ? (isDark ? 0.11 : 0.10) : (fvg.isInverse ? 0.25 : 0.22);
+      const ba = isMit ? 0.70 : 0.95;
 
-      // Keep active unmitigated FVGs at full visibility; only soften mitigated ones
-      const alpha = isMit ? 0.50 : 1.0;
+      // Keep active unmitigated FVGs at full visibility; mitigated at 72%
+      const alpha = isMit ? 0.72 : 1.0;
 
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -1778,7 +1774,7 @@ export function renderChart(
         ctx.setLineDash([4 * dpr, 3 * dpr]);
       }
       ctx.strokeStyle = `rgba(${base},${ba})`;
-      ctx.lineWidth = (fvg.isInverse ? 1.3 : 1.1) * dpr;
+      ctx.lineWidth = (fvg.isInverse ? 1.6 : 1.4) * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
       if (fvg.isInverse || isMit) {
         ctx.setLineDash([]);
@@ -1886,10 +1882,8 @@ export function renderChart(
       const x1 = Math.max(0, Math.min(chartW, startX));
       const x2 = Math.max(0, Math.min(chartW, rawX2));
 
-      // Age-dependent historical fading
-      const alpha = enableHistoricalFading
-        ? sam.computeHistoricalAlpha(sb.candleIndex, lastBarIdx, visMode)
-        : (isLatestBreak ? 1.0 : 0.45);
+      // Full crisp visibility for all BOS / CHoCH structure breaks
+      const alpha = isLatestBreak || isChoch ? 1.0 : 0.88;
 
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -1898,10 +1892,10 @@ export function renderChart(
       if (x2 > x1) {
         if (isLatestBreak || isChoch) {
           ctx.setLineDash([]);
-          ctx.lineWidth = 1.3 * dpr;
+          ctx.lineWidth = 1.6 * dpr;
         } else {
           ctx.setLineDash([4 * dpr, 3 * dpr]);
-          ctx.lineWidth = 0.8 * dpr;
+          ctx.lineWidth = 1.2 * dpr;
         }
         ctx.strokeStyle = color;
         ctx.beginPath();
@@ -1999,11 +1993,11 @@ export function renderChart(
 
         ctx.save();
         if (lvl.isSwept) {
-          ctx.globalAlpha = 0.35;
+          ctx.globalAlpha = 0.68;
         }
-        ctx.setLineDash([3 * dpr, 4 * dpr]);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.0 * dpr;
+        ctx.setLineDash([4 * dpr, 3 * dpr]);
+        ctx.strokeStyle = isHighSide ? '#E11D48' : '#059669';
+        ctx.lineWidth = 1.4 * dpr;
         ctx.beginPath();
         ctx.moveTo(x1, y);
         ctx.lineTo(x2, y);
@@ -2522,46 +2516,46 @@ export function renderChart(
         const yCur = curPrice > 0 ? priceToY(curPrice) : -999;
 
         ctx.save();
-        // Keep active live setups at full 100% visibility; only soften completed historical setups
+        // Keep active live setups at full 100% visibility; completed setups at 82%
         if (isTradeOver && enableHistoricalFading && (lastBarIdx - st.candleIndex > 6)) {
-          ctx.globalAlpha = 0.65;
+          ctx.globalAlpha = 0.82;
         }
 
-        // 1. Take Profit (Reward) Zone (Entry to TP1) — Clear green shaded region (clamped to viewport)
+        // 1. Take Profit (Reward) Zone (Entry to TP1) — Bold green shaded region (clamped to viewport)
         const tpTopRaw = Math.min(yEntry, yTP);
         const tpBotRaw = Math.max(yEntry, yTP);
         const tpTop = Math.max(0, tpTopRaw);
         const tpBot = Math.min(chartH, tpBotRaw);
         const tpH = Math.max(tpBot - tpTop, 2 * dpr);
         if (tpBot > 0 && tpTop < chartH) {
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.13)';
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
           ctx.fillRect(x, tpTop, boxW, tpH);
-          ctx.strokeStyle = 'rgba(5, 150, 105, 0.78)';
-          ctx.lineWidth = 1.2 * dpr;
+          ctx.strokeStyle = 'rgba(5, 150, 105, 0.95)';
+          ctx.lineWidth = 1.5 * dpr;
           ctx.setLineDash([4 * dpr, 3 * dpr]);
           ctx.strokeRect(x, tpTop, boxW, tpH);
           ctx.setLineDash([]);
         }
 
-        // 2. Stop Loss (Risk) Zone (Entry to SL) — Clear red shaded region (clamped to viewport)
+        // 2. Stop Loss (Risk) Zone (Entry to SL) — Bold red shaded region (clamped to viewport)
         const slTopRaw = Math.min(yEntry, ySL);
         const slBotRaw = Math.max(yEntry, ySL);
         const slTop = Math.max(0, slTopRaw);
         const slBot = Math.min(chartH, slBotRaw);
         const slH = Math.max(slBot - slTop, 2 * dpr);
         if (slBot > 0 && slTop < chartH) {
-          ctx.fillStyle = 'rgba(244, 63, 94, 0.13)';
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.22)';
           ctx.fillRect(x, slTop, boxW, slH);
-          ctx.strokeStyle = 'rgba(225, 29, 72, 0.78)';
-          ctx.lineWidth = 1.2 * dpr;
+          ctx.strokeStyle = 'rgba(225, 29, 72, 0.95)';
+          ctx.lineWidth = 1.5 * dpr;
           ctx.setLineDash([4 * dpr, 3 * dpr]);
           ctx.strokeRect(x, slTop, boxW, slH);
           ctx.setLineDash([]);
         }
 
-        // 3. Entry Line (Thin Neutral Line - institutional hierarchy)
-        ctx.strokeStyle = isDark ? '#94A3B8' : '#64748B';
-        ctx.lineWidth = 1.2 * dpr;
+        // 3. Entry Line (Crisp solid entry reference line)
+        ctx.strokeStyle = isDark ? '#F8FAFC' : '#0F172A';
+        ctx.lineWidth = 1.6 * dpr;
         ctx.beginPath();
         ctx.moveTo(x, yEntry);
         ctx.lineTo(x + boxW, yEntry);
@@ -2695,7 +2689,7 @@ export function renderChart(
             id: 'header',
             y: headerTargetY,
             text: headerTag,
-            bg: isBull ? 'rgba(5, 150, 105, 0.96)' : 'rgba(220, 38, 38, 0.96)',
+            bg: isBull ? '#059669' : '#DC2626',
             fg: '#FFFFFF',
             border: '#FFFFFF',
           },
@@ -2703,22 +2697,22 @@ export function renderChart(
             id: 'sl',
             y: clampY(ySL),
             text: slText,
-            bg: 'rgba(244, 63, 94, 0.92)',
+            bg: '#E11D48',
             fg: '#FFFFFF',
           },
           {
             id: 'entry',
             y: clampY(yEntry),
             text: entryText,
-            bg: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(241, 245, 249, 0.95)',
-            fg: isDark ? '#E2E8F0' : '#0F172A',
+            bg: isDark ? '#0F172A' : '#FFFFFF',
+            fg: isDark ? '#F8FAFC' : '#0F172A',
             border: isBull ? '#059669' : '#DC2626',
           },
           {
             id: 'tp1',
             y: clampY(yTP),
             text: tp1Text,
-            bg: 'rgba(16, 185, 129, 0.92)',
+            bg: '#059669',
             fg: '#FFFFFF',
           },
         ];
@@ -2728,7 +2722,7 @@ export function renderChart(
             id: 'tp2',
             y: clampY(priceToY(st.targetPrice2!)),
             text: tp2Text,
-            bg: 'rgba(5, 150, 105, 0.92)',
+            bg: '#047857',
             fg: '#FFFFFF',
           });
         }
