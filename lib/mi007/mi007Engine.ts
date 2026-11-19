@@ -646,7 +646,14 @@ function evaluateDirectionalSetup(
   const fvgNear = activeFvg ? Math.abs(activeFvg.cePrice - last.close) <= atr * 4.5 : false;
   const obFvgPts = obNear && fvgNear ? 15 : (obNear || fvgNear ? 12 : activeOb || activeFvg ? 8 : 0);
 
-  // 5. Volume Profile Support / Resistance or LVN Rejection (15 pts)
+  // 5. Volume Profile Support / Resistance or LVN Alignment with SMC Entry (15 pts — Mandatory Gate)
+  const rawSmcEntry = roundPrice(
+    obNear && activeOb
+      ? (activeOb.topPrice + activeOb.bottomPrice) / 2
+      : fvgNear && activeFvg
+      ? activeFvg.cePrice
+      : last.close
+  );
   const keyVpLevels = [
     vp.fixedRange.poc,
     vp.fixedRange.val,
@@ -655,9 +662,25 @@ function evaluateDirectionalSetup(
     vp.session?.poc,
     ...vp.lvnPrices,
   ].filter((v): v is number => typeof v === 'number' && v > 0);
-  const nearVpSupport = keyVpLevels.some((lvl) => Math.abs(last.close - lvl) <= atr * 1.5);
+
+  let nearestVpLevel: number | null = null;
+  let nearestVpDist = Infinity;
+  for (const lvl of keyVpLevels) {
+    const d = Math.abs(rawSmcEntry - lvl);
+    if (d < nearestVpDist) {
+      nearestVpDist = d;
+      nearestVpLevel = lvl;
+    }
+  }
+
+  // Strict confluence: SMC Entry (or its OB/FVG zone) must overlap a key Volume Profile level (POC/VAL/VAH/LVN)
+  const vpInsideZone = Boolean(
+    (activeOb && keyVpLevels.some((lvl) => lvl >= activeOb.bottomPrice - atr * 0.4 && lvl <= activeOb.topPrice + atr * 0.4)) ||
+    (activeFvg && keyVpLevels.some((lvl) => lvl >= activeFvg.bottomPrice - atr * 0.4 && lvl <= activeFvg.topPrice + atr * 0.4))
+  );
+  const vpEntryAligned = vpInsideZone || nearestVpDist <= atr * 1.5;
   const vpBiasAligned = (isBull && vp.pocMigration === 'UP') || (!isBull && vp.pocMigration === 'DOWN');
-  const vpPts = nearVpSupport && vpBiasAligned ? 15 : nearVpSupport ? 12 : vpBiasAligned ? 8 : 0;
+  const vpPts = vpEntryAligned && vpBiasAligned ? 15 : vpEntryAligned ? 12 : vpBiasAligned ? 6 : 0;
 
   // 6. Fibonacci Confluence (10 pts): OTE (0.618–0.786) or Discount/Premium alignment
   const fibOteHit = Boolean(fib && fib.direction === direction && fib.inOteZone);
@@ -683,13 +706,11 @@ function evaluateDirectionalSetup(
   );
   const classification = classifyScore(totalScore);
 
-  // Determine Entry, Structural SL, and Liquidity/Fib Targets (minimum 1:2 R:R)
+  // Determine Entry (snapped to SMC + Volume Profile confluence midpoint when overlapping), Structural SL & Targets
   const entryPrice = roundPrice(
-    obNear && activeOb
-      ? (activeOb.topPrice + activeOb.bottomPrice) / 2
-      : fvgNear && activeFvg
-      ? activeFvg.cePrice
-      : last.close
+    vpEntryAligned && nearestVpLevel !== null && nearestVpDist <= atr * 1.0
+      ? (rawSmcEntry + nearestVpLevel) / 2
+      : rawSmcEntry
   );
 
   // Structural Invalidation Stop Loss
@@ -806,7 +827,7 @@ function evaluateDirectionalSetup(
     },
   ];
 
-  const isTradeable = totalScore >= 60 && riskReward1 >= 2.0;
+  const isTradeable = totalScore >= 60 && riskReward1 >= 2.0 && vpEntryAligned;
 
   return {
     id: `mi007_${direction}_${anchorBarIdx}_${roundPrice(entryPrice)}`,
