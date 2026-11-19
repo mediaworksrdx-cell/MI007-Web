@@ -19,7 +19,7 @@ import {
 import { calculateSMC, DEFAULT_SMC_CONFIG, SMC_TRADE_LIFESPAN_BARS, resolveSameBarTpSlOrder, inferCandleIntervalMs, getSmcTradingDayKey, isCandleClosed, type SmcConfig } from './smcEngine';
 import { SmartAnnotationManager, type SmcVisualizationMode } from './smc/smartAnnotationManager';
 import { renderOrderFlowFootprint, formatVol } from './orderflow/orderFlowRenderer';
-import { renderQuantumAiOverlays } from './quantumai/quantumAiRenderer';
+import { renderMi007Overlay } from './mi007/mi007Renderer';
 import {
   calculateSMA as calcSMA,
   calculateEMA as calcEMA,
@@ -4802,28 +4802,21 @@ export function renderChart(
     }
   }
 
-  // ── LAYER 7.6: Quantum AI — SMC & Resonance Strategy Overlay ─────────────
-  if (options.showQuantumAi && options.quantumAiConfig?.enabled && options.quantumAiData) {
-    // When SMC overlay is active, suppress Quantum AI dashboard HUD and execution levels to prevent duplicate/conflicting overlays
-    const isSmcActive = options.showSmcOverlay && options.smcConfig?.enabled;
-    const qaiConfig = isSmcActive
-      ? { ...options.quantumAiConfig, showDashboard: false, showExecutionLevels: false, showSignals: false }
-      : options.quantumAiConfig;
-
-    renderQuantumAiOverlays({
+  // ── LAYER 7.6: MI007 — Institutional SMC + Volume Profile + Fibonacci Strategy ──
+  if (options.showMi007 && options.mi007Data) {
+    renderMi007Overlay({
       ctx,
+      data: options.mi007Data,
       candles,
-      analysis: options.quantumAiData,
-      config: qaiConfig,
-      priceToY,
-      safeStart,
-      safeEnd,
       startIdx,
-      candleW,
+      endIdx,
       chartW,
       chartH,
+      candleW,
       dpr,
       isDark,
+      priceToY,
+      formatPrice: (p: number) => formatPrice(p, options.symbol),
     });
   }
 
@@ -5563,45 +5556,7 @@ export function renderOverlay(
       }
     }
 
-    // Check Quantum AI Order Blocks if not matched in SMC
-    if (!hoveredOB && options.quantumAiData?.orderBlocks) {
-      for (const qob of options.quantumAiData.orderBlocks) {
-        if (qob.endIndex < startIdx && qob.isMitigated) continue;
-        if (qob.startIndex > endIdx) continue;
-        const lx = Math.max(0, qob.startIndex - startIdx) * candleW;
-        const rx = qob.isMitigated
-          ? Math.min(visCnt, qob.endIndex - startIdx) * candleW + candleW
-          : chartW;
-        const yT = priceToY(qob.top);
-        const yB = priceToY(qob.bottom);
-        const topY = Math.min(yT, yB);
-        const botY = Math.max(yT, yB);
-
-        if (cx >= lx - 8 * dpr && cx <= rx + 8 * dpr && cy >= topY - 8 * dpr && cy <= botY + 8 * dpr) {
-          const midPrice = (qob.top + qob.bottom) / 2;
-          const spread = Math.abs(qob.top - qob.bottom);
-          const spreadPct = midPrice > 0 ? (spread / midPrice) * 100 : 0;
-          hoveredOB = {
-            type: 'QUANTUM_OB',
-            title: qob.isBullish ? 'Quantum AI Bullish Demand OB' : 'Quantum AI Bearish Supply OB',
-            topPrice: qob.top,
-            bottomPrice: qob.bottom,
-            midpointPrice: midPrice,
-            spread,
-            spreadPct,
-            status: qob.isInvalidated ? 'Invalidated' : qob.isMitigated ? 'Mitigated / Tested' : 'Active Institutional Zone',
-            isMitigated: qob.isMitigated,
-            barTime: qob.time,
-          };
-          break;
-        }
-      }
-    }
-
-    const isQuantumAiActive = Boolean(
-      (options.showQuantumAi || options.quantumAiConfig?.enabled) &&
-      options.quantumAiData
-    );
+    const isQuantumAiActive = false;
     const isOrderFlowActive = Boolean(
       (options.showOrderFlow || options.orderFlowConfig?.enabled)
     );
@@ -6073,124 +6028,6 @@ export function renderOverlay(
           drawOfRow('FLOW STATUS:', dynLabel, dynCol, 4);
         } else {
           drawOfRow('FLOW STATUS:', 'Analyzing Flow...', '#94A3B8', 3);
-        }
-
-        ctx.restore();
-      } else if (isQuantumHover && options.quantumAiData) {
-        ctx.save();
-        const qData = options.quantumAiData;
-        const cursorPrice = pMin + Math.max(0, Math.min(1, (chartH - cy) / chartH)) * pRange;
-        const cardW = 256 * dpr;
-        const cardH = 134 * dpr;
-
-        // Position HUD card to the right or flip to the left
-        let cardX = lensX + lensRadius + 14 * dpr;
-        if (cardX + cardW > chartW - 10 * dpr) {
-          cardX = lensX - lensRadius - cardW - 14 * dpr;
-        }
-        if (cardX < 10 * dpr) cardX = 10 * dpr;
-        const cardY = Math.max(10 * dpr, Math.min(chartH - cardH - 10 * dpr, lensY - cardH / 2));
-
-        const isBullishBias = qData.confluence ? qData.confluence.bullScore >= qData.confluence.bearScore : true;
-        const accentCol = isBullishBias ? '#A855F7' : '#EC4899';
-        const accentBg = isBullishBias ? 'rgba(168, 85, 247, 0.15)' : 'rgba(236, 72, 153, 0.15)';
-
-        // Drop shadow & background
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-        ctx.shadowBlur = 16 * dpr;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 4 * dpr;
-
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
-        ctx.beginPath();
-        if (typeof ctx.roundRect === 'function') {
-          ctx.roundRect(cardX, cardY, cardW, cardH, 8 * dpr);
-        } else {
-          ctx.rect(cardX, cardY, cardW, cardH);
-        }
-        ctx.fill();
-        ctx.restore();
-
-        // Card Border
-        ctx.save();
-        ctx.strokeStyle = accentCol;
-        ctx.lineWidth = 1.2 * dpr;
-        ctx.beginPath();
-        if (typeof ctx.roundRect === 'function') {
-          ctx.roundRect(cardX, cardY, cardW, cardH, 8 * dpr);
-        } else {
-          ctx.rect(cardX, cardY, cardW, cardH);
-        }
-        ctx.stroke();
-
-        // Card Header Bar
-        ctx.fillStyle = accentBg;
-        ctx.fillRect(cardX + 1, cardY + 1, cardW - 2, 24 * dpr);
-
-        ctx.font = `bold ${9 * dpr}px "JetBrains Mono", monospace`;
-        ctx.fillStyle = '#C084FC';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('● QUANTUM AI CONFLUENCE', cardX + 10 * dpr, cardY + 12 * dpr);
-
-        // Status badge
-        const netBiasStr = qData.confluence?.isLongQualified
-          ? 'BULLISH (LONG)'
-          : qData.confluence?.isShortQualified
-            ? 'BEARISH (SHORT)'
-            : (isBullishBias ? 'BULL BIAS' : 'BEAR BIAS');
-        const badgeLabel = `BIAS: ${netBiasStr}`;
-        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono", monospace`;
-        const btm = ctx.measureText(badgeLabel);
-        const bbw = btm.width + 8 * dpr;
-        const bbh = 13 * dpr;
-        const bbx = cardX + cardW - bbw - 8 * dpr;
-        const dby = cardY + 5.5 * dpr;
-        ctx.fillStyle = isBullishBias ? 'rgba(168, 85, 247, 0.25)' : 'rgba(239, 68, 68, 0.25)';
-        ctx.fillRect(bbx, dby, bbw, bbh);
-        ctx.fillStyle = isBullishBias ? '#C084FC' : '#F87171';
-        ctx.textAlign = 'center';
-        ctx.fillText(badgeLabel, bbx + bbw / 2, dby + bbh / 2);
-
-        // Rows
-        const rowY0 = cardY + 38 * dpr;
-        const rowSpacing = 17 * dpr;
-
-        const drawQRow = (label: string, value: string, valCol: string, rowIdx: number) => {
-          const ry = rowY0 + rowIdx * rowSpacing;
-          ctx.font = `600 ${8.5 * dpr}px "JetBrains Mono", monospace`;
-          ctx.fillStyle = '#94A3B8';
-          ctx.textAlign = 'left';
-          ctx.fillText(label, cardX + 10 * dpr, ry);
-
-          ctx.font = `bold ${10 * dpr}px "JetBrains Mono", monospace`;
-          ctx.fillStyle = valCol;
-          ctx.textAlign = 'right';
-          ctx.fillText(value, cardX + cardW - 10 * dpr, ry);
-        };
-
-        drawQRow('HOVERED PRICE:', `₹ ${formatPrice(cursorPrice)}`, '#38BDF8', 0);
-
-        const eq = qData.dealingRange?.equilibrium || 0;
-        const isDiscount = eq > 0 && cursorPrice < eq;
-        const zoneStr = eq > 0 ? (isDiscount ? 'DISCOUNT (Buy Zone)' : 'PREMIUM (Sell Zone)') : 'Equilibrium';
-        drawQRow('DEALING RANGE:', zoneStr, isDiscount ? '#34D399' : '#F87171', 1);
-
-        const bullPts = qData.confluence?.bullScore?.toFixed(1) || '0';
-        const bearPts = qData.confluence?.bearScore?.toFixed(1) || '0';
-        drawQRow('CONFLUENCE:', `Bull ${bullPts} / 9.5 | Bear ${bearPts} / 9.5`, '#FBBF24', 2);
-
-        const squeezeStr = qData.volatility?.isSqueeze ? `Squeeze (${qData.volatility.squeezeLength} bars)` : 'Normal Volatility';
-        drawQRow('VOLATILITY:', squeezeStr, qData.volatility?.isSqueeze ? '#F59E0B' : '#C084FC', 3);
-
-        const setup = qData.setups && qData.setups.length > 0 ? qData.setups[0] : null;
-        if (setup) {
-          const setupStr = `Entry: ₹${formatPrice(setup.entryPrice)} [TP1: ₹${formatPrice(setup.tp1Price)}]`;
-          drawQRow('ACTIVE SETUP:', setupStr, setup.isBullish ? '#34D399' : '#F87171', 4);
-        } else {
-          const resAlignment = qData.resonance?.overallAlignment?.replace(/_/g, ' ') || 'ALIGNMENT';
-          const resPct = qData.resonance?.resonancePct?.toFixed(0) || '80';
-          drawQRow('RESONANCE:', `${resAlignment} (${resPct}%)`, '#CBD5E1', 4);
         }
 
         ctx.restore();

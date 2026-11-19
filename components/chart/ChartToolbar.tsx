@@ -7,8 +7,7 @@ import { ChartTemplate } from '@/lib/chartTemplates';
 import { SmcConfig, DEFAULT_SMC_CONFIG } from '@/lib/smcEngine';
 import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG } from '@/lib/orderflow/types';
 import { OrderFlowToolbarMenu } from './OrderFlowToolbarMenu';
-import { QuantumAiConfig, DEFAULT_QUANTUM_AI_CONFIG, QuantumAiAnalysisResult } from '@/lib/quantumai/types';
-import { QuantumAiToolbarMenu } from './QuantumAiToolbarMenu';
+
 import { STRATEGY_INDICATOR_MAP } from '@/lib/screener/strategyIndicatorMap';
 
 const TIMEFRAMES: { value: Timeframe; label: string }[] = [
@@ -50,11 +49,8 @@ interface ChartToolbarProps {
   onOrderFlowConfigChange?: (config: OrderFlowConfig) => void;
   orderFlowSignalsCount?: number;
   onOpenOrderFlowSignals?: () => void;
-  showQuantumAi?: boolean;
-  quantumAiConfig?: QuantumAiConfig;
-  quantumAiAnalysis?: QuantumAiAnalysisResult;
-  onToggleQuantumAi?: () => void;
-  onQuantumAiConfigChange?: (config: Partial<QuantumAiConfig>) => void;
+  showMi007?: boolean;
+  onToggleMi007?: () => void;
   showVolumeProfile: boolean;
   showMagnifier?: boolean;
   onToggleMagnifier?: () => void;
@@ -165,11 +161,8 @@ export function ChartToolbar({
   onOrderFlowConfigChange,
   orderFlowSignalsCount = 0,
   onOpenOrderFlowSignals,
-  showQuantumAi = false,
-  quantumAiConfig,
-  quantumAiAnalysis,
-  onToggleQuantumAi: _onToggleQuantumAi,
-  onQuantumAiConfigChange,
+  showMi007 = false,
+  onToggleMi007,
   showVolumeProfile,
   showMagnifier = false,
   onToggleMagnifier,
@@ -208,7 +201,7 @@ export function ChartToolbar({
   isFullscreen,
   onToggleFullscreen,
 }: ChartToolbarProps) {
-  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | 'SMC' | 'ORDER_FLOW' | 'QUANTUM_AI' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'TF' | 'CANDLES' | 'INDICATORS' | 'TEMPLATES' | 'SMC' | 'ORDER_FLOW' | null>(null);
   const [fxTab, setFxTab] = useState<'indicators' | 'strategies'>('indicators');
   const [indicatorSearch, setIndicatorSearch] = useState('');
   const [strategySearch, setStrategySearch] = useState('');
@@ -216,10 +209,7 @@ export function ChartToolbar({
   const [recentlyAppliedStrategy, setRecentlyAppliedStrategy] = useState<string | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
-  const activeQuantumAiConfig: QuantumAiConfig = quantumAiConfig || {
-    ...DEFAULT_QUANTUM_AI_CONFIG,
-    enabled: showQuantumAi,
-  };
+
 
   const activeOfConfig: OrderFlowConfig = orderFlowConfig || {
     ...DEFAULT_ORDER_FLOW_CONFIG,
@@ -1379,39 +1369,31 @@ export function ChartToolbar({
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
-        {/* 4.6 Quantum AI — SMC & Resonance Strategy Engine Dropdown */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setOpenMenu(openMenu === 'QUANTUM_AI' ? null : 'QUANTUM_AI')}
-            title="Quantum AI — Multi-Timeframe SMC & Resonance Strategy Engine"
-            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
-              openMenu === 'QUANTUM_AI'
-                ? 'border-purple-500 bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 font-bold'
-                : 'border-slate-200 dark:border-slate-700 hover:border-purple-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
+        {/* 4.6 MI007 — Institutional SMC + Volume Profile + Fibonacci Strategy (Single Toggle) */}
+        <button
+          type="button"
+          onClick={() => onToggleMi007?.()}
+          title="MI007 — Institutional SMC + Volume Profile + Fibonacci Strategy"
+          className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+            showMi007
+              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
+              : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
+          }`}
+        >
+          <span
+            className={`font-mono font-black text-xs px-1 rounded ${
+              showMi007
+                ? 'bg-emerald-500 text-slate-950'
+                : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
             }`}
           >
-            <span className="font-mono font-black text-xs px-1 rounded bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400">
-              Q-AI
-            </span>
-            <span className="hidden sm:inline">Quantum AI</span>
-            {activeQuantumAiConfig.enabled && (
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-            )}
-            <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
-          </button>
-
-          <QuantumAiToolbarMenu
-            isOpen={openMenu === 'QUANTUM_AI'}
-            onClose={() => setOpenMenu(null)}
-            config={activeQuantumAiConfig}
-            onChangeConfig={(updates) => {
-              const updated = { ...activeQuantumAiConfig, ...updates };
-              onQuantumAiConfigChange?.(updated);
-            }}
-            analysis={quantumAiAnalysis}
-          />
-        </div>
+            MI007
+          </span>
+          <span className="hidden sm:inline">SMC+VP+Fib</span>
+          {showMi007 && (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          )}
+        </button>
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
         

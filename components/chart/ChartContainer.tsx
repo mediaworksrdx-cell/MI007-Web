@@ -33,8 +33,7 @@ import { SmcConfig, DEFAULT_SMC_CONFIG, getStoredSmcConfig, saveStoredSmcConfig 
 import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG, ExchangeTradeTick } from '@/lib/orderflow/types';
 import { analyzeOrderFlow } from '@/lib/orderflow/orderFlowEngine';
 import { OrderFlowSignalsModal } from './OrderFlowSignalsModal';
-import { QuantumAiConfig, DEFAULT_QUANTUM_AI_CONFIG, QuantumAiAnalysisResult } from '@/lib/quantumai/types';
-import { analyzeQuantumAi, aggregateSessionAwareHtf } from '@/lib/quantumai/quantumAiEngine';
+import { analyzeMi007Strategy } from '@/lib/mi007/mi007Engine';
 import { ChartToolbar } from './ChartToolbar';
 import { CandlestickCanvas } from './CandlestickCanvas';
 import { OHLCVHeader } from './OHLCVHeader';
@@ -325,29 +324,21 @@ export function ChartContainer({
     }
   }, []);
 
-  // Quantum AI — Multi-Timeframe SMC & Resonance configuration and modal state
-  const [quantumAiConfig, setQuantumAiConfig] = useState<QuantumAiConfig>(() => {
+  // MI007 — Institutional SMC + Volume Profile + Fibonacci Strategy (Single Toggle)
+  const [showMi007, setShowMi007] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('mi007_quantum_ai_config');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          return {
-            ...DEFAULT_QUANTUM_AI_CONFIG,
-            ...parsed,
-            showDashboard: false,
-          };
-        }
+        return localStorage.getItem('mi007_institutional_strategy_enabled') === 'true';
       } catch (e) {}
     }
-    return DEFAULT_QUANTUM_AI_CONFIG;
+    return false;
   });
-  const handleQuantumAiConfigChange = useCallback((updates: Partial<QuantumAiConfig>) => {
-    setQuantumAiConfig(prev => {
-      const next = { ...prev, ...updates };
+  const handleToggleMi007 = useCallback(() => {
+    setShowMi007(prev => {
+      const next = !prev;
       if (typeof window !== 'undefined') {
         try {
-          localStorage.setItem('mi007_quantum_ai_config', JSON.stringify(next));
+          localStorage.setItem('mi007_institutional_strategy_enabled', String(next));
         } catch (e) {}
       }
       return next;
@@ -407,13 +398,7 @@ export function ChartContainer({
           saveStoredSmcConfig(next);
           return next;
         });
-        setQuantumAiConfig(prev => ({
-          ...prev,
-          enabled: false,
-          showDashboard: false,
-          showSignals: false,
-          showExecutionLevels: false,
-        }));
+        setShowMi007(true);
       } else if (smcParam === '0' || smcParam === 'false' || strategiesParam || indicatorsParam) {
         // Explicitly disable SMC overlay for pure technical strategies
         setSmcConfig(prev => {
@@ -426,7 +411,7 @@ export function ChartContainer({
       // Detect Quantum AI strategy URL query parameters
       const moduleParam = sp.get('module');
       if (moduleParam === 'quantum-ai' && tabParam !== 'smc') {
-        setQuantumAiConfig(prev => ({ ...prev, enabled: true, showDashboard: false }));
+        setShowMi007(true);
       }
 
       // Detect Order Flow Footprint URL query parameters (e.g. ?of=1 or ?orderflow=1)
@@ -526,7 +511,7 @@ export function ChartContainer({
             }
 
             if (setup.isQuantumAi) {
-              setQuantumAiConfig((prev) => ({ ...prev, enabled: true }));
+              setShowMi007(true);
             }
           });
         }
@@ -760,7 +745,7 @@ export function ChartContainer({
         ? prev
         : null
     );
-    if (!quantumAiConfig.enabled || lastClosedOpenTime === 0) return;
+    if (!showMi007 || lastClosedOpenTime === 0) return;
     const htfMap: Record<Timeframe, Timeframe> = {
       '1m': '15m',
       '5m': '15m',
@@ -799,28 +784,24 @@ export function ChartContainer({
     return () => {
       cancelled = true;
     };
-  }, [quantumAiConfig.enabled, selectedSymbol, timeframe, market, lastClosedOpenTime]);
+  }, [showMi007, selectedSymbol, timeframe, market, lastClosedOpenTime]);
 
-  const quantumAiData = useMemo(() => {
-    if (!quantumAiConfig.enabled || candles.length === 0) return undefined;
-    if (
+  const mi007Data = useMemo(() => {
+    if (!showMi007 || candles.length === 0) return null;
+    const validHtf =
       apiHtfCandles &&
       apiHtfCandles.symbol === selectedSymbol &&
       apiHtfCandles.chartTf === timeframe &&
       apiHtfCandles.market === market &&
       apiHtfCandles.candles.length >= 10
-    ) {
-      return analyzeQuantumAi(candles, quantumAiConfig, {
-        htfCandles: apiHtfCandles.candles,
-        htfLabel: `${apiHtfCandles.tf} (/api/candles)`,
-      });
-    }
-    const aggregated = aggregateSessionAwareHtf(candles, market);
-    return analyzeQuantumAi(candles, quantumAiConfig, {
-      htfCandles: aggregated.candles,
-      htfLabel: aggregated.label,
+        ? apiHtfCandles.candles
+        : undefined;
+    return analyzeMi007Strategy(candles, {
+      symbol: selectedSymbol,
+      timeframe,
+      htfCandles: validHtf,
     });
-  }, [candles, quantumAiConfig, apiHtfCandles, selectedSymbol, timeframe, market]);
+  }, [candles, showMi007, apiHtfCandles, selectedSymbol, timeframe, market]);
   const [currentPrice, setCurrentPrice] = useState<number | undefined>();
   const [isLoadingCandles, setIsLoadingCandles] = useState(false);
   const [isLiveFromEngine, setIsLiveFromEngine] = useState(false);
@@ -1662,7 +1643,7 @@ export function ChartContainer({
     }
 
     if (setup.isQuantumAi) {
-      setQuantumAiConfig((prev) => ({ ...prev, enabled: true }));
+      setShowMi007(true);
     }
 
     if (setup.timeframe && ['1m', '5m', '15m', '30m', '1H', '4H', '1D', '1W', '1M'].includes(setup.timeframe)) {
@@ -1942,11 +1923,8 @@ export function ChartContainer({
         onOrderFlowConfigChange={handleOrderFlowConfigChange}
         orderFlowSignalsCount={orderFlowData?.signals.length || 0}
         onOpenOrderFlowSignals={() => setIsOfSignalsOpen(true)}
-        showQuantumAi={quantumAiConfig.enabled}
-        quantumAiConfig={quantumAiConfig}
-        quantumAiAnalysis={quantumAiData}
-        onToggleQuantumAi={() => handleQuantumAiConfigChange({ ...quantumAiConfig, enabled: !quantumAiConfig.enabled })}
-        onQuantumAiConfigChange={handleQuantumAiConfigChange}
+        showMi007={showMi007}
+        onToggleMi007={handleToggleMi007}
         showVolumeProfile={showVolumeProfile}
         showMagnifier={isMagnifierActive}
         onToggleMagnifier={handleToggleMagnifier}
@@ -2042,9 +2020,8 @@ export function ChartContainer({
             showOrderFlow={orderFlowConfig.enabled}
             orderFlowConfig={orderFlowConfig}
             orderFlowData={orderFlowData}
-            showQuantumAi={quantumAiConfig.enabled}
-            quantumAiConfig={quantumAiConfig}
-            quantumAiData={quantumAiData}
+            showMi007={showMi007}
+            mi007Data={mi007Data}
             showVolumeProfile={showVolumeProfile}
             showFnoOverlay={false}
             fnoLevels={undefined}

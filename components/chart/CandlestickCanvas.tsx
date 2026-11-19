@@ -24,9 +24,8 @@ interface CandlestickCanvasProps {
   showOrderFlow?: boolean;
   orderFlowConfig?: import("../../lib/orderflow/types").OrderFlowConfig;
   orderFlowData?: import("../../lib/orderflow/types").OrderFlowAnalysisResult;
-  showQuantumAi?: boolean;
-  quantumAiConfig?: import("../../lib/quantumai/types").QuantumAiConfig;
-  quantumAiData?: import("../../lib/quantumai/types").QuantumAiAnalysisResult;
+  showMi007?: boolean;
+  mi007Data?: import("../../lib/mi007/types").Mi007AnalysisResult | null;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;
@@ -165,7 +164,7 @@ const VISIBLE_CANDLES_BASE = 60;
 export function CandlestickCanvas({
   candles, chartType, showVolume, showVolumePanel,
   showSmcOverlay, smcConfig, showOrderFlow = false, orderFlowConfig, orderFlowData,
-  showQuantumAi = false, quantumAiConfig, quantumAiData,
+  showMi007 = false, mi007Data,
   showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
   currentPriceOverride, timeframe, isMarketOpen = true, symbol, showMagnifier = false, onToggleMagnifier, targetCandleTime, targetSetupId, targetSmcSetup, className = '',
@@ -885,9 +884,8 @@ export function CandlestickCanvas({
   const sizeRef = useRef(size);
   const showMagnifierRef = useRef(showMagnifier);
   const smcDataRef = useRef<import('@/lib/smcEngine').SmcAnalysis | null>(null);
-  const showQuantumAiRef = useRef(showQuantumAi);
-  const quantumAiDataRef = useRef(quantumAiData);
-  const quantumAiConfigRef = useRef(quantumAiConfig);
+  const showMi007Ref = useRef(showMi007);
+  const mi007DataRef = useRef(mi007Data);
   const showOrderFlowRef = useRef(showOrderFlow);
   const orderFlowConfigRef = useRef(orderFlowConfig);
   const orderFlowDataRef = useRef(orderFlowData);
@@ -976,9 +974,8 @@ export function CandlestickCanvas({
     timeframeRef.current = timeframe;
     cursorModeRef.current = cursorMode;
     showMagnifierRef.current = showMagnifier;
-    showQuantumAiRef.current = showQuantumAi;
-    quantumAiDataRef.current = quantumAiData;
-    quantumAiConfigRef.current = quantumAiConfig;
+    showMi007Ref.current = showMi007;
+    mi007DataRef.current = mi007Data;
     showOrderFlowRef.current = showOrderFlow;
     orderFlowConfigRef.current = orderFlowConfig;
     orderFlowDataRef.current = orderFlowData;
@@ -1028,9 +1025,8 @@ export function CandlestickCanvas({
         cursorMode: cursorModeRef.current,
         showMagnifier: Boolean(showMagnifierRef.current),
         mainCanvas: canvasRef.current,
-        showQuantumAi: showQuantumAiRef.current,
-        quantumAiConfig: quantumAiConfigRef.current,
-        quantumAiData: quantumAiDataRef.current,
+        showMi007: showMi007Ref.current,
+        mi007Data: mi007DataRef.current,
         drawings: isAllDrawingsHiddenRef.current ? [] : drawingsRef.current,
         activeDrawing: isAllDrawingsHiddenRef.current ? null : drawingInProgressRef.current,
         selectedDrawingId: isAllDrawingsHiddenRef.current ? null : selectedDrawingIdRef.current,
@@ -1250,9 +1246,8 @@ export function CandlestickCanvas({
           showOrderFlow,
           orderFlowConfig,
           orderFlowData,
-          showQuantumAi: quantumAiConfig ? quantumAiConfig.enabled : showQuantumAi,
-          quantumAiConfig,
-          quantumAiData,
+          showMi007,
+          mi007Data,
           showVolumeProfile,
           showFnoOverlay, fnoLevels,
           strategyOverlay,
@@ -1277,7 +1272,7 @@ export function CandlestickCanvas({
       }
     };
   }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, smcConfig, memoizedSmcData, showOrderFlow, orderFlowConfig, orderFlowData,
-      showQuantumAi, quantumAiConfig, quantumAiData, showVolumeProfile,
+      showMi007, mi007Data, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, isAllDrawingsHidden, startIdx, endIdx, priceScaleRatio, priceOffset, size, dpr, clockTick, theme]);

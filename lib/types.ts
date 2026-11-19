@@ -186,9 +186,8 @@ export interface ChartOptions {
   showOrderFlow?: boolean;
   orderFlowConfig?: import('./orderflow/types').OrderFlowConfig;
   orderFlowData?: import('./orderflow/types').OrderFlowAnalysisResult;
-  showQuantumAi?: boolean;
-  quantumAiConfig?: import('./quantumai/types').QuantumAiConfig;
-  quantumAiData?: import('./quantumai/types').QuantumAiAnalysisResult;
+  showMi007?: boolean;
+  mi007Data?: import('./mi007/types').Mi007AnalysisResult | null;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;
