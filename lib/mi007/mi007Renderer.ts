@@ -391,28 +391,28 @@ export function renderMi007Overlay({
   }
 
   // ── 4. Section 8: Required MI007 Institutional Setup & Checklist HUD Card ─────
-  const cardW = Math.min(252 * dpr, chartW * 0.34);
-  const pad = 9 * dpr;
-  const lineH = 13 * dpr;
+  const cardW = Math.min(286 * dpr, chartW * 0.36);
+  const pad = 10 * dpr;
+  const lineH = 15 * dpr;
   const setup = data.activeSetup;
   const checklistCount = setup ? setup.checklist.length : 0;
-  const cardH = (setup ? 104 + checklistCount * 13 : 66) * dpr;
+  const cardH = (setup ? 116 + checklistCount * 15 : 72) * dpr;
   const cardX = 12 * dpr;
   const cardY = 34 * dpr;
 
   if (showSmc && chartW >= 360 * dpr && chartH >= cardY + cardH + 20 * dpr) {
-    ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.94)';
-    ctx.strokeStyle = isDark ? 'rgba(51, 65, 85, 0.9)' : 'rgba(203, 213, 225, 0.95)';
-    ctx.lineWidth = 1 * dpr;
+    ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.96)';
+    ctx.strokeStyle = isDark ? 'rgba(51, 65, 85, 0.95)' : 'rgba(203, 213, 225, 0.95)';
+    ctx.lineWidth = 1.2 * dpr;
     ctx.beginPath();
     ctx.roundRect(cardX, cardY, cardW, cardH, 8 * dpr);
     ctx.fill();
     ctx.stroke();
 
     // Header row
-    let cy = cardY + pad + 5 * dpr;
-    ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-    ctx.fillStyle = isDark ? '#94A3B8' : '#64748B';
+    let cy = cardY + pad + 6 * dpr;
+    ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+    ctx.fillStyle = isDark ? '#94A3B8' : '#475569';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText('MI-007 INSTITUTIONAL SETUP', cardX + pad, cy);
@@ -420,13 +420,13 @@ export function renderMi007Overlay({
     if (setup) {
       const isBull = setup.direction === 'BULLISH';
       const dirText = setup.isTradeable ? setup.direction : 'NO TRADE';
-      const dirColor = !setup.isTradeable ? '#94A3B8' : isBull ? '#10B981' : '#F43F5E';
+      const dirColor = !setup.isTradeable ? '#64748B' : isBull ? '#059669' : '#E11D48';
       ctx.fillStyle = dirColor;
       ctx.textAlign = 'right';
       ctx.fillText(`${dirText} • ${setup.score}/100`, cardX + cardW - pad, cy);
 
       cy += lineH;
-      ctx.font = `600 ${7 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `600 ${8 * dpr}px "JetBrains Mono",monospace`;
       ctx.fillStyle = isDark ? '#CBD5E1' : '#334155';
       ctx.textAlign = 'left';
       ctx.fillText(`${setup.classification} • ${data.regime.regime.replace('_', ' ')}`, cardX + pad, cy);
@@ -437,11 +437,11 @@ export function renderMi007Overlay({
       const drawKv = (col: number, rowOffset: number, k: string, v: string, vColor: string) => {
         const kx = cardX + pad + col * colW;
         const ky = cy + rowOffset * (lineH + 2 * dpr);
-        ctx.font = `600 ${6.8 * dpr}px "JetBrains Mono",monospace`;
+        ctx.font = `600 ${7.8 * dpr}px "JetBrains Mono",monospace`;
         ctx.fillStyle = isDark ? '#94A3B8' : '#64748B';
         ctx.textAlign = 'left';
         ctx.fillText(k, kx, ky);
-        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
         ctx.fillStyle = vColor;
         ctx.textAlign = 'right';
         ctx.fillText(v, kx + colW - 6 * dpr, ky);
@@ -462,8 +462,8 @@ export function renderMi007Overlay({
 
       // Confirmation Checklist Header
       cy += 9 * dpr;
-      ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
-      ctx.fillStyle = isDark ? '#94A3B8' : '#64748B';
+      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+      ctx.fillStyle = isDark ? '#94A3B8' : '#475569';
       ctx.textAlign = 'left';
       ctx.fillText('CONFIRMATION CHECKLIST', cardX + pad, cy);
       ctx.textAlign = 'right';
@@ -474,18 +474,18 @@ export function renderMi007Overlay({
         cy += lineH;
         const badgeColor =
           item.status === 'Confirmed'
-            ? '#10B981'
+            ? '#059669'
             : item.status === 'Pending'
-            ? '#F59E0B'
+            ? '#D97706'
             : '#64748B';
-        ctx.font = `bold ${6.6 * dpr}px "JetBrains Mono",monospace`;
+        ctx.font = `bold ${7.8 * dpr}px "JetBrains Mono",monospace`;
         ctx.fillStyle = badgeColor;
         ctx.textAlign = 'left';
         const tag = item.status === 'Confirmed' ? '✓' : item.status === 'Pending' ? '◐' : '○';
         ctx.fillText(`${tag} ${item.label}`, cardX + pad, cy);
 
         ctx.textAlign = 'right';
-        ctx.fillStyle = isDark ? '#94A3B8' : '#64748B';
+        ctx.fillStyle = isDark ? '#CBD5E1' : '#334155';
         ctx.fillText(`${item.awarded}/${item.weight}`, cardX + cardW - pad, cy);
       }
     } else {

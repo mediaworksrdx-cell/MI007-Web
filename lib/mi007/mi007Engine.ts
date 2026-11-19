@@ -620,19 +620,24 @@ function evaluateDirectionalSetup(
       ].filter((v): v is number => typeof v === 'number' && v > 0)
     : [];
 
+  // Directional Volume Profile Support (for Longs: at/below entry) / Resistance (for Shorts: at/above entry)
+  const directionalVpLevels = keyVpLevels.filter((lvl) =>
+    isBull ? lvl <= rawSmcEntry + atr * 0.35 : lvl >= rawSmcEntry - atr * 0.35
+  );
+
   let nearestVpDist = Infinity;
-  for (const lvl of keyVpLevels) {
+  for (const lvl of directionalVpLevels) {
     const d = Math.abs(rawSmcEntry - lvl);
     if (d < nearestVpDist) {
       nearestVpDist = d;
     }
   }
 
-  // Strict confluence: exact SMC Engine Entry (or its OB/FVG zone) must align with a key Volume Profile level
+  // Strict directional confluence: supporting/resisting VP level must align with SMC Entry or its OB/FVG zone
   const vpInsideZone = Boolean(
     hasActualVp && (
-      (activeOb && keyVpLevels.some((lvl) => lvl >= activeOb.bottomPrice - atr * 0.4 && lvl <= activeOb.topPrice + atr * 0.4)) ||
-      (activeFvg && keyVpLevels.some((lvl) => lvl >= activeFvg.bottomPrice - atr * 0.4 && lvl <= activeFvg.topPrice + atr * 0.4))
+      (activeOb && directionalVpLevels.some((lvl) => lvl >= activeOb.bottomPrice - atr * 0.4 && lvl <= activeOb.topPrice + atr * 0.4)) ||
+      (activeFvg && directionalVpLevels.some((lvl) => lvl >= activeFvg.bottomPrice - atr * 0.4 && lvl <= activeFvg.topPrice + atr * 0.4))
     )
   );
   const vpEntryAligned = hasActualVp && (vpInsideZone || nearestVpDist <= atr * 1.5);
@@ -706,11 +711,17 @@ function evaluateDirectionalSetup(
     : (opposingPools[0] ?? (isBull ? entryPrice + risk * 2.0 : entryPrice - risk * 2.0));
   const target1 = roundPrice(Math.max(minPriceFloor, rawTp1));
 
+  // Enforce clean >= 0.8R separation between TP1 and TP2 so targets never bunch up
   const fallbackTp2 = isBull
     ? Math.max(entryPrice + risk * 3.0, target1 + risk)
-    : Math.max(minPriceFloor, Math.min(entryPrice - risk * 3.0, target1 - risk * 0.5));
-  const rawTp2 = matchingSmcSetup?.targetPrice2
-    ? matchingSmcSetup.targetPrice2
+    : Math.max(minPriceFloor, Math.min(entryPrice - risk * 3.0, target1 - risk * 0.8));
+  const smcTp2Separated =
+    matchingSmcSetup?.targetPrice2 !== undefined &&
+    (isBull
+      ? matchingSmcSetup.targetPrice2 >= target1 + risk * 0.8
+      : matchingSmcSetup.targetPrice2 <= target1 - risk * 0.8 && matchingSmcSetup.targetPrice2 > minPriceFloor);
+  const rawTp2 = smcTp2Separated
+    ? matchingSmcSetup!.targetPrice2!
     : (opposingPools.find((p) => (isBull ? p >= target1 + risk * 0.8 : p <= target1 - risk * 0.8)) ?? fallbackTp2);
   const target2 = roundPrice(Math.max(minPriceFloor, rawTp2));
 
@@ -821,20 +832,28 @@ function evaluateDirectionalSetup(
     },
   ];
 
-  // VP2 & FB2: Require valid positive targets, non-stale entry, >= 1:2 RR, and VP confluence when actual volume exists
+  // Guarantee totalScore === exact sum of checklist items (no discrepancy possible)
+  const verifiedTotalScore = Math.min(100, checklist.reduce((acc, item) => acc + item.awarded, 0));
+  const verifiedClassification = classifyScore(verifiedTotalScore);
+
+  // Strict institutional execution gate:
+  // - Score >= 60, R:R >= 1:2, strictly positive ordered targets, non-stale entry
+  // - Closed-candle entry confirmation required (Section 5: Entry after confirmation)
+  // - Directional Volume Profile support/resistance confluence when actual volume exists
   const vpGate = hasActualVp ? vpEntryAligned : true;
   const isTradeable =
-    totalScore >= 60 &&
+    verifiedTotalScore >= 60 &&
     riskReward1 >= 2.0 &&
     targetsValid &&
     !isStaleSetup &&
+    entryCandleConfirmed &&
     vpGate;
 
   return {
     id: `mi007_${direction}_${anchorBarIdx}_${roundPrice(entryPrice)}`,
     direction,
-    score: totalScore,
-    classification,
+    score: verifiedTotalScore,
+    classification: verifiedClassification,
     isTradeable,
     entryPrice,
     stopLoss,
