@@ -1,7 +1,7 @@
 import { SmcSetupType } from '../smcEngine';
 
 export type SmcAlertAssetClass = 'STOCK' | 'INDEX' | 'COMMODITY' | 'FOREX' | 'CRYPTO';
-export type SmcAlertStage = 'EARLY' | 'ACTIONABLE' | 'OUTCOME';
+export type SmcAlertStage = 'EARLY' | 'RETEST' | 'ACTIONABLE' | 'TP_HIT' | 'SL_HIT';
 export type SmcAlertDirection = 'BOTH' | 'BULLISH' | 'BEARISH';
 
 export interface SmcSetupOption {
@@ -231,11 +231,14 @@ export function saveAlertHistory(history: SmcTriggeredAlert[]): void {
 }
 
 export function classifySetupStage(status: string, signalState?: string): { stage: SmcAlertStage; label: string } {
-  if (status === 'TARGET_HIT') return { stage: 'OUTCOME', label: 'TP1 HIT' };
-  if (status === 'EXITED') return { stage: 'OUTCOME', label: 'TP2 / EXITED' };
-  if (status === 'INVALIDATED' || signalState === 'RETEST_FAILED') return { stage: 'OUTCOME', label: 'INVALIDATED / SL' };
-  if (signalState === 'ENTRY_READY' || signalState === 'EXECUTED') return { stage: 'ACTIONABLE', label: 'ENTRY READY' };
-  if (signalState === 'REJECTION_CONFIRMED' || signalState === 'RETEST_CONFIRMED') return { stage: 'ACTIONABLE', label: 'REJECTION CONFIRMED' };
-  if (signalState === 'RETEST_TOUCHED' || status === 'RETESTING' || status === 'ENTRY_ZONE_REACHED') return { stage: 'ACTIONABLE', label: 'RETEST TOUCHED' };
+  if (status === 'TARGET_HIT') return { stage: 'TP_HIT', label: 'TP1 HIT' };
+  if (status === 'EXITED') return { stage: 'TP_HIT', label: 'TP2 / EXITED' };
+  if (status === 'INVALIDATED' || signalState === 'RETEST_FAILED') return { stage: 'SL_HIT', label: 'SL / INVALIDATED' };
+  if (signalState === 'ENTRY_READY' || signalState === 'EXECUTED' || signalState === 'REJECTION_CONFIRMED' || signalState === 'RETEST_CONFIRMED') {
+    return { stage: 'ACTIONABLE', label: signalState === 'ENTRY_READY' ? 'ENTRY READY' : 'REJECTION CONFIRMED' };
+  }
+  if (signalState === 'RETEST_TOUCHED' || status === 'RETESTING' || status === 'ENTRY_ZONE_REACHED') {
+    return { stage: 'RETEST', label: 'RETEST TOUCHED' };
+  }
   return { stage: 'EARLY', label: 'WAIT PULLBACK' };
 }

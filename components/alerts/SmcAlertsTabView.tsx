@@ -66,7 +66,7 @@ export function SmcAlertsTabView() {
   const [customSetups, setCustomSetups] = useState<SmcSetupType[]>(TOP_6_SMC_SETUPS);
   const [direction, setDirection] = useState<SmcAlertDirection>('BOTH');
   const [minQuality, setMinQuality] = useState<number>(70);
-  const [triggerStages, setTriggerStages] = useState<SmcAlertStage[]>(['EARLY', 'ACTIONABLE']);
+  const [triggerStages, setTriggerStages] = useState<SmcAlertStage[]>(['EARLY', 'RETEST', 'ACTIONABLE', 'TP_HIT', 'SL_HIT']);
   const [ruleChannels, setRuleChannels] = useState({ browser: true, whatsapp: true, gmail: true });
   const [quickFilter, setQuickFilter] = useState<'ALL' | SmcAlertAssetClass>('ALL');
 
@@ -328,7 +328,7 @@ export function SmcAlertsTabView() {
       setupTypes: chosenSetups,
       direction,
       minQuality,
-      triggerStages: triggerStages.length > 0 ? [...triggerStages] : ['EARLY', 'ACTIONABLE'],
+      triggerStages: triggerStages.length > 0 ? [...triggerStages] : ['EARLY', 'RETEST', 'ACTIONABLE', 'TP_HIT', 'SL_HIT'],
       channels: { ...ruleChannels },
       enabled: true,
       createdAt: new Date().toISOString(),
@@ -790,8 +790,10 @@ export function SmcAlertsTabView() {
               {(
                 [
                   { id: 'EARLY', label: 'Wait Pullback' },
+                  { id: 'RETEST', label: 'Retest Touched' },
                   { id: 'ACTIONABLE', label: 'Entry Ready' },
-                  { id: 'OUTCOME', label: 'TP1 / SL Hit' },
+                  { id: 'TP_HIT', label: 'TP1 / TP2 Hit' },
+                  { id: 'SL_HIT', label: 'SL / Invalidated' },
                 ] as const
               ).map((st) => (
                 <button
