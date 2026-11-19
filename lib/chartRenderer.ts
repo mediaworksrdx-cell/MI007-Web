@@ -1616,10 +1616,8 @@ export function renderChart(
           : (ob.isBullish ? 'rgba(16, 185, 129, 0.40)' : 'rgba(239, 68, 68, 0.40)');
       }
 
-      // Age-dependent historical visual fading
-      const alpha = enableHistoricalFading
-        ? sam.computeHistoricalAlpha(ob.startIndex, lastBarIdx, visMode, ob.isMitigated)
-        : (ob.isMitigated ? 0.35 : 1.0);
+      // Keep active unmitigated Order Blocks at full 100% opacity
+      const alpha = ob.isMitigated ? 0.45 : 1.0;
 
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -1764,10 +1762,8 @@ export function renderChart(
       const fa = isMit ? (isDark ? 0.025 : 0.02) : (fvg.isInverse ? 0.04 : 0.035);
       const ba = isMit ? 0.25 : (fvg.isInverse ? 0.45 : 0.35);
 
-      // Age-dependent historical visual fading
-      const alpha = enableHistoricalFading
-        ? sam.computeHistoricalAlpha(fvg.startIndex, lastBarIdx, visMode, isMit)
-        : (isMit ? 0.35 : 1.0);
+      // Keep active unmitigated FVGs at full 100% opacity
+      const alpha = isMit ? 0.45 : 1.0;
 
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -2518,9 +2514,9 @@ export function renderChart(
         const yCur = curPrice > 0 ? priceToY(curPrice) : -999;
 
         ctx.save();
-        // Historical setup fading
-        if (enableHistoricalFading && (lastBarIdx - st.candleIndex > 6)) {
-          ctx.globalAlpha = Math.max(0.40, 1.0 - (lastBarIdx - st.candleIndex - 6) * 0.04);
+        // Keep active setups at full 100% opacity; only soften completed historical trades
+        if (isTradeOver && enableHistoricalFading && (lastBarIdx - st.candleIndex > 6)) {
+          ctx.globalAlpha = 0.70;
         }
 
         // 1. Take Profit (Reward) Zone (Entry to TP1) — Subtle green shaded region (clamped to viewport)
