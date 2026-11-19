@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsx scripts/verify-institutional-audit.ts",
+    "test": "npm run test:mi007 && npx tsx scripts/verify-institutional-audit.ts",
+    "test:mi007": "node -r ./scripts/ts-loader.cjs scripts/test-audit-round2-regressions.cjs",
     "test:unit": "npx tsx scripts/test-screener.mjs",
     "test:strategies": "npx tsx scripts/test-all-screener-strategies.ts"
   },

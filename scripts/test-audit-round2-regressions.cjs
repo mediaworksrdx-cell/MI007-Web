@@ -223,7 +223,35 @@ function makeSeries(n, volFn, flatEvery = 0) {
   assert.strictEqual(res.orderFlow.volumeQuality, 'ACTUAL');
   assert.ok(res.orderFlow.barDelta > 0, `Expected positive barDelta on bullish close-near-high bar, got ${res.orderFlow.barDelta}`);
   assert.strictEqual(res.orderFlow.cvdTrend, 'BULLISH', `Expected BULLISH cvdTrend on sustained buying, got ${res.orderFlow.cvdTrend}`);
-  console.log(`PASS [10/10] Numerical Order Flow barDelta=${res.orderFlow.barDelta}, cvdTrend=${res.orderFlow.cvdTrend} & OHLCV proxy metadata`);
+  console.log(`PASS [10/11] Numerical Order Flow barDelta=${res.orderFlow.barDelta}, cvdTrend=${res.orderFlow.cvdTrend} & OHLCV proxy metadata`);
 }
 
-console.log('\nALL 10 UNCONDITIONAL AUDIT REGRESSION TESTS PASSED!');
+// TEST 11: Critical 1 (full-slice volumeEstimated older than 120 bars) + Critical 2 (confirmed-swing Fibo anchor stability)
+{
+  // Bar #5 (145 bars before end, outside latest 120) flagged volumeEstimated=true must still disqualify ACTUAL
+  const longSeries = makeSeries(160, (i) => 1000 + (i % 19) * 280);
+  longSeries[5] = { ...longSeries[5], volumeEstimated: true };
+  const vp = computeVolumeProfile(longSeries, { bucketCount: 40 });
+  assert.strictEqual(vp.volumeQuality, 'ESTIMATED', 'Critical 1: full-slice scan must catch volumeEstimated=true older than 120 bars');
+
+  // Fibonacci confirmed-swing anchor stability: adding 2 interior bars inside an established confirmed leg must not move swingHigh/swingLow
+  const stabSpecs = [];
+  for (let i = 0; i < 20; i++) stabSpecs.push({ o: 120 - i, h: 121 - i, l: 119 - i, c: 120 - i, v: 1000 + i * 20 });
+  for (let i = 0; i <= 30; i++) {
+    const p = 100 + (100 * i) / 30;
+    stabSpecs.push({ o: p - 1, h: p + 1, l: p - 1.5, c: p, v: 1200 + i * 30 });
+  }
+  for (let i = 1; i <= 20; i++) {
+    const p = 200 - i * 2;
+    stabSpecs.push({ o: p + 1, h: p + 1.5, l: p - 0.5, c: p, v: 900 + i * 15 });
+  }
+  const stableSeries = makeCandles(stabSpecs);
+  const res1 = analyzeMi007Strategy(stableSeries.slice(0, 64), { symbol: 'FIB_STAB', timeframe: '1H' });
+  const res2 = analyzeMi007Strategy(stableSeries.slice(0, 66), { symbol: 'FIB_STAB', timeframe: '1H' });
+  assert.ok(res1.fibonacci && res2.fibonacci, 'Fibonacci must exist in both slices');
+  assert.strictEqual(res1.fibonacci.swingHigh.price, res2.fibonacci.swingHigh.price, 'Critical 2: swingHigh must stay stable across unconfirmed bars');
+  assert.strictEqual(res1.fibonacci.swingLow.price, res2.fibonacci.swingLow.price, 'Critical 2: swingLow must stay stable across unconfirmed bars');
+  console.log('PASS [11/11] Full-slice volumeEstimated check & confirmed-swing Fibo anchor stability (Critical 1 + 2)');
+}
+
+console.log('\nALL 11 UNCONDITIONAL AUDIT REGRESSION TESTS PASSED!');

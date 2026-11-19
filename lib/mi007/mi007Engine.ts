@@ -297,18 +297,12 @@ function computeFibonacciConfluence(
       const postOriginMajorHighs = majorSwings.filter((s) => s.isHigh && s.index > origIdx);
       let peakIdx = origIdx;
       let peakHigh = -Infinity;
+      // Critical 2: Only anchor Priority-1 BOS leg once a confirmed post-origin major swing exists (never scan unconfirmed candles)
       if (postOriginMajorHighs.length > 0) {
         for (const h of postOriginMajorHighs) {
           if (h.price > peakHigh) {
             peakHigh = h.price;
             peakIdx = h.index;
-          }
-        }
-      } else {
-        for (let i = origIdx; i < n; i++) {
-          if (closedCandles[i].high > peakHigh) {
-            peakHigh = closedCandles[i].high;
-            peakIdx = i;
           }
         }
       }
@@ -340,13 +334,6 @@ function computeFibonacciConfluence(
             troughIdx = l.index;
           }
         }
-      } else {
-        for (let i = origIdx; i < n; i++) {
-          if (closedCandles[i].low < troughLow) {
-            troughLow = closedCandles[i].low;
-            troughIdx = i;
-          }
-        }
       }
       if (!originBroken && troughIdx > origIdx && origHigh > troughLow) {
         anchorHigh = { index: origIdx, price: origHigh, time: closedCandles[origIdx].openTime };
@@ -356,7 +343,8 @@ function computeFibonacciConfluence(
     }
   }
 
-  // Priority 2 (Fallback): Highest confirmed major swing high & lowest major swing low in active 100-bar window
+  // Priority 2 (Fallback): Strictly immutable confirmed major swing high & low in active 100-bar window
+  // (No unconfirmed candle-extreme extension loop — anchors only update when a new confirmed major swing forms)
   if (!anchorHigh || !anchorLow) {
     const recentMajors = majorSwings.filter((s) => s.index >= lookbackStart);
     const pool = recentMajors.length >= 2 ? recentMajors : majorSwings;
@@ -381,19 +369,6 @@ function computeFibonacciConfluence(
           anchorHigh = { index: i, price: c.high, time: c.openTime };
         }
         if (!anchorLow || c.low < anchorLow.price) {
-          anchorLow = { index: i, price: c.low, time: c.openTime };
-        }
-      }
-    }
-
-    if (anchorHigh && anchorLow) {
-      const legStart = Math.min(anchorHigh.index, anchorLow.index);
-      for (let i = legStart; i < n; i++) {
-        const c = closedCandles[i];
-        if (c.high > anchorHigh.price) {
-          anchorHigh = { index: i, price: c.high, time: c.openTime };
-        }
-        if (c.low < anchorLow.price) {
           anchorLow = { index: i, price: c.low, time: c.openTime };
         }
       }

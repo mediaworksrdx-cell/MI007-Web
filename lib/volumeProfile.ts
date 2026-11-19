@@ -42,26 +42,22 @@ function roundPrice(v: number): number {
 
 /**
  * Determines whether candle volume represents actual traded volume or missing/constant/estimated data.
- * Critical 01: Strictly inspects candle `volumeEstimated` flag so estimated/synthetic volume is never classified ACTUAL.
+ * Critical 1: Zero-tolerance scan across ALL supplied candles (not just latest 120) so no older estimated bar slips through.
  */
 export function detectVolumeQuality(candles: Candle[]): VolumeQuality {
   if (!candles || candles.length === 0) return 'ESTIMATED';
-  const sample = candles.slice(-120);
   let positive = 0;
-  let estimatedFlagged = 0;
   const uniqueVols = new Set<number>();
-  for (const c of sample) {
+  for (const c of candles) {
     if ((c as any)?.volumeEstimated === true) {
-      estimatedFlagged++;
+      return 'ESTIMATED';
     }
     if (typeof c.volume === 'number' && Number.isFinite(c.volume) && c.volume > 0) {
       positive++;
       uniqueVols.add(Math.round(c.volume));
     }
   }
-  // Critical 1: Zero-tolerance guard — any candle flagged volumeEstimated=true disqualifies ACTUAL classification
-  if (estimatedFlagged > 0) return 'ESTIMATED';
-  const positiveRatio = positive / sample.length;
+  const positiveRatio = positive / candles.length;
   if (positiveRatio < 0.7 || uniqueVols.size < Math.min(8, Math.max(3, Math.floor(positive * 0.4)))) {
     return 'ESTIMATED';
   }
