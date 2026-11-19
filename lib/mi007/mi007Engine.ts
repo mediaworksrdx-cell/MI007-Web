@@ -6,6 +6,7 @@ import {
   isCandleClosed,
   timeframeToMs,
   SmcAnalysis,
+  SmcStructureBreak,
   SmcSwingPoint,
 } from '../smcEngine';
 import {
@@ -141,15 +142,30 @@ function buildRangeProfile(
 
     const loBin = Math.max(0, Math.min(numBins - 1, Math.floor((c.low - minP) / binSize)));
     const hiBin = Math.max(0, Math.min(numBins - 1, Math.floor((c.high - minP) / binSize)));
-    const span = Math.max(1, hiBin - loBin + 1);
-    const perBin = v / span;
+    const bodyLow = Math.min(c.open, c.close);
+    const bodyHigh = Math.max(c.open, c.close);
+    const bLoBin = Math.max(loBin, Math.min(hiBin, Math.floor((bodyLow - minP) / binSize)));
+    const bHiBin = Math.max(bLoBin, Math.min(hiBin, Math.floor((bodyHigh - minP) / binSize)));
+
+    const fullSpan = Math.max(1, hiBin - loBin + 1);
+    const bodySpan = Math.max(1, bHiBin - bLoBin + 1);
     const range = Math.max(1e-9, c.high - c.low);
+    // Buy/Sell directional split weighted by close position within candle range
     const buyFrac = Math.max(0.15, Math.min(0.85, (c.close - c.low) / range));
 
+    // Institutional body-weighted distribution: 65% of bar volume inside body, 35% across full wick range
+    const wickPerBin = (v * 0.35) / fullSpan;
+    const bodyPerBin = (v * 0.65) / bodySpan;
+
     for (let b = loBin; b <= hiBin; b++) {
-      volArr[b] += perBin;
-      buyArr[b] += perBin * buyFrac;
-      sellArr[b] += perBin * (1 - buyFrac);
+      volArr[b] += wickPerBin;
+      buyArr[b] += wickPerBin * buyFrac;
+      sellArr[b] += wickPerBin * (1 - buyFrac);
+    }
+    for (let b = bLoBin; b <= bHiBin; b++) {
+      volArr[b] += bodyPerBin;
+      buyArr[b] += bodyPerBin * buyFrac;
+      sellArr[b] += bodyPerBin * (1 - buyFrac);
     }
   }
 
@@ -158,23 +174,33 @@ function buildRangeProfile(
     if (volArr[b] > volArr[pocIdx]) pocIdx = b;
   }
 
-  // 70% Value Area expansion around POC
+  // Standard Institutional 70% Value Area expansion using 2-row lookahead around POC
   const targetVaVol = totalVolume * 0.7;
   let vaVol = volArr[pocIdx];
   let vaLo = pocIdx;
   let vaHi = pocIdx;
   while (vaVol < targetVaVol && (vaLo > 0 || vaHi < numBins - 1)) {
-    const upVol = vaHi < numBins - 1 ? volArr[vaHi + 1] : -1;
-    const dnVol = vaLo > 0 ? volArr[vaLo - 1] : -1;
-    if (upVol >= dnVol && vaHi < numBins - 1) {
+    const canUp = vaHi < numBins - 1;
+    const canDn = vaLo > 0;
+    const up2 = canUp ? volArr[vaHi + 1] + (vaHi + 2 < numBins ? volArr[vaHi + 2] : 0) : -1;
+    const dn2 = canDn ? volArr[vaLo - 1] + (vaLo - 2 >= 0 ? volArr[vaLo - 2] : 0) : -1;
+    if (canUp && (!canDn || up2 >= dn2)) {
       vaHi++;
       vaVol += volArr[vaHi];
-    } else if (vaLo > 0) {
+    } else if (canDn) {
       vaLo--;
       vaVol += volArr[vaLo];
     } else {
       break;
     }
+  }
+
+  // 3-bin Gaussian smoothing for robust HVN / LVN structural node detection
+  const smoothed = new Float64Array(numBins);
+  for (let b = 0; b < numBins; b++) {
+    const prev = b > 0 ? volArr[b - 1] : volArr[b];
+    const next = b < numBins - 1 ? volArr[b + 1] : volArr[b];
+    smoothed[b] = prev * 0.25 + volArr[b] * 0.5 + next * 0.25;
   }
 
   const meanBinVol = totalVolume / numBins;
@@ -183,6 +209,9 @@ function buildRangeProfile(
     const pLow = minP + b * binSize;
     const pHigh = pLow + binSize;
     const v = volArr[b];
+    const sv = smoothed[b];
+    const isLocalPeak = (b === 0 || sv >= smoothed[b - 1]) && (b === numBins - 1 || sv >= smoothed[b + 1]);
+    const isLocalTrough = (b > 0 && sv <= smoothed[b - 1]) && (b < numBins - 1 && sv <= smoothed[b + 1]);
     bins.push({
       priceLow: roundPrice(pLow),
       priceHigh: roundPrice(pHigh),
@@ -190,8 +219,8 @@ function buildRangeProfile(
       volume: v,
       buyVolume: buyArr[b],
       sellVolume: sellArr[b],
-      isHvn: meanBinVol > 0 && v >= meanBinVol * 1.4,
-      isLvn: meanBinVol > 0 && v > 0 && v <= meanBinVol * 0.45,
+      isHvn: meanBinVol > 0 && ((isLocalPeak && sv >= meanBinVol * 1.25) || v >= meanBinVol * 1.55),
+      isLvn: meanBinVol > 0 && v > 0 && ((isLocalTrough && sv <= meanBinVol * 0.55) || v <= meanBinVol * 0.35),
     });
   }
 
@@ -219,9 +248,9 @@ function computeVolumeProfiles(
   const n = closedCandles.length;
   const volumeQuality = detectVolumeQuality(closedCandles);
 
-  // 1. Fixed Range Profile (last 180 closed bars)
-  const frStart = Math.max(0, n - 180);
-  const { summary: fixedRange, bins } = buildRangeProfile(closedCandles, frStart, n - 1, 32);
+  // 1. Fixed Range Profile (48 high-res bins over last 150 closed bars)
+  const frStart = Math.max(0, n - 150);
+  const { summary: fixedRange, bins } = buildRangeProfile(closedCandles, frStart, n - 1, 48);
 
   // 2. Session & Daily Profiles by UTC day boundary
   const lastTime = closedCandles[n - 1]?.openTime ?? 0;
@@ -299,65 +328,126 @@ function computeVolumeProfiles(
 
 function computeFibonacciConfluence(
   closedCandles: Candle[],
-  majorSwings: SmcSwingPoint[]
+  majorSwings: SmcSwingPoint[],
+  structureBreaks: SmcStructureBreak[] = []
 ): Mi007FibonacciConfluence | null {
   const n = closedCandles.length;
   if (n < 10) return null;
 
-  // Use confirmed major swings within the active visible structural lookback (last 100 closed bars)
   const lookbackStart = Math.max(0, n - 100);
-  const recentMajors = majorSwings.filter((s) => s.index >= lookbackStart);
-  const pool = recentMajors.length >= 2 ? recentMajors : majorSwings;
-
-  const highs = pool.filter((s) => s.isHigh);
-  const lows = pool.filter((s) => !s.isHigh);
-
-  // Pick the highest confirmed major swing high and lowest confirmed major swing low of the active leg
   let anchorHigh: { index: number; price: number; time: number } | null = null;
   let anchorLow: { index: number; price: number; time: number } | null = null;
+  let bosDirection: 'BULLISH' | 'BEARISH' | null = null;
 
-  for (const h of highs) {
-    if (!anchorHigh || h.price >= anchorHigh.price) {
-      anchorHigh = { index: h.index, price: h.price, time: h.time };
-    }
-  }
-  for (const l of lows) {
-    if (!anchorLow || l.price <= anchorLow.price) {
-      anchorLow = { index: l.index, price: l.price, time: l.time };
-    }
-  }
+  // Priority 1 (Institutional SMC Strategy): Anchor strictly to the latest confirmed BOS / MSS Impulse Leg
+  const recentBreaks = structureBreaks.filter(
+    (b) => (b.breakType === 'BOS' || b.breakType === 'MSS' || b.breakType === 'CHoCH') && b.candleIndex >= lookbackStart
+  );
+  const latestBreak = recentBreaks.length > 0 ? recentBreaks[recentBreaks.length - 1] : null;
 
-  // Fallback to structural window extreme closed bars if major swings are scarce
-  if (!anchorHigh || !anchorLow) {
-    for (let i = lookbackStart; i < n; i++) {
-      const c = closedCandles[i];
-      if (!anchorHigh || c.high > anchorHigh.price) {
-        anchorHigh = { index: i, price: c.high, time: c.openTime };
+  if (latestBreak) {
+    // Search backwards from the BOS candle for the impulse origin swing
+    const searchStart = Math.max(0, latestBreak.swingIndex - 20);
+    const searchEnd = Math.min(n - 1, latestBreak.candleIndex);
+    if (latestBreak.isBullish) {
+      // Bullish BOS impulse: Origin = lowest swing low launching the break, Peak = highest high from origin to present
+      let origIdx = searchStart;
+      let origLow = Infinity;
+      for (let i = searchStart; i <= searchEnd; i++) {
+        if (closedCandles[i].low < origLow) {
+          origLow = closedCandles[i].low;
+          origIdx = i;
+        }
       }
-      if (!anchorLow || c.low < anchorLow.price) {
-        anchorLow = { index: i, price: c.low, time: c.openTime };
+      let peakIdx = origIdx;
+      let peakHigh = -Infinity;
+      for (let i = origIdx; i < n; i++) {
+        if (closedCandles[i].high > peakHigh) {
+          peakHigh = closedCandles[i].high;
+          peakIdx = i;
+        }
+      }
+      if (peakIdx > origIdx && peakHigh > origLow) {
+        anchorLow = { index: origIdx, price: origLow, time: closedCandles[origIdx].openTime };
+        anchorHigh = { index: peakIdx, price: peakHigh, time: closedCandles[peakIdx].openTime };
+        bosDirection = 'BULLISH';
+      }
+    } else {
+      // Bearish BOS impulse: Origin = highest swing high launching the break, Trough = lowest low from origin to present
+      let origIdx = searchStart;
+      let origHigh = -Infinity;
+      for (let i = searchStart; i <= searchEnd; i++) {
+        if (closedCandles[i].high > origHigh) {
+          origHigh = closedCandles[i].high;
+          origIdx = i;
+        }
+      }
+      let troughIdx = origIdx;
+      let troughLow = Infinity;
+      for (let i = origIdx; i < n; i++) {
+        if (closedCandles[i].low < troughLow) {
+          troughLow = closedCandles[i].low;
+          troughIdx = i;
+        }
+      }
+      if (troughIdx > origIdx && origHigh > troughLow) {
+        anchorHigh = { index: origIdx, price: origHigh, time: closedCandles[origIdx].openTime };
+        anchorLow = { index: troughIdx, price: troughLow, time: closedCandles[troughIdx].openTime };
+        bosDirection = 'BEARISH';
+      }
+    }
+  }
+
+  // Priority 2 (Fallback): Highest confirmed major swing high & lowest major swing low in active 100-bar window
+  if (!anchorHigh || !anchorLow) {
+    const recentMajors = majorSwings.filter((s) => s.index >= lookbackStart);
+    const pool = recentMajors.length >= 2 ? recentMajors : majorSwings;
+    const highs = pool.filter((s) => s.isHigh);
+    const lows = pool.filter((s) => !s.isHigh);
+
+    for (const h of highs) {
+      if (!anchorHigh || h.price >= anchorHigh.price) {
+        anchorHigh = { index: h.index, price: h.price, time: h.time };
+      }
+    }
+    for (const l of lows) {
+      if (!anchorLow || l.price <= anchorLow.price) {
+        anchorLow = { index: l.index, price: l.price, time: l.time };
+      }
+    }
+
+    if (!anchorHigh || !anchorLow) {
+      for (let i = lookbackStart; i < n; i++) {
+        const c = closedCandles[i];
+        if (!anchorHigh || c.high > anchorHigh.price) {
+          anchorHigh = { index: i, price: c.high, time: c.openTime };
+        }
+        if (!anchorLow || c.low < anchorLow.price) {
+          anchorLow = { index: i, price: c.low, time: c.openTime };
+        }
+      }
+    }
+
+    if (anchorHigh && anchorLow) {
+      const legStart = Math.min(anchorHigh.index, anchorLow.index);
+      for (let i = legStart; i < n; i++) {
+        const c = closedCandles[i];
+        if (c.high > anchorHigh.price) {
+          anchorHigh = { index: i, price: c.high, time: c.openTime };
+        }
+        if (c.low < anchorLow.price) {
+          anchorLow = { index: i, price: c.low, time: c.openTime };
+        }
       }
     }
   }
 
   if (!anchorHigh || !anchorLow || anchorHigh.price <= anchorLow.price) return null;
 
-  // If a subsequent closed bar broke beyond the anchor extreme, extend the impulse anchor to that true extreme
-  const legStart = Math.min(anchorHigh.index, anchorLow.index);
-  for (let i = legStart; i < n; i++) {
-    const c = closedCandles[i];
-    if (c.high > anchorHigh.price) {
-      anchorHigh = { index: i, price: c.high, time: c.openTime };
-    }
-    if (c.low < anchorLow.price) {
-      anchorLow = { index: i, price: c.low, time: c.openTime };
-    }
-  }
-
   // Direction of the primary impulse leg:
   //   Low before High -> BULLISH impulse (1.00 = Low, 0.00 = High; retraces DOWN from High; extends UP above High)
   //   High before Low -> BEARISH impulse (1.00 = High, 0.00 = Low; retraces UP from Low; extends DOWN below Low)
-  const direction: 'BULLISH' | 'BEARISH' = anchorHigh.index >= anchorLow.index ? 'BULLISH' : 'BEARISH';
+  const direction: 'BULLISH' | 'BEARISH' = bosDirection || (anchorHigh.index >= anchorLow.index ? 'BULLISH' : 'BEARISH');
   const span = anchorHigh.price - anchorLow.price;
   if (span <= 0) return null;
 
@@ -796,8 +886,8 @@ export function analyzeMi007Strategy(
   // Module 04: Volume Profile (Fixed Range, Session, Daily, Weekly, Anchored, HVN/LVN, POC migration)
   const volumeProfile = computeVolumeProfiles(closedCandles, majorSwings);
 
-  // Module 05: Fibonacci Confluence (anchored strictly to confirmed major swings)
-  const fibonacci = computeFibonacciConfluence(closedCandles, majorSwings);
+  // Module 05: Fibonacci Confluence (anchored strictly to latest confirmed BOS/MSS impulse leg)
+  const fibonacci = computeFibonacciConfluence(closedCandles, majorSwings, smc.structureBreaks);
 
   // Module 06: Order Flow Confirmation (gated by ACTUAL vs ESTIMATED volume)
   const orderFlow = evaluateOrderFlow(closedCandles, volumeProfile.volumeQuality);

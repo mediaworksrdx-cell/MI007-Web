@@ -40,57 +40,133 @@ export function renderMi007Overlay({
 
   ctx.save();
 
-  // ── 1. Institutional Volume Profile (Fixed Range Histogram + POC / VAH / VAL) ──
+  // ── 1. Institutional Volume Profile (48-Bin Up/Down Histogram + 70% VA + POC / VAH / VAL + dPOC) ──
   const vp = data.volumeProfile;
   if (showVolPro && vp.bins.length > 0 && vp.fixedRange.totalVolume > 0) {
     const maxBinVol = Math.max(...vp.bins.map((b) => b.volume), 1);
-    const maxBarW = Math.min(92 * dpr, chartW * 0.14);
+    const maxBarW = Math.min(118 * dpr, chartW * 0.16);
     const rightEdge = chartW - 2 * dpr;
 
+    // Subtle 70% Value Area shading behind right-side histogram
+    const yVah = priceToY(vp.fixedRange.vah);
+    const yVal = priceToY(vp.fixedRange.val);
+    const vaTop = Math.max(0, Math.min(yVah, yVal));
+    const vaBot = Math.min(chartH, Math.max(yVah, yVal));
+    if (vaBot > vaTop) {
+      ctx.fillStyle = isDark ? 'rgba(56, 189, 248, 0.06)' : 'rgba(2, 132, 199, 0.06)';
+      ctx.fillRect(rightEdge - maxBarW, vaTop, maxBarW, vaBot - vaTop);
+    }
+
+    // Dual-color Buy (Teal) / Sell (Rose) split bars — vibrant inside 70% VA, softer outside
     for (const bin of vp.bins) {
       const yTop = priceToY(bin.priceHigh);
       const yBot = priceToY(bin.priceLow);
       if (yBot < 0 || yTop > chartH) continue;
-      const barH = Math.max(1.5 * dpr, Math.abs(yBot - yTop) - 0.8 * dpr);
-      const barW = (bin.volume / maxBinVol) * maxBarW;
-      const inVa = bin.priceMid >= vp.fixedRange.val && bin.priceMid <= vp.fixedRange.vah;
+      const barH = Math.max(1.8 * dpr, Math.abs(yBot - yTop) - 0.8 * dpr);
+      const totalBarW = (bin.volume / maxBinVol) * maxBarW;
+      if (totalBarW <= 0.5) continue;
 
-      ctx.fillStyle = bin.isHvn
-        ? (isDark ? 'rgba(56, 189, 248, 0.28)' : 'rgba(2, 132, 199, 0.22)')
-        : bin.isLvn
-        ? (isDark ? 'rgba(251, 191, 36, 0.16)' : 'rgba(217, 119, 6, 0.14)')
-        : inVa
-        ? (isDark ? 'rgba(148, 163, 184, 0.20)' : 'rgba(100, 116, 139, 0.16)')
-        : (isDark ? 'rgba(100, 116, 139, 0.10)' : 'rgba(148, 163, 184, 0.10)');
-      ctx.fillRect(rightEdge - barW, Math.min(yTop, yBot), barW, barH);
+      const inVa = bin.priceMid >= vp.fixedRange.val && bin.priceMid <= vp.fixedRange.vah;
+      const isPocBin = Math.abs(bin.priceMid - vp.fixedRange.poc) <= (bin.priceHigh - bin.priceLow) * 0.6;
+      const yRect = Math.min(yTop, yBot);
+
+      if (isPocBin) {
+        ctx.fillStyle = isDark ? 'rgba(245, 158, 11, 0.85)' : 'rgba(217, 119, 6, 0.82)';
+        ctx.fillRect(rightEdge - totalBarW, yRect, totalBarW, barH);
+      } else {
+        const buyRatio = bin.volume > 0 ? bin.buyVolume / bin.volume : 0.5;
+        const buyW = totalBarW * buyRatio;
+        const sellW = totalBarW - buyW;
+
+        // Sell portion (left side of right-aligned bar)
+        ctx.fillStyle = inVa
+          ? (isDark ? 'rgba(244, 63, 94, 0.55)' : 'rgba(225, 29, 72, 0.48)')
+          : (isDark ? 'rgba(244, 63, 94, 0.22)' : 'rgba(225, 29, 72, 0.18)');
+        ctx.fillRect(rightEdge - totalBarW, yRect, sellW, barH);
+
+        // Buy portion (right side touching axis)
+        ctx.fillStyle = inVa
+          ? (isDark ? 'rgba(16, 185, 129, 0.60)' : 'rgba(5, 150, 105, 0.52)')
+          : (isDark ? 'rgba(16, 185, 129, 0.24)' : 'rgba(5, 150, 105, 0.20)');
+        ctx.fillRect(rightEdge - buyW, yRect, buyW, barH);
+      }
+
+      // Highlight HVN outer tick & LVN thin-liquidity notch
+      if (bin.isHvn && !isPocBin) {
+        ctx.fillStyle = isDark ? 'rgba(56, 189, 248, 0.85)' : 'rgba(2, 132, 199, 0.80)';
+        ctx.fillRect(rightEdge - totalBarW - 2 * dpr, yRect, 2 * dpr, barH);
+      }
     }
 
-    // POC, VAH, VAL horizontal lines
-    const drawVpLine = (price: number, label: string, color: string, dashed: boolean) => {
+    // Causal Developing POC (dPOC) stepped gold line over last 40 bars
+    if (vp.developingPoc && vp.developingPoc.length >= 2) {
+      const devStart = candles.length - vp.developingPoc.length;
+      ctx.save();
+      ctx.strokeStyle = isDark ? 'rgba(251, 191, 36, 0.65)' : 'rgba(217, 119, 6, 0.65)';
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.setLineDash([2 * dpr, 2 * dpr]);
+      ctx.beginPath();
+      let started = false;
+      for (let i = 0; i < vp.developingPoc.length; i++) {
+        const barIdx = devStart + i;
+        if (barIdx < startIdx || barIdx > endIdx) continue;
+        const x = (barIdx - startIdx) * candleW + candleW / 2;
+        const y = priceToY(vp.developingPoc[i]);
+        if (y < 0 || y > chartH) continue;
+        if (!started) {
+          ctx.moveTo(x, y);
+          started = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    // POC, VAH, VAL horizontal lines with high-contrast pill labels
+    const drawVpLine = (price: number, label: string, color: string, dashed: boolean, isPoc = false) => {
       if (!price || price <= 0) return;
       const y = priceToY(price);
       if (y < 10 * dpr || y > chartH - 10 * dpr) return;
       ctx.save();
       ctx.strokeStyle = color;
-      ctx.lineWidth = dashed ? 0.9 * dpr : 1.3 * dpr;
-      if (dashed) ctx.setLineDash([4 * dpr, 3 * dpr]);
+      ctx.lineWidth = isPoc ? 1.8 * dpr : 1.25 * dpr;
+      if (dashed) ctx.setLineDash([5 * dpr, 3 * dpr]);
       ctx.beginPath();
-      ctx.moveTo(chartW * 0.45, y);
+      ctx.moveTo(isPoc ? chartW * 0.25 : chartW * 0.42, y);
       ctx.lineTo(rightEdge, y);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
-      ctx.fillStyle = color;
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(label, rightEdge - 4 * dpr, y - 2 * dpr);
+      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+      const padX = 5 * dpr;
+      const tw = ctx.measureText(label).width + padX * 2;
+      const th = 14 * dpr;
+      const bx = rightEdge - tw - 4 * dpr;
+      const by = y - th - 2 * dpr;
+      ctx.fillStyle = isPoc
+        ? (isDark ? '#D97706' : '#B45309')
+        : (isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.94)');
+      ctx.beginPath();
+      ctx.roundRect(bx, by, tw, th, 3 * dpr);
+      ctx.fill();
+      if (!isPoc) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 0.9 * dpr;
+        ctx.stroke();
+      }
+      ctx.fillStyle = isPoc ? '#FFFFFF' : color;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, bx + padX, by + th / 2);
       ctx.restore();
     };
 
-    drawVpLine(vp.fixedRange.poc, `POC ${formatPrice(vp.fixedRange.poc)}`, '#F59E0B', false);
-    drawVpLine(vp.fixedRange.vah, `VAH`, 'rgba(148, 163, 184, 0.75)', true);
-    drawVpLine(vp.fixedRange.val, `VAL`, 'rgba(148, 163, 184, 0.75)', true);
+    drawVpLine(vp.fixedRange.poc, `POC ${formatPrice(vp.fixedRange.poc)}`, isDark ? '#FBBF24' : '#B45309', false, true);
+    drawVpLine(vp.fixedRange.vah, `VAH ${formatPrice(vp.fixedRange.vah)}`, isDark ? '#38BDF8' : '#0369A1', true);
+    drawVpLine(vp.fixedRange.val, `VAL ${formatPrice(vp.fixedRange.val)}`, isDark ? '#38BDF8' : '#0369A1', true);
   }
 
   // ── 2. Fibonacci Confluence (TradingView-style Shaded Bands + Swing Anchor + OTE Zone) ──
@@ -134,19 +210,26 @@ export function renderMi007Overlay({
         }
       }
 
-      // OTE Golden Zone watermark inside 0.618 – 0.786 band
+      // OTE Golden Zone watermark inside 0.618 – 0.786 band (with VP HVN/POC Confluence detection)
       const yOteTop = priceToY(fib.oteZone[1]);
       const yOteBot = priceToY(fib.oteZone[0]);
       const oteMidY = (yOteTop + yOteBot) / 2;
       if (Math.abs(yOteBot - yOteTop) >= 14 * dpr && oteMidY > 16 * dpr && oteMidY < chartH - 16 * dpr) {
+        const hasVpOteConfluence =
+          (vp.fixedRange.poc >= fib.oteZone[0] && vp.fixedRange.poc <= fib.oteZone[1]) ||
+          vp.hvnPrices.some((p) => p >= fib.oteZone[0] && p <= fib.oteZone[1]);
         const hudClearX = showSmc ? Math.min(272 * dpr, chartW * 0.36) : 14 * dpr;
         const oteLabelX = Math.max(fibStartX + 8 * dpr, hudClearX);
         ctx.save();
-        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = isDark ? 'rgba(253, 224, 71, 0.90)' : 'rgba(161, 98, 7, 0.92)';
+        ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = isDark ? 'rgba(253, 224, 71, 0.95)' : 'rgba(146, 64, 14, 0.95)';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`★ OTE ZONE (0.618 – 0.786)`, oteLabelX, oteMidY);
+        ctx.fillText(
+          hasVpOteConfluence ? `★ OTE + VP CONFLUENCE (0.618 – 0.786)` : `★ OTE ZONE (0.618 – 0.786)`,
+          oteLabelX,
+          oteMidY
+        );
         ctx.restore();
       }
 
