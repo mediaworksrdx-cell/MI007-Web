@@ -951,341 +951,145 @@ export function ChartToolbar({
                 </button>
               </div>
 
-              {/* Institutional Visualization Mode Selector */}
-              <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 shrink-0">
-                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                  <span>Interface Mode</span>
-                  <span className="text-[9.5px] px-1.5 py-0.2 rounded font-mono font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                    {activeSmcConfig.visualizationMode === 'analysis' ? 'Analysis' : activeSmcConfig.visualizationMode === 'advanced' ? 'Advanced' : 'Clean (Def)'}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateSmc({ visualizationMode: 'clean', showMajorStructureOnly: true, showInternalStructure: false, enableCollisionControl: true, enableHistoricalFading: true })}
-                    className={`px-1.5 py-1 text-[10.5px] font-bold rounded border text-center transition-colors cursor-pointer ${
-                      (activeSmcConfig.visualizationMode || 'clean') === 'clean'
-                        ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 shadow-xs'
-                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    Clean (Def)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateSmc({
-                      enabled: true,
-                      visualizationMode: 'advanced',
-                      showMajorStructureOnly: false,
-                      showInternalStructure: true,
-                      enableCollisionControl: true,
-                      enableHistoricalFading: true,
-                      showBos: true,
-                      showChoch: true,
-                      showSwings: true,
-                      showLiquidityLevels: true,
-                      showBullishOb: true,
-                      showBearishOb: true,
-                      showBullishFvg: true,
-                      showBearishFvg: true,
-                      showBullishConfluence: true,
-                      showBearishConfluence: true,
-                    })}
-                    className={`px-1.5 py-1 text-[10.5px] font-bold rounded border text-center transition-colors cursor-pointer ${
-                      activeSmcConfig.visualizationMode === 'advanced'
-                        ? 'bg-blue-500/15 border-blue-500/50 text-blue-600 dark:text-blue-400 shadow-xs'
-                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    Advanced
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateSmc({
-                      enabled: true,
-                      visualizationMode: 'analysis',
-                      showMajorStructureOnly: false,
-                      showInternalStructure: true,
-                      showPremiumDiscount: true,
-                      showEquilibrium: true,
-                      showOte: true,
-                      enableCollisionControl: true,
-                      enableHistoricalFading: false,
-                      showBos: true,
-                      showChoch: true,
-                      showSwings: true,
-                      showLiquidityLevels: true,
-                      showSweeps: true,
-                      showSslSweeps: true,
-                      showBslSweeps: true,
-                      showBullishOb: true,
-                      showBearishOb: true,
-                      showBullishFvg: true,
-                      showBearishFvg: true,
-                      showBullishConfluence: true,
-                      showBearishConfluence: true,
-                    })}
-                    className={`px-1.5 py-1 text-[10.5px] font-bold rounded border text-center transition-colors cursor-pointer ${
-                      activeSmcConfig.visualizationMode === 'analysis'
-                        ? 'bg-purple-500/15 border-purple-500/50 text-purple-600 dark:text-purple-400 shadow-xs'
-                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    Analysis
-                  </button>
-                </div>
+              {/* Quick Presets Bar */}
+              <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex items-center gap-1.5 flex-wrap shrink-0">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5 shrink-0">Quick:</span>
+                <button
+                  type="button"
+                  onClick={() => handleUpdateSmc({
+                    enabled: true,
+                    visualizationMode: 'clean',
+                    enableCollisionControl: true,
+                    enableHistoricalFading: true,
+                    showMajorStructureOnly: true,
+                    showInternalStructure: false,
+                    showBos: true,
+                    showChoch: true,
+                    showBullishStructure: true,
+                    showBearishStructure: true,
+                    showBullishOb: true,
+                    showBearishOb: true,
+                    showBullishFvg: true,
+                    showBearishFvg: true,
+                    showSweeps: true,
+                    showSslSweeps: true,
+                    showBslSweeps: true,
+                    showPremiumDiscount: true,
+                    showEquilibrium: true,
+                    showOte: true,
+                    showBreakers: false,
+                    showBullishIfvg: false,
+                    showBearishIfvg: false,
+                    showMitigatedOb: false,
+                    showMitigatedFvg: false,
+                    showFvgMidpoint: false,
+                    showSwings: false,
+                    showPdhPdl: false,
+                    showPwhPwl: false,
+                    showBullishConfluence: true,
+                    showBearishConfluence: true,
+                  })}
+                  className="px-2 py-0.5 text-[10.5px] font-semibold rounded-md border bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 cursor-pointer transition-colors"
+                >
+                  Core 6
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetPreset('all')}
+                  className="px-2 py-0.5 text-[10.5px] font-semibold rounded-md border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+                >
+                  All On
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetPreset('reset')}
+                  className="px-2 py-0.5 text-[10.5px] font-semibold rounded-md border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+                >
+                  Reset
+                </button>
               </div>
 
-              {/* Presets Bar */}
-              <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex items-center gap-1 flex-wrap shrink-0">
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5 shrink-0">Presets:</span>
-                {[
-                  { id: 'all', label: 'All' },
-                  { id: 'structure', label: 'Structure' },
-                  { id: 'zones', label: 'OB & FVG' },
-                  { id: 'reset', label: 'Reset' },
-                ].map((p) => {
-                  const isActive =
-                    (p.id === 'all' && activeSmcConfig.showBos && activeSmcConfig.showBullishOb) ||
-                    (p.id === 'structure' && activeSmcConfig.showBos && !activeSmcConfig.showBullishOb) ||
-                    (p.id === 'zones' && !activeSmcConfig.showBos && activeSmcConfig.showBullishOb);
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => handleSetPreset(p.id as any)}
-                      className={`px-2 py-0.5 text-[10.5px] font-semibold rounded-md border cursor-pointer transition-colors shrink-0 ${
-                        isActive
-                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
-                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Toggles Container */}
-              <div className={`flex-1 min-h-0 overflow-y-auto px-2 py-2 pb-10 space-y-3 text-xs ${!activeSmcConfig.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
-                {/* 0. Institutional Layout Controls */}
+              {/* Simplified 2-Group SMC Menu */}
+              <div className={`flex-1 min-h-0 overflow-y-auto px-2 py-2 pb-6 space-y-3 text-xs ${!activeSmcConfig.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                {/* 1. Core SMC (Most Important) */}
                 <div>
-                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
-                    Visual Layout &amp; Collision Engine
-                  </div>
-                  <div className="space-y-0.5">
-                    <SmcToggleRow
-                      label="Smart Collision Control"
-                      sublabel="Auto-repositions labels &amp; manages right price axis badges"
-                      checked={activeSmcConfig.enableCollisionControl !== false}
-                      onChange={(v) => handleUpdateSmc({ enableCollisionControl: v })}
-                      badge="AABB"
-                    />
-                    <SmcToggleRow
-                      label="Historical Structure Fading"
-                      sublabel="Subtly fades older zones so current price action remains prominent"
-                      checked={activeSmcConfig.enableHistoricalFading !== false}
-                      onChange={(v) => handleUpdateSmc({ enableHistoricalFading: v })}
-                    />
-                    <SmcToggleRow
-                      label="Major Structure Only"
-                      sublabel="Prioritize high-conviction swing highs/lows"
-                      checked={activeSmcConfig.showMajorStructureOnly !== false}
-                      onChange={(v) => handleUpdateSmc({ showMajorStructureOnly: v })}
-                    />
-                    <SmcToggleRow
-                      label="Internal Market Structure"
-                      sublabel="Subtle short-term swings independent of major swings"
-                      checked={Boolean(activeSmcConfig.showInternalStructure)}
-                      onChange={(v) => handleUpdateSmc({ showInternalStructure: v })}
-                    />
-                  </div>
-                </div>
-
-                {/* 2. Market Structure */}
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
-                    Market Structure
+                  <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1 px-1.5">
+                    1. Core SMC (Recommended)
                   </div>
                   <div className="space-y-0.5">
                     <SmcToggleRow
                       label="Break of Structure (BOS)"
-                      sublabel="Trend continuation breaks"
+                      sublabel="Confirms trend continuation"
                       checked={activeSmcConfig.showBos}
                       onChange={(v) => handleUpdateSmc({ showBos: v, showBullishStructure: true, showBearishStructure: true })}
                       badge="BOS"
                     />
                     <SmcToggleRow
                       label="Change of Character (CHoCH)"
-                      sublabel="Trend reversal character shifts"
+                      sublabel="Early trend reversal shift"
                       checked={activeSmcConfig.showChoch}
                       onChange={(v) => handleUpdateSmc({ showChoch: v, showBullishStructure: true, showBearishStructure: true })}
                       badge="CHoCH"
                     />
                     <SmcToggleRow
-                      label="Swing Points"
-                      sublabel="Confirmed pivot highs and lows (HH, HL, LH, LL)"
-                      checked={activeSmcConfig.showSwings}
-                      onChange={(v) => handleUpdateSmc({ showSwings: v })}
-                    />
-                  </div>
-                </div>
-
-                {/* 3. Liquidity */}
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
-                    Liquidity Pools & Sweeps
-                  </div>
-                  <div className="space-y-0.5">
-                    <SmcToggleRow
-                      label="BSL & SSL Levels"
-                      sublabel="Buy-Side and Sell-Side liquidity lines"
-                      checked={activeSmcConfig.showLiquidityLevels}
-                      onChange={(v) => handleUpdateSmc({ showLiquidityLevels: v })}
+                      label="Order Blocks (Buy & Sell)"
+                      sublabel="Key institutional demand & supply zones"
+                      checked={Boolean(activeSmcConfig.showBullishOb || activeSmcConfig.showBearishOb)}
+                      onChange={(v) => handleUpdateSmc({ showBullishOb: v, showBearishOb: v })}
+                      badge="OB"
                     />
                     <SmcToggleRow
-                      label="Equal Highs & Lows (EQH / EQL)"
-                      sublabel="Double top/bottom liquidity clusters"
-                      checked={activeSmcConfig.showEqualHighLow}
-                      onChange={(v) => handleUpdateSmc({ showEqualHighLow: v })}
+                      label="Fair Value Gaps (FVG)"
+                      sublabel="3-candle price imbalance zones"
+                      checked={Boolean(activeSmcConfig.showBullishFvg || activeSmcConfig.showBearishFvg)}
+                      onChange={(v) => handleUpdateSmc({ showBullishFvg: v, showBearishFvg: v })}
+                      badge="FVG"
                     />
                     <SmcToggleRow
                       label="Liquidity Sweeps"
-                      sublabel="Stop hunt & rejection wicks (BSL & SSL)"
+                      sublabel="Stop-hunt wicks beyond highs & lows"
                       checked={activeSmcConfig.showSweeps}
                       onChange={(v) => handleUpdateSmc({ showSweeps: v, showSslSweeps: v, showBslSweeps: v })}
                     />
-                  </div>
-                </div>
-
-                {/* 4. Order Blocks & Breakers */}
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
-                    Order Blocks & Breakers
-                  </div>
-                  <div className="space-y-0.5">
                     <SmcToggleRow
-                      label="Demand Order Blocks (Bullish)"
-                      sublabel="Institutional buying zones"
-                      checked={activeSmcConfig.showBullishOb}
-                      onChange={(v) => handleUpdateSmc({ showBullishOb: v })}
-                    />
-                    <SmcToggleRow
-                      label="Supply Order Blocks (Bearish)"
-                      sublabel="Institutional selling zones"
-                      checked={activeSmcConfig.showBearishOb}
-                      onChange={(v) => handleUpdateSmc({ showBearishOb: v })}
-                    />
-                    <SmcToggleRow
-                      label="Breaker Blocks"
-                      sublabel="Violated order blocks flipped into opposite role"
-                      checked={activeSmcConfig.showBreakers}
-                      onChange={(v) => handleUpdateSmc({ showBreakers: v, showBullishBreakers: v, showBearishBreakers: v })}
-                    />
-                    <SmcToggleRow
-                      label="Show Mitigated Blocks"
-                      sublabel="Keep tested order blocks visible (dimmed)"
-                      checked={activeSmcConfig.showMitigatedOb}
-                      onChange={(v) => handleUpdateSmc({ showMitigatedOb: v })}
+                      label="Premium / Discount & OTE"
+                      sublabel="Dealing range, 50% EQ & 62–79% OTE"
+                      checked={Boolean(activeSmcConfig.showPremiumDiscount || activeSmcConfig.showEquilibrium || activeSmcConfig.showOte)}
+                      onChange={(v) => handleUpdateSmc({ showPremiumDiscount: v, showEquilibrium: v, showOte: v })}
                     />
                   </div>
                 </div>
 
-                {/* 5. Fair Value Gaps (FVG) */}
+                {/* 2. Optional (Turn On When Needed) */}
                 <div>
                   <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
-                    Fair Value Gaps (FVG)
+                    2. Optional (As Needed)
                   </div>
                   <div className="space-y-0.5">
                     <SmcToggleRow
-                      label="Bullish Imbalance (+FVG)"
-                      sublabel="3-candle displacement buy imbalance"
-                      checked={activeSmcConfig.showBullishFvg}
-                      onChange={(v) => handleUpdateSmc({ showBullishFvg: v })}
+                      label="Breakers & Inverse FVG"
+                      sublabel="Flipped support/resistance reversal zones"
+                      checked={Boolean(activeSmcConfig.showBreakers || activeSmcConfig.showBullishIfvg || activeSmcConfig.showBearishIfvg)}
+                      onChange={(v) => handleUpdateSmc({ showBreakers: v, showBullishBreakers: v, showBearishBreakers: v, showBullishIfvg: v, showBearishIfvg: v })}
                     />
                     <SmcToggleRow
-                      label="Bearish Imbalance (-FVG)"
-                      sublabel="3-candle displacement sell imbalance"
-                      checked={activeSmcConfig.showBearishFvg}
-                      onChange={(v) => handleUpdateSmc({ showBearishFvg: v })}
-                    />
-                    <SmcToggleRow
-                      label="Inverse FVG (IFVG)"
-                      sublabel="Violated FVGs flipped into support/resistance"
-                      checked={Boolean(activeSmcConfig.showBullishIfvg || activeSmcConfig.showBearishIfvg)}
-                      onChange={(v) => handleUpdateSmc({ showBullishIfvg: v, showBearishIfvg: v })}
-                    />
-                    <SmcToggleRow
-                      label="Consequent Encroachment (50% CE)"
-                      sublabel="50% midpoint magnet midline"
-                      checked={activeSmcConfig.showFvgMidpoint}
-                      onChange={(v) => handleUpdateSmc({ showFvgMidpoint: v })}
-                    />
-                    <SmcToggleRow
-                      label="Show Mitigated FVGs"
-                      sublabel="Keep filled imbalances visible (dimmed)"
-                      checked={activeSmcConfig.showMitigatedFvg}
-                      onChange={(v) => handleUpdateSmc({ showMitigatedFvg: v })}
-                    />
-                  </div>
-                </div>
-
-                {/* 6. Confluence Setups */}
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
-                    Confluence Setups
-                  </div>
-                  <div className="space-y-0.5">
-                    <SmcToggleRow
-                      label="Bullish Confluence Setups"
-                      sublabel="SSL sweep + FVG + Demand OB confluence"
-                      checked={activeSmcConfig.showBullishConfluence}
-                      onChange={(v) => handleUpdateSmc({ showBullishConfluence: v })}
-                    />
-                    <SmcToggleRow
-                      label="Bearish Confluence Setups"
-                      sublabel="BSL sweep + FVG + Supply OB confluence"
-                      checked={activeSmcConfig.showBearishConfluence}
-                      onChange={(v) => handleUpdateSmc({ showBearishConfluence: v })}
-                    />
-                  </div>
-                </div>
-
-                {/* 7. Premium / Discount & Levels */}
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-1.5">
-                    Range & Session Levels
-                  </div>
-                  <div className="space-y-0.5">
-                    <SmcToggleRow
-                      label="Dealing Range Zones"
-                      sublabel="Premium and discount zones tint"
-                      checked={activeSmcConfig.showPremiumDiscount}
-                      onChange={(v) => handleUpdateSmc({ showPremiumDiscount: v })}
-                    />
-                    <SmcToggleRow
-                      label="Equilibrium (50% EQ)"
-                      sublabel="Fair value midpoint line"
-                      checked={activeSmcConfig.showEquilibrium}
-                      onChange={(v) => handleUpdateSmc({ showEquilibrium: v })}
-                    />
-                    <SmcToggleRow
-                      label="Optimal Trade Entry (OTE)"
-                      sublabel="61.8% to 78.6% retracement zone"
-                      checked={activeSmcConfig.showOte}
-                      onChange={(v) => handleUpdateSmc({ showOte: v })}
-                    />
-                    <SmcToggleRow
-                      label="Previous Day High / Low (PDH / PDL)"
-                      sublabel="Key daily liquidity references"
+                      label="Previous Day High / Low"
+                      sublabel="Key intraday PDH / PDL levels"
                       checked={activeSmcConfig.showPdhPdl}
                       onChange={(v) => handleUpdateSmc({ showPdhPdl: v })}
+                      badge="PDH/L"
                     />
                     <SmcToggleRow
-                      label="Previous Week High / Low (PWH / PWL)"
-                      sublabel="Major weekly liquidity references"
-                      checked={activeSmcConfig.showPwhPwl}
-                      onChange={(v) => handleUpdateSmc({ showPwhPwl: v })}
+                      label="Swing Points (HH / HL / LH / LL)"
+                      sublabel="Pivot high and low structure labels"
+                      checked={activeSmcConfig.showSwings}
+                      onChange={(v) => handleUpdateSmc({ showSwings: v })}
+                    />
+                    <SmcToggleRow
+                      label="SMC Trade Brackets"
+                      sublabel="Auto Entry, SL & TP boxes (hidden when MI007 is ON)"
+                      checked={Boolean(activeSmcConfig.showBullishConfluence || activeSmcConfig.showBearishConfluence)}
+                      onChange={(v) => handleUpdateSmc({ showBullishConfluence: v, showBearishConfluence: v })}
                     />
                   </div>
                 </div>

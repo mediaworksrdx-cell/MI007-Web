@@ -2270,8 +2270,9 @@ export function renderChart(
       ctx.restore();
     }
 
-    // 10. Confirmed Directional SMC Setups (Only Quality >= 70 Accepted; < 70 Strictly Excluded from Active Trade List)
-    if (smcData.confirmedSetups || smcData.allSetups || smcData.rejectedSetups) {
+    // 10. Confirmed Directional SMC Setups (auto-suppressed when MI007 single-toggle strategy is rendering its own institutional bracket)
+    const mi007OwnsBracket = Boolean(options.showMi007 && options.mi007Data?.activeSetup?.isTradeable);
+    if (!mi007OwnsBracket && (smcData.confirmedSetups || smcData.allSetups || smcData.rejectedSetups)) {
       const terminalClose = candles[candles.length - 1]?.close ?? 0;
       const barIntervalMs = inferCandleIntervalMs(candles);
       const isIntradayChart = barIntervalMs > 0 && barIntervalMs <= 3_600_000;
