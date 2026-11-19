@@ -307,7 +307,10 @@ export interface SmcAnalysis {
   sessionLevels: SmcSessionLevels;
   confirmedSetups: SmcConfirmedSetup[];
   executableSetups?: SmcConfirmedSetup[];
+  activeSetups?: SmcConfirmedSetup[];
   allSetups: SmcConfirmedSetup[];
+  /** Unbiased setup history including stopped-out (INVALIDATED), EXPIRED, winners, and open setups (SMC-A) */
+  setupHistory?: SmcConfirmedSetup[];
   rejectedSetups?: SmcConfirmedSetup[];
   equilibriumPrice: number;
   datasetFingerprint?: string;
@@ -2335,7 +2338,8 @@ export function detectAll16SmcSetups(
   ltfCandles?: Candle[],
   liquidityLevels?: SmcLiquidityLevel[],
   rejectedOut?: SmcConfirmedSetup[],
-  symbol?: string
+  symbol?: string,
+  historyOut?: SmcConfirmedSetup[]
 ): SmcConfirmedSetup[] {
   if (!isValidVerifiedCandleDataset(candles)) return [];
 
@@ -3909,6 +3913,11 @@ export function detectAll16SmcSetups(
       return false;
     }
 
+    // SMC-A: Record EVERY validated setup (open, winner, stopped-out INVALIDATED, and EXPIRED) in setupHistory
+    if (historyOut) {
+      historyOut.push(st);
+    }
+
     // If setup is structurally invalidated or expired, do not emit as active setup
     if (st.status === 'INVALIDATED' || st.status === 'EXPIRED') return false;
 
@@ -4160,6 +4169,7 @@ export function calculateSMC(
 
   // 8. Detect All 16 Confirmed SMC Setups (strictly separating >= 70 accepted setups from < 70 rejected setups)
   const rawRejectedSetups: SmcConfirmedSetup[] = [];
+  const rawSetupHistory: SmcConfirmedSetup[] = [];
   const allSetups = detectAll16SmcSetups(
     candles,
     swings,
@@ -4176,7 +4186,8 @@ export function calculateSMC(
     config?.ltfCandles,
     liquidityLevels,
     rawRejectedSetups,
-    symbol
+    symbol,
+    rawSetupHistory
   );
 
   // Directional filtering across all enabled SMC strategies
@@ -4191,6 +4202,12 @@ export function calculateSMC(
   });
 
   const rejectedSetups = rawRejectedSetups.filter((s) => {
+    if (s.direction === 'BULLISH' && !isBullAllowed) return false;
+    if (s.direction === 'BEARISH' && !isBearAllowed) return false;
+    return true;
+  });
+
+  const setupHistory = rawSetupHistory.filter((s) => {
     if (s.direction === 'BULLISH' && !isBullAllowed) return false;
     if (s.direction === 'BEARISH' && !isBearAllowed) return false;
     return true;
@@ -4222,7 +4239,9 @@ export function calculateSMC(
     sessionLevels,
     confirmedSetups,
     executableSetups,
+    activeSetups: filteredSetups,
     allSetups: filteredSetups,
+    setupHistory,
     rejectedSetups,
     equilibriumPrice: dealingRange.equilibriumPrice,
     datasetFingerprint: fingerprint,

@@ -1,4 +1,5 @@
 import { Candle } from '../types';
+import { computeVolumeProfile, detectVolumeQuality as detectSharedVolumeQuality } from '../volumeProfile';
 import {
   calculateSMC,
   computeAtrSeries,
@@ -97,13 +98,13 @@ function computeMarketRegime(
   };
 }
 
-// ── Module 04: Institutional Volume Profile Engine ───────────────────────────
+// ── Module 04: Institutional Volume Profile Engine (Unified with Chart VPVR) ─
 
-function buildRangeProfile(
+export function buildRangeProfile(
   candles: Candle[],
   startIdx: number,
   endIdx: number,
-  numBins = 32
+  numBins = 40
 ): { summary: Mi007ProfileSummary; bins: Mi007VolumeBin[] } {
   const s = Math.max(0, startIdx);
   const e = Math.min(candles.length - 1, endIdx);
@@ -114,126 +115,33 @@ function buildRangeProfile(
     };
   }
 
-  let minP = Infinity;
-  let maxP = -Infinity;
-  for (let i = s; i <= e; i++) {
-    if (candles[i].low < minP) minP = candles[i].low;
-    if (candles[i].high > maxP) maxP = candles[i].high;
-  }
-  if (!Number.isFinite(minP) || !Number.isFinite(maxP) || maxP <= minP) {
-    const p = candles[e]?.close || 1;
+  const slice = candles.slice(s, e + 1);
+  const vp = computeVolumeProfile(slice, { bucketCount: numBins });
+  // VP1: Zero-volume series returns no profile (poc=0, bins=[]) instead of collapsing to bin 0
+  if (!vp.hasVolume || vp.totalVolume <= 0 || vp.buckets.length === 0) {
     return {
-      summary: { poc: p, vah: p, val: p, totalVolume: 0, startIndex: s, endIndex: e },
+      summary: { poc: 0, vah: 0, val: 0, totalVolume: 0, startIndex: s, endIndex: e },
       bins: [],
     };
   }
 
-  const binSize = (maxP - minP) / numBins;
-  const volArr = new Float64Array(numBins);
-  const buyArr = new Float64Array(numBins);
-  const sellArr = new Float64Array(numBins);
-  let totalVolume = 0;
-
-  for (let i = s; i <= e; i++) {
-    const c = candles[i];
-    const v = Math.max(0, Number.isFinite(c.volume) ? c.volume : 0);
-    if (v <= 0) continue;
-    totalVolume += v;
-
-    const loBin = Math.max(0, Math.min(numBins - 1, Math.floor((c.low - minP) / binSize)));
-    const hiBin = Math.max(0, Math.min(numBins - 1, Math.floor((c.high - minP) / binSize)));
-    const bodyLow = Math.min(c.open, c.close);
-    const bodyHigh = Math.max(c.open, c.close);
-    const bLoBin = Math.max(loBin, Math.min(hiBin, Math.floor((bodyLow - minP) / binSize)));
-    const bHiBin = Math.max(bLoBin, Math.min(hiBin, Math.floor((bodyHigh - minP) / binSize)));
-
-    const fullSpan = Math.max(1, hiBin - loBin + 1);
-    const bodySpan = Math.max(1, bHiBin - bLoBin + 1);
-    const range = Math.max(1e-9, c.high - c.low);
-    // Buy/Sell directional split weighted by close position within candle range
-    const buyFrac = Math.max(0.15, Math.min(0.85, (c.close - c.low) / range));
-
-    // Institutional body-weighted distribution: 65% of bar volume inside body, 35% across full wick range
-    const wickPerBin = (v * 0.35) / fullSpan;
-    const bodyPerBin = (v * 0.65) / bodySpan;
-
-    for (let b = loBin; b <= hiBin; b++) {
-      volArr[b] += wickPerBin;
-      buyArr[b] += wickPerBin * buyFrac;
-      sellArr[b] += wickPerBin * (1 - buyFrac);
-    }
-    for (let b = bLoBin; b <= bHiBin; b++) {
-      volArr[b] += bodyPerBin;
-      buyArr[b] += bodyPerBin * buyFrac;
-      sellArr[b] += bodyPerBin * (1 - buyFrac);
-    }
-  }
-
-  let pocIdx = 0;
-  for (let b = 1; b < numBins; b++) {
-    if (volArr[b] > volArr[pocIdx]) pocIdx = b;
-  }
-
-  // Standard Institutional 70% Value Area expansion using 2-row lookahead around POC
-  const targetVaVol = totalVolume * 0.7;
-  let vaVol = volArr[pocIdx];
-  let vaLo = pocIdx;
-  let vaHi = pocIdx;
-  while (vaVol < targetVaVol && (vaLo > 0 || vaHi < numBins - 1)) {
-    const canUp = vaHi < numBins - 1;
-    const canDn = vaLo > 0;
-    const up2 = canUp ? volArr[vaHi + 1] + (vaHi + 2 < numBins ? volArr[vaHi + 2] : 0) : -1;
-    const dn2 = canDn ? volArr[vaLo - 1] + (vaLo - 2 >= 0 ? volArr[vaLo - 2] : 0) : -1;
-    if (canUp && (!canDn || up2 >= dn2)) {
-      vaHi++;
-      vaVol += volArr[vaHi];
-    } else if (canDn) {
-      vaLo--;
-      vaVol += volArr[vaLo];
-    } else {
-      break;
-    }
-  }
-
-  // 3-bin Gaussian smoothing for robust HVN / LVN structural node detection
-  const smoothed = new Float64Array(numBins);
-  for (let b = 0; b < numBins; b++) {
-    const prev = b > 0 ? volArr[b - 1] : volArr[b];
-    const next = b < numBins - 1 ? volArr[b + 1] : volArr[b];
-    smoothed[b] = prev * 0.25 + volArr[b] * 0.5 + next * 0.25;
-  }
-
-  const meanBinVol = totalVolume / numBins;
-  const bins: Mi007VolumeBin[] = [];
-  for (let b = 0; b < numBins; b++) {
-    const pLow = minP + b * binSize;
-    const pHigh = pLow + binSize;
-    const v = volArr[b];
-    const sv = smoothed[b];
-    const isLocalPeak = (b === 0 || sv >= smoothed[b - 1]) && (b === numBins - 1 || sv >= smoothed[b + 1]);
-    const isLocalTrough = (b > 0 && sv <= smoothed[b - 1]) && (b < numBins - 1 && sv <= smoothed[b + 1]);
-    bins.push({
-      priceLow: roundPrice(pLow),
-      priceHigh: roundPrice(pHigh),
-      priceMid: roundPrice((pLow + pHigh) / 2),
-      volume: v,
-      buyVolume: buyArr[b],
-      sellVolume: sellArr[b],
-      isHvn: meanBinVol > 0 && ((isLocalPeak && sv >= meanBinVol * 1.25) || v >= meanBinVol * 1.55),
-      isLvn: meanBinVol > 0 && v > 0 && ((isLocalTrough && sv <= meanBinVol * 0.55) || v <= meanBinVol * 0.35),
-    });
-  }
-
-  const poc = bins[pocIdx]?.priceMid ?? candles[e].close;
-  const vah = bins[vaHi]?.priceHigh ?? maxP;
-  const val = bins[vaLo]?.priceLow ?? minP;
+  const bins: Mi007VolumeBin[] = vp.buckets.map((b) => ({
+    priceLow: b.priceLow,
+    priceHigh: b.priceHigh,
+    priceMid: b.priceMid,
+    volume: b.totalVolume,
+    buyVolume: b.buyVolume,
+    sellVolume: b.sellVolume,
+    isHvn: b.isHvn,
+    isLvn: b.isLvn,
+  }));
 
   return {
     summary: {
-      poc: roundPrice(poc),
-      vah: roundPrice(vah),
-      val: roundPrice(val),
-      totalVolume,
+      poc: vp.pocPrice,
+      vah: vp.vahPrice,
+      val: vp.valPrice,
+      totalVolume: vp.totalVolume,
       startIndex: s,
       endIndex: e,
     },
@@ -246,11 +154,27 @@ function computeVolumeProfiles(
   majorSwings: SmcSwingPoint[]
 ): Mi007VolumeProfile {
   const n = closedCandles.length;
-  const volumeQuality = detectVolumeQuality(closedCandles);
+  const volumeQuality = detectSharedVolumeQuality(closedCandles);
 
-  // 1. Fixed Range Profile (48 high-res bins over last 150 closed bars)
+  // 1. Fixed Range Profile (40 bins matching Chart VPVR over last 150 closed bars)
   const frStart = Math.max(0, n - 150);
-  const { summary: fixedRange, bins } = buildRangeProfile(closedCandles, frStart, n - 1, 48);
+  const { summary: fixedRange, bins } = buildRangeProfile(closedCandles, frStart, n - 1, 40);
+
+  if (volumeQuality !== 'ACTUAL' || fixedRange.totalVolume <= 0) {
+    return {
+      volumeQuality,
+      fixedRange: { poc: 0, vah: 0, val: 0, totalVolume: 0, startIndex: frStart, endIndex: Math.max(0, n - 1) },
+      session: null,
+      daily: null,
+      weekly: null,
+      anchored: null,
+      pocMigration: 'FLAT',
+      hvnPrices: [],
+      lvnPrices: [],
+      bins: [],
+      developingPoc: [],
+    };
+  }
 
   // 2. Session & Daily Profiles by UTC day boundary
   const lastTime = closedCandles[n - 1]?.openTime ?? 0;
@@ -259,7 +183,8 @@ function computeVolumeProfiles(
   while (sessionStart > 0 && closedCandles[sessionStart - 1].openTime >= dayStartMs) {
     sessionStart--;
   }
-  const session = n - sessionStart >= 3 ? buildRangeProfile(closedCandles, sessionStart, n - 1, 20).summary : null;
+  const sessRes = n - sessionStart >= 3 ? buildRangeProfile(closedCandles, sessionStart, n - 1, 40).summary : null;
+  const session = sessRes && sessRes.totalVolume > 0 ? sessRes : null;
 
   let prevDayEnd = sessionStart - 1;
   let prevDayStart = Math.max(0, prevDayEnd);
@@ -269,10 +194,11 @@ function computeVolumeProfiles(
       prevDayStart--;
     }
   }
-  const daily =
+  const dailyRes =
     prevDayEnd - prevDayStart >= 2
-      ? buildRangeProfile(closedCandles, prevDayStart, prevDayEnd, 20).summary
+      ? buildRangeProfile(closedCandles, prevDayStart, prevDayEnd, 40).summary
       : null;
+  const daily = dailyRes && dailyRes.totalVolume > 0 ? dailyRes : null;
 
   // 3. Weekly Profile (last 7 calendar days)
   const weekCutoff = lastTime - 7 * 86_400_000;
@@ -280,16 +206,18 @@ function computeVolumeProfiles(
   while (weekStart > 0 && closedCandles[weekStart - 1].openTime >= weekCutoff) {
     weekStart--;
   }
-  const weekly = n - weekStart >= 5 ? buildRangeProfile(closedCandles, weekStart, n - 1, 24).summary : null;
+  const weekRes = n - weekStart >= 5 ? buildRangeProfile(closedCandles, weekStart, n - 1, 40).summary : null;
+  const weekly = weekRes && weekRes.totalVolume > 0 ? weekRes : null;
 
   // 4. Anchored Volume Profile (from latest confirmed major swing point)
   const lastMajor = majorSwings.length > 0 ? majorSwings[majorSwings.length - 1] : null;
   const anchorIdx = lastMajor && n - 1 - lastMajor.index >= 4 ? lastMajor.index : Math.max(0, n - 40);
-  const anchored = buildRangeProfile(closedCandles, anchorIdx, n - 1, 24).summary;
+  const anchoredRes = buildRangeProfile(closedCandles, anchorIdx, n - 1, 40).summary;
+  const anchored = anchoredRes.totalVolume > 0 ? anchoredRes : null;
 
   // 5. POC Migration (prior daily POC vs current session/anchored POC)
   const refOldPoc = daily?.poc || fixedRange.poc;
-  const refNewPoc = session?.poc || anchored.poc;
+  const refNewPoc = session?.poc || anchored?.poc || fixedRange.poc;
   const pocDiffPct = refOldPoc > 0 ? ((refNewPoc - refOldPoc) / refOldPoc) * 100 : 0;
   const pocMigration: 'UP' | 'DOWN' | 'FLAT' =
     pocDiffPct > 0.15 ? 'UP' : pocDiffPct < -0.15 ? 'DOWN' : 'FLAT';
@@ -300,9 +228,9 @@ function computeVolumeProfiles(
   if (devLen >= 5) {
     const devStart = n - devLen;
     for (let i = devStart; i < n; i++) {
-      // Lightweight causal running POC from sessionStart or frStart up to i
       const subStart = Math.max(frStart, i - 60);
-      developingPoc.push(buildRangeProfile(closedCandles, subStart, i, 16).summary.poc);
+      const subPoc = buildRangeProfile(closedCandles, subStart, i, 24).summary.poc;
+      if (subPoc > 0) developingPoc.push(subPoc);
     }
   }
 
@@ -346,11 +274,10 @@ function computeFibonacciConfluence(
   const latestBreak = recentBreaks.length > 0 ? recentBreaks[recentBreaks.length - 1] : null;
 
   if (latestBreak) {
-    // Search backwards from the BOS candle for the impulse origin swing
-    const searchStart = Math.max(0, latestBreak.swingIndex - 20);
+    // FB5: Search strictly from the broken swing index (not swingIndex - 20) and verify origin hasn't been invalidated
+    const searchStart = Math.max(0, latestBreak.swingIndex);
     const searchEnd = Math.min(n - 1, latestBreak.candleIndex);
     if (latestBreak.isBullish) {
-      // Bullish BOS impulse: Origin = lowest swing low launching the break, Peak = highest high from origin to present
       let origIdx = searchStart;
       let origLow = Infinity;
       for (let i = searchStart; i <= searchEnd; i++) {
@@ -361,19 +288,22 @@ function computeFibonacciConfluence(
       }
       let peakIdx = origIdx;
       let peakHigh = -Infinity;
+      let originBroken = false;
       for (let i = origIdx; i < n; i++) {
         if (closedCandles[i].high > peakHigh) {
           peakHigh = closedCandles[i].high;
           peakIdx = i;
         }
+        if (i > origIdx && closedCandles[i].close < origLow) {
+          originBroken = true;
+        }
       }
-      if (peakIdx > origIdx && peakHigh > origLow) {
+      if (!originBroken && peakIdx > origIdx && peakHigh > origLow) {
         anchorLow = { index: origIdx, price: origLow, time: closedCandles[origIdx].openTime };
         anchorHigh = { index: peakIdx, price: peakHigh, time: closedCandles[peakIdx].openTime };
         bosDirection = 'BULLISH';
       }
     } else {
-      // Bearish BOS impulse: Origin = highest swing high launching the break, Trough = lowest low from origin to present
       let origIdx = searchStart;
       let origHigh = -Infinity;
       for (let i = searchStart; i <= searchEnd; i++) {
@@ -384,13 +314,17 @@ function computeFibonacciConfluence(
       }
       let troughIdx = origIdx;
       let troughLow = Infinity;
+      let originBroken = false;
       for (let i = origIdx; i < n; i++) {
         if (closedCandles[i].low < troughLow) {
           troughLow = closedCandles[i].low;
           troughIdx = i;
         }
+        if (i > origIdx && closedCandles[i].close > origHigh) {
+          originBroken = true;
+        }
       }
-      if (troughIdx > origIdx && origHigh > troughLow) {
+      if (!originBroken && troughIdx > origIdx && origHigh > troughLow) {
         anchorHigh = { index: origIdx, price: origHigh, time: closedCandles[origIdx].openTime };
         anchorLow = { index: troughIdx, price: troughLow, time: closedCandles[troughIdx].openTime };
         bosDirection = 'BEARISH';
@@ -466,8 +400,10 @@ function computeFibonacciConfluence(
   const p705 = retracementPrice(0.705);
   const p786 = retracementPrice(0.786);
   const p100 = retracementPrice(1.0);
-  const ext1272 = extensionPrice(1.272);
-  const ext1618 = extensionPrice(1.618);
+  const rawExt1272 = extensionPrice(1.272);
+  const rawExt1618 = extensionPrice(1.618);
+  const ext1272 = rawExt1272 > 0 ? rawExt1272 : 0;
+  const ext1618 = rawExt1618 > 0 ? rawExt1618 : 0;
 
   const levels: Mi007FibLevel[] = [
     { ratio: 0.0, label: '0.00', price: p000, isExtension: false, isOte: false },
@@ -478,8 +414,8 @@ function computeFibonacciConfluence(
     { ratio: 0.705, label: '0.705 OTE', price: p705, isExtension: false, isOte: true },
     { ratio: 0.786, label: '0.786 Deep', price: p786, isExtension: false, isOte: true },
     { ratio: 1.0, label: '1.00', price: p100, isExtension: false, isOte: false },
-    { ratio: 1.272, label: '1.272 Ext', price: ext1272, isExtension: true, isOte: false },
-    { ratio: 1.618, label: '1.618 Ext', price: ext1618, isExtension: true, isOte: false },
+    ...(ext1272 > 0 ? [{ ratio: 1.272, label: '1.272 Ext', price: ext1272, isExtension: true, isOte: false }] : []),
+    ...(ext1618 > 0 ? [{ ratio: 1.618, label: '1.618 Ext', price: ext1618, isExtension: true, isOte: false }] : []),
   ];
 
   const oteLow = Math.min(p618, p786);
@@ -670,33 +606,37 @@ function evaluateDirectionalSetup(
       ? activeFvg.cePrice
       : last.close
   );
-  const keyVpLevels = [
-    vp.fixedRange.poc,
-    vp.fixedRange.val,
-    vp.fixedRange.vah,
-    vp.anchored?.poc,
-    vp.session?.poc,
-    ...vp.lvnPrices,
-  ].filter((v): v is number => typeof v === 'number' && v > 0);
+  // VP2: Gate Volume Profile scoring strictly on ACTUAL volume quality
+  const hasActualVp = vp.volumeQuality === 'ACTUAL' && vp.fixedRange.totalVolume > 0;
+  const keyVpLevels = hasActualVp
+    ? [
+        vp.fixedRange.poc,
+        vp.fixedRange.val,
+        vp.fixedRange.vah,
+        vp.anchored?.poc,
+        vp.session?.poc,
+        ...vp.lvnPrices,
+      ].filter((v): v is number => typeof v === 'number' && v > 0)
+    : [];
 
-  let nearestVpLevel: number | null = null;
   let nearestVpDist = Infinity;
   for (const lvl of keyVpLevels) {
     const d = Math.abs(rawSmcEntry - lvl);
     if (d < nearestVpDist) {
       nearestVpDist = d;
-      nearestVpLevel = lvl;
     }
   }
 
   // Strict confluence: exact SMC Engine Entry (or its OB/FVG zone) must align with a key Volume Profile level
   const vpInsideZone = Boolean(
-    (activeOb && keyVpLevels.some((lvl) => lvl >= activeOb.bottomPrice - atr * 0.4 && lvl <= activeOb.topPrice + atr * 0.4)) ||
-    (activeFvg && keyVpLevels.some((lvl) => lvl >= activeFvg.bottomPrice - atr * 0.4 && lvl <= activeFvg.topPrice + atr * 0.4))
+    hasActualVp && (
+      (activeOb && keyVpLevels.some((lvl) => lvl >= activeOb.bottomPrice - atr * 0.4 && lvl <= activeOb.topPrice + atr * 0.4)) ||
+      (activeFvg && keyVpLevels.some((lvl) => lvl >= activeFvg.bottomPrice - atr * 0.4 && lvl <= activeFvg.topPrice + atr * 0.4))
+    )
   );
-  const vpEntryAligned = vpInsideZone || nearestVpDist <= atr * 1.5;
-  const vpBiasAligned = (isBull && vp.pocMigration === 'UP') || (!isBull && vp.pocMigration === 'DOWN');
-  const vpPts = vpEntryAligned && vpBiasAligned ? 15 : vpEntryAligned ? 12 : vpBiasAligned ? 6 : 0;
+  const vpEntryAligned = hasActualVp && (vpInsideZone || nearestVpDist <= atr * 1.5);
+  const vpBiasAligned = hasActualVp && ((isBull && vp.pocMigration === 'UP') || (!isBull && vp.pocMigration === 'DOWN'));
+  const vpPts = !hasActualVp ? 0 : vpEntryAligned && vpBiasAligned ? 15 : vpEntryAligned ? 12 : vpBiasAligned ? 6 : 0;
 
   // 6. Fibonacci Confluence (10 pts): OTE (0.618–0.786) or Discount/Premium alignment
   const fibOteHit = Boolean(fib && fib.direction === direction && fib.inOteZone);
@@ -741,34 +681,63 @@ function evaluateDirectionalSetup(
   // Clamp risk to sane structural bounds [0.6 * ATR, 3.5 * ATR]
   const rawRisk = Math.abs(entryPrice - structuralInvalidation);
   const clampedRisk = Math.max(atr * 0.65, Math.min(atr * 3.5, rawRisk));
-  const stopLoss = roundPrice(
-    matchingSmcSetup ? matchingSmcSetup.stopLoss : (isBull ? entryPrice - clampedRisk : entryPrice + clampedRisk)
-  );
+  // FB2: Enforce strictly positive prices for SL and all targets (never emit negative targets/extensions)
+  const minPriceFloor = Math.max(0.01, roundPrice(last.close * 0.01));
+  const rawStopLoss = matchingSmcSetup
+    ? matchingSmcSetup.stopLoss
+    : (isBull ? entryPrice - clampedRisk : entryPrice + clampedRisk);
+  const stopLoss = roundPrice(Math.max(minPriceFloor, rawStopLoss));
   const risk = Math.max(1e-9, Math.abs(entryPrice - stopLoss));
 
-  // Opposing Liquidity Pools for TP1 & TP2 (use exact SMC Engine TP1/TP2 when matched)
+  // Opposing Liquidity Pools for TP1 & TP2 (strictly positive & on the correct side of entry)
   const opposingPools = smc.liquidityLevels
-    .filter((lvl) => !lvl.isSwept && (isBull ? lvl.price >= entryPrice + risk * 2.0 : lvl.price <= entryPrice - risk * 2.0))
+    .filter(
+      (lvl) =>
+        !lvl.isSwept &&
+        lvl.price > minPriceFloor &&
+        (isBull ? lvl.price >= entryPrice + risk * 2.0 : lvl.price <= entryPrice - risk * 2.0)
+    )
     .map((lvl) => lvl.price)
     .sort((a, b) => (isBull ? a - b : b - a));
 
-  const target1 = roundPrice(
-    matchingSmcSetup
-      ? matchingSmcSetup.targetPrice
-      : (opposingPools[0] ?? (isBull ? entryPrice + risk * 2.0 : entryPrice - risk * 2.0))
-  );
-  const fallbackTp2 = isBull ? Math.max(entryPrice + risk * 3.0, target1 + risk) : Math.min(entryPrice - risk * 3.0, target1 - risk);
-  const target2 = roundPrice(
-    matchingSmcSetup?.targetPrice2
-      ? matchingSmcSetup.targetPrice2
-      : (opposingPools.find((p) => (isBull ? p >= target1 + risk * 0.8 : p <= target1 - risk * 0.8)) ?? fallbackTp2)
-  );
-  const fibExtCandidate = fib && fib.direction === direction ? fib.ext1272 : undefined;
+  const rawTp1 = matchingSmcSetup
+    ? matchingSmcSetup.targetPrice
+    : (opposingPools[0] ?? (isBull ? entryPrice + risk * 2.0 : entryPrice - risk * 2.0));
+  const target1 = roundPrice(Math.max(minPriceFloor, rawTp1));
+
+  const fallbackTp2 = isBull
+    ? Math.max(entryPrice + risk * 3.0, target1 + risk)
+    : Math.max(minPriceFloor, Math.min(entryPrice - risk * 3.0, target1 - risk * 0.5));
+  const rawTp2 = matchingSmcSetup?.targetPrice2
+    ? matchingSmcSetup.targetPrice2
+    : (opposingPools.find((p) => (isBull ? p >= target1 + risk * 0.8 : p <= target1 - risk * 0.8)) ?? fallbackTp2);
+  const target2 = roundPrice(Math.max(minPriceFloor, rawTp2));
+
+  const fibExtCandidate = fib && fib.direction === direction && fib.ext1272 > minPriceFloor ? fib.ext1272 : undefined;
   const fibExtValid =
     fibExtCandidate !== undefined &&
-    (isBull ? fibExtCandidate > target2 + risk * 0.4 : fibExtCandidate < target2 - risk * 0.4);
-  const fallbackTp3 = isBull ? Math.max(entryPrice + risk * 4.0, target2 + risk) : Math.min(entryPrice - risk * 4.0, target2 - risk);
-  const target3 = roundPrice(fibExtValid ? fibExtCandidate! : fallbackTp3);
+    (isBull ? fibExtCandidate > target2 + risk * 0.4 : fibExtCandidate < target2 - risk * 0.4 && fibExtCandidate > minPriceFloor);
+  const fallbackTp3 = isBull
+    ? Math.max(entryPrice + risk * 4.0, target2 + risk)
+    : Math.max(minPriceFloor, Math.min(entryPrice - risk * 4.0, target2 - risk * 0.5));
+  const target3 = roundPrice(Math.max(minPriceFloor, fibExtValid ? fibExtCandidate! : fallbackTp3));
+
+  const targetsValid =
+    entryPrice > 0 &&
+    stopLoss > 0 &&
+    target1 > 0 &&
+    target2 > 0 &&
+    target3 > 0 &&
+    (isBull
+      ? stopLoss < entryPrice && target1 > entryPrice && target2 >= target1 && target3 >= target2
+      : stopLoss > entryPrice && target1 < entryPrice && target2 <= target1 && target3 <= target2);
+
+  // FB2: Stale / passed-TP1 / SL-violated check
+  const pricePassedTp1 = isBull ? last.close >= target1 : last.close <= target1;
+  const priceViolatedSl = isBull ? last.close <= stopLoss : last.close >= stopLoss;
+  const entryDistancePct = last.close > 0 ? Math.abs(entryPrice - last.close) / last.close : 1;
+  const entryTooFar = Math.abs(entryPrice - last.close) > atr * 4.5 || entryDistancePct > 0.12;
+  const isStaleSetup = pricePassedTp1 || priceViolatedSl || entryTooFar;
 
   const riskReward1 = Number((Math.abs(target1 - entryPrice) / risk).toFixed(2));
   const riskReward2 = Number((Math.abs(target2 - entryPrice) / risk).toFixed(2));
@@ -818,10 +787,12 @@ function evaluateDirectionalSetup(
     {
       id: 'vp',
       label: `Volume Profile ${isBull ? 'support' : 'resistance'} / LVN`,
-      status: vpPts >= 12 ? 'Confirmed' : vpPts > 0 ? 'Pending' : 'Unconfirmed',
+      status: !hasActualVp ? 'Unconfirmed' : vpPts >= 12 ? 'Confirmed' : vpPts > 0 ? 'Pending' : 'Unconfirmed',
       weight: 15,
       awarded: vpPts,
-      detail: `POC ${vp.fixedRange.poc} | Migration ${vp.pocMigration} (${vp.volumeQuality})`,
+      detail: hasActualVp
+        ? `POC ${vp.fixedRange.poc} | Migration ${vp.pocMigration} (ACTUAL)`
+        : 'Not available (no actual volume)',
     },
     {
       id: 'fib',
@@ -849,7 +820,14 @@ function evaluateDirectionalSetup(
     },
   ];
 
-  const isTradeable = totalScore >= 60 && riskReward1 >= 2.0 && vpEntryAligned;
+  // VP2 & FB2: Require valid positive targets, non-stale entry, >= 1:2 RR, and VP confluence when actual volume exists
+  const vpGate = hasActualVp ? vpEntryAligned : true;
+  const isTradeable =
+    totalScore >= 60 &&
+    riskReward1 >= 2.0 &&
+    targetsValid &&
+    !isStaleSetup &&
+    vpGate;
 
   return {
     id: `mi007_${direction}_${anchorBarIdx}_${roundPrice(entryPrice)}`,

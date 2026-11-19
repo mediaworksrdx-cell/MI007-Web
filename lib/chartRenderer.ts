@@ -20,6 +20,7 @@ import { calculateSMC, DEFAULT_SMC_CONFIG, SMC_TRADE_LIFESPAN_BARS, resolveSameB
 import { SmartAnnotationManager, type SmcVisualizationMode } from './smc/smartAnnotationManager';
 import { renderOrderFlowFootprint, formatVol } from './orderflow/orderFlowRenderer';
 import { renderMi007Overlay } from './mi007/mi007Renderer';
+import { computeVolumeProfile } from './volumeProfile';
 import {
   calculateSMA as calcSMA,
   calculateEMA as calcEMA,
@@ -705,40 +706,24 @@ export function calculateCVD(candles: Candle[]): CvdResult {
   return { cvdLine, deltaBars };
 }
 
-export function calculateVolumeProfile(candles: Candle[], priceMin: number, priceMax: number, bucketCount=40): VolumeProfileData {
-  if (!candles.length || priceMin >= priceMax || bucketCount <= 0) return { buckets: [], pocPrice: 0, vahPrice: 0, valPrice: 0, maxBucketVolume: 0 };
-  const step = (priceMax - priceMin) / bucketCount;
-  const buckets: VolumeProfileBucket[] = Array.from({ length: bucketCount }, (_, i) => ({
-    priceLow: priceMin + i * step, priceHigh: priceMin + (i + 1) * step, buyVolume: 0, sellVolume: 0, totalVolume: 0
-  }));
-  for (const c of candles) {
-    if (c.high < priceMin || c.low > priceMax) continue;
-    const range = Math.max(c.high - c.low, 1e-9);
-    const buyFrac = Math.min(1, Math.max(0, (c.close - c.low) / range));
-    const vol = (c.volume && c.volume > 0) ? c.volume : Math.max(100, Math.round(range * 1000));
-    const buyVol = vol * buyFrac, sellVol = vol * (1 - buyFrac);
-    for (let i = 0; i < bucketCount; i++) {
-      const b = buckets[i];
-      const oLow = Math.max(b.priceLow, c.low), oHigh = Math.min(b.priceHigh, c.high);
-      if (oHigh > oLow) {
-        const portion = (oHigh - oLow) / range;
-        b.buyVolume += buyVol * portion; b.sellVolume += sellVol * portion; b.totalVolume += (buyVol + sellVol) * portion;
-      }
-    }
+export function calculateVolumeProfile(candles: Candle[], _priceMin?: number, _priceMax?: number, bucketCount = 40): VolumeProfileData {
+  const res = computeVolumeProfile(candles, { bucketCount });
+  if (!res.hasVolume || res.buckets.length === 0) {
+    return { buckets: [], pocPrice: 0, vahPrice: 0, valPrice: 0, maxBucketVolume: 0 };
   }
-  let maxVol = 0, pocIdx = 0, totalVol = 0;
-  buckets.forEach((b, i) => { totalVol += b.totalVolume; if (b.totalVolume > maxVol) { maxVol = b.totalVolume; pocIdx = i; } });
-  const pocPrice = (buckets[pocIdx].priceLow + buckets[pocIdx].priceHigh) / 2;
-  const targetVaVol = totalVol * 0.70;
-  let curVaVol = maxVol, vaLow = pocIdx, vaHigh = pocIdx;
-  while (curVaVol < targetVaVol && (vaLow > 0 || vaHigh < bucketCount - 1)) {
-    const nL = vaLow > 0 ? buckets[vaLow - 1].totalVolume : -1;
-    const nH = vaHigh < bucketCount - 1 ? buckets[vaHigh + 1].totalVolume : -1;
-    if (nH >= nL && nH >= 0) { vaHigh++; curVaVol += nH; }
-    else if (nL >= 0) { vaLow--; curVaVol += nL; }
-    else break;
-  }
-  return { buckets, pocPrice, vahPrice: buckets[vaHigh].priceHigh, valPrice: buckets[vaLow].priceLow, maxBucketVolume: maxVol };
+  return {
+    buckets: res.buckets.map((b) => ({
+      priceLow: b.priceLow,
+      priceHigh: b.priceHigh,
+      buyVolume: b.buyVolume,
+      sellVolume: b.sellVolume,
+      totalVolume: b.totalVolume,
+    })),
+    pocPrice: res.pocPrice,
+    vahPrice: res.vahPrice,
+    valPrice: res.valPrice,
+    maxBucketVolume: res.maxBucketVolume,
+  };
 }
 
 // EMA Ribbon (4 EMAs: 20, 50, 100, 200)
@@ -3822,46 +3807,63 @@ export function renderChart(
                 { lvl: 1.0,   color: '#EF4444', label: '100.0%' },
               ];
           const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+          const drawMinX = item.extendLeft ? 0 : minX;
+          const drawMaxX = item.extendRight ? chartW : maxX;
+          const isReversed = Boolean((item as any).reverse);
+          const ratioOf = (lvl: number) => (isReversed ? lvl : 1 - lvl);
 
-          // Golden pocket fill (0.382 - 0.618)
-          const y382 = y1 + (y2 - y1) * 0.382;
-          const y618 = y1 + (y2 - y1) * 0.618;
-          ctx.save();
-          ctx.fillStyle = item.fillColor || 'rgba(16, 185, 129, 0.10)';
-          ctx.fillRect(minX, Math.min(y382, y618), maxX - minX, Math.abs(y618 - y382));
-          ctx.restore();
+          // FB3: Golden pocket / OTE zone fill (0.618 - 0.786), drawn only when both levels are enabled
+          const has618 = levels.some((f) => Math.abs(f.lvl - 0.618) < 0.005);
+          const has786 = levels.some((f) => Math.abs(f.lvl - 0.786) < 0.005);
+          if (has618 && has786) {
+            const y618 = y1 + (y2 - y1) * ratioOf(0.618);
+            const y786 = y1 + (y2 - y1) * ratioOf(0.786);
+            ctx.save();
+            ctx.fillStyle = item.fillColor || 'rgba(16, 185, 129, 0.10)';
+            ctx.fillRect(drawMinX, Math.min(y618, y786), drawMaxX - drawMinX, Math.abs(y786 - y618));
+            ctx.restore();
+          }
 
           for (const itemFib of levels) {
-            const ly = y1 + (y2 - y1) * itemFib.lvl;
-            const pVal = p1.price + (p2.price - p1.price) * itemFib.lvl;
+            const r = ratioOf(itemFib.lvl);
+            const ly = y1 + (y2 - y1) * r;
+            const pVal = p1.price + (p2.price - p1.price) * r;
             ctx.save();
             ctx.strokeStyle = itemFib.color;
             ctx.setLineDash([3 * dpr, 3 * dpr]);
-            ctx.beginPath(); ctx.moveTo(minX, ly); ctx.lineTo(maxX, ly); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(drawMinX, ly); ctx.lineTo(drawMaxX, ly); ctx.stroke();
             ctx.restore();
             ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
             ctx.fillStyle = itemFib.color;
-            ctx.fillText(`${itemFib.label} (${formatPrice(pVal)})`, minX + 4 * dpr, ly - 3 * dpr);
+            ctx.fillText(`${itemFib.label} (${formatPrice(pVal)})`, drawMinX + 4 * dpr, ly - 3 * dpr);
           }
         } else if (item.tool === 'FIBONACCI_EXTENSION') {
           const p3 = item.points[2] || p2;
           const baseRange = p2.price - p1.price;
-          const extLevels = [
-            { lvl: 0.0,   color: '#64748B', label: '0.0 (Base)' },
-            { lvl: 0.618, color: '#0284C7', label: '0.618 Target' },
-            { lvl: 1.0,   color: '#10B981', label: '1.0 Target' },
-            { lvl: 1.618, color: '#F59E0B', label: '1.618 Golden Ext' },
-            { lvl: 2.618, color: '#EF4444', label: '2.618 Ultra Ext' },
-          ];
-          const minX = Math.min(x1, x2);
+          const extLevels = (item.fibLevels && item.fibLevels.length > 0)
+            ? item.fibLevels.filter(f => f.enabled !== false).map(f => ({
+                lvl: f.lvl,
+                color: f.color,
+                label: f.label || `${f.lvl} Ext`,
+              }))
+            : [
+                { lvl: 0.0,   color: '#64748B', label: '0.0 (Base)' },
+                { lvl: 0.618, color: '#0284C7', label: '0.618 Target' },
+                { lvl: 1.0,   color: '#10B981', label: '1.0 Target' },
+                { lvl: 1.272, color: '#8B5CF6', label: '1.272 Ext' },
+                { lvl: 1.618, color: '#F59E0B', label: '1.618 Golden Ext' },
+                { lvl: 2.618, color: '#EF4444', label: '2.618 Ultra Ext' },
+              ];
+          const minX = item.extendLeft ? 0 : Math.min(x1, x2);
+          const maxX = item.extendRight !== false ? chartW : Math.max(x1, x2);
           for (const ext of extLevels) {
             const targetP = p3.price + baseRange * ext.lvl;
-            if (targetP >= pMin && targetP <= pMax) {
+            if (targetP > 0 && targetP >= pMin && targetP <= pMax) {
               const ly = priceToY(targetP);
               ctx.save();
               ctx.strokeStyle = ext.color;
               ctx.setLineDash([4 * dpr, 4 * dpr]);
-              ctx.beginPath(); ctx.moveTo(minX, ly); ctx.lineTo(chartW, ly); ctx.stroke();
+              ctx.beginPath(); ctx.moveTo(minX, ly); ctx.lineTo(maxX, ly); ctx.stroke();
               ctx.restore();
               ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
               ctx.fillStyle = ext.color;
