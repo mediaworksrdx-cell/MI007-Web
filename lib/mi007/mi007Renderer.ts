@@ -429,9 +429,12 @@ export function renderMi007Overlay({
       ctx.font = `600 ${8 * dpr}px "JetBrains Mono",monospace`;
       ctx.fillStyle = isDark ? '#CBD5E1' : '#334155';
       ctx.textAlign = 'left';
-      ctx.fillText(`${setup.classification} • ${data.regime.regime.replace('_', ' ')}`, cardX + pad, cy);
+      const subHeader = setup.isTradeable
+        ? `${setup.classification} • ${data.regime.regime.replace('_', ' ')}`
+        : `INDICATIVE ONLY (NO TRADE) • ${data.regime.regime.replace('_', ' ')}`;
+      ctx.fillText(subHeader, cardX + pad, cy);
 
-      // Price Grid (ENTRY, SL, TP1, TP2)
+      // Price Grid (labeled explicitly as INDICATIVE when !setup.isTradeable)
       cy += lineH + 3 * dpr;
       const colW = (cardW - pad * 2) / 2;
       const drawKv = (col: number, rowOffset: number, k: string, v: string, vColor: string) => {
@@ -442,15 +445,15 @@ export function renderMi007Overlay({
         ctx.textAlign = 'left';
         ctx.fillText(k, kx, ky);
         ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = vColor;
+        ctx.fillStyle = setup.isTradeable ? vColor : (isDark ? '#64748B' : '#94A3B8');
         ctx.textAlign = 'right';
         ctx.fillText(v, kx + colW - 6 * dpr, ky);
       };
 
-      drawKv(0, 0, 'ENTRY', formatPrice(setup.entryPrice), isDark ? '#F8FAFC' : '#0F172A');
-      drawKv(1, 0, 'STOP LOSS', formatPrice(setup.stopLoss), '#F43F5E');
-      drawKv(0, 1, 'TARGET 1', formatPrice(setup.target1), '#10B981');
-      drawKv(1, 1, 'TARGET 2', formatPrice(setup.target2), '#10B981');
+      drawKv(0, 0, setup.isTradeable ? 'ENTRY' : 'REF ENTRY', formatPrice(setup.entryPrice), isDark ? '#F8FAFC' : '#0F172A');
+      drawKv(1, 0, setup.isTradeable ? 'STOP LOSS' : 'REF SL', formatPrice(setup.stopLoss), '#F43F5E');
+      drawKv(0, 1, setup.isTradeable ? 'TARGET 1' : 'REF TP1', formatPrice(setup.target1), '#10B981');
+      drawKv(1, 1, setup.isTradeable ? 'TARGET 2' : 'REF TP2', formatPrice(setup.target2), '#10B981');
 
       // Divider
       cy += (lineH + 2 * dpr) * 2 + 2 * dpr;

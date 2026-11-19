@@ -177,39 +177,53 @@ function makeSeries(n, volFn, flatEvery = 0) {
   console.log('PASS [7/10] SMC setupHistory preserves stopped-out / expired setups (SMC-A)');
 }
 
-// TEST 8: Critical 01 + Important 06 — volumeEstimated flag must classify ESTIMATED & never bypass VP gate
+// TEST 8: Critical 1 + Important 06 — even ONE volumeEstimated=true candle must classify ESTIMATED & block tradeability (unconditional)
 {
-  const estCandles = makeSeries(150, (i) => 1000 + (i % 19) * 350).map((c) => ({ ...c, volumeEstimated: true }));
-  const res = analyzeMi007Strategy(estCandles, { symbol: 'EST_FLAG_TEST', timeframe: '1H' });
-  assert.strictEqual(res.volumeProfile.volumeQuality, 'ESTIMATED', 'Critical 01: volumeEstimated=true must classify as ESTIMATED');
-  if (res.activeSetup) {
-    assert.strictEqual(res.activeSetup.scoreBreakdown.volumeProfile, 0, 'Critical 01: VP score must be 0 when volumeEstimated=true');
-    assert.strictEqual(res.activeSetup.isTradeable, false, 'Important 06: must never bypass VP execution gate when volume is estimated');
-    assert.strictEqual(res.activeSetup.status, 'WAIT_CONFIRMATION', 'Important 05: non-tradeable setup must not have status ACTIVE');
-  }
-  console.log('PASS [8/10] volumeEstimated flag & strict non-bypassable VP gate (Critical 01 + Important 06)');
+  const estCandles = makeSeries(150, (i) => 1000 + (i % 19) * 350);
+  estCandles[estCandles.length - 5] = { ...estCandles[estCandles.length - 5], volumeEstimated: true };
+  const res = analyzeMi007Strategy(estCandles, { symbol: 'EST_SINGLE_BAR', timeframe: '1H' });
+  assert.ok(res && res.activeSetup, 'Test 8 requires non-null activeSetup (no conditional skipping)');
+  assert.strictEqual(res.volumeProfile.volumeQuality, 'ESTIMATED', 'Critical 1: even 1 volumeEstimated=true candle must classify ESTIMATED');
+  assert.strictEqual(res.activeSetup.scoreBreakdown.volumeProfile, 0, 'Critical 1: VP score must be 0 when estimated');
+  assert.strictEqual(res.activeSetup.isTradeable, false, 'Important 6: must never bypass VP gate when volume is estimated');
+  assert.strictEqual(res.activeSetup.status, 'WAIT_CONFIRMATION', 'Important 5: non-tradeable setup must not have status ACTIVE');
+  console.log('PASS [8/10] Zero-tolerance volumeEstimated flag & non-bypassable VP gate (unconditional)');
 }
 
-// TEST 9: Important 05 — status === ACTIVE iff isTradeable, and score === sum(checklist.awarded)
+// TEST 9: Important 5 & Important 3 — unconditional status/isTradeable parity, checklist sum parity, and directional candle close
 {
   const series = makeSeries(160, (i) => 1200 + (i % 17) * 410);
-  const res = analyzeMi007Strategy(series, { symbol: 'STATUS_SYNC', timeframe: '1H' });
-  if (res.activeSetup) {
-    const st = res.activeSetup;
-    const sum = st.checklist.reduce((a, b) => a + b.awarded, 0);
-    assert.strictEqual(st.score, Math.min(100, sum), 'Score must exactly match checklist sum');
-    assert.strictEqual(st.status === 'ACTIVE', st.isTradeable, 'Important 05: status ACTIVE must strictly match isTradeable');
+  // Make last closed bar a bearish candle with a huge lower wick — must NOT pass bullish candle confirmation
+  const last = series[series.length - 1];
+  series[series.length - 1] = { ...last, open: 1010, high: 1012, low: 980, close: 1006, volume: 3500 };
+  const res = analyzeMi007Strategy(series, { symbol: 'STATUS_SYNC_UNCOND', timeframe: '1H' });
+  assert.ok(res && res.activeSetup, 'Test 9 requires non-null activeSetup (no conditional skipping)');
+  const st = res.activeSetup;
+  const sum = st.checklist.reduce((a, b) => a + b.awarded, 0);
+  assert.strictEqual(st.score, Math.min(100, sum), 'Score must exactly match checklist sum');
+  assert.strictEqual(st.status === 'ACTIVE', st.isTradeable, 'Important 5: status ACTIVE must strictly match isTradeable');
+  if (st.direction === 'BULLISH') {
+    assert.strictEqual(st.scoreBreakdown.entryCandle, 0, 'Important 3: bearish close with lower wick must NOT award bullish entry confirmation');
   }
-  console.log('PASS [9/10] Status/isTradeable consistency & checklist sum parity (Important 05)');
+  console.log('PASS [9/10] Unconditional status/isTradeable parity, checklist sum & directional close (Important 3 + 5)');
 }
 
-// TEST 10: Critical 02 & 03 — Transparent OHLCV proxy / distributionModel metadata
+// TEST 10: Critical 2 & 3 — Numerical Order Flow bar-delta / CVD accuracy + OHLCV proxy metadata
 {
-  const series = makeSeries(150, (i) => 1000 + (i % 13) * 250);
-  const vp = computeVolumeProfile(series, { bucketCount: 40 });
+  const bullRun = [];
+  for (let i = 0; i < 60; i++) {
+    const p = 100 + i * 2;
+    bullRun.push({ o: p, h: p + 4, l: p - 0.5, c: p + 3.8, v: 1000 + (i % 11) * 250 });
+  }
+  const candles = makeCandles(bullRun);
+  const vp = computeVolumeProfile(candles, { bucketCount: 40 });
   assert.strictEqual(vp.distributionModel, 'OHLCV_UNIFORM_APPROXIMATION');
   assert.strictEqual(vp.estimatedDelta, true);
-  console.log('PASS [10/10] Transparent OHLCV approximation & delta proxy metadata (Critical 02 + 03)');
+  const res = analyzeMi007Strategy(candles, { symbol: 'OF_MATH_TEST', timeframe: '1H' });
+  assert.strictEqual(res.orderFlow.volumeQuality, 'ACTUAL');
+  assert.ok(res.orderFlow.barDelta > 0, `Expected positive barDelta on bullish close-near-high bar, got ${res.orderFlow.barDelta}`);
+  assert.strictEqual(res.orderFlow.cvdTrend, 'BULLISH', `Expected BULLISH cvdTrend on sustained buying, got ${res.orderFlow.cvdTrend}`);
+  console.log(`PASS [10/10] Numerical Order Flow barDelta=${res.orderFlow.barDelta}, cvdTrend=${res.orderFlow.cvdTrend} & OHLCV proxy metadata`);
 }
 
-console.log('\nALL 10 AUDIT REGRESSION TESTS PASSED!');
+console.log('\nALL 10 UNCONDITIONAL AUDIT REGRESSION TESTS PASSED!');

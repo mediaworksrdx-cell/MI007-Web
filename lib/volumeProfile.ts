@@ -59,7 +59,8 @@ export function detectVolumeQuality(candles: Candle[]): VolumeQuality {
       uniqueVols.add(Math.round(c.volume));
     }
   }
-  if (estimatedFlagged > sample.length * 0.2) return 'ESTIMATED';
+  // Critical 1: Zero-tolerance guard — any candle flagged volumeEstimated=true disqualifies ACTUAL classification
+  if (estimatedFlagged > 0) return 'ESTIMATED';
   const positiveRatio = positive / sample.length;
   if (positiveRatio < 0.7 || uniqueVols.size < Math.min(8, Math.max(3, Math.floor(positive * 0.4)))) {
     return 'ESTIMATED';

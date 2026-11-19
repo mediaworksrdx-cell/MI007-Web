@@ -289,16 +289,27 @@ function computeFibonacciConfluence(
           origIdx = i;
         }
       }
+      // Critical 2: Anchor termination strictly to highest confirmed major swing high after origin when available
+      let originBroken = false;
+      for (let i = origIdx + 1; i < n; i++) {
+        if (closedCandles[i].close < origLow) originBroken = true;
+      }
+      const postOriginMajorHighs = majorSwings.filter((s) => s.isHigh && s.index > origIdx);
       let peakIdx = origIdx;
       let peakHigh = -Infinity;
-      let originBroken = false;
-      for (let i = origIdx; i < n; i++) {
-        if (closedCandles[i].high > peakHigh) {
-          peakHigh = closedCandles[i].high;
-          peakIdx = i;
+      if (postOriginMajorHighs.length > 0) {
+        for (const h of postOriginMajorHighs) {
+          if (h.price > peakHigh) {
+            peakHigh = h.price;
+            peakIdx = h.index;
+          }
         }
-        if (i > origIdx && closedCandles[i].close < origLow) {
-          originBroken = true;
+      } else {
+        for (let i = origIdx; i < n; i++) {
+          if (closedCandles[i].high > peakHigh) {
+            peakHigh = closedCandles[i].high;
+            peakIdx = i;
+          }
         }
       }
       if (!originBroken && peakIdx > origIdx && peakHigh > origLow) {
@@ -315,16 +326,26 @@ function computeFibonacciConfluence(
           origIdx = i;
         }
       }
+      let originBroken = false;
+      for (let i = origIdx + 1; i < n; i++) {
+        if (closedCandles[i].close > origHigh) originBroken = true;
+      }
+      const postOriginMajorLows = majorSwings.filter((s) => !s.isHigh && s.index > origIdx);
       let troughIdx = origIdx;
       let troughLow = Infinity;
-      let originBroken = false;
-      for (let i = origIdx; i < n; i++) {
-        if (closedCandles[i].low < troughLow) {
-          troughLow = closedCandles[i].low;
-          troughIdx = i;
+      if (postOriginMajorLows.length > 0) {
+        for (const l of postOriginMajorLows) {
+          if (l.price < troughLow) {
+            troughLow = l.price;
+            troughIdx = l.index;
+          }
         }
-        if (i > origIdx && closedCandles[i].close > origHigh) {
-          originBroken = true;
+      } else {
+        for (let i = origIdx; i < n; i++) {
+          if (closedCandles[i].low < troughLow) {
+            troughLow = closedCandles[i].low;
+            troughIdx = i;
+          }
         }
       }
       if (!originBroken && troughIdx > origIdx && origHigh > troughLow) {
@@ -655,13 +676,13 @@ function evaluateDirectionalSetup(
   const ofAligned = of.volumeQuality === 'ACTUAL' && of.confirmed && of.direction === direction;
   const ofPts = ofAligned ? 10 : of.volumeQuality === 'ACTUAL' && of.cvdTrend === direction ? 5 : 0;
 
-  // 8. Entry Candle Confirmation (5 pts): rejection wick or directional displacement close on latest closed bar
+  // 8. Entry Candle Confirmation (5 pts — Important 3: strictly requires directional candle close + body or rejection wick)
   const barRange = Math.max(1e-9, last.high - last.low);
   const lowerWick = (Math.min(last.open, last.close) - last.low) / barRange;
   const upperWick = (last.high - Math.max(last.open, last.close)) / barRange;
   const entryCandleConfirmed = isBull
-    ? (last.close > last.open && (last.close - last.open) / barRange >= 0.45) || lowerWick >= 0.35
-    : (last.close < last.open && (last.open - last.close) / barRange >= 0.45) || upperWick >= 0.35;
+    ? last.close > last.open && ((last.close - last.open) / barRange >= 0.45 || lowerWick >= 0.35)
+    : last.close < last.open && ((last.open - last.close) / barRange >= 0.45 || upperWick >= 0.35);
   const entryCandlePts = entryCandleConfirmed ? 5 : 0;
 
   const totalScore = Math.min(
