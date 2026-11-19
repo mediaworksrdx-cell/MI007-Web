@@ -1406,11 +1406,20 @@ export function renderChart(
       // Density control: institutional pivot spacing
       const minBarSpacing = isCleanMode ? 14 : (candleW < 8 * dpr ? 8 : candleW < 14 * dpr ? 6 : 4);
       const minPixelSpacing = isCleanMode ? 85 * dpr : 45 * dpr;
-      const maxSwingsAllowed = isCleanMode ? 6 : 14;
+      const maxSwingsAllowed = isCleanMode ? 6 : 120;
 
       if (visibleSwings.length > maxSwingsAllowed) {
-        // Keep the most recent key swings in the viewport
-        visibleSwings = visibleSwings.slice(-maxSwingsAllowed);
+        if (isCleanMode) {
+          visibleSwings = visibleSwings.slice(-maxSwingsAllowed);
+        } else {
+          // Evenly span the entire visible history instead of dropping the left side of the chart
+          const step = visibleSwings.length / maxSwingsAllowed;
+          const sampled: typeof visibleSwings = [];
+          for (let si = 0; si < maxSwingsAllowed; si++) {
+            sampled.push(visibleSwings[Math.floor(si * step)]);
+          }
+          visibleSwings = sampled;
+        }
       }
 
       interface RenderedSwingPill {
@@ -1502,8 +1511,8 @@ export function renderChart(
     // 4. Order Blocks & Breakers (Demand, Supply, Breakers) — Dedicated Quota Pools & High Contrast
     const lastPrice = candles[candles.length - 1]?.close || (pMin + pMax) / 2;
     const isTargetedMode = Boolean(options.targetSetupId);
-    const baseQuota = isTargetedMode ? 1 : 3;
-    const mitigatedQuota = smcCfg.showMitigatedOb ? 2 : 0;
+    const baseQuota = isTargetedMode ? 1 : 10;
+    const mitigatedQuota = smcCfg.showMitigatedOb ? 10 : 0;
 
     const sortZonesByProximity = <T extends { topPrice: number; bottomPrice: number; startIndex: number; isMitigated?: boolean }>(zones: T[]): T[] => {
       return zones
@@ -1699,7 +1708,7 @@ export function renderChart(
     }
 
     // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG) — Dedicated Quota Pools & High Visibility
-    const fvgBaseQuota = isTargetedMode ? 1 : (isCleanMode ? 1 : Math.max(2, Math.floor((smcCfg.maxVisibleZones || 6) / 2)));
+    const fvgBaseQuota = isTargetedMode ? 1 : (isCleanMode ? 1 : Math.max(5, Math.floor((smcCfg.maxVisibleZones || 10) / 2)));
     const fvgMitigatedQuota = smcCfg.showMitigatedFvg ? 2 : 0;
 
     const inWindowFvgs = smcData.fvgs.filter((fvg) => {
@@ -1864,9 +1873,20 @@ export function renderChart(
       return true;
     });
 
-    // Display major structure breaks across the viewport: clean mode up to 8, advanced/analysis up to 20
-    const maxBreaks = isCleanMode ? 8 : 20;
-    const breaksToRender = inWindowBreaks.slice(-maxBreaks);
+    // Display structure breaks across the ENTIRE visible viewport (never drop left-side history)
+    const maxBreaks = isCleanMode ? 8 : 120;
+    let breaksToRender = inWindowBreaks;
+    if (inWindowBreaks.length > maxBreaks) {
+      if (isCleanMode) {
+        breaksToRender = inWindowBreaks.slice(-maxBreaks);
+      } else {
+        const step = inWindowBreaks.length / maxBreaks;
+        breaksToRender = [];
+        for (let bi = 0; bi < maxBreaks; bi++) {
+          breaksToRender.push(inWindowBreaks[Math.floor(bi * step)]);
+        }
+      }
+    }
 
     for (let sbi = 0; sbi < breaksToRender.length; sbi++) {
       const sb = breaksToRender[sbi];
@@ -1882,10 +1902,10 @@ export function renderChart(
       const x1 = Math.max(0, Math.min(chartW, startX));
       const x2 = Math.max(0, Math.min(chartW, rawX2));
 
-      // Age-dependent historical fading
+      // Keep historical breaks clearly readable across the full chart history
       const alpha = enableHistoricalFading
-        ? sam.computeHistoricalAlpha(sb.candleIndex, lastBarIdx, visMode)
-        : (isLatestBreak ? 1.0 : 0.45);
+        ? Math.max(0.68, sam.computeHistoricalAlpha(sb.candleIndex, lastBarIdx, visMode))
+        : (isLatestBreak ? 1.0 : 0.72);
 
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -2344,54 +2364,62 @@ export function renderChart(
           return (b.qualityScore ?? 0) - (a.qualityScore ?? 0);
         };
 
+        // Full-history SMC setups across ALL days & timeframes visible in current viewport (plus latest active setup)
+        const allCandidates = (smcData.allSetups && smcData.allSetups.length > 0 ? smcData.allSetups : (smcData.confirmedSetups || []))
+          .filter((s) =>
+            (s.qualityScore ?? 0) >= 60 &&
+            !s.isRejectedPermanently &&
+            s.setupType !== 'SESSION_LIQUIDITY' &&
+            s.signalState !== 'REJECTED' &&
+            ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence && isBullishMaster) ||
+             (s.direction === 'BEARISH' && smcCfg.showBearishConfluence && isBearishMaster))
+          );
+
+        // 1. Primary active live setup (not SL-violated)
         const activeBullish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBullishConfluence && isBullishMaster && (lastBarIdx - s.candleIndex <= 60))
+          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBullishConfluence && isBullishMaster)
           .sort(rankSetup)[0];
 
         const activeBearish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBearishConfluence && isBearishMaster && (lastBarIdx - s.candleIndex <= 60))
+          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBearishConfluence && isBearishMaster)
           .sort(rankSetup)[0];
 
-        if (activeBullish && activeBearish) {
-          // Strictly adhere to Higher-Timeframe Bias to eliminate conflicting simultaneous signals
-          if (smcData.htfBias === 'BULLISH') {
-            setupsToRender = [activeBullish];
-          } else if (smcData.htfBias === 'BEARISH') {
-            setupsToRender = [activeBearish];
-          } else if (activeBullish.qualityScore !== activeBearish.qualityScore) {
-            setupsToRender = [activeBullish.qualityScore > activeBearish.qualityScore ? activeBullish : activeBearish];
-          } else {
-            setupsToRender = [activeBullish.candleIndex >= activeBearish.candleIndex ? activeBullish : activeBearish];
-          }
-        } else if (activeBullish) {
-          if (smcData.htfBias !== 'BEARISH' || activeBullish.setupType === 'CHOCH_REVERSAL') {
-            setupsToRender = [activeBullish];
-          }
-        } else if (activeBearish) {
-          if (smcData.htfBias !== 'BULLISH' || activeBearish.setupType === 'CHOCH_REVERSAL') {
-            setupsToRender = [activeBearish];
-          }
+        const primaryActive: SmcConfirmedSetup | undefined =
+          activeBullish && activeBearish
+            ? (smcData.htfBias === 'BULLISH'
+                ? activeBullish
+                : smcData.htfBias === 'BEARISH'
+                ? activeBearish
+                : activeBullish.qualityScore >= activeBearish.qualityScore
+                ? activeBullish
+                : activeBearish)
+            : activeBullish || activeBearish;
+
+        if (primaryActive) {
+          setupsToRender.push(primaryActive);
         }
 
-        // If no currently open setup exists, show most recent valid/TARGET_HIT setup (never SL-violated dead setups)
-        if (setupsToRender.length === 0 && smcData.allSetups && smcData.allSetups.length > 0) {
-          const recentCompleted = smcData.allSetups
-            .filter((s) =>
-              (s.status === 'TARGET_HIT' || (!isSlViolatedByPrice(s) && (s.status === 'CONFIRMED' || s.status === 'RETESTING'))) &&
-              (s.qualityScore ?? 0) >= 60 &&
-              !s.isRejectedPermanently &&
-              !s.retestFailed &&
-              s.signalState !== 'INVALIDATED' &&
-              s.signalState !== 'RETEST_FAILED' &&
-              (lastBarIdx - s.candleIndex <= 80) &&
-              ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence && isBullishMaster) ||
-               (s.direction === 'BEARISH' && smcCfg.showBearishConfluence && isBearishMaster))
-            )
-            .sort((a, b) => b.candleIndex - a.candleIndex)[0];
-          if (recentCompleted) {
-            setupsToRender = [recentCompleted];
+        // 2. Historical SMC setups across ALL past days overlapping the visible chart window
+        const histWindowStart = Math.max(0, startIdx - SMC_TRADE_LIFESPAN_BARS);
+        const historicalPool = allCandidates
+          .filter((s) =>
+            s.candleIndex >= histWindowStart &&
+            s.candleIndex <= endIdx &&
+            (!primaryActive || s.id !== primaryActive.id)
+          )
+          .sort((a, b) => b.candleIndex - a.candleIndex || (b.qualityScore ?? 0) - (a.qualityScore ?? 0));
+
+        const maxVisibleSetups = isCleanMode ? 3 : 16;
+        const minBarGap = isCleanMode ? 18 : Math.max(10, Math.floor((endIdx - startIdx) / 14));
+        for (const h of historicalPool) {
+          if (setupsToRender.length >= maxVisibleSetups) break;
+          const tooClose = setupsToRender.some((existing) => Math.abs(existing.candleIndex - h.candleIndex) < minBarGap);
+          if (!tooClose) {
+            setupsToRender.push(h);
           }
         }
+        // Render oldest-to-newest so the latest setup always sits cleanly on top
+        setupsToRender.sort((a, b) => a.candleIndex - b.candleIndex);
       }
 
       for (const st of setupsToRender) {
@@ -2502,11 +2530,14 @@ export function renderChart(
         // Lock bracket start strictly at the setup/breakout candle (st.candleIndex)
         const bracketStartIdx = st.candleIndex;
         const startX = (bracketStartIdx - startIdx) * candleW + candleW / 2;
-        // Dynamic horizontal bracket expansion: bracket dynamically expands with every new candle that forms
-        const endX = Math.max(
-          (endCandleIdx - startIdx) * candleW + candleW / 2,
-          currentCandleX + candleW * 0.5
-        );
+        const rawEndX = (endCandleIdx - startIdx) * candleW + candleW / 2;
+        // Completed historical setups terminate cleanly at their TP/SL/expiry candle; active setups expand dynamically
+        const endX = isTradeOver
+          ? rawEndX
+          : Math.max(rawEndX, currentCandleX + candleW * 0.5);
+
+        // Skip setups completely outside the visible viewport
+        if (endX < 0 || startX > chartW) continue;
 
         const minBracketW = Math.max(36 * dpr, candleW * 2);
         const x = Math.max(8 * dpr, Math.min(startX, maxRightX - minBracketW));

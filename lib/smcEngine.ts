@@ -3267,8 +3267,8 @@ export function detectAll16SmcSetups(
     return Math.max(a * factor, lastPrice * 0.0003);
   };
 
-  // ── Strategy 1: BOS Continuation Scanner
-  const recentBOS = breaks.filter((b) => b.breakType === 'BOS').slice(-8);
+  // ── Strategy 1: BOS Continuation Scanner (full chart history)
+  const recentBOS = breaks.filter((b) => b.breakType === 'BOS').slice(-120);
   for (const brk of recentBOS) {
     const isBull = brk.isBullish;
     const entry = brk.price;
@@ -3295,8 +3295,8 @@ export function detectAll16SmcSetups(
     ));
   }
 
-  // ── Strategy 2: CHoCH / MSS Reversal Scanner
-  const recentCHoCH = breaks.filter((b) => b.breakType === 'CHoCH' || b.breakType === 'MSS').slice(-8);
+  // ── Strategy 2: CHoCH / MSS Reversal Scanner (full chart history)
+  const recentCHoCH = breaks.filter((b) => b.breakType === 'CHoCH' || b.breakType === 'MSS').slice(-120);
   for (const brk of recentCHoCH) {
     const isBull = brk.isBullish;
     const entry = brk.price;
@@ -3339,8 +3339,8 @@ export function detectAll16SmcSetups(
     return null;
   };
 
-  // ── Strategy 3: Liquidity Sweep Reversal (Mirrored BSL/SSL)
-  const recentSweeps = sweeps.slice(-8);
+  // ── Strategy 3: Liquidity Sweep Reversal (Mirrored BSL/SSL — full chart history)
+  const recentSweeps = sweeps.slice(-100);
   for (const sw of recentSweeps) {
     const isBull = !sw.isHighSweep; // SSL sweep = Bullish reversal
     const confirmIdx = findSweepConfirmationBar(sw, isBull);
@@ -3380,8 +3380,8 @@ export function detectAll16SmcSetups(
     ));
   }
 
-  // ── Strategy 4: Equal Highs & Equal Lows (EQH / EQL Sweep)
-  const eqSwept = sweeps.filter((s) => s.label.includes('EQH') || s.label.includes('EQL')).slice(-8);
+  // ── Strategy 4: Equal Highs & Equal Lows (EQH / EQL Sweep — full chart history)
+  const eqSwept = sweeps.filter((s) => s.label.includes('EQH') || s.label.includes('EQL')).slice(-25);
   for (const eq of eqSwept) {
     const isBull = !eq.isHighSweep;
     const confirmIdx = findSweepConfirmationBar(eq, isBull);
@@ -3422,7 +3422,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 5: Fair Value Gap (FVG) Retracement (Genuine unmitigated gap with ATR displacement)
-  const activeFvgs = fvgs.filter((f) => !f.isInverse && !f.isInvalidated && !f.isMitigated && f.state === 'FRESH').slice(-8);
+  const activeFvgs = fvgs.filter((f) => !f.isInverse && !f.isInvalidated && !f.isMitigated && f.state === 'FRESH').slice(-25);
   for (const fvg of activeFvgs) {
     const isBull = fvg.isBullish;
     const impulseBar = candles[fvg.startIndex + 1];
@@ -3462,7 +3462,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 6: Order Block (OB) Retest in Discount/Premium
-  const activeObs = orderBlocks.filter((ob) => !ob.isMitigated).slice(-8);
+  const activeObs = orderBlocks.filter((ob) => !ob.isMitigated).slice(-25);
   for (const ob of activeObs) {
     const isBull = ob.isBullish;
 
