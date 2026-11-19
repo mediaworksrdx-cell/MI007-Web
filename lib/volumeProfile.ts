@@ -17,6 +17,7 @@ export interface UnifiedVolumeProfile {
   hasVolume: boolean;
   volumeQuality: VolumeQuality;
   estimatedDelta: true;
+  distributionModel: 'OHLCV_UNIFORM_APPROXIMATION';
   buckets: UnifiedVolumeBucket[];
   pocPrice: number;
   vahPrice: number;
@@ -41,18 +42,24 @@ function roundPrice(v: number): number {
 
 /**
  * Determines whether candle volume represents actual traded volume or missing/constant/estimated data.
+ * Critical 01: Strictly inspects candle `volumeEstimated` flag so estimated/synthetic volume is never classified ACTUAL.
  */
 export function detectVolumeQuality(candles: Candle[]): VolumeQuality {
   if (!candles || candles.length === 0) return 'ESTIMATED';
   const sample = candles.slice(-120);
   let positive = 0;
+  let estimatedFlagged = 0;
   const uniqueVols = new Set<number>();
   for (const c of sample) {
+    if ((c as any)?.volumeEstimated === true) {
+      estimatedFlagged++;
+    }
     if (typeof c.volume === 'number' && Number.isFinite(c.volume) && c.volume > 0) {
       positive++;
       uniqueVols.add(Math.round(c.volume));
     }
   }
+  if (estimatedFlagged > sample.length * 0.2) return 'ESTIMATED';
   const positiveRatio = positive / sample.length;
   if (positiveRatio < 0.7 || uniqueVols.size < Math.min(8, Math.max(3, Math.floor(positive * 0.4)))) {
     return 'ESTIMATED';
@@ -79,6 +86,7 @@ export function computeVolumeProfile(
     hasVolume: false,
     volumeQuality,
     estimatedDelta: true,
+    distributionModel: 'OHLCV_UNIFORM_APPROXIMATION',
     buckets: [],
     pocPrice: 0,
     vahPrice: 0,
@@ -114,6 +122,7 @@ export function computeVolumeProfile(
       hasVolume: true,
       volumeQuality,
       estimatedDelta: true,
+      distributionModel: 'OHLCV_UNIFORM_APPROXIMATION',
       buckets: [
         {
           priceLow: p,
@@ -258,6 +267,7 @@ export function computeVolumeProfile(
     hasVolume: true,
     volumeQuality,
     estimatedDelta: true,
+    distributionModel: 'OHLCV_UNIFORM_APPROXIMATION',
     buckets,
     pocPrice: buckets[pocIdx].priceMid,
     vahPrice: buckets[vaHigh].priceHigh,

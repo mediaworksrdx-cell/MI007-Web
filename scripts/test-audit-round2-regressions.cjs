@@ -174,7 +174,42 @@ function makeSeries(n, volFn, flatEvery = 0) {
     }
   }
   assert.ok(foundNonActiveInHistory, `SMC-A: setupHistory should record stopped-out/expired setups (totalHistory=${totalHistory})`);
-  console.log('PASS [7/7] SMC setupHistory preserves stopped-out / expired setups (SMC-A)');
+  console.log('PASS [7/10] SMC setupHistory preserves stopped-out / expired setups (SMC-A)');
 }
 
-console.log('\nALL 7 ROUND-2 AUDIT REGRESSION TESTS PASSED!');
+// TEST 8: Critical 01 + Important 06 — volumeEstimated flag must classify ESTIMATED & never bypass VP gate
+{
+  const estCandles = makeSeries(150, (i) => 1000 + (i % 19) * 350).map((c) => ({ ...c, volumeEstimated: true }));
+  const res = analyzeMi007Strategy(estCandles, { symbol: 'EST_FLAG_TEST', timeframe: '1H' });
+  assert.strictEqual(res.volumeProfile.volumeQuality, 'ESTIMATED', 'Critical 01: volumeEstimated=true must classify as ESTIMATED');
+  if (res.activeSetup) {
+    assert.strictEqual(res.activeSetup.scoreBreakdown.volumeProfile, 0, 'Critical 01: VP score must be 0 when volumeEstimated=true');
+    assert.strictEqual(res.activeSetup.isTradeable, false, 'Important 06: must never bypass VP execution gate when volume is estimated');
+    assert.strictEqual(res.activeSetup.status, 'WAIT_CONFIRMATION', 'Important 05: non-tradeable setup must not have status ACTIVE');
+  }
+  console.log('PASS [8/10] volumeEstimated flag & strict non-bypassable VP gate (Critical 01 + Important 06)');
+}
+
+// TEST 9: Important 05 — status === ACTIVE iff isTradeable, and score === sum(checklist.awarded)
+{
+  const series = makeSeries(160, (i) => 1200 + (i % 17) * 410);
+  const res = analyzeMi007Strategy(series, { symbol: 'STATUS_SYNC', timeframe: '1H' });
+  if (res.activeSetup) {
+    const st = res.activeSetup;
+    const sum = st.checklist.reduce((a, b) => a + b.awarded, 0);
+    assert.strictEqual(st.score, Math.min(100, sum), 'Score must exactly match checklist sum');
+    assert.strictEqual(st.status === 'ACTIVE', st.isTradeable, 'Important 05: status ACTIVE must strictly match isTradeable');
+  }
+  console.log('PASS [9/10] Status/isTradeable consistency & checklist sum parity (Important 05)');
+}
+
+// TEST 10: Critical 02 & 03 — Transparent OHLCV proxy / distributionModel metadata
+{
+  const series = makeSeries(150, (i) => 1000 + (i % 13) * 250);
+  const vp = computeVolumeProfile(series, { bucketCount: 40 });
+  assert.strictEqual(vp.distributionModel, 'OHLCV_UNIFORM_APPROXIMATION');
+  assert.strictEqual(vp.estimatedDelta, true);
+  console.log('PASS [10/10] Transparent OHLCV approximation & delta proxy metadata (Critical 02 + 03)');
+}
+
+console.log('\nALL 10 AUDIT REGRESSION TESTS PASSED!');

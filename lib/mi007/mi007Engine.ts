@@ -3,6 +3,7 @@ import { computeVolumeProfile, detectVolumeQuality as detectSharedVolumeQuality 
 import {
   calculateSMC,
   computeAtrSeries,
+  getSmcTradingDayKey,
   inferCandleIntervalMs,
   isCandleClosed,
   timeframeToMs,
@@ -152,7 +153,8 @@ export function buildRangeProfile(
 
 function computeVolumeProfiles(
   closedCandles: Candle[],
-  majorSwings: SmcSwingPoint[]
+  majorSwings: SmcSwingPoint[],
+  symbol?: string
 ): Mi007VolumeProfile {
   const n = closedCandles.length;
   const volumeQuality = detectSharedVolumeQuality(closedCandles);
@@ -177,11 +179,11 @@ function computeVolumeProfiles(
     };
   }
 
-  // 2. Session & Daily Profiles by UTC day boundary
+  // 2. Important 04: Session & Daily Profiles aligned to exchange-specific trading day (IST NSE / NY US / UTC Crypto)
   const lastTime = closedCandles[n - 1]?.openTime ?? 0;
-  const dayStartMs = Math.floor(lastTime / 86_400_000) * 86_400_000;
+  const currentSessionKey = getSmcTradingDayKey(lastTime, symbol);
   let sessionStart = n - 1;
-  while (sessionStart > 0 && closedCandles[sessionStart - 1].openTime >= dayStartMs) {
+  while (sessionStart > 0 && getSmcTradingDayKey(closedCandles[sessionStart - 1].openTime, symbol) === currentSessionKey) {
     sessionStart--;
   }
   const sessRes = n - sessionStart >= 3 ? buildRangeProfile(closedCandles, sessionStart, n - 1, 40).summary : null;
@@ -190,8 +192,8 @@ function computeVolumeProfiles(
   let prevDayEnd = sessionStart - 1;
   let prevDayStart = Math.max(0, prevDayEnd);
   if (prevDayEnd >= 2) {
-    const prevDayFloor = Math.floor(closedCandles[prevDayEnd].openTime / 86_400_000) * 86_400_000;
-    while (prevDayStart > 0 && closedCandles[prevDayStart - 1].openTime >= prevDayFloor) {
+    const prevSessionKey = getSmcTradingDayKey(closedCandles[prevDayEnd].openTime, symbol);
+    while (prevDayStart > 0 && getSmcTradingDayKey(closedCandles[prevDayStart - 1].openTime, symbol) === prevSessionKey) {
       prevDayStart--;
     }
   }
@@ -816,11 +818,11 @@ function evaluateDirectionalSetup(
     },
     {
       id: 'of',
-      label: `Order Flow (${of.volumeQuality === 'ACTUAL' ? 'Actual Vol' : 'Est. Vol'})`,
+      label: `Order Flow (${of.volumeQuality === 'ACTUAL' ? 'OHLCV Delta Proxy' : 'Unavailable'})`,
       status: ofAligned ? 'Confirmed' : ofPts > 0 ? 'Pending' : 'Unconfirmed',
       weight: 10,
       awarded: ofPts,
-      detail: of.note,
+      detail: of.volumeQuality === 'ACTUAL' ? `${of.note} (OHLCV close-position proxy, not tick tape)` : of.note,
     },
     {
       id: 'candle',
@@ -836,11 +838,10 @@ function evaluateDirectionalSetup(
   const verifiedTotalScore = Math.min(100, checklist.reduce((acc, item) => acc + item.awarded, 0));
   const verifiedClassification = classifyScore(verifiedTotalScore);
 
-  // Strict institutional execution gate:
-  // - Score >= 60, R:R >= 1:2, strictly positive ordered targets, non-stale entry
-  // - Closed-candle entry confirmation required (Section 5: Entry after confirmation)
-  // - Directional Volume Profile support/resistance confluence when actual volume exists
-  const vpGate = hasActualVp ? vpEntryAligned : true;
+  // Strict institutional execution gate (Important 05 & 06):
+  // - Never bypass Volume Profile confluence when actual volume is unavailable
+  // - status === 'ACTIVE' iff isTradeable === true (zero status/isTradeable disagreement)
+  const vpGate = hasActualVp && vpEntryAligned;
   const isTradeable =
     verifiedTotalScore >= 60 &&
     riskReward1 >= 2.0 &&
@@ -865,7 +866,7 @@ function evaluateDirectionalSetup(
     riskReward3,
     candleIndex: anchorBarIdx,
     timestamp: closedCandles[anchorBarIdx]?.openTime ?? last.openTime,
-    status: totalScore >= 70 && entryCandleConfirmed ? 'ACTIVE' : 'WAIT_CONFIRMATION',
+    status: isTradeable ? 'ACTIVE' : 'WAIT_CONFIRMATION',
     checklist,
     scoreBreakdown: {
       htfStructure: htfPts,
@@ -924,8 +925,8 @@ export function analyzeMi007Strategy(
   // Module 01: Market Regime
   const regime = computeMarketRegime(closedCandles, smc, atrSeries);
 
-  // Module 04: Volume Profile (Fixed Range, Session, Daily, Weekly, Anchored, HVN/LVN, POC migration)
-  const volumeProfile = computeVolumeProfiles(closedCandles, majorSwings);
+  // Module 04: Volume Profile (Fixed Range, Exchange-Session, Daily, Weekly, Anchored, HVN/LVN, POC migration)
+  const volumeProfile = computeVolumeProfiles(closedCandles, majorSwings, symbol);
 
   // Module 05: Fibonacci Confluence (anchored strictly to latest confirmed BOS/MSS impulse leg)
   const fibonacci = computeFibonacciConfluence(closedCandles, majorSwings, smc.structureBreaks);
