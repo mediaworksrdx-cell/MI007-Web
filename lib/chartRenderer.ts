@@ -1160,24 +1160,24 @@ export function renderChart(
         const barTW = maxBarW * totalFrac;
         const buyR = b.totalVolume > 0 ? b.buyVolume / b.totalVolume : 0.5;
         const buyW = barTW * buyR, sellW = barTW - buyW;
-        // Right-aligned Volume Profile histogram docked to the right price axis
-        ctx.fillStyle = `rgba(255,23,68,${0.48*alphaM})`; ctx.fillRect(chartW - barTW, y, sellW, barH);
-        ctx.fillStyle = `rgba(0,230,118,${0.48*alphaM})`; ctx.fillRect(chartW - buyW, y, buyW, barH);
+        // Left-aligned Volume Profile histogram docked to the left edge of the chart
+        ctx.fillStyle = `rgba(255,23,68,${0.48*alphaM})`; ctx.fillRect(0, y, sellW, barH);
+        ctx.fillStyle = `rgba(0,230,118,${0.48*alphaM})`; ctx.fillRect(sellW, y, buyW, barH);
       }
       // VAH/VAL/POC lines
       if (vpData.vahPrice >= pMin && vpData.vahPrice <= pMax) {
         const vy = priceToY(vpData.vahPrice);
         ctx.save(); ctx.setLineDash([4*dpr,4*dpr]); ctx.strokeStyle='rgba(66,165,245,0.7)'; ctx.lineWidth=1*dpr;
         ctx.beginPath(); ctx.moveTo(0,vy); ctx.lineTo(chartW,vy); ctx.stroke(); ctx.setLineDash([]);
-        ctx.font=`bold ${8*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle='rgba(66,165,245,0.9)'; ctx.textAlign='right';
-        ctx.fillText(`VAH: ${formatPrice(vpData.vahPrice)}`, chartW-4*dpr, vy-4*dpr); ctx.restore();
+        ctx.font=`bold ${8*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle='rgba(66,165,245,0.9)'; ctx.textAlign='left';
+        ctx.fillText(`VAH: ${formatPrice(vpData.vahPrice)}`, 4*dpr, vy-4*dpr); ctx.restore();
       }
       if (vpData.valPrice >= pMin && vpData.valPrice <= pMax) {
         const vy = priceToY(vpData.valPrice);
         ctx.save(); ctx.setLineDash([4*dpr,4*dpr]); ctx.strokeStyle='rgba(66,165,245,0.7)'; ctx.lineWidth=1*dpr;
         ctx.beginPath(); ctx.moveTo(0,vy); ctx.lineTo(chartW,vy); ctx.stroke(); ctx.setLineDash([]);
-        ctx.font=`bold ${8*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle='rgba(66,165,245,0.9)'; ctx.textAlign='right';
-        ctx.fillText(`VAL: ${formatPrice(vpData.valPrice)}`, chartW-4*dpr, vy+2*dpr); ctx.restore();
+        ctx.font=`bold ${8*dpr}px "JetBrains Mono",monospace`; ctx.fillStyle='rgba(66,165,245,0.9)'; ctx.textAlign='left';
+        ctx.fillText(`VAL: ${formatPrice(vpData.valPrice)}`, 4*dpr, vy+2*dpr); ctx.restore();
       }
       if (vpData.pocPrice >= pMin && vpData.pocPrice <= pMax) {
         const py = priceToY(vpData.pocPrice);

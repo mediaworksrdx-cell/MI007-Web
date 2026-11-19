@@ -41,16 +41,17 @@ export function renderMi007Overlay({
 
   ctx.save();
 
-  // ── 1A. Split Volume Profile (Blue/White 70% VA) + Estimated Delta Profile (Green/Red) ──
-  if (showVolPro && vp.volumeQuality === 'ACTUAL' && vp.bins.length > 0 && vp.fixedRange.totalVolume > 0) {
+  // ── 1A. Left-Docked Split Volume Profile (Blue/White 70% VA) + Estimated Delta Profile (Green/Red) ──
+  const hasLeftVolPro = Boolean(showVolPro && vp.volumeQuality === 'ACTUAL' && vp.bins.length > 0 && vp.fixedRange.totalVolume > 0);
+  const volMaxW = Math.min(72 * dpr, chartW * 0.10);
+  const deltaMaxW = Math.min(46 * dpr, chartW * 0.065);
+  const leftEdge = 2 * dpr;
+  if (hasLeftVolPro) {
     const maxBinVol = Math.max(...vp.bins.map((b) => b.volume), 1);
     const maxDelta = Math.max(...vp.bins.map((b) => Math.abs(b.buyVolume - b.sellVolume)), 1);
-    const volMaxW = Math.min(72 * dpr, chartW * 0.10);
-    const deltaMaxW = Math.min(46 * dpr, chartW * 0.065);
-    const rightEdge = chartW - 2 * dpr;
-    const spineX = rightEdge - volMaxW;
+    const spineX = leftEdge + deltaMaxW;
 
-    // Subtle vertical spine separating Delta Profile (left) and Volume Profile (right)
+    // Subtle vertical spine separating Estimated Delta Profile (left) and Volume Profile (right)
     ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.25)' : 'rgba(71, 85, 105, 0.22)';
     ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
@@ -67,7 +68,7 @@ export function renderMi007Overlay({
       const inVa = bin.priceMid >= vp.fixedRange.val && bin.priceMid <= vp.fixedRange.vah;
       const isPocBin = Math.abs(bin.priceMid - vp.fixedRange.poc) <= (bin.priceHigh - bin.priceLow) * 0.6;
 
-      // Right side: Volume Profile (Blue inside 70% VA, White/Slate outside VA, Gold on POC)
+      // Right of spine: Volume Profile (Blue inside 70% VA, White/Slate outside VA, Gold on POC)
       const vW = (bin.volume / maxBinVol) * volMaxW;
       if (vW > 0.5) {
         ctx.fillStyle = isPocBin
@@ -78,7 +79,7 @@ export function renderMi007Overlay({
         ctx.fillRect(spineX, yRect, vW, barH);
       }
 
-      // Left side: Estimated Delta Profile (Green positive delta, Red/Orange negative delta)
+      // Left of spine: Estimated Delta Profile (Green positive delta, Red/Orange negative delta)
       const delta = bin.buyVolume - bin.sellVolume;
       const dW = (Math.abs(delta) / maxDelta) * deltaMaxW;
       if (dW > 0.5) {
@@ -92,9 +93,9 @@ export function renderMi007Overlay({
     // Header micro-label above split profile (transparently marks Estimated Delta)
     ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
     ctx.fillStyle = isDark ? 'rgba(148, 163, 184, 0.85)' : 'rgba(71, 85, 105, 0.85)';
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('EST. DELTA | VOL PRO', spineX, 6 * dpr);
+    ctx.fillText('EST. DELTA | VOL PRO', leftEdge + 2 * dpr, 6 * dpr);
 
     // Key Institutional Horizontal Bands: POC (Gold), Prior Daily POC (Yellow), VAH & VAL
     const drawKeyLevel = (price: number, label: string, color: string, dashed: boolean, thick = false) => {
@@ -106,8 +107,8 @@ export function renderMi007Overlay({
       ctx.lineWidth = thick ? 2.0 * dpr : 1.2 * dpr;
       if (dashed) ctx.setLineDash([5 * dpr, 3 * dpr]);
       ctx.beginPath();
-      ctx.moveTo(thick ? chartW * 0.15 : chartW * 0.38, y);
-      ctx.lineTo(rightEdge, y);
+      ctx.moveTo(leftEdge, y);
+      ctx.lineTo(thick ? chartW * 0.85 : chartW * 0.62, y);
       ctx.stroke();
       ctx.setLineDash([]);
 
@@ -115,7 +116,7 @@ export function renderMi007Overlay({
       const padX = 4 * dpr;
       const tw = ctx.measureText(label).width + padX * 2;
       const th = 13 * dpr;
-      const bx = rightEdge - tw - 3 * dpr;
+      const bx = leftEdge + 3 * dpr;
       const by = y - th - 2 * dpr;
       ctx.fillStyle = thick ? color : (isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.94)');
       ctx.beginPath();
@@ -397,7 +398,9 @@ export function renderMi007Overlay({
   const setup = data.activeSetup;
   const checklistCount = setup ? setup.checklist.length : 0;
   const cardH = (setup ? 116 + checklistCount * 15 : 72) * dpr;
-  const cardX = 12 * dpr;
+  // Clear the left-docked Volume Profile when Vol Pro is active so neither overlaps the other
+  const leftVolClearX = hasLeftVolPro ? leftEdge + deltaMaxW + volMaxW + 10 * dpr : 12 * dpr;
+  const cardX = Math.min(leftVolClearX, Math.max(12 * dpr, chartW - cardW - 12 * dpr));
   const cardY = 34 * dpr;
 
   if (showSmc && chartW >= 360 * dpr && chartH >= cardY + cardH + 20 * dpr) {

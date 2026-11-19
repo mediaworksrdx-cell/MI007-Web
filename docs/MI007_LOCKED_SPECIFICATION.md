@@ -83,7 +83,7 @@ Both **Chart VPVR** (`calculateVolumeProfile` in `lib/chartRenderer.ts`) and **M
 
 1. **Visual Layers Under `MI-007`:**
    - **`Vol Pro` Sub-Toggle:**
-     - Right-docked **Split Volume Profile** (Blue 70% VA / Slate outside / Gold POC) + **Estimated Delta Profile** (Green/Red, explicitly labeled `EST. DELTA | VOL PRO`) + Gold `POC`, Yellow `PD-POC` (exchange-session aligned via `getSmcTradingDayKey`), Blue `VAH`/`VAL`.
+     - Left-docked **Split Volume Profile** (Blue 70% VA / Slate outside / Gold POC) + **Estimated Delta Profile** (Green/Red, explicitly labeled `EST. DELTA | VOL PRO`) + Gold `POC`, Yellow `PD-POC` (exchange-session aligned via `getSmcTradingDayKey`), Blue `VAH`/`VAL` (with MI-007 HUD card offset cleanly to the right of the profile so neither overlaps).
      - **Full-History Order Flow Volume Bubbles** (`O(N)` trailing 20-bar SMA across 100% of loaded candles, `≥ 1.75×` volume surge, bright Gold outer ring on passive absorption `≥ 2.0×` + compact body/wick, strictly gated on non-estimated actual volume).
    - **`Fibo` Sub-Toggle:**
      - **Thick Black Lines Only** (`2.2px` solid key levels, `1.5px` dashed intermediate/extensions, black dashed diagonal anchor line, crisp black-on-white labels — **no colored shaded bands**).
