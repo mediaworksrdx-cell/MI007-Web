@@ -93,91 +93,163 @@ export function renderMi007Overlay({
     drawVpLine(vp.fixedRange.val, `VAL`, 'rgba(148, 163, 184, 0.75)', true);
   }
 
-  // ── 2. Fibonacci Confluence (Confirmed Major Swing Anchor + OTE Zone) ─────────
+  // ── 2. Fibonacci Confluence (TradingView-style Shaded Bands + Swing Anchor + OTE Zone) ──
   const fib = data.fibonacci;
-  if (showFibo && fib) {
+  if (showFibo && fib && fib.levels.length > 0) {
     const highX = (fib.swingHigh.index - startIdx) * candleW + candleW / 2;
     const lowX = (fib.swingLow.index - startIdx) * candleW + candleW / 2;
     const highY = priceToY(fib.swingHigh.price);
     const lowY = priceToY(fib.swingLow.price);
 
     const anchorStartIdx = Math.min(fib.swingHigh.index, fib.swingLow.index);
-    const fibStartX = Math.max(8 * dpr, (anchorStartIdx - startIdx) * candleW + candleW / 2);
-    const fibEndX = Math.min(chartW - 4 * dpr, (candles.length - 1 - startIdx) * candleW + candleW * 0.5);
+    const rawFibStartX = (anchorStartIdx - startIdx) * candleW + candleW / 2;
+    const fibStartX = Math.max(8 * dpr, Math.min(rawFibStartX, chartW - 80 * dpr));
+    const fibEndX = chartW - 4 * dpr;
 
-    if (fibEndX > fibStartX + 16 * dpr) {
+    if (fibEndX > fibStartX + 20 * dpr) {
+      const levelByRatio = new Map<number, number>();
+      for (const lv of fib.levels) levelByRatio.set(lv.ratio, lv.price);
+
+      // Shaded horizontal Fibonacci bands (TradingView style, high visibility in Light & Dark)
+      const bandSpecs: Array<{ r1: number; r2: number; darkFill: string; lightFill: string }> = [
+        { r1: 0.0,   r2: 0.236, darkFill: 'rgba(148, 163, 184, 0.08)', lightFill: 'rgba(100, 116, 139, 0.09)' },
+        { r1: 0.236, r2: 0.382, darkFill: 'rgba(56, 189, 248, 0.10)',  lightFill: 'rgba(2, 132, 199, 0.10)' },
+        { r1: 0.382, r2: 0.5,   darkFill: 'rgba(16, 185, 129, 0.10)',  lightFill: 'rgba(5, 150, 105, 0.10)' },
+        { r1: 0.5,   r2: 0.618, darkFill: 'rgba(245, 158, 11, 0.12)',  lightFill: 'rgba(217, 119, 6, 0.11)' },
+        { r1: 0.618, r2: 0.786, darkFill: 'rgba(250, 204, 21, 0.22)',  lightFill: 'rgba(234, 179, 8, 0.22)' }, // OTE Golden Zone
+        { r1: 0.786, r2: 1.0,   darkFill: 'rgba(244, 63, 94, 0.11)',   lightFill: 'rgba(225, 29, 72, 0.10)' },
+      ];
+
+      for (const b of bandSpecs) {
+        const p1 = levelByRatio.get(b.r1);
+        const p2 = levelByRatio.get(b.r2);
+        if (p1 === undefined || p2 === undefined) continue;
+        const y1 = priceToY(p1);
+        const y2 = priceToY(p2);
+        const top = Math.max(0, Math.min(y1, y2));
+        const bot = Math.min(chartH, Math.max(y1, y2));
+        if (bot > top) {
+          ctx.fillStyle = isDark ? b.darkFill : b.lightFill;
+          ctx.fillRect(fibStartX, top, fibEndX - fibStartX, bot - top);
+        }
+      }
+
+      // OTE Golden Zone watermark inside 0.618 – 0.786 band
+      const yOteTop = priceToY(fib.oteZone[1]);
+      const yOteBot = priceToY(fib.oteZone[0]);
+      const oteMidY = (yOteTop + yOteBot) / 2;
+      if (Math.abs(yOteBot - yOteTop) >= 14 * dpr && oteMidY > 16 * dpr && oteMidY < chartH - 16 * dpr) {
+        const hudClearX = showSmc ? Math.min(272 * dpr, chartW * 0.36) : 14 * dpr;
+        const oteLabelX = Math.max(fibStartX + 8 * dpr, hudClearX);
+        ctx.save();
+        ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = isDark ? 'rgba(253, 224, 71, 0.90)' : 'rgba(161, 98, 7, 0.92)';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`★ OTE ZONE (0.618 – 0.786)`, oteLabelX, oteMidY);
+        ctx.restore();
+      }
+
       // Diagonal anchor trendline connecting confirmed Swing Low <-> Swing High
       ctx.save();
-      ctx.strokeStyle = fib.direction === 'BULLISH' ? 'rgba(16, 185, 129, 0.70)' : 'rgba(244, 63, 94, 0.70)';
-      ctx.lineWidth = 1.2 * dpr;
-      ctx.setLineDash([4 * dpr, 3 * dpr]);
+      ctx.strokeStyle = fib.direction === 'BULLISH'
+        ? (isDark ? 'rgba(16, 185, 129, 0.92)' : 'rgba(5, 150, 105, 0.92)')
+        : (isDark ? 'rgba(244, 63, 94, 0.92)' : 'rgba(225, 29, 72, 0.92)');
+      ctx.lineWidth = 2.0 * dpr;
+      ctx.setLineDash([6 * dpr, 4 * dpr]);
       ctx.beginPath();
       ctx.moveTo(lowX, lowY);
       ctx.lineTo(highX, highY);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Anchor dots on confirmed swing extremes
+      // Ringed anchor dots + Swing Low / Swing High tags
       for (const pt of [
-        { x: lowX, y: lowY, col: '#10B981' },
-        { x: highX, y: highY, col: '#F43F5E' },
+        { x: lowX, y: lowY, col: '#10B981', tag: fib.direction === 'BULLISH' ? 'FIB 1.00 LOW' : 'FIB 0.00 LOW', below: true },
+        { x: highX, y: highY, col: '#F43F5E', tag: fib.direction === 'BULLISH' ? 'FIB 0.00 HIGH' : 'FIB 1.00 HIGH', below: false },
       ]) {
         if (pt.x >= 0 && pt.x <= chartW && pt.y >= 0 && pt.y <= chartH) {
           ctx.fillStyle = pt.col;
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y, 3.2 * dpr, 0, Math.PI * 2);
+          ctx.arc(pt.x, pt.y, 4.5 * dpr, 0, Math.PI * 2);
           ctx.fill();
+          ctx.strokeStyle = isDark ? '#0F172A' : '#FFFFFF';
+          ctx.lineWidth = 1.6 * dpr;
+          ctx.stroke();
+
+          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          const tw = ctx.measureText(pt.tag).width + 8 * dpr;
+          const th = 12 * dpr;
+          const bx = Math.max(6 * dpr, Math.min(pt.x - tw / 2, chartW - tw - 6 * dpr));
+          const by = pt.below ? Math.min(chartH - th - 4 * dpr, pt.y + 7 * dpr) : Math.max(4 * dpr, pt.y - th - 7 * dpr);
+          ctx.fillStyle = pt.col;
+          ctx.beginPath();
+          ctx.roundRect(bx, by, tw, th, 3 * dpr);
+          ctx.fill();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(pt.tag, bx + tw / 2, by + th / 2);
         }
       }
       ctx.restore();
 
-      // Soft OTE Zone fill (0.618 – 0.786)
-      const yOteTop = priceToY(fib.oteZone[1]);
-      const yOteBot = priceToY(fib.oteZone[0]);
-      if (yOteBot > 0 && yOteTop < chartH) {
-        ctx.fillStyle = fib.direction === 'BULLISH' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(244, 63, 94, 0.08)';
-        ctx.fillRect(fibStartX, Math.max(0, yOteTop), fibEndX - fibStartX, Math.min(chartH, yOteBot) - Math.max(0, yOteTop));
-      }
-
-      // Draw all standard Fibonacci retracement & extension levels with exact prices
-      // Avoid top-left MI-007 HUD card when placing text labels
-      const hudClearX = showSmc ? Math.min(270 * dpr, chartW * 0.36) : 12 * dpr;
-      const labelX = Math.min(fibEndX - 90 * dpr, Math.max(fibStartX + 4 * dpr, hudClearX));
-      ctx.font = `bold ${7 * dpr}px "JetBrains Mono",monospace`;
+      // Horizontal Fibonacci lines + high-contrast pill labels
+      const hudClearX = showSmc ? Math.min(272 * dpr, chartW * 0.36) : 14 * dpr;
+      const labelX = Math.min(fibEndX - 135 * dpr, Math.max(fibStartX + 6 * dpr, hudClearX));
+      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
 
       for (const lvl of fib.levels) {
         const y = priceToY(lvl.price);
-        if (y < 10 * dpr || y > chartH - 12 * dpr) continue;
+        if (y < 8 * dpr || y > chartH - 8 * dpr) continue;
 
         const isAnchor = lvl.ratio === 0.0 || lvl.ratio === 1.0;
+        const isEq = lvl.ratio === 0.5;
         const isShallow = lvl.ratio === 0.236 || lvl.ratio === 0.382;
-        ctx.strokeStyle = isAnchor
-          ? (isDark ? 'rgba(226, 232, 240, 0.55)' : 'rgba(71, 85, 105, 0.55)')
+
+        const lineColor = isAnchor
+          ? (isDark ? 'rgba(226, 232, 240, 0.90)' : 'rgba(15, 23, 42, 0.85)')
           : lvl.isOte
-          ? 'rgba(245, 158, 11, 0.75)'
+          ? (isDark ? 'rgba(251, 191, 36, 0.95)' : 'rgba(180, 83, 9, 0.95)')
+          : isEq
+          ? (isDark ? 'rgba(52, 211, 153, 0.90)' : 'rgba(5, 150, 105, 0.90)')
           : lvl.isExtension
-          ? 'rgba(16, 185, 129, 0.55)'
+          ? (isDark ? 'rgba(192, 132, 252, 0.90)' : 'rgba(126, 34, 206, 0.88)')
           : isShallow
-          ? 'rgba(148, 163, 184, 0.32)'
-          : 'rgba(148, 163, 184, 0.55)';
-        ctx.lineWidth = lvl.ratio === 0.705 || lvl.ratio === 0.618 || isAnchor ? 1.1 * dpr : 0.8 * dpr;
-        ctx.setLineDash(isAnchor ? [] : [3 * dpr, 3 * dpr]);
+          ? (isDark ? 'rgba(56, 189, 248, 0.65)' : 'rgba(2, 132, 199, 0.68)')
+          : (isDark ? 'rgba(148, 163, 184, 0.78)' : 'rgba(71, 85, 105, 0.78)');
+
+        ctx.save();
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = (isAnchor || lvl.ratio === 0.618 || lvl.ratio === 0.786 || isEq) ? 1.6 * dpr : 1.15 * dpr;
+        ctx.setLineDash(isAnchor || lvl.ratio === 0.618 || lvl.ratio === 0.786 ? [] : [5 * dpr, 3 * dpr]);
         ctx.beginPath();
         ctx.moveTo(fibStartX, y);
         ctx.lineTo(fibEndX, y);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        ctx.fillStyle = isAnchor
-          ? (isDark ? '#E2E8F0' : '#334155')
-          : lvl.isOte
-          ? (isDark ? '#FBBF24' : '#B45309')
-          : lvl.isExtension
-          ? (isDark ? '#34D399' : '#047857')
-          : (isDark ? '#94A3B8' : '#64748B');
+        // Pill background behind Fib label so it never disappears into candles/white bg
+        const text = `${lvl.label} (${formatPrice(lvl.price)})`;
+        const padX = 4 * dpr;
+        const pillW = ctx.measureText(text).width + padX * 2;
+        const pillH = 12 * dpr;
+        const px = Math.max(fibStartX + 4 * dpr, labelX);
+        const py = y - pillH - 1 * dpr;
+
+        ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.84)' : 'rgba(255, 255, 255, 0.90)';
+        ctx.beginPath();
+        ctx.roundRect(px, py, pillW, pillH, 2.5 * dpr);
+        ctx.fill();
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 0.75 * dpr;
+        ctx.stroke();
+
+        ctx.fillStyle = lineColor;
         ctx.textAlign = 'left';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(`${lvl.label} (${formatPrice(lvl.price)})`, Math.max(fibStartX + 3 * dpr, labelX), y - 1.5 * dpr);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, px + padX, py + pillH / 2);
+        ctx.restore();
       }
     }
   }

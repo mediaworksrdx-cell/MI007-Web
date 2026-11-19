@@ -304,8 +304,8 @@ function computeFibonacciConfluence(
   const n = closedCandles.length;
   if (n < 10) return null;
 
-  // Use confirmed major swings within the active structural lookback (last 150 closed bars)
-  const lookbackStart = Math.max(0, n - 150);
+  // Use confirmed major swings within the active visible structural lookback (last 100 closed bars)
+  const lookbackStart = Math.max(0, n - 100);
   const recentMajors = majorSwings.filter((s) => s.index >= lookbackStart);
   const pool = recentMajors.length >= 2 ? recentMajors : majorSwings;
 
