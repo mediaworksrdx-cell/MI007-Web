@@ -1254,55 +1254,61 @@ export function renderChart(
       const yEq = Math.max(0, Math.min(chartH, priceToY(dr.equilibriumPrice)));
 
       ctx.save();
-      // Premium Zone (>50% to High) - Subtle non-obtrusive auction boundary
+      // Premium Zone (>50% to High) - Clear visible auction boundary
       if (yEq > yHigh) {
-        ctx.fillStyle = isDark ? 'rgba(244, 63, 94, 0.02)' : 'rgba(244, 63, 94, 0.015)';
+        ctx.fillStyle = isDark ? 'rgba(244, 63, 94, 0.05)' : 'rgba(244, 63, 94, 0.045)';
         ctx.fillRect(0, yHigh, chartW, yEq - yHigh);
 
-        // Compact right-docked micro badge
-        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        // High-contrast right-docked badge
+        ctx.font = `bold ${10 * dpr}px "JetBrains Mono",monospace`;
         const pBadge = 'PREMIUM';
         const ptm = ctx.measureText(pBadge);
-        const pbw = ptm.width + 6 * dpr;
-        const pbh = 11 * dpr;
-        ctx.fillStyle = 'rgba(244, 63, 94, 0.12)';
-        ctx.fillRect(chartW - pbw - 6 * dpr, yHigh + 3 * dpr, pbw, pbh);
-        ctx.fillStyle = '#E11D48';
+        const pbw = ptm.width + 10 * dpr;
+        const pbh = 16 * dpr;
+        ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(255, 255, 255, 0.94)';
+        ctx.fillRect(chartW - pbw - 6 * dpr, yHigh + 4 * dpr, pbw, pbh);
+        ctx.strokeStyle = 'rgba(225, 29, 72, 0.75)';
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeRect(chartW - pbw - 6 * dpr, yHigh + 4 * dpr, pbw, pbh);
+        ctx.fillStyle = isDark ? '#FB7185' : '#BE123C';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        ctx.fillText(pBadge, chartW - 9 * dpr, yHigh + 3 * dpr + pbh / 2);
+        ctx.fillText(pBadge, chartW - 11 * dpr, yHigh + 4 * dpr + pbh / 2);
       }
 
-      // Discount Zone (<50% to Low) - Subtle non-obtrusive auction boundary
+      // Discount Zone (<50% to Low) - Clear visible auction boundary
       if (yLow > yEq) {
-        ctx.fillStyle = isDark ? 'rgba(16, 185, 129, 0.02)' : 'rgba(16, 185, 129, 0.015)';
+        ctx.fillStyle = isDark ? 'rgba(16, 185, 129, 0.05)' : 'rgba(16, 185, 129, 0.045)';
         ctx.fillRect(0, yEq, chartW, yLow - yEq);
 
-        // Compact right-docked micro badge
-        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        // High-contrast right-docked badge
+        ctx.font = `bold ${10 * dpr}px "JetBrains Mono",monospace`;
         const dBadge = 'DISCOUNT';
         const dtm = ctx.measureText(dBadge);
-        const dbw = dtm.width + 6 * dpr;
-        const dbh = 11 * dpr;
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
-        ctx.fillRect(chartW - dbw - 6 * dpr, yLow - dbh - 3 * dpr, dbw, dbh);
-        ctx.fillStyle = '#059669';
+        const dbw = dtm.width + 10 * dpr;
+        const dbh = 16 * dpr;
+        ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(255, 255, 255, 0.94)';
+        ctx.fillRect(chartW - dbw - 6 * dpr, yLow - dbh - 4 * dpr, dbw, dbh);
+        ctx.strokeStyle = 'rgba(5, 150, 105, 0.75)';
+        ctx.lineWidth = 1 * dpr;
+        ctx.strokeRect(chartW - dbw - 6 * dpr, yLow - dbh - 4 * dpr, dbw, dbh);
+        ctx.fillStyle = isDark ? '#34D399' : '#047857';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        ctx.fillText(dBadge, chartW - 9 * dpr, yLow - 3 * dpr - dbh / 2);
+        ctx.fillText(dBadge, chartW - 11 * dpr, yLow - 4 * dpr - dbh / 2);
       }
 
       // Range boundaries: stroked only in non-clean modes to eliminate horizontal line clutter
       if (!isCleanMode) {
         ctx.setLineDash([4 * dpr, 4 * dpr]);
-        ctx.lineWidth = 0.8 * dpr;
-        ctx.strokeStyle = 'rgba(244, 63, 94, 0.25)';
+        ctx.lineWidth = 1.1 * dpr;
+        ctx.strokeStyle = 'rgba(225, 29, 72, 0.45)';
         ctx.beginPath();
         ctx.moveTo(0, yHigh);
         ctx.lineTo(chartW, yHigh);
         ctx.stroke();
 
-        ctx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
+        ctx.strokeStyle = 'rgba(5, 150, 105, 0.45)';
         ctx.beginPath();
         ctx.moveTo(0, yLow);
         ctx.lineTo(chartW, yLow);
@@ -1312,40 +1318,38 @@ export function renderChart(
       ctx.restore();
     }
 
-    // 1b. Optimal Trade Entry (OTE 61.8% to 78.6%) — Subtle Translucent Background Zone (No full-width horizontal stroke lines)
+    // 1b. Optimal Trade Entry (OTE 61.8% to 78.6%) — Clear Visible Zone & Pill Label
     if (smcCfg.showOte && (isBullishMaster || isBearishMaster) && dr.highPrice > dr.lowPrice) {
       ctx.save();
-      // Bullish Discount OTE: rendered in Discount zone (Long retracement)
-      if (isBullishMaster && dr.discountOteRange && dr.discountOteRange[0] > 0) {
-        const yOte1 = priceToY(dr.discountOteRange[0]);
-        const yOte2 = priceToY(dr.discountOteRange[1]);
+      const drawOteZone = (range: [number, number], isBull: boolean) => {
+        const yOte1 = priceToY(range[0]);
+        const yOte2 = priceToY(range[1]);
         const oteTop = Math.max(0, Math.min(chartH - 2 * dpr, Math.min(yOte1, yOte2)));
         const oteH = Math.max(Math.abs(yOte1 - yOte2), 2 * dpr);
-        ctx.fillStyle = isDark ? 'rgba(16, 185, 129, 0.025)' : 'rgba(16, 185, 129, 0.02)';
+        ctx.fillStyle = isBull
+          ? (isDark ? 'rgba(16, 185, 129, 0.11)' : 'rgba(16, 185, 129, 0.10)')
+          : (isDark ? 'rgba(244, 63, 94, 0.11)' : 'rgba(244, 63, 94, 0.10)');
         ctx.fillRect(0, oteTop, chartW, oteH);
-        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-        ctx.fillStyle = 'rgba(5, 150, 105, 0.65)';
+        const label = 'OTE (61.8% - 78.6%)';
+        ctx.font = `bold ${9.5 * dpr}px "JetBrains Mono",monospace`;
+        const lw = ctx.measureText(label).width + 10 * dpr;
+        const lh = 15 * dpr;
+        const ly = Math.max(4 * dpr, Math.min(chartH - lh - 4 * dpr, oteTop + oteH / 2 - lh / 2));
+        ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.92)';
+        ctx.fillRect(8 * dpr, ly, lw, lh);
+        ctx.strokeStyle = isBull ? 'rgba(5, 150, 105, 0.70)' : 'rgba(225, 29, 72, 0.70)';
+        ctx.lineWidth = 0.9 * dpr;
+        ctx.strokeRect(8 * dpr, ly, lw, lh);
+        ctx.fillStyle = isBull ? (isDark ? '#34D399' : '#047857') : (isDark ? '#FB7185' : '#BE123C');
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`OTE [61.8% - 78.6%]`, 8 * dpr, oteTop + oteH / 2);
+        ctx.fillText(label, 13 * dpr, ly + lh / 2);
+      };
+      if (isBullishMaster && dr.discountOteRange && dr.discountOteRange[0] > 0) {
+        drawOteZone(dr.discountOteRange as [number, number], true);
       }
-
-      // Bearish Premium OTE: rendered in Premium zone (Short retracement)
-      if (isBearishMaster && dr.premiumOteRange) {
-        const premOte = dr.premiumOteRange;
-        if (premOte[0] > 0 && premOte[1] > 0) {
-          const yOte1 = priceToY(premOte[0]);
-          const yOte2 = priceToY(premOte[1]);
-          const oteTop = Math.max(0, Math.min(chartH - 2 * dpr, Math.min(yOte1, yOte2)));
-          const oteH = Math.max(Math.abs(yOte1 - yOte2), 2 * dpr);
-          ctx.fillStyle = isDark ? 'rgba(244, 63, 94, 0.025)' : 'rgba(244, 63, 94, 0.02)';
-          ctx.fillRect(0, oteTop, chartW, oteH);
-          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
-          ctx.fillStyle = 'rgba(225, 29, 72, 0.65)';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(`OTE [61.8% - 78.6%]`, 8 * dpr, oteTop + oteH / 2);
-        }
+      if (isBearishMaster && dr.premiumOteRange && dr.premiumOteRange[0] > 0 && dr.premiumOteRange[1] > 0) {
+        drawOteZone(dr.premiumOteRange as [number, number], false);
       }
       ctx.restore();
     }
@@ -1357,40 +1361,40 @@ export function renderChart(
       const eqStopX = isCleanMode ? Math.min(chartW - 65 * dpr, lastCandleX - 16 * dpr) : chartW;
       ctx.save();
       ctx.setLineDash([6 * dpr, 4 * dpr]);
-      ctx.strokeStyle = isCleanMode ? 'rgba(217, 119, 6, 0.25)' : 'rgba(217, 119, 6, 0.50)';
-      ctx.lineWidth = 0.8 * dpr;
+      ctx.strokeStyle = isCleanMode ? 'rgba(217, 119, 6, 0.45)' : 'rgba(217, 119, 6, 0.75)';
+      ctx.lineWidth = 1.2 * dpr;
       ctx.beginPath();
       ctx.moveTo(eqStartX, eqY);
       ctx.lineTo(eqStopX, eqY);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Single minimalist midpoint pill docked cleanly near start of line
+      // High-contrast midpoint pill docked cleanly near start of line
       const eqText = `50% EQ: ${formatPrice(smcData.equilibriumPrice, options.symbol)}`;
-      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${10 * dpr}px "JetBrains Mono",monospace`;
       const tm = ctx.measureText(eqText);
-      const tw = tm.width + 8 * dpr;
-      const th = 13 * dpr;
+      const tw = tm.width + 10 * dpr;
+      const th = 16 * dpr;
       const eqBadgeX = Math.max(8 * dpr, eqStartX + 6 * dpr);
 
-      ctx.fillStyle = 'rgba(217, 119, 6, 0.12)';
+      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(255, 255, 255, 0.94)';
       ctx.fillRect(eqBadgeX, eqY - th - 2 * dpr, tw, th);
-      ctx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
-      ctx.lineWidth = 0.8 * dpr;
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.75)';
+      ctx.lineWidth = 1 * dpr;
       ctx.strokeRect(eqBadgeX, eqY - th - 2 * dpr, tw, th);
 
-      ctx.fillStyle = '#D97706';
+      ctx.fillStyle = isDark ? '#FBBF24' : '#B45309';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(eqText, eqBadgeX + 4 * dpr, eqY - th / 2 - 2 * dpr);
+      ctx.fillText(eqText, eqBadgeX + 5 * dpr, eqY - th / 2 - 2 * dpr);
       ctx.restore();
     }
 
     // 3. Swing Point Labels (HH, HL, LH, LL) - Non-Overlapping Collision Prevention & Density Control
     if (smcCfg.showSwings && smcData.swings) {
       ctx.save();
-      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-      const th = 13 * dpr;
+      ctx.font = `bold ${10 * dpr}px "JetBrains Mono",monospace`;
+      const th = 16 * dpr;
 
       // Filter visible swings within horizontal window & master bias
       let visibleSwings = smcData.swings.filter((sw) => {
@@ -1473,22 +1477,22 @@ export function renderChart(
         // Clamp yBox within chart viewport
         yBox = Math.max(2 * dpr, Math.min(chartH - th - 2 * dpr, yBox));
 
-        // Age-dependent historical fading
+        // Age-dependent historical fading (keep readable minimum alpha)
         const alpha = enableHistoricalFading
-          ? sam.computeHistoricalAlpha(sw.index, lastBarIdx, visMode)
+          ? Math.max(0.75, sam.computeHistoricalAlpha(sw.index, lastBarIdx, visMode))
           : 1.0;
 
         ctx.save();
         ctx.globalAlpha = alpha;
 
-        // Badge pill behind swing label for clean readability
-        ctx.fillStyle = isH ? 'rgba(244, 63, 94, 0.12)' : 'rgba(16, 185, 129, 0.12)';
+        // High-contrast badge pill behind swing label
+        ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(255, 255, 255, 0.94)';
         ctx.fillRect(x - tw / 2, yBox, tw, th);
-        ctx.strokeStyle = isH ? 'rgba(244, 63, 94, 0.45)' : 'rgba(16, 185, 129, 0.45)';
-        ctx.lineWidth = 0.8 * dpr;
+        ctx.strokeStyle = isH ? 'rgba(225, 29, 72, 0.78)' : 'rgba(5, 150, 105, 0.78)';
+        ctx.lineWidth = 1.0 * dpr;
         ctx.strokeRect(x - tw / 2, yBox, tw, th);
 
-        ctx.fillStyle = isH ? '#E11D48' : '#059669';
+        ctx.fillStyle = isH ? (isDark ? '#FB7185' : '#BE123C') : (isDark ? '#34D399' : '#047857');
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(text, x, yBox + th / 2);
@@ -1598,43 +1602,41 @@ export function renderChart(
       const bH = Math.max(Math.abs(yT - yB), 3 * dpr);
 
       const isTarget = isTargetZone(ob);
-      let obColor = ob.isBullish ? '#0284C7' : '#EF4444';
+      let obColor = ob.isBullish ? (isDark ? '#38BDF8' : '#0369A1') : (isDark ? '#FB7185' : '#BE123C');
       let obBg = isTarget
-        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.12)' : 'rgba(239, 68, 68, 0.12)')
-        : (ob.isBullish ? 'rgba(2, 132, 199, 0.035)' : 'rgba(239, 68, 68, 0.035)');
+        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.18)' : 'rgba(239, 68, 68, 0.18)')
+        : (ob.isBullish ? 'rgba(2, 132, 199, 0.10)' : 'rgba(239, 68, 68, 0.10)');
       let obBorder = isTarget
-        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.85)' : 'rgba(239, 68, 68, 0.85)')
-        : (ob.isBullish ? 'rgba(2, 132, 199, 0.35)' : 'rgba(239, 68, 68, 0.35)');
+        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.92)' : 'rgba(239, 68, 68, 0.92)')
+        : (ob.isBullish ? 'rgba(2, 132, 199, 0.72)' : 'rgba(239, 68, 68, 0.72)');
 
       if (ob.isBreaker) {
-        obColor = ob.isBullish ? '#059669' : '#DC2626';
+        obColor = ob.isBullish ? (isDark ? '#34D399' : '#047857') : (isDark ? '#F87171' : '#B91C1C');
         obBg = isTarget
-          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.14)' : 'rgba(239, 68, 68, 0.14)')
-          : (ob.isBullish ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.04)');
+          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.20)' : 'rgba(239, 68, 68, 0.20)')
+          : (ob.isBullish ? 'rgba(16, 185, 129, 0.11)' : 'rgba(239, 68, 68, 0.11)');
         obBorder = isTarget
-          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.85)' : 'rgba(239, 68, 68, 0.85)')
-          : (ob.isBullish ? 'rgba(16, 185, 129, 0.40)' : 'rgba(239, 68, 68, 0.40)');
+          ? (ob.isBullish ? 'rgba(16, 185, 129, 0.92)' : 'rgba(239, 68, 68, 0.92)')
+          : (ob.isBullish ? 'rgba(16, 185, 129, 0.75)' : 'rgba(239, 68, 68, 0.75)');
       }
 
-      // Age-dependent historical visual fading
-      const alpha = enableHistoricalFading
-        ? sam.computeHistoricalAlpha(ob.startIndex, lastBarIdx, visMode, ob.isMitigated)
-        : (ob.isMitigated ? 0.35 : 1.0);
+      // Keep active unmitigated Order Blocks at full visibility; only soften mitigated ones
+      const alpha = ob.isMitigated ? 0.50 : 1.0;
 
       ctx.save();
       ctx.globalAlpha = alpha;
 
       ctx.fillStyle = ob.isMitigated
-        ? (ob.isBullish ? (isDark ? 'rgba(2, 132, 199, 0.04)' : 'rgba(2, 132, 199, 0.025)') : (isDark ? 'rgba(239, 68, 68, 0.04)' : 'rgba(239, 68, 68, 0.025)'))
+        ? (ob.isBullish ? (isDark ? 'rgba(2, 132, 199, 0.06)' : 'rgba(2, 132, 199, 0.05)') : (isDark ? 'rgba(239, 68, 68, 0.06)' : 'rgba(239, 68, 68, 0.05)'))
         : obBg;
       ctx.fillRect(lx, bTop, bw, bH);
       if (ob.isBreaker || ob.isMitigated) {
         ctx.setLineDash([5 * dpr, 3 * dpr]);
       }
       ctx.strokeStyle = ob.isMitigated
-        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.30)' : 'rgba(239, 68, 68, 0.30)')
+        ? (ob.isBullish ? 'rgba(2, 132, 199, 0.45)' : 'rgba(239, 68, 68, 0.45)')
         : obBorder;
-      ctx.lineWidth = isTarget ? 1.4 * dpr : 0.8 * dpr;
+      ctx.lineWidth = isTarget ? 1.6 * dpr : 1.2 * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
       if (ob.isBreaker || ob.isMitigated) {
         ctx.setLineDash([]);
@@ -1645,8 +1647,8 @@ export function renderChart(
       if (smcCfg.showFvgMidpoint && mtPrice >= pMin && mtPrice <= pMax) {
         const yMt = priceToY(mtPrice);
         ctx.setLineDash([4 * dpr, 3 * dpr]);
-        ctx.strokeStyle = ob.isBreaker ? (ob.isBullish ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)') : (ob.isBullish ? 'rgba(2, 132, 199, 0.6)' : 'rgba(239, 68, 68, 0.6)');
-        ctx.lineWidth = 0.8 * dpr;
+        ctx.strokeStyle = ob.isBreaker ? (ob.isBullish ? 'rgba(16, 185, 129, 0.75)' : 'rgba(239, 68, 68, 0.75)') : (ob.isBullish ? 'rgba(2, 132, 199, 0.75)' : 'rgba(239, 68, 68, 0.75)');
+        ctx.lineWidth = 1.0 * dpr;
         ctx.beginPath();
         ctx.moveTo(lx, yMt);
         ctx.lineTo(lx + bw, yMt);
@@ -1654,31 +1656,31 @@ export function renderChart(
         ctx.setLineDash([]);
       }
 
-      // Institutional corner micro badge (Clean: +OB / -OB / +BRK / -BRK)
+      // Institutional corner badge (+OB / -OB / +BRK / -BRK)
       const baseTag = ob.isBreaker
         ? (ob.isBullish ? '+BRK' : '-BRK')
         : (ob.isBullish ? '+OB' : '-OB');
       const priceSpan = `${formatPrice(ob.bottomPrice, options.symbol)} - ${formatPrice(ob.topPrice, options.symbol)}`;
-      const text = bw > 90 * dpr ? `${baseTag} · ${priceSpan}` : baseTag;
+      const text = bw > 110 * dpr ? `${baseTag} · ${priceSpan}` : baseTag;
 
-      ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${9.5 * dpr}px "JetBrains Mono",monospace`;
       const tm = ctx.measureText(text);
-      const tw = tm.width + 6 * dpr;
-      const th = 12 * dpr;
+      const tw = tm.width + 10 * dpr;
+      const th = 16 * dpr;
 
-      const badgeX = Math.max(4 * dpr, Math.min(chartW - tw - 4 * dpr, lx + 2 * dpr));
-      const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, bTop + 2 * dpr));
+      const badgeX = Math.max(4 * dpr, Math.min(chartW - tw - 4 * dpr, lx + 3 * dpr));
+      const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, bTop + 3 * dpr));
 
-      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.85)';
+      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)';
       ctx.fillRect(badgeX, badgeY, tw, th);
       ctx.strokeStyle = obBorder;
-      ctx.lineWidth = 0.8 * dpr;
+      ctx.lineWidth = 1.0 * dpr;
       ctx.strokeRect(badgeX, badgeY, tw, th);
 
       ctx.fillStyle = obColor;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(text, badgeX + 3 * dpr, badgeY + th / 2);
+      ctx.fillText(text, badgeX + 5 * dpr, badgeY + th / 2);
 
       // Register into Smart Annotation Manager for hover telemetry
       sam.registerInteractiveZone({
@@ -1761,13 +1763,11 @@ export function renderChart(
       const base = fvg.isBullish
         ? (fvg.isInverse ? [6, 182, 212] : [16, 185, 129])
         : (fvg.isInverse ? [168, 85, 247] : [244, 63, 94]);
-      const fa = isMit ? (isDark ? 0.025 : 0.02) : (fvg.isInverse ? 0.04 : 0.035);
-      const ba = isMit ? 0.25 : (fvg.isInverse ? 0.45 : 0.35);
+      const fa = isMit ? (isDark ? 0.05 : 0.04) : (fvg.isInverse ? 0.13 : 0.11);
+      const ba = isMit ? 0.40 : (fvg.isInverse ? 0.78 : 0.72);
 
-      // Age-dependent historical visual fading
-      const alpha = enableHistoricalFading
-        ? sam.computeHistoricalAlpha(fvg.startIndex, lastBarIdx, visMode, isMit)
-        : (isMit ? 0.35 : 1.0);
+      // Keep active unmitigated FVGs at full visibility; only soften mitigated ones
+      const alpha = isMit ? 0.50 : 1.0;
 
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -1778,7 +1778,7 @@ export function renderChart(
         ctx.setLineDash([4 * dpr, 3 * dpr]);
       }
       ctx.strokeStyle = `rgba(${base},${ba})`;
-      ctx.lineWidth = (fvg.isInverse ? 1.0 : 0.8) * dpr;
+      ctx.lineWidth = (fvg.isInverse ? 1.3 : 1.1) * dpr;
       ctx.strokeRect(lx, bTop, bw, bH);
       if (fvg.isInverse || isMit) {
         ctx.setLineDash([]);
@@ -1788,8 +1788,8 @@ export function renderChart(
       if (smcCfg.showFvgMidpoint && fvg.cePrice) {
         const yCe = priceToY(fvg.cePrice);
         ctx.setLineDash([4 * dpr, 3 * dpr]);
-        ctx.strokeStyle = fvg.isInverse ? (fvg.isBullish ? 'rgba(6, 182, 212, 0.6)' : 'rgba(168, 85, 247, 0.6)') : (fvg.isBullish ? 'rgba(16, 185, 129, 0.6)' : 'rgba(245, 158, 11, 0.6)');
-        ctx.lineWidth = 0.8 * dpr;
+        ctx.strokeStyle = fvg.isInverse ? (fvg.isBullish ? 'rgba(6, 182, 212, 0.75)' : 'rgba(168, 85, 247, 0.75)') : (fvg.isBullish ? 'rgba(16, 185, 129, 0.75)' : 'rgba(245, 158, 11, 0.75)');
+        ctx.lineWidth = 1.0 * dpr;
         ctx.beginPath();
         ctx.moveTo(lx, yCe);
         ctx.lineTo(lx + bw, yCe);
@@ -1797,31 +1797,31 @@ export function renderChart(
         ctx.setLineDash([]);
       }
 
-      // Corner micro tag: +FVG / -FVG / +IFVG / -IFVG
+      // Corner tag: +FVG / -FVG / +IFVG / -IFVG
       const tag = fvg.isInverse
         ? (fvg.isBullish ? '+IFVG' : '-IFVG')
         : (fvg.isBullish ? '+FVG' : '-FVG');
 
-      ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${9.5 * dpr}px "JetBrains Mono",monospace`;
       const tm = ctx.measureText(tag);
-      const tw = tm.width + 6 * dpr;
-      const th = 12 * dpr;
+      const tw = tm.width + 10 * dpr;
+      const th = 16 * dpr;
 
-      const badgeX = Math.max(4 * dpr, Math.min(chartW - tw - 4 * dpr, lx + 2 * dpr));
-      const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, bTop + 2 * dpr));
+      const badgeX = Math.max(4 * dpr, Math.min(chartW - tw - 4 * dpr, lx + 3 * dpr));
+      const badgeY = Math.max(4 * dpr, Math.min(chartH - th - 4 * dpr, bTop + 3 * dpr));
 
-      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.85)';
+      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)';
       ctx.fillRect(badgeX, badgeY, tw, th);
-      ctx.strokeStyle = `rgba(${base},${isMit ? 0.35 : 0.50})`;
-      ctx.lineWidth = 0.8 * dpr;
+      ctx.strokeStyle = `rgba(${base},${isMit ? 0.50 : 0.80})`;
+      ctx.lineWidth = 1.0 * dpr;
       ctx.strokeRect(badgeX, badgeY, tw, th);
 
       ctx.fillStyle = fvg.isInverse
-        ? (fvg.isBullish ? '#0891B2' : '#9333EA')
-        : (fvg.isBullish ? '#059669' : '#DC2626');
+        ? (fvg.isBullish ? (isDark ? '#22D3EE' : '#0E7490') : (isDark ? '#C084FC' : '#7E22CE'))
+        : (fvg.isBullish ? (isDark ? '#34D399' : '#047857') : (isDark ? '#FB7185' : '#BE123C'));
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(tag, badgeX + 3 * dpr, badgeY + th / 2);
+      ctx.fillText(tag, badgeX + 5 * dpr, badgeY + th / 2);
 
       // Register interactive hover zone
       sam.registerInteractiveZone({
@@ -1925,10 +1925,10 @@ export function renderChart(
         : Math.max(35 * dpr, Math.min(chartW - 35 * dpr, Math.max(x2, 40 * dpr)));
 
       const text = sb.type || (sb.isBullish ? `+${sb.breakType}` : `-${sb.breakType}`);
-      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+      ctx.font = `bold ${10 * dpr}px "JetBrains Mono",monospace`;
       const tm = ctx.measureText(text);
-      const tw = tm.width + 8 * dpr;
-      const th = 13 * dpr;
+      const tw = tm.width + 10 * dpr;
+      const th = 17 * dpr;
       let badgeY = y - th / 2;
 
       if (enableCollisionControl) {
@@ -2014,19 +2014,19 @@ export function renderChart(
         const isNearCurrentPrice = curPriceY > 0 && Math.abs(y - curPriceY) < 18 * dpr;
         if (!isNearCurrentPrice) {
           const text = lvl.label;
-          ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+          ctx.font = `bold ${9.5 * dpr}px "JetBrains Mono",monospace`;
           const tm = ctx.measureText(text);
-          const tw = tm.width + 6 * dpr;
-          const th = 12 * dpr;
+          const tw = tm.width + 10 * dpr;
+          const th = 16 * dpr;
 
           const badgeX = isCleanMode ? x2 - tw - 4 * dpr : x2 - tw - 6 * dpr;
-          ctx.fillStyle = isHighSide ? 'rgba(244, 63, 94, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+          ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.95)';
           ctx.fillRect(badgeX, y - th / 2, tw, th);
           ctx.strokeStyle = color;
-          ctx.lineWidth = 0.8 * dpr;
+          ctx.lineWidth = 1.0 * dpr;
           ctx.strokeRect(badgeX, y - th / 2, tw, th);
 
-          ctx.fillStyle = isHighSide ? '#E11D48' : '#059669';
+          ctx.fillStyle = isHighSide ? (isDark ? '#FB7185' : '#BE123C') : (isDark ? '#34D399' : '#047857');
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(text, badgeX + tw / 2, y);
@@ -2143,11 +2143,11 @@ export function renderChart(
         ctx.closePath();
         ctx.fill();
 
-        // Discrete clean sweep badge near the rejection wick
-        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        // Clean sweep badge near the rejection wick
+        ctx.font = `bold ${9.5 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(label);
-        const tw = tm.width + 8 * dpr;
-        const th = 12 * dpr;
+        const tw = tm.width + 10 * dpr;
+        const th = 16 * dpr;
         let badgeY = isHigh ? yWick - th - 7 * dpr : yWick + 7 * dpr;
 
         if (enableCollisionControl) {
@@ -2522,38 +2522,38 @@ export function renderChart(
         const yCur = curPrice > 0 ? priceToY(curPrice) : -999;
 
         ctx.save();
-        // Historical setup fading
-        if (enableHistoricalFading && (lastBarIdx - st.candleIndex > 6)) {
-          ctx.globalAlpha = Math.max(0.40, 1.0 - (lastBarIdx - st.candleIndex - 6) * 0.04);
+        // Keep active live setups at full 100% visibility; only soften completed historical setups
+        if (isTradeOver && enableHistoricalFading && (lastBarIdx - st.candleIndex > 6)) {
+          ctx.globalAlpha = 0.65;
         }
 
-        // 1. Take Profit (Reward) Zone (Entry to TP1) — Subtle green shaded region (clamped to viewport)
+        // 1. Take Profit (Reward) Zone (Entry to TP1) — Clear green shaded region (clamped to viewport)
         const tpTopRaw = Math.min(yEntry, yTP);
         const tpBotRaw = Math.max(yEntry, yTP);
         const tpTop = Math.max(0, tpTopRaw);
         const tpBot = Math.min(chartH, tpBotRaw);
         const tpH = Math.max(tpBot - tpTop, 2 * dpr);
         if (tpBot > 0 && tpTop < chartH) {
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.13)';
           ctx.fillRect(x, tpTop, boxW, tpH);
-          ctx.strokeStyle = 'rgba(16, 185, 129, 0.50)';
-          ctx.lineWidth = 1 * dpr;
+          ctx.strokeStyle = 'rgba(5, 150, 105, 0.78)';
+          ctx.lineWidth = 1.2 * dpr;
           ctx.setLineDash([4 * dpr, 3 * dpr]);
           ctx.strokeRect(x, tpTop, boxW, tpH);
           ctx.setLineDash([]);
         }
 
-        // 2. Stop Loss (Risk) Zone (Entry to SL) — Subtle red shaded region (clamped to viewport)
+        // 2. Stop Loss (Risk) Zone (Entry to SL) — Clear red shaded region (clamped to viewport)
         const slTopRaw = Math.min(yEntry, ySL);
         const slBotRaw = Math.max(yEntry, ySL);
         const slTop = Math.max(0, slTopRaw);
         const slBot = Math.min(chartH, slBotRaw);
         const slH = Math.max(slBot - slTop, 2 * dpr);
         if (slBot > 0 && slTop < chartH) {
-          ctx.fillStyle = 'rgba(244, 63, 94, 0.08)';
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.13)';
           ctx.fillRect(x, slTop, boxW, slH);
-          ctx.strokeStyle = 'rgba(244, 63, 94, 0.50)';
-          ctx.lineWidth = 1 * dpr;
+          ctx.strokeStyle = 'rgba(225, 29, 72, 0.78)';
+          ctx.lineWidth = 1.2 * dpr;
           ctx.setLineDash([4 * dpr, 3 * dpr]);
           ctx.strokeRect(x, slTop, boxW, slH);
           ctx.setLineDash([]);
@@ -2672,10 +2672,10 @@ export function renderChart(
         const tp2Text = hasTp2 ? `TP2: ${formatPrice(st.targetPrice2!, options.symbol)} (1:${tp2Rr})` : '';
 
         // Vertical non-overlapping badge stacker clamped strictly above volume histogram
-        const minYBound = 16 * dpr;
+        const minYBound = 18 * dpr;
         const maxYBound = chartH - 28 * dpr;
-        const badgeH = 14 * dpr;
-        const minGap = 17 * dpr;
+        const badgeH = 18 * dpr;
+        const minGap = 21 * dpr;
 
         interface SetupBadgeItem {
           id: 'header' | 'sl' | 'entry' | 'tp1' | 'tp2';
@@ -2750,12 +2750,12 @@ export function renderChart(
           }
         }
 
-        // Draw right-aligned non-overlapping badges with subtle anchor dots on the bracket edge
-        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        // Draw right-aligned non-overlapping badges with crisp 10px font
+        ctx.font = `bold ${10 * dpr}px "JetBrains Mono",monospace`;
         const rightAnchorX = Math.min(chartW - 6 * dpr, x + boxW);
         for (const item of badgeItems) {
           const itemTm = ctx.measureText(item.text);
-          const itemW = itemTm.width + 10 * dpr;
+          const itemW = itemTm.width + 12 * dpr;
           const itemX = Math.max(8 * dpr, Math.min(chartW - itemW - 6 * dpr, rightAnchorX - itemW));
           const itemTopY = item.y - badgeH / 2;
 
@@ -2763,14 +2763,14 @@ export function renderChart(
           ctx.fillRect(itemX, itemTopY, itemW, badgeH);
           if (item.border) {
             ctx.strokeStyle = item.border;
-            ctx.lineWidth = 0.9 * dpr;
+            ctx.lineWidth = 1.1 * dpr;
             ctx.strokeRect(itemX, itemTopY, itemW, badgeH);
           }
 
           ctx.fillStyle = item.fg;
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
-          ctx.fillText(item.text, itemX + 5 * dpr, item.y);
+          ctx.fillText(item.text, itemX + 6 * dpr, item.y);
 
           if (enableCollisionControl) {
             sam.tryPlaceLabel({
