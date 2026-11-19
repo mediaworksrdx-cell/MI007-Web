@@ -934,49 +934,51 @@ function detectVolumeBubbles(
   // Strictly gate on ACTUAL volume so zero-volume feeds never fabricate volume bubbles
   if (volumeQuality !== 'ACTUAL' || closedCandles.length < 25) return [];
 
+  // Full-history O(N) trailing 20-bar volume SMA across 100% of loaded candles on all timeframes
   const bubbles: Mi007VolumeBubble[] = [];
-  const start = Math.max(20, closedCandles.length - 180);
-  for (let i = start; i < closedCandles.length; i++) {
-    const c = closedCandles[i];
-    const vol = typeof c.volume === 'number' && Number.isFinite(c.volume) && c.volume > 0 ? c.volume : 0;
-    if (vol <= 0) continue;
+  let winSum = 0;
+  let winCnt = 0;
+  const volOf = (idx: number) => {
+    const v = closedCandles[idx]?.volume;
+    return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0;
+  };
+  for (let j = 0; j < 20; j++) {
+    const v = volOf(j);
+    if (v > 0) { winSum += v; winCnt++; }
+  }
 
-    // Causal 20-bar trailing SMA(volume) strictly excluding bar i
-    let sum = 0;
-    let cnt = 0;
-    for (let j = i - 20; j < i; j++) {
-      const v = closedCandles[j]?.volume;
-      if (typeof v === 'number' && Number.isFinite(v) && v > 0) {
-        sum += v;
-        cnt++;
+  for (let i = 20; i < closedCandles.length; i++) {
+    const c = closedCandles[i];
+    const vol = volOf(i);
+    if (vol > 0 && winCnt >= 10) {
+      const avgVol = winSum / winCnt;
+      const relVolume = avgVol > 0 ? vol / avgVol : 0;
+      if (relVolume >= 1.75) {
+        const range = Math.max(1e-9, c.high - c.low);
+        const body = Math.abs(c.close - c.open);
+        const bodyRatio = body / range;
+        const closePos = (c.close - c.low) / range;
+        const isAbsorption = relVolume >= 2.0 && bodyRatio <= 0.38;
+        const side: 'BUY' | 'SELL' = closePos >= 0.5 ? 'BUY' : 'SELL';
+        const price = isAbsorption
+          ? (side === 'BUY' ? c.low + range * 0.25 : c.high - range * 0.25)
+          : c.close;
+
+        bubbles.push({
+          candleIndex: i,
+          time: c.openTime,
+          price: roundPrice(price),
+          volume: vol,
+          relVolume: Number(relVolume.toFixed(2)),
+          side,
+          isAbsorption,
+        });
       }
     }
-    if (cnt < 10) continue;
-    const avgVol = sum / cnt;
-    if (avgVol <= 0) continue;
-    const relVolume = vol / avgVol;
-    if (relVolume < 1.75) continue;
-
-    const range = Math.max(1e-9, c.high - c.low);
-    const body = Math.abs(c.close - c.open);
-    const bodyRatio = body / range;
-    const closePos = (c.close - c.low) / range;
-    const isAbsorption = relVolume >= 2.0 && bodyRatio <= 0.38;
-    const side: 'BUY' | 'SELL' = closePos >= 0.5 ? 'BUY' : 'SELL';
-    // Anchor bubble at the extreme absorption wick or close for visual clarity
-    const price = isAbsorption
-      ? (side === 'BUY' ? c.low + range * 0.25 : c.high - range * 0.25)
-      : c.close;
-
-    bubbles.push({
-      candleIndex: i,
-      time: c.openTime,
-      price: roundPrice(price),
-      volume: vol,
-      relVolume: Number(relVolume.toFixed(2)),
-      side,
-      isAbsorption,
-    });
+    // Slide causal 20-bar window forward
+    const outV = volOf(i - 20);
+    if (outV > 0) { winSum -= outV; winCnt--; }
+    if (vol > 0) { winSum += vol; winCnt++; }
   }
   return bubbles;
 }

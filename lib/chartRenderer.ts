@@ -1189,13 +1189,17 @@ export function renderChart(
     }
   }
 
-  // ── LAYER 3: Smart Money Concepts (SMC) Overlays ──
-  const smcCfg = options.smcConfig || (options.showSmcOverlay ? DEFAULT_SMC_CONFIG : null);
+  // ── LAYER 3: Smart Money Concepts (SMC) Overlays (enabled by SMC button OR MI-007 SMC sub-toggle) ──
+  const mi007WantsSmc = Boolean(options.showMi007 && options.mi007Config?.showSmc !== false);
+  const rawSmcCfg = options.smcConfig || (options.showSmcOverlay || mi007WantsSmc ? DEFAULT_SMC_CONFIG : null);
+  const smcCfg = rawSmcCfg
+    ? (mi007WantsSmc && !rawSmcCfg.enabled ? { ...rawSmcCfg, enabled: true, visualizationMode: 'analysis' as const } : rawSmcCfg)
+    : null;
   if (smcCfg && smcCfg.enabled) {
     const sym = (options as any).symbol || 'NIFTY';
     const tf = options.timeframe || '1H';
-    // CH-017: reuse precomputed smcData when provided instead of recomputing on every render
-    const smcData = options.smcData || calculateSMC(candles, smcCfg, sym, tf);
+    // CH-017: reuse precomputed smcData (or mi007Data.smc) instead of recomputing on every render
+    const smcData = options.smcData || options.mi007Data?.smc || calculateSMC(candles, smcCfg, sym, tf);
     const isBullishMaster = smcCfg.showBullishSetups !== false;
     const isBearishMaster = smcCfg.showBearishSetups !== false;
 
@@ -1502,24 +1506,18 @@ export function renderChart(
     const mitigatedQuota = smcCfg.showMitigatedOb ? 2 : 0;
 
     const sortZonesByProximity = <T extends { topPrice: number; bottomPrice: number; startIndex: number; isMitigated?: boolean }>(zones: T[]): T[] => {
+      const vpMid = (pMin + pMax) / 2;
+      const vpMargin = (pMax - pMin) * 0.25;
       return zones
-        .filter(z => {
-          if (!isCleanMode) return true;
-          // In Institutional Clean Mode, discard ancient or extreme outlier zones far from active trading action
-          const midP = (z.topPrice + z.bottomPrice) / 2;
-          const distPct = Math.abs(midP - lastPrice) / Math.max(1, lastPrice);
-          if (distPct > 0.15) return false;
-          if (candles.length - 1 - z.startIndex > 90) return false;
-          return true;
-        })
+        .filter(z => z.topPrice >= pMin - vpMargin && z.bottomPrice <= pMax + vpMargin)
         .slice()
         .sort((a, b) => {
           const aInPrice = a.bottomPrice <= pMax && a.topPrice >= pMin;
           const bInPrice = b.bottomPrice <= pMax && b.topPrice >= pMin;
           if (aInPrice && !bInPrice) return -1;
           if (!aInPrice && bInPrice) return 1;
-          const aDist = Math.abs((a.topPrice + a.bottomPrice) / 2 - lastPrice);
-          const bDist = Math.abs((b.topPrice + b.bottomPrice) / 2 - lastPrice);
+          const aDist = Math.abs((a.topPrice + a.bottomPrice) / 2 - vpMid);
+          const bDist = Math.abs((b.topPrice + b.bottomPrice) / 2 - vpMid);
           if (Math.abs(aDist - bDist) > (pMax - pMin) * 0.05) return aDist - bDist;
           return b.startIndex - a.startIndex;
         });
