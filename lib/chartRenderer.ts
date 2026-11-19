@@ -2283,10 +2283,18 @@ export function renderChart(
         }
       }
 
+      const isSlViolatedByPrice = (s: SmcConfirmedSetup) => {
+        if (terminalClose <= 0 || s.status === 'TARGET_HIT') return false;
+        return s.direction === 'BULLISH'
+          ? terminalClose < s.stopLoss
+          : terminalClose > s.stopLoss;
+      };
+
       const isActiveSetup = (s: SmcConfirmedSetup) =>
         (s.qualityScore ?? 0) >= 60 &&
         !s.isRejectedPermanently &&
         !s.retestFailed &&
+        !isSlViolatedByPrice(s) &&
         s.signalState !== 'REJECTED' &&
         s.signalState !== 'RETEST_FAILED' &&
         s.signalState !== 'INVALIDATED' &&
@@ -2365,13 +2373,16 @@ export function renderChart(
           }
         }
 
-        // If no currently open setup exists, show most recent TARGET_HIT setup from today's session only (only if qualityScore >= 70)
+        // If no currently open setup exists, show most recent valid/TARGET_HIT setup (never SL-violated dead setups)
         if (setupsToRender.length === 0 && smcData.allSetups && smcData.allSetups.length > 0) {
           const recentCompleted = smcData.allSetups
             .filter((s) =>
-              (s.status === 'TARGET_HIT' || s.status === 'CONFIRMED' || s.status === 'RETESTING') &&
+              (s.status === 'TARGET_HIT' || (!isSlViolatedByPrice(s) && (s.status === 'CONFIRMED' || s.status === 'RETESTING'))) &&
               (s.qualityScore ?? 0) >= 60 &&
               !s.isRejectedPermanently &&
+              !s.retestFailed &&
+              s.signalState !== 'INVALIDATED' &&
+              s.signalState !== 'RETEST_FAILED' &&
               (lastBarIdx - s.candleIndex <= 80) &&
               ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence && isBullishMaster) ||
                (s.direction === 'BEARISH' && smcCfg.showBearishConfluence && isBearishMaster))
