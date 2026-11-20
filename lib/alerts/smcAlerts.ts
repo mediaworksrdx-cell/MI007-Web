@@ -165,7 +165,7 @@ export const DEFAULT_CHANNEL_SETTINGS: SmcAlertChannelSettings = {
   pollIntervalSec: 60,
   whatsappEnabled: false,
   whatsappProvider: 'selfhosted',
-  whatsappPhone: '',
+  whatsappPhone: '+918838202279',
   selfhostedUrl: 'http://localhost:5050',
   callmebotApiKey: '',
   twilioAccountSid: DEFAULT_TWILIO_SID,
@@ -259,6 +259,7 @@ export function loadAlertSettings(): SmcAlertChannelSettings {
     return {
       ...DEFAULT_CHANNEL_SETTINGS,
       ...parsed,
+      whatsappPhone: parsed.whatsappPhone || '+918838202279',
       twilioAccountSid: parsed.twilioAccountSid || DEFAULT_TWILIO_SID,
       twilioAuthToken: parsed.twilioAuthToken || DEFAULT_TWILIO_TOKEN,
     };

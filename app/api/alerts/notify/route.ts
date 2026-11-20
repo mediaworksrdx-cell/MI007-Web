@@ -25,8 +25,9 @@ export interface NotifyAlertPayload {
     gmail?: boolean;
   };
   config?: {
-    whatsappProvider?: 'callmebot' | 'meta' | 'twilio';
+    whatsappProvider?: 'selfhosted' | 'twilio' | 'callmebot' | 'meta';
     whatsappPhone?: string;
+    selfhostedUrl?: string;
     callmebotApiKey?: string;
     twilioAccountSid?: string;
     twilioAuthToken?: string;

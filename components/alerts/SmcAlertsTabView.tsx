@@ -89,6 +89,35 @@ export function SmcAlertsTabView() {
   const [testFeedback, setTestFeedback] = useState<{ channel: string; ok: boolean; msg: string } | null>(null);
   const [showChannelsConfig, setShowChannelsConfig] = useState(true);
 
+  // Self-hosted WhatsApp Bot State
+  const [botStatus, setBotStatus] = useState<string>('unknown');
+  const [botConnected, setBotConnected] = useState<boolean>(false);
+  const [botUser, setBotUser] = useState<string | null>(null);
+  const [botPairingCode, setBotPairingCode] = useState<string | null>(null);
+  const [isBotLoading, setIsBotLoading] = useState<boolean>(false);
+  const [codeCopied, setCodeCopied] = useState<boolean>(false);
+
+  const fetchBotStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/alerts/whatsapp-bot', { cache: 'no-store' });
+      const data = await res.json();
+      if (data?.ok) {
+        setBotStatus(data.status || 'unknown');
+        setBotConnected(Boolean(data.connected));
+        setBotUser(data.user || null);
+        if (data.pairingCode) {
+          setBotPairingCode(data.pairingCode);
+        }
+      } else {
+        setBotStatus('offline');
+        setBotConnected(false);
+      }
+    } catch {
+      setBotStatus('offline');
+      setBotConnected(false);
+    }
+  }, []);
+
   const historyRef = useRef<SmcTriggeredAlert[]>([]);
   historyRef.current = history;
   const sentIdsRef = useRef<Record<string, number>>({});
@@ -119,6 +148,60 @@ export function SmcAlertsTabView() {
   useEffect(() => {
     if (hydrated) saveAlertHistory(history);
   }, [history, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (settings.whatsappProvider === 'selfhosted') {
+      fetchBotStatus();
+      const interval = setInterval(fetchBotStatus, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [hydrated, settings.whatsappProvider, fetchBotStatus]);
+
+  const handleRequestPairingOtp = async () => {
+    setIsBotLoading(true);
+    try {
+      const phone = settings.whatsappPhone || '+918838202279';
+      const res = await fetch('/api/alerts/whatsapp-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'request-code', phone }),
+      });
+      const data = await res.json();
+      if (data?.ok && data.code) {
+        setBotPairingCode(data.code);
+        setBotStatus('awaiting_pairing');
+        setTestFeedback({ channel: 'WhatsApp', ok: true, msg: `OTP Generated: ${data.code}. Enter it on your phone!` });
+      } else {
+        setTestFeedback({ channel: 'WhatsApp', ok: false, msg: data?.error || 'Failed to generate OTP code. Ensure gateway is running.' });
+      }
+    } catch (err: any) {
+      setTestFeedback({ channel: 'WhatsApp', ok: false, msg: err?.message || 'Gateway connection failed.' });
+    } finally {
+      setIsBotLoading(false);
+    }
+  };
+
+  const handleResetBotSession = async () => {
+    if (typeof window !== 'undefined' && !window.confirm('Unlink and reset WhatsApp Bot session?')) return;
+    setIsBotLoading(true);
+    try {
+      await fetch('/api/alerts/whatsapp-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset' }),
+      });
+      setBotConnected(false);
+      setBotUser(null);
+      setBotPairingCode(null);
+      setBotStatus('awaiting_pairing');
+      await fetchBotStatus();
+    } catch {
+      // ignore
+    } finally {
+      setIsBotLoading(false);
+    }
+  };
 
   const requestBrowserPermission = async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -581,19 +664,95 @@ export function SmcAlertsTabView() {
               </div>
 
               {settings.whatsappProvider === 'selfhosted' && (
-                <div className="p-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 text-[11px] leading-relaxed space-y-1.5">
-                  <div className="flex items-center gap-1.5 font-bold text-emerald-400">
-                    <span>🚀 Private WhatsApp Bot ($0 Cost • Unlimited Alerts)</span>
+                <div className="p-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 text-[11px] leading-relaxed space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+                      <span>🚀 Private WhatsApp Bot ($0 Cost • Unlimited Alerts)</span>
+                    </div>
+                    {botConnected ? (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Online &amp; Linked
+                      </span>
+                    ) : botStatus === 'awaiting_pairing' ? (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30">
+                        ⚡ Enter OTP on Phone
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400 text-[10px] font-bold border border-slate-500/30">
+                        Terminal Gateway Offline
+                      </span>
+                    )}
                   </div>
-                  <p className="text-[10px] text-[var(--theme-card-text-muted)]">
-                    Start your private bot gateway in your project terminal:
-                  </p>
-                  <div className="px-2 py-1 rounded bg-black/40 border border-slate-700/50 font-mono text-[11px] text-emerald-300 select-all">
-                    npm run whatsapp:bot
-                  </div>
-                  <p className="text-[10px] text-[var(--theme-card-text-muted)]">
-                    Scan the terminal QR code with your phone (WhatsApp $\rightarrow$ Linked Devices). Once scanned, it will send trade alerts directly to any client phone number!
-                  </p>
+
+                  {botConnected ? (
+                    <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 space-y-1">
+                      <div className="text-xs font-bold text-emerald-300">
+                        ✅ Connected: {botUser || settings.whatsappPhone || '+918838202279'}
+                      </div>
+                      <p className="text-[10px] text-[var(--theme-card-text-muted)]">
+                        Your WhatsApp bot is linked and permanently authenticated. Real-time trade setups will be delivered to your phone with zero per-message charges.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleResetBotSession}
+                        disabled={isBotLoading}
+                        className="mt-1 text-[10px] text-red-400 hover:text-red-300 underline cursor-pointer"
+                      >
+                        Unlink / Re-pair with another phone
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {botPairingCode ? (
+                        <div className="p-3 rounded-lg bg-black/50 border border-emerald-500/40 text-center space-y-2">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                            Your WhatsApp Pairing OTP Code:
+                          </div>
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="px-4 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-2xl font-black font-mono tracking-widest text-emerald-300 select-all">
+                              {botPairingCode}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(botPairingCode.replace('-', ''));
+                                setCodeCopied(true);
+                                setTimeout(() => setCodeCopied(false), 2000);
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white cursor-pointer"
+                              title="Copy Code"
+                            >
+                              {codeCopied ? '✓ Copied' : '📋 Copy'}
+                            </button>
+                          </div>
+                          <ol className="list-decimal list-inside text-[11px] text-left text-slate-300 space-y-1 pt-1 border-t border-slate-800">
+                            <li>Open WhatsApp on phone (<strong className="text-emerald-300">{settings.whatsappPhone || '+918838202279'}</strong>)</li>
+                            <li>Tap <strong>Settings / 3-dots</strong> $\rightarrow$ <strong>Linked Devices</strong> $\rightarrow$ <strong>Link a Device</strong></li>
+                            <li>Tap <strong className="text-emerald-300">"Link with phone number instead"</strong> at the bottom</li>
+                            <li>Enter the 8-character code: <strong className="text-emerald-400 font-mono">{botPairingCode}</strong></li>
+                          </ol>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] text-[var(--theme-card-text-muted)]">
+                            Start the gateway in your terminal, or click below to request an instant OTP pairing code:
+                          </p>
+                          <div className="px-2 py-1 rounded bg-black/40 border border-slate-700/50 font-mono text-[11px] text-emerald-300 select-all">
+                            npm run whatsapp:bot
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleRequestPairingOtp}
+                            disabled={isBotLoading}
+                            className="w-full mt-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                          >
+                            <span>{isBotLoading ? '⏳ Requesting OTP...' : '📲 Get WhatsApp Pairing OTP'}</span>
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
 

@@ -3,13 +3,15 @@
  * Powered by @whiskeysockets/baileys
  *
  * Runs a standalone HTTP microservice on port 5050.
- * Scan the QR code once with your phone, and it will stay connected 24/7.
- * Messages can be sent to any phone number worldwide with zero third-party fees.
+ * Supports OTP Pairing Code (no QR camera scan needed) & QR fallback.
+ * Permanent session saved to whatsapp_auth/ with $0 ongoing fees.
  */
 
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
+const pino = require('pino');
 const qrcode = require('qrcode-terminal');
 const {
   default: makeWASocket,
@@ -18,75 +20,154 @@ const {
   fetchLatestBaileysVersion,
 } = require('@whiskeysockets/baileys');
 
-const PORT = process.env.PORT || 5050;
+const PORT = parseInt(process.env.PORT || '5050', 10);
 const AUTH_DIR = path.resolve(__dirname, '..', 'whatsapp_auth');
 
 let sock = null;
 let connectionState = 'initializing';
 let currentQr = null;
 let connectedUser = null;
+let currentPairingCode = null;
+let currentPairingPhone = null;
+let isStarting = false;
 
-async function startWhatsAppBot() {
-  if (!fs.existsSync(AUTH_DIR)) {
-    fs.mkdirSync(AUTH_DIR, { recursive: true });
+function cleanPhoneNumber(phone) {
+  return String(phone || '').replace(/[\s+()\-]/g, '');
+}
+
+function formatPairingCode(code) {
+  if (!code) return '';
+  const clean = String(code).trim().replace(/[^a-zA-Z0-9]/g, '');
+  if (clean.length === 8) {
+    return `${clean.slice(0, 4)}-${clean.slice(4)}`;
+  }
+  return clean;
+}
+
+async function requestPairing(phoneInput) {
+  const digits = cleanPhoneNumber(phoneInput);
+  if (!digits || digits.length < 8 || digits.length > 15) {
+    throw new Error(`Invalid phone number: "${phoneInput}". Must contain 8 to 15 digits including country code.`);
   }
 
-  const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
-  let version = undefined;
+  if (connectionState === 'connected') {
+    throw new Error(`WhatsApp is already connected as ${connectedUser || 'active user'}. Use /reset to switch accounts.`);
+  }
+
+  if (!sock) {
+    throw new Error('WhatsApp socket is not initialized yet. Please wait a few seconds and try again.');
+  }
+
   try {
-    const vRes = await fetchLatestBaileysVersion();
-    version = vRes.version;
-  } catch {}
+    const rawCode = await sock.requestPairingCode(digits);
+    const formatted = formatPairingCode(rawCode);
+    currentPairingCode = formatted;
+    currentPairingPhone = `+${digits}`;
 
-  sock = makeWASocket({
-    version,
-    auth: state,
-    printQRInTerminal: false,
-    syncFullHistory: false,
-    browser: ['MI-007 Platform', 'Chrome', '1.0.0'],
-  });
+    console.log('\n================================================================');
+    console.log(`⚡ WHATSAPP OTP PAIRING CODE FOR +${digits}:`);
+    console.log(`\n                  👉   ${formatted}   👈\n`);
+    console.log('📌 HOW TO LINK ON YOUR PHONE:');
+    console.log('   1. Open WhatsApp on your phone (+91' + digits.slice(-10) + ')');
+    console.log('   2. Tap Settings (iOS) or 3 Dots (Android) -> Linked Devices');
+    console.log('   3. Tap "Link a device"');
+    console.log('   4. Tap "Link with phone number instead" at the bottom of the screen');
+    console.log(`   5. Enter this 8-character pairing code: ${formatted}`);
+    console.log('================================================================\n');
 
-  sock.ev.on('creds.update', saveCreds);
+    return { ok: true, code: formatted, phone: `+${digits}` };
+  } catch (err) {
+    console.error('[WhatsApp Bot] Error requesting pairing code:', err?.message || err);
+    throw err;
+  }
+}
 
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect, qr } = update;
+async function startWhatsAppBot(requestedPhone = null) {
+  if (isStarting) return;
+  isStarting = true;
 
-    if (qr) {
-      currentQr = qr;
-      connectionState = 'qr_ready';
-      console.log('\n================================================================');
-      console.log('⚡ SCAN THIS QR CODE ON YOUR PHONE TO LINK WHATSAPP:');
-      console.log('   (WhatsApp -> Settings -> Linked Devices -> Link a Device)');
-      console.log('================================================================\n');
-      qrcode.generate(qr, { small: true });
+  try {
+    if (!fs.existsSync(AUTH_DIR)) {
+      fs.mkdirSync(AUTH_DIR, { recursive: true });
     }
 
-    if (connection === 'close') {
-      const statusCode = lastDisconnect?.error?.output?.statusCode;
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-      connectionState = 'disconnected';
-      connectedUser = null;
-      console.log(`[WhatsApp Bot] Connection closed (code: ${statusCode}). Reconnecting: ${shouldReconnect}`);
-      if (shouldReconnect) {
-        setTimeout(startWhatsAppBot, 3000);
-      } else {
-        console.log('[WhatsApp Bot] Logged out. Delete whatsapp_auth/ and restart to pair again.');
+    const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+    let version = undefined;
+    try {
+      const vRes = await fetchLatestBaileysVersion();
+      version = vRes.version;
+    } catch {}
+
+    const isRegistered = Boolean(state?.creds?.registered);
+
+    sock = makeWASocket({
+      version,
+      auth: state,
+      logger: pino({ level: 'silent' }),
+      printQRInTerminal: false,
+      syncFullHistory: false,
+      browser: ['MI-007 Platform', 'Chrome', '1.0.0'],
+    });
+
+    sock.ev.on('creds.update', saveCreds);
+
+    sock.ev.on('connection.update', async (update) => {
+      const { connection, lastDisconnect, qr } = update;
+
+      if (qr) {
+        currentQr = qr;
+        if (!isRegistered && connectionState !== 'connected') {
+          connectionState = 'awaiting_pairing';
+        }
       }
-    } else if (connection === 'open') {
-      connectionState = 'connected';
-      currentQr = null;
-      connectedUser = sock?.user?.id || 'Connected';
-      console.log('\n================================================================');
-      console.log(`✅ WHATSAPP BOT CONNECTED! Signed in as: ${connectedUser}`);
-      console.log(`⚡ Ready to send automated trade alerts on http://localhost:${PORT}`);
-      console.log('================================================================\n');
+
+      if (connection === 'close') {
+        const statusCode = lastDisconnect?.error?.output?.statusCode;
+        const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+        connectionState = 'disconnected';
+        connectedUser = null;
+        console.log(`[WhatsApp Bot] Connection closed (code: ${statusCode}). Reconnecting: ${shouldReconnect}`);
+        isStarting = false;
+        if (shouldReconnect) {
+          setTimeout(() => startWhatsAppBot(), 3000);
+        } else {
+          console.log('[WhatsApp Bot] Session logged out. Delete whatsapp_auth/ or call /reset to pair again.');
+        }
+      } else if (connection === 'open') {
+        connectionState = 'connected';
+        currentQr = null;
+        currentPairingCode = null;
+        connectedUser = sock?.user?.id || 'Connected';
+        isStarting = false;
+        console.log('\n================================================================');
+        console.log(`✅ WHATSAPP BOT CONNECTED! Signed in as: ${connectedUser}`);
+        console.log(`⚡ Ready to send automated trade alerts on http://localhost:${PORT}`);
+        console.log('================================================================\n');
+      }
+    });
+
+    // Auto-request pairing code on startup if not registered
+    if (!isRegistered) {
+      connectionState = 'awaiting_pairing';
+      const defaultPhone = requestedPhone || process.env.PHONE || process.argv[2] || '+918838202279';
+      setTimeout(async () => {
+        if (!state.creds.registered && connectionState !== 'connected') {
+          try {
+            await requestPairing(defaultPhone);
+          } catch (e) {
+            console.log(`[WhatsApp Bot] Ready for pairing. Awaiting phone number on http://localhost:${PORT}/request-code or terminal.`);
+          }
+        }
+      }, 2500);
     }
-  });
+  } catch (err) {
+    isStarting = false;
+    console.error('[WhatsApp Bot] Initialization error:', err);
+  }
 }
 
 // ── HTTP REST Server ──────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -108,8 +189,59 @@ const server = http.createServer(async (req, res) => {
         connected: connectionState === 'connected',
         user: connectedUser,
         hasQr: Boolean(currentQr),
+        pairingCode: currentPairingCode,
+        pairingPhone: currentPairingPhone,
       })
     );
+    return;
+  }
+
+  // Request OTP Pairing Code Endpoint
+  if (url.pathname === '/request-code' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > 10000) req.destroy();
+    });
+
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body || '{}');
+        const phone = data.phone || process.env.PHONE || '+918838202279';
+        const result = await requestPairing(phone);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: err?.message || 'Failed to request pairing code' }));
+      }
+    });
+    return;
+  }
+
+  // Reset / Logout Session Endpoint
+  if (url.pathname === '/reset' && req.method === 'POST') {
+    try {
+      if (sock) {
+        try {
+          await sock.logout();
+        } catch {}
+      }
+      if (fs.existsSync(AUTH_DIR)) {
+        fs.rmSync(AUTH_DIR, { recursive: true, force: true });
+      }
+      connectionState = 'disconnected';
+      connectedUser = null;
+      currentPairingCode = null;
+      currentPairingPhone = null;
+      currentQr = null;
+      setTimeout(() => startWhatsAppBot(), 1500);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, message: 'WhatsApp session reset. Ready to pair again.' }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err?.message || 'Failed to reset session' }));
+    }
     return;
   }
 
@@ -138,14 +270,13 @@ const server = http.createServer(async (req, res) => {
           res.end(
             JSON.stringify({
               ok: false,
-              error: `WhatsApp Bot is not connected yet (current state: ${connectionState}). Please scan the QR code in the terminal.`,
+              error: `WhatsApp Bot is not connected yet (current state: ${connectionState}). Please enter pairing OTP on your phone first.`,
             })
           );
           return;
         }
 
-        // Clean phone number: remove +, spaces, dashes, parentheses
-        const cleanDigits = rawPhone.replace(/[\s+()\-]/g, '');
+        const cleanDigits = cleanPhoneNumber(rawPhone);
         if (cleanDigits.length < 8 || cleanDigits.length > 15) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: false, error: 'Invalid international phone number format.' }));
