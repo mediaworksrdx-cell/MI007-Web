@@ -15,14 +15,19 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const passkey = req.nextUrl.searchParams.get('passkey') || '';
+    const passkey = req.headers.get('x-blog-passkey') || req.nextUrl.searchParams.get('passkey') || '';
     const auth = verifyBlogPasskey(passkey);
+    // BL4 fix: only expose drafts to authenticated callers
     const allowDraft = auth.role === 'admin' || auth.role === 'author';
 
-    // Check slug first, then fallback to id
+    // Check slug first, then fallback to id — but never expose drafts to anonymous callers
     let post = await getBlogPostBySlug(id, { allowDraft });
     if (!post) {
-      const all = await getAllBlogPosts({ status: 'all', isAdmin: true });
+      const all = await getAllBlogPosts({
+        status: allowDraft ? 'all' : 'published',
+        isAdmin: auth.role === 'admin',
+        authorKeyId: auth.authorKeyId || undefined,
+      });
       post = all.find((p) => p.id === id) || null;
     }
 
@@ -55,7 +60,14 @@ export async function PUT(
       );
     }
 
-    const res = await updateBlogPost(id, body, passkey);
+    // BL5 fix: normalize published boolean → status string for updates too
+    const updates = { ...body };
+    if ('published' in updates) {
+      updates.status = updates.published === true ? 'published' : 'draft';
+      delete updates.published;
+    }
+
+    const res = await updateBlogPost(id, updates, passkey);
     if (!res.ok) {
       const status = res.error?.includes('Unauthorized') ? 401 : res.error?.includes('Forbidden') ? 403 : 400;
       return NextResponse.json({ success: false, error: res.error }, { status });

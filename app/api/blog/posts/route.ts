@@ -12,20 +12,22 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const category = searchParams.get('category') || undefined;
     const tag = searchParams.get('tag') || undefined;
-    const passkey = searchParams.get('passkey') || '';
+    // BL2 fix: read passkey from header first, never from query string
+    const passkey = req.headers.get('x-blog-passkey') || '';
     const statusParam = searchParams.get('status') as 'published' | 'draft' | 'all' | null;
 
     const auth = verifyBlogPasskey(passkey);
     const isAdmin = auth.role === 'admin';
     const authorKeyId = auth.authorKeyId;
 
-    const status = statusParam || (isAdmin ? 'all' : 'published');
+    // BL10 fix: when status=all, only admins see all; authors see only their own
+    const requestedStatus = statusParam || (isAdmin ? 'all' : 'published');
 
     const posts = await getAllBlogPosts({
-      status,
+      status: requestedStatus,
       category,
       tag,
-      authorKeyId,
+      authorKeyId: auth.role !== 'none' ? authorKeyId : undefined,
       isAdmin,
     });
 
@@ -55,7 +57,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const res = await createBlogPost(body, passkey);
+    // BL5 fix: normalize client's `published: boolean` → service's `status: 'published'|'draft'`
+    const normalized = { ...body };
+    if ('published' in normalized) {
+      normalized.status = normalized.published === true ? 'published' : 'draft';
+      delete normalized.published;
+    }
+
+    const res = await createBlogPost(normalized, passkey);
     if (!res.ok) {
       return NextResponse.json({ success: false, error: res.error }, { status: 400 });
     }

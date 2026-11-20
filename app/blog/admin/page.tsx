@@ -38,6 +38,14 @@ export default function BlogAdminDashboardPage() {
         setAuthLabel(data.label);
         setPasskey(keyToTest.trim());
         if (typeof window !== 'undefined') {
+          // BL6 fix: write full session object to localStorage so /blog/write can read it
+          const sessionObj = {
+            role: data.role === 'admin' ? 'super_admin' : 'author',
+            authorKeyId: data.authorKeyId,
+            name: data.role === 'admin' ? 'MI007 Chief Editor' : 'MI007 Analyst',
+            passkey: keyToTest.trim(),
+          };
+          localStorage.setItem('mi007_blog_session', JSON.stringify(sessionObj));
           sessionStorage.setItem('mi007_blog_passkey', keyToTest.trim());
         }
       } else {
@@ -66,7 +74,10 @@ export default function BlogAdminDashboardPage() {
     if (authRole === 'none') return;
     setLoadingPosts(true);
     try {
-      const res = await fetch(`/api/blog/posts?status=all&passkey=${encodeURIComponent(passkey)}`);
+      // BL2 fix: send passkey in header, not in query string
+      const res = await fetch('/api/blog/posts?status=all', {
+        headers: { 'x-blog-passkey': passkey },
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.posts)) {
@@ -117,6 +128,7 @@ export default function BlogAdminDashboardPage() {
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('mi007_blog_passkey');
+      localStorage.removeItem('mi007_blog_session'); // BL6 fix: clear both stores
     }
     setAuthRole('none');
     setPasskey('');
@@ -181,10 +193,7 @@ export default function BlogAdminDashboardPage() {
           {/* Quick Guidance Box */}
           <div className="mt-6 pt-5 border-t border-[var(--theme-card-border)] text-center">
             <div className="text-[11px] text-[var(--theme-card-text-muted)] font-mono">
-              Default Super Admin: <code className="text-emerald-400 font-bold">MI007_ADMIN_2026</code>
-            </div>
-            <div className="text-[10px] text-slate-500 font-mono mt-1">
-              Author key: <code className="text-slate-400">ANALYST_DEV_2026</code>
+              Contact your administrator for access credentials.
             </div>
             <div className="mt-4">
               <Link href="/blog" className="text-xs text-slate-400 hover:text-white transition-colors">

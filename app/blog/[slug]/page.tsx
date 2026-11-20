@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { BlogPost } from '@/lib/blog/blogService';
 
 export default function BlogPostReaderPage() {
@@ -13,6 +15,12 @@ export default function BlogPostReaderPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [morePosts, setMorePosts] = useState<BlogPost[]>([]);
+  // BL13 fix: build share URL only client-side to avoid SSR window reference
+  const [shareUrl, setShareUrl] = useState('');
+
+  useEffect(() => {
+    setShareUrl(window.location.href);
+  }, []);
 
   useEffect(() => {
     async function loadPost() {
@@ -172,7 +180,7 @@ export default function BlogPostReaderPage() {
               <span>{copied ? '✓ Copied' : '🔗 Copy'}</span>
             </button>
             <a
-              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
+              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(shareUrl)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] hover:border-sky-500/50 bg-slate-900/80 hover:bg-slate-800 text-xs font-mono font-bold text-slate-300 hover:text-sky-400 transition-colors cursor-pointer"
@@ -180,7 +188,7 @@ export default function BlogPostReaderPage() {
               𝕏 Share
             </a>
             <a
-              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${post.title} — ${typeof window !== 'undefined' ? window.location.href : ''}`)}`}
+              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${post.title} — ${shareUrl}`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] hover:border-emerald-500/50 bg-slate-900/80 hover:bg-slate-800 text-xs font-mono font-bold text-slate-300 hover:text-emerald-400 transition-colors cursor-pointer"
@@ -204,64 +212,26 @@ export default function BlogPostReaderPage() {
         </div>
       )}
 
-      {/* ── Article Body (Formatted Reader) ── */}
+      {/* ── Article Body (Markdown Rendered) ── */}
       <article className="max-w-3xl mx-auto px-4 sm:px-6 pb-16">
-        <div className="prose prose-invert prose-emerald max-w-none text-slate-200 text-sm sm:text-base leading-relaxed space-y-6">
-          {post.content.split('\n\n').map((paragraph, idx) => {
-            const p = paragraph.trim();
-            if (!p) return null;
-
-            // Heading 2
-            if (p.startsWith('## ')) {
-              return (
-                <h2 key={idx} className="text-xl sm:text-2xl font-black text-white pt-6 pb-2 border-b border-[var(--theme-card-border)]">
-                  {p.replace(/^##\s+/, '')}
-                </h2>
-              );
-            }
-
-            // Heading 3
-            if (p.startsWith('### ')) {
-              return (
-                <h3 key={idx} className="text-lg sm:text-xl font-bold text-white pt-4 pb-1">
-                  {p.replace(/^###\s+/, '')}
-                </h3>
-              );
-            }
-
-            // Callout / Blockquote
-            if (p.startsWith('> ')) {
-              return (
-                <blockquote
-                  key={idx}
-                  className="my-4 border-l-4 border-emerald-500 bg-emerald-500/10 rounded-r-xl p-4 text-emerald-200 text-sm leading-relaxed"
-                >
-                  {p.replace(/^>\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1')}
-                </blockquote>
-              );
-            }
-
-            // Bullet List
-            if (p.startsWith('- ') || p.startsWith('1. ') || p.startsWith('* ')) {
-              const lines = p.split('\n');
-              return (
-                <ul key={idx} className="list-disc list-inside space-y-2 text-slate-300 pl-2">
-                  {lines.map((li, liIdx) => (
-                    <li key={liIdx} className="leading-relaxed">
-                      {li.replace(/^[-*0-9.]+\s+/, '')}
-                    </li>
-                  ))}
-                </ul>
-              );
-            }
-
-            // Standard Paragraph
-            return (
-              <p key={idx} className="text-slate-300 leading-relaxed">
-                {p}
-              </p>
-            );
-          })}
+        {/* BL7 fix: replaced hand-rolled regex renderer with react-markdown + remark-gfm */}
+        <div className="prose prose-invert prose-emerald prose-sm sm:prose-base max-w-none
+          prose-headings:text-white prose-headings:font-black
+          prose-h2:text-xl prose-h2:sm:text-2xl prose-h2:border-b prose-h2:border-[var(--theme-card-border)] prose-h2:pb-2 prose-h2:pt-6
+          prose-h3:text-lg prose-h3:sm:text-xl prose-h3:pt-4 prose-h3:pb-1
+          prose-p:text-slate-300 prose-p:leading-relaxed
+          prose-li:text-slate-300 prose-li:leading-relaxed
+          prose-blockquote:border-l-4 prose-blockquote:border-emerald-500 prose-blockquote:bg-emerald-500/10
+          prose-blockquote:rounded-r-xl prose-blockquote:p-4 prose-blockquote:text-emerald-200 prose-blockquote:not-italic
+          prose-code:bg-slate-800 prose-code:text-emerald-300 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
+          prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-800 prose-pre:rounded-xl
+          prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:text-emerald-300
+          prose-strong:text-white prose-em:text-slate-200
+          prose-hr:border-[var(--theme-card-border)]
+          prose-table:text-sm prose-th:text-white prose-td:text-slate-300">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {post.content}
+          </ReactMarkdown>
         </div>
 
         {/* Tags */}

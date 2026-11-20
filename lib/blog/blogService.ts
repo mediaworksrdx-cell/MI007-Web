@@ -246,10 +246,20 @@ export async function getAllBlogPosts(options?: {
 
   return posts.filter((p) => {
     // Status filter
-    if (statusFilter !== 'all' && p.status !== statusFilter) {
-      if (!options?.isAdmin && (!options?.authorKeyId || p.authorKeyId !== options.authorKeyId)) {
-        return false;
+    // BL10 fix: when status=all, admins see everything; authors see only their own; public sees nothing extra
+    if (statusFilter === 'all') {
+      if (options?.isAdmin) {
+        // super admin: all posts visible
+      } else if (options?.authorKeyId) {
+        // author: only their own posts visible (published + their own drafts)
+        if (p.status === 'draft' && p.authorKeyId !== options.authorKeyId) return false;
+      } else {
+        // anonymous: only published
+        if (p.status !== 'published') return false;
       }
+    } else if (p.status !== statusFilter) {
+      // non-'all' status filter: strict match
+      return false;
     }
 
     // Category filter
