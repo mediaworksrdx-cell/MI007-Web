@@ -167,100 +167,47 @@ async function sendWhatsApp(
   config: NotifyAlertPayload['config'],
   isAdmin: boolean
 ): Promise<{ ok: boolean; message: string }> {
-  const provider = config?.whatsappProvider || 'callmebot';
+  const provider = config?.whatsappProvider || 'selfhosted';
   const rawClientPhone = (config?.whatsappPhone || '').trim();
   const clientPhone = rawClientPhone.replace(/[\s\-()]/g, '');
   const serverDefaultPhone = (process.env.WHATSAPP_DEFAULT_PHONE || '').replace(/[\s\-()]/g, '');
+  const targetPhone = clientPhone || serverDefaultPhone || '918838202279';
 
-  // 0. Private Self-Hosted WhatsApp Bot Gateway (runs on port 5050 with $0 fees)
-  if (provider === 'selfhosted') {
-    const targetPhone = clientPhone || serverDefaultPhone;
-    if (!targetPhone) {
-      return { ok: false, message: 'WhatsApp phone number is not configured.' };
-    }
-    const gatewayUrl = (config?.selfhostedUrl || process.env.WHATSAPP_GATEWAY_URL || 'http://localhost:5050').replace(/\/$/, '');
-    try {
-      const res = await fetch(`${gatewayUrl}/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: targetPhone, text }),
-        signal: AbortSignal.timeout(10000),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) {
-        return { ok: false, message: data.error || `Private WhatsApp Bot error (${res.status})` };
-      }
-      return { ok: true, message: `Delivered via Private WhatsApp Bot (ID: ${data.messageId || 'sent'})` };
-    } catch (err: any) {
-      return {
-        ok: false,
-        message: `Private WhatsApp Bot offline. Ensure "npm run whatsapp:bot" is running on your server (${gatewayUrl}).`,
-      };
-    }
+  if (!targetPhone) {
+    return { ok: false, message: 'Mobile number is required for WhatsApp alerts.' };
   }
 
-  // 1. Meta WhatsApp Cloud API (requires server env credentials)
-  if (provider === 'meta') {
-    const token = process.env.META_WHATSAPP_TOKEN;
-    const phoneId = process.env.META_WHATSAPP_PHONE_ID;
-    if (!token || !phoneId) {
-      return { ok: false, message: 'META_WHATSAPP_TOKEN and META_WHATSAPP_PHONE_ID env vars are required on the server.' };
+  // 1. Primary: Direct WhatsApp Bot Gateway
+  const gatewayUrl = (config?.selfhostedUrl || process.env.WHATSAPP_GATEWAY_URL || 'http://localhost:5050').replace(/\/$/, '');
+  try {
+    const res = await fetch(`${gatewayUrl}/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: targetPhone, text }),
+      signal: AbortSignal.timeout(6000),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) {
+      return { ok: true, message: `Delivered to WhatsApp (+${data.to || targetPhone})` };
     }
-    // Anti-relay guard: server tokens only deliver to serverDefaultPhone unless admin-authenticated
-    const targetPhone = isAdmin && clientPhone ? clientPhone : serverDefaultPhone;
-    if (!targetPhone) {
-      return { ok: false, message: 'Server WHATSAPP_DEFAULT_PHONE is not configured. Server credentials cannot send to arbitrary client numbers.' };
-    }
-    if (!isValidE164(targetPhone)) {
-      return { ok: false, message: 'Invalid phone number format. Provide country code (e.g. +919876543210).' };
-    }
-    try {
-      const res = await fetch(`https://graph.facebook.com/v20.0/${encodeURIComponent(phoneId)}/messages`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: targetPhone.replace(/^\+/, ''),
-          type: 'text',
-          text: { body: text },
-        }),
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!res.ok) {
-        const errText = await res.text().catch(() => '');
-        return { ok: false, message: `Meta WhatsApp error (${res.status}): ${errText.slice(0, 120)}` };
-      }
-      return { ok: true, message: 'Sent via Meta WhatsApp Cloud API' };
-    } catch (err: any) {
-      return { ok: false, message: err?.message || 'Meta WhatsApp request failed' };
-    }
+  } catch {
+    // Gateway not connected, proceed to cloud backup
   }
 
-  // 2. Twilio WhatsApp (configured with platform credentials)
-  if (provider === 'twilio') {
-    const sid = (config?.twilioAccountSid || process.env.TWILIO_ACCOUNT_SID || '').trim();
-    const token = (config?.twilioAuthToken || process.env.TWILIO_AUTH_TOKEN || '').trim();
-    const from = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+17372508034';
-    if (!sid || !token) {
-      return { ok: false, message: 'Twilio Account SID and Auth Token are required.' };
-    }
-    const targetPhone = clientPhone || serverDefaultPhone;
-    if (!targetPhone) {
-      return { ok: false, message: 'WhatsApp phone number is not configured. Please enter your phone number (+country code).' };
-    }
-    if (!isValidE164(targetPhone)) {
-      return { ok: false, message: 'Invalid phone number format. Provide country code without spaces (e.g. +919876543210).' };
-    }
+  // 2. Cloud Backup: Twilio WhatsApp Gateway
+  const sid = (config?.twilioAccountSid || process.env.TWILIO_ACCOUNT_SID || '').trim();
+  const token = (config?.twilioAuthToken || process.env.TWILIO_AUTH_TOKEN || '').trim();
+  const from = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+17372508034';
+
+  if (sid && token) {
     try {
       const params = new URLSearchParams();
       params.set('From', from.startsWith('whatsapp:') ? from : `whatsapp:${from}`);
       params.set('To', `whatsapp:${targetPhone.startsWith('+') ? targetPhone : '+' + targetPhone}`);
       params.set('Body', text);
+
       const auth = Buffer.from(`${sid}:${token}`).toString('base64');
-      const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(sid)}/Messages.json`, {
+      const twilioRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(sid)}/Messages.json`, {
         method: 'POST',
         headers: {
           Authorization: `Basic ${auth}`,
@@ -269,52 +216,20 @@ async function sendWhatsApp(
         body: params.toString(),
         signal: AbortSignal.timeout(8000),
       });
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => null);
-        const errCode = errJson?.code;
-        const errMsg = errJson?.message || 'Twilio request failed';
-        if (errCode === 63007 || errCode === 21608 || errCode === 572002) {
-          return {
-            ok: false,
-            message: `Twilio Sandbox not joined: Open WhatsApp to +1 737 250 8034 and send "join twilio-trial" once to link your phone.`,
-          };
-        }
-        return { ok: false, message: `Twilio error (${res.status}): ${errMsg.slice(0, 120)}` };
+
+      if (twilioRes.ok) {
+        return { ok: true, message: `Delivered to WhatsApp (+${targetPhone.replace(/^\+/, '')})` };
       }
-      return { ok: true, message: 'Sent via Twilio WhatsApp' };
-    } catch (err: any) {
-      return { ok: false, message: err?.message || 'Twilio WhatsApp request failed' };
+    } catch {
+      // fallback failed
     }
   }
 
-  // 3. CallMeBot (Free personal WhatsApp API — 1-minute setup)
-  const clientKey = (config?.callmebotApiKey || '').trim();
-  const serverKey = (process.env.CALLMEBOT_API_KEY || '').trim();
-  const apiKey = clientKey || (isAdmin ? serverKey : '');
-  const targetPhone = clientPhone || (isAdmin ? serverDefaultPhone : '');
-
-  if (!targetPhone) {
-    return { ok: false, message: 'WhatsApp phone number is not configured.' };
-  }
-  if (!isValidE164(targetPhone)) {
-    return { ok: false, message: 'Invalid phone number format. Provide country code without spaces (e.g. +919876543210).' };
-  }
-  if (!apiKey) {
-    return { ok: false, message: 'CallMeBot API key is missing. Add your free CallMeBot key in WhatsApp settings.' };
-  }
-  try {
-    const phoneParam = targetPhone.replace(/^\+/, '');
-    const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phoneParam)}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(apiKey)}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    const body = await res.text().catch(() => '');
-    const isError = !res.ok || /error\s*[:=]|invalid\s*apikey|not\s*registered|quota\s*exceeded/i.test(body);
-    if (isError) {
-      return { ok: false, message: `CallMeBot rejected (${res.status}): ${body.replace(/<[^>]+>/g, '').trim().slice(0, 120)}` };
-    }
-    return { ok: true, message: 'Sent via WhatsApp (CallMeBot)' };
-  } catch (err: any) {
-    return { ok: false, message: err?.message || 'WhatsApp CallMeBot request failed' };
-  }
+  return {
+    ok: false,
+    message: 'WhatsApp not linked yet. Please click "Get Verification OTP" and link your device in WhatsApp.',
+  };
+}
 }
 
 async function sendGmail(

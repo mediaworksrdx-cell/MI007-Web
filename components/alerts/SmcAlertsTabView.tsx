@@ -633,206 +633,82 @@ export function SmcAlertsTabView() {
                 </label>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] mb-1">
-                    Provider
-                  </label>
-                  <select
-                    value={settings.whatsappProvider}
-                    onChange={(e) => setSettings((s) => ({ ...s, whatsappProvider: e.target.value as any }))}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs"
-                  >
-                    <option value="selfhosted">Private WhatsApp Bot ($0 Free • Self-Hosted)</option>
-                    <option value="twilio">Twilio WhatsApp (Active)</option>
-                    <option value="callmebot">CallMeBot (Free Personal)</option>
-                    <option value="meta">Meta Cloud API (.env)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] mb-1">
-                    Phone (+CountryCode)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="+919876543210"
-                    value={settings.whatsappPhone}
-                    onChange={(e) => setSettings((s) => ({ ...s, whatsappPhone: e.target.value }))}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs mono"
-                  />
-                </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] mb-1">
+                  Mobile Number (with Country Code)
+                </label>
+                <input
+                  type="text"
+                  placeholder="+918838202279"
+                  value={settings.whatsappPhone}
+                  onChange={(e) => setSettings((s) => ({ ...s, whatsappPhone: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-sm mono font-bold"
+                />
               </div>
 
-              {settings.whatsappProvider === 'selfhosted' && (
-                <div className="p-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 text-[11px] leading-relaxed space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-bold text-emerald-400">
-                      <span>🚀 Private WhatsApp Bot ($0 Cost • Unlimited Alerts)</span>
+              {botConnected ? (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <div>
+                      <div className="text-xs font-bold text-emerald-400">Verified &amp; Connected</div>
+                      <div className="text-[11px] text-slate-300 mono">{settings.whatsappPhone || '+918838202279'}</div>
                     </div>
-                    {botConnected ? (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        Online &amp; Linked
-                      </span>
-                    ) : botStatus === 'awaiting_pairing' ? (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30">
-                        ⚡ Enter OTP on Phone
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-400 text-[10px] font-bold border border-slate-500/30">
-                        Terminal Gateway Offline
-                      </span>
-                    )}
                   </div>
-
-                  {botConnected ? (
-                    <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 space-y-1">
-                      <div className="text-xs font-bold text-emerald-300">
-                        ✅ Connected: {botUser || settings.whatsappPhone || '+918838202279'}
-                      </div>
-                      <p className="text-[10px] text-[var(--theme-card-text-muted)]">
-                        Your WhatsApp bot is linked and permanently authenticated. Real-time trade setups will be delivered to your phone with zero per-message charges.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleResetBotSession}
-                        disabled={isBotLoading}
-                        className="mt-1 text-[10px] text-red-400 hover:text-red-300 underline cursor-pointer"
-                      >
-                        Unlink / Re-pair with another phone
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      {botPairingCode ? (
-                        <div className="p-3 rounded-lg bg-black/50 border border-emerald-500/40 text-center space-y-2">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                            Your WhatsApp Pairing OTP Code:
-                          </div>
-                          <div className="flex items-center justify-center gap-2">
-                            <span className="px-4 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-2xl font-black font-mono tracking-widest text-emerald-300 select-all">
-                              {botPairingCode}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                navigator.clipboard.writeText(botPairingCode.replace('-', ''));
-                                setCodeCopied(true);
-                                setTimeout(() => setCodeCopied(false), 2000);
-                              }}
-                              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white cursor-pointer"
-                              title="Copy Code"
-                            >
-                              {codeCopied ? '✓ Copied' : '📋 Copy'}
-                            </button>
-                          </div>
-                          <ol className="list-decimal list-inside text-[11px] text-left text-slate-300 space-y-1 pt-1 border-t border-slate-800">
-                            <li>Open WhatsApp on phone (<strong className="text-emerald-300">{settings.whatsappPhone || '+918838202279'}</strong>)</li>
-                            <li>Tap <strong>Settings / 3-dots</strong> $\rightarrow$ <strong>Linked Devices</strong> $\rightarrow$ <strong>Link a Device</strong></li>
-                            <li>Tap <strong className="text-emerald-300">"Link with phone number instead"</strong> at the bottom</li>
-                            <li>Enter the 8-character code: <strong className="text-emerald-400 font-mono">{botPairingCode}</strong></li>
-                          </ol>
-                        </div>
-                      ) : (
-                        <div className="space-y-1.5">
-                          <p className="text-[10px] text-[var(--theme-card-text-muted)]">
-                            Start the gateway in your terminal, or click below to request an instant OTP pairing code:
-                          </p>
-                          <div className="px-2 py-1 rounded bg-black/40 border border-slate-700/50 font-mono text-[11px] text-emerald-300 select-all">
-                            npm run whatsapp:bot
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleRequestPairingOtp}
-                            disabled={isBotLoading}
-                            className="w-full mt-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                          >
-                            <span>{isBotLoading ? '⏳ Requesting OTP...' : '📲 Get WhatsApp Pairing OTP'}</span>
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
+                  <button
+                    type="button"
+                    onClick={handleResetBotSession}
+                    disabled={isBotLoading}
+                    className="text-[11px] text-red-400 hover:text-red-300 underline cursor-pointer"
+                  >
+                    Unlink
+                  </button>
                 </div>
-              )}
-
-              {settings.whatsappProvider === 'twilio' && (
-                <div className="p-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 text-[11px] leading-relaxed">
-                  <div className="flex items-center gap-1.5 font-bold text-emerald-400 mb-1">
-                    <span>⚡ Twilio WhatsApp Gateway Active</span>
+              ) : botPairingCode ? (
+                <div className="p-3.5 rounded-xl bg-black/60 border border-emerald-500/40 text-center space-y-2.5">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                    Verification Code (Pairing OTP)
                   </div>
-                  <p className="text-[10px] text-[var(--theme-card-text-muted)]">
-                    Link your phone to your Twilio WhatsApp Sandbox (one-time only):
-                  </p>
-                  <ol className="list-decimal list-inside text-[10px] text-[var(--theme-card-text-muted)] space-y-0.5 mt-1">
-                    <li>
-                      Open WhatsApp to{' '}
-                      <a
-                        href="https://wa.me/17372508034?text=join%20twilio-trial"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline text-emerald-500 font-bold"
-                      >
-                        +1 737 250 8034
-                      </a>
-                    </li>
-                    <li>
-                      Send the message:{' '}
-                      <code className="px-1 py-0.5 rounded bg-slate-500/20 font-mono text-emerald-300 font-bold">
-                        join twilio-trial
-                      </code>
-                    </li>
-                    <li>Enter your phone number above (e.g. <code className="text-emerald-400 font-mono">+918838202279</code>) and click <strong>🧪 Send Test WhatsApp</strong>.</li>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="px-4 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-2xl font-black font-mono tracking-widest text-emerald-300 select-all">
+                      {botPairingCode}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(botPairingCode.replace('-', ''));
+                        setCodeCopied(true);
+                        setTimeout(() => setCodeCopied(false), 2000);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white cursor-pointer font-bold"
+                    >
+                      {codeCopied ? '✓ Copied' : '📋 Copy'}
+                    </button>
+                  </div>
+                  <ol className="text-left text-[11px] text-slate-300 space-y-1 pt-1.5 border-t border-slate-800 list-decimal list-inside">
+                    <li>Open WhatsApp on phone (<strong>{settings.whatsappPhone || '+918838202279'}</strong>)</li>
+                    <li>Tap <strong>Linked Devices</strong> &rarr; <strong>Link with phone number instead</strong></li>
+                    <li>Enter the 8-digit verification code above</li>
                   </ol>
                 </div>
-              )}
-
-              {settings.whatsappProvider === 'callmebot' && (
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] mb-1">
-                    CallMeBot API Key
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="Paste your free CallMeBot apikey"
-                    value={settings.callmebotApiKey}
-                    onChange={(e) => setSettings((s) => ({ ...s, callmebotApiKey: e.target.value }))}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs mono"
-                  />
-                  <p className="text-[10px] text-[var(--theme-card-text-muted)] mt-1.5 leading-relaxed">
-                    Free 1-min setup: Open WhatsApp to{' '}
-                    <a
-                      href="https://wa.me/34644204756?text=I%20allow%20callmebot%20to%20send%20me%20messages"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline text-emerald-500 font-bold"
-                    >
-                      +34 644 20 47 56
-                    </a>{' '}
-                    (or alternate{' '}
-                    <a
-                      href="https://wa.me/34623786449?text=I%20allow%20callmebot%20to%20send%20me%20messages"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline text-emerald-500 font-bold"
-                    >
-                      +34 623 78 64 49
-                    </a>
-                    ) and send:{' '}
-                    <code className="px-1 py-0.5 rounded bg-slate-500/15 text-[11px] font-mono text-emerald-400">
-                      I allow callmebot to send me messages
-                    </code>
-                    . CallMeBot will reply with your API Key within 1-2 minutes.
-                  </p>
-                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleRequestPairingOtp}
+                  disabled={isBotLoading}
+                  className="w-full px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                >
+                  <span>{isBotLoading ? '⏳ Requesting Verification Code...' : '📲 Get Verification OTP'}</span>
+                </button>
               )}
             </div>
+
             <button
               type="button"
               onClick={() => handleSendTest('whatsapp')}
-              className="w-full px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-500 text-xs font-bold cursor-pointer"
+              className="w-full px-3 py-2 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-500 text-xs font-bold cursor-pointer transition-all mt-2"
             >
-              🧪 Send Test WhatsApp
+              🧪 Send Test WhatsApp Alert
             </button>
           </div>
 

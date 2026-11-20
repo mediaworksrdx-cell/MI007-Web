@@ -259,6 +259,7 @@ export function loadAlertSettings(): SmcAlertChannelSettings {
     return {
       ...DEFAULT_CHANNEL_SETTINGS,
       ...parsed,
+      whatsappProvider: 'selfhosted',
       whatsappPhone: parsed.whatsappPhone || '+918838202279',
       twilioAccountSid: parsed.twilioAccountSid || DEFAULT_TWILIO_SID,
       twilioAuthToken: parsed.twilioAuthToken || DEFAULT_TWILIO_TOKEN,
