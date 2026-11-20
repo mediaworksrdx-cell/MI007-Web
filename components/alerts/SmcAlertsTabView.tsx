@@ -588,14 +588,14 @@ export function SmcAlertsTabView() {
                   <p className="text-[10px] text-[var(--theme-card-text-muted)] mt-1.5 leading-relaxed">
                     Free 1-min setup: Open WhatsApp to{' '}
                     <a
-                      href="https://wa.me/34698288973?text=I%20allow%20callmebot%20to%20send%20me%20messages"
+                      href="https://wa.me/34644204756?text=I%20allow%20callmebot%20to%20send%20me%20messages"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline text-emerald-500 font-bold"
                     >
-                      +34 698 28 89 73
+                      +34 644 20 47 56
                     </a>{' '}
-                    (or backup{' '}
+                    (or alternate{' '}
                     <a
                       href="https://wa.me/34623786449?text=I%20allow%20callmebot%20to%20send%20me%20messages"
                       target="_blank"
