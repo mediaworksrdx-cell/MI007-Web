@@ -1705,12 +1705,10 @@ export default function TerminalPage() {
               </div>
             )}
 
-            {/* ── SMC Alerts Module (Shown on ALERTS tab) ── */}
-            {activeTab === 'alerts' && (
-              <div className="mb-8 animate-in fade-in duration-150">
-                <SmcAlertsTabView />
-              </div>
-            )}
+            {/* ── SMC Alerts Module (Always mounted in background so auto-scanning & notifications stay active across all terminal tabs) ── */}
+            <div className={`mb-8 ${activeTab === 'alerts' ? 'block animate-in fade-in duration-150' : 'hidden'}`}>
+              <SmcAlertsTabView />
+            </div>
 
             {/* ── Core Indices Grid (Shown on Full Dashboard) ── */}
             {activeTab === 'all' && (

@@ -117,23 +117,50 @@ function buildHtmlEmail(payload: NotifyAlertPayload): string {
   `;
 }
 
+function isOriginAuthorized(req: NextRequest): boolean {
+  const adminSecret = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
+  const token = req.headers.get('x-mi007-admin-secret') || req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+  if (adminSecret && token === adminSecret) return true;
+
+  const origin = req.headers.get('origin');
+  const host = req.headers.get('host');
+  if (origin && host) {
+    try {
+      const originHost = new URL(origin).host;
+      if (originHost === host) return true;
+    } catch {}
+  }
+  // Allow same-host/internal server-side proxy
+  const referer = req.headers.get('referer');
+  if (referer && host) {
+    try {
+      const refHost = new URL(referer).host;
+      if (refHost === host) return true;
+    } catch {}
+  }
+  return false;
+}
+
 async function sendWhatsApp(
   text: string,
-  config: NotifyAlertPayload['config']
+  config: NotifyAlertPayload['config'],
+  reqAuthorized: boolean
 ): Promise<{ ok: boolean; message: string }> {
   const provider = config?.whatsappProvider || 'callmebot';
-  const rawPhone = (config?.whatsappPhone || process.env.WHATSAPP_DEFAULT_PHONE || '').replace(/[^0-9+]/g, '');
+  const clientPhone = (config?.whatsappPhone || '').replace(/[^0-9+]/g, '');
+  const serverDefaultPhone = (process.env.WHATSAPP_DEFAULT_PHONE || '').replace(/[^0-9+]/g, '');
 
-  if (!rawPhone) {
-    return { ok: false, message: 'WhatsApp phone number is not configured.' };
-  }
-
-  // 1. Meta WhatsApp Cloud API (if configured via env)
-  if (provider === 'meta' || (process.env.META_WHATSAPP_TOKEN && process.env.META_WHATSAPP_PHONE_ID && provider !== 'callmebot')) {
+  // 1. Meta WhatsApp Cloud API (requires server env credentials)
+  if (provider === 'meta') {
     const token = process.env.META_WHATSAPP_TOKEN;
     const phoneId = process.env.META_WHATSAPP_PHONE_ID;
     if (!token || !phoneId) {
-      return { ok: false, message: 'META_WHATSAPP_TOKEN and META_WHATSAPP_PHONE_ID env vars are required.' };
+      return { ok: false, message: 'META_WHATSAPP_TOKEN and META_WHATSAPP_PHONE_ID env vars are required on the server.' };
+    }
+    // Anti-relay guard: server tokens only deliver to serverDefaultPhone unless authorized
+    const targetPhone = reqAuthorized && clientPhone ? clientPhone : (serverDefaultPhone || clientPhone);
+    if (!targetPhone) {
+      return { ok: false, message: 'WhatsApp recipient phone number is not configured.' };
     }
     try {
       const res = await fetch(`https://graph.facebook.com/v20.0/${encodeURIComponent(phoneId)}/messages`, {
@@ -144,7 +171,7 @@ async function sendWhatsApp(
         },
         body: JSON.stringify({
           messaging_product: 'whatsapp',
-          to: rawPhone.replace(/^\+/, ''),
+          to: targetPhone.replace(/^\+/, ''),
           type: 'text',
           text: { body: text },
         }),
@@ -160,18 +187,22 @@ async function sendWhatsApp(
     }
   }
 
-  // 2. Twilio WhatsApp (if configured via env)
+  // 2. Twilio WhatsApp (requires server env credentials)
   if (provider === 'twilio') {
     const sid = process.env.TWILIO_ACCOUNT_SID;
     const token = process.env.TWILIO_AUTH_TOKEN;
     const from = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
     if (!sid || !token) {
-      return { ok: false, message: 'TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN env vars are required.' };
+      return { ok: false, message: 'TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN env vars are required on the server.' };
+    }
+    const targetPhone = reqAuthorized && clientPhone ? clientPhone : (serverDefaultPhone || clientPhone);
+    if (!targetPhone) {
+      return { ok: false, message: 'Twilio WhatsApp recipient phone number is not configured.' };
     }
     try {
       const params = new URLSearchParams();
       params.set('From', from.startsWith('whatsapp:') ? from : `whatsapp:${from}`);
-      params.set('To', `whatsapp:${rawPhone.startsWith('+') ? rawPhone : '+' + rawPhone}`);
+      params.set('To', `whatsapp:${targetPhone.startsWith('+') ? targetPhone : '+' + targetPhone}`);
       params.set('Body', text);
       const auth = Buffer.from(`${sid}:${token}`).toString('base64');
       const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(sid)}/Messages.json`, {
@@ -194,16 +225,24 @@ async function sendWhatsApp(
   }
 
   // 3. CallMeBot (Free personal WhatsApp API — 1-minute setup)
-  const apiKey = (config?.callmebotApiKey || process.env.CALLMEBOT_API_KEY || '').trim();
+  const clientKey = (config?.callmebotApiKey || '').trim();
+  const serverKey = (process.env.CALLMEBOT_API_KEY || '').trim();
+  const apiKey = clientKey || (reqAuthorized ? serverKey : '');
+  const targetPhone = clientPhone || (reqAuthorized ? serverDefaultPhone : '');
+
+  if (!targetPhone) {
+    return { ok: false, message: 'WhatsApp phone number is not configured.' };
+  }
   if (!apiKey) {
     return { ok: false, message: 'CallMeBot API key is missing. Add your free CallMeBot key in WhatsApp settings.' };
   }
   try {
-    const phoneParam = rawPhone.replace(/^\+/, '');
+    const phoneParam = targetPhone.replace(/^\+/, '');
     const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phoneParam)}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(apiKey)}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     const body = await res.text().catch(() => '');
-    if (!res.ok || /error|invalid|apikey/i.test(body)) {
+    const isError = !res.ok || /error\s*[:=]|invalid\s*apikey|not\s*registered|quota\s*exceeded/i.test(body);
+    if (isError) {
       return { ok: false, message: `CallMeBot rejected (${res.status}): ${body.replace(/<[^>]+>/g, '').trim().slice(0, 120)}` };
     }
     return { ok: true, message: 'Sent via WhatsApp (CallMeBot)' };
@@ -214,18 +253,39 @@ async function sendWhatsApp(
 
 async function sendGmail(
   payload: NotifyAlertPayload,
-  plainText: string
+  plainText: string,
+  reqAuthorized: boolean
 ): Promise<{ ok: boolean; message: string }> {
-  const user = (payload.config?.gmailUser || process.env.GMAIL_USER || '').trim();
-  const pass = (payload.config?.gmailAppPassword || process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
-  const to = (payload.config?.gmailTo || process.env.GMAIL_TO || user).trim();
+  const clientUser = (payload.config?.gmailUser || '').trim();
+  const clientPass = (payload.config?.gmailAppPassword || '').replace(/\s+/g, '');
+  const serverUser = (process.env.GMAIL_USER || '').trim();
+  const serverPass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
 
-  if (!user || !pass) {
+  let user = '';
+  let pass = '';
+  let to = '';
+
+  if (clientUser && clientPass) {
+    user = clientUser;
+    pass = clientPass;
+    to = (payload.config?.gmailTo || clientUser).trim();
+  } else if (serverUser && serverPass) {
+    // Open-relay guard: Server credentials only deliver to GMAIL_TO or GMAIL_USER unless internal request is authorized
+    user = serverUser;
+    pass = serverPass;
+    const configuredTo = (process.env.GMAIL_TO || serverUser).trim();
+    if (reqAuthorized && payload.config?.gmailTo) {
+      to = payload.config.gmailTo.trim();
+    } else {
+      to = configuredTo;
+    }
+  } else {
     return {
       ok: false,
-      message: 'Gmail credentials missing. Enter Gmail + 16-char App Password in settings (or set GMAIL_USER & GMAIL_APP_PASSWORD in .env).',
+      message: 'Gmail credentials missing. Enter Gmail + 16-char App Password in settings (or configure GMAIL_USER & GMAIL_APP_PASSWORD on Vercel).',
     };
   }
+
   if (!to) {
     return { ok: false, message: 'Recipient Gmail address is required.' };
   }
@@ -260,6 +320,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing alert payload' }, { status: 400 });
     }
 
+    const reqAuthorized = isOriginAuthorized(req);
     const plainText = buildPlainText(payload);
     const results: {
       whatsapp?: { ok: boolean; message: string };
@@ -269,14 +330,14 @@ export async function POST(req: NextRequest) {
     const tasks: Promise<void>[] = [];
     if (payload.channels?.whatsapp) {
       tasks.push(
-        sendWhatsApp(plainText, payload.config).then((r) => {
+        sendWhatsApp(plainText, payload.config, reqAuthorized).then((r) => {
           results.whatsapp = r;
         })
       );
     }
     if (payload.channels?.gmail) {
       tasks.push(
-        sendGmail(payload, plainText).then((r) => {
+        sendGmail(payload, plainText, reqAuthorized).then((r) => {
           results.gmail = r;
         })
       );

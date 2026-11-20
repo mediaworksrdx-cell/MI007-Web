@@ -41,6 +41,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const isInitialSeed = Boolean(body?.isInitialSeed);
+    const baselineIds: string[] = [];
     const triggered: SmcTriggeredAlert[] = [];
     const concurrency = 6;
     let cursor = 0;
@@ -55,14 +57,15 @@ export async function POST(req: NextRequest) {
         const smc = calculateSMC(candles, { enabled: true }, item.symbol, timeframe);
         const candidates = [...(smc.confirmedSetups || []), ...(smc.allSetups || [])];
         const seenSetupIds = new Set<string>();
+        const seenZones = new Map<string, number>(); // Cluster deduplication by price level
         const lastBarIdx = candles.length - 1;
+        const lastClose = candles[lastBarIdx]?.close ?? 0;
 
         for (const st of candidates) {
           if (!st || seenSetupIds.has(st.id)) continue;
           seenSetupIds.add(st.id);
 
-          // Only alert on recent setups (within last 60 bars)
-          if (lastBarIdx - st.candleIndex > 60) continue;
+          const barsAgo = lastBarIdx - st.candleIndex;
 
           // Quality filter
           const qual = st.qualityScore ?? 0;
@@ -83,9 +86,48 @@ export async function POST(req: NextRequest) {
             continue;
           }
 
+          // Strict Freshness Gate (avoids blasting ancient historical setups)
+          if (!isInitialSeed) {
+            if (stage === 'EARLY') {
+              // Early setup must be formed in the last 4 candles
+              if (barsAgo > 4) continue;
+            } else if (stage === 'RETEST') {
+              // Retest must be active within last 10 candles
+              if (barsAgo > 10) continue;
+            } else if (stage === 'ACTIONABLE') {
+              // Actionable entry: formed within last 15 candles OR actively interacting with entry zone
+              const zoneTolerance = Math.max(Math.abs(st.entryPrice - st.stopLoss) * 1.5, st.entryPrice * 0.005);
+              const isNearZone = Math.abs(lastClose - st.entryPrice) <= zoneTolerance;
+              if (barsAgo > 15 && !isNearZone) continue;
+            } else if (stage === 'TP_HIT') {
+              // Target hit must be recent (within last 3 candles of hit index or formation)
+              const hitIdx = st.tp1HitIndex ?? st.tp2HitIndex ?? st.candleIndex;
+              if (lastBarIdx - hitIdx > 3) continue;
+            } else if (stage === 'SL_HIT') {
+              // Invalidation must be fresh (within last 3 candles)
+              if (barsAgo > 4) continue;
+            }
+          }
+
           // Deterministic deduplication key so the same setup+stage never spams twice
           const dedupId = `${item.symbol.toUpperCase()}|${timeframe}|${st.id}|${stage}|${label}`;
+          baselineIds.push(dedupId);
+
+          if (isInitialSeed) {
+            alreadySent.add(dedupId);
+            continue;
+          }
+
           if (alreadySent.has(dedupId)) continue;
+
+          // Zone Clustering: Deduplicate concurrent overlapping setups on the same price level
+          const clusterUnit = Math.max(0.001, st.entryPrice * 0.002);
+          const zoneKey = `${item.symbol}|${timeframe}|${st.direction}|${Math.round(st.entryPrice / clusterUnit)}|${stage}`;
+          const existingQual = seenZones.get(zoneKey);
+          if (existingQual !== undefined && existingQual >= qual) {
+            continue;
+          }
+          seenZones.set(zoneKey, qual);
           alreadySent.add(dedupId);
 
           const riskDist = Math.max(1e-9, Math.abs(st.entryPrice - st.stopLoss));
@@ -120,7 +162,8 @@ export async function POST(req: NextRequest) {
     await Promise.all(workers);
 
     return NextResponse.json({
-      triggered,
+      triggered: isInitialSeed ? [] : triggered,
+      baselineIds: isInitialSeed ? baselineIds : undefined,
       evaluatedPairs: jobs.length,
       checkedAt: new Date().toISOString(),
     });

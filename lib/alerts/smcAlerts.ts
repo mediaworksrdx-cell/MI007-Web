@@ -167,6 +167,55 @@ export const DEFAULT_CHANNEL_SETTINGS: SmcAlertChannelSettings = {
 const WATCHLIST_KEY = 'mi007_smc_alert_watchlist_v1';
 const SETTINGS_KEY = 'mi007_smc_alert_settings_v1';
 const HISTORY_KEY = 'mi007_smc_alert_history_v1';
+const SENT_IDS_KEY = 'mi007_smc_alert_sent_ids_v1';
+const MAX_SENT_IDS = 5000;
+const SENT_ID_TTL_MS = 7 * 24 * 3600 * 1000; // 7 days retention
+
+export function loadSentAlertIds(): Record<string, number> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(SENT_IDS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return {};
+    const now = Date.now();
+    const clean: Record<string, number> = {};
+    for (const [id, ts] of Object.entries(parsed)) {
+      if (typeof ts === 'number' && now - ts < SENT_ID_TTL_MS) {
+        clean[id] = ts;
+      }
+    }
+    return clean;
+  } catch {
+    return {};
+  }
+}
+
+export function saveSentAlertIds(sent: Record<string, number>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const entries = Object.entries(sent);
+    if (entries.length > MAX_SENT_IDS) {
+      entries.sort((a, b) => b[1] - a[1]);
+      const trimmed = Object.fromEntries(entries.slice(0, MAX_SENT_IDS));
+      localStorage.setItem(SENT_IDS_KEY, JSON.stringify(trimmed));
+      return;
+    }
+    localStorage.setItem(SENT_IDS_KEY, JSON.stringify(sent));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+export function recordSentAlertIds(newIds: string[]): Record<string, number> {
+  const current = loadSentAlertIds();
+  const now = Date.now();
+  for (const id of newIds) {
+    current[id] = now;
+  }
+  saveSentAlertIds(current);
+  return current;
+}
 
 export function loadAlertWatchlist(): SmcAlertWatchItem[] {
   if (typeof window === 'undefined') return [];

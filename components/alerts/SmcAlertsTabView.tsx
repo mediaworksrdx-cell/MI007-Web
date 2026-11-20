@@ -21,6 +21,8 @@ import {
   saveAlertHistory,
   saveAlertSettings,
   saveAlertWatchlist,
+  loadSentAlertIds,
+  recordSentAlertIds,
 } from '@/lib/alerts/smcAlerts';
 
 function playAlertChime() {
@@ -80,11 +82,17 @@ export function SmcAlertsTabView() {
 
   const historyRef = useRef<SmcTriggeredAlert[]>([]);
   historyRef.current = history;
+  const sentIdsRef = useRef<Record<string, number>>({});
+  const hasSeededRef = useRef<boolean>(false);
 
   useEffect(() => {
     setWatchlist(loadAlertWatchlist());
     setSettings(loadAlertSettings());
     setHistory(loadAlertHistory());
+    sentIdsRef.current = loadSentAlertIds();
+    if (Object.keys(sentIdsRef.current).length > 0) {
+      hasSeededRef.current = true;
+    }
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setBrowserPermission(Notification.permission);
     }
@@ -194,17 +202,34 @@ export function SmcAlertsTabView() {
 
     setIsScanning(true);
     try {
-      const alreadySentIds = historyRef.current.map((h) => h.id);
+      const isInitial = !hasSeededRef.current && Object.keys(sentIdsRef.current).length === 0;
+      const alreadySentIds = Object.keys(sentIdsRef.current);
       const res = await fetch('/api/alerts/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: enabled, alreadySentIds }),
+        body: JSON.stringify({
+          items: enabled,
+          alreadySentIds,
+          isInitialSeed: isInitial,
+        }),
       });
       const data = await res.json();
-      const newlyTriggered: SmcTriggeredAlert[] = Array.isArray(data?.triggered) ? data.triggered : [];
       setLastScanTime(new Date().toLocaleTimeString());
 
+      if (isInitial && Array.isArray(data?.baselineIds)) {
+        sentIdsRef.current = recordSentAlertIds(data.baselineIds);
+        hasSeededRef.current = true;
+        setScanSummary(`Initialized baseline for ${data.evaluatedPairs || 0} symbol/TF pairs. Actively watching for new setups.`);
+        return;
+      }
+
+      hasSeededRef.current = true;
+      const newlyTriggered: SmcTriggeredAlert[] = Array.isArray(data?.triggered) ? data.triggered : [];
+
       if (newlyTriggered.length > 0) {
+        // Record all newly triggered IDs into persistent sent store immediately
+        sentIdsRef.current = recordSentAlertIds(newlyTriggered.map((t) => t.id));
+
         const watchById = new Map(enabled.map((w) => [w.id, w]));
         const dispatched: SmcTriggeredAlert[] = [];
         for (const al of newlyTriggered) {
@@ -227,7 +252,16 @@ export function SmcAlertsTabView() {
     }
   }, [watchlist, isScanning, dispatchSingleAlert]);
 
-  // Auto-scan interval while Dashboard tab is open
+  // Initial scan once hydrated to establish baseline or check active setups
+  useEffect(() => {
+    if (!hydrated || watchlist.filter((w) => w.enabled).length === 0) return;
+    const initialTimer = setTimeout(() => {
+      runScan();
+    }, 1200);
+    return () => clearTimeout(initialTimer);
+  }, [hydrated, watchlist, runScan]);
+
+  // Auto-scan recurring interval
   useEffect(() => {
     if (!hydrated || !settings.autoScanEnabled || watchlist.filter((w) => w.enabled).length === 0) return;
     const ms = Math.max(30, settings.pollIntervalSec || 60) * 1000;
