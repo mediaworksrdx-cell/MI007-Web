@@ -171,6 +171,7 @@ export function SmcAlertsTabView() {
               config: {
                 whatsappProvider: settings.whatsappProvider,
                 whatsappPhone: settings.whatsappPhone,
+                selfhostedUrl: settings.selfhostedUrl,
                 callmebotApiKey: settings.callmebotApiKey,
                 twilioAccountSid: settings.twilioAccountSid,
                 twilioAuthToken: settings.twilioAuthToken,
@@ -343,6 +344,7 @@ export function SmcAlertsTabView() {
           config: {
             whatsappProvider: settings.whatsappProvider,
             whatsappPhone: settings.whatsappPhone,
+            selfhostedUrl: settings.selfhostedUrl,
             callmebotApiKey: settings.callmebotApiKey,
             twilioAccountSid: settings.twilioAccountSid,
             twilioAuthToken: settings.twilioAuthToken,
@@ -558,6 +560,7 @@ export function SmcAlertsTabView() {
                     onChange={(e) => setSettings((s) => ({ ...s, whatsappProvider: e.target.value as any }))}
                     className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs"
                   >
+                    <option value="selfhosted">Private WhatsApp Bot ($0 Free • Self-Hosted)</option>
                     <option value="twilio">Twilio WhatsApp (Active)</option>
                     <option value="callmebot">CallMeBot (Free Personal)</option>
                     <option value="meta">Meta Cloud API (.env)</option>
@@ -576,6 +579,23 @@ export function SmcAlertsTabView() {
                   />
                 </div>
               </div>
+
+              {settings.whatsappProvider === 'selfhosted' && (
+                <div className="p-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 text-[11px] leading-relaxed space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+                    <span>🚀 Private WhatsApp Bot ($0 Cost • Unlimited Alerts)</span>
+                  </div>
+                  <p className="text-[10px] text-[var(--theme-card-text-muted)]">
+                    Start your private bot gateway in your project terminal:
+                  </p>
+                  <div className="px-2 py-1 rounded bg-black/40 border border-slate-700/50 font-mono text-[11px] text-emerald-300 select-all">
+                    npm run whatsapp:bot
+                  </div>
+                  <p className="text-[10px] text-[var(--theme-card-text-muted)]">
+                    Scan the terminal QR code with your phone (WhatsApp $\rightarrow$ Linked Devices). Once scanned, it will send trade alerts directly to any client phone number!
+                  </p>
+                </div>
+              )}
 
               {settings.whatsappProvider === 'twilio' && (
                 <div className="p-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 text-[11px] leading-relaxed">

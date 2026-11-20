@@ -67,8 +67,9 @@ export interface SmcAlertChannelSettings {
   autoScanEnabled: boolean;
   pollIntervalSec: number;
   whatsappEnabled: boolean;
-  whatsappProvider: 'callmebot' | 'meta' | 'twilio';
+  whatsappProvider: 'selfhosted' | 'twilio' | 'callmebot' | 'meta';
   whatsappPhone: string;
+  selfhostedUrl?: string;
   callmebotApiKey: string;
   twilioAccountSid?: string;
   twilioAuthToken?: string;
@@ -163,8 +164,9 @@ export const DEFAULT_CHANNEL_SETTINGS: SmcAlertChannelSettings = {
   autoScanEnabled: true,
   pollIntervalSec: 60,
   whatsappEnabled: false,
-  whatsappProvider: 'twilio',
+  whatsappProvider: 'selfhosted',
   whatsappPhone: '',
+  selfhostedUrl: 'http://localhost:5050',
   callmebotApiKey: '',
   twilioAccountSid: DEFAULT_TWILIO_SID,
   twilioAuthToken: DEFAULT_TWILIO_TOKEN,

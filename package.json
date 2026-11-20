@@ -10,17 +10,20 @@
     "test": "npm run test:mi007 && npx tsx scripts/verify-institutional-audit.ts",
     "test:mi007": "node -r ./scripts/ts-loader.cjs scripts/test-audit-round2-regressions.cjs",
     "test:unit": "npx tsx scripts/test-screener.mjs",
-    "test:strategies": "npx tsx scripts/test-all-screener-strategies.ts"
+    "test:strategies": "npx tsx scripts/test-all-screener-strategies.ts",
+    "whatsapp:bot": "node scripts/whatsapp-gateway.cjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
     "@types/three": "^0.186.0",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
     "framer-motion": "^13.4.6",
     "gsap": "^3.15.0",
     "lightweight-charts": "^5.2.1",
     "next": "^16.4.6",
     "nodemailer": "^10.6.0",
+    "qrcode-terminal": "^0.12.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-markdown": "^10.1.0",

@@ -171,6 +171,33 @@ async function sendWhatsApp(
   const clientPhone = rawClientPhone.replace(/[\s\-()]/g, '');
   const serverDefaultPhone = (process.env.WHATSAPP_DEFAULT_PHONE || '').replace(/[\s\-()]/g, '');
 
+  // 0. Private Self-Hosted WhatsApp Bot Gateway (runs on port 5050 with $0 fees)
+  if (provider === 'selfhosted') {
+    const targetPhone = clientPhone || serverDefaultPhone;
+    if (!targetPhone) {
+      return { ok: false, message: 'WhatsApp phone number is not configured.' };
+    }
+    const gatewayUrl = (config?.selfhostedUrl || process.env.WHATSAPP_GATEWAY_URL || 'http://localhost:5050').replace(/\/$/, '');
+    try {
+      const res = await fetch(`${gatewayUrl}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: targetPhone, text }),
+        signal: AbortSignal.timeout(10000),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        return { ok: false, message: data.error || `Private WhatsApp Bot error (${res.status})` };
+      }
+      return { ok: true, message: `Delivered via Private WhatsApp Bot (ID: ${data.messageId || 'sent'})` };
+    } catch (err: any) {
+      return {
+        ok: false,
+        message: `Private WhatsApp Bot offline. Ensure "npm run whatsapp:bot" is running on your server (${gatewayUrl}).`,
+      };
+    }
+  }
+
   // 1. Meta WhatsApp Cloud API (requires server env credentials)
   if (provider === 'meta') {
     const token = process.env.META_WHATSAPP_TOKEN;
