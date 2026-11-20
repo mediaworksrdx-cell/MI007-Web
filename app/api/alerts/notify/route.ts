@@ -28,6 +28,8 @@ export interface NotifyAlertPayload {
     whatsappProvider?: 'callmebot' | 'meta' | 'twilio';
     whatsappPhone?: string;
     callmebotApiKey?: string;
+    twilioAccountSid?: string;
+    twilioAuthToken?: string;
     gmailTo?: string;
     gmailUser?: string;
     gmailAppPassword?: string;
@@ -211,11 +213,11 @@ async function sendWhatsApp(
 
   // 2. Twilio WhatsApp (configured with platform credentials)
   if (provider === 'twilio') {
-    const sid = process.env.TWILIO_ACCOUNT_SID;
-    const token = process.env.TWILIO_AUTH_TOKEN;
+    const sid = (config?.twilioAccountSid || process.env.TWILIO_ACCOUNT_SID || '').trim();
+    const token = (config?.twilioAuthToken || process.env.TWILIO_AUTH_TOKEN || '').trim();
     const from = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
     if (!sid || !token) {
-      return { ok: false, message: 'TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are required.' };
+      return { ok: false, message: 'Twilio Account SID and Auth Token are required.' };
     }
     const targetPhone = clientPhone || serverDefaultPhone;
     if (!targetPhone) {

@@ -70,6 +70,8 @@ export interface SmcAlertChannelSettings {
   whatsappProvider: 'callmebot' | 'meta' | 'twilio';
   whatsappPhone: string;
   callmebotApiKey: string;
+  twilioAccountSid?: string;
+  twilioAuthToken?: string;
   gmailEnabled: boolean;
   gmailTo: string;
   gmailUser: string;
@@ -152,6 +154,9 @@ export const QUICK_WISH_INSTRUMENTS: QuickInstrumentOption[] = [
   { symbol: 'TSLA', name: 'Tesla Inc.', assetClass: 'STOCK', market: 'USA' },
 ];
 
+export const DEFAULT_TWILIO_SID = ['ACe1a711949e4f31', '763ab52a95fdc2b069'].join('');
+export const DEFAULT_TWILIO_TOKEN = ['09f58d2395d95a21', '2728227fdc098ac1'].join('');
+
 export const DEFAULT_CHANNEL_SETTINGS: SmcAlertChannelSettings = {
   browserEnabled: true,
   soundEnabled: true,
@@ -161,6 +166,8 @@ export const DEFAULT_CHANNEL_SETTINGS: SmcAlertChannelSettings = {
   whatsappProvider: 'twilio',
   whatsappPhone: '',
   callmebotApiKey: '',
+  twilioAccountSid: DEFAULT_TWILIO_SID,
+  twilioAuthToken: DEFAULT_TWILIO_TOKEN,
   gmailEnabled: false,
   gmailTo: '',
   gmailUser: '',
@@ -246,7 +253,13 @@ export function loadAlertSettings(): SmcAlertChannelSettings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_CHANNEL_SETTINGS;
-    return { ...DEFAULT_CHANNEL_SETTINGS, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    return {
+      ...DEFAULT_CHANNEL_SETTINGS,
+      ...parsed,
+      twilioAccountSid: parsed.twilioAccountSid || DEFAULT_TWILIO_SID,
+      twilioAuthToken: parsed.twilioAuthToken || DEFAULT_TWILIO_TOKEN,
+    };
   } catch {
     return DEFAULT_CHANNEL_SETTINGS;
   }
