@@ -1441,7 +1441,7 @@ export function ChartToolbar({
           </button>
 
           {openMenu === 'TEMPLATES' && (
-            <div className="absolute top-full left-0 mt-1 w-52 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-xl py-1 z-[100] animate-in fade-in duration-75">
+            <div className="absolute top-full right-0 mt-1 w-52 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-xl py-1 z-[100] animate-in fade-in duration-75">
               <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                 Chart Templates
               </div>
@@ -1561,7 +1561,7 @@ export function ChartToolbar({
                 return;
               }
               if (candleRangeMs) {
-                const padDayMs = isDailyOrHigher ? 24 * 3600_000 : 0;
+                const padDayMs = 24 * 3600_000;
                 if (toMs < candleRangeMs.minMs - padDayMs || fromMs > candleRangeMs.maxMs + padDayMs) {
                   setGoToError(
                     `Outside loaded history (${fmtShort(candleRangeMs.minMs)} – ${fmtShort(candleRangeMs.maxMs)}). Switch to 4H or 1D for older dates.`
@@ -1580,7 +1580,7 @@ export function ChartToolbar({
             return (
               <form
                 onSubmit={handleApplyGoTo}
-                className="absolute top-full right-0 sm:left-0 sm:right-auto mt-1 w-76 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-xl p-3 z-[100] animate-in fade-in duration-75 select-text"
+                className="absolute top-full right-0 mt-1 w-76 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B0F19] shadow-2xl p-3 z-[100] animate-in fade-in duration-75 select-text"
               >
                 <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-1.5">
@@ -1611,7 +1611,6 @@ export function ChartToolbar({
                       <input
                         type="date"
                         min={minDateStr}
-                        max={maxDateStr}
                         value={goToDateFrom}
                         onChange={(e) => { setGoToDateFrom(e.target.value); setGoToError(null); }}
                         className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
@@ -1624,7 +1623,6 @@ export function ChartToolbar({
                       <input
                         type="date"
                         min={minDateStr}
-                        max={maxDateStr}
                         value={goToDateTill}
                         onChange={(e) => { setGoToDateTill(e.target.value); setGoToError(null); }}
                         className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
