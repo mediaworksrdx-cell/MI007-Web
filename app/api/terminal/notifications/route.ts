@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type') || 'ALL'; // 'ALL' | 'NEWS' | 'CALENDAR' | 'SIGNAL'
-    const limit = parseInt(searchParams.get('limit') || '25', 10);
+    const rawLimit = parseInt(searchParams.get('limit') || '25', 10);
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(50, rawLimit) : 25;
 
     // 1. Primary: Query Kotlin JVM Trade Engine
     try {
@@ -99,9 +100,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 3. Include Institutional Signals
-    aggregated.push(...BASELINE_SIGNALS);
-
     // Filter by type if requested
     let filtered = aggregated;
     if (type !== 'ALL') {
@@ -115,11 +113,18 @@ export async function GET(request: NextRequest) {
       return b.timestamp - a.timestamp;
     });
 
-    const result = filtered.slice(0, limit);
+    // Sanitize hrefs to prevent open redirects or javascript: URLs
+    const sanitized = filtered.map((n) => ({
+      ...n,
+      href: typeof n.href === 'string' && (n.href.startsWith('/') || n.href.startsWith('https://')) ? n.href : '/terminal',
+    }));
+
+    const result = sanitized.slice(0, limit);
 
     return NextResponse.json({
       success: true,
       total: result.length,
+      degraded: aggregated.length === 0,
       counts: {
         all: aggregated.length,
         news: aggregated.filter((a) => a.type === 'NEWS').length,

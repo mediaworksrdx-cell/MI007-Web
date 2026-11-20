@@ -33,17 +33,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ triggered: [], evaluatedPairs: 0, checkedAt: new Date().toISOString() });
     }
 
-    // Build evaluation jobs: (item, timeframe)
-    const jobs: Array<{ item: SmcAlertWatchItem; timeframe: string }> = [];
+    // Build evaluation jobs: (item, timeframe), capped to 30 pairs per request
+    const rawJobs: Array<{ item: SmcAlertWatchItem; timeframe: string }> = [];
     for (const item of enabledItems) {
       for (const tf of item.timeframes) {
-        jobs.push({ item, timeframe: tf });
+        rawJobs.push({ item, timeframe: tf });
       }
     }
+    const jobs = rawJobs.slice(0, 30);
 
     const isInitialSeed = Boolean(body?.isInitialSeed);
     const baselineIds: string[] = [];
     const triggered: SmcTriggeredAlert[] = [];
+    const pairStatuses: Array<{ symbol: string; timeframe: string; status: 'ok' | 'no_data' | 'insufficient_candles'; count: number }> = [];
     const concurrency = 6;
     let cursor = 0;
 
@@ -52,10 +54,30 @@ export async function POST(req: NextRequest) {
         const job = jobs[cursor++];
         const { item, timeframe } = job;
         const candles = await loadRealCandles(item.symbol, timeframe, item.market || 'INDIA', origin);
-        if (candles.length < 30) continue;
+        if (candles.length < 30) {
+          pairStatuses.push({
+            symbol: item.symbol.toUpperCase(),
+            timeframe,
+            status: candles.length === 0 ? 'no_data' : 'insufficient_candles',
+            count: candles.length,
+          });
+          continue;
+        }
+
+        pairStatuses.push({
+          symbol: item.symbol.toUpperCase(),
+          timeframe,
+          status: 'ok',
+          count: candles.length,
+        });
 
         const smc = calculateSMC(candles, { enabled: true }, item.symbol, timeframe);
-        const candidates = [...(smc.confirmedSetups || []), ...(smc.allSetups || [])];
+        // AL4: Include setupHistory so stopped-out (INVALIDATED) setups are evaluated for SL_HIT
+        const candidates = [
+          ...(smc.confirmedSetups || []),
+          ...(smc.allSetups || []),
+          ...(smc.setupHistory || []),
+        ];
         const seenSetupIds = new Set<string>();
         const seenZones = new Map<string, number>(); // Cluster deduplication by price level
         const lastBarIdx = candles.length - 1;
@@ -67,9 +89,9 @@ export async function POST(req: NextRequest) {
 
           const barsAgo = lastBarIdx - st.candleIndex;
 
-          // Quality filter
+          // Quality filter (AL13: allow 0 quality)
           const qual = st.qualityScore ?? 0;
-          if (qual < (item.minQuality || 60)) continue;
+          if (qual < (item.minQuality ?? 60)) continue;
 
           // Direction filter
           if (item.direction === 'BULLISH' && st.direction !== 'BULLISH') continue;
@@ -104,13 +126,15 @@ export async function POST(req: NextRequest) {
               const hitIdx = st.tp1HitIndex ?? st.tp2HitIndex ?? st.candleIndex;
               if (lastBarIdx - hitIdx > 3) continue;
             } else if (stage === 'SL_HIT') {
-              // Invalidation must be fresh (within last 3 candles)
-              if (barsAgo > 4) continue;
+              // Invalidation must be fresh (within last 6 candles)
+              if (barsAgo > 6) continue;
             }
           }
 
-          // Deterministic deduplication key so the same setup+stage never spams twice
-          const dedupId = `${item.symbol.toUpperCase()}|${timeframe}|${st.id}|${stage}|${label}`;
+          // AL2: Deterministic, immutable deduplication key based on formation timestamp (openTime)
+          // NEVER embeds shifting candle array index so dedupe survives rolling bar windows.
+          const formationTime = candles[st.candleIndex]?.openTime || st.formationTime || st.time || 0;
+          const dedupId = `${item.symbol.toUpperCase()}|${timeframe}|${st.setupType}|${st.direction}|${formationTime}|${stage}`;
           baselineIds.push(dedupId);
 
           if (isInitialSeed) {
@@ -153,6 +177,9 @@ export async function POST(req: NextRequest) {
             riskReward: rr,
             stage,
             statusLabel: label,
+            formationTime,
+            currentPrice: lastClose,
+            barsAgo,
             triggeredAt: new Date().toISOString(),
           });
         }
@@ -165,6 +192,7 @@ export async function POST(req: NextRequest) {
       triggered: isInitialSeed ? [] : triggered,
       baselineIds: isInitialSeed ? baselineIds : undefined,
       evaluatedPairs: jobs.length,
+      pairStatuses,
       checkedAt: new Date().toISOString(),
     });
   } catch (err: any) {

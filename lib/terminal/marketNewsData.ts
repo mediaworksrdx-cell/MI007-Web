@@ -241,18 +241,10 @@ export async function fetchLiveMarketNews(): Promise<NewsItem[]> {
     }
   }
 
-  if (parsedItems.length >= 10) {
-    cachedLiveNews = parsedItems;
-    lastNewsFetchTime = now;
-    return parsedItems;
-  }
-
-  // Fallback / blend with baseline news if network yields limited items
-  const baseline = getBaselineNews();
-  const blended = [...parsedItems, ...baseline.filter((b) => !seenTitles.has(b.title.toLowerCase()))];
-  cachedLiveNews = blended;
+  // Authentic live news caching: Never blend fabricated news or falsely attribute canned headlines to real news agencies
+  cachedLiveNews = parsedItems;
   lastNewsFetchTime = now;
-  return blended;
+  return parsedItems;
 }
 
 // Institutional Seed Newsfeed (24/7 Resilience covering all asset classes)

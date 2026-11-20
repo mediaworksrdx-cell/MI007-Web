@@ -14,7 +14,6 @@ import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 import {
   AppNotification,
   NotificationType,
-  BASELINE_SIGNALS,
 } from '@/lib/terminal/notificationTypes';
 
 interface NavbarProps {
@@ -62,12 +61,22 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
 
   // ── Unified Notification Centre State (Real-Time News, Calendar, Signals) ──
-  const [notifications, setNotifications] = useState<AppNotification[]>(BASELINE_SIGNALS);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [notifFilter, setNotifFilter] = useState<NotificationType>('ALL');
   const [notifLoading, setNotifLoading] = useState(false);
   const [desktopAlertsEnabled, setDesktopAlertsEnabled] = useState(false);
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = localStorage.getItem('mi007_read_notifications');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
 
-  const unreadCount = notifications.length;
+  const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
+  const seenNotificationIdsRef = useRef<Set<string>>(new Set());
   const [userSession, setUserSession] = useState<{ name: string; role: string; deskId: string } | null>(null);
 
   const [brandHovered, setBrandHovered] = useState(false);
@@ -89,7 +98,20 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             if (raw) dismissed = new Set(JSON.parse(raw));
           } catch {}
 
-          const active = data.notifications.filter((n: AppNotification) => !dismissed.has(n.id));
+          const active: AppNotification[] = data.notifications.filter((n: AppNotification) => !dismissed.has(n.id));
+
+          // AL9: Fire desktop notifications for new high-priority items if granted
+          if (silent && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            for (const n of active) {
+              if (!seenNotificationIdsRef.current.has(n.id) && n.priority === 'HIGH') {
+                try {
+                  new Notification(n.title, { body: n.desc, icon: '/favicon.ico' });
+                } catch {}
+              }
+            }
+          }
+
+          seenNotificationIdsRef.current = new Set(active.map((n) => n.id));
           setNotifications(active);
         }
       }
@@ -133,6 +155,14 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
     }
   };
 
+  const markAllAsRead = () => {
+    const allIds = new Set(notifications.map((n) => n.id));
+    setReadIds(allIds);
+    try {
+      localStorage.setItem('mi007_read_notifications', JSON.stringify(Array.from(allIds).slice(-200)));
+    } catch {}
+  };
+
   const dismissNotification = (id: string) => {
     setNotifications((prev) => prev.filter((item) => item.id !== id));
     try {
@@ -140,7 +170,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       const currentList: string[] = raw ? JSON.parse(raw) : [];
       if (!currentList.includes(id)) {
         currentList.push(id);
-        localStorage.setItem('mi007_dismissed_notifications', JSON.stringify(currentList));
+        localStorage.setItem('mi007_dismissed_notifications', JSON.stringify(currentList.slice(-200)));
       }
     } catch {}
   };
@@ -151,7 +181,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
     try {
       const raw = localStorage.getItem('mi007_dismissed_notifications');
       const currentList: string[] = raw ? JSON.parse(raw) : [];
-      const updated = Array.from(new Set([...currentList, ...allIds]));
+      const updated = Array.from(new Set([...currentList, ...allIds])).slice(-200);
       localStorage.setItem('mi007_dismissed_notifications', JSON.stringify(updated));
     } catch {}
   };
@@ -313,8 +343,12 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             <button
               type="button"
               onClick={() => {
-                setNotificationMenuOpen((v) => !v);
+                const nextOpen = !notificationMenuOpen;
+                setNotificationMenuOpen(nextOpen);
                 setAccountMenuOpen(false);
+                if (nextOpen) {
+                  markAllAsRead();
+                }
               }}
               className={`relative flex items-center justify-center w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-lg border transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
                 notificationMenuOpen ? 'ring-2 ring-emerald-500' : 'opacity-85 hover:opacity-100 hover:border-emerald-500/40'

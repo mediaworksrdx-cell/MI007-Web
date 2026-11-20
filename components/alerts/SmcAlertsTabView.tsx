@@ -25,11 +25,20 @@ import {
   recordSentAlertIds,
 } from '@/lib/alerts/smcAlerts';
 
+let sharedAlertAudioCtx: AudioContext | null = null;
+
 function playAlertChime() {
   try {
+    if (typeof window === 'undefined') return;
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    if (!sharedAlertAudioCtx || sharedAlertAudioCtx.state === 'closed') {
+      sharedAlertAudioCtx = new AudioCtx();
+    }
+    if (sharedAlertAudioCtx.state === 'suspended') {
+      sharedAlertAudioCtx.resume().catch(() => {});
+    }
+    const ctx = sharedAlertAudioCtx;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
@@ -68,7 +77,7 @@ export function SmcAlertsTabView() {
   const [customSetups, setCustomSetups] = useState<SmcSetupType[]>(TOP_6_SMC_SETUPS);
   const [direction, setDirection] = useState<SmcAlertDirection>('BOTH');
   const [minQuality, setMinQuality] = useState<number>(70);
-  const [triggerStages, setTriggerStages] = useState<SmcAlertStage[]>(['EARLY', 'RETEST', 'ACTIONABLE', 'TP_HIT', 'SL_HIT']);
+  const [triggerStages, setTriggerStages] = useState<SmcAlertStage[]>(['ACTIONABLE', 'TP_HIT', 'SL_HIT']);
   const [ruleChannels, setRuleChannels] = useState({ browser: true, whatsapp: true, gmail: true });
   const [quickFilter, setQuickFilter] = useState<'ALL' | SmcAlertAssetClass>('ALL');
 
@@ -240,10 +249,18 @@ export function SmcAlertsTabView() {
           );
           dispatched.push(withDelivery);
         }
+        const missingCount = Array.isArray(data?.pairStatuses)
+          ? data.pairStatuses.filter((p: any) => p.status !== 'ok').length
+          : 0;
+        const missingSuffix = missingCount > 0 ? ` (${missingCount} pair(s) had insufficient data)` : '';
         setHistory((prev) => [...dispatched, ...prev].slice(0, 150));
-        setScanSummary(`Checked ${data.evaluatedPairs || 0} symbol/TF pairs • ${dispatched.length} new SMC alert(s) triggered.`);
+        setScanSummary(`Checked ${data.evaluatedPairs || 0} symbol/TF pairs${missingSuffix} • ${dispatched.length} new SMC alert(s) triggered.`);
       } else {
-        setScanSummary(`Checked ${data.evaluatedPairs || 0} symbol/TF pairs • No new setups since last check.`);
+        const missingCount = Array.isArray(data?.pairStatuses)
+          ? data.pairStatuses.filter((p: any) => p.status !== 'ok').length
+          : 0;
+        const missingSuffix = missingCount > 0 ? ` (${missingCount} pair(s) had insufficient data)` : '';
+        setScanSummary(`Checked ${data.evaluatedPairs || 0} symbol/TF pairs${missingSuffix} • No new setups since last check.`);
       }
     } catch (err: any) {
       setScanSummary(`Scan error: ${err?.message || 'Unable to reach /api/alerts/evaluate'}`);
@@ -362,7 +379,7 @@ export function SmcAlertsTabView() {
       setupTypes: chosenSetups,
       direction,
       minQuality,
-      triggerStages: triggerStages.length > 0 ? [...triggerStages] : ['EARLY', 'RETEST', 'ACTIONABLE', 'TP_HIT', 'SL_HIT'],
+      triggerStages: triggerStages.length > 0 ? [...triggerStages] : ['ACTIONABLE', 'TP_HIT', 'SL_HIT'],
       channels: { ...ruleChannels },
       enabled: true,
       createdAt: new Date().toISOString(),
@@ -416,7 +433,10 @@ export function SmcAlertsTabView() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-slate-500/5 text-xs font-semibold cursor-pointer">
+            <label
+              title="Continuous background scanning runs automatically while this Terminal tab is open."
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-slate-500/5 text-xs font-semibold cursor-pointer"
+            >
               <input
                 type="checkbox"
                 checked={settings.autoScanEnabled}
@@ -424,6 +444,7 @@ export function SmcAlertsTabView() {
                 className="accent-emerald-500"
               />
               <span>Auto-Check ({settings.pollIntervalSec}s)</span>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold hidden sm:inline">● Live in Tab</span>
             </label>
 
             <button

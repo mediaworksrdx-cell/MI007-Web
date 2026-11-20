@@ -304,17 +304,10 @@ export async function fetchLiveEconomicCalendar(): Promise<EconomicEvent[]> {
 
   const combined = [...liveEvents, ...indiaEvents].sort((a, b) => a.timestamp - b.timestamp);
 
-  if (combined.length >= 8) {
-    cachedLiveCalendar = combined;
-    lastCalendarFetchTime = now;
-    return combined;
-  }
-
-  // Fallback to baseline schedule
-  const baseline = getBaselineEconomicEvents();
-  cachedLiveCalendar = baseline;
+  // Authentic live calendar caching: Never return fabricated events with pre-baked actual numbers
+  cachedLiveCalendar = combined;
   lastCalendarFetchTime = now;
-  return baseline;
+  return combined;
 }
 
 // Institutional Seed Calendar (Comprehensive schedule surrounding current date)

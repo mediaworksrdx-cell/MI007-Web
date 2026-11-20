@@ -97,6 +97,9 @@ export interface SmcTriggeredAlert {
   stage: SmcAlertStage;
   statusLabel: string;
   triggeredAt: string;
+  formationTime?: number;
+  currentPrice?: number;
+  barsAgo?: number;
   delivery?: {
     browser?: 'sent' | 'skipped' | 'failed';
     whatsapp?: 'sent' | 'skipped' | 'failed';
