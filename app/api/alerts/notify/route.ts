@@ -230,7 +230,6 @@ async function sendWhatsApp(
     message: 'WhatsApp not linked yet. Please click "Get Verification OTP" and link your device in WhatsApp.',
   };
 }
-}
 
 async function sendGmail(
   payload: NotifyAlertPayload,
