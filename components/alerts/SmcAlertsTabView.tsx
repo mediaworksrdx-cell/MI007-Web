@@ -554,9 +554,9 @@ export function SmcAlertsTabView() {
                     onChange={(e) => setSettings((s) => ({ ...s, whatsappProvider: e.target.value as any }))}
                     className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs"
                   >
+                    <option value="twilio">Twilio WhatsApp (Active)</option>
                     <option value="callmebot">CallMeBot (Free Personal)</option>
                     <option value="meta">Meta Cloud API (.env)</option>
-                    <option value="twilio">Twilio WhatsApp (.env)</option>
                   </select>
                 </div>
                 <div>
@@ -572,6 +572,38 @@ export function SmcAlertsTabView() {
                   />
                 </div>
               </div>
+
+              {settings.whatsappProvider === 'twilio' && (
+                <div className="p-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 text-[11px] leading-relaxed">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-400 mb-1">
+                    <span>⚡ Twilio WhatsApp Gateway Active</span>
+                  </div>
+                  <p className="text-[10px] text-[var(--theme-card-text-muted)]">
+                    Link your phone to the Twilio WhatsApp Sandbox (one-time only):
+                  </p>
+                  <ol className="list-decimal list-inside text-[10px] text-[var(--theme-card-text-muted)] space-y-0.5 mt-1">
+                    <li>
+                      Open WhatsApp to{' '}
+                      <a
+                        href="https://wa.me/14155238886"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline text-emerald-500 font-bold"
+                      >
+                        +1 415 523 8886
+                      </a>
+                    </li>
+                    <li>
+                      Send your join code from your Twilio Console (e.g.{' '}
+                      <code className="px-1 py-0.5 rounded bg-slate-500/20 font-mono text-emerald-300">
+                        join &lt;your-code&gt;
+                      </code>
+                      )
+                    </li>
+                    <li>Enter your phone number above and click <strong>🧪 Send Test WhatsApp</strong>.</li>
+                  </ol>
+                </div>
+              )}
 
               {settings.whatsappProvider === 'callmebot' && (
                 <div>

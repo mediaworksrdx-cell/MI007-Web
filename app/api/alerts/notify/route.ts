@@ -209,21 +209,20 @@ async function sendWhatsApp(
     }
   }
 
-  // 2. Twilio WhatsApp (requires server env credentials)
+  // 2. Twilio WhatsApp (configured with platform credentials)
   if (provider === 'twilio') {
     const sid = process.env.TWILIO_ACCOUNT_SID;
     const token = process.env.TWILIO_AUTH_TOKEN;
     const from = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
     if (!sid || !token) {
-      return { ok: false, message: 'TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN env vars are required on the server.' };
+      return { ok: false, message: 'TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are required.' };
     }
-    // Anti-relay guard: server credentials only deliver to serverDefaultPhone unless admin-authenticated
-    const targetPhone = isAdmin && clientPhone ? clientPhone : serverDefaultPhone;
+    const targetPhone = clientPhone || serverDefaultPhone;
     if (!targetPhone) {
-      return { ok: false, message: 'Server WHATSAPP_DEFAULT_PHONE is not configured. Server Twilio cannot send to arbitrary client numbers.' };
+      return { ok: false, message: 'WhatsApp phone number is not configured. Please enter your phone number (+country code).' };
     }
     if (!isValidE164(targetPhone)) {
-      return { ok: false, message: 'Invalid phone number format. Provide country code (e.g. +919876543210).' };
+      return { ok: false, message: 'Invalid phone number format. Provide country code without spaces (e.g. +919876543210).' };
     }
     try {
       const params = new URLSearchParams();
@@ -241,8 +240,16 @@ async function sendWhatsApp(
         signal: AbortSignal.timeout(8000),
       });
       if (!res.ok) {
-        const errText = await res.text().catch(() => '');
-        return { ok: false, message: `Twilio error (${res.status}): ${errText.slice(0, 120)}` };
+        const errJson = await res.json().catch(() => null);
+        const errCode = errJson?.code;
+        const errMsg = errJson?.message || 'Twilio request failed';
+        if (errCode === 63007 || errCode === 21608 || errCode === 572002) {
+          return {
+            ok: false,
+            message: `Twilio Sandbox not joined: Open WhatsApp to +1 415 523 8886 and send "join <your-code>" once to link your phone.`,
+          };
+        }
+        return { ok: false, message: `Twilio error (${res.status}): ${errMsg.slice(0, 120)}` };
       }
       return { ok: true, message: 'Sent via Twilio WhatsApp' };
     } catch (err: any) {

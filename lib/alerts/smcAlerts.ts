@@ -158,7 +158,7 @@ export const DEFAULT_CHANNEL_SETTINGS: SmcAlertChannelSettings = {
   autoScanEnabled: true,
   pollIntervalSec: 60,
   whatsappEnabled: false,
-  whatsappProvider: 'callmebot',
+  whatsappProvider: 'twilio',
   whatsappPhone: '',
   callmebotApiKey: '',
   gmailEnabled: false,
