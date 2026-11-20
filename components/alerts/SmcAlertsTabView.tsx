@@ -585,9 +585,30 @@ export function SmcAlertsTabView() {
                     onChange={(e) => setSettings((s) => ({ ...s, callmebotApiKey: e.target.value }))}
                     className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs mono"
                   />
-                  <p className="text-[10px] text-[var(--theme-card-text-muted)] mt-1 leading-relaxed">
-                    Free 1-min setup: save <strong>+34 644 71 98 38</strong> in WhatsApp and send{' '}
-                    <code className="px-1 rounded bg-slate-500/15">I allow callmebot to send me messages</code> to get your key.
+                  <p className="text-[10px] text-[var(--theme-card-text-muted)] mt-1.5 leading-relaxed">
+                    Free 1-min setup: Open WhatsApp to{' '}
+                    <a
+                      href="https://wa.me/34698288973?text=I%20allow%20callmebot%20to%20send%20me%20messages"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-emerald-500 font-bold"
+                    >
+                      +34 698 28 89 73
+                    </a>{' '}
+                    (or backup{' '}
+                    <a
+                      href="https://wa.me/34623786449?text=I%20allow%20callmebot%20to%20send%20me%20messages"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-emerald-500 font-bold"
+                    >
+                      +34 623 78 64 49
+                    </a>
+                    ) and send:{' '}
+                    <code className="px-1 py-0.5 rounded bg-slate-500/15 text-[11px] font-mono text-emerald-400">
+                      I allow callmebot to send me messages
+                    </code>
+                    . CallMeBot will reply with your API Key within 1-2 minutes.
                   </p>
                 </div>
               )}
