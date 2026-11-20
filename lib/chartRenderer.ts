@@ -2384,17 +2384,27 @@ export function renderChart(
           }
         }
 
-        // If no currently open setup exists, show most recent valid/TARGET_HIT setup (never SL-violated dead setups)
+        // If no currently open setup exists, show most recent valid institutional setup (never SL-violated dead setups)
         if (setupsToRender.length === 0 && smcData.allSetups && smcData.allSetups.length > 0) {
+          const cleanSym = ((options as any).symbol || '').toUpperCase().replace(/[\s\/-]+/g, '');
+          const is24x5Global = [
+            'GOLD', 'XAU', 'XAUUSD', 'SILVER', 'XAG', 'XAGUSD', 'CRUDEOIL', 'CRUDE', 'OIL',
+            'BRENT', 'WTI', 'NATGAS', 'COPPER', 'PLATINUM', 'EURUSD', 'GBPUSD', 'USDJPY',
+            'USDINR', 'USDCAD', 'AUDCAD', 'USDCHF', 'USDAED', 'AUDUSD', 'NZDUSD'
+          ].includes(cleanSym) || cleanSym.endsWith('USD') || cleanSym.endsWith('USDT');
+          const maxLookbackBars = is24x5Global ? 160 : 80;
+
           const recentCompleted = smcData.allSetups
             .filter((s) =>
-              (s.status === 'TARGET_HIT' || (!isSlViolatedByPrice(s) && (s.status === 'CONFIRMED' || s.status === 'RETESTING'))) &&
+              (s.status === 'TARGET_HIT' || s.status === 'CONFIRMED' || s.status === 'RETESTING' || s.status === 'ENTRY_ZONE_REACHED' || s.status === 'PENDING' || s.status === 'DETECTED') &&
+              !isSlViolatedByPrice(s) &&
               (s.qualityScore ?? 0) >= 60 &&
               !s.isRejectedPermanently &&
               !s.retestFailed &&
               s.signalState !== 'INVALIDATED' &&
               s.signalState !== 'RETEST_FAILED' &&
-              (lastBarIdx - s.candleIndex <= 80) &&
+              s.actionTier !== 'REJECT' &&
+              (lastBarIdx - s.candleIndex <= maxLookbackBars) &&
               ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence && isBullishMaster) ||
                (s.direction === 'BEARISH' && smcCfg.showBearishConfluence && isBearishMaster))
             )

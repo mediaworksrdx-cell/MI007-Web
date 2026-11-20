@@ -1775,7 +1775,7 @@ export function CandlestickCanvas({
     );
     const priceToY = (p: number) => chartH - ((p - pMin) / pRange * chartH);
 
-    const smc = calculateSMC(cleanCandles, smcConfig);
+    const smc = memoizedSmcData || calculateSMC(cleanCandles, smcConfig, symbol, timeframe);
     const isBullishMaster = smcConfig?.showBullishSetups !== false;
     const isBearishMaster = smcConfig?.showBearishSetups !== false;
 

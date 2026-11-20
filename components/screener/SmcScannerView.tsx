@@ -133,6 +133,28 @@ const SMC_SCAN_CACHE = new Map<string, ScannedSmcItem[]>();
 const CANDLE_FETCH_CACHE = new Map<string, { candles: Candle[]; fetchedAt: number; noData: boolean }>();
 const CANDLE_CACHE_TTL_MS = 60_000;
 
+export const GLOBAL_COMMODITIES_FOREX: CompanyFundamental[] = [
+  // Commodities
+  { id: 'GOLD', symbol: 'GOLD', name: 'Gold Spot Bullion (XAU/USD)', market: 'USA', sector: 'Commodities', currentPrice: 2735.40, priceChangePct: 0.45 },
+  { id: 'SILVER', symbol: 'SILVER', name: 'Silver Spot Bullion (XAG/USD)', market: 'USA', sector: 'Commodities', currentPrice: 31.85, priceChangePct: 0.80 },
+  { id: 'CRUDEOIL', symbol: 'CRUDEOIL', name: 'Crude Oil WTI Futures', market: 'USA', sector: 'Commodities', currentPrice: 74.20, priceChangePct: -0.35 },
+  { id: 'BRENT', symbol: 'BRENT', name: 'Brent Crude Oil Spot', market: 'USA', sector: 'Commodities', currentPrice: 78.40, priceChangePct: -0.20 },
+  { id: 'NATGAS', symbol: 'NATGAS', name: 'Natural Gas Henry Hub', market: 'USA', sector: 'Commodities', currentPrice: 2.85, priceChangePct: 1.20 },
+  { id: 'COPPER', symbol: 'COPPER', name: 'High Grade Copper COMEX', market: 'USA', sector: 'Commodities', currentPrice: 4.38, priceChangePct: 0.15 },
+  { id: 'PLATINUM', symbol: 'PLATINUM', name: 'Platinum Spot COMEX', market: 'USA', sector: 'Commodities', currentPrice: 1024.50, priceChangePct: 0.60 },
+
+  // Forex
+  { id: 'EURUSD', symbol: 'EURUSD', name: 'Euro / US Dollar', market: 'USA', sector: 'Forex', currentPrice: 1.0845, priceChangePct: 0.12 },
+  { id: 'GBPUSD', symbol: 'GBPUSD', name: 'British Pound / US Dollar', market: 'USA', sector: 'Forex', currentPrice: 1.2980, priceChangePct: -0.08 },
+  { id: 'USDJPY', symbol: 'USDJPY', name: 'US Dollar / Japanese Yen', market: 'USA', sector: 'Forex', currentPrice: 152.40, priceChangePct: 0.25 },
+  { id: 'USDINR', symbol: 'USDINR', name: 'US Dollar / Indian Rupee', market: 'USA', sector: 'Forex', currentPrice: 84.08, priceChangePct: 0.05 },
+  { id: 'USDCAD', symbol: 'USDCAD', name: 'US Dollar / Canadian Dollar', market: 'USA', sector: 'Forex', currentPrice: 1.4092, priceChangePct: -0.15 },
+  { id: 'AUDCAD', symbol: 'AUDCAD', name: 'Australian Dollar / Canadian Dollar', market: 'USA', sector: 'Forex', currentPrice: 0.9838, priceChangePct: 0.10 },
+  { id: 'USDCHF', symbol: 'USDCHF', name: 'US Dollar / Swiss Franc', market: 'USA', sector: 'Forex', currentPrice: 0.8850, priceChangePct: -0.05 },
+  { id: 'AUDUSD', symbol: 'AUDUSD', name: 'Australian Dollar / USD', market: 'USA', sector: 'Forex', currentPrice: 0.6650, priceChangePct: 0.30 },
+  { id: 'NZDUSD', symbol: 'NZDUSD', name: 'New Zealand Dollar / USD', market: 'USA', sector: 'Forex', currentPrice: 0.5920, priceChangePct: 0.22 },
+];
+
 export function SmcScannerView({
   companies,
   market,
@@ -140,6 +162,7 @@ export function SmcScannerView({
   onBackToScreener,
 }: SmcScannerViewProps) {
   const [selectedSetupType, setSelectedSetupType] = useState<SmcSetupType | 'ALL'>('ALL');
+  const [assetClassFilter, setAssetClassFilter] = useState<'ALL' | 'EQUITIES' | 'COMMODITIES' | 'FOREX'>('ALL');
   const [directionFilter, setDirectionFilter] = useState<'ALL' | 'BULLISH' | 'BEARISH'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ACTIVE' | 'CONFIRMED' | 'RETESTING' | 'ALL'>('ACTIVE');
   const [tierFilter, setTierFilter] = useState<'ALL' | 'HIGH' | 'STRONG' | 'MODERATE'>('ALL');
@@ -158,9 +181,9 @@ export function SmcScannerView({
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [selectedSetupType, directionFilter, statusFilter, tierFilter, timeframe, searchQuery, oneSetupPerSymbol]);
+  }, [selectedSetupType, assetClassFilter, directionFilter, statusFilter, tierFilter, timeframe, searchQuery, oneSetupPerSymbol]);
 
-  // Universe selection: top institutional equities (filtered of junk debt/bonds/SGBs) plus query matches
+  // Universe selection: top institutional equities + commodities & forex
   const targetUniverse = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const cleanEquities = companies.filter((c) => {
@@ -172,14 +195,25 @@ export function SmcScannerView({
       return true;
     });
 
-    let baseList = cleanEquities;
-    if (cleanEquities.length > 75) {
-      const sorted = [...cleanEquities].sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0));
-      baseList = sorted.slice(0, 75);
+    const commoditiesList = GLOBAL_COMMODITIES_FOREX.filter(c => c.sector === 'Commodities');
+    const forexList = GLOBAL_COMMODITIES_FOREX.filter(c => c.sector === 'Forex');
+
+    let baseList: CompanyFundamental[] = [];
+    if (assetClassFilter === 'COMMODITIES') {
+      baseList = commoditiesList;
+    } else if (assetClassFilter === 'FOREX') {
+      baseList = forexList;
+    } else if (assetClassFilter === 'EQUITIES') {
+      baseList = cleanEquities.slice(0, 75);
+    } else {
+      // ALL: include commodities + forex + top equities
+      baseList = [...commoditiesList, ...forexList, ...cleanEquities.slice(0, 60)];
     }
+
     if (!q) return baseList;
 
-    const matched = cleanEquities.filter(
+    const allCandidateList = [...GLOBAL_COMMODITIES_FOREX, ...cleanEquities];
+    const matched = allCandidateList.filter(
       (c) => c.symbol.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)
     ).slice(0, 30);
 
@@ -187,7 +221,7 @@ export function SmcScannerView({
     baseList.forEach((c) => map.set(c.symbol.toUpperCase(), c));
     matched.forEach((c) => map.set(c.symbol.toUpperCase(), c));
     return Array.from(map.values());
-  }, [companies, searchQuery]);
+  }, [companies, searchQuery, assetClassFilter]);
 
   // SMC Scan Cache
 
@@ -206,7 +240,8 @@ export function SmcScannerView({
       const pending: CompanyFundamental[] = [];
 
       for (const comp of targetUniverse) {
-        const key = `${market}:${comp.symbol}:${timeframe}`;
+        const compMarket = comp.market || (['GOLD', 'SILVER', 'CRUDEOIL', 'BRENT', 'NATGAS', 'COPPER', 'PLATINUM', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDCAD', 'AUDCAD', 'USDCHF', 'USDAED', 'AUDUSD', 'NZDUSD'].includes(comp.symbol.toUpperCase()) ? 'USA' : market);
+        const key = `${compMarket}:${comp.symbol}:${timeframe}`;
         const cached = CANDLE_FETCH_CACHE.get(key);
         if (cached && now - cached.fetchedAt < CANDLE_CACHE_TTL_MS) {
           if (cached.noData || cached.candles.length < 20) nextNoData.push(comp.symbol);
@@ -229,10 +264,11 @@ export function SmcScannerView({
         const batch = pending.slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(
           batch.map(async (comp) => {
-            const key = `${market}:${comp.symbol}:${timeframe}`;
+            const compMarket = comp.market || (['GOLD', 'SILVER', 'CRUDEOIL', 'BRENT', 'NATGAS', 'COPPER', 'PLATINUM', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDCAD', 'AUDCAD', 'USDCHF', 'USDAED', 'AUDUSD', 'NZDUSD'].includes(comp.symbol.toUpperCase()) ? 'USA' : market);
+            const key = `${compMarket}:${comp.symbol}:${timeframe}`;
             try {
               const res = await fetch(
-                `/api/candles?symbol=${encodeURIComponent(comp.symbol)}&timeframe=${encodeURIComponent(timeframe)}&market=${encodeURIComponent(market)}`,
+                `/api/candles?symbol=${encodeURIComponent(comp.symbol)}&timeframe=${encodeURIComponent(timeframe)}&market=${encodeURIComponent(compMarket)}`,
                 { signal: controller.signal }
               );
               if (!res.ok) {
@@ -240,7 +276,7 @@ export function SmcScannerView({
                 return { symbol: comp.symbol, candles: [] as Candle[], noData: true };
               }
               const data = await res.json();
-              const raw: Candle[] = Array.isArray(data?.candles) ? data.candles : [];
+              const raw: Candle[] = Array.isArray(data) ? data : (Array.isArray(data?.candles) ? data.candles : []);
               const fetchNow = Date.now();
               const normalized: Candle[] = raw.map((c, idx) => ({
                 ...c,
@@ -311,11 +347,13 @@ export function SmcScannerView({
             s.actionTier !== 'REJECT'
         );
 
+        const compMkt = comp.market || (['GOLD', 'SILVER', 'CRUDEOIL', 'BRENT', 'NATGAS', 'COPPER', 'PLATINUM', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDCAD', 'AUDCAD', 'USDCHF', 'USDAED', 'AUDUSD', 'NZDUSD'].includes(comp.symbol.toUpperCase()) ? 'USA' : market);
+
         for (const setup of setupsList) {
           items.push({
             symbol: comp.symbol,
             name: comp.name,
-            market,
+            market: compMkt,
             currentPrice: price,
             changePct: comp.priceChangePct ?? 0,
             setup,
@@ -539,6 +577,18 @@ export function SmcScannerView({
               </button>
             ))}
           </div>
+
+          {/* Asset Class Filter */}
+          <select
+            value={assetClassFilter}
+            onChange={(e) => setAssetClassFilter(e.target.value as any)}
+            className="h-8 px-2.5 rounded-xl border border-[var(--theme-card-border)] bg-[var(--theme-card-surface)] text-[var(--theme-card-text)] font-semibold focus:outline-none focus:border-amber-500"
+          >
+            <option value="ALL">All Markets / Asset Classes</option>
+            <option value="EQUITIES">🏛️ Equities</option>
+            <option value="COMMODITIES">🛢️ Commodities</option>
+            <option value="FOREX">💱 Forex Pairs</option>
+          </select>
 
           {/* Setup Type Filter (All 16 SMC Setup Types) */}
           <select

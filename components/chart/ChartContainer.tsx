@@ -185,6 +185,22 @@ function validateAndCleanCandles(candles: Candle[], timeframe?: string): Candle[
   return valid;
 }
 
+function getSymbolEffectiveMarket(symbol: string, fallbackMarket: MarketType): MarketType {
+  if (!symbol) return fallbackMarket;
+  const clean = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
+  const isGlobal = [
+    'GOLD', 'XAU', 'XAUUSD', 'SILVER', 'XAG', 'XAGUSD', 'CRUDEOIL', 'CRUDE', 'OIL', 'BRENT', 'WTI',
+    'NATGAS', 'COPPER', 'PLATINUM', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDCAD', 'AUDCAD',
+    'USDCHF', 'USDAED', 'AUDUSD', 'NZDUSD', 'BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP',
+    'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC', 'POL', 'SPX', 'NDX', 'DJI', 'VIX', 'QQQ', 'NVDA',
+    'AAPL', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'AMD', 'NFLX', 'INTC'
+  ].includes(clean) || clean.endsWith('USDT') || clean.endsWith('USD');
+  if (isGlobal) return 'USA';
+  const isUae = ['DFMGI', 'ADXGI', 'ADX', 'EMAAR', 'FAB', 'DEWA', 'ALDAR', 'ENBD', 'ADNOC', 'AIRARABIA', 'SALIK', 'DFM'].includes(clean);
+  if (isUae) return 'UAE';
+  return fallbackMarket;
+}
+
 export function ChartContainer({
   market,
   defaultSymbol,
@@ -207,6 +223,7 @@ export function ChartContainer({
   const [selectedSymbol, setSelectedSymbol] = useState(
     defaultSymbol ?? instruments[0].symbol
   );
+  const effectiveMarket = useMemo(() => getSymbolEffectiveMarket(selectedSymbol, market), [selectedSymbol, market]);
   const [timeframe, setTimeframe] = useState<Timeframe>(() => {
     if (initialTfParam && ['1m', '5m', '15m', '30m', '1H', '4H', '1D', '1W', '1M'].includes(initialTfParam)) {
       return initialTfParam as Timeframe;
@@ -782,8 +799,8 @@ export function ChartContainer({
 
   const orderFlowData = useMemo(() => {
     if (candles.length === 0) return undefined;
-    return analyzeOrderFlow(candles, orderFlowConfig, ticksPerCandleRef.current, selectedSymbol, market);
-  }, [candles, orderFlowConfig, selectedSymbol, market]);
+    return analyzeOrderFlow(candles, orderFlowConfig, ticksPerCandleRef.current, selectedSymbol, effectiveMarket);
+  }, [candles, orderFlowConfig, selectedSymbol, effectiveMarket]);
 
   const [apiHtfCandles, setApiHtfCandles] = useState<{
     symbol: string;
@@ -802,7 +819,7 @@ export function ChartContainer({
   useEffect(() => {
     // Clear stale HTF state immediately if symbol, timeframe, or market changed
     setApiHtfCandles(prev =>
-      prev && prev.symbol === selectedSymbol && prev.chartTf === timeframe && prev.market === market
+      prev && prev.symbol === selectedSymbol && prev.chartTf === timeframe && prev.market === effectiveMarket
         ? prev
         : null
     );
@@ -824,14 +841,14 @@ export function ChartContainer({
       return;
     }
     let cancelled = false;
-    fetchCandles(selectedSymbol, targetHtf, undefined, undefined, market)
+    fetchCandles(selectedSymbol, targetHtf, undefined, undefined, effectiveMarket)
       .then(res => {
         if (cancelled) return;
         if (res && res.length >= 10) {
           setApiHtfCandles({
             symbol: selectedSymbol,
             chartTf: timeframe,
-            market,
+            market: effectiveMarket,
             tf: targetHtf,
             candles: res,
           });
@@ -845,7 +862,7 @@ export function ChartContainer({
     return () => {
       cancelled = true;
     };
-  }, [showMi007, selectedSymbol, timeframe, market, lastClosedOpenTime]);
+  }, [showMi007, selectedSymbol, timeframe, effectiveMarket, lastClosedOpenTime]);
 
   const mi007Data = useMemo(() => {
     if (!showMi007 || candles.length === 0) return null;
@@ -853,7 +870,7 @@ export function ChartContainer({
       apiHtfCandles &&
       apiHtfCandles.symbol === selectedSymbol &&
       apiHtfCandles.chartTf === timeframe &&
-      apiHtfCandles.market === market &&
+      apiHtfCandles.market === effectiveMarket &&
       apiHtfCandles.candles.length >= 10
         ? apiHtfCandles.candles
         : undefined;
@@ -986,7 +1003,7 @@ export function ChartContainer({
         }
 
         // 2. Fetch latest exact exchange candles from API
-        const rawEngine = await fetchCandles(selectedSymbol, timeframe, undefined, undefined, market);
+        const rawEngine = await fetchCandles(selectedSymbol, timeframe, undefined, undefined, effectiveMarket);
         let cleanEngine = validateAndCleanCandles(rawEngine || [], timeframe).filter(c => c.openTime <= Date.now() + 300_000);
         if (isArtificialLinearStaircase(cleanEngine)) {
           console.warn(`[ChartContainer] Auto-rejecting artificial staircase from engine for ${selectedSymbol}`);
@@ -1007,7 +1024,7 @@ export function ChartContainer({
             saveStoredCandles(selectedSymbol, timeframe, cleanMerged);
           } else if (cleanCached.length === 0) {
             // Fallback to mock data ONLY in-memory (never pollute persistent storage with mock candles)
-            const fallback = getMockCandles(market, selectedSymbol, timeframe, 800);
+            const fallback = getMockCandles(effectiveMarket, selectedSymbol, timeframe, 800);
             const cleanFallback = validateAndCleanCandles(fallback, timeframe);
             setCandles(cleanFallback);
             setCurrentPrice(cleanFallback[cleanFallback.length - 1]?.close);
@@ -1028,7 +1045,7 @@ export function ChartContainer({
     return () => {
       isCancelled = true;
     };
-  }, [market, selectedSymbol, timeframe]);
+  }, [effectiveMarket, selectedSymbol, timeframe]);
 
   // Track last save timestamp to throttle IndexedDB writes during active ticks
   const lastSaveTimeRef = useRef<number>(0);
@@ -1290,7 +1307,7 @@ export function ChartContainer({
       return;
     }
     let cancelled = false;
-    fetchCandles(selectedSymbol, htfTf, undefined, undefined, market)
+    fetchCandles(selectedSymbol, htfTf, undefined, undefined, effectiveMarket)
       .then((raw) => {
         if (cancelled) return;
         const cleaned = validateAndCleanCandles(raw || [], htfTf);
@@ -1302,7 +1319,7 @@ export function ChartContainer({
     return () => {
       cancelled = true;
     };
-  }, [showSmcOverlay, selectedSymbol, timeframe, market]);
+  }, [showSmcOverlay, selectedSymbol, timeframe, effectiveMarket]);
 
   const smcConfigWithHtf = useMemo<SmcConfig>(
     () => (htfCandles ? { ...smcConfig, htfCandles } : smcConfig),
@@ -1958,12 +1975,11 @@ export function ChartContainer({
         isStandalone={isStandalone}
         onSelectInstrument={(item: ChartInstrumentItem) => {
           setSelectedSymbol(item.symbol);
+          const targetMkt = item.market || getSymbolEffectiveMarket(item.symbol, market);
           if (typeof window !== 'undefined' && window.location.pathname.startsWith('/chart/')) {
             const url = new URL(window.location.href);
             url.pathname = `/chart/${item.symbol}`;
-            if (item.market) {
-              url.searchParams.set('market', item.market);
-            }
+            url.searchParams.set('market', targetMkt);
             window.history.pushState(null, '', url.toString());
           }
         }}

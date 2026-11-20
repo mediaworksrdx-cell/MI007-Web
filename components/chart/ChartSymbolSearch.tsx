@@ -37,38 +37,40 @@ export const MASTER_CHART_INSTRUMENTS: ChartInstrumentItem[] = [
   { symbol: 'FTSE ADX 15', name: 'FTSE ADX 15 Index', category: 'INDEX', market: 'UAE', exchange: 'ADX', currency: 'AED', flag: '🇦🇪', basePrice: 9410.20, sector: 'UAE Top 15' },
 
   // ─── COMMODITIES ───
-  { symbol: 'GOLD', name: 'Gold Bullion Spot (XAU/USD)', category: 'COMMODITY', exchange: 'COMEX', currency: '$', flag: '🛢️', basePrice: 2735.40, sector: 'Precious Metals' },
-  { symbol: 'SILVER', name: 'Silver Spot (XAG/USD)', category: 'COMMODITY', exchange: 'COMEX', currency: '$', flag: '🛢️', basePrice: 31.85, sector: 'Precious Metals' },
-  { symbol: 'CRUDEOIL', name: 'Brent Crude Oil', category: 'COMMODITY', exchange: 'ICE', currency: '$', flag: '🛢️', basePrice: 74.20, sector: 'Energy' },
-  { symbol: 'WTI', name: 'WTI Light Sweet Crude', category: 'COMMODITY', exchange: 'NYMEX', currency: '$', flag: '🛢️', basePrice: 70.80, sector: 'Energy' },
-  { symbol: 'NATGAS', name: 'Natural Gas Henry Hub', category: 'COMMODITY', exchange: 'NYMEX', currency: '$', flag: '🛢️', basePrice: 2.85, sector: 'Energy' },
-  { symbol: 'COPPER', name: 'High Grade Copper', category: 'COMMODITY', exchange: 'COMEX', currency: '$', flag: '🛢️', basePrice: 4.38, sector: 'Industrial Metals' },
-  { symbol: 'PLATINUM', name: 'Platinum Spot', category: 'COMMODITY', exchange: 'NYMEX', currency: '$', flag: '🛢️', basePrice: 1024.50, sector: 'Precious Metals' },
+  { symbol: 'GOLD', name: 'Gold Bullion Spot (XAU/USD)', category: 'COMMODITY', market: 'USA', exchange: 'COMEX', currency: '$', flag: '🛢️', basePrice: 2735.40, sector: 'Precious Metals' },
+  { symbol: 'SILVER', name: 'Silver Spot (XAG/USD)', category: 'COMMODITY', market: 'USA', exchange: 'COMEX', currency: '$', flag: '🛢️', basePrice: 31.85, sector: 'Precious Metals' },
+  { symbol: 'CRUDEOIL', name: 'Crude Oil WTI Futures', category: 'COMMODITY', market: 'USA', exchange: 'NYMEX', currency: '$', flag: '🛢️', basePrice: 74.20, sector: 'Energy' },
+  { symbol: 'BRENT', name: 'Brent Crude Oil Spot', category: 'COMMODITY', market: 'USA', exchange: 'ICE', currency: '$', flag: '🛢️', basePrice: 78.40, sector: 'Energy' },
+  { symbol: 'WTI', name: 'WTI Light Sweet Crude', category: 'COMMODITY', market: 'USA', exchange: 'NYMEX', currency: '$', flag: '🛢️', basePrice: 70.80, sector: 'Energy' },
+  { symbol: 'NATGAS', name: 'Natural Gas Henry Hub', category: 'COMMODITY', market: 'USA', exchange: 'NYMEX', currency: '$', flag: '🛢️', basePrice: 2.85, sector: 'Energy' },
+  { symbol: 'COPPER', name: 'High Grade Copper', category: 'COMMODITY', market: 'USA', exchange: 'COMEX', currency: '$', flag: '🛢️', basePrice: 4.38, sector: 'Industrial Metals' },
+  { symbol: 'PLATINUM', name: 'Platinum Spot', category: 'COMMODITY', market: 'USA', exchange: 'NYMEX', currency: '$', flag: '🛢️', basePrice: 1024.50, sector: 'Precious Metals' },
 
   // ─── FOREX ───
-  { symbol: 'EURUSD', name: 'Euro / US Dollar', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 1.0845, sector: 'Major Currency' },
-  { symbol: 'GBPUSD', name: 'British Pound / US Dollar', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 1.2980, sector: 'Major Currency' },
-  { symbol: 'USDJPY', name: 'US Dollar / Japanese Yen', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 152.40, sector: 'Major Currency' },
-  { symbol: 'USDINR', name: 'US Dollar / Indian Rupee', category: 'FOREX', exchange: 'FOREX', currency: '₹', flag: '💱', basePrice: 84.08, sector: 'Emerging Pair' },
-  { symbol: 'USDCAD', name: 'US Dollar / Canadian Dollar', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 1.4092, sector: 'Major Currency' },
-  { symbol: 'AUDCAD', name: 'Australian Dollar / Canadian Dollar', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 0.9838, sector: 'Commodity Currency' },
-  { symbol: 'USDCHF', name: 'US Dollar / Swiss Franc', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 0.8850, sector: 'Safe Haven' },
-  { symbol: 'USDAED', name: 'US Dollar / UAE Dirham', category: 'FOREX', exchange: 'FOREX', currency: 'AED', flag: '💱', basePrice: 3.6725, sector: 'Pegged Currency' },
-  { symbol: 'AUDUSD', name: 'Australian Dollar / USD', category: 'FOREX', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 0.6650, sector: 'Commodity Currency' },
+  { symbol: 'EURUSD', name: 'Euro / US Dollar', category: 'FOREX', market: 'USA', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 1.0845, sector: 'Major Currency' },
+  { symbol: 'GBPUSD', name: 'British Pound / US Dollar', category: 'FOREX', market: 'USA', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 1.2980, sector: 'Major Currency' },
+  { symbol: 'USDJPY', name: 'US Dollar / Japanese Yen', category: 'FOREX', market: 'USA', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 152.40, sector: 'Major Currency' },
+  { symbol: 'USDINR', name: 'US Dollar / Indian Rupee', category: 'FOREX', market: 'USA', exchange: 'FOREX', currency: '₹', flag: '💱', basePrice: 84.08, sector: 'Emerging Pair' },
+  { symbol: 'USDCAD', name: 'US Dollar / Canadian Dollar', category: 'FOREX', market: 'USA', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 1.4092, sector: 'Major Currency' },
+  { symbol: 'AUDCAD', name: 'Australian Dollar / Canadian Dollar', category: 'FOREX', market: 'USA', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 0.9838, sector: 'Commodity Currency' },
+  { symbol: 'USDCHF', name: 'US Dollar / Swiss Franc', category: 'FOREX', market: 'USA', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 0.8850, sector: 'Safe Haven' },
+  { symbol: 'USDAED', name: 'US Dollar / UAE Dirham', category: 'FOREX', market: 'USA', exchange: 'FOREX', currency: 'AED', flag: '💱', basePrice: 3.6725, sector: 'Pegged Currency' },
+  { symbol: 'AUDUSD', name: 'Australian Dollar / USD', category: 'FOREX', market: 'USA', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 0.6650, sector: 'Commodity Currency' },
+  { symbol: 'NZDUSD', name: 'New Zealand Dollar / USD', category: 'FOREX', market: 'USA', exchange: 'FOREX', currency: '$', flag: '💱', basePrice: 0.5920, sector: 'Commodity Currency' },
 
   // ─── CRYPTO ───
-  { symbol: 'BTC', name: 'Bitcoin', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 65193.58, sector: 'Store of Value' },
-  { symbol: 'ETH', name: 'Ethereum', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 2403.00, sector: 'Smart Contracts' },
-  { symbol: 'SOL', name: 'Solana', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 104.37, sector: 'Layer 1' },
-  { symbol: 'BNB', name: 'Binance Coin', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 727.00, sector: 'Exchange Ecosystem' },
-  { symbol: 'DOGE', name: 'Dogecoin', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.079, sector: 'Meme & Payment' },
-  { symbol: 'SHIB', name: 'Shiba Inu', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.0000185, sector: 'Meme Ecosystem' },
-  { symbol: 'XRP', name: 'Ripple XRP', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 1.31, sector: 'Cross-Border Payments' },
-  { symbol: 'ADA', name: 'Cardano', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.218, sector: 'Proof of Stake L1' },
-  { symbol: 'AVAX', name: 'Avalanche', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 9.60, sector: 'Layer 1' },
-  { symbol: 'DOT', name: 'Polkadot', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 1.16, sector: 'Interoperability' },
-  { symbol: 'LINK', name: 'Chainlink', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 12.09, sector: 'Oracle Network' },
-  { symbol: 'MATIC', name: 'Polygon', category: 'CRYPTO', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.126, sector: 'Ethereum L2' },
+  { symbol: 'BTC', name: 'Bitcoin', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 65193.58, sector: 'Store of Value' },
+  { symbol: 'ETH', name: 'Ethereum', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 2403.00, sector: 'Smart Contracts' },
+  { symbol: 'SOL', name: 'Solana', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 104.37, sector: 'Layer 1' },
+  { symbol: 'BNB', name: 'Binance Coin', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 727.00, sector: 'Exchange Ecosystem' },
+  { symbol: 'DOGE', name: 'Dogecoin', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.079, sector: 'Meme & Payment' },
+  { symbol: 'SHIB', name: 'Shiba Inu', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.0000185, sector: 'Meme Ecosystem' },
+  { symbol: 'XRP', name: 'Ripple XRP', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 1.31, sector: 'Cross-Border Payments' },
+  { symbol: 'ADA', name: 'Cardano', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.218, sector: 'Proof of Stake L1' },
+  { symbol: 'AVAX', name: 'Avalanche', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 9.60, sector: 'Layer 1' },
+  { symbol: 'DOT', name: 'Polkadot', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 1.16, sector: 'Interoperability' },
+  { symbol: 'LINK', name: 'Chainlink', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 12.09, sector: 'Oracle Network' },
+  { symbol: 'MATIC', name: 'Polygon', category: 'CRYPTO', market: 'USA', exchange: 'CRYPTO', currency: '$', flag: '🪙', basePrice: 0.126, sector: 'Ethereum L2' },
 
   // ─── US STOCKS ───
   { symbol: 'NVDA', name: 'NVIDIA Corporation', category: 'STOCK', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 214.10, sector: 'Technology' },
@@ -143,13 +145,18 @@ function resolveCurrentInstrument(selectedSymbol: string) {
     };
   }
 
+  const isCommodity = ['GOLD', 'XAU', 'SILVER', 'XAG', 'CRUDEOIL', 'BRENT', 'WTI', 'NATGAS', 'COPPER', 'PLATINUM'].includes(clean);
+  const isForex = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDCAD', 'AUDCAD', 'USDCHF', 'USDAED', 'AUDUSD', 'NZDUSD'].includes(clean);
+  const isCrypto = ['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC'].includes(clean) || clean.endsWith('USDT') || clean.endsWith('USD');
+
   return {
     symbol: selectedSymbol,
     name: selectedSymbol,
-    category: 'STOCK' as const,
-    exchange: 'GLOBAL',
-    currency: '₹',
-    flag: '📈',
+    category: isCommodity ? 'COMMODITY' as const : isForex ? 'FOREX' as const : isCrypto ? 'CRYPTO' as const : 'STOCK' as const,
+    market: (isCommodity || isForex || isCrypto) ? ('USA' as const) : ('INDIA' as const),
+    exchange: isCommodity ? 'COMEX' : isForex ? 'FOREX' : isCrypto ? 'CRYPTO' : 'GLOBAL',
+    currency: (isCommodity || isForex || isCrypto) ? '$' : '₹',
+    flag: isCommodity ? '🛢️' : isForex ? '💱' : isCrypto ? '🪙' : '📈',
     basePrice: 1000,
   };
 }

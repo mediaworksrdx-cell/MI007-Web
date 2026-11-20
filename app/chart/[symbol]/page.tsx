@@ -26,15 +26,15 @@ interface ChartPageProps {
   }>;
 }
 
-const CRYPTO_SET = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC']);
-const COMMODITIES_SET = new Set(['GOLD', 'XAUUSD', 'SILVER', 'XAGUSD', 'CRUDEOIL', 'BRENT', 'WTI', 'NATGAS', 'COPPER', 'PLATINUM']);
+const CRYPTO_SET = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC', 'POL', 'BTCUSD', 'BTCUSDT', 'ETHUSD', 'ETHUSDT', 'SOLUSD', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT']);
+const COMMODITIES_SET = new Set(['GOLD', 'XAU', 'XAUUSD', 'SILVER', 'XAG', 'XAGUSD', 'CRUDEOIL', 'CRUDE', 'OIL', 'BRENT', 'WTI', 'NATGAS', 'NATURALGAS', 'COPPER', 'PLATINUM']);
 const FOREX_SET = new Set(['EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDAED', 'AUDUSD', 'USDCAD', 'AUDCAD', 'UADCAD', 'USDCHF', 'NZDUSD']);
 const USA_SET = new Set([
-  'SPX', 'NDX', 'DJI', 'VIX', 'VIXY', 'QQQ',
-  'AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'GOOG',
+  'SPX', 'NDX', 'DJI', 'VIX', 'VIXY', 'QQQ', 'RUT', 'SPY', 'DIA',
+  'AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'GOOG', 'AMD', 'NFLX', 'INTC',
   'S&P 500', 'NASDAQ 100', 'DOW JONES'
 ]);
-const UAE_SET = new Set(['DFMGI', 'ADXGI', 'ADX', 'EMAAR', 'FAB', 'DEWA', 'ALDAR', 'ENBD', 'ADNOC', 'AIRARABIA', 'DFM GENERAL', 'ADX GENERAL', 'FTSE ADX 15']);
+const UAE_SET = new Set(['DFMGI', 'ADXGI', 'ADX', 'EMAAR', 'FAB', 'DEWA', 'ALDAR', 'ENBD', 'ADNOC', 'AIRARABIA', 'DFM GENERAL', 'ADX GENERAL', 'FTSE ADX 15', 'SALIK', 'DFM']);
 
 export default function ChartPage({ params, searchParams }: ChartPageProps) {
   const { symbol } = use(params);
@@ -43,21 +43,20 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
   const isFromScreener = from === 'screener';
 
   const cleanSym = symbol.toUpperCase().replace(/[\s\/-]+/g, '');
-  const isCrypto = CRYPTO_SET.has(cleanSym);
+  const isCrypto = CRYPTO_SET.has(cleanSym) || cleanSym.endsWith('USDT') || cleanSym.endsWith('USD');
   const isCommodity = COMMODITIES_SET.has(cleanSym);
-  const isForex = FOREX_SET.has(cleanSym);
+  const isForex = FOREX_SET.has(cleanSym) || /^(EUR|GBP|USD|AUD|NZD|CAD|CHF|JPY|INR|AED){2}$/.test(cleanSym);
 
   const validMarkets: MarketType[] = ['INDIA', 'USA', 'UAE'];
   let defaultMarket: MarketType = 'INDIA';
 
-  if (marketParam && validMarkets.includes(marketParam as MarketType)) {
-    defaultMarket = marketParam as MarketType;
-  } else if (USA_SET.has(cleanSym)) {
+  // Strict market precedence: Global asset classes (Forex, Commodities, Crypto, US stocks) must always route to USA
+  if (isCrypto || isCommodity || isForex || USA_SET.has(cleanSym)) {
     defaultMarket = 'USA';
   } else if (UAE_SET.has(cleanSym)) {
     defaultMarket = 'UAE';
-  } else if (isCrypto || isCommodity || isForex) {
-    defaultMarket = 'USA';
+  } else if (marketParam && validMarkets.includes(marketParam as MarketType)) {
+    defaultMarket = marketParam as MarketType;
   }
 
   const [market, setMarket] = useState<MarketType>(defaultMarket);

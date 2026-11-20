@@ -2286,28 +2286,20 @@ const US_EQUITY_SYMBOLS = new Set([
 export function getSmcTradingDayKey(timestampMs: number, symbol?: string): string {
   if (!timestampMs || timestampMs <= 0) return '';
   const sym = (symbol || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const isCryptoOrFx =
+  const isCommodity = [
+    'GOLD', 'XAU', 'XAUUSD', 'SILVER', 'XAG', 'XAGUSD', 'CRUDEOIL', 'CRUDE', 'OIL',
+    'BRENT', 'WTI', 'NATGAS', 'COPPER', 'PLATINUM'
+  ].includes(sym);
+  const isForex = [
+    'EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDAED', 'AUDUSD', 'USDCAD', 'AUDCAD',
+    'UADCAD', 'USDCHF', 'NZDUSD'
+  ].includes(sym) || /^(EUR|GBP|USD|AUD|NZD|CAD|CHF|JPY|INR|AED){2}$/.test(sym);
+  const isCrypto =
     sym.endsWith('USDT') ||
     sym.endsWith('USD') ||
-    sym === 'BTC' ||
-    sym === 'ETH' ||
-    sym === 'SOL' ||
-    sym === 'BNB' ||
-    sym === 'XRP' ||
-    sym === 'DOGE' ||
-    sym === 'ADA' ||
-    sym === 'AVAX' ||
-    sym === 'EURUSD' ||
-    sym === 'GBPUSD' ||
-    sym === 'USDJPY' ||
-    sym === 'AUDUSD' ||
-    sym === 'USDCAD' ||
-    sym === 'USDCHF' ||
-    sym === 'XAUUSD' ||
-    sym === 'XAGUSD' ||
-    sym === 'WTI' ||
-    sym === 'BRENT';
-  if (isCryptoOrFx) {
+    ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC', 'POL', 'SHIB'].includes(sym);
+
+  if (isCommodity || isForex || isCrypto) {
     return new Date(timestampMs).toISOString().slice(0, 10);
   }
   if (US_EQUITY_SYMBOLS.has(sym)) {
