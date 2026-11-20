@@ -583,28 +583,27 @@ export function SmcAlertsTabView() {
                     <span>⚡ Twilio WhatsApp Gateway Active</span>
                   </div>
                   <p className="text-[10px] text-[var(--theme-card-text-muted)]">
-                    Link your phone to the Twilio WhatsApp Sandbox (one-time only):
+                    Link your phone to your Twilio WhatsApp Sandbox (one-time only):
                   </p>
                   <ol className="list-decimal list-inside text-[10px] text-[var(--theme-card-text-muted)] space-y-0.5 mt-1">
                     <li>
                       Open WhatsApp to{' '}
                       <a
-                        href="https://wa.me/14155238886"
+                        href="https://wa.me/17372508034?text=join%20twilio-trial"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="underline text-emerald-500 font-bold"
                       >
-                        +1 415 523 8886
+                        +1 737 250 8034
                       </a>
                     </li>
                     <li>
-                      Send your join code from your Twilio Console (e.g.{' '}
-                      <code className="px-1 py-0.5 rounded bg-slate-500/20 font-mono text-emerald-300">
-                        join &lt;your-code&gt;
+                      Send the message:{' '}
+                      <code className="px-1 py-0.5 rounded bg-slate-500/20 font-mono text-emerald-300 font-bold">
+                        join twilio-trial
                       </code>
-                      )
                     </li>
-                    <li>Enter your phone number above and click <strong>🧪 Send Test WhatsApp</strong>.</li>
+                    <li>Enter your phone number above (e.g. <code className="text-emerald-400 font-mono">+918838202279</code>) and click <strong>🧪 Send Test WhatsApp</strong>.</li>
                   </ol>
                 </div>
               )}

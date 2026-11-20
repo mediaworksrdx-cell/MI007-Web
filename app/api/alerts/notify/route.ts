@@ -215,7 +215,7 @@ async function sendWhatsApp(
   if (provider === 'twilio') {
     const sid = (config?.twilioAccountSid || process.env.TWILIO_ACCOUNT_SID || '').trim();
     const token = (config?.twilioAuthToken || process.env.TWILIO_AUTH_TOKEN || '').trim();
-    const from = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
+    const from = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+17372508034';
     if (!sid || !token) {
       return { ok: false, message: 'Twilio Account SID and Auth Token are required.' };
     }
@@ -248,7 +248,7 @@ async function sendWhatsApp(
         if (errCode === 63007 || errCode === 21608 || errCode === 572002) {
           return {
             ok: false,
-            message: `Twilio Sandbox not joined: Open WhatsApp to +1 415 523 8886 and send "join <your-code>" once to link your phone.`,
+            message: `Twilio Sandbox not joined: Open WhatsApp to +1 737 250 8034 and send "join twilio-trial" once to link your phone.`,
           };
         }
         return { ok: false, message: `Twilio error (${res.status}): ${errMsg.slice(0, 120)}` };
