@@ -101,10 +101,11 @@ export function computeVolumeProfile(
   let minP = Infinity;
   let maxP = -Infinity;
   let rawVolSum = 0;
+  const hasActualVolume = volumeQuality === 'ACTUAL';
   for (const c of candles) {
     if (Number.isFinite(c.low) && c.low < minP) minP = c.low;
     if (Number.isFinite(c.high) && c.high > maxP) maxP = c.high;
-    if ((c as any)?.volumeEstimated === true) continue;
+    if (hasActualVolume && (c as any)?.volumeEstimated === true) continue;
     if (typeof c.volume === 'number' && Number.isFinite(c.volume) && c.volume > 0) {
       rawVolSum += c.volume;
     }
@@ -152,7 +153,7 @@ export function computeVolumeProfile(
   let totalVolume = 0;
 
   for (const c of candles) {
-    if ((c as any)?.volumeEstimated === true) continue;
+    if (hasActualVolume && (c as any)?.volumeEstimated === true) continue;
     const vol = typeof c.volume === 'number' && Number.isFinite(c.volume) && c.volume > 0 ? c.volume : 0;
     if (vol <= 0) continue;
     totalVolume += vol;

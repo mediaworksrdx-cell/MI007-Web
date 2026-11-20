@@ -163,7 +163,7 @@ function computeVolumeProfiles(
   const volumeQuality = detectSharedVolumeQuality(closedCandles.slice(frStart));
   const { summary: fixedRange, bins } = buildRangeProfile(closedCandles, frStart, n - 1, 40);
 
-  if (volumeQuality !== 'ACTUAL' || fixedRange.totalVolume <= 0) {
+  if (fixedRange.totalVolume <= 0) {
     return {
       volumeQuality,
       fixedRange: { poc: 0, vah: 0, val: 0, totalVolume: 0, startIndex: frStart, endIndex: Math.max(0, n - 1) },
@@ -931,16 +931,17 @@ function detectVolumeBubbles(
   closedCandles: Candle[],
   volumeQuality: Mi007VolumeQuality
 ): Mi007VolumeBubble[] {
-  // Strictly gate on ACTUAL volume so zero-volume feeds never fabricate volume bubbles
-  if (volumeQuality !== 'ACTUAL' || closedCandles.length < 25) return [];
+  if (closedCandles.length < 25) return [];
 
   // Full-history O(N) trailing 20-bar volume SMA across 100% of loaded candles on all timeframes
   const bubbles: Mi007VolumeBubble[] = [];
   let winSum = 0;
   let winCnt = 0;
+  const isActual = volumeQuality === 'ACTUAL';
   const volOf = (idx: number) => {
     const bar = closedCandles[idx];
-    if (!bar || (bar as any).volumeEstimated === true) return 0;
+    if (!bar) return 0;
+    if (isActual && (bar as any).volumeEstimated === true) return 0;
     const v = bar.volume;
     return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0;
   };

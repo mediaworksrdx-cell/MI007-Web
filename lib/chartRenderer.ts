@@ -1144,7 +1144,7 @@ export function renderChart(
   ctx.restore();
 
   // ── LAYER 2: Standalone Volume Profile (VPVR — suppressed when MI-007 Vol Pro is drawing its Split Delta/Vol Profile) ──
-  const mi007OwnsVolPro = Boolean(options.showMi007 && options.mi007Config?.showVolPro !== false && options.mi007Data?.volumeProfile?.volumeQuality === 'ACTUAL');
+  const mi007OwnsVolPro = Boolean(options.showMi007 && options.mi007Config?.showVolPro !== false && (options.mi007Data?.volumeProfile?.bins?.length ?? 0) > 0);
   if (options.showVolumeProfile && !mi007OwnsVolPro) {
     const visCandles = candles.slice(safeStart, safeEnd);
     const vpData = calculateVolumeProfile(visCandles, pMin, pMax, 40);

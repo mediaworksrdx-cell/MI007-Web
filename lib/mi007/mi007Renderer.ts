@@ -42,7 +42,7 @@ export function renderMi007Overlay({
   ctx.save();
 
   // ── 1A. Left-Docked Split Volume Profile (Blue/White 70% VA) + Estimated Delta Profile (Green/Red) ──
-  const hasLeftVolPro = Boolean(showVolPro && vp.volumeQuality === 'ACTUAL' && vp.bins.length > 0 && vp.fixedRange.totalVolume > 0);
+  const hasLeftVolPro = Boolean(showVolPro && vp.bins.length > 0 && vp.fixedRange.totalVolume > 0);
   const volMaxW = Math.min(72 * dpr, chartW * 0.10);
   const deltaMaxW = Math.min(46 * dpr, chartW * 0.065);
   const leftEdge = 2 * dpr;
@@ -95,7 +95,8 @@ export function renderMi007Overlay({
     ctx.fillStyle = isDark ? 'rgba(148, 163, 184, 0.85)' : 'rgba(71, 85, 105, 0.85)';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('EST. DELTA | VOL PRO', leftEdge + 2 * dpr, 6 * dpr);
+    const profileLabel = vp.volumeQuality === 'ACTUAL' ? 'EST. DELTA | VOL PRO' : 'EST. DELTA | VOL PRO (EST)';
+    ctx.fillText(profileLabel, leftEdge + 2 * dpr, 6 * dpr);
 
     // Key Institutional Horizontal Bands: POC (Gold), Prior Daily POC (Yellow), VAH & VAL
     const drawKeyLevel = (price: number, label: string, color: string, dashed: boolean, thick = false) => {
