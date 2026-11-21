@@ -683,23 +683,23 @@ export function SmcAlertsTabView() {
           </div>
 
           {/* 2. WhatsApp Notifications */}
-          <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] p-4 flex flex-col justify-between gap-3">
-            <div className="space-y-2.5">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col justify-between gap-3 shadow-xs text-gray-900">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-sm flex items-center gap-1.5">💬 WhatsApp Alerts</span>
-                <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
+                <span className="font-semibold text-sm text-gray-900 flex items-center gap-1.5">WhatsApp Alerts</span>
+                <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.whatsappEnabled}
                     onChange={(e) => setSettings((s) => ({ ...s, whatsappEnabled: e.target.checked }))}
-                    className="accent-emerald-500"
+                    className="accent-black rounded"
                   />
                   <span>Active</span>
                 </label>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] mb-1">
+                <label className="block text-[11px] font-medium text-gray-500 mb-1">
                   Mobile Number (with Country Code)
                 </label>
                 <input
@@ -711,35 +711,35 @@ export function SmcAlertsTabView() {
                     if (otpVerified) setOtpVerified(false);
                     if (otpSent) setOtpSent(false);
                   }}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-sm mono font-bold"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs font-mono font-medium focus:outline-none focus:border-gray-500"
                 />
               </div>
 
               {otpVerified ? (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+                <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     <div>
-                      <div className="text-xs font-bold text-emerald-400">✓ Verified &amp; Active (OTP Verified)</div>
-                      <div className="text-[11px] text-slate-300 mono">{settings.whatsappPhone || '+918778123702'}</div>
+                      <div className="text-xs font-medium text-gray-900">Verified & Active</div>
+                      <div className="text-[11px] text-gray-500 font-mono">{settings.whatsappPhone || '+918778123702'}</div>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={handleResetOtp}
                     disabled={isOtpLoading}
-                    className="text-[11px] text-red-400 hover:text-red-300 underline cursor-pointer"
+                    className="text-xs text-gray-500 hover:text-red-600 underline cursor-pointer"
                   >
-                    Change Number
+                    Change
                   </button>
                 </div>
               ) : otpSent ? (
-                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-emerald-500/40 text-center space-y-2.5">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                    Enter 6-Digit Verification OTP
+                <div className="p-3.5 rounded-lg bg-gray-50 border border-gray-200 text-center space-y-2.5">
+                  <div className="text-xs font-medium text-gray-800">
+                    Enter 6-Digit Code
                   </div>
-                  <p className="text-[11px] text-slate-300">
-                    OTP sent for <strong className="text-white">{settings.whatsappPhone || '+918778123702'}</strong>
+                  <p className="text-[11px] text-gray-500">
+                    Sent to <strong className="text-gray-800">{settings.whatsappPhone || '+918778123702'}</strong>
                   </p>
                   <div className="flex items-center justify-center gap-2">
                     <input
@@ -748,32 +748,32 @@ export function SmcAlertsTabView() {
                       placeholder="● ● ● ● ● ●"
                       value={otpInput}
                       onChange={(e) => setOtpInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                      className="w-40 text-center px-3 py-1.5 rounded-lg bg-black/60 border border-emerald-500/50 text-xl font-mono font-black tracking-widest text-emerald-300"
+                      className="w-36 text-center px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-900 text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-gray-500"
                     />
                     <button
                       type="button"
                       onClick={handleVerifyOtp}
                       disabled={isOtpLoading || otpInput.trim().length !== 6}
-                      className="px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold text-xs cursor-pointer transition-all"
+                      className="px-3 py-1.5 rounded-lg bg-gray-900 hover:bg-black disabled:opacity-40 text-white font-medium text-xs cursor-pointer transition-all"
                     >
-                      {isOtpLoading ? 'Verifying...' : 'Verify OTP'}
+                      {isOtpLoading ? 'Verifying...' : 'Verify'}
                     </button>
                   </div>
-                  <div className="flex items-center justify-between text-[10px] pt-1.5 border-t border-slate-800">
+                  <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-gray-200">
                     <button
                       type="button"
                       onClick={() => handleSendOtp('whatsapp')}
                       disabled={isOtpLoading || resendCooldown > 0}
-                      className="text-slate-400 hover:text-white disabled:opacity-50 underline cursor-pointer"
+                      className="text-gray-500 hover:text-gray-800 disabled:opacity-40 underline cursor-pointer"
                     >
                       {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
                     </button>
                     <button
                       type="button"
                       onClick={handleResetOtp}
-                      className="text-red-400 hover:text-red-300 underline cursor-pointer"
+                      className="text-gray-400 hover:text-red-600 cursor-pointer"
                     >
-                      Cancel / Change Number
+                      Cancel
                     </button>
                   </div>
                 </div>
@@ -782,9 +782,9 @@ export function SmcAlertsTabView() {
                   type="button"
                   onClick={() => handleSendOtp('whatsapp')}
                   disabled={isOtpLoading}
-                  className="w-full px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                  className="w-full px-3 py-2 rounded-lg bg-gray-900 hover:bg-black disabled:opacity-50 text-white font-medium text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all"
                 >
-                  <span>{isOtpLoading ? '⏳ Sending Verification OTP...' : '📲 Send Verification OTP'}</span>
+                  <span>{isOtpLoading ? 'Sending Code...' : 'Send Verification OTP'}</span>
                 </button>
               )}
             </div>
@@ -792,9 +792,9 @@ export function SmcAlertsTabView() {
             <button
               type="button"
               onClick={() => handleSendTest('whatsapp')}
-              className="w-full px-3 py-2 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-500 text-xs font-bold cursor-pointer transition-all mt-2"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-medium cursor-pointer transition-all mt-2"
             >
-              🧪 Send Test WhatsApp Alert
+              Send Test WhatsApp Alert
             </button>
           </div>
 
