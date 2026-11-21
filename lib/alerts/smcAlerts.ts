@@ -229,15 +229,78 @@ export function recordSentAlertIds(newIds: string[]): Record<string, number> {
   return current;
 }
 
+export const DEFAULT_STARTER_WATCHLIST: SmcAlertWatchItem[] = [
+  {
+    id: 'smc_watch_NIFTY_default',
+    symbol: 'NIFTY',
+    name: 'NIFTY 50 Index',
+    assetClass: 'INDEX',
+    market: 'INDIA',
+    timeframes: ['15m', '1h'],
+    setupTypes: [],
+    direction: 'BOTH',
+    minQuality: 65,
+    triggerStages: ['WAIT_PULLBACK', 'RETEST_TOUCHED', 'ENTRY_READY', 'ACTIONABLE', 'TP_HIT', 'SL_HIT'],
+    channels: { browser: true, whatsapp: true, gmail: true },
+    enabled: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'smc_watch_BANKNIFTY_default',
+    symbol: 'BANKNIFTY',
+    name: 'Bank NIFTY Index',
+    assetClass: 'INDEX',
+    market: 'INDIA',
+    timeframes: ['15m', '1h'],
+    setupTypes: [],
+    direction: 'BOTH',
+    minQuality: 65,
+    triggerStages: ['WAIT_PULLBACK', 'RETEST_TOUCHED', 'ENTRY_READY', 'ACTIONABLE', 'TP_HIT', 'SL_HIT'],
+    channels: { browser: true, whatsapp: true, gmail: true },
+    enabled: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'smc_watch_GOLD_default',
+    symbol: 'GOLD',
+    name: 'Gold Spot (XAU/USD)',
+    assetClass: 'COMMODITY',
+    market: 'USA',
+    timeframes: ['15m', '1h'],
+    setupTypes: [],
+    direction: 'BOTH',
+    minQuality: 65,
+    triggerStages: ['WAIT_PULLBACK', 'RETEST_TOUCHED', 'ENTRY_READY', 'ACTIONABLE', 'TP_HIT', 'SL_HIT'],
+    channels: { browser: true, whatsapp: true, gmail: true },
+    enabled: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'smc_watch_BTCUSDT_default',
+    symbol: 'BTCUSDT',
+    name: 'Bitcoin / Tether',
+    assetClass: 'CRYPTO',
+    market: 'USA',
+    timeframes: ['15m', '1h'],
+    setupTypes: [],
+    direction: 'BOTH',
+    minQuality: 65,
+    triggerStages: ['WAIT_PULLBACK', 'RETEST_TOUCHED', 'ENTRY_READY', 'ACTIONABLE', 'TP_HIT', 'SL_HIT'],
+    channels: { browser: true, whatsapp: true, gmail: true },
+    enabled: true,
+    createdAt: new Date().toISOString(),
+  },
+];
+
 export function loadAlertWatchlist(): SmcAlertWatchItem[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') return DEFAULT_STARTER_WATCHLIST;
   try {
     const raw = localStorage.getItem(WATCHLIST_KEY);
-    if (!raw) return [];
+    if (!raw) return DEFAULT_STARTER_WATCHLIST;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_STARTER_WATCHLIST;
   } catch {
-    return [];
+    return DEFAULT_STARTER_WATCHLIST;
   }
 }
 
