@@ -17,21 +17,10 @@ export async function dispatchWhatsAppOtp(
   otp: string,
   challengeId?: string
 ): Promise<WhatsAppDispatchResult> {
-  const hasMetaConfig = Boolean(
-    (process.env.META_WHATSAPP_TOKEN ||
-      process.env.WHATSAPP_ACCESS_TOKEN ||
-      process.env.WHATSAPP_CLOUD_API_TOKEN) &&
-      (process.env.META_WHATSAPP_PHONE_ID ||
-        process.env.WHATSAPP_PHONE_NUMBER_ID ||
-        process.env.WHATSAPP_CLOUD_PHONE_ID)
-  );
-
   // 1. Meta WhatsApp Business Cloud API (Official worldwide OTP delivery)
-  if (hasMetaConfig) {
-    const metaResult = await dispatchMetaCloudOtp(phone, otp);
-    if (metaResult.ok) {
-      return metaResult;
-    }
+  const metaResult = await dispatchMetaCloudOtp(phone, otp);
+  if (metaResult.ok) {
+    return metaResult;
   }
 
   // 2. Self-Hosted GCP Microservice Gateway
