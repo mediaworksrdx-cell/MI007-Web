@@ -176,33 +176,36 @@ async function sendWhatsApp(
     return { ok: false, message: 'Mobile number is required for WhatsApp alerts.' };
   }
 
-  // Private WhatsApp Bot Gateway
-  const gatewayUrl = (config?.selfhostedUrl || process.env.WHATSAPP_GATEWAY_URL || 'http://localhost:5050').replace(/\/$/, '');
-  try {
-    const res = await fetch(`${gatewayUrl}/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: targetPhone, text }),
-      signal: AbortSignal.timeout(10000),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.ok) {
-      return { ok: true, message: `Delivered via WhatsApp Bot (+${data.to || targetPhone})` };
-    }
-    if (data?.error) {
-      return { ok: false, message: data.error };
-    }
-  } catch {
-    return {
-      ok: false,
-      message: `WhatsApp Gateway is offline at ${gatewayUrl}. Please ensure "npm run whatsapp:bot" is running.`,
-    };
+  // 1. External Gateway (if configured via env or settings)
+  const externalGateway = config?.selfhostedUrl || process.env.WHATSAPP_GATEWAY_URL;
+  if (externalGateway) {
+    try {
+      const res = await fetch(`${externalGateway.replace(/\/$/, '')}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: targetPhone, text }),
+        signal: AbortSignal.timeout(10000),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        return { ok: true, message: `Delivered via WhatsApp Bot (+${data.to || targetPhone})` };
+      }
+      if (data?.error) {
+        return { ok: false, message: data.error };
+      }
+    } catch {}
   }
 
-  return {
-    ok: false,
-    message: 'WhatsApp not linked yet. Please click "Get Verification OTP" and link your device in WhatsApp.',
-  };
+  // 2. Native In-Process Baileys execution
+  try {
+    const { sendInProcessBotMessage } = await import('@/lib/alerts/whatsappBotServer');
+    return await sendInProcessBotMessage(targetPhone, text);
+  } catch (err: any) {
+    return {
+      ok: false,
+      message: err?.message || 'WhatsApp Bot is not linked yet. Please click "Get Verification OTP" on the terminal.',
+    };
+  }
 }
 
 async function sendGmail(

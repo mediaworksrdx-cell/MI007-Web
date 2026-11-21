@@ -99,40 +99,18 @@ export function SmcAlertsTabView() {
 
   const fetchBotStatus = useCallback(async () => {
     try {
-      let data: any = null;
-      try {
-        const customUrl = settings.selfhostedUrl ? `?url=${encodeURIComponent(settings.selfhostedUrl)}` : '';
-        const res = await fetch(`/api/alerts/whatsapp-bot${customUrl}`, { cache: 'no-store' });
-        data = await res.json().catch(() => ({}));
-      } catch {}
-
-      if (!data?.ok || data.status === 'offline') {
-        try {
-          const directUrl = (settings.selfhostedUrl || 'http://localhost:5050').replace(/\/$/, '');
-          const directRes = await fetch(`${directUrl}/status`, { cache: 'no-store', signal: AbortSignal.timeout(2000) });
-          const directData = await directRes.json().catch(() => ({}));
-          if (directData?.status && directData.status !== 'offline') {
-            data = { ok: true, ...directData };
-          }
-        } catch {}
-      }
-
-      if (data?.ok && data.status !== 'offline') {
+      const res = await fetch('/api/alerts/whatsapp-bot', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (data?.ok) {
         setBotStatus(data.status || 'unknown');
         setBotConnected(Boolean(data.connected));
         setBotUser(data.user || null);
         if (data.pairingCode) {
           setBotPairingCode(data.pairingCode);
         }
-      } else {
-        setBotStatus('offline');
-        setBotConnected(false);
       }
-    } catch {
-      setBotStatus('offline');
-      setBotConnected(false);
-    }
-  }, [settings.selfhostedUrl]);
+    } catch {}
+  }, []);
 
   const historyRef = useRef<SmcTriggeredAlert[]>([]);
   historyRef.current = history;
@@ -178,51 +156,29 @@ export function SmcAlertsTabView() {
     setIsBotLoading(true);
     try {
       const phone = settings.whatsappPhone || '+918838202279';
-      let data: any = null;
-      try {
-        const res = await fetch('/api/alerts/whatsapp-bot', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'request-code', phone, gatewayUrl: settings.selfhostedUrl }),
-        });
-        data = await res.json().catch(() => ({}));
-      } catch {}
-
-      if (!data?.ok || !data?.code) {
-        try {
-          const directUrl = (settings.selfhostedUrl || 'http://localhost:5050').replace(/\/$/, '');
-          const directRes = await fetch(`${directUrl}/request-code`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone }),
-            signal: AbortSignal.timeout(4000),
-          });
-          const directData = await directRes.json().catch(() => ({}));
-          if (directData?.ok && directData?.code) {
-            data = directData;
-          }
-        } catch {}
-      }
+      const res = await fetch('/api/alerts/whatsapp-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'request-code', phone }),
+      });
+      const data = await res.json().catch(() => ({}));
 
       if (data?.ok && data.code) {
         setBotPairingCode(data.code);
         setBotStatus('awaiting_pairing');
         setTestFeedback({ channel: 'WhatsApp', ok: true, msg: `OTP Generated: ${data.code}. Enter it on your phone!` });
       } else {
-        const errorMsg =
-          data?.error ||
-          'WhatsApp Gateway is offline. Please start it with "npm run whatsapp:bot" in your terminal.';
         setTestFeedback({
           channel: 'WhatsApp',
           ok: false,
-          msg: errorMsg,
+          msg: data?.error || 'Failed to generate OTP code. Please try again.',
         });
       }
-    } catch {
+    } catch (err: any) {
       setTestFeedback({
         channel: 'WhatsApp',
         ok: false,
-        msg: 'WhatsApp Gateway is offline. Please start it with "npm run whatsapp:bot" in your terminal.',
+        msg: err?.message || 'Failed to request verification code.',
       });
     } finally {
       setIsBotLoading(false);
@@ -236,16 +192,14 @@ export function SmcAlertsTabView() {
       await fetch('/api/alerts/whatsapp-bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset', gatewayUrl: settings.selfhostedUrl }),
+        body: JSON.stringify({ action: 'reset' }),
       });
       setBotConnected(false);
       setBotUser(null);
       setBotPairingCode(null);
-      setBotStatus('awaiting_pairing');
+      setBotStatus('idle');
       await fetchBotStatus();
-    } catch {
-      // ignore
-    } finally {
+    } catch {} finally {
       setIsBotLoading(false);
     }
   };
