@@ -531,9 +531,9 @@ export function CandlestickCanvas({
   }, [goToRange, cleanCandles, timeframe]);
 
   // Viewport calculation with responsive zoom, dynamic candle scaling,
-  // and a forward projection empty space buffer of 6 bars (~35-50px) to the right of the latest candle.
+  // and a forward projection empty space buffer of 15 bars (~80-120px) to the right of the latest candle (TradingView standard).
   // When Go-To Range Lock is active, viewport stays strictly pinned to the selected range until turned Off / Closed.
-  const RIGHT_BUFFER_BARS = 6;
+  const RIGHT_BUFFER_BARS = 15;
   const baseVisible = size.w < 640 ? 55 : size.w < 1024 ? 90 : 140;
   const maxScrollOffset = Math.max(0, cleanCandles.length - 8);
   const minScrollOffset = -RIGHT_BUFFER_BARS * 2;
@@ -2699,9 +2699,9 @@ export function CandlestickCanvas({
         onTouchEnd={handleTouchEnd}
       />
 
-      {/* ── Layer 3: Floating Chart Controls Dock (Zoom Only: + and -) ── */}
+      {/* ── Layer 3: Floating Chart Controls Dock (Zoom Only: + and -) — positioned in bottom-left above time axis (TradingView standard) ── */}
       <div
-        className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-full shadow-md shadow-slate-900/10 px-1.5 py-1 select-none transition-all opacity-80 hover:opacity-100 hover:bg-white dark:hover:bg-slate-900"
+        className="absolute bottom-9 left-4 z-20 flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-full shadow-md shadow-slate-900/10 px-1.5 py-1 select-none transition-all opacity-80 hover:opacity-100 hover:bg-white dark:hover:bg-slate-900"
         onPointerMove={(e) => handlePointerMove(e as unknown as React.PointerEvent<HTMLElement>)}
       >
         {/* Zoom In (+) */}

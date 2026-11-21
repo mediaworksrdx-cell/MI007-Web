@@ -342,29 +342,55 @@ export function computeCalendarTimeTicks(
       }
     }
   } else {
-    // Intraday: Clean hour and session boundaries
-    let lastX = -Infinity;
-    const timeStep = Math.max(1, Math.floor((endIdx - startIdx) / Math.max(2, Math.floor(chartW / (95 * dpr)))));
-    let prevDay = -1;
-    for (let i = startIdx; i < endIdx; i += timeStep) {
-      if (i < 0 || i >= candles.length) continue;
-      const li = i - startIdx;
-      const x = Math.round(li * candleW + candleW / 2);
-      if (x - lastX < minSpacing) continue;
+    // Intraday: TradingView calendar-anchored intervals (15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d)
+    const CANDLE_INTERVALS = [
+      15 * 60_000,
+      30 * 60_000,
+      60 * 60_000,
+      2 * 3600_000,
+      4 * 3600_000,
+      6 * 3600_000,
+      12 * 3600_000,
+      24 * 3600_000,
+    ];
+    const maxTicks = Math.max(2, Math.floor(chartW / (90 * dpr)));
+    let chosenStep = CANDLE_INTERVALS[CANDLE_INTERVALS.length - 1];
+    for (const step of CANDLE_INTERVALS) {
+      if (spanMs / step <= maxTicks) {
+        chosenStep = step;
+        break;
+      }
+    }
 
-      const ts = candles[i].openTime;
-      const d = new Date(ts);
+    const firstAnchor = Math.ceil(firstTs / chosenStep) * chosenStep;
+    let lastX = -Infinity;
+    let prevDay = -1;
+    const seenIndices = new Set<number>();
+
+    for (let targetTs = firstAnchor; targetTs <= lastTs + chosenStep / 2; targetTs += chosenStep) {
+      const idx = findClosestCandleIndex(targetTs);
+      if (idx < safeStart || idx >= safeEnd || seenIndices.has(idx)) continue;
+      const c = candles[idx];
+      if (Math.abs(c.openTime - targetTs) > chosenStep * 0.6) continue;
+
+      const li = idx - startIdx;
+      const x = Math.round(li * candleW + candleW / 2);
+      if (x < 15 * dpr || x > chartW - 15 * dpr || x - lastX < minSpacing) continue;
+
+      const d = new Date(targetTs);
       const curDay = d.getDate();
-      const multiDay = Math.abs(lastTs - firstTs) > 86_400_000;
+      const isMidnightOrNewDay = (d.getHours() === 0 && d.getMinutes() === 0) || (prevDay !== -1 && prevDay !== curDay);
+      const multiDay = spanMs > 36 * 3600_000;
       let label: string;
-      if (multiDay && prevDay !== curDay) {
+      if (multiDay && isMidnightOrNewDay) {
         label = `${d.getDate()} ${months[d.getMonth()]}`;
       } else {
         label = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
       }
       prevDay = curDay;
-      ticks.push({ x, label, isYear: false });
+      ticks.push({ x, label, isYear: isMidnightOrNewDay });
       lastX = x;
+      seenIndices.add(idx);
     }
   }
 
@@ -2739,15 +2765,15 @@ export function renderChart(
             : effectiveSignalState;
         const statusLabel =
           rawStatus === 'RETEST_FAILED'
-            ? 'RETEST FAILED • DO NOT EXECUTE'
+            ? 'RETEST FAILED'
             : rawStatus === 'RETEST_BELOW_BOS'
-            ? (isBull ? 'BELOW BOS • RECLAIM & REJECTION REQUIRED (DO NOT EXECUTE)' : 'ABOVE BOS • RECLAIM & REJECTION REQUIRED (DO NOT EXECUTE)')
+            ? (isBull ? 'BELOW BOS' : 'ABOVE BOS')
             : rawStatus === 'RETEST_TOUCHED'
-            ? 'RETEST TOUCHED • AWAITING REJECTION (DO NOT EXECUTE)'
+            ? 'RETEST TOUCHED'
             : rawStatus === 'CONDITIONAL_SETUP'
-            ? 'CONDITIONAL SETUP • AWAITING RETEST (DO NOT EXECUTE)'
+            ? 'AWAITING RETEST'
             : rawStatus.replace(/_/g, ' ');
-        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName}${bosLabel} (${rrLabel}${scoreLabel}) [${statusLabel}]`;
+        const headerTag = `${isBull ? '▲ LONG' : '▼ SHORT'}: ${shortName} (${rrLabel}${scoreLabel}) [${statusLabel}]`;
         ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
         const tm = ctx.measureText(headerTag);
         const tw = tm.width + 10 * dpr;
@@ -5153,14 +5179,15 @@ export function renderChart(
       ctx.font = `600 ${11.5 * dpr}px ${TV_FONT_STACK}`;
       const pMeas = ctx.measureText(pTxt);
       const pLW = Math.min(W - chartW, pMeas.width + 16 * dpr);
-      const pLH = 22 * dpr;
+      const pLH = 20 * dpr;
       const pX = W - pLW;
+      const clampedCy = Math.max(pLH / 2 + 2 * dpr, Math.min(chartH - pLH / 2 - 2 * dpr, cy));
       ctx.fillStyle = LABEL_BG;
-      ctx.fillRect(pX, cy - pLH / 2, pLW, pLH);
+      ctx.fillRect(pX, clampedCy - pLH / 2, pLW, pLH);
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(pTxt, pX + pLW / 2, cy);
+      ctx.fillText(pTxt, pX + pLW / 2, clampedCy);
     }
     // Time label on bottom
     const cidx = startIdx + Math.floor(cx / candleW);
@@ -5466,14 +5493,15 @@ export function renderOverlay(
       ctx.font = `600 ${11.5 * dpr}px ${TV_FONT_STACK}`;
       const pMeas = ctx.measureText(pTxt);
       const pLW = Math.min(W - chartW, pMeas.width + 16 * dpr);
-      const pLH = 22 * dpr;
+      const pLH = 20 * dpr;
       const pX = W - pLW;
+      const clampedCy = Math.max(pLH / 2 + 2 * dpr, Math.min(chartH - pLH / 2 - 2 * dpr, cy));
       ctx.fillStyle = LABEL_BG;
-      ctx.fillRect(pX, cy - pLH / 2, pLW, pLH);
+      ctx.fillRect(pX, clampedCy - pLH / 2, pLW, pLH);
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(pTxt, pX + pLW / 2, cy);
+      ctx.fillText(pTxt, pX + pLW / 2, clampedCy);
     }
 
     const firstMs = candles.length > 0 ? candles[0].openTime : 0;
