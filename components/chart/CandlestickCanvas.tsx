@@ -2551,6 +2551,16 @@ export function CandlestickCanvas({
       } else if (!e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'm' || e.key === 'M')) {
         e.preventDefault();
         onToggleMagnifier?.();
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setZoom(z => Math.min(6.0, +(z * 1.25).toFixed(2)));
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setZoom(z => Math.max(0.15, +(z / 1.25).toFixed(2)));
+      } else if (e.key === '0') {
+        e.preventDefault();
+        setZoom(1);
+        setScrollOffset(0);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -2698,47 +2708,6 @@ export function CandlestickCanvas({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       />
-
-      {/* ── Layer 3: Floating Chart Controls Dock (Zoom Only: + and -) — positioned in bottom-left above time axis (TradingView standard) ── */}
-      <div
-        className="absolute bottom-9 left-4 z-20 flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-full shadow-md shadow-slate-900/10 px-1.5 py-1 select-none transition-all opacity-80 hover:opacity-100 hover:bg-white dark:hover:bg-slate-900"
-        onPointerMove={(e) => handlePointerMove(e as unknown as React.PointerEvent<HTMLElement>)}
-      >
-        {/* Zoom In (+) */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setZoom(z => Math.min(6.0, +(z * 1.25).toFixed(2)));
-          }}
-          title="Zoom in (+)"
-          aria-label="Zoom in"
-          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
-
-        <div className="w-[1px] h-3.5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
-
-        {/* Zoom Out (-) */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setZoom(z => Math.max(0.15, +(z / 1.25).toFixed(2)));
-          }}
-          title="Zoom out (-)"
-          aria-label="Zoom out"
-          className="w-7 h-7 flex items-center justify-center rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all cursor-pointer font-bold"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
-      </div>
 
       {/* ── Layer 4: Foreground Overlay Canvas (120 FPS Crosshair, Anchors, Magnet, Events) ── */}
       <canvas
