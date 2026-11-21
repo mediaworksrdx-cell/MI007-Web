@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       err?.name === 'TypeError';
 
     const helpfulMsg = isConnRefused
-      ? `WhatsApp Gateway is offline or unreachable at ${targetGateway}. To use Private Bot OTP pairing, start the gateway ("npm run whatsapp:bot" on your server), or switch to CallMeBot for free zero-server cloud alerts.`
+      ? `WhatsApp Gateway is offline at ${targetGateway}. Please start it with "npm run whatsapp:bot" in your terminal.`
       : err?.message || 'Failed to communicate with WhatsApp gateway';
 
     return NextResponse.json(
