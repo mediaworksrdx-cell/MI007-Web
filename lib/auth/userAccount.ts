@@ -32,7 +32,7 @@ export function getUserAccount(): UserAccount | null {
           id: `ACC-${Math.floor(100000 + Math.random() * 900000)}`,
           name: parsed.name || 'Trader',
           email: `${parsed.name?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'trader'}@mi007.terminal`,
-          phone: localStorage.getItem('mi007_whatsapp_phone_v1') || '+918778123702',
+          phone: localStorage.getItem('mi007_whatsapp_phone_v1') || '',
           phoneVerified: localStorage.getItem('mi007_whatsapp_verified_v1') === 'true',
           role: parsed.role || 'Pro Trader',
           deskId: parsed.deskId || 'DESK-007',

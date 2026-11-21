@@ -54,23 +54,20 @@ export async function dispatchWhatsAppOtp(
       return { ok: true, messageId: data?.messageId || `wa_${Date.now()}` };
     }
 
-    // 3. Resilient Fallback for Active Verified Owner Numbers (+918778123702 & +919940163622)
-    if (cleanPhone.endsWith('8778123702') || cleanPhone.endsWith('9940163622')) {
-      return {
-        ok: true,
-        messageId: `wamid_verified_owner_${Date.now()}`,
-      };
-    }
-
-    // Client-safe error: never leak pairing codes or internal terminal messages
+    // Return upstream Meta error or gateway error if available, without internal code leakage
     return {
       ok: false,
-      error: 'Unable to deliver WhatsApp OTP at this moment. Please check your phone number or try again.',
+      error:
+        metaResult.error ||
+        data?.error ||
+        'Unable to deliver WhatsApp OTP. Please ensure your number is valid and capable of receiving WhatsApp messages.',
     };
   } catch {
     return {
       ok: false,
-      error: 'WhatsApp delivery service temporarily unavailable.',
+      error:
+        metaResult.error ||
+        'WhatsApp delivery service temporarily unavailable. Please try again.',
     };
   }
 }

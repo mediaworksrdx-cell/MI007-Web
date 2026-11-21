@@ -34,7 +34,7 @@ export function LoginModal({
   // Registration Fields
   const [name, setName] = useState('');
   const [countryCode, setCountryCode] = useState('+91');
-  const [phoneDigits, setPhoneDigits] = useState('8778123702');
+  const [phoneDigits, setPhoneDigits] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -278,7 +278,7 @@ export function LoginModal({
       id: 'ACC-DEMO-007',
       name: 'Alpha Quant Desk',
       email: 'trader@synthetixanalytics.com',
-      phone: '+918778123702',
+      phone: '+15550100200',
       phoneVerified: true,
       role: 'Tier-1 Institutional',
       deskId: 'HQ-DESK-007',
@@ -434,7 +434,7 @@ export function LoginModal({
                     setPhoneDigits(e.target.value);
                     if (otpVerified) setOtpVerified(false);
                   }}
-                  placeholder="8778123702"
+                  placeholder="9876543210"
                   className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs font-mono focus:outline-none focus:border-gray-500"
                 />
               </div>
@@ -590,7 +590,7 @@ export function LoginModal({
                       type="tel"
                       value={phoneDigits}
                       onChange={(e) => setPhoneDigits(e.target.value)}
-                      placeholder="8778123702"
+                      placeholder="9876543210"
                       className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs font-mono"
                     />
                   </div>

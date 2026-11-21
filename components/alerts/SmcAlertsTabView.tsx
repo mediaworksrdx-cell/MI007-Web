@@ -191,7 +191,7 @@ export function SmcAlertsTabView() {
         channel: channel === 'whatsapp' ? 'WhatsApp' : 'Gmail',
         ok: false,
         msg: channel === 'whatsapp'
-          ? 'Please enter a valid mobile number with country code (e.g. +918778123702).'
+          ? 'Please enter a valid mobile number with country code (e.g. +91 98765 43210).'
           : 'Please enter a valid recipient email address.',
       });
       return;
@@ -250,12 +250,12 @@ export function SmcAlertsTabView() {
         body: JSON.stringify({
           challenge_id: otpChallengeId || '',
           otp: code,
-          destination: settings.whatsappPhone || '+918778123702',
+          destination: settings.whatsappPhone || '',
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (data?.ok && data.verified) {
-        const phone = data.destination || settings.whatsappPhone || '+918778123702';
+        const phone = data.destination || settings.whatsappPhone || '';
         const accName = regName.trim() || 'MI-007 Trader';
         const accEmail = regEmail.trim().toLowerCase() || `${phone.replace(/[^0-9]/g, '')}@mi007.terminal`;
         const newAcc: UserAccount = {
@@ -855,7 +855,7 @@ export function SmcAlertsTabView() {
                     </label>
                     <input
                       type="text"
-                      placeholder="+918778123702"
+                      placeholder="+91 98765 43210"
                       value={settings.whatsappPhone}
                       onChange={(e) => {
                         setSettings((s) => ({ ...s, whatsappPhone: e.target.value }));
@@ -887,7 +887,7 @@ export function SmcAlertsTabView() {
                         Enter 6-Digit WhatsApp Code
                       </div>
                       <p className="text-[11px] text-gray-500">
-                        Sent to <strong>{settings.whatsappPhone || '+918778123702'}</strong>
+                        Sent to <strong>{settings.whatsappPhone}</strong>
                       </p>
                       <div className="flex items-center justify-center gap-2">
                         <input
