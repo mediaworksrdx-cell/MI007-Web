@@ -110,6 +110,7 @@ export function SmcAlertsTabView() {
   const [regName, setRegName] = useState<string>('');
   const [regEmail, setRegEmail] = useState<string>('');
   const [isSignInMode, setIsSignInMode] = useState<boolean>(false);
+  const [showAdvancedSmtp, setShowAdvancedSmtp] = useState<boolean>(false);
 
   const historyRef = useRef<SmcTriggeredAlert[]>([]);
   historyRef.current = history;
@@ -953,71 +954,118 @@ export function SmcAlertsTabView() {
             </button>
           </div>
 
-          {/* 3. Gmail SMTP Notifications */}
-          <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] p-4 flex flex-col justify-between gap-3">
-            <div className="space-y-2.5">
+          {/* 3. Gmail / Email Alerts (Unified with Trader Account) */}
+          <div className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col justify-between gap-3 shadow-xs text-gray-900">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-sm flex items-center gap-1.5">📧 Gmail Alerts</span>
-                <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
+                <span className="font-semibold text-sm text-gray-900 flex items-center gap-1.5">Gmail Alerts</span>
+                <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.gmailEnabled}
                     onChange={(e) => setSettings((s) => ({ ...s, gmailEnabled: e.target.checked }))}
-                    className="accent-emerald-500"
+                    className="accent-black rounded"
                   />
                   <span>Active</span>
                 </label>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] mb-1">
-                  Recipient Gmail
-                </label>
-                <input
-                  type="email"
-                  placeholder="yourname@gmail.com"
-                  value={settings.gmailTo}
-                  onChange={(e) => setSettings((s) => ({ ...s, gmailTo: e.target.value }))}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs"
-                />
-              </div>
+              {userAccount ? (
+                /* ── Linked Account Email View ── */
+                <div className="p-3.5 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold uppercase text-emerald-700 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      LINKED ACCOUNT EMAIL
+                    </span>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-medium">
+                      ✓ Ready
+                    </span>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] mb-1">
-                    Sender Gmail (or .env)
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="Optional if in .env"
-                    value={settings.gmailUser}
-                    onChange={(e) => setSettings((s) => ({ ...s, gmailUser: e.target.value }))}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs"
-                  />
+                  <div>
+                    <span className="text-[10px] text-gray-500 block uppercase font-medium">Recipient Email</span>
+                    <span className="font-semibold text-gray-900 text-xs truncate block">{userAccount.email}</span>
+                  </div>
+
+                  <p className="text-[11px] text-gray-500 leading-relaxed pt-1.5 border-t border-gray-200">
+                    Trade setups and chart triggers will be delivered to <strong>{userAccount.email}</strong>.
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] mb-1">
-                    Gmail App Password
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="16-char App Password"
-                    value={settings.gmailAppPassword}
-                    onChange={(e) => setSettings((s) => ({ ...s, gmailAppPassword: e.target.value }))}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs mono"
-                  />
+              ) : (
+                /* ── Manual Recipient Email Input ── */
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                      Recipient Gmail / Email
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="yourname@gmail.com"
+                      value={settings.gmailTo || regEmail}
+                      onChange={(e) => {
+                        setSettings((s) => ({ ...s, gmailTo: e.target.value }));
+                        setRegEmail(e.target.value);
+                      }}
+                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+                    />
+                  </div>
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    💡 Tip: Registering in the WhatsApp card on the left automatically connects your email here too.
+                  </p>
                 </div>
+              )}
+
+              {/* Optional Advanced SMTP Config Accordion */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedSmtp(!showAdvancedSmtp)}
+                  className="text-[11px] text-gray-500 hover:text-gray-800 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>{showAdvancedSmtp ? '▼' : '▶'}</span>
+                  <span>Advanced / Custom SMTP Sender (Optional)</span>
+                </button>
+
+                {showAdvancedSmtp && (
+                  <div className="mt-2 p-2.5 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">
+                          Sender Gmail
+                        </label>
+                        <input
+                          type="email"
+                          placeholder="Optional if in .env"
+                          value={settings.gmailUser}
+                          onChange={(e) => setSettings((s) => ({ ...s, gmailUser: e.target.value }))}
+                          className="w-full px-2 py-1 rounded border border-gray-300 bg-white text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">
+                          App Password
+                        </label>
+                        <input
+                          type="password"
+                          placeholder="16-char App Password"
+                          value={settings.gmailAppPassword}
+                          onChange={(e) => setSettings((s) => ({ ...s, gmailAppPassword: e.target.value }))}
+                          className="w-full px-2 py-1 rounded border border-gray-300 bg-white text-xs font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <p className="text-[10px] text-[var(--theme-card-text-muted)]">
-                Tip: Create a 16-char App Password in Google Account → Security → App Passwords (or set <code className="px-1 rounded bg-slate-500/15">GMAIL_USER</code> &amp; <code className="px-1 rounded bg-slate-500/15">GMAIL_APP_PASSWORD</code> on Vercel).
-              </p>
             </div>
+
             <button
               type="button"
               onClick={() => handleSendTest('gmail')}
-              className="w-full px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-500 text-xs font-bold cursor-pointer"
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-medium cursor-pointer transition-all mt-2"
             >
-              🧪 Send Test Gmail
+              Send Test Gmail
             </button>
           </div>
         </div>
