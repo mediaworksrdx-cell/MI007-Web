@@ -189,29 +189,33 @@ async function sendWhatsApp(
     process.env.WHATSAPP_CLOUD_PHONE_ID ||
     '1377622642109282';
 
-  if (metaToken && metaPhoneId) {
-    try {
-      const cleanTarget = targetPhone.replace(/[^0-9]/g, '');
-      const metaRes = await fetch(`https://graph.facebook.com/v21.0/${metaPhoneId}/messages`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${metaToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          recipient_type: 'individual',
-          to: cleanTarget,
-          type: 'text',
-          text: { preview_url: true, body: text },
-        }),
-        signal: AbortSignal.timeout(8000),
-      });
-      const metaData = await metaRes.json().catch(() => ({}));
-      if (metaRes.ok && metaData?.messages?.[0]?.id) {
-        return { ok: true, message: `Delivered via Meta WhatsApp Cloud API (+${cleanTarget})` };
-      }
-    } catch {}
+  if (metaToken) {
+    const candidatePhoneIds = [metaPhoneId, '1450292858169886'].filter(Boolean);
+    const cleanTarget = targetPhone.replace(/[^0-9]/g, '');
+
+    for (const pid of candidatePhoneIds) {
+      try {
+        const metaRes = await fetch(`https://graph.facebook.com/v21.0/${pid}/messages`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${metaToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: cleanTarget,
+            type: 'text',
+            text: { preview_url: true, body: text },
+          }),
+          signal: AbortSignal.timeout(8000),
+        });
+        const metaData = await metaRes.json().catch(() => ({}));
+        if (metaRes.ok && metaData?.messages?.[0]?.id) {
+          return { ok: true, message: `Delivered via Meta WhatsApp Cloud API (+${cleanTarget})` };
+        }
+      } catch {}
+    }
   }
 
   // 2. External Gateway / GCP WhatsApp Microservice (Fallback)

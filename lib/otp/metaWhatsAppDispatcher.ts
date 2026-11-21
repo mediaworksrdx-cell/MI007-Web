@@ -46,85 +46,91 @@ export async function dispatchMetaCloudOtp(
     };
   }
 
-  const url = `https://graph.facebook.com/v21.0/${phoneId}/messages`;
+  // Attempt dispatch with primary phoneId, then fallback to verified sandbox phoneId
+  const candidatePhoneIds = [phoneId, '1450292858169886'].filter(
+    (v, i, a) => a.indexOf(v) === i
+  );
 
-  // 1. Direct formatted text message
-  const textPayload = {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
-    to: cleanPhone,
-    type: 'text',
-    text: {
-      preview_url: false,
-      body: `MI-007 Verification\n\nYour verification code is:\n*${otp}*\n\nValid for 5 minutes.\nDo not share this code with anyone.\n\nMARKET INTELLIGENCE AI — MI-007\nSynthetix Analytics`,
-    },
-  };
+  let lastError = '';
 
-  try {
-    let res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+  for (const pid of candidatePhoneIds) {
+    const url = `https://graph.facebook.com/v21.0/${pid}/messages`;
+
+    // 1. Direct formatted text message
+    const textPayload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: cleanPhone,
+      type: 'text',
+      text: {
+        preview_url: false,
+        body: `MI-007 Verification\n\nYour verification code is:\n*${otp}*\n\nValid for 5 minutes.\nDo not share this code with anyone.\n\nMARKET INTELLIGENCE AI — MI-007\nSynthetix Analytics`,
       },
-      body: JSON.stringify(textPayload),
-      signal: AbortSignal.timeout(8000),
-    });
+    };
 
-    let data = await res.json().catch(() => ({}));
-
-    // If text message is restricted, fallback to template payload
-    if (!res.ok) {
-      const templatePayload = {
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: cleanPhone,
-        type: 'template',
-        template: {
-          name: templateName,
-          language: { code: 'en_US' },
-          components: [
-            {
-              type: 'body',
-              parameters: [{ type: 'text', text: otp }],
-            },
-          ],
-        },
-      };
-
-      res = await fetch(url, {
+    try {
+      let res = await fetch(url, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(templatePayload),
+        body: JSON.stringify(textPayload),
         signal: AbortSignal.timeout(8000),
       });
 
-      data = await res.json().catch(() => ({}));
+      let data = await res.json().catch(() => ({}));
+
+      // If text message requires template, fallback to template payload
+      if (!res.ok) {
+        const templatePayload = {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: cleanPhone,
+          type: 'template',
+          template: {
+            name: templateName,
+            language: { code: 'en_US' },
+            components: [
+              {
+                type: 'body',
+                parameters: [{ type: 'text', text: otp }],
+              },
+            ],
+          },
+        };
+
+        res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(templatePayload),
+          signal: AbortSignal.timeout(8000),
+        });
+
+        data = await res.json().catch(() => ({}));
+      }
+
+      if (res.ok && data?.messages?.[0]?.id) {
+        return {
+          ok: true,
+          messageId: data.messages[0].id,
+        };
+      }
+
+      lastError =
+        data?.error?.message ||
+        data?.error?.error_data?.details ||
+        `Meta API returned HTTP ${res.status}`;
+    } catch (err: any) {
+      lastError = err?.message || 'Meta Cloud API network timeout';
     }
-
-    if (res.ok && data?.messages?.[0]?.id) {
-      return {
-        ok: true,
-        messageId: data.messages[0].id,
-      };
-    }
-
-    const errorMessage =
-      data?.error?.message ||
-      data?.error?.error_data?.details ||
-      `Meta API returned HTTP ${res.status}`;
-
-    return {
-      ok: false,
-      error: errorMessage,
-    };
-  } catch (err: any) {
-    return {
-      ok: false,
-      error: err?.message || 'Meta Cloud API network timeout',
-    };
   }
+
+  return {
+    ok: false,
+    error: lastError,
+  };
 }
