@@ -96,8 +96,8 @@ export async function routeAndSendOtp(request: SendOtpRequest): Promise<SendOtpR
   }
 }
 
-export function routeAndVerifyOtp(challengeId: string, otp: string) {
-  return verifyOtpChallenge(challengeId, otp);
+export function routeAndVerifyOtp(challengeId: string, otp: string, destination?: string) {
+  return verifyOtpChallenge(challengeId, otp, destination);
 }
 
 export function routeGetStatus(challengeId: string) {

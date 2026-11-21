@@ -198,16 +198,16 @@ export function SmcAlertsTabView() {
       setTestFeedback({ channel: 'WhatsApp', ok: false, msg: 'Please enter the complete 6-digit OTP code.' });
       return;
     }
-    if (!otpChallengeId) {
-      setTestFeedback({ channel: 'WhatsApp', ok: false, msg: 'No active OTP challenge found. Please click Resend OTP.' });
-      return;
-    }
     setIsOtpLoading(true);
     try {
       const res = await fetch('/api/v1/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challenge_id: otpChallengeId, otp: code }),
+        body: JSON.stringify({
+          challenge_id: otpChallengeId || '',
+          otp: code,
+          destination: settings.whatsappPhone || '+918778123702',
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (data?.ok && data.verified) {

@@ -8,10 +8,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const challengeId = String(body.challenge_id || body.challengeId || '').trim();
     const otp = String(body.otp || body.code || '').trim();
+    const destination = String(body.destination || body.phone || body.email || '').trim();
 
-    if (!challengeId) {
+    if (!challengeId && !destination) {
       return NextResponse.json(
-        { ok: false, error: 'Challenge ID (challenge_id) is required.' },
+        { ok: false, error: 'Challenge ID or destination phone is required.' },
         { status: 400 }
       );
     }
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = routeAndVerifyOtp(challengeId, otp);
+    const result = routeAndVerifyOtp(challengeId, otp, destination);
 
     if (!result.ok) {
       return NextResponse.json(
