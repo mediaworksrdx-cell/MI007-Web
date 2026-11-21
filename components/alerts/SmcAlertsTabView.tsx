@@ -928,7 +928,25 @@ export function SmcAlertsTabView() {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => handleSendOtp('whatsapp')}
+                      onClick={() => {
+                        if (!isSignInMode && !regName.trim()) {
+                          setTestFeedback({
+                            channel: 'WhatsApp',
+                            ok: false,
+                            msg: 'Please enter your Full Name before registering.',
+                          });
+                          return;
+                        }
+                        if (!isSignInMode && (!regEmail.trim() || !regEmail.includes('@'))) {
+                          setTestFeedback({
+                            channel: 'WhatsApp',
+                            ok: false,
+                            msg: 'Please enter a valid Email Address before registering.',
+                          });
+                          return;
+                        }
+                        handleSendOtp('whatsapp');
+                      }}
                       disabled={isOtpLoading}
                       className="w-full px-3 py-2 rounded-lg bg-gray-900 hover:bg-black text-white text-xs font-medium transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                     >
