@@ -258,7 +258,21 @@ const server = http.createServer(async (req, res) => {
       try {
         const data = JSON.parse(body || '{}');
         const rawPhone = String(data.phone || '').trim();
-        const text = String(data.text || (data.otp ? `Your MI-007 Verification OTP is: ${data.otp}` : '')).trim();
+        let text = String(data.text || '').trim();
+        if (!text && data.otp) {
+          text = [
+            'MI-007 Verification',
+            '',
+            'Your verification code is:',
+            `*${data.otp}*`,
+            '',
+            'Valid for 5 minutes.',
+            'Do not share this code with anyone.',
+            '',
+            'MARKET INTELLIGENCE AI — MI-007',
+            'Synthetix Analytics',
+          ].join('\n');
+        }
 
         if (!rawPhone || !text) {
           res.writeHead(400, { 'Content-Type': 'application/json' });

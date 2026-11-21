@@ -1,0 +1,44 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { routeAndSendOtp } from '@/lib/otp/router';
+
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const destination = String(body.destination || body.phone || body.email || '').trim();
+    const channel = (body.channel || (destination.includes('@') ? 'email' : 'whatsapp')) as 'whatsapp' | 'email';
+    const purpose = body.purpose || 'verification';
+
+    if (!destination) {
+      return NextResponse.json(
+        { ok: false, error: 'Destination (phone number or email) is required.' },
+        { status: 400 }
+      );
+    }
+
+    const result = await routeAndSendOtp({ destination, channel, purpose });
+
+    if (!result.ok) {
+      return NextResponse.json(
+        { ok: false, error: result.error || result.message, challenge_id: result.challenge_id },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      challenge_id: result.challenge_id,
+      channel: result.channel,
+      destination: result.destination,
+      expires_in: result.expires_in,
+      cooldown: result.cooldown,
+      message: result.message,
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { ok: false, error: err?.message || 'Internal OTP dispatch error' },
+      { status: 500 }
+    );
+  }
+}

@@ -89,11 +89,12 @@ export function SmcAlertsTabView() {
   const [testFeedback, setTestFeedback] = useState<{ channel: string; ok: boolean; msg: string } | null>(null);
   const [showChannelsConfig, setShowChannelsConfig] = useState(true);
 
-  // WhatsApp Business OTP Verification State
+  // Central MI-007 OTP Engine State
   const [otpVerified, setOtpVerified] = useState<boolean>(false);
   const [otpSent, setOtpSent] = useState<boolean>(false);
   const [otpInput, setOtpInput] = useState<string>('');
-  const [demoOtp, setDemoOtp] = useState<string | null>(null);
+  const [otpChallengeId, setOtpChallengeId] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
   const [isOtpLoading, setIsOtpLoading] = useState<boolean>(false);
 
   const historyRef = useRef<SmcTriggeredAlert[]>([]);
@@ -131,37 +132,53 @@ export function SmcAlertsTabView() {
     if (hydrated) saveAlertHistory(history);
   }, [history, hydrated]);
 
-  const handleSendOtp = async () => {
-    const phone = (settings.whatsappPhone || '').trim();
-    if (!phone || phone.length < 8) {
-      setTestFeedback({ channel: 'WhatsApp', ok: false, msg: 'Please enter a valid mobile number with country code (e.g. +918778123702).' });
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
+  const handleSendOtp = async (channel: 'whatsapp' | 'email' = 'whatsapp') => {
+    const destination = (channel === 'whatsapp' ? settings.whatsappPhone : settings.gmailTo || settings.gmailUser || '').trim();
+    if (!destination || destination.length < 5) {
+      setTestFeedback({
+        channel: channel === 'whatsapp' ? 'WhatsApp' : 'Gmail',
+        ok: false,
+        msg: channel === 'whatsapp'
+          ? 'Please enter a valid mobile number with country code (e.g. +918778123702).'
+          : 'Please enter a valid recipient email address.',
+      });
       return;
     }
     setIsOtpLoading(true);
     try {
-      const res = await fetch('/api/alerts/whatsapp-bot', {
+      const res = await fetch('/api/v1/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'send-otp', phone }),
+        body: JSON.stringify({ destination, channel, purpose: 'alerts' }),
       });
       const data = await res.json().catch(() => ({}));
       if (data?.ok) {
         setOtpSent(true);
+        if (data.challenge_id) setOtpChallengeId(data.challenge_id);
+        setResendCooldown(data.cooldown || 60);
         setTestFeedback({
-          channel: 'WhatsApp',
+          channel: channel === 'whatsapp' ? 'WhatsApp' : 'Gmail',
           ok: true,
-          msg: `6-Digit OTP sent to ${phone} via WhatsApp. Enter the code below to complete verification.`,
+          msg: `6-Digit OTP sent to ${destination} via ${channel === 'whatsapp' ? 'WhatsApp' : 'Email'}. Enter code below.`,
         });
       } else {
         setTestFeedback({
-          channel: 'WhatsApp',
+          channel: channel === 'whatsapp' ? 'WhatsApp' : 'Gmail',
           ok: false,
-          msg: data?.error || 'Failed to send WhatsApp verification OTP.',
+          msg: data?.error || 'Failed to dispatch verification OTP.',
         });
       }
     } catch (err: any) {
       setTestFeedback({
-        channel: 'WhatsApp',
+        channel: channel === 'whatsapp' ? 'WhatsApp' : 'Gmail',
         ok: false,
         msg: err?.message || 'Network error requesting OTP.',
       });
@@ -176,20 +193,23 @@ export function SmcAlertsTabView() {
       setTestFeedback({ channel: 'WhatsApp', ok: false, msg: 'Please enter the complete 6-digit OTP code.' });
       return;
     }
+    if (!otpChallengeId) {
+      setTestFeedback({ channel: 'WhatsApp', ok: false, msg: 'No active OTP challenge found. Please click Resend OTP.' });
+      return;
+    }
     setIsOtpLoading(true);
     try {
-      const phone = (settings.whatsappPhone || '').trim();
-      const res = await fetch('/api/alerts/whatsapp-bot', {
+      const res = await fetch('/api/v1/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'verify-otp', phone, otp: code }),
+        body: JSON.stringify({ challenge_id: otpChallengeId, otp: code }),
       });
       const data = await res.json().catch(() => ({}));
       if (data?.ok && data.verified) {
         setOtpVerified(true);
         setOtpSent(false);
         setOtpInput('');
-        setDemoOtp(null);
+        setOtpChallengeId(null);
         setSettings((s) => ({ ...s, whatsappEnabled: true }));
         if (typeof window !== 'undefined') {
           localStorage.setItem('mi007_whatsapp_verified_v1', 'true');
@@ -197,7 +217,7 @@ export function SmcAlertsTabView() {
         setTestFeedback({
           channel: 'WhatsApp',
           ok: true,
-          msg: `✓ Mobile number ${phone} verified successfully for WhatsApp Business alerts!`,
+          msg: `✓ Verified successfully! Live SMC trade alerts are now active for ${data.destination || 'your account'}.`,
         });
       } else {
         setTestFeedback({
@@ -218,28 +238,19 @@ export function SmcAlertsTabView() {
   };
 
   const handleResetOtp = async () => {
-    if (typeof window !== 'undefined' && !window.confirm('Reset WhatsApp number verification?')) return;
-    setIsOtpLoading(true);
-    try {
-      const phone = (settings.whatsappPhone || '').trim();
-      await fetch('/api/alerts/whatsapp-bot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset', phone }),
-      });
-    } catch {}
+    if (typeof window !== 'undefined' && !window.confirm('Reset verification?')) return;
     setOtpVerified(false);
     setOtpSent(false);
     setOtpInput('');
-    setDemoOtp(null);
+    setOtpChallengeId(null);
+    setResendCooldown(0);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('mi007_whatsapp_verified_v1');
     }
-    setIsOtpLoading(false);
     setTestFeedback({
       channel: 'WhatsApp',
       ok: true,
-      msg: 'WhatsApp verification reset. Enter a new number to verify.',
+      msg: 'Verification reset. Enter your phone number or email to verify.',
     });
   };
 
@@ -746,11 +757,11 @@ export function SmcAlertsTabView() {
                   <div className="flex items-center justify-between text-[10px] pt-1.5 border-t border-slate-800">
                     <button
                       type="button"
-                      onClick={handleSendOtp}
-                      disabled={isOtpLoading}
-                      className="text-slate-400 hover:text-white underline cursor-pointer"
+                      onClick={() => handleSendOtp('whatsapp')}
+                      disabled={isOtpLoading || resendCooldown > 0}
+                      className="text-slate-400 hover:text-white disabled:opacity-50 underline cursor-pointer"
                     >
-                      Resend OTP
+                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
                     </button>
                     <button
                       type="button"
@@ -764,7 +775,7 @@ export function SmcAlertsTabView() {
               ) : (
                 <button
                   type="button"
-                  onClick={handleSendOtp}
+                  onClick={() => handleSendOtp('whatsapp')}
                   disabled={isOtpLoading}
                   className="w-full px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-sm"
                 >
