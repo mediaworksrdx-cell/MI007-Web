@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               try {
                 var saved = localStorage.getItem('mi007_active_theme');
-                var theme = 'ocean';
+                var theme = 'cream';
                 if (saved === 'ocean' || saved === 'violet' || saved === 'cream' || saved === 'sky') {
                   theme = saved;
                 } else if (saved === 'arctic' || saved === 'lightblue' || saved === 'quartz') {

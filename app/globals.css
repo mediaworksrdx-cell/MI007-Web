@@ -72,7 +72,7 @@ html[data-theme="obsidian"] {
   --color-crimson-red: #FF4D4D;
   --color-accent-cyan: #00E5FF;
   --color-cyber-gold: #38BDF8;
-  --color-chart-bg: #0A192F;
+  --color-chart-bg: #FFFFFF;
   --color-text-primary: #F0FDF4;
   --color-text-secondary: #CBD5E1;
   --color-text-muted: #7DD3FC;
@@ -113,7 +113,7 @@ html[data-theme="techno"] {
   --color-crimson-red: #FF4D6D;
   --color-accent-cyan: #22E555;
   --color-cyber-gold: #A855F7;
-  --color-chart-bg: #120A24;
+  --color-chart-bg: #FFFFFF;
   --color-text-primary: #FAF5FF;
   --color-text-secondary: #E9D5FF;
   --color-text-muted: #C084FC;

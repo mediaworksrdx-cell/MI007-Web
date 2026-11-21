@@ -124,13 +124,13 @@ function applyThemeToDOM(themeId: AppTheme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<AppTheme>('ocean');
+  const [theme, setThemeState] = useState<AppTheme>('cream');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     // Read stored theme from localStorage or document attribute with legacy migration
     const stored = (typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null);
-    let initialTheme: AppTheme = 'ocean';
+    let initialTheme: AppTheme = 'cream';
     if (stored && (THEMES as Record<string, ThemeConfig>)[stored]) {
       initialTheme = stored as AppTheme;
     } else if (stored === 'arctic' || stored === 'lightblue' || stored === 'quartz') {

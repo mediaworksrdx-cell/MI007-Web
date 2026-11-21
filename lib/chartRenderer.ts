@@ -60,80 +60,21 @@ export interface ChartThemeColors {
 }
 
 export function getChartThemeColors(): ChartThemeColors {
-  const themeAttr = typeof document !== 'undefined'
-    ? (document.documentElement.getAttribute('data-theme') || 'ocean')
-    : 'ocean';
-
-  const isLight = themeAttr === 'cream' || themeAttr === 'sky' || themeAttr === 'ivory' || themeAttr === 'excel' || themeAttr === 'arctic' || themeAttr === 'lightblue' || themeAttr === 'quartz';
-  const isDark = !isLight;
-
-  if (themeAttr === 'violet') {
-    return {
-      isDark: true,
-      bg: '#120A24',
-      panelBg: '#0F081D',
-      panelSep: 'rgba(168, 85, 247, 0.22)',
-      gridColor: 'rgba(168, 85, 247, 0.08)',
-      axisTextColor: '#C084FC',
-      separatorColor: '#3B1F6A',
-      bull: '#22E555',
-      bear: '#FF4D6D',
-      strokeBull: '#16A34A',
-      strokeBear: '#DC2626',
-      crosshairColor: 'rgba(192, 132, 252, 0.65)',
-    };
-  }
-
-
-
-  if (themeAttr === 'cream' || themeAttr === 'ivory' || themeAttr === 'excel') {
-    return {
-      isDark: false,
-      bg: '#FFFFFF',
-      panelBg: '#F9F7F2',
-      panelSep: '#E5E0D8',
-      gridColor: 'rgba(0, 0, 0, 0.05)',
-      axisTextColor: '#52525B',
-      separatorColor: '#E5E0D8',
-      bull: '#107C41',
-      bear: '#DC2626',
-      strokeBull: '#0B592E',
-      strokeBear: '#991B1B',
-      crosshairColor: 'rgba(71, 85, 105, 0.55)',
-    };
-  }
-
-  if (themeAttr === 'sky' || themeAttr === 'arctic' || themeAttr === 'lightblue' || themeAttr === 'quartz') {
-    return {
-      isDark: false,
-      bg: '#FFFFFF',
-      panelBg: '#E8F3FA',
-      panelSep: '#BAE6FD',
-      gridColor: 'rgba(2, 132, 199, 0.07)',
-      axisTextColor: '#0369A1',
-      separatorColor: '#BAE6FD',
-      bull: '#059669',
-      bear: '#DC2626',
-      strokeBull: '#047857',
-      strokeBear: '#991B1B',
-      crosshairColor: 'rgba(2, 132, 199, 0.55)',
-    };
-  }
-
-  // Default: Ocean
+  // Institutional Pure White Chart Canvas (Pure Crisp White #FFFFFF)
+  // Ensures maximum contrast, clean TradingView readability, and professional presentation across all themes.
   return {
-    isDark: true,
-    bg: '#0A192F',
-    panelBg: '#071322',
-    panelSep: '#1B3B60',
-    gridColor: 'rgba(255, 255, 255, 0.06)',
-    axisTextColor: '#7DD3FC',
-    separatorColor: '#1B3B60',
-    bull: '#00F59B',
-    bear: '#FF4D4D',
-    strokeBull: '#059669',
-    strokeBear: '#DC2626',
-    crosshairColor: 'rgba(0, 229, 255, 0.6)',
+    isDark: false,
+    bg: '#FFFFFF',
+    panelBg: '#F8FAFC',
+    panelSep: '#E2E8F0',
+    gridColor: 'rgba(0, 0, 0, 0.06)',
+    axisTextColor: '#334155',
+    separatorColor: '#E2E8F0',
+    bull: '#089981',
+    bear: '#F23645',
+    strokeBull: '#057A65',
+    strokeBear: '#D11E30',
+    crosshairColor: 'rgba(51, 65, 85, 0.65)',
   };
 }
 
