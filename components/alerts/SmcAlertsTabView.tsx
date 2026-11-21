@@ -89,28 +89,12 @@ export function SmcAlertsTabView() {
   const [testFeedback, setTestFeedback] = useState<{ channel: string; ok: boolean; msg: string } | null>(null);
   const [showChannelsConfig, setShowChannelsConfig] = useState(true);
 
-  // Self-hosted WhatsApp Bot State
-  const [botStatus, setBotStatus] = useState<string>('unknown');
-  const [botConnected, setBotConnected] = useState<boolean>(false);
-  const [botUser, setBotUser] = useState<string | null>(null);
-  const [botPairingCode, setBotPairingCode] = useState<string | null>(null);
-  const [isBotLoading, setIsBotLoading] = useState<boolean>(false);
-  const [codeCopied, setCodeCopied] = useState<boolean>(false);
-
-  const fetchBotStatus = useCallback(async () => {
-    try {
-      const res = await fetch('/api/alerts/whatsapp-bot', { cache: 'no-store' });
-      const data = await res.json().catch(() => ({}));
-      if (data?.ok) {
-        setBotStatus(data.status || 'unknown');
-        setBotConnected(Boolean(data.connected));
-        setBotUser(data.user || null);
-        if (data.pairingCode) {
-          setBotPairingCode(data.pairingCode);
-        }
-      }
-    } catch {}
-  }, []);
+  // WhatsApp Business OTP Verification State
+  const [otpVerified, setOtpVerified] = useState<boolean>(false);
+  const [otpSent, setOtpSent] = useState<boolean>(false);
+  const [otpInput, setOtpInput] = useState<string>('');
+  const [demoOtp, setDemoOtp] = useState<string | null>(null);
+  const [isOtpLoading, setIsOtpLoading] = useState<boolean>(false);
 
   const historyRef = useRef<SmcTriggeredAlert[]>([]);
   historyRef.current = history;
@@ -128,6 +112,10 @@ export function SmcAlertsTabView() {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setBrowserPermission(Notification.permission);
     }
+    if (typeof window !== 'undefined') {
+      const isVer = localStorage.getItem('mi007_whatsapp_verified_v1') === 'true';
+      if (isVer) setOtpVerified(true);
+    }
     setHydrated(true);
   }, []);
 
@@ -143,65 +131,117 @@ export function SmcAlertsTabView() {
     if (hydrated) saveAlertHistory(history);
   }, [history, hydrated]);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    if (settings.whatsappProvider === 'selfhosted') {
-      fetchBotStatus();
-      const interval = setInterval(fetchBotStatus, 4000);
-      return () => clearInterval(interval);
+  const handleSendOtp = async () => {
+    const phone = (settings.whatsappPhone || '').trim();
+    if (!phone || phone.length < 8) {
+      setTestFeedback({ channel: 'WhatsApp', ok: false, msg: 'Please enter a valid mobile number with country code (e.g. +918778123702).' });
+      return;
     }
-  }, [hydrated, settings.whatsappProvider, fetchBotStatus]);
-
-  const handleRequestPairingOtp = async () => {
-    setIsBotLoading(true);
+    setIsOtpLoading(true);
     try {
-      const phone = settings.whatsappPhone || '+918838202279';
       const res = await fetch('/api/alerts/whatsapp-bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'request-code', phone }),
+        body: JSON.stringify({ action: 'send-otp', phone }),
       });
       const data = await res.json().catch(() => ({}));
-
-      if (data?.ok && data.code) {
-        setBotPairingCode(data.code);
-        setBotStatus('awaiting_pairing');
-        setTestFeedback({ channel: 'WhatsApp', ok: true, msg: `OTP Generated: ${data.code}. Enter it on your phone!` });
+      if (data?.ok) {
+        setOtpSent(true);
+        setDemoOtp(data.otp || data.code || null);
+        setTestFeedback({
+          channel: 'WhatsApp',
+          ok: true,
+          msg: `6-Digit OTP sent for ${phone}. Enter the code below to complete verification.`,
+        });
       } else {
         setTestFeedback({
           channel: 'WhatsApp',
           ok: false,
-          msg: data?.error || 'Failed to generate OTP code. Please try again.',
+          msg: data?.error || 'Failed to send verification OTP.',
         });
       }
     } catch (err: any) {
       setTestFeedback({
         channel: 'WhatsApp',
         ok: false,
-        msg: err?.message || 'Failed to request verification code.',
+        msg: err?.message || 'Network error requesting OTP.',
       });
     } finally {
-      setIsBotLoading(false);
+      setIsOtpLoading(false);
     }
   };
 
-  const handleResetBotSession = async () => {
-    if (typeof window !== 'undefined' && !window.confirm('Unlink and reset WhatsApp Bot session?')) return;
-    setIsBotLoading(true);
+  const handleVerifyOtp = async () => {
+    const code = otpInput.trim().replace(/[^0-9]/g, '');
+    if (code.length !== 6) {
+      setTestFeedback({ channel: 'WhatsApp', ok: false, msg: 'Please enter the complete 6-digit OTP code.' });
+      return;
+    }
+    setIsOtpLoading(true);
     try {
+      const phone = (settings.whatsappPhone || '').trim();
+      const res = await fetch('/api/alerts/whatsapp-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify-otp', phone, otp: code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data?.ok && data.verified) {
+        setOtpVerified(true);
+        setOtpSent(false);
+        setOtpInput('');
+        setDemoOtp(null);
+        setSettings((s) => ({ ...s, whatsappEnabled: true }));
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('mi007_whatsapp_verified_v1', 'true');
+        }
+        setTestFeedback({
+          channel: 'WhatsApp',
+          ok: true,
+          msg: `✓ Mobile number ${phone} verified successfully for WhatsApp Business alerts!`,
+        });
+      } else {
+        setTestFeedback({
+          channel: 'WhatsApp',
+          ok: false,
+          msg: data?.error || 'Invalid OTP code. Please try again.',
+        });
+      }
+    } catch (err: any) {
+      setTestFeedback({
+        channel: 'WhatsApp',
+        ok: false,
+        msg: err?.message || 'Verification failed. Please try again.',
+      });
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
+  const handleResetOtp = async () => {
+    if (typeof window !== 'undefined' && !window.confirm('Reset WhatsApp number verification?')) return;
+    setIsOtpLoading(true);
+    try {
+      const phone = (settings.whatsappPhone || '').trim();
       await fetch('/api/alerts/whatsapp-bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset' }),
+        body: JSON.stringify({ action: 'reset', phone }),
       });
-      setBotConnected(false);
-      setBotUser(null);
-      setBotPairingCode(null);
-      setBotStatus('idle');
-      await fetchBotStatus();
-    } catch {} finally {
-      setIsBotLoading(false);
+    } catch {}
+    setOtpVerified(false);
+    setOtpSent(false);
+    setOtpInput('');
+    setDemoOtp(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('mi007_whatsapp_verified_v1');
     }
+    setIsOtpLoading(false);
+    setTestFeedback({
+      channel: 'WhatsApp',
+      ok: true,
+      msg: 'WhatsApp verification reset. Enter a new number to verify.',
+    });
   };
 
   const requestBrowserPermission = async () => {
@@ -414,6 +454,15 @@ export function SmcAlertsTabView() {
       } else {
         setTestFeedback({ channel: 'Browser', ok: false, msg: 'Please allow notifications in your browser address bar.' });
       }
+      return;
+    }
+
+    if (channel === 'whatsapp' && !otpVerified) {
+      setTestFeedback({
+        channel: 'WhatsApp',
+        ok: false,
+        msg: 'Please verify your mobile number with OTP first by clicking "Send Verification OTP".',
+      });
       return;
     }
 
@@ -640,66 +689,101 @@ export function SmcAlertsTabView() {
                 </label>
                 <input
                   type="text"
-                  placeholder="+918838202279"
+                  placeholder="+918778123702"
                   value={settings.whatsappPhone}
-                  onChange={(e) => setSettings((s) => ({ ...s, whatsappPhone: e.target.value }))}
+                  onChange={(e) => {
+                    setSettings((s) => ({ ...s, whatsappPhone: e.target.value }));
+                    if (otpVerified) setOtpVerified(false);
+                    if (otpSent) setOtpSent(false);
+                  }}
                   className="w-full px-3 py-2 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-sm mono font-bold"
                 />
               </div>
 
-              {botConnected ? (
+              {otpVerified ? (
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                     <div>
-                      <div className="text-xs font-bold text-emerald-400">Verified &amp; Connected</div>
-                      <div className="text-[11px] text-slate-300 mono">{settings.whatsappPhone || '+918838202279'}</div>
+                      <div className="text-xs font-bold text-emerald-400">✓ Verified &amp; Active (OTP Verified)</div>
+                      <div className="text-[11px] text-slate-300 mono">{settings.whatsappPhone || '+918778123702'}</div>
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={handleResetBotSession}
-                    disabled={isBotLoading}
+                    onClick={handleResetOtp}
+                    disabled={isOtpLoading}
                     className="text-[11px] text-red-400 hover:text-red-300 underline cursor-pointer"
                   >
-                    Unlink
+                    Change Number
                   </button>
                 </div>
-              ) : botPairingCode ? (
-                <div className="p-3.5 rounded-xl bg-black/60 border border-emerald-500/40 text-center space-y-2.5">
+              ) : otpSent ? (
+                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-emerald-500/40 text-center space-y-2.5">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                    Verification Code (Pairing OTP)
+                    Enter 6-Digit Verification OTP
                   </div>
+                  <p className="text-[11px] text-slate-300">
+                    OTP sent for <strong className="text-white">{settings.whatsappPhone || '+918778123702'}</strong>
+                  </p>
                   <div className="flex items-center justify-center gap-2">
-                    <span className="px-4 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-2xl font-black font-mono tracking-widest text-emerald-300 select-all">
-                      {botPairingCode}
-                    </span>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      placeholder="● ● ● ● ● ●"
+                      value={otpInput}
+                      onChange={(e) => setOtpInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                      className="w-40 text-center px-3 py-1.5 rounded-lg bg-black/60 border border-emerald-500/50 text-xl font-mono font-black tracking-widest text-emerald-300"
+                    />
                     <button
                       type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(botPairingCode.replace('-', ''));
-                        setCodeCopied(true);
-                        setTimeout(() => setCodeCopied(false), 2000);
-                      }}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white cursor-pointer font-bold"
+                      onClick={handleVerifyOtp}
+                      disabled={isOtpLoading || otpInput.trim().length !== 6}
+                      className="px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold text-xs cursor-pointer transition-all"
                     >
-                      {codeCopied ? '✓ Copied' : '📋 Copy'}
+                      {isOtpLoading ? 'Verifying...' : 'Verify OTP'}
                     </button>
                   </div>
-                  <ol className="text-left text-[11px] text-slate-300 space-y-1 pt-1.5 border-t border-slate-800 list-decimal list-inside">
-                    <li>Open WhatsApp on phone (<strong>{settings.whatsappPhone || '+918838202279'}</strong>)</li>
-                    <li>Tap <strong>Linked Devices</strong> &rarr; <strong>Link with phone number instead</strong></li>
-                    <li>Enter the 8-digit verification code above</li>
-                  </ol>
+                  {demoOtp && (
+                    <div className="p-2 rounded-lg bg-slate-800/80 border border-slate-700 text-[11px] flex items-center justify-between">
+                      <span className="text-slate-300">
+                        OTP Code: <strong className="text-emerald-400 mono font-black">{demoOtp}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setOtpInput(demoOtp)}
+                        className="text-[10px] text-emerald-400 hover:text-emerald-300 underline font-semibold"
+                      >
+                        Auto-Fill
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-[10px] pt-1.5 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={handleSendOtp}
+                      disabled={isOtpLoading}
+                      className="text-slate-400 hover:text-white underline cursor-pointer"
+                    >
+                      Resend OTP
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetOtp}
+                      className="text-red-400 hover:text-red-300 underline cursor-pointer"
+                    >
+                      Cancel / Change Number
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button
                   type="button"
-                  onClick={handleRequestPairingOtp}
-                  disabled={isBotLoading}
-                  className="w-full px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                  onClick={handleSendOtp}
+                  disabled={isOtpLoading}
+                  className="w-full px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-sm"
                 >
-                  <span>{isBotLoading ? '⏳ Requesting Verification Code...' : '📲 Get Verification OTP'}</span>
+                  <span>{isOtpLoading ? '⏳ Sending Verification OTP...' : '📲 Send Verification OTP'}</span>
                 </button>
               )}
             </div>
