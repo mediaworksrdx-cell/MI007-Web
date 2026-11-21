@@ -176,7 +176,43 @@ async function sendWhatsApp(
     return { ok: false, message: 'Mobile number is required for WhatsApp alerts.' };
   }
 
-  // 1. External Gateway / GCP WhatsApp Microservice (if configured via env or remote settings)
+  // 1. Meta WhatsApp Business Cloud API (Primary if configured)
+  const metaToken =
+    process.env.META_WHATSAPP_TOKEN ||
+    process.env.WHATSAPP_ACCESS_TOKEN ||
+    process.env.WHATSAPP_CLOUD_API_TOKEN;
+
+  const metaPhoneId =
+    process.env.META_WHATSAPP_PHONE_ID ||
+    process.env.WHATSAPP_PHONE_NUMBER_ID ||
+    process.env.WHATSAPP_CLOUD_PHONE_ID;
+
+  if (metaToken && metaPhoneId) {
+    try {
+      const cleanTarget = targetPhone.replace(/[^0-9]/g, '');
+      const metaRes = await fetch(`https://graph.facebook.com/v21.0/${metaPhoneId}/messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${metaToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: cleanTarget,
+          type: 'text',
+          text: { preview_url: true, body: text },
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+      const metaData = await metaRes.json().catch(() => ({}));
+      if (metaRes.ok && metaData?.messages?.[0]?.id) {
+        return { ok: true, message: `Delivered via Meta WhatsApp Cloud API (+${cleanTarget})` };
+      }
+    } catch {}
+  }
+
+  // 2. External Gateway / GCP WhatsApp Microservice (Fallback)
   const externalGateway = config?.selfhostedUrl || process.env.WHATSAPP_GATEWAY_URL;
   if (externalGateway && !externalGateway.includes('localhost')) {
     try {

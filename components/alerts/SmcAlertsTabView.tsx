@@ -170,10 +170,15 @@ export function SmcAlertsTabView() {
           msg: `6-Digit OTP sent to ${destination} via ${channel === 'whatsapp' ? 'WhatsApp' : 'Email'}. Enter code below.`,
         });
       } else {
+        const rawErr = String(data?.error || '');
+        const cleanMsg =
+          rawErr.toLowerCase().includes('pairing') || rawErr.toLowerCase().includes('connect')
+            ? 'Unable to deliver WhatsApp OTP to this number right now. Please try again or verify your country code.'
+            : rawErr || 'Failed to dispatch verification OTP.';
         setTestFeedback({
           channel: channel === 'whatsapp' ? 'WhatsApp' : 'Gmail',
           ok: false,
-          msg: data?.error || 'Failed to dispatch verification OTP.',
+          msg: cleanMsg,
         });
       }
     } catch (err: any) {
