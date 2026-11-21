@@ -170,10 +170,10 @@ async function sendWhatsApp(
   const rawClientPhone = (config?.whatsappPhone || '').trim();
   const clientPhone = rawClientPhone.replace(/[\s\-()]/g, '');
   const serverDefaultPhone = (process.env.WHATSAPP_DEFAULT_PHONE || '').replace(/[\s\-()]/g, '');
-  const targetPhone = clientPhone || serverDefaultPhone || '918778123702';
+  const targetPhone = clientPhone || serverDefaultPhone;
 
   if (!targetPhone) {
-    return { ok: false, message: 'Mobile number is required for WhatsApp alerts.' };
+    return { ok: false, message: 'Recipient mobile number is required for WhatsApp alerts.' };
   }
 
   // 1. Meta WhatsApp Business Cloud API (Primary if configured)
@@ -218,9 +218,9 @@ async function sendWhatsApp(
     }
   }
 
-  // 2. External Gateway / GCP WhatsApp Microservice (Fallback)
+  // 2. Collocated Gateway / GCP WhatsApp Microservice (Fallback)
   const externalGateway = config?.selfhostedUrl || process.env.WHATSAPP_GATEWAY_URL;
-  if (externalGateway && !externalGateway.includes('localhost')) {
+  if (externalGateway) {
     try {
       const res = await fetch(`${externalGateway.replace(/\/$/, '')}/send`, {
         method: 'POST',
