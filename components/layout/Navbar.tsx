@@ -12,6 +12,13 @@ import { SettingsModal } from '@/components/ui/SettingsModal';
 import { LoginModal } from '@/components/auth/LoginModal';
 import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 import {
+  getUserAccount,
+  logoutUser,
+  deleteUserAccount,
+  onAuthChange,
+  UserAccount,
+} from '@/lib/auth/userAccount';
+import {
   AppNotification,
   NotificationType,
 } from '@/lib/terminal/notificationTypes';
@@ -78,7 +85,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
   const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
   const seenNotificationIdsRef = useRef<Set<string>>(new Set());
-  const [userSession, setUserSession] = useState<{ name: string; role: string; deskId: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
 
   const [brandHovered, setBrandHovered] = useState(false);
 
@@ -211,12 +218,11 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
   }, [notifications]);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('mi007_user_session');
-      if (stored) {
-        setUserSession(JSON.parse(stored));
-      }
-    } catch {}
+    setCurrentUser(getUserAccount());
+    const unsubscribe = onAuthChange((acc) => {
+      setCurrentUser(acc);
+    });
+    return unsubscribe;
   }, []);
 
   // Click outside & Escape key handler to close Account/Settings, Notification & Charts dropdowns
@@ -585,7 +591,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               className={`account-menu-btn relative flex items-center justify-center w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-lg border transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
                 accountMenuOpen ? 'ring-2 ring-emerald-500' : ''
               }`}
-              title={userSession ? `${userSession.name} · Settings & Themes` : 'Account, Settings & Themes'}
+              title={currentUser ? `${currentUser.name} · Settings & Themes` : 'Account, Settings & Themes'}
               aria-label="Account, Settings and Themes"
               aria-expanded={accountMenuOpen}
             >
@@ -606,10 +612,10 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               {/* Status / Active Theme Pip */}
               <span
                 className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white shadow-xs ${
-                  userSession ? 'bg-emerald-500 animate-pulse' : ''
+                  currentUser ? 'bg-emerald-500 animate-pulse' : ''
                 }`}
-                style={!userSession ? { backgroundColor: currentThemeConfig.palette.accent } : undefined}
-                title={userSession ? `Connected: ${userSession.name}` : `Theme: ${currentThemeConfig.name}`}
+                style={!currentUser ? { backgroundColor: currentThemeConfig.palette.accent } : undefined}
+                title={currentUser ? `Connected: ${currentUser.name}` : `Theme: ${currentThemeConfig.name}`}
               />
             </button>
 
@@ -617,29 +623,66 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             {accountMenuOpen && (
               <div className="account-settings-dropdown absolute right-0 mt-2.5 w-72 sm:w-80 rounded-2xl p-3 flex flex-col gap-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                 {/* 1. Account / Session Section */}
-                {userSession ? (
-                  <div className="account-dropdown-user-card p-3 rounded-xl border">
-                    <div className="flex items-center justify-between mb-1">
+                {currentUser ? (
+                  <div className="account-dropdown-user-card p-3 rounded-xl border bg-white/5 space-y-2.5">
+                    <div className="flex items-center justify-between">
                       <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-emerald-500 flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         DESK CONNECTED
                       </span>
                       <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-500">
-                        {userSession.deskId}
+                        {currentUser.deskId || 'DESK-007'}
                       </span>
                     </div>
-                    <div className="font-extrabold text-[15px] truncate">{userSession.name}</div>
-                    <div className="text-[11px] font-mono opacity-70 truncate">{userSession.role}</div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        localStorage.removeItem('mi007_user_session');
-                        setUserSession(null);
-                      }}
-                      className="mt-2.5 w-full py-1.5 px-3 rounded-lg border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[11px] font-mono font-bold transition-all text-center cursor-pointer"
-                    >
-                      Sign Out
-                    </button>
+
+                    <div>
+                      <div className="font-extrabold text-[15px] truncate text-gray-900 dark:text-white">
+                        {currentUser.name}
+                      </div>
+                      <div className="text-[11px] font-mono opacity-70 truncate">
+                        {currentUser.email}
+                      </div>
+                      {currentUser.phone && (
+                        <div className="mt-1 flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+                          <span>💬 {currentUser.phone}</span>
+                          <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950/80 px-1 py-0.2 rounded font-sans font-semibold">
+                            {currentUser.phoneVerified ? 'Verified' : 'Active'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-current/10 flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          logoutUser();
+                          setCurrentUser(null);
+                        }}
+                        className="w-full py-1.5 px-3 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-white/10 text-xs font-mono font-bold transition-all text-center cursor-pointer"
+                      >
+                        Sign Out
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (
+                            typeof window !== 'undefined' &&
+                            window.confirm(
+                              'Are you sure you want to delete your personal account? This will permanently delete your profile, saved alert settings, and phone verification.'
+                            )
+                          ) {
+                            deleteUserAccount();
+                            setCurrentUser(null);
+                            setAccountMenuOpen(false);
+                          }
+                        }}
+                        className="w-full py-1 text-[11px] text-red-500 hover:text-red-700 hover:underline text-center cursor-pointer transition-colors font-sans"
+                      >
+                        Delete Personal Account
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <button
@@ -659,12 +702,12 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="font-extrabold text-[13px] tracking-tight group-hover:text-emerald-500 transition-colors">
-                          Client Portal Login
+                          Create Account / Sign In
                         </span>
                         <span className="text-xs font-mono opacity-60">→</span>
                       </div>
                       <p className="text-[11px] opacity-70 leading-tight mt-0.5">
-                        Access proprietary quant desk
+                        Register with name, mobile &amp; email
                       </p>
                     </div>
                   </button>
@@ -767,7 +810,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
-              <span className="truncate">{userSession ? userSession.name : 'Client Login'}</span>
+              <span className="truncate">{currentUser ? currentUser.name : 'Create Account / Sign In'}</span>
             </button>
           </div>
 
@@ -813,7 +856,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
       <LoginModal
         isOpen={loginOpen}
         onClose={() => setLoginOpen(false)}
-        onLoginSuccess={(u) => setUserSession(u)}
+        onLoginSuccess={(u) => setCurrentUser(u)}
       />
     </header>
   );

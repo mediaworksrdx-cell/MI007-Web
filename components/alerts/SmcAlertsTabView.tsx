@@ -24,6 +24,7 @@ import {
   loadSentAlertIds,
   recordSentAlertIds,
 } from '@/lib/alerts/smcAlerts';
+import { onAuthChange } from '@/lib/auth/userAccount';
 
 let sharedAlertAudioCtx: AudioContext | null = null;
 
@@ -116,8 +117,27 @@ export function SmcAlertsTabView() {
     if (typeof window !== 'undefined') {
       const isVer = localStorage.getItem('mi007_whatsapp_verified_v1') === 'true';
       if (isVer) setOtpVerified(true);
+      const savedPhone = localStorage.getItem('mi007_whatsapp_phone_v1');
+      if (savedPhone) {
+        setSettings((s) => ({ ...s, whatsappPhone: savedPhone }));
+      }
     }
     setHydrated(true);
+
+    const unsubscribe = onAuthChange((acc) => {
+      if (acc) {
+        if (acc.phone) {
+          setSettings((s) => ({ ...s, whatsappPhone: acc.phone, whatsappEnabled: true }));
+        }
+        if (acc.phoneVerified) {
+          setOtpVerified(true);
+        }
+      } else {
+        setOtpVerified(false);
+      }
+    });
+
+    return unsubscribe;
   }, []);
 
   useEffect(() => {

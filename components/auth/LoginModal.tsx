@@ -1,23 +1,91 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
+import { saveUserAccount, UserAccount } from '@/lib/auth/userAccount';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess?: (user: { name: string; role: string; deskId: string }) => void;
+  onLoginSuccess?: (user: UserAccount) => void;
+  initialMode?: 'signin' | 'signup';
 }
 
-export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps) {
+const COUNTRY_CODES = [
+  { code: '+91', label: '🇮🇳 India (+91)' },
+  { code: '+1',  label: '🇺🇸 USA / Canada (+1)' },
+  { code: '+44', label: '🇬🇧 UK (+44)' },
+  { code: '+971', label: '🇦🇪 UAE (+971)' },
+  { code: '+65', label: '🇸🇬 Singapore (+65)' },
+  { code: '+49', label: '🇩🇪 Germany (+49)' },
+  { code: '+81', label: '🇯🇵 Japan (+81)' },
+  { code: '+61', label: '🇦🇺 Australia (+61)' },
+];
+
+export function LoginModal({
+  isOpen,
+  onClose,
+  onLoginSuccess,
+  initialMode = 'signup',
+}: LoginModalProps) {
+  const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
+  const [signInMethod, setSignInMethod] = useState<'otp' | 'password'>('otp');
+
+  // Registration Fields
+  const [name, setName] = useState('');
+  const [countryCode, setCountryCode] = useState('+91');
+  const [phoneDigits, setPhoneDigits] = useState('8778123702');
   const [email, setEmail] = useState('');
-  const [key, setKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
-  const [remember, setRemember] = useState(true);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // WhatsApp OTP Verification state inside modal
+  const [otpChallengeId, setOtpChallengeId] = useState<string | null>(null);
+  const [otpInput, setOtpInput] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  // General Status
   const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<'institutional' | 'retail'>('institutional');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successUser, setSuccessUser] = useState<UserAccount | null>(null);
+
+  const fullPhone = `${countryCode}${phoneDigits.trim().replace(/^0+/, '')}`;
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setErrorMessage(null);
+      setSuccessUser(null);
+      // Pre-fill phone if saved in localStorage
+      if (typeof window !== 'undefined') {
+        const savedPhone = localStorage.getItem('mi007_whatsapp_phone_v1');
+        if (savedPhone) {
+          const matchedCountry = COUNTRY_CODES.find((c) => savedPhone.startsWith(c.code));
+          if (matchedCountry) {
+            setCountryCode(matchedCountry.code);
+            setPhoneDigits(savedPhone.slice(matchedCountry.code.length));
+          } else {
+            setPhoneDigits(savedPhone.replace(/[^0-9]/g, ''));
+          }
+        }
+        if (localStorage.getItem('mi007_whatsapp_verified_v1') === 'true') {
+          setOtpVerified(true);
+        }
+      }
+    }
+  }, [isOpen]);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((c) => (c > 0 ? c - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   // Close on ESC
   useEffect(() => {
@@ -36,267 +104,609 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  // 1. Dispatch WhatsApp OTP
+  const handleSendWhatsAppOtp = async () => {
+    setErrorMessage(null);
+    const cleanNumber = fullPhone.replace(/[\s+()\-]/g, '');
+    if (cleanNumber.length < 9) {
+      setErrorMessage('Please enter a valid mobile number.');
+      return;
+    }
 
-    setTimeout(() => {
-      const user = {
-        name: email.split('@')[0] || 'QUANT-TRADER',
-        role: activeTab === 'institutional' ? 'Tier-1 Institutional' : 'Pro Day Trader',
-        deskId: `DESK-${Math.floor(100 + Math.random() * 900)}`,
-      };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('mi007_user_session', JSON.stringify(user));
+    setOtpLoading(true);
+    try {
+      const res = await fetch('/api/v1/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destination: fullPhone,
+          channel: 'whatsapp',
+          purpose: mode === 'signup' ? 'registration' : 'login',
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        setOtpChallengeId(data.challenge_id);
+        setOtpSent(true);
+        setCooldown(data.cooldown || 60);
+      } else {
+        setErrorMessage(data.error || 'Failed to send WhatsApp verification code. Please check your number.');
       }
-      setIsLoading(false);
-      setIsSuccess(true);
-      setTimeout(() => {
-        onLoginSuccess?.(user);
-        setIsSuccess(false);
-        onClose();
-      }, 1000);
-    }, 700);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Network error sending WhatsApp OTP.');
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
-  const handleDemoLogin = () => {
-    setEmail('alpha.quant@institutional.mi007');
-    setKey('MI007-QUANT-VIP-9921');
-    setIsLoading(true);
+  // 2. Verify WhatsApp OTP
+  const handleVerifyOtp = async () => {
+    setErrorMessage(null);
+    const code = otpInput.trim().replace(/[^0-9]/g, '');
+    if (code.length !== 6) {
+      setErrorMessage('Please enter the complete 6-digit code.');
+      return;
+    }
 
-    setTimeout(() => {
-      const demoUser = {
-        name: 'ALPHA-QUANT',
-        role: 'Tier-1 Institutional Desk',
-        deskId: 'HQ-DESK-MI007',
-      };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('mi007_user_session', JSON.stringify(demoUser));
+    setOtpLoading(true);
+    try {
+      const res = await fetch('/api/v1/otp/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          challenge_id: otpChallengeId || '',
+          otp: code,
+          destination: fullPhone,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok && data.verified) {
+        setOtpVerified(true);
+        setOtpSent(false);
+        setOtpInput('');
+
+        // If signing in via OTP, finish login immediately!
+        if (mode === 'signin' && signInMethod === 'otp') {
+          handleFinishLogin({
+            id: `ACC-${Date.now().toString(36).toUpperCase()}`,
+            name: name || 'MI-007 Trader',
+            email: email || `${fullPhone.replace(/[^0-9]/g, '')}@mi007.terminal`,
+            phone: fullPhone,
+            phoneVerified: true,
+            role: 'Pro Trader',
+            deskId: `DESK-${Math.floor(100 + Math.random() * 900)}`,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      } else {
+        setErrorMessage(data.error || 'Invalid OTP code. Please try again.');
       }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to verify OTP.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // 3. Handle Registration Submission
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    if (!name.trim()) {
+      setErrorMessage('Please enter your full name.');
+      return;
+    }
+    if (!email.trim() || !email.includes('@')) {
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: fullPhone,
+          email: email.trim().toLowerCase(),
+          password,
+          phoneVerified: otpVerified,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok && data.user) {
+        handleFinishLogin(data.user);
+      } else {
+        setErrorMessage(data.error || 'Failed to register account.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Registration request failed.');
+    } finally {
       setIsLoading(false);
-      setIsSuccess(true);
-      setTimeout(() => {
-        onLoginSuccess?.(demoUser);
-        setIsSuccess(false);
-        onClose();
-      }, 900);
-    }, 600);
+    }
+  };
+
+  // 4. Handle Sign In Submission (Email/Password)
+  const handleSignInSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'email_password',
+          email: email.trim().toLowerCase(),
+          password,
+          phone: fullPhone,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok && data.user) {
+        handleFinishLogin(data.user);
+      } else {
+        setErrorMessage(data.error || 'Invalid email or password.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Login request failed.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 5. Complete Login & Sync
+  const handleFinishLogin = (user: UserAccount) => {
+    saveUserAccount(user);
+    setSuccessUser(user);
+    setTimeout(() => {
+      onLoginSuccess?.(user);
+      onClose();
+    }, 1200);
+  };
+
+  // 6. One-Click Demo Login
+  const handleDemoLogin = () => {
+    const demoUser: UserAccount = {
+      id: 'ACC-DEMO-007',
+      name: 'Alpha Quant Desk',
+      email: 'trader@synthetixanalytics.com',
+      phone: '+918778123702',
+      phoneVerified: true,
+      role: 'Tier-1 Institutional',
+      deskId: 'HQ-DESK-007',
+      createdAt: new Date().toISOString(),
+    };
+    handleFinishLogin(demoUser);
   };
 
   return (
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="relative w-full max-w-[460px] rounded-3xl border border-amber-400/30 bg-slate-900/98 text-slate-100 p-6 sm:p-7 shadow-[0_25px_70px_rgba(0,0,0,0.65)] backdrop-blur-2xl animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-[460px] rounded-2xl border border-gray-200 bg-white text-gray-900 p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Subtle Ambient Radial Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-amber-500/10 blur-2xl pointer-events-none rounded-full" />
-
         {/* Close Button */}
         <button
           onClick={onClose}
           type="button"
-          aria-label="Close Login Modal"
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+          aria-label="Close"
+          className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
-        {/* Header with Falcon Crest Badge */}
+        {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-5">
-          <div className="relative mb-3 flex items-center justify-center h-[51px] w-[51px] sm:h-[59px] sm:w-[59px] overflow-visible">
+          <div className="relative mb-2 flex items-center justify-center h-12 w-12">
             <Falcon3DLogo
               src="/images/logo-falcon-transparent.png"
-              alt="MARKET INTELLIGENCE MI-007 Falcon"
-              width={51}
-              height={51}
+              alt="MI-007 Falcon"
+              width={46}
+              height={46}
               priority
               className="object-contain"
               popoutScale={1.08}
             />
           </div>
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="mono text-[11px] uppercase font-bold tracking-widest text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 font-caveat">
-              MARKET INTELLIGENCE MI-007 SECURE ACCESS
-            </span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white font-sans">
-            Terminal Client Portal
+          <h2 className="text-xl font-bold tracking-tight text-gray-900 font-sans">
+            Market Intelligence MI-007
           </h2>
-          <p className="text-xs text-slate-400 mt-1 max-w-xs font-sans">
-            Institutional order routing, quantitative alpha signals & dynamic options architecture.
+          <p className="text-xs text-gray-500 mt-0.5">
+            Institutional Smart Money Concepts &amp; Real-Time Trade Alerts
           </p>
         </div>
 
-        {/* Account Type Tabs */}
-        <div className="grid grid-cols-2 gap-1 p-1 bg-slate-950/80 rounded-xl border border-white/10 mb-4 font-mono text-xs">
+        {/* Clean Mode Switcher: Sign In vs Create Account */}
+        <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-lg mb-5 text-xs font-medium">
           <button
             type="button"
-            onClick={() => setActiveTab('institutional')}
-            className={`py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'institutional'
-                ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-                : 'text-slate-400 hover:text-white'
+            onClick={() => {
+              setMode('signup');
+              setErrorMessage(null);
+            }}
+            className={`py-2 rounded-md transition-all cursor-pointer ${
+              mode === 'signup'
+                ? 'bg-white text-gray-900 font-semibold shadow-xs'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7V9H22V7L12 2ZM4 11V19H7V11H4ZM10 11V19H14V11H10ZM17 11V19H20V11H17ZM2 21V23H22V21H2Z" />
-            </svg>
-            <span>Institutional Desk</span>
+            Create Account
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('retail')}
-            className={`py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
-              activeTab === 'retail'
-                ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-                : 'text-slate-400 hover:text-white'
+            onClick={() => {
+              setMode('signin');
+              setErrorMessage(null);
+            }}
+            className={`py-2 rounded-md transition-all cursor-pointer ${
+              mode === 'signin'
+                ? 'bg-white text-gray-900 font-semibold shadow-xs'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-            </svg>
-            <span>Pro Trader</span>
+            Sign In
           </button>
         </div>
 
-        {/* Success Banner */}
-        {isSuccess ? (
-          <div className="py-6 flex flex-col items-center text-center animate-in fade-in zoom-in-95">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 text-2xl mb-3">
+        {/* Error Alert */}
+        {errorMessage && (
+          <div className="p-3 mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
+            <span className="shrink-0 mt-0.5">⚠️</span>
+            <div className="flex-1">{errorMessage}</div>
+          </div>
+        )}
+
+        {/* Success Screen */}
+        {successUser ? (
+          <div className="py-6 flex flex-col items-center text-center animate-in fade-in">
+            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl font-bold mb-3">
               ✓
             </div>
-            <h3 className="text-base font-bold text-white mb-1">Session Authenticated</h3>
-            <p className="text-xs text-emerald-400 mono">Launching Secure Telemetry Bridge...</p>
+            <h3 className="text-base font-bold text-gray-900 mb-1">
+              Welcome, {successUser.name}!
+            </h3>
+            <p className="text-xs text-gray-500">
+              Account connected. Launching terminal alerts...
+            </p>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-3.5">
-            {/* Input: Institutional ID / Email */}
+        ) : mode === 'signup' ? (
+          /* ───────── CREATE ACCOUNT FORM ───────── */
+          <form onSubmit={handleSignUpSubmit} className="space-y-3.5">
+            {/* Full Name */}
             <div>
-              <label className="block text-[11px] font-mono uppercase tracking-wider text-slate-300 font-bold mb-1">
-                {activeTab === 'institutional' ? 'Institutional Desk ID / Work Email' : 'Account Email'}
+              <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                Full Name
               </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="4" width="20" height="16" rx="2" />
-                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                  </svg>
-                </span>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={activeTab === 'institutional' ? 'trader@propfirm.com' : 'you@domain.com'}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950/70 border border-slate-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-white placeholder-slate-500 text-xs sm:text-sm font-sans outline-none transition-all"
-                />
-              </div>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Darshan"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+              />
             </div>
 
-            {/* Input: Access Key / Passphrase */}
+            {/* Mobile Number with WhatsApp Verification */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] font-mono uppercase tracking-wider text-slate-300 font-bold">
-                  Terminal License Key / Passphrase
+                <label className="text-[11px] font-medium text-gray-700">
+                  Mobile Number (WhatsApp)
                 </label>
-                <a
-                  href="/contact"
-                  className="text-[10px] text-amber-400 hover:text-amber-300 mono underline underline-offset-2"
-                >
-                  Request Key?
-                </a>
+                {otpVerified && (
+                  <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
+                    <span>✓</span> Verified on WhatsApp
+                  </span>
+                )}
               </div>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                </span>
+              <div className="flex gap-2">
+                <select
+                  value={countryCode}
+                  onChange={(e) => setCountryCode(e.target.value)}
+                  className="w-32 px-2 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+                >
+                  {COUNTRY_CODES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
                 <input
-                  type={showKey ? 'text' : 'password'}
+                  type="tel"
                   required
-                  value={key}
-                  onChange={(e) => setKey(e.target.value)}
-                  placeholder="MI007-••••-••••-••••"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-950/70 border border-slate-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-white placeholder-slate-500 text-xs sm:text-sm font-mono outline-none transition-all"
+                  value={phoneDigits}
+                  onChange={(e) => {
+                    setPhoneDigits(e.target.value);
+                    if (otpVerified) setOtpVerified(false);
+                  }}
+                  placeholder="8778123702"
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs font-mono focus:outline-none focus:border-gray-500"
                 />
+              </div>
+
+              {/* Inline OTP Verification Area */}
+              {!otpVerified && (
+                <div className="mt-2">
+                  {otpSent ? (
+                    <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
+                      <div className="text-[11px] text-gray-600 flex items-center justify-between">
+                        <span>Enter 6-digit WhatsApp code:</span>
+                        <button
+                          type="button"
+                          onClick={handleSendWhatsAppOtp}
+                          disabled={otpLoading || cooldown > 0}
+                          className="text-gray-500 hover:text-gray-800 underline disabled:opacity-50 text-[10px] cursor-pointer"
+                        >
+                          {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend'}
+                        </button>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          maxLength={6}
+                          placeholder="● ● ● ● ● ●"
+                          value={otpInput}
+                          onChange={(e) => setOtpInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                          className="w-32 text-center px-2 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-base font-mono font-bold tracking-wider"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={otpLoading || otpInput.trim().length !== 6}
+                          className="px-3 py-1.5 rounded-lg bg-gray-900 hover:bg-black text-white text-xs font-medium disabled:opacity-40 cursor-pointer"
+                        >
+                          {otpLoading ? 'Verifying...' : 'Verify Code'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSendWhatsAppOtp}
+                      disabled={otpLoading}
+                      className="text-[11px] text-gray-600 hover:text-black font-medium underline cursor-pointer"
+                    >
+                      {otpLoading ? 'Sending Code...' : '📲 Verify Mobile with WhatsApp OTP'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Email Address */}
+            <div>
+              <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@domain.com"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-medium text-gray-700">
+                  Password
+                </label>
                 <button
                   type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs mono"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-[10px] text-gray-500 hover:text-gray-800"
                 >
-                  {showKey ? 'Hide' : 'Show'}
+                  {showPassword ? 'Hide' : 'Show'}
                 </button>
               </div>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+              />
             </div>
 
-            {/* Checkbox: Remember Session */}
-            <div className="flex items-center justify-between text-xs pt-1">
-              <label className="flex items-center gap-2 cursor-pointer text-slate-300 font-sans">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-amber-400 focus:ring-offset-slate-900"
-                />
-                <span>Remember this terminal session</span>
-              </label>
-              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                TLS 256-Bit
-              </span>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="pt-2 flex flex-col gap-2">
+            {/* Submit Button */}
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg transition-all active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                className="w-full py-2.5 rounded-lg bg-gray-900 hover:bg-black text-white text-xs font-medium transition-all cursor-pointer disabled:opacity-50 shadow-xs"
               >
-                {isLoading ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                    <span>Verifying Credentials...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                    </svg>
-                    <span>Authenticate & Launch Dashboard</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                disabled={isLoading}
-                className="w-full py-2.5 rounded-xl border border-slate-700 hover:border-slate-500 bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="7.5" cy="15.5" r="5.5" />
-                  <path d="m21 2-9.6 9.6M15.5 7.5l3 3M18.5 4.5l3 3" />
-                </svg>
-                <span>Instant Demo Trader Access (One-Click)</span>
+                {isLoading ? 'Creating Account...' : 'Create Account'}
               </button>
             </div>
           </form>
+        ) : (
+          /* ───────── SIGN IN FORM ───────── */
+          <div className="space-y-4">
+            {/* Method Toggle: WhatsApp OTP vs Email/Password */}
+            <div className="flex items-center justify-center gap-4 text-xs border-b border-gray-100 pb-2">
+              <button
+                type="button"
+                onClick={() => setSignInMethod('otp')}
+                className={`pb-1 cursor-pointer transition-colors ${
+                  signInMethod === 'otp'
+                    ? 'font-bold text-gray-900 border-b-2 border-gray-900'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                WhatsApp Mobile OTP
+              </button>
+              <button
+                type="button"
+                onClick={() => setSignInMethod('password')}
+                className={`pb-1 cursor-pointer transition-colors ${
+                  signInMethod === 'password'
+                    ? 'font-bold text-gray-900 border-b-2 border-gray-900'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                Email &amp; Password
+              </button>
+            </div>
+
+            {signInMethod === 'otp' ? (
+              /* Sign In via WhatsApp OTP */
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                    Registered Mobile Number
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="w-32 px-2 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none"
+                    >
+                      {COUNTRY_CODES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="tel"
+                      value={phoneDigits}
+                      onChange={(e) => setPhoneDigits(e.target.value)}
+                      placeholder="8778123702"
+                      className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+
+                {otpSent ? (
+                  <div className="p-3.5 rounded-lg bg-gray-50 border border-gray-200 space-y-2.5 text-center">
+                    <div className="text-xs font-medium text-gray-800">
+                      Enter 6-Digit WhatsApp Code
+                    </div>
+                    <p className="text-[11px] text-gray-500">
+                      Sent to <strong>{fullPhone}</strong>
+                    </p>
+                    <div className="flex justify-center gap-2">
+                      <input
+                        type="text"
+                        maxLength={6}
+                        placeholder="● ● ● ● ● ●"
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                        className="w-36 text-center px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-base font-mono font-bold tracking-widest"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyOtp}
+                        disabled={otpLoading || otpInput.trim().length !== 6}
+                        className="px-3.5 py-1.5 rounded-lg bg-gray-900 hover:bg-black text-white text-xs font-medium cursor-pointer disabled:opacity-40"
+                      >
+                        {otpLoading ? 'Verifying...' : 'Sign In'}
+                      </button>
+                    </div>
+                    <div className="text-[11px] pt-1 border-t border-gray-200 flex justify-between">
+                      <button
+                        type="button"
+                        onClick={handleSendWhatsAppOtp}
+                        disabled={otpLoading || cooldown > 0}
+                        className="text-gray-500 hover:text-gray-800 underline text-[10px]"
+                      >
+                        {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOtpSent(false)}
+                        className="text-gray-400 hover:text-red-600 text-[10px]"
+                      >
+                        Change Number
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSendWhatsAppOtp}
+                    disabled={otpLoading}
+                    className="w-full py-2.5 rounded-lg bg-gray-900 hover:bg-black text-white text-xs font-medium transition-all cursor-pointer disabled:opacity-50 shadow-xs"
+                  >
+                    {otpLoading ? 'Sending WhatsApp Code...' : 'Send WhatsApp Login Code'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              /* Sign In via Email & Password */
+              <form onSubmit={handleSignInSubmit} className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@domain.com"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-2.5 rounded-lg bg-gray-900 hover:bg-black text-white text-xs font-medium transition-all cursor-pointer disabled:opacity-50 shadow-xs"
+                >
+                  {isLoading ? 'Signing In...' : 'Sign In'}
+                </button>
+              </form>
+            )}
+
+            {/* Instant Demo Access Button */}
+            <div className="pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                className="w-full py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-medium transition-all cursor-pointer"
+              >
+                Instant Demo Access (One-Click)
+              </button>
+            </div>
+          </div>
         )}
 
-        {/* Footnote */}
-        <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-          <span>Synthetix Analytics Network</span>
-          <span>NYSE · NASDAQ · NSE · DFM</span>
+        {/* Footer */}
+        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+          <span>Synthetix Analytics</span>
+          <span>End-to-End Encrypted</span>
         </div>
       </div>
     </div>
