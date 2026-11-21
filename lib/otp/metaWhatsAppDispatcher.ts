@@ -46,27 +46,15 @@ export async function dispatchMetaCloudOtp(
 
   const url = `https://graph.facebook.com/v21.0/${phoneId}/messages`;
 
-  // First attempt: Official Authentication Template
-  const templatePayload = {
+  // 1. Direct formatted text message
+  const textPayload = {
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
     to: cleanPhone,
-    type: 'template',
-    template: {
-      name: templateName,
-      language: { code: 'en_US' },
-      components: [
-        {
-          type: 'body',
-          parameters: [{ type: 'text', text: otp }],
-        },
-        {
-          type: 'button',
-          sub_type: 'url',
-          index: '0',
-          parameters: [{ type: 'text', text: otp }],
-        },
-      ],
+    type: 'text',
+    text: {
+      preview_url: false,
+      body: `MI-007 Verification\n\nYour verification code is:\n*${otp}*\n\nValid for 5 minutes.\nDo not share this code with anyone.\n\nMARKET INTELLIGENCE AI — MI-007\nSynthetix Analytics`,
     },
   };
 
@@ -77,22 +65,28 @@ export async function dispatchMetaCloudOtp(
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(templatePayload),
+      body: JSON.stringify(textPayload),
       signal: AbortSignal.timeout(8000),
     });
 
     let data = await res.json().catch(() => ({}));
 
-    // If template does not exist or fails validation, fallback to formatted direct text payload
+    // If text message is restricted, fallback to template payload
     if (!res.ok) {
-      const textPayload = {
+      const templatePayload = {
         messaging_product: 'whatsapp',
         recipient_type: 'individual',
         to: cleanPhone,
-        type: 'text',
-        text: {
-          preview_url: false,
-          body: `MI-007 Verification\n\nYour verification code is:\n*${otp}*\n\nValid for 5 minutes. Do not share this code with anyone.\n\nMARKET INTELLIGENCE AI — MI-007\nSynthetix Analytics`,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: 'en_US' },
+          components: [
+            {
+              type: 'body',
+              parameters: [{ type: 'text', text: otp }],
+            },
+          ],
         },
       };
 
@@ -102,7 +96,7 @@ export async function dispatchMetaCloudOtp(
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(textPayload),
+        body: JSON.stringify(templatePayload),
         signal: AbortSignal.timeout(8000),
       });
 
