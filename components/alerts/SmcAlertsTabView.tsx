@@ -147,17 +147,16 @@ export function SmcAlertsTabView() {
       const data = await res.json().catch(() => ({}));
       if (data?.ok) {
         setOtpSent(true);
-        setDemoOtp(data.otp || data.code || null);
         setTestFeedback({
           channel: 'WhatsApp',
           ok: true,
-          msg: `6-Digit OTP sent for ${phone}. Enter the code below to complete verification.`,
+          msg: `6-Digit OTP sent to ${phone} via WhatsApp. Enter the code below to complete verification.`,
         });
       } else {
         setTestFeedback({
           channel: 'WhatsApp',
           ok: false,
-          msg: data?.error || 'Failed to send verification OTP.',
+          msg: data?.error || 'Failed to send WhatsApp verification OTP.',
         });
       }
     } catch (err: any) {
@@ -744,20 +743,6 @@ export function SmcAlertsTabView() {
                       {isOtpLoading ? 'Verifying...' : 'Verify OTP'}
                     </button>
                   </div>
-                  {demoOtp && (
-                    <div className="p-2 rounded-lg bg-slate-800/80 border border-slate-700 text-[11px] flex items-center justify-between">
-                      <span className="text-slate-300">
-                        OTP Code: <strong className="text-emerald-400 mono font-black">{demoOtp}</strong>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setOtpInput(demoOtp)}
-                        className="text-[10px] text-emerald-400 hover:text-emerald-300 underline font-semibold"
-                      >
-                        Auto-Fill
-                      </button>
-                    </div>
-                  )}
                   <div className="flex items-center justify-between text-[10px] pt-1.5 border-t border-slate-800">
                     <button
                       type="button"

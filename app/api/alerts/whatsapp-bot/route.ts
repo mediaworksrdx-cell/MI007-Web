@@ -56,26 +56,45 @@ export async function POST(req: NextRequest) {
         expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
       });
 
-      // If external WhatsApp gateway / GCP microservice is configured, forward OTP send request
-      const externalGateway = body.gatewayUrl || process.env.WHATSAPP_GATEWAY_URL;
+      // Forward OTP send request to external WhatsApp gateway / GCP microservice
+      const externalGateway =
+        body.gatewayUrl || process.env.WHATSAPP_GATEWAY_URL || 'https://synthetixanalytics.com/whatsapp';
+
+      let gatewayDelivered = false;
+      let gatewayError = '';
+
       if (externalGateway && !externalGateway.includes('localhost')) {
         try {
-          await fetch(`${externalGateway.replace(/\/$/, '')}/send-otp`, {
+          const gwRes = await fetch(`${externalGateway.replace(/\/$/, '')}/send-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone, otp, text: `Your MI-007 Verification OTP is: ${otp}` }),
-            signal: AbortSignal.timeout(5000),
+            signal: AbortSignal.timeout(8000),
           });
-        } catch {
-          // Non-blocking in testing mode
+          const gwData = await gwRes.json().catch(() => ({}));
+          if (gwRes.ok && gwData?.ok) {
+            gatewayDelivered = true;
+          } else {
+            gatewayError = gwData?.error || `Gateway returned HTTP ${gwRes.status}`;
+          }
+        } catch (fetchErr: any) {
+          gatewayError = fetchErr?.message || 'Gateway network timeout';
         }
+      }
+
+      if (!gatewayDelivered && gatewayError) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: `WhatsApp Delivery Failed: ${gatewayError}. Ensure your WhatsApp bot is connected on the server.`,
+          },
+          { status: 502 }
+        );
       }
 
       return NextResponse.json({
         ok: true,
-        message: `Verification OTP generated for +${phone}`,
-        otp,
-        code: otp,
+        message: `Verification OTP sent to WhatsApp on +${phone}`,
         phone: `+${phone}`,
       });
     }
