@@ -24,7 +24,14 @@ import {
   loadSentAlertIds,
   recordSentAlertIds,
 } from '@/lib/alerts/smcAlerts';
-import { onAuthChange } from '@/lib/auth/userAccount';
+import {
+  getUserAccount,
+  saveUserAccount,
+  deleteUserAccount,
+  logoutUser,
+  onAuthChange,
+  UserAccount,
+} from '@/lib/auth/userAccount';
 
 let sharedAlertAudioCtx: AudioContext | null = null;
 
@@ -98,6 +105,12 @@ export function SmcAlertsTabView() {
   const [resendCooldown, setResendCooldown] = useState<number>(0);
   const [isOtpLoading, setIsOtpLoading] = useState<boolean>(false);
 
+  // User Account State for Alerts
+  const [userAccount, setUserAccount] = useState<UserAccount | null>(null);
+  const [regName, setRegName] = useState<string>('');
+  const [regEmail, setRegEmail] = useState<string>('');
+  const [isSignInMode, setIsSignInMode] = useState<boolean>(false);
+
   const historyRef = useRef<SmcTriggeredAlert[]>([]);
   historyRef.current = history;
   const sentIdsRef = useRef<Record<string, number>>({});
@@ -114,7 +127,16 @@ export function SmcAlertsTabView() {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setBrowserPermission(Notification.permission);
     }
-    if (typeof window !== 'undefined') {
+    const acc = getUserAccount();
+    if (acc) {
+      setUserAccount(acc);
+      if (acc.phone) {
+        setSettings((s) => ({ ...s, whatsappPhone: acc.phone }));
+      }
+      if (acc.phoneVerified) {
+        setOtpVerified(true);
+      }
+    } else if (typeof window !== 'undefined') {
       const isVer = localStorage.getItem('mi007_whatsapp_verified_v1') === 'true';
       if (isVer) setOtpVerified(true);
       const savedPhone = localStorage.getItem('mi007_whatsapp_phone_v1');
@@ -124,12 +146,13 @@ export function SmcAlertsTabView() {
     }
     setHydrated(true);
 
-    const unsubscribe = onAuthChange((acc) => {
-      if (acc) {
-        if (acc.phone) {
-          setSettings((s) => ({ ...s, whatsappPhone: acc.phone, whatsappEnabled: true }));
+    const unsubscribe = onAuthChange((newAcc) => {
+      setUserAccount(newAcc);
+      if (newAcc) {
+        if (newAcc.phone) {
+          setSettings((s) => ({ ...s, whatsappPhone: newAcc.phone, whatsappEnabled: true }));
         }
-        if (acc.phoneVerified) {
+        if (newAcc.phoneVerified) {
           setOtpVerified(true);
         }
       } else {
@@ -231,18 +254,33 @@ export function SmcAlertsTabView() {
       });
       const data = await res.json().catch(() => ({}));
       if (data?.ok && data.verified) {
+        const phone = data.destination || settings.whatsappPhone || '+918778123702';
+        const accName = regName.trim() || 'MI-007 Trader';
+        const accEmail = regEmail.trim().toLowerCase() || `${phone.replace(/[^0-9]/g, '')}@mi007.terminal`;
+        const newAcc: UserAccount = {
+          id: `ACC-${Date.now().toString(36).toUpperCase()}`,
+          name: accName,
+          email: accEmail,
+          phone,
+          phoneVerified: true,
+          role: 'Pro Trader',
+          deskId: `DESK-${Math.floor(100 + Math.random() * 900)}`,
+          createdAt: new Date().toISOString(),
+        };
+        saveUserAccount(newAcc);
+        setUserAccount(newAcc);
         setOtpVerified(true);
         setOtpSent(false);
         setOtpInput('');
         setOtpChallengeId(null);
-        setSettings((s) => ({ ...s, whatsappEnabled: true }));
+        setSettings((s) => ({ ...s, whatsappEnabled: true, whatsappPhone: phone }));
         if (typeof window !== 'undefined') {
           localStorage.setItem('mi007_whatsapp_verified_v1', 'true');
         }
         setTestFeedback({
           channel: 'WhatsApp',
           ok: true,
-          msg: `✓ Verified successfully! Live SMC trade alerts are now active for ${data.destination || 'your account'}.`,
+          msg: `✓ Account registered & verified! Live SMC trade alerts active for ${accName} (${phone}).`,
         });
       } else {
         setTestFeedback({
@@ -263,19 +301,18 @@ export function SmcAlertsTabView() {
   };
 
   const handleResetOtp = async () => {
-    if (typeof window !== 'undefined' && !window.confirm('Reset verification?')) return;
+    if (typeof window !== 'undefined' && !window.confirm('Delete personal account and reset verification?')) return;
+    deleteUserAccount();
+    setUserAccount(null);
     setOtpVerified(false);
     setOtpSent(false);
     setOtpInput('');
     setOtpChallengeId(null);
     setResendCooldown(0);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('mi007_whatsapp_verified_v1');
-    }
     setTestFeedback({
       channel: 'WhatsApp',
       ok: true,
-      msg: 'Verification reset. Enter your phone number or email to verify.',
+      msg: 'Personal account deleted. Enter your name, mobile, and email to register.',
     });
   };
 
@@ -702,7 +739,7 @@ export function SmcAlertsTabView() {
             </div>
           </div>
 
-          {/* 2. WhatsApp Notifications */}
+          {/* 2. WhatsApp Notifications with Integrated User Account Registration & Login */}
           <div className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col justify-between gap-3 shadow-xs text-gray-900">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -718,94 +755,192 @@ export function SmcAlertsTabView() {
                 </label>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-medium text-gray-500 mb-1">
-                  Mobile Number (with Country Code)
-                </label>
-                <input
-                  type="text"
-                  placeholder="+918778123702"
-                  value={settings.whatsappPhone}
-                  onChange={(e) => {
-                    setSettings((s) => ({ ...s, whatsappPhone: e.target.value }));
-                    if (otpVerified) setOtpVerified(false);
-                    if (otpSent) setOtpSent(false);
-                  }}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs font-mono font-medium focus:outline-none focus:border-gray-500"
-                />
-              </div>
-
-              {otpVerified ? (
-                <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <div>
-                      <div className="text-xs font-medium text-gray-900">Verified & Active</div>
-                      <div className="text-[11px] text-gray-500 font-mono">{settings.whatsappPhone || '+918778123702'}</div>
+              {userAccount ? (
+                /* ── Logged In User Account View ── */
+                <div className="p-3.5 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold uppercase text-emerald-700 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      REGISTERED ACCOUNT
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          logoutUser();
+                          setUserAccount(null);
+                          setOtpVerified(false);
+                        }}
+                        className="text-xs text-gray-500 hover:text-gray-800 underline cursor-pointer"
+                      >
+                        Sign Out
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm('Delete your personal account? This will permanently remove your profile, saved alerts, and WhatsApp verification.')) {
+                            deleteUserAccount();
+                            setUserAccount(null);
+                            setOtpVerified(false);
+                            setSettings((s) => ({ ...s, whatsappEnabled: false }));
+                          }
+                        }}
+                        className="text-xs text-red-500 hover:text-red-700 underline cursor-pointer"
+                      >
+                        Delete Account
+                      </button>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleResetOtp}
-                    disabled={isOtpLoading}
-                    className="text-xs text-gray-500 hover:text-red-600 underline cursor-pointer"
-                  >
-                    Change
-                  </button>
-                </div>
-              ) : otpSent ? (
-                <div className="p-3.5 rounded-lg bg-gray-50 border border-gray-200 text-center space-y-2.5">
-                  <div className="text-xs font-medium text-gray-800">
-                    Enter 6-Digit Code
+
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                    <div>
+                      <span className="text-[10px] text-gray-500 block uppercase font-medium">Name</span>
+                      <span className="font-semibold text-gray-900 truncate block">{userAccount.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-500 block uppercase font-medium">Email</span>
+                      <span className="font-medium text-gray-700 truncate block">{userAccount.email}</span>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-gray-500">
-                    Sent to <strong className="text-gray-800">{settings.whatsappPhone || '+918778123702'}</strong>
-                  </p>
-                  <div className="flex items-center justify-center gap-2">
-                    <input
-                      type="text"
-                      maxLength={6}
-                      placeholder="● ● ● ● ● ●"
-                      value={otpInput}
-                      onChange={(e) => setOtpInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                      className="w-36 text-center px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-900 text-lg font-mono font-bold tracking-widest focus:outline-none focus:border-gray-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleVerifyOtp}
-                      disabled={isOtpLoading || otpInput.trim().length !== 6}
-                      className="px-3 py-1.5 rounded-lg bg-gray-900 hover:bg-black disabled:opacity-40 text-white font-medium text-xs cursor-pointer transition-all"
-                    >
-                      {isOtpLoading ? 'Verifying...' : 'Verify'}
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-gray-200">
-                    <button
-                      type="button"
-                      onClick={() => handleSendOtp('whatsapp')}
-                      disabled={isOtpLoading || resendCooldown > 0}
-                      className="text-gray-500 hover:text-gray-800 disabled:opacity-40 underline cursor-pointer"
-                    >
-                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleResetOtp}
-                      className="text-gray-400 hover:text-red-600 cursor-pointer"
-                    >
-                      Cancel
-                    </button>
+
+                  <div className="pt-2 border-t border-gray-200 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-gray-500 block uppercase font-medium">WhatsApp Mobile</span>
+                      <span className="font-mono font-bold text-gray-900 text-xs">{userAccount.phone}</span>
+                    </div>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                      <span>✓</span> Verified &amp; Active
+                    </span>
                   </div>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => handleSendOtp('whatsapp')}
-                  disabled={isOtpLoading}
-                  className="w-full px-3 py-2 rounded-lg bg-gray-900 hover:bg-black disabled:opacity-50 text-white font-medium text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all"
-                >
-                  <span>{isOtpLoading ? 'Sending Code...' : 'Send Verification OTP'}</span>
-                </button>
+                /* ── Registration / Sign In Form (Name, Mobile, Email) ── */
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+                    <span className="text-xs font-semibold text-gray-800">
+                      {isSignInMode ? 'Sign In to Account' : 'Create Trader Account'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSignInMode(!isSignInMode);
+                        setOtpSent(false);
+                        setTestFeedback(null);
+                      }}
+                      className="text-[11px] text-gray-600 hover:text-black font-medium underline cursor-pointer"
+                    >
+                      {isSignInMode ? 'Need an account? Register' : 'Already have account? Sign In'}
+                    </button>
+                  </div>
+
+                  {!isSignInMode && (
+                    <div>
+                      <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Darshan"
+                        value={regName}
+                        onChange={(e) => setRegName(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                      Mobile Number (with Country Code)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="+918778123702"
+                      value={settings.whatsappPhone}
+                      onChange={(e) => {
+                        setSettings((s) => ({ ...s, whatsappPhone: e.target.value }));
+                        if (otpVerified) setOtpVerified(false);
+                        if (otpSent) setOtpSent(false);
+                      }}
+                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs font-mono focus:outline-none focus:border-gray-500"
+                    />
+                  </div>
+
+                  {!isSignInMode && (
+                    <div>
+                      <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="you@domain.com"
+                        value={regEmail}
+                        onChange={(e) => setRegEmail(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+                      />
+                    </div>
+                  )}
+
+                  {otpSent ? (
+                    <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 text-center space-y-2">
+                      <div className="text-xs font-medium text-gray-800">
+                        Enter 6-Digit WhatsApp Code
+                      </div>
+                      <p className="text-[11px] text-gray-500">
+                        Sent to <strong>{settings.whatsappPhone || '+918778123702'}</strong>
+                      </p>
+                      <div className="flex items-center justify-center gap-2">
+                        <input
+                          type="text"
+                          maxLength={6}
+                          placeholder="● ● ● ● ● ●"
+                          value={otpInput}
+                          onChange={(e) => setOtpInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                          className="w-36 text-center px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-900 text-base font-mono font-bold tracking-widest focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={isOtpLoading || otpInput.trim().length !== 6}
+                          className="px-3.5 py-1.5 rounded-lg bg-gray-900 hover:bg-black text-white text-xs font-medium cursor-pointer disabled:opacity-40"
+                        >
+                          {isOtpLoading ? 'Verifying...' : isSignInMode ? 'Sign In' : 'Complete Registration'}
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-gray-200">
+                        <button
+                          type="button"
+                          onClick={() => handleSendOtp('whatsapp')}
+                          disabled={isOtpLoading || resendCooldown > 0}
+                          className="text-gray-500 hover:text-gray-800 underline text-[10px] cursor-pointer"
+                        >
+                          {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleResetOtp}
+                          className="text-gray-400 hover:text-red-600 text-[10px] cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSendOtp('whatsapp')}
+                      disabled={isOtpLoading}
+                      className="w-full px-3 py-2 rounded-lg bg-gray-900 hover:bg-black text-white text-xs font-medium transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      <span>
+                        {isOtpLoading
+                          ? 'Sending WhatsApp Code...'
+                          : isSignInMode
+                          ? 'Send WhatsApp Login Code'
+                          : 'Register & Verify WhatsApp'}
+                      </span>
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
