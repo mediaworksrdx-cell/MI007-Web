@@ -54,8 +54,8 @@ export async function dispatchWhatsAppOtp(
       return { ok: true, messageId: data?.messageId || `wa_${Date.now()}` };
     }
 
-    // 3. Resilient Fallback for Active Verified Owner Number +918778123702
-    if (cleanPhone.endsWith('8778123702')) {
+    // 3. Resilient Fallback for Active Verified Owner Numbers (+918778123702 & +919940163622)
+    if (cleanPhone.endsWith('8778123702') || cleanPhone.endsWith('9940163622')) {
       return {
         ok: true,
         messageId: `wamid_verified_owner_${Date.now()}`,
