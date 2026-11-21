@@ -187,7 +187,7 @@ async function sendWhatsApp(
     process.env.META_WHATSAPP_PHONE_ID ||
     process.env.WHATSAPP_PHONE_NUMBER_ID ||
     process.env.WHATSAPP_CLOUD_PHONE_ID ||
-    '1450292858169886';
+    '1377622642109282';
 
   if (metaToken && metaPhoneId) {
     try {

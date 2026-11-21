@@ -24,7 +24,7 @@ export async function dispatchMetaCloudOtp(
     process.env.META_WHATSAPP_PHONE_ID ||
     process.env.WHATSAPP_PHONE_NUMBER_ID ||
     process.env.WHATSAPP_CLOUD_PHONE_ID ||
-    '1450292858169886';
+    '1377622642109282';
 
   const templateName =
     process.env.META_WHATSAPP_TEMPLATE_NAME || 'otp_verification';
