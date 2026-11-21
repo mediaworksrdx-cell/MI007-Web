@@ -21,12 +21,15 @@ export async function GET(
       cache: 'no-store',
     });
     const data = await res.arrayBuffer();
+    const hostHeader = GCP_TRADE_ENGINE_URL.includes('://') 
+      ? new URL(GCP_TRADE_ENGINE_URL).host 
+      : 'GCP-34.27.67.139';
     return new NextResponse(data, {
       status: res.status,
       headers: {
         'Content-Type': res.headers.get('content-type') || 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'X-Trade-Engine-Host': 'GCP-35.223.66.37',
+        'X-Trade-Engine-Host': hostHeader,
       },
     });
   } catch (err: any) {
@@ -57,12 +60,15 @@ export async function POST(
       cache: 'no-store',
     });
     const data = await res.arrayBuffer();
+    const hostHeader = GCP_TRADE_ENGINE_URL.includes('://') 
+      ? new URL(GCP_TRADE_ENGINE_URL).host 
+      : 'GCP-34.27.67.139';
     return new NextResponse(data, {
       status: res.status,
       headers: {
         'Content-Type': res.headers.get('content-type') || 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'X-Trade-Engine-Host': 'GCP-35.223.66.37',
+        'X-Trade-Engine-Host': hostHeader,
       },
     });
   } catch (err: any) {
