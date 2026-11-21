@@ -741,16 +741,16 @@ export function SmcAlertsTabView() {
           </div>
 
           {/* 2. WhatsApp Notifications with Integrated User Account Registration & Login */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col justify-between gap-3 shadow-xs text-gray-900">
+          <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] p-4 flex flex-col justify-between gap-3 text-[var(--theme-card-text)]">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-sm text-gray-900 flex items-center gap-1.5">WhatsApp Alerts</span>
-                <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                <span className="font-bold text-sm flex items-center gap-1.5 text-[var(--theme-card-text)]">WhatsApp Alerts</span>
+                <label className="flex items-center gap-1.5 text-xs text-[var(--theme-card-text-muted)] cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.whatsappEnabled}
                     onChange={(e) => setSettings((s) => ({ ...s, whatsappEnabled: e.target.checked }))}
-                    className="accent-black rounded"
+                    className="accent-emerald-500 rounded"
                   />
                   <span>Active</span>
                 </label>
@@ -758,9 +758,9 @@ export function SmcAlertsTabView() {
 
               {userAccount ? (
                 /* ── Logged In User Account View ── */
-                <div className="p-3.5 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
+                <div className="p-3.5 rounded-lg bg-white/5 border border-[var(--theme-card-border)] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold uppercase text-emerald-700 flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                       REGISTERED ACCOUNT
                     </span>
@@ -772,7 +772,7 @@ export function SmcAlertsTabView() {
                           setUserAccount(null);
                           setOtpVerified(false);
                         }}
-                        className="text-xs text-gray-500 hover:text-gray-800 underline cursor-pointer"
+                        className="text-xs text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] underline cursor-pointer"
                       >
                         Sign Out
                       </button>
@@ -786,7 +786,7 @@ export function SmcAlertsTabView() {
                             setSettings((s) => ({ ...s, whatsappEnabled: false }));
                           }
                         }}
-                        className="text-xs text-red-500 hover:text-red-700 underline cursor-pointer"
+                        className="text-xs text-rose-400 hover:text-rose-300 underline cursor-pointer"
                       >
                         Delete Account
                       </button>
@@ -795,21 +795,21 @@ export function SmcAlertsTabView() {
 
                   <div className="grid grid-cols-2 gap-2 text-xs pt-1">
                     <div>
-                      <span className="text-[10px] text-gray-500 block uppercase font-medium">Name</span>
-                      <span className="font-semibold text-gray-900 truncate block">{userAccount.name}</span>
+                      <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase font-medium">Name</span>
+                      <span className="font-semibold text-[var(--theme-card-text)] truncate block">{userAccount.name}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-gray-500 block uppercase font-medium">Email</span>
-                      <span className="font-medium text-gray-700 truncate block">{userAccount.email}</span>
+                      <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase font-medium">Email</span>
+                      <span className="font-medium text-[var(--theme-card-text)] truncate block">{userAccount.email}</span>
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-gray-200 flex items-center justify-between">
+                  <div className="pt-2 border-t border-[var(--theme-card-border)] flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] text-gray-500 block uppercase font-medium">WhatsApp Mobile</span>
-                      <span className="font-mono font-bold text-gray-900 text-xs">{userAccount.phone}</span>
+                      <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase font-medium">WhatsApp Mobile</span>
+                      <span className="font-mono font-bold text-[var(--theme-card-text)] text-xs">{userAccount.phone}</span>
                     </div>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-medium flex items-center gap-1">
                       <span>✓</span> Verified &amp; Active
                     </span>
                   </div>
@@ -817,8 +817,8 @@ export function SmcAlertsTabView() {
               ) : (
                 /* ── Registration / Sign In Form (Name, Mobile, Email) ── */
                 <div className="space-y-2.5">
-                  <div className="flex items-center justify-between pb-1 border-b border-gray-100">
-                    <span className="text-xs font-semibold text-gray-800">
+                  <div className="flex items-center justify-between pb-1 border-b border-[var(--theme-card-border)]">
+                    <span className="text-xs font-semibold text-[var(--theme-card-text)]">
                       {isSignInMode ? 'Sign In to Account' : 'Create Trader Account'}
                     </span>
                     <button
@@ -828,7 +828,7 @@ export function SmcAlertsTabView() {
                         setOtpSent(false);
                         setTestFeedback(null);
                       }}
-                      className="text-[11px] text-gray-600 hover:text-black font-medium underline cursor-pointer"
+                      className="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium underline cursor-pointer"
                     >
                       {isSignInMode ? 'Need an account? Register' : 'Already have account? Sign In'}
                     </button>
@@ -836,7 +836,7 @@ export function SmcAlertsTabView() {
 
                   {!isSignInMode && (
                     <div>
-                      <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                      <label className="block text-[11px] font-medium text-[var(--theme-card-text-muted)] mb-1">
                         Full Name
                       </label>
                       <input
@@ -844,13 +844,13 @@ export function SmcAlertsTabView() {
                         placeholder="e.g. Darshan"
                         value={regName}
                         onChange={(e) => setRegName(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+                        className="w-full px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] text-xs focus:outline-none focus:border-emerald-500/60"
                       />
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                    <label className="block text-[11px] font-medium text-[var(--theme-card-text-muted)] mb-1">
                       Mobile Number (with Country Code)
                     </label>
                     <input
@@ -862,13 +862,13 @@ export function SmcAlertsTabView() {
                         if (otpVerified) setOtpVerified(false);
                         if (otpSent) setOtpSent(false);
                       }}
-                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs font-mono focus:outline-none focus:border-gray-500"
+                      className="w-full px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] text-xs font-mono focus:outline-none focus:border-emerald-500/60"
                     />
                   </div>
 
                   {!isSignInMode && (
                     <div>
-                      <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                      <label className="block text-[11px] font-medium text-[var(--theme-card-text-muted)] mb-1">
                         Email Address
                       </label>
                       <input
@@ -876,18 +876,18 @@ export function SmcAlertsTabView() {
                         placeholder="you@domain.com"
                         value={regEmail}
                         onChange={(e) => setRegEmail(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+                        className="w-full px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] text-xs focus:outline-none focus:border-emerald-500/60"
                       />
                     </div>
                   )}
 
                   {otpSent ? (
-                    <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 text-center space-y-2">
-                      <div className="text-xs font-medium text-gray-800">
+                    <div className="p-3 rounded-lg bg-white/5 border border-[var(--theme-card-border)] text-center space-y-2">
+                      <div className="text-xs font-medium text-[var(--theme-card-text)]">
                         Enter 6-Digit WhatsApp Code
                       </div>
-                      <p className="text-[11px] text-gray-500">
-                        Sent to <strong>{settings.whatsappPhone}</strong>
+                      <p className="text-[11px] text-[var(--theme-card-text-muted)]">
+                        Sent to <strong className="text-[var(--theme-card-text)]">{settings.whatsappPhone}</strong>
                       </p>
                       <div className="flex items-center justify-center gap-2">
                         <input
@@ -896,30 +896,30 @@ export function SmcAlertsTabView() {
                           placeholder="● ● ● ● ● ●"
                           value={otpInput}
                           onChange={(e) => setOtpInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                          className="w-36 text-center px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-900 text-base font-mono font-bold tracking-widest focus:outline-none"
+                          className="w-36 text-center px-3 py-1.5 rounded-lg bg-[var(--theme-card-bg)] border border-[var(--theme-card-border)] text-[var(--theme-card-text)] text-base font-mono font-bold tracking-widest focus:outline-none focus:border-emerald-500"
                         />
                         <button
                           type="button"
                           onClick={handleVerifyOtp}
                           disabled={isOtpLoading || otpInput.trim().length !== 6}
-                          className="px-3.5 py-1.5 rounded-lg bg-gray-900 hover:bg-black text-white text-xs font-medium cursor-pointer disabled:opacity-40"
+                          className="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold cursor-pointer disabled:opacity-40"
                         >
                           {isOtpLoading ? 'Verifying...' : isSignInMode ? 'Sign In' : 'Complete Registration'}
                         </button>
                       </div>
-                      <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-gray-200">
+                      <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-[var(--theme-card-border)]">
                         <button
                           type="button"
                           onClick={() => handleSendOtp('whatsapp')}
                           disabled={isOtpLoading || resendCooldown > 0}
-                          className="text-gray-500 hover:text-gray-800 underline text-[10px] cursor-pointer"
+                          className="text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] underline text-[10px] cursor-pointer"
                         >
                           {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
                         </button>
                         <button
                           type="button"
                           onClick={handleResetOtp}
-                          className="text-gray-400 hover:text-red-600 text-[10px] cursor-pointer"
+                          className="text-rose-400 hover:text-rose-300 text-[10px] cursor-pointer"
                         >
                           Cancel
                         </button>
@@ -948,7 +948,7 @@ export function SmcAlertsTabView() {
                         handleSendOtp('whatsapp');
                       }}
                       disabled={isOtpLoading}
-                      className="w-full px-3 py-2 rounded-lg bg-gray-900 hover:bg-black text-white text-xs font-medium transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      className="w-full px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                     >
                       <span>
                         {isOtpLoading
@@ -966,23 +966,23 @@ export function SmcAlertsTabView() {
             <button
               type="button"
               onClick={() => handleSendTest('whatsapp')}
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-medium cursor-pointer transition-all mt-2"
+              className="w-full px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] hover:border-emerald-500/50 hover:bg-white/5 text-[var(--theme-card-text)] text-xs font-bold cursor-pointer transition-all mt-2"
             >
               Send Test WhatsApp Alert
             </button>
           </div>
 
           {/* 3. Gmail / Email Alerts (Unified with Trader Account) */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col justify-between gap-3 shadow-xs text-gray-900">
+          <div className="rounded-2xl border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] p-4 flex flex-col justify-between gap-3 text-[var(--theme-card-text)]">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-sm text-gray-900 flex items-center gap-1.5">Gmail Alerts</span>
-                <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                <span className="font-bold text-sm flex items-center gap-1.5 text-[var(--theme-card-text)]">Gmail Alerts</span>
+                <label className="flex items-center gap-1.5 text-xs text-[var(--theme-card-text-muted)] cursor-pointer">
                   <input
                     type="checkbox"
                     checked={settings.gmailEnabled}
                     onChange={(e) => setSettings((s) => ({ ...s, gmailEnabled: e.target.checked }))}
-                    className="accent-black rounded"
+                    className="accent-emerald-500 rounded"
                   />
                   <span>Active</span>
                 </label>
@@ -990,31 +990,31 @@ export function SmcAlertsTabView() {
 
               {userAccount ? (
                 /* ── Linked Account Email View ── */
-                <div className="p-3.5 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
+                <div className="p-3.5 rounded-lg bg-white/5 border border-[var(--theme-card-border)] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold uppercase text-emerald-700 flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                       LINKED ACCOUNT EMAIL
                     </span>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-medium">
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-medium">
                       ✓ Ready
                     </span>
                   </div>
 
                   <div>
-                    <span className="text-[10px] text-gray-500 block uppercase font-medium">Recipient Email</span>
-                    <span className="font-semibold text-gray-900 text-xs truncate block">{userAccount.email}</span>
+                    <span className="text-[10px] text-[var(--theme-card-text-muted)] block uppercase font-medium">Recipient Email</span>
+                    <span className="font-semibold text-[var(--theme-card-text)] text-xs truncate block">{userAccount.email}</span>
                   </div>
 
-                  <p className="text-[11px] text-gray-500 leading-relaxed pt-1.5 border-t border-gray-200">
-                    Trade setups and chart triggers will be delivered to <strong>{userAccount.email}</strong>.
+                  <p className="text-[11px] text-[var(--theme-card-text-muted)] leading-relaxed pt-1.5 border-t border-[var(--theme-card-border)]">
+                    Trade setups and chart triggers will be delivered to <strong className="text-[var(--theme-card-text)]">{userAccount.email}</strong>.
                   </p>
                 </div>
               ) : (
                 /* ── Manual Recipient Email Input ── */
                 <div className="space-y-2">
                   <div>
-                    <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                    <label className="block text-[11px] font-medium text-[var(--theme-card-text-muted)] mb-1">
                       Recipient Gmail / Email
                     </label>
                     <input
@@ -1025,10 +1025,10 @@ export function SmcAlertsTabView() {
                         setSettings((s) => ({ ...s, gmailTo: e.target.value }));
                         setRegEmail(e.target.value);
                       }}
-                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-xs focus:outline-none focus:border-gray-500"
+                      className="w-full px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] text-xs focus:outline-none focus:border-emerald-500/60"
                     />
                   </div>
-                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                  <p className="text-[11px] text-[var(--theme-card-text-muted)] leading-relaxed">
                     💡 Tip: Registering in the WhatsApp card on the left automatically connects your email here too.
                   </p>
                 </div>
@@ -1039,17 +1039,17 @@ export function SmcAlertsTabView() {
                 <button
                   type="button"
                   onClick={() => setShowAdvancedSmtp(!showAdvancedSmtp)}
-                  className="text-[11px] text-gray-500 hover:text-gray-800 flex items-center gap-1 cursor-pointer"
+                  className="text-[11px] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] flex items-center gap-1 cursor-pointer"
                 >
                   <span>{showAdvancedSmtp ? '▼' : '▶'}</span>
                   <span>Advanced / Custom SMTP Sender (Optional)</span>
                 </button>
 
                 {showAdvancedSmtp && (
-                  <div className="mt-2 p-2.5 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
+                  <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-[var(--theme-card-border)] space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">
+                        <label className="block text-[10px] font-medium text-[var(--theme-card-text-muted)] mb-0.5">
                           Sender Gmail
                         </label>
                         <input
@@ -1057,11 +1057,11 @@ export function SmcAlertsTabView() {
                           placeholder="Optional if in .env"
                           value={settings.gmailUser}
                           onChange={(e) => setSettings((s) => ({ ...s, gmailUser: e.target.value }))}
-                          className="w-full px-2 py-1 rounded border border-gray-300 bg-white text-xs"
+                          className="w-full px-2 py-1 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] text-xs"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-gray-500 mb-0.5">
+                        <label className="block text-[10px] font-medium text-[var(--theme-card-text-muted)] mb-0.5">
                           App Password
                         </label>
                         <input
@@ -1069,7 +1069,7 @@ export function SmcAlertsTabView() {
                           placeholder="16-char App Password"
                           value={settings.gmailAppPassword}
                           onChange={(e) => setSettings((s) => ({ ...s, gmailAppPassword: e.target.value }))}
-                          className="w-full px-2 py-1 rounded border border-gray-300 bg-white text-xs font-mono"
+                          className="w-full px-2 py-1 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] text-xs font-mono"
                         />
                       </div>
                     </div>
@@ -1081,7 +1081,7 @@ export function SmcAlertsTabView() {
             <button
               type="button"
               onClick={() => handleSendTest('gmail')}
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-medium cursor-pointer transition-all mt-2"
+              className="w-full px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] hover:border-emerald-500/50 hover:bg-white/5 text-[var(--theme-card-text)] text-xs font-bold cursor-pointer transition-all mt-2"
             >
               Send Test Gmail
             </button>
