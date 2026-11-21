@@ -181,16 +181,16 @@ async function sendWhatsApp(
     process.env.META_WHATSAPP_TOKEN ||
     process.env.WHATSAPP_ACCESS_TOKEN ||
     process.env.WHATSAPP_CLOUD_API_TOKEN ||
-    'EAGeZA22o5RjgBTPLEUUDrwllZBqkalfcfVeCRFr2JRNJAmO4VmTBO7kCO11K41H9ETMrInBRVhjffuZBSSoWHZAJ0pkmqhA3JwypRVdAxZA6eLfRgdeZB5rWwDesv0YMzZCxzZB9liBmXyNZBtPwTmInXvDXbOJ6GwXZA95zZCiHt6svibz1LQR7rqreCrC4T9otAkIdEcGLZBzDm4e53F6Thklt5n36q9by02WGNRKdjRPDTJQUiabwKez0b3jX2CLmSXW2DdOBTeLyDloXSZAwZBGea2GQZDZD';
+    'EAGeZA22o5RjgBTMYg3wK9eKILPtD8o9rMLNGFNeRSU22uKtScAOJZBLwFQtZC43RXw7SZB7GuV8IQQJPTsf3824Xwf5MILe3qfHqtZCJaIbPvekK3ANcLFowoGhqFGtQdtE1ZAeap6HdSnciY4FXoZBc5leuqvQBa0eaDbAhFJihQzuwgNDB8ZAZAJ8tahMZAUcPK7js1Wue4OsqNcgj8fHcjvds49t35jhg4S1LTYnQ8VIER5Kspc8aZA7yaA07OZAsgD0DQCrTIz3R39cDItmZBEtZAZB';
 
   const metaPhoneId =
     process.env.META_WHATSAPP_PHONE_ID ||
     process.env.WHATSAPP_PHONE_NUMBER_ID ||
     process.env.WHATSAPP_CLOUD_PHONE_ID ||
-    '1377622642109282';
+    '1450292858169886';
 
   if (metaToken) {
-    const candidatePhoneIds = [metaPhoneId, '1450292858169886'].filter(Boolean);
+    const candidatePhoneIds = ['1450292858169886', metaPhoneId, '1377622642109282'].filter(Boolean);
     const cleanTarget = targetPhone.replace(/[^0-9]/g, '');
 
     for (const pid of candidatePhoneIds) {

@@ -18,13 +18,13 @@ export async function dispatchMetaCloudOtp(
     process.env.META_WHATSAPP_TOKEN ||
     process.env.WHATSAPP_ACCESS_TOKEN ||
     process.env.WHATSAPP_CLOUD_API_TOKEN ||
-    'EAGeZA22o5RjgBTPLEUUDrwllZBqkalfcfVeCRFr2JRNJAmO4VmTBO7kCO11K41H9ETMrInBRVhjffuZBSSoWHZAJ0pkmqhA3JwypRVdAxZA6eLfRgdeZB5rWwDesv0YMzZCxzZB9liBmXyNZBtPwTmInXvDXbOJ6GwXZA95zZCiHt6svibz1LQR7rqreCrC4T9otAkIdEcGLZBzDm4e53F6Thklt5n36q9by02WGNRKdjRPDTJQUiabwKez0b3jX2CLmSXW2DdOBTeLyDloXSZAwZBGea2GQZDZD';
+    'EAGeZA22o5RjgBTMYg3wK9eKILPtD8o9rMLNGFNeRSU22uKtScAOJZBLwFQtZC43RXw7SZB7GuV8IQQJPTsf3824Xwf5MILe3qfHqtZCJaIbPvekK3ANcLFowoGhqFGtQdtE1ZAeap6HdSnciY4FXoZBc5leuqvQBa0eaDbAhFJihQzuwgNDB8ZAZAJ8tahMZAUcPK7js1Wue4OsqNcgj8fHcjvds49t35jhg4S1LTYnQ8VIER5Kspc8aZA7yaA07OZAsgD0DQCrTIz3R39cDItmZBEtZAZB';
 
   const phoneId =
     process.env.META_WHATSAPP_PHONE_ID ||
     process.env.WHATSAPP_PHONE_NUMBER_ID ||
     process.env.WHATSAPP_CLOUD_PHONE_ID ||
-    '1377622642109282';
+    '1450292858169886';
 
   const templateName =
     process.env.META_WHATSAPP_TEMPLATE_NAME || 'otp_verification';
@@ -46,8 +46,8 @@ export async function dispatchMetaCloudOtp(
     };
   }
 
-  // Attempt dispatch with primary phoneId, then fallback to verified sandbox phoneId
-  const candidatePhoneIds = [phoneId, '1450292858169886'].filter(
+  // Attempt dispatch with primary sandbox phoneId (1450292858169886), then live phoneId (1377622642109282)
+  const candidatePhoneIds = ['1450292858169886', phoneId, '1377622642109282'].filter(
     (v, i, a) => a.indexOf(v) === i
   );
 
