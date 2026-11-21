@@ -180,12 +180,14 @@ async function sendWhatsApp(
   const metaToken =
     process.env.META_WHATSAPP_TOKEN ||
     process.env.WHATSAPP_ACCESS_TOKEN ||
-    process.env.WHATSAPP_CLOUD_API_TOKEN;
+    process.env.WHATSAPP_CLOUD_API_TOKEN ||
+    'EAGeZA22o5RjgBTJkzsmgwjVqp7nrQuNPVvIwcB5A6xajSZC7vNtZAtHjEBHZAF8SncOI1eVkwVJ4E67roKjiyD74ZBtvnJZAR9Mihd2C0rS4U5fxkZAMZCcxjY3ZBY8x56x9HdJ28UUZBFglmPR9xKZCvOry2NSjcPtTvaEkX6AJeHDft2iMzoabYkwhfEqKOBo5wcgdm5Fqp9RmLi5GIjHWV8OH3wH64i7VK18j2sH5WhCE7okyp2eCfFuRr9Wg9ZCCtMIZA59AZCsxnZCMBFvsTKvZAuew';
 
   const metaPhoneId =
     process.env.META_WHATSAPP_PHONE_ID ||
     process.env.WHATSAPP_PHONE_NUMBER_ID ||
-    process.env.WHATSAPP_CLOUD_PHONE_ID;
+    process.env.WHATSAPP_CLOUD_PHONE_ID ||
+    '1450292858169886';
 
   if (metaToken && metaPhoneId) {
     try {
