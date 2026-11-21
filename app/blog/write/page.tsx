@@ -87,13 +87,13 @@ function BlogWriteContent() {
         setSlugManuallyEdited(true);
         setCategory(data.category);
         setTagsInput(data.tags.join(', '));
-        setCoverImage(data.coverImage);
+        setCoverImage(data.coverImage || '');
         setSummary(data.summary);
         setContent(data.content);
         setAuthorName(data.author.name);
         setAuthorRole(data.author.role);
         setAuthorBio(data.author.bio || '');
-        setIsPublished(data.published);
+        setIsPublished(data.status === 'published');
       })
       .catch((err) => {
         setStatusMsg({ type: 'error', text: `Failed to load post for editing: ${err.message}` });

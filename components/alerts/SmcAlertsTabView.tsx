@@ -99,9 +99,10 @@ export function SmcAlertsTabView() {
 
   const fetchBotStatus = useCallback(async () => {
     try {
-      const res = await fetch('/api/alerts/whatsapp-bot', { cache: 'no-store' });
+      const customUrl = settings.selfhostedUrl ? `?url=${encodeURIComponent(settings.selfhostedUrl)}` : '';
+      const res = await fetch(`/api/alerts/whatsapp-bot${customUrl}`, { cache: 'no-store' });
       const data = await res.json();
-      if (data?.ok) {
+      if (data?.ok && data.status !== 'offline') {
         setBotStatus(data.status || 'unknown');
         setBotConnected(Boolean(data.connected));
         setBotUser(data.user || null);
@@ -116,7 +117,7 @@ export function SmcAlertsTabView() {
       setBotStatus('offline');
       setBotConnected(false);
     }
-  }, []);
+  }, [settings.selfhostedUrl]);
 
   const historyRef = useRef<SmcTriggeredAlert[]>([]);
   historyRef.current = history;
@@ -165,7 +166,7 @@ export function SmcAlertsTabView() {
       const res = await fetch('/api/alerts/whatsapp-bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'request-code', phone }),
+        body: JSON.stringify({ action: 'request-code', phone, gatewayUrl: settings.selfhostedUrl }),
       });
       const data = await res.json();
       if (data?.ok && data.code) {
@@ -173,10 +174,20 @@ export function SmcAlertsTabView() {
         setBotStatus('awaiting_pairing');
         setTestFeedback({ channel: 'WhatsApp', ok: true, msg: `OTP Generated: ${data.code}. Enter it on your phone!` });
       } else {
-        setTestFeedback({ channel: 'WhatsApp', ok: false, msg: data?.error || 'Failed to generate OTP code. Ensure gateway is running.' });
+        setTestFeedback({
+          channel: 'WhatsApp',
+          ok: false,
+          msg: data?.error || 'Failed to generate OTP code. Ensure gateway microservice is running.',
+        });
       }
     } catch (err: any) {
-      setTestFeedback({ channel: 'WhatsApp', ok: false, msg: err?.message || 'Gateway connection failed.' });
+      setTestFeedback({
+        channel: 'WhatsApp',
+        ok: false,
+        msg: err?.message?.includes('fetch failed')
+          ? 'WhatsApp Gateway is offline. Start it with "npm run whatsapp:bot" or switch to CallMeBot for cloud alerts.'
+          : err?.message || 'Gateway connection failed.',
+      });
     } finally {
       setIsBotLoading(false);
     }
@@ -189,7 +200,7 @@ export function SmcAlertsTabView() {
       await fetch('/api/alerts/whatsapp-bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset' }),
+        body: JSON.stringify({ action: 'reset', gatewayUrl: settings.selfhostedUrl }),
       });
       setBotConnected(false);
       setBotUser(null);
@@ -633,6 +644,43 @@ export function SmcAlertsTabView() {
                 </label>
               </div>
 
+              {/* Provider Selector Tabs */}
+              <div className="flex rounded-lg p-0.5 bg-black/20 border border-[var(--theme-card-border)] text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setSettings((s) => ({ ...s, whatsappProvider: 'callmebot' }))}
+                  className={`flex-1 py-1 text-center rounded-md transition-all cursor-pointer ${
+                    settings.whatsappProvider === 'callmebot'
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                      : 'text-[var(--theme-card-text-muted)] hover:text-white'
+                  }`}
+                >
+                  ⚡ CallMeBot (Cloud)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettings((s) => ({ ...s, whatsappProvider: 'selfhosted' }))}
+                  className={`flex-1 py-1 text-center rounded-md transition-all cursor-pointer ${
+                    settings.whatsappProvider === 'selfhosted'
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                      : 'text-[var(--theme-card-text-muted)] hover:text-white'
+                  }`}
+                >
+                  💻 Private Bot (OTP)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettings((s) => ({ ...s, whatsappProvider: 'twilio' }))}
+                  className={`flex-1 py-1 text-center rounded-md transition-all cursor-pointer ${
+                    settings.whatsappProvider === 'twilio'
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                      : 'text-[var(--theme-card-text-muted)] hover:text-white'
+                  }`}
+                >
+                  Twilio
+                </button>
+              </div>
+
               <div>
                 <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] mb-1">
                   Mobile Number (with Country Code)
@@ -646,60 +694,148 @@ export function SmcAlertsTabView() {
                 />
               </div>
 
-              {botConnected ? (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <div>
-                      <div className="text-xs font-bold text-emerald-400">Verified &amp; Connected</div>
-                      <div className="text-[11px] text-slate-300 mono">{settings.whatsappPhone || '+918838202279'}</div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleResetBotSession}
-                    disabled={isBotLoading}
-                    className="text-[11px] text-red-400 hover:text-red-300 underline cursor-pointer"
-                  >
-                    Unlink
-                  </button>
-                </div>
-              ) : botPairingCode ? (
-                <div className="p-3.5 rounded-xl bg-black/60 border border-emerald-500/40 text-center space-y-2.5">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                    Verification Code (Pairing OTP)
-                  </div>
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="px-4 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-2xl font-black font-mono tracking-widest text-emerald-300 select-all">
-                      {botPairingCode}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(botPairingCode.replace('-', ''));
-                        setCodeCopied(true);
-                        setTimeout(() => setCodeCopied(false), 2000);
-                      }}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white cursor-pointer font-bold"
+              {/* 1. CallMeBot Provider UI */}
+              {settings.whatsappProvider === 'callmebot' && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)]">
+                      CallMeBot API Key
+                    </label>
+                    <a
+                      href={`https://wa.me/34644204756?text=${encodeURIComponent('I allow callmebot to send me messages')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-emerald-400 hover:underline font-semibold"
                     >
-                      {codeCopied ? '✓ Copied' : '📋 Copy'}
-                    </button>
+                      👉 Get Free Key (WhatsApp) ↗
+                    </a>
                   </div>
-                  <ol className="text-left text-[11px] text-slate-300 space-y-1 pt-1.5 border-t border-slate-800 list-decimal list-inside">
-                    <li>Open WhatsApp on phone (<strong>{settings.whatsappPhone || '+918838202279'}</strong>)</li>
-                    <li>Tap <strong>Linked Devices</strong> &rarr; <strong>Link with phone number instead</strong></li>
-                    <li>Enter the 8-digit verification code above</li>
-                  </ol>
+                  <input
+                    type="password"
+                    placeholder="Paste CallMeBot API Key (e.g. 1234567)"
+                    value={settings.callmebotApiKey}
+                    onChange={(e) => setSettings((s) => ({ ...s, callmebotApiKey: e.target.value }))}
+                    className="w-full px-3 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs mono"
+                  />
+                  <p className="text-[10px] text-[var(--theme-card-text-muted)] leading-relaxed">
+                    Zero-Server Cloud Delivery: Open WhatsApp to{' '}
+                    <a
+                      href={`https://wa.me/34644204756?text=${encodeURIComponent('I allow callmebot to send me messages')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-emerald-400 font-bold"
+                    >
+                      +34 644 20 47 56
+                    </a>{' '}
+                    and send <code className="px-1 py-0.5 rounded bg-slate-500/15 text-[10px] font-mono text-emerald-400">I allow callmebot to send me messages</code>. You will receive your API key in 30 seconds.
+                  </p>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleRequestPairingOtp}
-                  disabled={isBotLoading}
-                  className="w-full px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                >
-                  <span>{isBotLoading ? '⏳ Requesting Verification Code...' : '📲 Get Verification OTP'}</span>
-                </button>
+              )}
+
+              {/* 2. Self-Hosted Bot Provider UI */}
+              {settings.whatsappProvider === 'selfhosted' && (
+                <>
+                  {botConnected ? (
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <div>
+                          <div className="text-xs font-bold text-emerald-400">Verified &amp; Connected</div>
+                          <div className="text-[11px] text-slate-300 mono">{settings.whatsappPhone || '+918838202279'}</div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleResetBotSession}
+                        disabled={isBotLoading}
+                        className="text-[11px] text-red-400 hover:text-red-300 underline cursor-pointer"
+                      >
+                        Unlink
+                      </button>
+                    </div>
+                  ) : botPairingCode ? (
+                    <div className="p-3.5 rounded-xl bg-black/60 border border-emerald-500/40 text-center space-y-2.5">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        Verification Code (Pairing OTP)
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="px-4 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-2xl font-black font-mono tracking-widest text-emerald-300 select-all">
+                          {botPairingCode}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(botPairingCode.replace('-', ''));
+                            setCodeCopied(true);
+                            setTimeout(() => setCodeCopied(false), 2000);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white cursor-pointer font-bold"
+                        >
+                          {codeCopied ? '✓ Copied' : '📋 Copy'}
+                        </button>
+                      </div>
+                      <ol className="text-left text-[11px] text-slate-300 space-y-1 pt-1.5 border-t border-slate-800 list-decimal list-inside">
+                        <li>Open WhatsApp on phone (<strong>{settings.whatsappPhone || '+918838202279'}</strong>)</li>
+                        <li>Tap <strong>Linked Devices</strong> &rarr; <strong>Link with phone number instead</strong></li>
+                        <li>Enter the 8-digit verification code above</li>
+                      </ol>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {botStatus === 'offline' && (
+                        <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 space-y-1">
+                          <div className="font-bold flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-amber-400" /> Gateway Microservice Offline
+                          </div>
+                          <p className="text-[10px] text-slate-300 leading-relaxed">
+                            The Baileys gateway is offline. Run <code className="px-1 py-0.5 rounded bg-black/40 text-emerald-400 font-mono">npm run whatsapp:bot</code> on your server, or switch to <strong>⚡ CallMeBot (Cloud)</strong> above for zero-server delivery on Vercel.
+                          </p>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleRequestPairingOtp}
+                        disabled={isBotLoading}
+                        className="w-full px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                      >
+                        <span>{isBotLoading ? '⏳ Requesting Verification Code...' : '📲 Get Verification OTP'}</span>
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* 3. Twilio Provider UI */}
+              {settings.whatsappProvider === 'twilio' && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] mb-1">
+                      Twilio Account SID
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="ACxxxxxxxx..."
+                      value={settings.twilioAccountSid}
+                      onChange={(e) => setSettings((s) => ({ ...s, twilioAccountSid: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-[var(--theme-card-text-muted)] mb-1">
+                      Twilio Auth Token
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="Twilio Auth Token"
+                      value={settings.twilioAuthToken}
+                      onChange={(e) => setSettings((s) => ({ ...s, twilioAuthToken: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--theme-card-border)] bg-transparent text-xs mono"
+                    />
+                  </div>
+                  <p className="text-[10px] text-[var(--theme-card-text-muted)]">
+                    Twilio Sandbox: send <code className="px-1 py-0.5 rounded bg-slate-500/15 text-emerald-400 font-mono">join twilio-trial</code> on WhatsApp to +1 737 250 8034.
+                  </p>
+                </div>
               )}
             </div>
 

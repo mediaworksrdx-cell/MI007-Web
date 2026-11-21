@@ -133,7 +133,7 @@ const SMC_SCAN_CACHE = new Map<string, ScannedSmcItem[]>();
 const CANDLE_FETCH_CACHE = new Map<string, { candles: Candle[]; fetchedAt: number; noData: boolean }>();
 const CANDLE_CACHE_TTL_MS = 60_000;
 
-export const GLOBAL_COMMODITIES_FOREX: CompanyFundamental[] = [
+export const GLOBAL_COMMODITIES_FOREX: CompanyFundamental[] = ([
   // Commodities
   { id: 'GOLD', symbol: 'GOLD', name: 'Gold Spot Bullion (XAU/USD)', market: 'USA', sector: 'Commodities', currentPrice: 2735.40, priceChangePct: 0.45 },
   { id: 'SILVER', symbol: 'SILVER', name: 'Silver Spot Bullion (XAG/USD)', market: 'USA', sector: 'Commodities', currentPrice: 31.85, priceChangePct: 0.80 },
@@ -153,7 +153,7 @@ export const GLOBAL_COMMODITIES_FOREX: CompanyFundamental[] = [
   { id: 'USDCHF', symbol: 'USDCHF', name: 'US Dollar / Swiss Franc', market: 'USA', sector: 'Forex', currentPrice: 0.8850, priceChangePct: -0.05 },
   { id: 'AUDUSD', symbol: 'AUDUSD', name: 'Australian Dollar / USD', market: 'USA', sector: 'Forex', currentPrice: 0.6650, priceChangePct: 0.30 },
   { id: 'NZDUSD', symbol: 'NZDUSD', name: 'New Zealand Dollar / USD', market: 'USA', sector: 'Forex', currentPrice: 0.5920, priceChangePct: 0.22 },
-];
+] as unknown as CompanyFundamental[]);
 
 export function SmcScannerView({
   companies,
