@@ -246,8 +246,8 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Send Alert Endpoint
-  if (url.pathname === '/send' && req.method === 'POST') {
+  // Send Alert or OTP Endpoint
+  if ((url.pathname === '/send' || url.pathname === '/send-otp') && req.method === 'POST') {
     let body = '';
     req.on('data', (chunk) => {
       body += chunk;
@@ -258,7 +258,7 @@ const server = http.createServer(async (req, res) => {
       try {
         const data = JSON.parse(body || '{}');
         const rawPhone = String(data.phone || '').trim();
-        const text = String(data.text || '').trim();
+        const text = String(data.text || (data.otp ? `Your MI-007 Verification OTP is: ${data.otp}` : '')).trim();
 
         if (!rawPhone || !text) {
           res.writeHead(400, { 'Content-Type': 'application/json' });

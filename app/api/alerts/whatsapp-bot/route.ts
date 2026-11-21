@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
           await fetch(`${externalGateway.replace(/\/$/, '')}/send-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, otp, message: `Your MI-007 Verification OTP is: ${otp}` }),
+            body: JSON.stringify({ phone, otp, text: `Your MI-007 Verification OTP is: ${otp}` }),
             signal: AbortSignal.timeout(5000),
           });
         } catch {
