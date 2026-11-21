@@ -166,7 +166,7 @@ export const DEFAULT_CHANNEL_SETTINGS: SmcAlertChannelSettings = {
   whatsappEnabled: false,
   whatsappProvider: 'selfhosted',
   whatsappPhone: '+918778123702',
-  selfhostedUrl: '',
+  selfhostedUrl: 'https://synthetixanalytics.com/whatsapp',
   callmebotApiKey: '',
   twilioAccountSid: DEFAULT_TWILIO_SID,
   twilioAuthToken: DEFAULT_TWILIO_TOKEN,
