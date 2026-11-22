@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { routeAndVerifyOtp } from '@/lib/otp/router';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rate = checkRateLimit('otp-verify', ip, 15, 10 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { ok: false, verified: false, error: `Too many verification attempts. Retry in ${rate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const challengeId = String(body.challenge_id || body.challengeId || '').trim();
     const otp = String(body.otp || body.code || '').trim();

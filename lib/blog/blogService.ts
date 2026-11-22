@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 export type BlogCategory = 'SMC Analysis' | 'Macro & Forex' | 'Commodities' | 'Crypto' | 'Order Flow & Institutional';
 
@@ -33,25 +34,67 @@ export interface BlogPost {
 
 export type BlogAuthRole = 'admin' | 'author' | 'none';
 
-// Secure Passkey Authentication
-export const ADMIN_PASSKEY = process.env.BLOG_ADMIN_PASSWORD || 'MI007_ADMIN_2026';
-export const AUTHOR_PASSKEYS = [
-  process.env.BLOG_AUTHOR_PASSWORD || 'ANALYST_DEV_2026',
-  'ANALYST_QUANT_2026',
-  'ANALYST_MACRO_2026',
-];
+// Secure Passkey Authentication — loaded strictly from environment variables (no hardcoded fallbacks)
+function getAdminPasskey(): string {
+  return (process.env.BLOG_ADMIN_PASSWORD || '').trim();
+}
+
+function getAuthorPasskeys(): string[] {
+  const rawList = [
+    process.env.BLOG_AUTHOR_PASSWORD || '',
+    ...(process.env.BLOG_AUTHOR_PASSWORDS || '').split(','),
+  ]
+    .map((k) => k.trim())
+    .filter(Boolean);
+  return Array.from(new Set(rawList));
+}
+
+function safeKeyEqual(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function isSafeHttpUrl(url: unknown): string | undefined {
+  if (typeof url !== 'string') return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return parsed.toString();
+    }
+  } catch {}
+  return undefined;
+}
+
+function sanitizeAuthor(author: BlogAuthor): BlogAuthor {
+  return {
+    name: String(author?.name || 'Analyst').trim().slice(0, 100),
+    role: String(author?.role || 'Market Analyst').trim().slice(0, 100),
+    avatar: isSafeHttpUrl(author?.avatar),
+    bio: author?.bio ? String(author.bio).trim().slice(0, 500) : undefined,
+    twitter: isSafeHttpUrl(author?.twitter),
+    linkedin: isSafeHttpUrl(author?.linkedin),
+  };
+}
 
 export function verifyBlogPasskey(passkey: string): { role: BlogAuthRole; authorKeyId: string } {
   const cleanKey = (passkey || '').trim();
   if (!cleanKey) return { role: 'none', authorKeyId: '' };
 
-  if (cleanKey === ADMIN_PASSKEY) {
+  const adminKey = getAdminPasskey();
+  if (adminKey && safeKeyEqual(cleanKey, adminKey)) {
     return { role: 'admin', authorKeyId: 'admin' };
   }
 
-  const authorIdx = AUTHOR_PASSKEYS.indexOf(cleanKey);
-  if (authorIdx !== -1) {
-    return { role: 'author', authorKeyId: `author_${authorIdx + 1}` };
+  const authorKeys = getAuthorPasskeys();
+  for (let i = 0; i < authorKeys.length; i++) {
+    if (safeKeyEqual(cleanKey, authorKeys[i])) {
+      return { role: 'author', authorKeyId: `author_${i + 1}` };
+    }
   }
 
   return { role: 'none', authorKeyId: '' };
@@ -314,10 +357,18 @@ export async function createBlogPost(
   const readTimeMinutes = Math.max(1, Math.round(wordCount / 200));
 
   const newPost: BlogPost = {
-    ...data,
-    id: `post-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    id: `post-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
     slug,
+    title: String(data.title).trim().slice(0, 200),
+    summary: String(data.summary || '').trim().slice(0, 500),
+    content: String(data.content),
+    coverImage: isSafeHttpUrl(data.coverImage),
+    category: data.category,
+    tags: Array.isArray(data.tags) ? data.tags.map((t) => String(t).trim().slice(0, 40)).filter(Boolean).slice(0, 12) : [],
+    author: sanitizeAuthor(data.author),
     authorKeyId: role === 'admin' ? 'admin' : authorKeyId,
+    status: data.status === 'draft' ? 'draft' : 'published',
+    featured: role === 'admin' ? Boolean(data.featured) : false,
     publishedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     readTimeMinutes,
@@ -359,9 +410,20 @@ export async function updateBlogPost(
     readTimeMinutes = Math.max(1, Math.round(wordCount / 200));
   }
 
+  // Explicitly allowlist mutable fields to prevent mass assignment (cannot overwrite id, authorKeyId, views, publishedAt)
   const updated: BlogPost = {
     ...existing,
-    ...updates,
+    ...(updates.title !== undefined ? { title: String(updates.title).trim().slice(0, 200) } : {}),
+    ...(updates.summary !== undefined ? { summary: String(updates.summary).trim().slice(0, 500) } : {}),
+    ...(updates.content !== undefined ? { content: String(updates.content) } : {}),
+    ...(updates.coverImage !== undefined ? { coverImage: isSafeHttpUrl(updates.coverImage) } : {}),
+    ...(updates.category !== undefined ? { category: updates.category } : {}),
+    ...(Array.isArray(updates.tags)
+      ? { tags: updates.tags.map((t) => String(t).trim().slice(0, 40)).filter(Boolean).slice(0, 12) }
+      : {}),
+    ...(updates.author !== undefined ? { author: sanitizeAuthor(updates.author) } : {}),
+    ...(updates.status === 'published' || updates.status === 'draft' ? { status: updates.status } : {}),
+    ...(role === 'admin' && updates.featured !== undefined ? { featured: Boolean(updates.featured) } : {}),
     readTimeMinutes,
     updatedAt: new Date().toISOString(),
   };

@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { routeAndVerifyOtp } from '@/lib/otp/router';
+import {
+  attachSessionCookie,
+  findUserByEmail,
+  findUserByPhone,
+  toPublicUser,
+  upsertUser,
+  verifyPassword,
+} from '@/lib/auth/serverAuth';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rate = checkRateLimit('auth-login', ip, 15, 15 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { ok: false, error: `Too many login attempts. Retry in ${rate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const loginType = body.type || (body.phone ? 'phone_otp' : 'email_password');
     const email = String(body.email || '').trim().toLowerCase();
@@ -31,30 +50,38 @@ export async function POST(req: NextRequest) {
       if (!verifyRes.ok) {
         return NextResponse.json(
           { ok: false, error: verifyRes.message || 'Invalid or expired OTP code.' },
-          { status: 400 }
+          { status: 401 }
         );
       }
 
-      const cleanPhone = phone.startsWith('+') ? phone : `+${phone}`;
-      const user = {
-        id: `USR-${Date.now().toString(36).toUpperCase()}`,
-        name: body.name || 'MI-007 Trader',
-        email: email || `${cleanPhone.replace(/[^0-9]/g, '')}@mi007.terminal`,
-        phone: cleanPhone,
-        phoneVerified: true,
-        role: 'Pro Trader',
-        deskId: `DESK-${Math.floor(100 + Math.random() * 900)}`,
-        createdAt: new Date().toISOString(),
-      };
+      const cleanPhone = phone.startsWith('+') ? phone : `+${phone.replace(/[\s+()\-]/g, '')}`;
+      let record = findUserByPhone(cleanPhone);
+      if (!record) {
+        record = upsertUser({
+          id: `USR-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`,
+          name: String(body.name || 'MI-007 Trader').trim().slice(0, 80),
+          email: email || `${cleanPhone.replace(/[^0-9]/g, '')}@mi007.terminal`,
+          phone: cleanPhone,
+          phoneVerified: true,
+          role: 'Pro Trader',
+          deskId: `DESK-${crypto.randomInt(100, 1000)}`,
+          createdAt: new Date().toISOString(),
+        });
+      } else if (!record.phoneVerified) {
+        record = upsertUser({ ...record, phoneVerified: true });
+      }
 
-      return NextResponse.json({
+      const publicUser = toPublicUser(record);
+      const res = NextResponse.json({
         ok: true,
         message: 'Authenticated via WhatsApp OTP successfully.',
-        user,
+        user: publicUser,
       });
+      attachSessionCookie(res, publicUser);
+      return res;
     }
 
-    // Email + Password login
+    // Email + Password login (strict server-side password verification)
     if (!email || !email.includes('@')) {
       return NextResponse.json(
         { ok: false, error: 'Please enter a valid email address.' },
@@ -62,33 +89,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!password || password.length < 4) {
+    if (!password) {
       return NextResponse.json(
         { ok: false, error: 'Please enter your password.' },
         { status: 400 }
       );
     }
 
-    const userName = email.split('@')[0].toUpperCase();
-    const user = {
-      id: `USR-${Date.now().toString(36).toUpperCase()}`,
-      name: userName || 'QUANT-TRADER',
-      email,
-      phone: phone || '+918778123702',
-      phoneVerified: Boolean(phone),
-      role: 'Pro Trader',
-      deskId: `DESK-${Math.floor(100 + Math.random() * 900)}`,
-      createdAt: new Date().toISOString(),
-    };
+    const existing = findUserByEmail(email);
+    if (!existing || !existing.passwordHash || !verifyPassword(password, existing.passwordHash)) {
+      return NextResponse.json(
+        { ok: false, error: 'Invalid email or password.' },
+        { status: 401 }
+      );
+    }
 
-    return NextResponse.json({
+    const publicUser = toPublicUser(existing);
+    const res = NextResponse.json({
       ok: true,
       message: 'Logged in successfully.',
-      user,
+      user: publicUser,
     });
-  } catch (err: any) {
+    attachSessionCookie(res, publicUser);
+    return res;
+  } catch {
     return NextResponse.json(
-      { ok: false, error: err?.message || 'Login failed.' },
+      { ok: false, error: 'Login failed.' },
       { status: 500 }
     );
   }

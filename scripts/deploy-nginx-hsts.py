@@ -35,10 +35,11 @@ server {
     # Modern Security Headers & Strict HSTS
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
     add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
 
-    client_max_body_size 50M;
+    client_max_body_size 10M;
 
     proxy_http_version 1.1;
     proxy_set_header Host $host;
@@ -48,20 +49,11 @@ server {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
 
-    # WhatsApp Bot Gateway
+    # WhatsApp Bot Gateway — internal loopback only (never expose publicly)
     location /whatsapp/ {
-        if ($request_method = 'OPTIONS') {
-            add_header 'Access-Control-Allow-Origin' '*' always;
-            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
-            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
-            add_header 'Access-Control-Max-Age' 1728000;
-            add_header 'Content-Type' 'text/plain; charset=utf-8';
-            add_header 'Content-Length' 0;
-            return 204;
-        }
-        add_header 'Access-Control-Allow-Origin' '*' always;
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
-        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+        allow 127.0.0.1;
+        allow ::1;
+        deny all;
 
         proxy_pass http://127.0.0.1:5050/;
         proxy_http_version 1.1;
@@ -73,20 +65,23 @@ server {
         proxy_connect_timeout 60s;
     }
 
-    # Trade Engine API Routes
-    location ~ ^/(candles|live-prices|crypto-prices|macro-data|search|instruments|historical|crypto|subscribe|coingecko-historical-data|us|news|economic-calendar|notifications|quote|quotes|smc|fno) {
+    # Trade Engine Public Read-Only API Routes (subscribe & instruments removed from public exposure)
+    location ~ ^/(candles|live-prices|crypto-prices|macro-data|search|historical|crypto|coingecko-historical-data|us|news|economic-calendar|notifications|quote|quotes|smc|fno) {
+        limit_except GET HEAD OPTIONS {
+            deny all;
+        }
         if ($request_method = 'OPTIONS') {
-            add_header 'Access-Control-Allow-Origin' '*' always;
-            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
-            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+            add_header 'Access-Control-Allow-Origin' 'https://marketintelligence-007.com' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
             add_header 'Access-Control-Max-Age' 1728000;
             add_header 'Content-Type' 'text/plain; charset=utf-8';
             add_header 'Content-Length' 0;
             return 204;
         }
-        add_header 'Access-Control-Allow-Origin' '*' always;
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
-        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+        add_header 'Access-Control-Allow-Origin' 'https://marketintelligence-007.com' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
 
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;

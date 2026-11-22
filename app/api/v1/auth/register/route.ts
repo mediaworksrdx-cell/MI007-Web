@@ -1,16 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import {
+  attachSessionCookie,
+  findUserByEmail,
+  hashPassword,
+  toPublicUser,
+  upsertUser,
+} from '@/lib/auth/serverAuth';
+import { routeGetStatus } from '@/lib/otp/router';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rate = checkRateLimit('auth-register', ip, 10, 15 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { ok: false, error: `Too many registration attempts. Retry in ${rate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
-    const name = String(body.name || '').trim();
+    const name = String(body.name || '').trim().slice(0, 80);
     const phone = String(body.phone || body.mobile || '').trim();
     const email = String(body.email || '').trim().toLowerCase();
     const password = String(body.password || '');
-    const phoneVerified = Boolean(body.phoneVerified);
+    const challengeId = String(body.challenge_id || body.challengeId || '').trim();
 
     if (!name || name.length < 2) {
       return NextResponse.json(
@@ -34,35 +52,60 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (password && password.length < 6) {
+    if (!password || password.length < 8) {
       return NextResponse.json(
-        { ok: false, error: 'Password must be at least 6 characters long.' },
+        { ok: false, error: 'Password must be at least 8 characters long.' },
         { status: 400 }
       );
     }
 
-    const userId = `USR-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
-    const deskId = `DESK-${Math.floor(100 + Math.random() * 900)}`;
+    if (findUserByEmail(email)) {
+      return NextResponse.json(
+        { ok: false, error: 'An account with this email already exists.' },
+        { status: 409 }
+      );
+    }
 
-    const user = {
+    // Never trust client-supplied phoneVerified; derive strictly from server-verified OTP challenge
+    let phoneVerified = false;
+    if (challengeId) {
+      const challengeStatus = routeGetStatus(challengeId);
+      if (
+        challengeStatus &&
+        challengeStatus.verified &&
+        !challengeStatus.expired &&
+        challengeStatus.destination.replace(/[\s+()\-]/g, '') === cleanPhone
+      ) {
+        phoneVerified = true;
+      }
+    }
+
+    const userId = `USR-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+    const deskId = `DESK-${crypto.randomInt(100, 1000)}`;
+
+    const record = upsertUser({
       id: userId,
       name,
       email,
-      phone: phone.startsWith('+') ? phone : `+${phone}`,
+      phone: phone.startsWith('+') ? phone : `+${cleanPhone}`,
       phoneVerified,
       role: 'Pro Trader',
       deskId,
+      passwordHash: hashPassword(password),
       createdAt: new Date().toISOString(),
-    };
+    });
 
-    return NextResponse.json({
+    const publicUser = toPublicUser(record);
+    const res = NextResponse.json({
       ok: true,
       message: 'Account registered successfully.',
-      user,
+      user: publicUser,
     });
-  } catch (err: any) {
+    attachSessionCookie(res, publicUser);
+    return res;
+  } catch {
     return NextResponse.json(
-      { ok: false, error: err?.message || 'Registration failed.' },
+      { ok: false, error: 'Registration failed.' },
       { status: 500 }
     );
   }

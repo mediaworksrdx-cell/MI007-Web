@@ -15,13 +15,17 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const passkey = req.headers.get('x-blog-passkey') || req.nextUrl.searchParams.get('passkey') || '';
+    // Never accept passkey from URL query string (prevents credential leakage in logs/history/Referer)
+    const passkey = req.headers.get('x-blog-passkey') || '';
     const auth = verifyBlogPasskey(passkey);
-    // BL4 fix: only expose drafts to authenticated callers
     const allowDraft = auth.role === 'admin' || auth.role === 'author';
 
-    // Check slug first, then fallback to id — but never expose drafts to anonymous callers
     let post = await getBlogPostBySlug(id, { allowDraft });
+    // Enforce per-author draft isolation (prevent cross-author draft IDOR)
+    if (post && post.status === 'draft' && auth.role !== 'admin' && post.authorKeyId !== auth.authorKeyId) {
+      post = null;
+    }
+
     if (!post) {
       const all = await getAllBlogPosts({
         status: allowDraft ? 'all' : 'published',
@@ -36,9 +40,9 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, post });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Failed to fetch article' },
+      { success: false, error: 'Failed to fetch article' },
       { status: 500 }
     );
   }
@@ -88,7 +92,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const passkey = (req.headers.get('x-blog-passkey') || req.nextUrl.searchParams.get('passkey') || '').trim();
+    const passkey = (req.headers.get('x-blog-passkey') || '').trim();
 
     if (!passkey) {
       return NextResponse.json(

@@ -1,18 +1,29 @@
+import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
-// In-memory OTP store with 10-minute expiry
+// In-memory OTP store with 5-minute expiry and strict attempt caps
 interface OtpEntry {
-  otp: string;
+  otpHash: string;
+  salt: string;
   phone: string;
+  attempts: number;
+  maxAttempts: number;
   expiresAt: number;
 }
 
 const otpStore = new Map<string, OtpEntry>();
+const MAX_ATTEMPTS = 5;
+const OTP_TTL_MS = 5 * 60 * 1000;
 
 function cleanPhone(p: string): string {
   return String(p || '').replace(/[\s+()\-]/g, '');
+}
+
+function hashOtpCode(otp: string, salt: string): string {
+  return crypto.createHmac('sha256', salt).update(otp).digest('hex');
 }
 
 export async function GET(req: NextRequest) {
@@ -22,71 +33,92 @@ export async function GET(req: NextRequest) {
   }
 
   const entry = otpStore.get(phone);
-  const isValid = Boolean(entry && Date.now() < entry.expiresAt);
+  const isValid = Boolean(entry && Date.now() < entry.expiresAt && entry.attempts < entry.maxAttempts);
 
   return NextResponse.json({
     ok: true,
     status: 'ready',
     hasPendingOtp: isValid,
-    phone: `+${phone}`,
   });
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
     const body = await req.json().catch(() => ({}));
-    const action = body.action || 'send-otp';
-    const rawPhone = body.phone || '+918778123702';
+    const action = String(body.action || 'send-otp');
+    const rawPhone = String(body.phone || '').trim();
     const phone = cleanPhone(rawPhone);
 
-    if (!phone || phone.length < 8) {
+    if (!phone || phone.length < 8 || phone.length > 15) {
       return NextResponse.json(
-        { ok: false, error: 'Valid phone number with country code is required (e.g. +918778123702)' },
+        { ok: false, error: 'Valid international phone number (8-15 digits) is required.' },
         { status: 400 }
       );
     }
 
     // 1. Send OTP Action
     if (action === 'send-otp' || action === 'request-code') {
-      // Generate clean 6-digit numeric OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const sendRate = checkRateLimit('wa-bot-send', `${ip}:${phone}`, 5, 10 * 60_000);
+      if (!sendRate.allowed) {
+        return NextResponse.json(
+          { ok: false, error: `Too many OTP requests. Retry in ${sendRate.retryAfterSeconds}s.` },
+          { status: 429 }
+        );
+      }
+
+      // Cryptographically secure 6-digit numeric OTP
+      const otp = crypto.randomInt(100000, 1000000).toString();
+      const salt = crypto.randomBytes(16).toString('hex');
       otpStore.set(phone, {
-        otp,
+        otpHash: hashOtpCode(otp, salt),
+        salt,
         phone,
-        expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+        attempts: 0,
+        maxAttempts: MAX_ATTEMPTS,
+        expiresAt: Date.now() + OTP_TTL_MS,
       });
 
-      // Forward OTP send request to external WhatsApp gateway / GCP microservice
-      const externalGateway =
-        body.gatewayUrl || process.env.WHATSAPP_GATEWAY_URL || 'https://synthetixanalytics.com/whatsapp';
+      // Strictly use server-configured gateway URL (never accept client-supplied gatewayUrl — prevents SSRF & OTP exfiltration)
+      const externalGateway = process.env.WHATSAPP_GATEWAY_URL;
+      if (!externalGateway) {
+        otpStore.delete(phone);
+        return NextResponse.json(
+          { ok: false, error: 'WhatsApp gateway is not configured on the server.' },
+          { status: 503 }
+        );
+      }
 
       let gatewayDelivered = false;
       let gatewayError = '';
 
-      if (externalGateway && !externalGateway.includes('localhost')) {
-        try {
-          const gwRes = await fetch(`${externalGateway.replace(/\/$/, '')}/send-otp`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, otp, text: `Your MI-007 Verification OTP is: ${otp}` }),
-            signal: AbortSignal.timeout(8000),
-          });
-          const gwData = await gwRes.json().catch(() => ({}));
-          if (gwRes.ok && gwData?.ok) {
-            gatewayDelivered = true;
-          } else {
-            gatewayError = gwData?.error || `Gateway returned HTTP ${gwRes.status}`;
-          }
-        } catch (fetchErr: any) {
-          gatewayError = fetchErr?.message || 'Gateway network timeout';
+      try {
+        const gwHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (process.env.WHATSAPP_GATEWAY_SECRET) {
+          gwHeaders['Authorization'] = `Bearer ${process.env.WHATSAPP_GATEWAY_SECRET}`;
         }
+        const gwRes = await fetch(`${externalGateway.replace(/\/$/, '')}/send-otp`, {
+          method: 'POST',
+          headers: gwHeaders,
+          body: JSON.stringify({ phone, otp, text: `Your MI-007 Verification OTP is: ${otp}` }),
+          signal: AbortSignal.timeout(8000),
+        });
+        const gwData = await gwRes.json().catch(() => ({}));
+        if (gwRes.ok && gwData?.ok) {
+          gatewayDelivered = true;
+        } else {
+          gatewayError = gwData?.error || `Gateway returned HTTP ${gwRes.status}`;
+        }
+      } catch (fetchErr: any) {
+        gatewayError = fetchErr?.message || 'Gateway network timeout';
       }
 
-      if (!gatewayDelivered && gatewayError) {
+      if (!gatewayDelivered) {
+        otpStore.delete(phone);
         return NextResponse.json(
           {
             ok: false,
-            error: `WhatsApp Delivery Failed: ${gatewayError}. Ensure your WhatsApp bot is connected on the server.`,
+            error: `WhatsApp Delivery Failed: ${gatewayError}`,
           },
           { status: 502 }
         );
@@ -101,6 +133,14 @@ export async function POST(req: NextRequest) {
 
     // 2. Verify OTP Action
     if (action === 'verify-otp') {
+      const verifyRate = checkRateLimit('wa-bot-verify', `${ip}:${phone}`, 15, 10 * 60_000);
+      if (!verifyRate.allowed) {
+        return NextResponse.json(
+          { ok: false, error: `Too many verification attempts. Retry in ${verifyRate.retryAfterSeconds}s.` },
+          { status: 429 }
+        );
+      }
+
       const userOtp = String(body.otp || '').trim().replace(/[^0-9]/g, '');
       if (!userOtp || userOtp.length !== 6) {
         return NextResponse.json(
@@ -111,20 +151,38 @@ export async function POST(req: NextRequest) {
 
       const stored = otpStore.get(phone);
       if (!stored || Date.now() > stored.expiresAt) {
+        otpStore.delete(phone);
         return NextResponse.json(
           { ok: false, error: 'OTP has expired or was not requested. Click Resend OTP.' },
           { status: 400 }
         );
       }
 
-      if (stored.otp !== userOtp) {
+      if (stored.attempts >= stored.maxAttempts) {
+        otpStore.delete(phone);
         return NextResponse.json(
-          { ok: false, error: 'Incorrect OTP code. Please check and try again.' },
+          { ok: false, error: 'Too many incorrect attempts. Please request a new OTP.' },
+          { status: 429 }
+        );
+      }
+
+      stored.attempts += 1;
+      const candidateHash = hashOtpCode(userOtp, stored.salt);
+      const isMatch = crypto.timingSafeEqual(
+        Buffer.from(candidateHash, 'hex'),
+        Buffer.from(stored.otpHash, 'hex')
+      );
+
+      if (!isMatch) {
+        const remaining = stored.maxAttempts - stored.attempts;
+        if (remaining <= 0) otpStore.delete(phone);
+        return NextResponse.json(
+          { ok: false, error: `Incorrect OTP code. ${Math.max(0, remaining)} attempt(s) remaining.` },
           { status: 400 }
         );
       }
 
-      // OTP matches successfully
+      // OTP matches successfully — consume immediately
       otpStore.delete(phone);
       return NextResponse.json({
         ok: true,
@@ -134,8 +192,15 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Reset Action
+    // 3. Reset Action (requires admin secret to prevent unauthenticated OTP invalidation DoS)
     if (action === 'reset') {
+      const adminSecret = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
+      const token =
+        req.headers.get('x-mi007-admin-secret') ||
+        req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+      if (!adminSecret || !token || token.length !== adminSecret.length || !crypto.timingSafeEqual(Buffer.from(token), Buffer.from(adminSecret))) {
+        return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+      }
       otpStore.delete(phone);
       return NextResponse.json({
         ok: true,
@@ -144,9 +209,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: false, error: 'Unknown action' }, { status: 400 });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json(
-      { ok: false, error: err?.message || 'Failed to process WhatsApp OTP request' },
+      { ok: false, error: 'Failed to process WhatsApp OTP request' },
       { status: 500 }
     );
   }

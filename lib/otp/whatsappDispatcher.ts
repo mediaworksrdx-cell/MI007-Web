@@ -34,11 +34,15 @@ export async function dispatchWhatsAppOtp(
   const text = formatOtpMessage(otp);
 
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (process.env.WHATSAPP_GATEWAY_SECRET) {
+      headers['Authorization'] = `Bearer ${process.env.WHATSAPP_GATEWAY_SECRET}`;
+    }
     const res = await fetch(`${gatewayUrl}/send-otp`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         phone: cleanPhone,
         otp,

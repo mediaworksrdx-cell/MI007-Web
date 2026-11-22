@@ -170,61 +170,69 @@ async function sendWhatsApp(
   const rawClientPhone = (config?.whatsappPhone || '').trim();
   const clientPhone = rawClientPhone.replace(/[\s\-()]/g, '');
   const serverDefaultPhone = (process.env.WHATSAPP_DEFAULT_PHONE || '').replace(/[\s\-()]/g, '');
-  const targetPhone = clientPhone || serverDefaultPhone;
 
-  if (!targetPhone) {
-    return { ok: false, message: 'Recipient mobile number is required for WhatsApp alerts.' };
+  // Open-relay guard: Server WhatsApp credentials only send to server-configured owner number
+  // unless the caller presents a valid administrative secret token.
+  const targetPhone = isAdmin ? (clientPhone || serverDefaultPhone) : serverDefaultPhone;
+
+  if (!targetPhone || !isValidE164(targetPhone)) {
+    return {
+      ok: false,
+      message: isAdmin
+        ? 'Valid E.164 recipient mobile number is required for WhatsApp alerts.'
+        : 'Server WHATSAPP_DEFAULT_PHONE is not configured (or admin authorization required for custom recipients).',
+    };
   }
 
-  // 1. Meta WhatsApp Business Cloud API (Primary if configured)
+  // 1. Meta WhatsApp Business Cloud API (Strictly from environment variables — no hardcoded tokens)
   const metaToken =
     process.env.META_WHATSAPP_TOKEN ||
     process.env.WHATSAPP_ACCESS_TOKEN ||
     process.env.WHATSAPP_CLOUD_API_TOKEN ||
-    'EAGeZA22o5RjgBTAeFVEebg1fZBw2dlRV7vhHRCiRgtlnbONaLWV2YTSgfZBy4KjqBVdnMurRyPhHDpqEZCcZCIAjNPVtwV7N2FyXhJ0ynRiMSUhZAAat0Vqu7FKuAcx9602bYpv44SmtZCfox2WT2tkkGNYFqMb3UOWw9IRHMAyPC5Xrx3uHvw5JGGe6TFkxwZDZD';
+    '';
 
   const metaPhoneId =
     process.env.META_WHATSAPP_PHONE_ID ||
     process.env.WHATSAPP_PHONE_NUMBER_ID ||
     process.env.WHATSAPP_CLOUD_PHONE_ID ||
-    '1450292858169886';
+    '';
 
-  if (metaToken) {
-    const candidatePhoneIds = ['1450292858169886', metaPhoneId, '1377622642109282'].filter(Boolean);
+  if (metaToken && metaPhoneId) {
     const cleanTarget = targetPhone.replace(/[^0-9]/g, '');
-
-    for (const pid of candidatePhoneIds) {
-      try {
-        const metaRes = await fetch(`https://graph.facebook.com/v21.0/${pid}/messages`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${metaToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            recipient_type: 'individual',
-            to: cleanTarget,
-            type: 'text',
-            text: { preview_url: true, body: text },
-          }),
-          signal: AbortSignal.timeout(8000),
-        });
-        const metaData = await metaRes.json().catch(() => ({}));
-        if (metaRes.ok && metaData?.messages?.[0]?.id) {
-          return { ok: true, message: `Delivered via Meta WhatsApp Cloud API (+${cleanTarget})` };
-        }
-      } catch {}
-    }
+    try {
+      const metaRes = await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(metaPhoneId)}/messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${metaToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: cleanTarget,
+          type: 'text',
+          text: { preview_url: true, body: text },
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+      const metaData = await metaRes.json().catch(() => ({}));
+      if (metaRes.ok && metaData?.messages?.[0]?.id) {
+        return { ok: true, message: `Delivered via Meta WhatsApp Cloud API (+${cleanTarget})` };
+      }
+    } catch {}
   }
 
-  // 2. Collocated Gateway / GCP WhatsApp Microservice (Fallback)
-  const externalGateway = config?.selfhostedUrl || process.env.WHATSAPP_GATEWAY_URL;
+  // 2. Server-Configured WhatsApp Microservice (Never trust client-supplied gateway URLs to prevent SSRF)
+  const externalGateway = process.env.WHATSAPP_GATEWAY_URL;
   if (externalGateway) {
     try {
+      const gwHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (process.env.WHATSAPP_GATEWAY_SECRET) {
+        gwHeaders['Authorization'] = `Bearer ${process.env.WHATSAPP_GATEWAY_SECRET}`;
+      }
       const res = await fetch(`${externalGateway.replace(/\/$/, '')}/send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: gwHeaders,
         body: JSON.stringify({ phone: targetPhone, text }),
         signal: AbortSignal.timeout(8000),
       });
@@ -238,10 +246,9 @@ async function sendWhatsApp(
     } catch {}
   }
 
-  // 2. WhatsApp Business Level Alert Dispatch (Clean serverless response)
   return {
-    ok: true,
-    message: `Delivered to verified number (+${targetPhone}) via WhatsApp Business dispatch`,
+    ok: false,
+    message: 'WhatsApp delivery is not configured on the server (set META_WHATSAPP_TOKEN & META_WHATSAPP_PHONE_ID or WHATSAPP_GATEWAY_URL).',
   };
 }
 

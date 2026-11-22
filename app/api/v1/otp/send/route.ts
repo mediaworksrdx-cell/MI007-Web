@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { routeAndSendOtp } from '@/lib/otp/router';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rate = checkRateLimit('otp-send', ip, 5, 10 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { ok: false, error: `Too many OTP requests. Retry in ${rate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const destination = String(body.destination || body.phone || body.email || '').trim();
     const channel = (body.channel || (destination.includes('@') ? 'email' : 'whatsapp')) as 'whatsapp' | 'email';

@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyBlogPasskey } from '@/lib/blog/blogService';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rate = checkRateLimit('blog-auth', ip, 10, 15 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { success: false, error: `Too many authentication attempts. Retry in ${rate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const passkey = (body?.passkey || '').trim();
 
@@ -23,9 +33,9 @@ export async function POST(req: NextRequest) {
       authorKeyId,
       label: role === 'admin' ? 'Super Admin' : 'Author / Analyst',
     });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json(
-      { success: false, error: err?.message || 'Authentication failed' },
+      { success: false, error: 'Authentication failed' },
       { status: 500 }
     );
   }

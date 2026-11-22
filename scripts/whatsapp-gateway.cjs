@@ -8,6 +8,7 @@
  */
 
 const http = require('http');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
@@ -21,7 +22,20 @@ const {
 } = require('@whiskeysockets/baileys');
 
 const PORT = parseInt(process.env.PORT || '5050', 10);
+const HOST = process.env.HOST || '127.0.0.1';
+const GATEWAY_SECRET = (process.env.WHATSAPP_GATEWAY_SECRET || '').trim();
 const AUTH_DIR = path.resolve(__dirname, '..', 'whatsapp_auth');
+
+function isAuthorized(req) {
+  if (!GATEWAY_SECRET) return false;
+  const authHeader = String(req.headers['authorization'] || '');
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!token) return false;
+  const a = Buffer.from(token, 'utf8');
+  const b = Buffer.from(GATEWAY_SECRET, 'utf8');
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
 
 let sock = null;
 let connectionState = 'initializing';
@@ -146,19 +160,21 @@ async function startWhatsAppBot(requestedPhone = null) {
       }
     });
 
-    // Auto-request pairing code on startup if not registered
+    // Auto-request pairing code on startup only if PHONE env/arg is explicitly supplied
     if (!isRegistered) {
       connectionState = 'awaiting_pairing';
-      const defaultPhone = requestedPhone || process.env.PHONE || process.argv[2] || '+918838202279';
-      setTimeout(async () => {
-        if (!state.creds.registered && connectionState !== 'connected') {
-          try {
-            await requestPairing(defaultPhone);
-          } catch (e) {
-            console.log(`[WhatsApp Bot] Ready for pairing. Awaiting phone number on http://localhost:${PORT}/request-code or terminal.`);
+      const defaultPhone = requestedPhone || process.env.PHONE || process.argv[2] || '';
+      if (defaultPhone) {
+        setTimeout(async () => {
+          if (!state.creds.registered && connectionState !== 'connected') {
+            try {
+              await requestPairing(defaultPhone);
+            } catch {
+              console.log(`[WhatsApp Bot] Ready for pairing. Awaiting phone number on http://${HOST}:${PORT}/request-code or terminal.`);
+            }
           }
-        }
-      }, 2500);
+        }, 2500);
+      }
     }
   } catch (err) {
     isStarting = false;
@@ -166,20 +182,16 @@ async function startWhatsAppBot(requestedPhone = null) {
   }
 }
 
-// ── HTTP REST Server ──────────────────────────────────────────
+// ── HTTP REST Server (Bound to loopback + Bearer Auth) ───────
 const server = http.createServer(async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Private-Network', 'true');
-
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
+  // Never emit Access-Control-Allow-Origin: * or Access-Control-Allow-Private-Network: true
+  if (!isAuthorized(req)) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: 'Unauthorized (missing or invalid WHATSAPP_GATEWAY_SECRET)' }));
     return;
   }
 
-  const url = new URL(req.url, `http://localhost:${PORT}`);
+  const url = new URL(req.url, `http://${HOST}:${PORT}`);
 
   // Health / Status Endpoint
   if (url.pathname === '/status' || url.pathname === '/health') {
@@ -208,7 +220,7 @@ const server = http.createServer(async (req, res) => {
     req.on('end', async () => {
       try {
         const data = JSON.parse(body || '{}');
-        const phone = data.phone || process.env.PHONE || '+918838202279';
+        const phone = data.phone || process.env.PHONE || '';
         const result = await requestPairing(phone);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(result));
@@ -319,8 +331,11 @@ const server = http.createServer(async (req, res) => {
   res.end(JSON.stringify({ error: 'Endpoint not found' }));
 });
 
-server.listen(PORT, () => {
-  console.log(`[WhatsApp Gateway] Listening on http://localhost:${PORT}`);
+server.listen(PORT, HOST, () => {
+  if (!GATEWAY_SECRET) {
+    console.warn('[WhatsApp Gateway] WARNING: WHATSAPP_GATEWAY_SECRET is not set — all HTTP requests will be rejected with 401.');
+  }
+  console.log(`[WhatsApp Gateway] Listening on http://${HOST}:${PORT}`);
   startWhatsAppBot().catch((err) => {
     console.error('[WhatsApp Bot] Fatal initialization error:', err);
   });

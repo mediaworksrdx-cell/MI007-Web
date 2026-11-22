@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 const AARKAAI_BASE_URL =
   process.env.AARKAAI_BASE_URL ||
@@ -10,6 +11,15 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rate = checkRateLimit('aarkaai-stream', ip, 20, 5 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded. Retry in ${rate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const { query, sessionId = 'academy-mentor-session' } = body;
 

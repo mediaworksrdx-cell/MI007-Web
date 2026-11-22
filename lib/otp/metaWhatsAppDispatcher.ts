@@ -18,13 +18,13 @@ export async function dispatchMetaCloudOtp(
     process.env.META_WHATSAPP_TOKEN ||
     process.env.WHATSAPP_ACCESS_TOKEN ||
     process.env.WHATSAPP_CLOUD_API_TOKEN ||
-    'EAGeZA22o5RjgBTAeFVEebg1fZBw2dlRV7vhHRCiRgtlnbONaLWV2YTSgfZBy4KjqBVdnMurRyPhHDpqEZCcZCIAjNPVtwV7N2FyXhJ0ynRiMSUhZAAat0Vqu7FKuAcx9602bYpv44SmtZCfox2WT2tkkGNYFqMb3UOWw9IRHMAyPC5Xrx3uHvw5JGGe6TFkxwZDZD';
+    '';
 
   const phoneId =
     process.env.META_WHATSAPP_PHONE_ID ||
     process.env.WHATSAPP_PHONE_NUMBER_ID ||
     process.env.WHATSAPP_CLOUD_PHONE_ID ||
-    '1450292858169886';
+    '';
 
   const templateName =
     process.env.META_WHATSAPP_TEMPLATE_NAME || 'otp_verification';
@@ -46,10 +46,7 @@ export async function dispatchMetaCloudOtp(
     };
   }
 
-  // Attempt dispatch with primary sandbox phoneId (1450292858169886), then live phoneId (1377622642109282)
-  const candidatePhoneIds = ['1450292858169886', phoneId, '1377622642109282'].filter(
-    (v, i, a) => a.indexOf(v) === i
-  );
+  const candidatePhoneIds = [phoneId];
 
   let lastError = '';
 
