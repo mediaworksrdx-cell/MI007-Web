@@ -8,7 +8,7 @@ export interface Mi007Config {
 }
 
 export const DEFAULT_MI007_CONFIG: Mi007Config = {
-  enabled: false,
+  enabled: true,
   showSmc: true,
   showVolPro: true,
   showFibo: true,

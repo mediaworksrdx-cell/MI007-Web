@@ -144,7 +144,8 @@ export function renderMi007Overlay({
   }
 
   // ── 1B. Order Flow Volume Bubbles (Big Trades + Gold Ring on Passive Absorption) ──
-  if (showVolPro && data.volumeBubbles && data.volumeBubbles.length > 0) {
+  // Permanent across 100% of historical candles (volume surge >= 1.75x, gold ring on absorption >= 2.0x)
+  if (data.volumeBubbles && data.volumeBubbles.length > 0) {
     ctx.save();
     for (const b of data.volumeBubbles) {
       if (b.candleIndex < startIdx || b.candleIndex >= endIdx) continue;
@@ -232,11 +233,7 @@ export function renderMi007Overlay({
       }
       ctx.restore();
 
-      // Thick black horizontal Fibonacci lines + clean black-on-white labels
-      const hudClearX = showSmc ? Math.min(272 * dpr, chartW * 0.36) : 14 * dpr;
-      const labelX = Math.min(fibEndX - 135 * dpr, Math.max(fibStartX + 6 * dpr, hudClearX));
-      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
-
+      // Thick black horizontal Fibonacci lines
       for (const lvl of fib.levels) {
         const y = priceToY(lvl.price);
         if (y < 8 * dpr || y > chartH - 8 * dpr) continue;
@@ -252,20 +249,59 @@ export function renderMi007Overlay({
         ctx.lineTo(fibEndX, y);
         ctx.stroke();
         ctx.setLineDash([]);
+        ctx.restore();
+      }
 
+      // Clean anti-collision staggered badge layout (prevents solid black stacking)
+      const hudClearX = showSmc ? Math.min(272 * dpr, chartW * 0.36) : 14 * dpr;
+      const baseLabelX = Math.min(fibEndX - 135 * dpr, Math.max(fibStartX + 6 * dpr, hudClearX));
+      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+
+      const visibleFibLevels = fib.levels
+        .map(lvl => ({
+          ...lvl,
+          y: priceToY(lvl.price),
+          isKey: lvl.ratio === 0.0 || lvl.ratio === 0.5 || lvl.ratio === 0.618 || lvl.ratio === 0.786 || lvl.ratio === 1.0 || lvl.ratio === 1.272 || lvl.ratio === 1.618,
+        }))
+        .filter(l => l.y >= 8 * dpr && l.y <= chartH - 8 * dpr)
+        .sort((a, b) => a.y - b.y);
+
+      const minGapY = 16 * dpr;
+      let lastYCol0 = -999;
+      let lastYCol1 = -999;
+
+      for (let i = 0; i < visibleFibLevels.length; i++) {
+        const lvl = visibleFibLevels[i];
         const text = `${lvl.label} (${formatPrice(lvl.price)})`;
         const padX = 4 * dpr;
         const pillW = ctx.measureText(text).width + padX * 2;
         const pillH = 13 * dpr;
-        const px = Math.max(fibStartX + 4 * dpr, labelX);
-        const py = y - pillH - 2 * dpr;
 
+        let col = 0;
+        if (Math.abs(lvl.y - lastYCol0) < minGapY) {
+          if (Math.abs(lvl.y - lastYCol1) >= minGapY) {
+            col = 1;
+          } else if (!lvl.isKey) {
+            continue; // Skip minor intermediate levels if both slots collide
+          } else {
+            col = (i % 2 === 0) ? 0 : 1;
+          }
+        }
+
+        const colOffset = col === 0 ? 0 : pillW + 10 * dpr;
+        const px = Math.min(chartW - pillW - 6 * dpr, Math.max(fibStartX + 4 * dpr, baseLabelX + colOffset));
+        const py = Math.max(4 * dpr, Math.min(chartH - pillH - 4 * dpr, lvl.y - pillH / 2));
+
+        if (col === 0) lastYCol0 = py;
+        else lastYCol1 = py;
+
+        ctx.save();
         ctx.fillStyle = pillBg;
         ctx.beginPath();
         ctx.roundRect(px, py, pillW, pillH, 2 * dpr);
         ctx.fill();
-        ctx.strokeStyle = ink;
-        ctx.lineWidth = 1.0 * dpr;
+        ctx.strokeStyle = isDark ? '#475569' : '#94A3B8';
+        ctx.lineWidth = 0.9 * dpr;
         ctx.stroke();
 
         ctx.fillStyle = ink;
@@ -405,9 +441,9 @@ export function renderMi007Overlay({
   const cardY = 34 * dpr;
 
   if (showSmc && chartW >= 360 * dpr && chartH >= cardY + cardH + 20 * dpr) {
-    ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.96)';
-    ctx.strokeStyle = isDark ? 'rgba(51, 65, 85, 0.95)' : 'rgba(203, 213, 225, 0.95)';
-    ctx.lineWidth = 1.2 * dpr;
+    ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.88)';
+    ctx.strokeStyle = isDark ? 'rgba(51, 65, 85, 0.85)' : 'rgba(203, 213, 225, 0.85)';
+    ctx.lineWidth = 1.0 * dpr;
     ctx.beginPath();
     ctx.roundRect(cardX, cardY, cardW, cardH, 8 * dpr);
     ctx.fill();
