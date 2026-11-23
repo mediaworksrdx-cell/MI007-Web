@@ -70,12 +70,52 @@ export async function dispatchEmailOtp(
   otp: string
 ): Promise<EmailDispatchResult> {
   const cleanEmail = String(email || '').trim().toLowerCase();
+
+  // 1. Primary: Resend HTTP API (zero-friction server-side delivery for all clients)
+  const resendKey = (process.env.RESEND_API_KEY || '').trim();
+  if (resendKey) {
+    const fromHeader =
+      (process.env.RESEND_FROM || '').trim() ||
+      'MI-007 Security <onboarding@resend.dev>';
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: fromHeader,
+          to: [cleanEmail],
+          subject: 'Your MI-007 verification code',
+          text: formatOtpEmailText(otp),
+          html: formatOtpEmailHtml(otp),
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.id) {
+        return { ok: true, messageId: data.id };
+      }
+      return {
+        ok: false,
+        error: data?.message || `Resend API returned HTTP ${res.status}`,
+      };
+    } catch (err: any) {
+      return {
+        ok: false,
+        error: err?.message || 'Resend API network timeout',
+      };
+    }
+  }
+
+  // 2. Fallback: SMTP (Gmail / Brevo / Custom)
   const transporter = getMailTransporter();
 
   if (!transporter) {
     return {
       ok: false,
-      error: 'SMTP credentials not configured on server (SMTP_USER / SMTP_PASS).',
+      error: 'Email delivery not configured on server (set RESEND_API_KEY or SMTP_USER/SMTP_PASS).',
     };
   }
 

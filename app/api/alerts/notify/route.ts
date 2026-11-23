@@ -261,12 +261,72 @@ async function sendWhatsApp(
 async function sendGmail(
   payload: NotifyAlertPayload,
   plainText: string,
-  isAdmin: boolean
+  isAdmin: boolean,
+  verifiedUserEmail?: string
 ): Promise<{ ok: boolean; message: string }> {
   const clientUser = (payload.config?.gmailUser || '').trim();
   const clientPass = (payload.config?.gmailAppPassword || '').replace(/\s+/g, '');
   const serverUser = (process.env.GMAIL_USER || '').trim();
   const serverPass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '');
+  const resendKey = (process.env.RESEND_API_KEY || '').trim();
+
+  // Daily send cap protection
+  const now = Date.now();
+  if (now > dailyEmailResetAt) {
+    dailyEmailCount = 0;
+    dailyEmailResetAt = now + 24 * 3600_000;
+  }
+  if (dailyEmailCount >= 250) {
+    return { ok: false, message: 'Daily email notification limit reached (250/day). Try again tomorrow.' };
+  }
+
+  const dirTag = payload.alert.direction === 'BULLISH' ? 'LONG' : 'SHORT';
+  const safeSymbol = esc(payload.alert.symbol);
+  const safeTf = esc(payload.alert.timeframe);
+  const safeStatus = esc(payload.alert.statusLabel);
+  const subject = `${payload.isTest ? '[TEST] ' : ''}MI-007 SMC ${dirTag}: ${safeSymbol} (${safeTf}) — ${safeStatus}`;
+
+  // 1. Resend HTTP API (Primary zero-friction server-side delivery for signed-in users & owner)
+  if (resendKey && !(clientUser && clientPass)) {
+    const defaultTo = (process.env.ALERT_DEFAULT_EMAIL || process.env.GMAIL_TO || serverUser || '').trim();
+    const to = isAdmin
+      ? ((payload.config?.gmailTo || verifiedUserEmail || defaultTo).trim())
+      : ((verifiedUserEmail || defaultTo).trim());
+
+    if (!to || !to.includes('@')) {
+      return { ok: false, message: 'Sign in with your email (or set ALERT_DEFAULT_EMAIL on server) to receive email alerts.' };
+    }
+
+    const fromHeader =
+      (process.env.RESEND_FROM || '').trim() ||
+      'MI-007 SMC Alerts <onboarding@resend.dev>';
+
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: fromHeader,
+          to: [to],
+          subject,
+          text: plainText,
+          html: buildHtmlEmail(payload),
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.id) {
+        dailyEmailCount++;
+        return { ok: true, message: `Email sent to ${to} via Resend` };
+      }
+      return { ok: false, message: data?.message || `Resend API returned HTTP ${res.status}` };
+    } catch (err: any) {
+      return { ok: false, message: err?.message || 'Resend email send failed' };
+    }
+  }
 
   let user = '';
   let pass = '';
@@ -277,35 +337,24 @@ async function sendGmail(
     pass = clientPass;
     to = (payload.config?.gmailTo || clientUser).trim();
   } else if (serverUser && serverPass) {
-    // Open-relay guard (AL1): Server environment credentials ONLY send to server-configured owner address
-    // (GMAIL_TO or GMAIL_USER) unless request has valid administrative secret token.
+    // Open-relay guard (AL1): Server SMTP credentials send only to signed-in user's own email or configured owner address unless isAdmin.
     user = serverUser;
     pass = serverPass;
-    const configuredTo = (process.env.GMAIL_TO || serverUser).trim();
+    const configuredTo = (process.env.ALERT_DEFAULT_EMAIL || process.env.GMAIL_TO || serverUser).trim();
     if (isAdmin && payload.config?.gmailTo) {
       to = payload.config.gmailTo.trim();
     } else {
-      to = configuredTo;
+      to = verifiedUserEmail || configuredTo;
     }
   } else {
     return {
       ok: false,
-      message: 'Gmail credentials missing. Enter your Gmail + 16-char App Password in settings.',
+      message: 'Email delivery not configured on server (set RESEND_API_KEY or Gmail SMTP).',
     };
   }
 
   if (!to || !to.includes('@')) {
-    return { ok: false, message: 'A valid recipient Gmail address is required.' };
-  }
-
-  // Daily send cap protection (Gmail limit is ~500/day)
-  const now = Date.now();
-  if (now > dailyEmailResetAt) {
-    dailyEmailCount = 0;
-    dailyEmailResetAt = now + 24 * 3600_000;
-  }
-  if (dailyEmailCount >= 250) {
-    return { ok: false, message: 'Daily email notification limit reached (250/day). Try again tomorrow.' };
+    return { ok: false, message: 'A valid recipient email address is required.' };
   }
 
   try {
@@ -316,12 +365,6 @@ async function sendGmail(
       greetingTimeout: 5000,
       socketTimeout: 10000,
     });
-
-    const dirTag = payload.alert.direction === 'BULLISH' ? 'LONG' : 'SHORT';
-    const safeSymbol = esc(payload.alert.symbol);
-    const safeTf = esc(payload.alert.timeframe);
-    const safeStatus = esc(payload.alert.statusLabel);
-    const subject = `${payload.isTest ? '[TEST] ' : ''}MI-007 SMC ${dirTag}: ${safeSymbol} (${safeTf}) — ${safeStatus}`;
 
     await transporter.sendMail({
       from: `"MI-007 SMC Alerts" <${user}>`,
@@ -382,8 +425,9 @@ export async function POST(req: NextRequest) {
       );
     }
     if (payload.channels?.gmail) {
+      const verifiedUserEmail = authUser?.email && authUser.email.includes('@') ? authUser.email : undefined;
       tasks.push(
-        sendGmail(payload, plainText, isAdmin).then((r) => {
+        sendGmail(payload, plainText, isAdmin, verifiedUserEmail).then((r) => {
           results.gmail = r;
         })
       );
