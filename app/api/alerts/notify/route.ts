@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { getAuthenticatedUser } from '@/lib/auth/serverAuth';
 
 export interface NotifyAlertPayload {
   isTest?: boolean;
@@ -165,15 +166,20 @@ function isValidE164(phone: string): boolean {
 async function sendWhatsApp(
   text: string,
   config: NotifyAlertPayload['config'],
-  isAdmin: boolean
+  isAdmin: boolean,
+  verifiedUserPhone?: string
 ): Promise<{ ok: boolean; message: string }> {
   const rawClientPhone = (config?.whatsappPhone || '').trim();
   const clientPhone = rawClientPhone.replace(/[\s\-()]/g, '');
   const serverDefaultPhone = (process.env.WHATSAPP_DEFAULT_PHONE || '').replace(/[\s\-()]/g, '');
 
-  // Open-relay guard: Server WhatsApp credentials only send to server-configured owner number
-  // unless the caller presents a valid administrative secret token.
-  const targetPhone = isAdmin ? (clientPhone || serverDefaultPhone) : serverDefaultPhone;
+  // Open-relay guard:
+  // - Admin secret can send to any valid E.164 recipient.
+  // - Signed-in user (valid HttpOnly mi007_session) can send to their own verified phone number.
+  // - Otherwise only server-configured WHATSAPP_DEFAULT_PHONE is allowed.
+  const targetPhone = isAdmin
+    ? (clientPhone || serverDefaultPhone)
+    : (verifiedUserPhone || serverDefaultPhone);
 
   if (!targetPhone || !isValidE164(targetPhone)) {
     return {
@@ -357,6 +363,10 @@ export async function POST(req: NextRequest) {
     }
 
     const isAdmin = hasAdminAuth(req);
+    const authUser = getAuthenticatedUser(req);
+    const verifiedUserPhone = authUser?.phoneVerified && authUser.phone
+      ? authUser.phone.replace(/[\s\-()]/g, '')
+      : undefined;
     const plainText = buildPlainText(payload);
     const results: {
       whatsapp?: { ok: boolean; message: string };
@@ -366,7 +376,7 @@ export async function POST(req: NextRequest) {
     const tasks: Promise<void>[] = [];
     if (payload.channels?.whatsapp) {
       tasks.push(
-        sendWhatsApp(plainText, payload.config, isAdmin).then((r) => {
+        sendWhatsApp(plainText, payload.config, isAdmin, verifiedUserPhone).then((r) => {
           results.whatsapp = r;
         })
       );

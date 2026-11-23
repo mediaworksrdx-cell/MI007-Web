@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export interface StoredUserRecord {
   id: string;
@@ -154,4 +154,24 @@ export function attachSessionCookie(res: NextResponse, user: PublicUserProfile):
     path: '/',
     maxAge: SESSION_TTL_SECONDS,
   });
+}
+
+export function getAuthenticatedUser(req: NextRequest): StoredUserRecord | null {
+  try {
+    const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+    if (!token) return null;
+    const parts = token.split('.');
+    if (parts.length !== 2) return null;
+    const [payload, sig] = parts;
+    const expectedSig = crypto.createHmac('sha256', getSessionSecret()).update(payload).digest('base64url');
+    if (sig.length !== expectedSig.length) return null;
+    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) return null;
+
+    const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (!decoded?.sub || !decoded?.exp || Date.now() / 1000 > decoded.exp) return null;
+
+    return loadUsers().find((u) => u.id === decoded.sub) || null;
+  } catch {
+    return null;
+  }
 }
