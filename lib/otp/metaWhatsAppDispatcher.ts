@@ -53,15 +53,21 @@ export async function dispatchMetaCloudOtp(
   for (const pid of candidatePhoneIds) {
     const url = `https://graph.facebook.com/v21.0/${pid}/messages`;
 
-    // 1. Direct formatted text message
-    const textPayload = {
+    // 1. Approved Authentication Template FIRST (required by Meta for 24/7 delivery outside 24h window)
+    const templatePayload = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
       to: cleanPhone,
-      type: 'text',
-      text: {
-        preview_url: false,
-        body: `MI-007 Verification\n\nYour verification code is:\n*${otp}*\n\nValid for 5 minutes.\nDo not share this code with anyone.\n\nMARKET INTELLIGENCE AI — MI-007\nSynthetix Analytics`,
+      type: 'template',
+      template: {
+        name: templateName,
+        language: { code: process.env.META_WHATSAPP_TEMPLATE_LANG || 'en_US' },
+        components: [
+          {
+            type: 'body',
+            parameters: [{ type: 'text', text: otp }],
+          },
+        ],
       },
     };
 
@@ -72,28 +78,22 @@ export async function dispatchMetaCloudOtp(
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(textPayload),
+        body: JSON.stringify(templatePayload),
         signal: AbortSignal.timeout(8000),
       });
 
       let data = await res.json().catch(() => ({}));
 
-      // If text message requires template, fallback to template payload
+      // 2. Fallback to direct formatted text message (works inside 24h customer-service window)
       if (!res.ok) {
-        const templatePayload = {
+        const textPayload = {
           messaging_product: 'whatsapp',
           recipient_type: 'individual',
           to: cleanPhone,
-          type: 'template',
-          template: {
-            name: templateName,
-            language: { code: 'en_US' },
-            components: [
-              {
-                type: 'body',
-                parameters: [{ type: 'text', text: otp }],
-              },
-            ],
+          type: 'text',
+          text: {
+            preview_url: false,
+            body: `MI-007 Verification\n\nYour verification code is:\n*${otp}*\n\nValid for 5 minutes.\nDo not share this code with anyone.\n\nMARKET INTELLIGENCE AI — MI-007\nSynthetix Analytics`,
           },
         };
 
@@ -103,7 +103,7 @@ export async function dispatchMetaCloudOtp(
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(templatePayload),
+          body: JSON.stringify(textPayload),
           signal: AbortSignal.timeout(8000),
         });
 
