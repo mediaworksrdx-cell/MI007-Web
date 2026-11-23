@@ -204,6 +204,7 @@ export function CandlestickCanvas({
   const [quickBarPos, setQuickBarPos] = useState<{ x: number; y: number } | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [inspectedSmc, setInspectedSmc] = useState<SmcInspectorData | null>(null);
+  const [mi007HudCollapsed, setMi007HudCollapsed] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [contextMenuDrawing, setContextMenuDrawing] = useState<DrawingItem | null>(null);
   const [dpr, setDpr] = useState(1);
@@ -1376,6 +1377,7 @@ export function CandlestickCanvas({
           showMi007,
           mi007Config,
           mi007Data,
+          mi007HudCollapsed,
           showVolumeProfile,
           showFnoOverlay, fnoLevels,
           strategyOverlay,
@@ -1400,7 +1402,7 @@ export function CandlestickCanvas({
       }
     };
   }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, smcConfig, memoizedSmcData, showOrderFlow, orderFlowConfig, orderFlowData,
-      showMi007, mi007Config, mi007Data, showVolumeProfile,
+      showMi007, mi007Config, mi007Data, mi007HudCollapsed, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, isAllDrawingsHidden, startIdx, endIdx, priceScaleRatio, priceOffset, size, dpr, clockTick, theme]);
@@ -2937,6 +2939,33 @@ export function CandlestickCanvas({
           onClose={() => setInspectedSmc(null)}
         />
       )}
+      {/* ── Layer 7: MI-007 HUD Card Collapse / Expand Button ── */}
+      {showMi007 && mi007Data && mi007Config?.showSmc !== false && size.w >= 440 && (() => {
+        const chartWCss = Math.max(0, size.w - CHART_RIGHT_MARGIN);
+        const hasLeftVol = Boolean(mi007Config?.showVolPro !== false && (mi007Data.volumeProfile?.bins?.length ?? 0) > 0 && (mi007Data.volumeProfile?.fixedRange?.totalVolume ?? 0) > 0);
+        const volMaxWCss = Math.min(72, chartWCss * 0.10);
+        const deltaMaxWCss = Math.min(46, chartWCss * 0.065);
+        const cardWCss = Math.min(286, chartWCss * 0.36);
+        const leftVolClearXCss = hasLeftVol ? 2 + deltaMaxWCss + volMaxWCss + 10 : 12;
+        const cardXCss = Math.min(leftVolClearXCss, Math.max(12, chartWCss - cardWCss - 12));
+        const btnLeft = Math.round(cardXCss + cardWCss - 24);
+        const btnTop = mi007HudCollapsed ? 39 : 41;
+        return (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMi007HudCollapsed((v) => !v);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            title={mi007HudCollapsed ? 'Expand MI-007 Checklist' : 'Minimize MI-007 Checklist'}
+            style={{ left: `${btnLeft}px`, top: `${btnTop}px` }}
+            className="absolute z-20 w-4.5 h-4.5 rounded flex items-center justify-center text-[11px] font-mono font-bold bg-slate-200/80 dark:bg-slate-800/90 hover:bg-emerald-500 hover:text-white text-slate-600 dark:text-slate-300 border border-slate-300/70 dark:border-slate-700 transition-colors cursor-pointer select-none leading-none"
+          >
+            {mi007HudCollapsed ? '+' : '−'}
+          </button>
+        );
+      })()}
     </div>
   );
 }

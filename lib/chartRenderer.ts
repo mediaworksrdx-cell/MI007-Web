@@ -4840,6 +4840,7 @@ export function renderChart(
       ctx,
       data: options.mi007Data,
       config: options.mi007Config,
+      hudCollapsed: Boolean(options.mi007HudCollapsed),
       candles,
       startIdx,
       endIdx,

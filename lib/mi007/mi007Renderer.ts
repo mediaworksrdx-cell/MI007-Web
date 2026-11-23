@@ -5,6 +5,7 @@ export interface RenderMi007Params {
   ctx: CanvasRenderingContext2D;
   data: Mi007AnalysisResult;
   config?: Mi007Config;
+  hudCollapsed?: boolean;
   candles: Candle[];
   startIdx: number;
   endIdx: number;
@@ -21,6 +22,7 @@ export function renderMi007Overlay({
   ctx,
   data,
   config,
+  hudCollapsed = false,
   candles,
   startIdx,
   endIdx,
@@ -99,48 +101,79 @@ export function renderMi007Overlay({
     ctx.fillText(profileLabel, leftEdge + 2 * dpr, 6 * dpr);
 
     // Key Institutional Horizontal Bands: POC (Gold), Prior Daily POC (Yellow), VAH & VAL
-    const drawKeyLevel = (price: number, label: string, color: string, dashed: boolean, thick = false) => {
+    // De-collided vertical badges + subtle secondary dashed lines to keep candlesticks uncluttered
+    const vpLevels: Array<{ price: number; label: string; color: string; dashed: boolean; thick: boolean; y: number; badgeY: number }> = [];
+    const pushVpLevel = (price: number, label: string, color: string, dashed: boolean, thick = false) => {
       if (!price || price <= 0) return;
       const y = priceToY(price);
-      if (y < 12 * dpr || y > chartH - 12 * dpr) return;
+      if (y < 14 * dpr || y > chartH - 14 * dpr) return;
+      vpLevels.push({ price, label, color, dashed, thick, y, badgeY: y });
+    };
+
+    pushVpLevel(vp.fixedRange.poc, `POC ${formatPrice(vp.fixedRange.poc)}`, '#F59E0B', false, true);
+    if (vp.daily && vp.daily.poc > 0 && Math.abs(vp.daily.poc - vp.fixedRange.poc) > (vp.fixedRange.vah - vp.fixedRange.val) * 0.05) {
+      pushVpLevel(vp.daily.poc, `PD-POC ${formatPrice(vp.daily.poc)}`, '#EAB308', true, false);
+    }
+    pushVpLevel(vp.fixedRange.vah, `VAH ${formatPrice(vp.fixedRange.vah)}`, isDark ? '#38BDF8' : '#0284C7', true, false);
+    pushVpLevel(vp.fixedRange.val, `VAL ${formatPrice(vp.fixedRange.val)}`, isDark ? '#38BDF8' : '#0284C7', true, false);
+
+    // 1. Draw lines first (subtler opacity on secondary dashed levels so candles breathe)
+    for (const lv of vpLevels) {
       ctx.save();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = thick ? 2.0 * dpr : 1.2 * dpr;
-      if (dashed) ctx.setLineDash([5 * dpr, 3 * dpr]);
+      ctx.globalAlpha = lv.thick ? 0.85 : 0.42;
+      ctx.strokeStyle = lv.color;
+      ctx.lineWidth = lv.thick ? 1.8 * dpr : 1.0 * dpr;
+      if (lv.dashed) ctx.setLineDash([5 * dpr, 4 * dpr]);
       ctx.beginPath();
-      ctx.moveTo(leftEdge, y);
-      ctx.lineTo(thick ? chartW * 0.85 : chartW * 0.62, y);
+      ctx.moveTo(leftEdge, lv.y);
+      ctx.lineTo(lv.thick ? chartW * 0.82 : chartW * 0.55, lv.y);
       ctx.stroke();
       ctx.setLineDash([]);
+      ctx.restore();
+    }
 
-      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
+    // 2. Vertically de-collide left-edge VP badges so VAH / PD-POC / POC / VAL never overlap
+    vpLevels.sort((a, b) => a.badgeY - b.badgeY);
+    const vpMinGap = 16 * dpr;
+    const vpMinY = 24 * dpr;
+    const vpMaxY = chartH - 16 * dpr;
+    for (let i = 1; i < vpLevels.length; i++) {
+      if (vpLevels[i].badgeY - vpLevels[i - 1].badgeY < vpMinGap) {
+        vpLevels[i].badgeY = vpLevels[i - 1].badgeY + vpMinGap;
+      }
+    }
+    if (vpLevels.length > 0 && vpLevels[vpLevels.length - 1].badgeY > vpMaxY) {
+      vpLevels[vpLevels.length - 1].badgeY = vpMaxY;
+      for (let i = vpLevels.length - 2; i >= 0; i--) {
+        if (vpLevels[i + 1].badgeY - vpLevels[i].badgeY < vpMinGap) {
+          vpLevels[i].badgeY = Math.max(vpMinY, vpLevels[i + 1].badgeY - vpMinGap);
+        }
+      }
+    }
+
+    for (const lv of vpLevels) {
+      ctx.save();
+      ctx.font = `bold ${7.8 * dpr}px "JetBrains Mono",monospace`;
       const padX = 4 * dpr;
-      const tw = ctx.measureText(label).width + padX * 2;
+      const tw = ctx.measureText(lv.label).width + padX * 2;
       const th = 13 * dpr;
       const bx = leftEdge + 3 * dpr;
-      const by = y - th - 2 * dpr;
-      ctx.fillStyle = thick ? color : (isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.94)');
+      const by = Math.max(vpMinY - th / 2, Math.min(vpMaxY - th / 2, lv.badgeY - th / 2));
+      ctx.fillStyle = lv.thick ? lv.color : (isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(255, 255, 255, 0.94)');
       ctx.beginPath();
       ctx.roundRect(bx, by, tw, th, 2.5 * dpr);
       ctx.fill();
-      if (!thick) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 0.9 * dpr;
+      if (!lv.thick) {
+        ctx.strokeStyle = lv.color;
+        ctx.lineWidth = 0.85 * dpr;
         ctx.stroke();
       }
-      ctx.fillStyle = thick ? '#0F172A' : color;
+      ctx.fillStyle = lv.thick ? '#0F172A' : lv.color;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(label, bx + padX, by + th / 2);
+      ctx.fillText(lv.label, bx + padX, by + th / 2);
       ctx.restore();
-    };
-
-    drawKeyLevel(vp.fixedRange.poc, `POC ${formatPrice(vp.fixedRange.poc)}`, '#F59E0B', false, true);
-    if (vp.daily && vp.daily.poc > 0 && Math.abs(vp.daily.poc - vp.fixedRange.poc) > (vp.fixedRange.vah - vp.fixedRange.val) * 0.05) {
-      drawKeyLevel(vp.daily.poc, `PD-POC ${formatPrice(vp.daily.poc)}`, '#EAB308', true, false);
     }
-    drawKeyLevel(vp.fixedRange.vah, `VAH ${formatPrice(vp.fixedRange.vah)}`, isDark ? '#38BDF8' : '#0284C7', true);
-    drawKeyLevel(vp.fixedRange.val, `VAL ${formatPrice(vp.fixedRange.val)}`, isDark ? '#38BDF8' : '#0284C7', true);
   }
 
   // ── 1B. Order Flow Volume Bubbles (Big Trades + Gold Ring on Passive Absorption) ──
@@ -184,7 +217,9 @@ export function renderMi007Overlay({
 
     const anchorStartIdx = Math.min(fib.swingHigh.index, fib.swingLow.index);
     const rawFibStartX = (anchorStartIdx - startIdx) * candleW + candleW / 2;
-    const fibStartX = Math.max(8 * dpr, Math.min(rawFibStartX, chartW - 80 * dpr));
+    // Keep Fibonacci lines clear of the left-docked Volume Profile histogram
+    const fibLeftFloor = hasLeftVolPro ? leftEdge + deltaMaxW + volMaxW + 10 * dpr : 10 * dpr;
+    const fibStartX = Math.max(fibLeftFloor, Math.min(rawFibStartX, chartW - 80 * dpr));
     const fibEndX = chartW - 4 * dpr;
 
     if (fibEndX > fibStartX + 20 * dpr) {
@@ -233,7 +268,7 @@ export function renderMi007Overlay({
       }
       ctx.restore();
 
-      // Thick black horizontal Fibonacci lines
+      // Thick black horizontal Fibonacci lines (crisp key levels, subtler minor retracements)
       for (const lvl of fib.levels) {
         const y = priceToY(lvl.price);
         if (y < 8 * dpr || y > chartH - 8 * dpr) continue;
@@ -241,9 +276,10 @@ export function renderMi007Overlay({
         const isKey = lvl.ratio === 0.0 || lvl.ratio === 0.5 || lvl.ratio === 0.618 || lvl.ratio === 0.786 || lvl.ratio === 1.0;
 
         ctx.save();
+        ctx.globalAlpha = isKey ? 0.85 : 0.36;
         ctx.strokeStyle = ink;
         ctx.lineWidth = isKey ? 2.2 * dpr : 1.5 * dpr;
-        ctx.setLineDash(isKey ? [] : [5 * dpr, 3 * dpr]);
+        ctx.setLineDash(isKey ? [] : [5 * dpr, 4 * dpr]);
         ctx.beginPath();
         ctx.moveTo(fibStartX, y);
         ctx.lineTo(fibEndX, y);
@@ -252,56 +288,56 @@ export function renderMi007Overlay({
         ctx.restore();
       }
 
-      // Clean anti-collision staggered badge layout (prevents solid black stacking)
-      const hudClearX = showSmc ? Math.min(272 * dpr, chartW * 0.36) : 14 * dpr;
-      const baseLabelX = Math.min(fibEndX - 135 * dpr, Math.max(fibStartX + 6 * dpr, hudClearX));
-      ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
+      // Clean right-edge anti-collision badge layout (keeps candles in center completely unobstructed)
+      ctx.font = `bold ${8 * dpr}px "JetBrains Mono",monospace`;
 
       const visibleFibLevels = fib.levels
         .map(lvl => ({
           ...lvl,
           y: priceToY(lvl.price),
+          badgeY: priceToY(lvl.price),
           isKey: lvl.ratio === 0.0 || lvl.ratio === 0.5 || lvl.ratio === 0.618 || lvl.ratio === 0.786 || lvl.ratio === 1.0 || lvl.ratio === 1.272 || lvl.ratio === 1.618,
         }))
-        .filter(l => l.y >= 8 * dpr && l.y <= chartH - 8 * dpr)
+        .filter(l => l.y >= 10 * dpr && l.y <= chartH - 10 * dpr)
         .sort((a, b) => a.y - b.y);
 
       const minGapY = 16 * dpr;
-      let lastYCol0 = -999;
-      let lastYCol1 = -999;
+      const placedFibs: typeof visibleFibLevels = [];
+      for (const lvl of visibleFibLevels) {
+        const prev = placedFibs[placedFibs.length - 1];
+        if (prev && Math.abs(lvl.badgeY - prev.badgeY) < minGapY) {
+          if (!lvl.isKey) continue; // Skip minor intermediate label when tightly packed
+          lvl.badgeY = prev.badgeY + minGapY;
+        }
+        placedFibs.push(lvl);
+      }
 
-      for (let i = 0; i < visibleFibLevels.length; i++) {
-        const lvl = visibleFibLevels[i];
+      const maxFibY = chartH - 12 * dpr;
+      if (placedFibs.length > 0 && placedFibs[placedFibs.length - 1].badgeY > maxFibY) {
+        placedFibs[placedFibs.length - 1].badgeY = maxFibY;
+        for (let i = placedFibs.length - 2; i >= 0; i--) {
+          if (placedFibs[i + 1].badgeY - placedFibs[i].badgeY < minGapY) {
+            placedFibs[i].badgeY = Math.max(12 * dpr, placedFibs[i + 1].badgeY - minGapY);
+          }
+        }
+      }
+
+      for (const lvl of placedFibs) {
         const text = `${lvl.label} (${formatPrice(lvl.price)})`;
         const padX = 4 * dpr;
         const pillW = ctx.measureText(text).width + padX * 2;
         const pillH = 13 * dpr;
-
-        let col = 0;
-        if (Math.abs(lvl.y - lastYCol0) < minGapY) {
-          if (Math.abs(lvl.y - lastYCol1) >= minGapY) {
-            col = 1;
-          } else if (!lvl.isKey) {
-            continue; // Skip minor intermediate levels if both slots collide
-          } else {
-            col = (i % 2 === 0) ? 0 : 1;
-          }
-        }
-
-        const colOffset = col === 0 ? 0 : pillW + 10 * dpr;
-        const px = Math.min(chartW - pillW - 6 * dpr, Math.max(fibStartX + 4 * dpr, baseLabelX + colOffset));
-        const py = Math.max(4 * dpr, Math.min(chartH - pillH - 4 * dpr, lvl.y - pillH / 2));
-
-        if (col === 0) lastYCol0 = py;
-        else lastYCol1 = py;
+        const px = Math.max(fibStartX + 4 * dpr, fibEndX - pillW - 4 * dpr);
+        const py = Math.max(4 * dpr, Math.min(chartH - pillH - 4 * dpr, lvl.badgeY - pillH / 2));
 
         ctx.save();
+        ctx.globalAlpha = lvl.isKey ? 0.96 : 0.78;
         ctx.fillStyle = pillBg;
         ctx.beginPath();
-        ctx.roundRect(px, py, pillW, pillH, 2 * dpr);
+        ctx.roundRect(px, py, pillW, pillH, 2.5 * dpr);
         ctx.fill();
         ctx.strokeStyle = isDark ? '#475569' : '#94A3B8';
-        ctx.lineWidth = 0.9 * dpr;
+        ctx.lineWidth = 0.85 * dpr;
         ctx.stroke();
 
         ctx.fillStyle = ink;
@@ -434,14 +470,16 @@ export function renderMi007Overlay({
   const lineH = 15 * dpr;
   const setup = data.activeSetup;
   const checklistCount = setup ? setup.checklist.length : 0;
-  const cardH = (setup ? 116 + checklistCount * 15 : 72) * dpr;
+  const cardH = hudCollapsed
+    ? 28 * dpr
+    : (setup ? 116 + checklistCount * 15 : 72) * dpr;
   // Clear the left-docked Volume Profile when Vol Pro is active so neither overlaps the other
   const leftVolClearX = hasLeftVolPro ? leftEdge + deltaMaxW + volMaxW + 10 * dpr : 12 * dpr;
   const cardX = Math.min(leftVolClearX, Math.max(12 * dpr, chartW - cardW - 12 * dpr));
   const cardY = 34 * dpr;
 
   if (showSmc && chartW >= 360 * dpr && chartH >= cardY + cardH + 20 * dpr) {
-    ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.88)';
+    ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.90)';
     ctx.strokeStyle = isDark ? 'rgba(51, 65, 85, 0.85)' : 'rgba(203, 213, 225, 0.85)';
     ctx.lineWidth = 1.0 * dpr;
     ctx.beginPath();
@@ -449,13 +487,13 @@ export function renderMi007Overlay({
     ctx.fill();
     ctx.stroke();
 
-    // Header row
-    let cy = cardY + pad + 6 * dpr;
+    // Header row (leave 22*dpr on right for collapse/expand toggle button)
+    let cy = cardY + (hudCollapsed ? cardH / 2 : pad + 6 * dpr);
     ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
     ctx.fillStyle = isDark ? '#94A3B8' : '#475569';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('MI-007 INSTITUTIONAL SETUP', cardX + pad, cy);
+    ctx.fillText(hudCollapsed ? 'MI-007 SETUP' : 'MI-007 INSTITUTIONAL SETUP', cardX + pad, cy);
 
     if (setup) {
       const isBull = setup.direction === 'BULLISH';
@@ -463,7 +501,12 @@ export function renderMi007Overlay({
       const dirColor = !setup.isTradeable ? '#64748B' : isBull ? '#059669' : '#E11D48';
       ctx.fillStyle = dirColor;
       ctx.textAlign = 'right';
-      ctx.fillText(`${dirText} • ${setup.score}/100`, cardX + cardW - pad, cy);
+      ctx.fillText(`${dirText} • ${setup.score}/100`, cardX + cardW - pad - 20 * dpr, cy);
+
+      if (hudCollapsed) {
+        ctx.restore();
+        return;
+      }
 
       cy += lineH;
       ctx.font = `600 ${8 * dpr}px "JetBrains Mono",monospace`;

@@ -189,6 +189,7 @@ export interface ChartOptions {
   showMi007?: boolean;
   mi007Config?: import('./mi007/types').Mi007Config;
   mi007Data?: import('./mi007/types').Mi007AnalysisResult | null;
+  mi007HudCollapsed?: boolean;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;
