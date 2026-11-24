@@ -1311,6 +1311,12 @@ export function ChartToolbar({
                       checked={activeMi007.showFibo}
                       onChange={(v) => updateMi007({ showFibo: v })}
                     />
+                    <SmcToggleRow
+                      label="HUD Card"
+                      sublabel="Confirmation checklist card"
+                      checked={Boolean(activeMi007.showHud)}
+                      onChange={(v) => updateMi007({ showHud: v })}
+                    />
                   </div>
                 </div>
               )}

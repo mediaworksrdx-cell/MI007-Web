@@ -5,6 +5,7 @@ export interface Mi007Config {
   showSmc: boolean;
   showVolPro: boolean;
   showFibo: boolean;
+  showHud?: boolean;
 }
 
 export const DEFAULT_MI007_CONFIG: Mi007Config = {
@@ -12,6 +13,7 @@ export const DEFAULT_MI007_CONFIG: Mi007Config = {
   showSmc: true,
   showVolPro: true,
   showFibo: true,
+  showHud: false,
 };
 
 export type Mi007RegimeType = 'TRENDING_UP' | 'TRENDING_DOWN' | 'RANGING';

@@ -478,7 +478,8 @@ export function renderMi007Overlay({
   const cardX = Math.min(leftVolClearX, Math.max(12 * dpr, chartW - cardW - 12 * dpr));
   const cardY = 34 * dpr;
 
-  if (showSmc && chartW >= 360 * dpr && chartH >= cardY + cardH + 20 * dpr) {
+  const showHud = Boolean(config?.showHud);
+  if (showHud && showSmc && chartW >= 360 * dpr && chartH >= cardY + cardH + 20 * dpr) {
     ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.90)';
     ctx.strokeStyle = isDark ? 'rgba(51, 65, 85, 0.85)' : 'rgba(203, 213, 225, 0.85)';
     ctx.lineWidth = 1.0 * dpr;

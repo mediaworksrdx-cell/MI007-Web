@@ -3004,7 +3004,7 @@ export function CandlestickCanvas({
         />
       )}
       {/* ── Layer 7: MI-007 HUD Card Collapse / Expand Button ── */}
-      {showMi007 && mi007Data && mi007Config?.showSmc !== false && size.w >= 440 && (() => {
+      {showMi007 && mi007Data && mi007Config?.showHud && mi007Config?.showSmc !== false && size.w >= 440 && (() => {
         const chartWCss = Math.max(0, size.w - CHART_RIGHT_MARGIN);
         const hasLeftVol = Boolean(mi007Config?.showVolPro !== false && (mi007Data.volumeProfile?.bins?.length ?? 0) > 0 && (mi007Data.volumeProfile?.fixedRange?.totalVolume ?? 0) > 0);
         const volMaxWCss = Math.min(72, chartWCss * 0.10);
