@@ -28,6 +28,7 @@ export const MASTER_CHART_INSTRUMENTS: ChartInstrumentItem[] = [
   { symbol: 'BANKEX', name: 'BSE BANKEX Index', category: 'INDEX', market: 'INDIA', exchange: 'BSE', currency: '₹', flag: '🇮🇳', basePrice: 62450.00, sector: 'Banking Benchmark' },
   { symbol: 'SPX', name: 'S&P 500 Index', category: 'INDEX', market: 'USA', exchange: 'NYSE', currency: '$', flag: '🇺🇸', basePrice: 7703.58, sector: 'US Benchmark' },
   { symbol: 'NDX', name: 'NASDAQ 100 Index', category: 'INDEX', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 29630.77, sector: 'US Tech Benchmark' },
+  { symbol: 'NASDAQ', name: 'NASDAQ Composite Index', category: 'INDEX', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 24509.76, sector: 'US Tech Benchmark' },
   { symbol: 'DJI', name: 'Dow Jones Industrial', category: 'INDEX', market: 'USA', exchange: 'NYSE', currency: '$', flag: '🇺🇸', basePrice: 51964.04, sector: 'US Bluechips' },
   { symbol: 'VIX', name: 'CBOE Volatility Index', category: 'INDEX', market: 'USA', exchange: 'CBOE', currency: '$', flag: '🇺🇸', basePrice: 18.56, sector: 'Market Volatility' },
   { symbol: 'QQQ', name: 'Invesco QQQ Trust', category: 'INDEX', market: 'USA', exchange: 'NASDAQ', currency: '$', flag: '🇺🇸', basePrice: 717.71, sector: 'Tech ETF' },
@@ -148,15 +149,16 @@ function resolveCurrentInstrument(selectedSymbol: string) {
   const isCommodity = ['GOLD', 'XAU', 'SILVER', 'XAG', 'CRUDEOIL', 'BRENT', 'WTI', 'NATGAS', 'COPPER', 'PLATINUM'].includes(clean);
   const isForex = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDCAD', 'AUDCAD', 'USDCHF', 'USDAED', 'AUDUSD', 'NZDUSD'].includes(clean);
   const isCrypto = ['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', 'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC'].includes(clean) || clean.endsWith('USDT') || clean.endsWith('USD');
+  const isUsSymbol = ['SPX', 'NDX', 'NASDAQ', 'DJI', 'VIX', 'QQQ', 'RUT', 'SPY', 'DIA', 'AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'GOOG', 'AMD', 'NFLX', 'INTC'].includes(clean);
 
   return {
     symbol: selectedSymbol,
     name: selectedSymbol,
-    category: isCommodity ? 'COMMODITY' as const : isForex ? 'FOREX' as const : isCrypto ? 'CRYPTO' as const : 'STOCK' as const,
-    market: (isCommodity || isForex || isCrypto) ? ('USA' as const) : ('INDIA' as const),
-    exchange: isCommodity ? 'COMEX' : isForex ? 'FOREX' : isCrypto ? 'CRYPTO' : 'GLOBAL',
-    currency: (isCommodity || isForex || isCrypto) ? '$' : '₹',
-    flag: isCommodity ? '🛢️' : isForex ? '💱' : isCrypto ? '🪙' : '📈',
+    category: isCommodity ? 'COMMODITY' as const : isForex ? 'FOREX' as const : isCrypto ? 'CRYPTO' as const : isUsSymbol ? 'INDEX' as const : 'STOCK' as const,
+    market: (isCommodity || isForex || isCrypto || isUsSymbol) ? ('USA' as const) : ('INDIA' as const),
+    exchange: isCommodity ? 'COMEX' : isForex ? 'FOREX' : isCrypto ? 'CRYPTO' : isUsSymbol ? 'NASDAQ' : 'GLOBAL',
+    currency: (isCommodity || isForex || isCrypto || isUsSymbol) ? '$' : '₹',
+    flag: isCommodity ? '🛢️' : isForex ? '💱' : isCrypto ? '🪙' : isUsSymbol ? '🇺🇸' : '📈',
     basePrice: 1000,
   };
 }

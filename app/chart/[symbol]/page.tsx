@@ -30,7 +30,7 @@ const CRYPTO_SET = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP', '
 const COMMODITIES_SET = new Set(['GOLD', 'XAU', 'XAUUSD', 'SILVER', 'XAG', 'XAGUSD', 'CRUDEOIL', 'CRUDE', 'OIL', 'BRENT', 'WTI', 'NATGAS', 'NATURALGAS', 'COPPER', 'PLATINUM']);
 const FOREX_SET = new Set(['EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDAED', 'AUDUSD', 'USDCAD', 'AUDCAD', 'UADCAD', 'USDCHF', 'NZDUSD']);
 const USA_SET = new Set([
-  'SPX', 'NDX', 'DJI', 'VIX', 'VIXY', 'QQQ', 'RUT', 'SPY', 'DIA',
+  'SPX', 'NDX', 'NASDAQ', 'DJI', 'VIX', 'VIXY', 'QQQ', 'RUT', 'SPY', 'DIA',
   'AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'GOOG', 'AMD', 'NFLX', 'INTC',
   'S&P 500', 'NASDAQ 100', 'DOW JONES'
 ]);

@@ -192,7 +192,7 @@ function getSymbolEffectiveMarket(symbol: string, fallbackMarket: MarketType): M
     'GOLD', 'XAU', 'XAUUSD', 'SILVER', 'XAG', 'XAGUSD', 'CRUDEOIL', 'CRUDE', 'OIL', 'BRENT', 'WTI',
     'NATGAS', 'COPPER', 'PLATINUM', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDINR', 'USDCAD', 'AUDCAD',
     'USDCHF', 'USDAED', 'AUDUSD', 'NZDUSD', 'BTC', 'ETH', 'SOL', 'BNB', 'DOGE', 'SHIB', 'XRP',
-    'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC', 'POL', 'SPX', 'NDX', 'DJI', 'VIX', 'QQQ', 'NVDA',
+    'ADA', 'AVAX', 'DOT', 'LINK', 'MATIC', 'POL', 'SPX', 'NDX', 'NASDAQ', 'DJI', 'VIX', 'QQQ', 'NVDA',
     'AAPL', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'AMD', 'NFLX', 'INTC'
   ].includes(clean) || clean.endsWith('USDT') || clean.endsWith('USD');
   if (isGlobal) return 'USA';
@@ -950,7 +950,7 @@ export function ChartContainer({
     if (['USDINR'].includes(sym)) return '₹';
     if (['USDAED'].includes(sym)) return 'AED ';
     if (['DFMGI', 'ADXGI', 'EMAAR', 'FAB', 'DEWA', 'ALDAR', 'ENBD', 'ADNOC', 'AIRARABIA', 'SALIK'].includes(sym)) return 'AED ';
-    if (['SPX', 'NDX', 'DJI', 'VIX', 'QQQ', 'NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'AMD', 'NFLX', 'INTC'].includes(sym)) return '$';
+    if (['SPX', 'NDX', 'NASDAQ', 'DJI', 'VIX', 'QQQ', 'NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'META', 'GOOGL', 'AMD', 'NFLX', 'INTC'].includes(sym)) return '$';
     return instruments[0]?.currency ?? '₹';
   }, [selectedSymbol, instruments]);
 

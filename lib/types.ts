@@ -394,6 +394,7 @@ export const INSTRUMENTS: Record<MarketType, Instrument[]> = {
   USA: [
     { symbol: 'SPX', name: 'S&P 500', exchange: 'NYSE', currency: '$', market: 'USA' },
     { symbol: 'NDX', name: 'NASDAQ 100', exchange: 'NASDAQ', currency: '$', market: 'USA' },
+    { symbol: 'NASDAQ', name: 'NASDAQ Composite', exchange: 'NASDAQ', currency: '$', market: 'USA' },
     { symbol: 'DJI', name: 'Dow Jones Industrial', exchange: 'NYSE', currency: '$', market: 'USA' },
     { symbol: 'VIX', name: 'Volatility Index', exchange: 'CBOE', currency: '$', market: 'USA' },
     { symbol: 'NVDA', name: 'NVIDIA Corp.', exchange: 'NASDAQ', currency: '$', market: 'USA' },

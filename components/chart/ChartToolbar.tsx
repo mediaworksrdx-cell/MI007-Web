@@ -1517,7 +1517,7 @@ export function ChartToolbar({
                 setOpenMenu(null);
               }}
               className="h-7 px-1.5 rounded-r-lg border border-emerald-500 bg-emerald-600 hover:bg-rose-600 hover:border-rose-600 text-white text-[11px] font-bold transition-colors cursor-pointer"
-              title="Turn Off Range Lock & return to live chart"
+              title="Reset view to latest live candles"
             >
               ✕
             </button>
@@ -1550,8 +1550,8 @@ export function ChartToolbar({
               const tillDate = goToDateTill || goToDateFrom;
               const fromT = isDailyOrHigher ? '00:00' : (goToTimeFrom || '00:00');
               const tillT = isDailyOrHigher ? '23:59' : (goToTimeTill || '23:59');
-              const fromMs = new Date(`${goToDateFrom}T${fromT}:00`).getTime();
-              const toMs = new Date(`${tillDate}T${tillT}:59.999`).getTime();
+              let fromMs = new Date(`${goToDateFrom}T${fromT}:00`).getTime();
+              let toMs = new Date(`${tillDate}T${tillT}:59.999`).getTime();
               if (Number.isNaN(fromMs) || Number.isNaN(toMs)) {
                 setGoToError('Invalid date or time.');
                 return;
@@ -1561,13 +1561,14 @@ export function ChartToolbar({
                 return;
               }
               if (candleRangeMs) {
-                const padDayMs = 24 * 3600_000;
-                if (toMs < candleRangeMs.minMs - padDayMs || fromMs > candleRangeMs.maxMs + padDayMs) {
+                if (toMs < candleRangeMs.minMs || fromMs > candleRangeMs.maxMs) {
                   setGoToError(
                     `Outside loaded history (${fmtShort(candleRangeMs.minMs)} – ${fmtShort(candleRangeMs.maxMs)}). Switch to 4H or 1D for older dates.`
                   );
                   return;
                 }
+                fromMs = Math.max(fromMs, candleRangeMs.minMs);
+                toMs = Math.min(toMs, candleRangeMs.maxMs);
               }
               const label = isDailyOrHigher
                 ? `${goToDateFrom} → ${tillDate}`

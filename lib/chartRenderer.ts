@@ -1232,7 +1232,7 @@ export function renderChart(
 
     // 1. Premium & Discount Zones (Dealing Range)
     const dr = smcData.dealingRange;
-    if (smcCfg.showPremiumDiscount && dr.highPrice > dr.lowPrice) {
+    if (smcCfg.showPremiumDiscount !== false && dr.highPrice > dr.lowPrice) {
       const yHigh = Math.max(0, Math.min(chartH, priceToY(dr.highPrice)));
       const yLow = Math.max(0, Math.min(chartH, priceToY(dr.lowPrice)));
       const yEq = Math.max(0, Math.min(chartH, priceToY(dr.equilibriumPrice)));
@@ -1297,7 +1297,7 @@ export function renderChart(
     }
 
     // 1b. Optimal Trade Entry (OTE 61.8% to 78.6%) — Subtle Translucent Background Zone (No full-width horizontal stroke lines)
-    if (smcCfg.showOte && (isBullishMaster || isBearishMaster) && dr.highPrice > dr.lowPrice) {
+    if (smcCfg.showOte !== false && (isBullishMaster || isBearishMaster) && dr.highPrice > dr.lowPrice) {
       ctx.save();
       // Bullish Discount OTE: rendered in Discount zone (Long retracement)
       if (isBullishMaster && dr.discountOteRange && dr.discountOteRange[0] > 0) {
@@ -1335,7 +1335,7 @@ export function renderChart(
     }
 
     // 2. Equilibrium Midline (EQ 50% — Golden Dash) — Anchored cleanly to recent candles, stops before active price beacon
-    if (smcCfg.showEquilibrium && smcData.equilibriumPrice > 0 && smcData.equilibriumPrice >= pMin && smcData.equilibriumPrice <= pMax) {
+    if (smcCfg.showEquilibrium !== false && smcData.equilibriumPrice > 0 && smcData.equilibriumPrice >= pMin && smcData.equilibriumPrice <= pMax) {
       const eqY = priceToY(smcData.equilibriumPrice);
       const eqStartX = isCleanMode ? Math.max(0, lastCandleX - 220 * dpr) : 0;
       const eqStopX = isCleanMode ? Math.min(chartW - 65 * dpr, lastCandleX - 16 * dpr) : chartW;
@@ -1371,7 +1371,7 @@ export function renderChart(
     }
 
     // 3. Swing Point Labels (HH, HL, LH, LL) - Non-Overlapping Collision Prevention & Density Control
-    if (smcCfg.showSwings && smcData.swings) {
+    if (smcCfg.showSwings !== false && smcData.swings) {
       ctx.save();
       ctx.font = `bold ${8.5 * dpr}px "JetBrains Mono",monospace`;
       const th = 13 * dpr;
@@ -1549,8 +1549,8 @@ export function renderChart(
     // Breaker Blocks (+BRK Support & -BRK Resistance)
     const shouldCheckBreakers = smcCfg.showBreakers !== false;
     const allCandidateBreakers = (shouldCheckBreakers ? smcData.breakers : []).filter((brk) => {
-      if (!smcCfg.showBreakers) return false;
-      if (brk.isMitigated && !smcCfg.showMitigatedOb) return false;
+      if (smcCfg.showBreakers === false) return false;
+      if (brk.isMitigated && smcCfg.showMitigatedOb === false) return false;
       if (brk.startIndex > endIdx) return false;
       if (brk.isMitigated && brk.endIndex < startIdx) return false;
       return true;
@@ -1948,7 +1948,7 @@ export function renderChart(
     }
 
     // 7. Liquidity Levels (BSL, SSL, EQH, EQL) — Consolidated & Collision-Safe
-    if (smcCfg.showLiquidityLevels && smcData.liquidityLevels) {
+    if (smcCfg.showLiquidityLevels !== false && smcData.liquidityLevels) {
       const rawLevels = smcData.liquidityLevels.filter((lvl) => {
         if (isCleanMode && (lvl.type === 'EQH' || lvl.type === 'EQL')) {
           // In clean mode, merge EQH/EQL into unified BSL/SSL clusters below
@@ -2021,7 +2021,7 @@ export function renderChart(
     }
 
     // 7b. Equal Highs & Equal Lows (EQH / EQL)
-    if (smcCfg.showEqualHighLow && smcData.liquidityLevels) {
+    if (smcCfg.showEqualHighLow !== false && smcData.liquidityLevels) {
       const eqLevels = smcData.liquidityLevels.filter((lvl) => (lvl.type === 'EQH' || lvl.type === 'EQL') && (!lvl.isSwept || smcCfg.showSweeps));
       const consolidatedEq = sam.consolidateLiquidityLevels(eqLevels, lastPrice, 0.0025);
       const eqhLevels = consolidatedEq.filter((l) => l.type === 'EQH').slice(-2);
@@ -2067,10 +2067,10 @@ export function renderChart(
     }
 
     // 8. Liquidity Sweeps (SSL & BSL) — Aggregated Clusters & Collision-Safe
-    const shouldRenderSweeps = smcCfg.showSweeps !== false && Boolean(smcCfg.showSweeps);
+    const shouldRenderSweeps = smcCfg.showSweeps !== false;
     if (shouldRenderSweeps && smcData.sweeps) {
       const visibleSweeps = smcData.sweeps.filter((sw) => {
-        if (!smcCfg.showSweeps) return false;
+        if (smcCfg.showSweeps === false) return false;
         return sw.candleIndex >= startIdx - 5 && sw.candleIndex <= endIdx;
       });
 
@@ -2335,11 +2335,11 @@ export function renderChart(
         };
 
         const activeBullish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBullishConfluence && isBullishMaster && (lastBarIdx - s.candleIndex <= 60))
+          .filter((s) => s.direction === 'BULLISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBullishConfluence !== false && isBullishMaster && (lastBarIdx - s.candleIndex <= 60))
           .sort(rankSetup)[0];
 
         const activeBearish = (smcData.confirmedSetups || [])
-          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBearishConfluence && isBearishMaster && (lastBarIdx - s.candleIndex <= 60))
+          .filter((s) => s.direction === 'BEARISH' && isActiveSetup(s) && s.setupType !== 'SESSION_LIQUIDITY' && smcCfg.showBearishConfluence !== false && isBearishMaster && (lastBarIdx - s.candleIndex <= 60))
           .sort(rankSetup)[0];
 
         if (activeBullish && activeBearish) {
@@ -2384,8 +2384,8 @@ export function renderChart(
               s.signalState !== 'RETEST_FAILED' &&
               s.actionTier !== 'REJECT' &&
               (lastBarIdx - s.candleIndex <= maxLookbackBars) &&
-              ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence && isBullishMaster) ||
-               (s.direction === 'BEARISH' && smcCfg.showBearishConfluence && isBearishMaster))
+              ((s.direction === 'BULLISH' && smcCfg.showBullishConfluence !== false && isBullishMaster) ||
+               (s.direction === 'BEARISH' && smcCfg.showBearishConfluence !== false && isBearishMaster))
             )
             .sort((a, b) => b.candleIndex - a.candleIndex)[0];
           if (recentCompleted) {

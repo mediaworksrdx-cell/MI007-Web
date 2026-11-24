@@ -32,7 +32,17 @@ export default function ErrorBoundary({
 
         <div className="flex items-center justify-center gap-3">
           <button
-            onClick={() => reset()}
+            onClick={() => {
+              try {
+                reset();
+              } catch {
+                if (typeof window !== 'undefined') window.location.reload();
+              }
+              // If still in error boundary after 100ms (e.g. stale deployment chunk hashes), force clean reload
+              if (typeof window !== 'undefined') {
+                setTimeout(() => window.location.reload(), 120);
+              }
+            }}
             className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors shadow-xs cursor-pointer"
           >
             Reconnect Stream
