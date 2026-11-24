@@ -27,6 +27,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Per-destination rate limit (independent of IP, prevents OTP bombing even across rotating IPs)
+    const destKey = destination.toLowerCase().replace(/[\s+()\-]/g, '');
+    const destRate = checkRateLimit('otp-send-dest', destKey, 5, 15 * 60_000);
+    if (!destRate.allowed) {
+      return NextResponse.json(
+        { ok: false, error: `Too many OTP requests for this destination. Retry in ${destRate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const result = await routeAndSendOtp({ destination, channel, purpose });
 
     if (!result.ok) {

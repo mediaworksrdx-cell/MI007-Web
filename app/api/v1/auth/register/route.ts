@@ -60,9 +60,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (findUserByEmail(email)) {
+      // Generic response prevents email enumeration
       return NextResponse.json(
-        { ok: false, error: 'An account with this email already exists.' },
-        { status: 409 }
+        { ok: false, error: 'Unable to complete registration with the provided details.' },
+        { status: 400 }
       );
     }
 

@@ -8,16 +8,20 @@ interface RateBucket {
 const stores = new Map<string, Map<string, RateBucket>>();
 
 /**
- * Extracts best-effort client IP for rate limiting.
- * Prefers platform-set headers (x-real-ip / x-vercel-forwarded-for) over client-spoofable headers.
+ * Extracts best-effort client IP for rate limiting behind Nginx on GCP.
+ * Strictly trusts Nginx-injected `x-real-ip` first and never trusts client-spoofable
+ * `x-vercel-forwarded-for` or `cf-connecting-ip` headers off those platforms.
  */
 export function getClientIp(req: NextRequest): string {
-  const realIp =
-    req.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip')?.trim() ||
-    req.headers.get('cf-connecting-ip')?.trim() ||
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return realIp || 'unknown';
+  const realIp = req.headers.get('x-real-ip')?.trim();
+  if (realIp) return realIp;
+  const xff = req.headers.get('x-forwarded-for');
+  if (xff) {
+    // Use rightmost entry (set by trusted reverse proxy, not client-prepended spoofed IPs)
+    const parts = xff.split(',').map((s) => s.trim()).filter(Boolean);
+    if (parts.length > 0) return parts[parts.length - 1];
+  }
+  return 'unknown';
 }
 
 export interface RateLimitResult {

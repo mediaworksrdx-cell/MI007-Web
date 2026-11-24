@@ -59,12 +59,34 @@ export async function POST(req: NextRequest) {
 
     // 1. Send OTP Action
     if (action === 'send-otp' || action === 'request-code') {
-      const sendRate = checkRateLimit('wa-bot-send', `${ip}:${phone}`, 5, 10 * 60_000);
-      if (!sendRate.allowed) {
+      // Rate-limit BOTH by IP and by target phone alone (spoofed IP cannot spam a victim's phone)
+      const sendIpRate = checkRateLimit('wa-bot-send-ip', ip, 10, 10 * 60_000);
+      const sendPhoneRate = checkRateLimit('wa-bot-send-phone', phone, 5, 15 * 60_000);
+      if (!sendIpRate.allowed || !sendPhoneRate.allowed) {
+        const retry = Math.max(sendIpRate.retryAfterSeconds, sendPhoneRate.retryAfterSeconds);
         return NextResponse.json(
-          { ok: false, error: `Too many OTP requests. Retry in ${sendRate.retryAfterSeconds}s.` },
+          { ok: false, error: `Too many OTP requests. Retry in ${retry}s.` },
           { status: 429 }
         );
+      }
+
+      // Preserve attempt count & enforce 60s resend cooldown so resending cannot reset guess counter
+      const existing = otpStore.get(phone);
+      if (existing && Date.now() < existing.expiresAt) {
+        if (existing.attempts >= existing.maxAttempts) {
+          return NextResponse.json(
+            { ok: false, error: 'Too many failed attempts for this number. Wait for the window to expire.' },
+            { status: 429 }
+          );
+        }
+        const elapsedMs = OTP_TTL_MS - (existing.expiresAt - Date.now());
+        if (elapsedMs < 60_000) {
+          const waitSec = Math.ceil((60_000 - elapsedMs) / 1000);
+          return NextResponse.json(
+            { ok: false, error: `Please wait ${waitSec}s before requesting another OTP.` },
+            { status: 429 }
+          );
+        }
       }
 
       // Cryptographically secure 6-digit numeric OTP
@@ -74,7 +96,7 @@ export async function POST(req: NextRequest) {
         otpHash: hashOtpCode(otp, salt),
         salt,
         phone,
-        attempts: 0,
+        attempts: existing && Date.now() < existing.expiresAt ? existing.attempts : 0,
         maxAttempts: MAX_ATTEMPTS,
         expiresAt: Date.now() + OTP_TTL_MS,
       });

@@ -299,12 +299,8 @@ export async function fetchLiveEconomicCalendar(): Promise<EconomicEvent[]> {
     console.warn('[EconomicCalendar] Primary feed error:', err);
   }
 
-  // Scheduled India releases
-  const indiaEvents = getScheduledIndiaEvents();
-
-  const combined = [...liveEvents, ...indiaEvents].sort((a, b) => a.timestamp - b.timestamp);
-
-  // Authentic live calendar caching: Never return fabricated events with pre-baked actual numbers
+  // Authentic live calendar caching: Never mix fabricated relative-date events with stale actual numbers
+  const combined = [...liveEvents].sort((a, b) => a.timestamp - b.timestamp);
   cachedLiveCalendar = combined;
   lastCalendarFetchTime = now;
   return combined;

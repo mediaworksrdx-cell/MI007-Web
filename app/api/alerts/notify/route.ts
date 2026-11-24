@@ -1,6 +1,8 @@
+import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { getAuthenticatedUser } from '@/lib/auth/serverAuth';
+import { checkRateLimit as checkSharedRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 export interface NotifyAlertPayload {
   isTest?: boolean;
@@ -135,28 +137,24 @@ function buildHtmlEmail(payload: NotifyAlertPayload): string {
   `;
 }
 
-// In-memory rate limiting and daily cap guards
-const ipRateMap = new Map<string, { count: number; resetAt: number }>();
+// Daily cap guard (rate limiting uses shared Nginx-aware rate limiter)
 let dailyEmailCount = 0;
 let dailyEmailResetAt = Date.now() + 24 * 3600_000;
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = ipRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    ipRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 20) return false;
-  entry.count++;
-  return true;
-}
-
 function hasAdminAuth(req: NextRequest): boolean {
-  const adminSecret = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
+  // Strictly use ADMIN_SECRET (never share with CRON_SECRET) with constant-time comparison
+  const adminSecret = (process.env.ADMIN_SECRET || '').trim();
   if (!adminSecret) return false;
-  const token = req.headers.get('x-mi007-admin-secret') || req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-  return token === adminSecret;
+  const token = (
+    req.headers.get('x-mi007-admin-secret') ||
+    req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ||
+    ''
+  ).trim();
+  if (!token) return false;
+  const a = Buffer.from(token, 'utf8');
+  const b = Buffer.from(adminSecret, 'utf8');
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
 }
 
 function isValidE164(phone: string): boolean {
@@ -174,12 +172,11 @@ async function sendWhatsApp(
   const serverDefaultPhone = (process.env.WHATSAPP_DEFAULT_PHONE || '').replace(/[\s\-()]/g, '');
 
   // Open-relay guard:
-  // - Admin secret can send to any valid E.164 recipient.
-  // - Signed-in user (valid HttpOnly mi007_session) can send to their own verified phone number.
-  // - Otherwise only server-configured WHATSAPP_DEFAULT_PHONE is allowed.
+  // - Admin secret can send to any valid E.164 recipient (or server default).
+  // - Signed-in user (valid HttpOnly mi007_session) can ONLY send to their own verified phone number.
   const targetPhone = isAdmin
     ? (clientPhone || serverDefaultPhone)
-    : (verifiedUserPhone || serverDefaultPhone);
+    : (verifiedUserPhone || '');
 
   if (!targetPhone || !isValidE164(targetPhone)) {
     return {
@@ -286,15 +283,15 @@ async function sendGmail(
   const safeStatus = esc(payload.alert.statusLabel);
   const subject = `${payload.isTest ? '[TEST] ' : ''}MI-007 SMC ${dirTag}: ${safeSymbol} (${safeTf}) — ${safeStatus}`;
 
-  // 1. Resend HTTP API (Primary zero-friction server-side delivery for signed-in users & owner)
-  if (resendKey && !(clientUser && clientPass)) {
+  // 1. Resend HTTP API (Primary zero-friction server-side delivery — never act as an arbitrary client SMTP relay)
+  if (resendKey) {
     const defaultTo = (process.env.ALERT_DEFAULT_EMAIL || process.env.GMAIL_TO || serverUser || '').trim();
     const to = isAdmin
       ? ((payload.config?.gmailTo || verifiedUserEmail || defaultTo).trim())
-      : ((verifiedUserEmail || defaultTo).trim());
+      : ((verifiedUserEmail || '').trim());
 
     if (!to || !to.includes('@')) {
-      return { ok: false, message: 'Sign in with your email (or set ALERT_DEFAULT_EMAIL on server) to receive email alerts.' };
+      return { ok: false, message: 'A verified account email is required to receive email alerts.' };
     }
 
     const fromHeader =
@@ -332,20 +329,12 @@ async function sendGmail(
   let pass = '';
   let to = '';
 
-  if (clientUser && clientPass) {
-    user = clientUser;
-    pass = clientPass;
-    to = (payload.config?.gmailTo || clientUser).trim();
-  } else if (serverUser && serverPass) {
-    // Open-relay guard (AL1): Server SMTP credentials send only to signed-in user's own email or configured owner address unless isAdmin.
+  // Server SMTP only — client-supplied SMTP credentials are NOT accepted (prevents open SMTP relay abuse)
+  if (serverUser && serverPass) {
     user = serverUser;
     pass = serverPass;
     const configuredTo = (process.env.ALERT_DEFAULT_EMAIL || process.env.GMAIL_TO || serverUser).trim();
-    if (isAdmin && payload.config?.gmailTo) {
-      to = payload.config.gmailTo.trim();
-    } else {
-      to = verifiedUserEmail || configuredTo;
-    }
+    to = isAdmin ? ((payload.config?.gmailTo || verifiedUserEmail || configuredTo).trim()) : ((verifiedUserEmail || '').trim());
   } else {
     return {
       ok: false,
@@ -383,9 +372,23 @@ async function sendGmail(
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    if (!checkRateLimit(ip)) {
-      return NextResponse.json({ ok: false, error: 'Rate limit exceeded (max 20 requests/min).' }, { status: 429 });
+    const ip = getClientIp(req);
+    const rate = checkSharedRateLimit('alerts-notify', ip, 20, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { ok: false, error: `Rate limit exceeded (max 20 requests/min). Retry in ${rate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
+    // Require either valid admin secret OR authenticated user session (never allow anonymous callers to message the owner)
+    const isAdmin = hasAdminAuth(req);
+    const authUser = getAuthenticatedUser(req);
+    if (!isAdmin && !authUser) {
+      return NextResponse.json(
+        { ok: false, error: 'Authentication required. Please sign in to send alert notifications.' },
+        { status: 401 }
+      );
     }
 
     const payload = (await req.json()) as NotifyAlertPayload;
@@ -393,7 +396,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing or invalid alert payload' }, { status: 400 });
     }
 
-    if (payload.alert.symbol.length > 20 || (payload.alert.setupName && payload.alert.setupName.length > 100)) {
+    const symbol = payload.alert.symbol.trim();
+    const setupName = typeof payload.alert.setupName === 'string' ? payload.alert.setupName.trim() : '';
+    const statusLabel = typeof payload.alert.statusLabel === 'string' ? payload.alert.statusLabel.trim() : '';
+    const timeframe = typeof payload.alert.timeframe === 'string' ? payload.alert.timeframe.trim() : '';
+    const market = typeof payload.alert.market === 'string' ? payload.alert.market.trim() : '';
+
+    if (
+      symbol.length > 20 ||
+      setupName.length > 100 ||
+      statusLabel.length > 60 ||
+      timeframe.length > 12 ||
+      market.length > 20
+    ) {
       return NextResponse.json({ error: 'Payload field length exceeds limit' }, { status: 400 });
     }
 
@@ -401,12 +416,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid alert direction' }, { status: 400 });
     }
 
-    if (!Number.isFinite(payload.alert.entryPrice) || !Number.isFinite(payload.alert.stopLoss) || !Number.isFinite(payload.alert.targetPrice)) {
-      return NextResponse.json({ error: 'Alert prices must be finite numbers' }, { status: 400 });
+    if (
+      !Number.isFinite(payload.alert.entryPrice) ||
+      !Number.isFinite(payload.alert.stopLoss) ||
+      !Number.isFinite(payload.alert.targetPrice) ||
+      !Number.isFinite(payload.alert.riskReward) ||
+      !Number.isFinite(payload.alert.qualityScore)
+    ) {
+      return NextResponse.json({ error: 'Alert prices, riskReward, and qualityScore must be finite numbers' }, { status: 400 });
     }
 
-    const isAdmin = hasAdminAuth(req);
-    const authUser = getAuthenticatedUser(req);
+    // Normalize trimmed fields
+    payload.alert.symbol = symbol;
+    payload.alert.setupName = setupName || 'SMC Setup';
+    payload.alert.statusLabel = statusLabel || 'ACTIVE';
+    payload.alert.timeframe = timeframe || '1H';
+    payload.alert.market = market || 'INDIA';
+
     const verifiedUserPhone = authUser?.phoneVerified && authUser.phone
       ? authUser.phone.replace(/[\s\-()]/g, '')
       : undefined;

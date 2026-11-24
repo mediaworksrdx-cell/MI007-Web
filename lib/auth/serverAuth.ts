@@ -99,7 +99,10 @@ function saveUsers(users: StoredUserRecord[]): void {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(users, null, 2), { encoding: 'utf8', mode: 0o600 });
+    // Atomic write via temp file + rename prevents partial/corrupted JSON under concurrent requests
+    const tmpPath = `${USERS_FILE_PATH}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+    fs.writeFileSync(tmpPath, JSON.stringify(users, null, 2), { encoding: 'utf8', mode: 0o600 });
+    fs.renameSync(tmpPath, USERS_FILE_PATH);
   } catch {
     // Serverless read-only filesystem fallback: stays in memory
   }
@@ -127,14 +130,38 @@ export function upsertUser(record: StoredUserRecord): StoredUserRecord {
   return record;
 }
 
-// ── Signed Session Tokens (HMAC-SHA256) ──────────────────────────────────────
+// ── Signed Session Tokens (HMAC-SHA256) + Revocation List ───────────────────
+const revokedTokens = new Set<string>();
+
+export function revokeSessionToken(token: string | undefined): void {
+  if (!token) return;
+  if (revokedTokens.size > 10_000) revokedTokens.clear();
+  revokedTokens.add(token);
+}
+
+export function clearSessionCookie(res: NextResponse, req?: NextRequest): void {
+  const existing = req?.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (existing) revokeSessionToken(existing);
+  res.cookies.set({
+    name: SESSION_COOKIE_NAME,
+    value: '',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
+}
+
 export function createSessionToken(user: PublicUserProfile): string {
   const exp = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
+  const jti = crypto.randomBytes(12).toString('hex');
   const payload = Buffer.from(
     JSON.stringify({
       sub: user.id,
       email: user.email,
       role: user.role,
+      jti,
       exp,
     }),
     'utf8'
@@ -159,7 +186,7 @@ export function attachSessionCookie(res: NextResponse, user: PublicUserProfile):
 export function getAuthenticatedUser(req: NextRequest): StoredUserRecord | null {
   try {
     const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-    if (!token) return null;
+    if (!token || revokedTokens.has(token)) return null;
     const parts = token.split('.');
     if (parts.length !== 2) return null;
     const [payload, sig] = parts;

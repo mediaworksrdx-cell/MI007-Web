@@ -7,6 +7,11 @@ import {
 } from '@/lib/alerts/smcAlerts';
 import { GET as getCandlesRoute } from '../../candles/route';
 import { Candle } from '@/lib/types';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
+
+const ALLOWED_TIMEFRAMES = new Set([
+  '1m', '3m', '5m', '15m', '30m', '1h', '1H', '4h', '4H', '1d', '1D', '1w', '1W',
+]);
 
 async function loadRealCandles(symbol: string, timeframe: string, market: string, origin: string): Promise<Candle[]> {
   try {
@@ -23,21 +28,42 @@ async function loadRealCandles(symbol: string, timeframe: string, market: string
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rate = checkRateLimit('alerts-evaluate', ip, 30, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded. Retry in ${rate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const items: SmcAlertWatchItem[] = Array.isArray(body?.items) ? body.items : [];
     const alreadySent = new Set<string>(Array.isArray(body?.alreadySentIds) ? body.alreadySentIds : []);
     const origin = req.nextUrl.origin || 'http://localhost:3000';
 
-    const enabledItems = items.filter((it) => it && it.enabled && it.symbol && Array.isArray(it.timeframes) && it.timeframes.length > 0);
+    const enabledItems = items.filter(
+      (it) =>
+        it &&
+        it.enabled &&
+        typeof it.symbol === 'string' &&
+        it.symbol.trim().length > 0 &&
+        it.symbol.trim().length <= 24 &&
+        /^[A-Za-z0-9._\-\s/^&=]+$/.test(it.symbol.trim()) &&
+        Array.isArray(it.timeframes) &&
+        it.timeframes.length > 0
+    );
     if (enabledItems.length === 0) {
       return NextResponse.json({ triggered: [], evaluatedPairs: 0, checkedAt: new Date().toISOString() });
     }
 
-    // Build evaluation jobs: (item, timeframe), capped to 30 pairs per request
+    // Build evaluation jobs: (item, validated timeframe), capped to 30 pairs per request
     const rawJobs: Array<{ item: SmcAlertWatchItem; timeframe: string }> = [];
     for (const item of enabledItems) {
       for (const tf of item.timeframes) {
-        rawJobs.push({ item, timeframe: tf });
+        if (typeof tf === 'string' && ALLOWED_TIMEFRAMES.has(tf.trim())) {
+          rawJobs.push({ item, timeframe: tf.trim() });
+        }
       }
     }
     const jobs = rawJobs.slice(0, 30);
