@@ -10,7 +10,7 @@ import { DrawingSettingsModal } from './DrawingSettingsModal';
 import { DrawingContextMenu } from './DrawingContextMenu';
 import type { CursorMode } from './DrawingToolbar';
 import type { SmcConfig } from '@/lib/smcEngine';
-import { calculateSMC, isCandleClosed, timeframeToMs } from '@/lib/smcEngine';
+import { calculateSMC, isCandleClosed, timeframeToMs, DEFAULT_SMC_CONFIG } from '@/lib/smcEngine';
 import { SmcInspectorModal, type SmcInspectorData } from './SmcInspectorModal';
 import { useAppTheme } from '@/lib/themeContext';
 
