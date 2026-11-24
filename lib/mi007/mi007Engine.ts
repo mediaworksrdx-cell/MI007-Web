@@ -348,17 +348,39 @@ function computeFibonacciConfluence(
   if (!anchorHigh || !anchorLow) {
     const recentMajors = majorSwings.filter((s) => s.index >= lookbackStart);
     const pool = recentMajors.length >= 2 ? recentMajors : majorSwings;
-    const highs = pool.filter((s) => s.isHigh);
-    const lows = pool.filter((s) => !s.isHigh);
+    const sortedPool = [...pool].sort((a, b) => a.index - b.index);
 
-    for (const h of highs) {
-      if (!anchorHigh || h.price >= anchorHigh.price) {
-        anchorHigh = { index: h.index, price: h.price, time: h.time };
+    if (sortedPool.length >= 2) {
+      const lastSwing = sortedPool[sortedPool.length - 1];
+      const prevOpposing = [...sortedPool]
+        .filter((s) => s.isHigh !== lastSwing.isHigh && s.index < lastSwing.index)
+        .pop();
+      if (prevOpposing && lastSwing.price !== prevOpposing.price) {
+        if (lastSwing.isHigh) {
+          anchorLow = { index: prevOpposing.index, price: prevOpposing.price, time: prevOpposing.time };
+          anchorHigh = { index: lastSwing.index, price: lastSwing.price, time: lastSwing.time };
+          bosDirection = 'BULLISH';
+        } else {
+          anchorHigh = { index: prevOpposing.index, price: prevOpposing.price, time: prevOpposing.time };
+          anchorLow = { index: lastSwing.index, price: lastSwing.price, time: lastSwing.time };
+          bosDirection = 'BEARISH';
+        }
       }
     }
-    for (const l of lows) {
-      if (!anchorLow || l.price <= anchorLow.price) {
-        anchorLow = { index: l.index, price: l.price, time: l.time };
+
+    if (!anchorHigh || !anchorLow) {
+      const highs = pool.filter((s) => s.isHigh);
+      const lows = pool.filter((s) => !s.isHigh);
+
+      for (const h of highs) {
+        if (!anchorHigh || h.price >= anchorHigh.price) {
+          anchorHigh = { index: h.index, price: h.price, time: h.time };
+        }
+      }
+      for (const l of lows) {
+        if (!anchorLow || l.price <= anchorLow.price) {
+          anchorLow = { index: l.index, price: l.price, time: l.time };
+        }
       }
     }
 

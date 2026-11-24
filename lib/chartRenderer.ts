@@ -1170,8 +1170,8 @@ export function renderChart(
       ...DEFAULT_SMC_CONFIG,
       ...rawSmcCfg,
       enabled: true,
-      visualizationMode: rawSmcCfg.visualizationMode || 'analysis',
-      ...(mi007WantsSmc && !standaloneSmcEnabled
+      visualizationMode: 'analysis',
+      ...(mi007WantsSmc
         ? {
             showBos: true,
             showChoch: true,
@@ -1181,6 +1181,11 @@ export function renderChart(
             showBullishFvg: true,
             showBearishFvg: true,
             showLiquidityLevels: true,
+            showSweeps: true,
+            showMitigatedOb: true,
+            showMitigatedFvg: true,
+            showBreakers: true,
+            showEqualHighLow: true,
           }
         : {}),
     };
@@ -1527,17 +1532,17 @@ export function renderChart(
 
     const allCandidateDemand = (showDemandBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
-    const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 4 : Math.max(6, baseQuota));
+    const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, 40);
     const mitigatedDemand = includeHistoricalMitigatedOb
-      ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, mitigatedQuota)
+      ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, 40)
       : [];
     const demandBlocks = [...unmitigatedDemand, ...mitigatedDemand];
 
     const allCandidateSupply = (showSupplyBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && !ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
-    const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 4 : Math.max(6, baseQuota));
+    const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, 40);
     const mitigatedSupply = includeHistoricalMitigatedOb
-      ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, mitigatedQuota)
+      ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, 40)
       : [];
     const supplyBlocks = [...unmitigatedSupply, ...mitigatedSupply];
 
@@ -1550,8 +1555,8 @@ export function renderChart(
       if (brk.isMitigated && brk.endIndex < startIdx) return false;
       return true;
     });
-    const bullBreakers = sortZonesByProximity(allCandidateBreakers.filter(b => b.isBullish)).slice(0, isCleanMode ? 1 : 2);
-    const bearBreakers = sortZonesByProximity(allCandidateBreakers.filter(b => !b.isBullish)).slice(0, isCleanMode ? 1 : 2);
+    const bullBreakers = sortZonesByProximity(allCandidateBreakers.filter(b => b.isBullish)).slice(0, 20);
+    const bearBreakers = sortZonesByProximity(allCandidateBreakers.filter(b => !b.isBullish)).slice(0, 20);
     const breakerBlocks = [...bullBreakers, ...bearBreakers];
 
     const blocksToRender = [...demandBlocks, ...supplyBlocks, ...breakerBlocks];
@@ -1678,9 +1683,9 @@ export function renderChart(
     }
 
     // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG) — Full History across Visible Viewport
-    const fvgBaseQuota = isTargetedMode ? 1 : (isCleanMode ? 4 : Math.max(8, Math.floor((smcCfg.maxVisibleZones || 16) / 2)));
+    const fvgBaseQuota = 40;
     const includeHistoricalMitigatedFvg = smcCfg.showMitigatedFvg !== false;
-    const fvgMitigatedQuota = isTargetedMode ? 1 : (includeHistoricalMitigatedFvg ? 6 : 0);
+    const fvgMitigatedQuota = includeHistoricalMitigatedFvg ? 40 : 0;
 
     const inWindowFvgs = smcData.fvgs.filter((fvg) => {
       if (fvg.isInverse) {
@@ -1844,17 +1849,13 @@ export function renderChart(
     });
 
     // Display structure breaks across the ENTIRE visible viewport (never drop left-side history)
-    const maxBreaks = isCleanMode ? 8 : 120;
+    const maxBreaks = 80;
     let breaksToRender = inWindowBreaks;
     if (inWindowBreaks.length > maxBreaks) {
-      if (isCleanMode) {
-        breaksToRender = inWindowBreaks.slice(-maxBreaks);
-      } else {
-        const step = inWindowBreaks.length / maxBreaks;
-        breaksToRender = [];
-        for (let bi = 0; bi < maxBreaks; bi++) {
-          breaksToRender.push(inWindowBreaks[Math.floor(bi * step)]);
-        }
+      const step = inWindowBreaks.length / maxBreaks;
+      breaksToRender = [];
+      for (let bi = 0; bi < maxBreaks; bi++) {
+        breaksToRender.push(inWindowBreaks[Math.floor(bi * step)]);
       }
     }
 
@@ -2070,15 +2071,12 @@ export function renderChart(
     if (shouldRenderSweeps && smcData.sweeps) {
       const visibleSweeps = smcData.sweeps.filter((sw) => {
         if (!smcCfg.showSweeps) return false;
-        // In Clean mode, only show recent sweeps within 25 bars
-        if (isCleanMode && (lastBarIdx - sw.candleIndex > 25)) return false;
         return sw.candleIndex >= startIdx - 5 && sw.candleIndex <= endIdx;
       });
 
       // Cluster adjacent sweeps to eliminate stacked repeated badges
-      const aggregatedSweeps = sam.aggregateSweeps(visibleSweeps, 4);
-      const maxSweeps = isCleanMode ? 2 : 8;
-      const sweepsToRender = aggregatedSweeps.slice(-maxSweeps);
+      const aggregatedSweeps = sam.aggregateSweeps(visibleSweeps, 2);
+      const sweepsToRender = aggregatedSweeps.slice(-30);
 
       for (const sw of sweepsToRender) {
         const li = sw.candleIndex - startIdx;

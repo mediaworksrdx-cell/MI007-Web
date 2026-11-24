@@ -1077,9 +1077,28 @@ export function CandlestickCanvas({
       setWorkerSmcData(null);
       return;
     }
-    const effectiveSmcCfg = smcConfig?.enabled
-      ? smcConfig
-      : { ...(smcConfig || {}), enabled: true };
+    const effectiveSmcCfg = {
+      ...DEFAULT_SMC_CONFIG,
+      ...(smcConfig || {}),
+      enabled: true,
+      visualizationMode: 'analysis' as const,
+      ...(mi007WantsSmc
+        ? {
+            showBos: true,
+            showChoch: true,
+            showSwings: true,
+            showBullishOb: true,
+            showBearishOb: true,
+            showBullishFvg: true,
+            showBearishFvg: true,
+            showLiquidityLevels: true,
+            showSweeps: true,
+            showMitigatedOb: true,
+            showMitigatedFvg: true,
+            showBreakers: true,
+          }
+        : {}),
+    };
     const reqId = ++smcWorkerReqIdRef.current;
     if (smcWorkerRef.current) {
       smcWorkerRef.current.postMessage({
@@ -1377,8 +1396,29 @@ export function CandlestickCanvas({
         cleanCandles,
         {
           chartType, showVolume, showVolumePanel,
-          showSmcOverlay: smcConfig ? smcConfig.enabled : showSmcOverlay,
-          smcConfig,
+          showSmcOverlay: (smcConfig ? smcConfig.enabled : showSmcOverlay) || Boolean(showMi007 && mi007Config?.showSmc !== false),
+          smcConfig: {
+            ...DEFAULT_SMC_CONFIG,
+            ...(smcConfig || {}),
+            enabled: (smcConfig ? smcConfig.enabled : showSmcOverlay) || Boolean(showMi007 && mi007Config?.showSmc !== false),
+            visualizationMode: 'analysis' as const,
+            ...(Boolean(showMi007 && mi007Config?.showSmc !== false)
+              ? {
+                  showBos: true,
+                  showChoch: true,
+                  showSwings: true,
+                  showBullishOb: true,
+                  showBearishOb: true,
+                  showBullishFvg: true,
+                  showBearishFvg: true,
+                  showLiquidityLevels: true,
+                  showSweeps: true,
+                  showMitigatedOb: true,
+                  showMitigatedFvg: true,
+                  showBreakers: true,
+                }
+              : {}),
+          },
           smcData: memoizedSmcData || undefined,
           targetSetupId: targetSetupIdRef.current || targetSetupId,
           targetSmcSetup: resolvedSmcSetup,

@@ -305,14 +305,6 @@ export function ChartContainer({
       const nextEnabled = typeof valOrFn === 'function' ? valOrFn(prev.enabled) : valOrFn;
       const updated = { ...prev, enabled: nextEnabled };
       saveStoredSmcConfig(updated);
-      setMi007Config(mPrev => {
-        if (mPrev.showSmc === nextEnabled) return mPrev;
-        const mNext = { ...mPrev, showSmc: nextEnabled };
-        if (typeof window !== 'undefined') {
-          try { localStorage.setItem('mi007_config_v1', JSON.stringify(mNext)); } catch (e) {}
-        }
-        return mNext;
-      });
       return updated;
     });
   }, []);
@@ -320,14 +312,6 @@ export function ChartContainer({
   const handleSmcConfigChange = useCallback((newCfg: SmcConfig) => {
     setSmcConfig(newCfg);
     saveStoredSmcConfig(newCfg);
-    setMi007Config(mPrev => {
-      if (mPrev.showSmc === newCfg.enabled) return mPrev;
-      const mNext = { ...mPrev, showSmc: newCfg.enabled };
-      if (typeof window !== 'undefined') {
-        try { localStorage.setItem('mi007_config_v1', JSON.stringify(mNext)); } catch (e) {}
-      }
-      return mNext;
-    });
   }, []);
 
   // Order Flow Footprint configuration and live signal state
