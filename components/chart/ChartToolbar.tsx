@@ -1502,10 +1502,10 @@ export function ChartToolbar({
                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
                 : 'border-slate-200 dark:border-slate-700 hover:border-emerald-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
             }`}
-            title={isGoToActive && activeGoToLabel ? `Range locked: ${activeGoToLabel} (click to edit)` : 'Go to & lock a specific Date & Time range on chart'}
+            title={isGoToActive && activeGoToLabel ? `Viewing range: ${activeGoToLabel} (click to edit)` : 'Go to a specific Date & Time range on chart'}
           >
             <span>📅</span>
-            <span>{isGoToActive ? 'Range ON' : 'Go to'}</span>
+            <span>Go to</span>
             <span className="text-[9px] text-slate-400 dark:text-slate-500">▼</span>
           </button>
 
@@ -1589,7 +1589,7 @@ export function ChartToolbar({
                     </span>
                     {isGoToActive && (
                       <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold uppercase">
-                        Locked
+                        Active
                       </span>
                     )}
                   </div>
@@ -1610,7 +1610,6 @@ export function ChartToolbar({
                       </label>
                       <input
                         type="date"
-                        min={minDateStr}
                         value={goToDateFrom}
                         onChange={(e) => { setGoToDateFrom(e.target.value); setGoToError(null); }}
                         className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
@@ -1622,7 +1621,6 @@ export function ChartToolbar({
                       </label>
                       <input
                         type="date"
-                        min={minDateStr}
                         value={goToDateTill}
                         onChange={(e) => { setGoToDateTill(e.target.value); setGoToError(null); }}
                         className="w-full h-7 px-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
@@ -1678,31 +1676,18 @@ export function ChartToolbar({
                       type="submit"
                       className="flex-1 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer"
                     >
-                      {isGoToActive ? 'Update Range' : 'Lock Range'}
+                      Go to Range
                     </button>
-                    {isGoToActive ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onGoToRange?.({ fromMs: 0, toMs: 0, reset: true });
-                          setOpenMenu(null);
-                        }}
-                        className="h-7 px-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer"
-                      >
-                        Off / Close
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onGoToRange?.({ fromMs: 0, toMs: 0, reset: true });
-                          setOpenMenu(null);
-                        }}
-                        className="h-7 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
-                      >
-                        Reset
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onGoToRange?.({ fromMs: 0, toMs: 0, reset: true });
+                        setOpenMenu(null);
+                      }}
+                      className="h-7 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      Reset
+                    </button>
                   </div>
                 </div>
               </form>

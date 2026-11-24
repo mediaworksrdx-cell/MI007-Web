@@ -1157,17 +1157,32 @@ export function renderChart(
   }
 
   // ── LAYER 3: Smart Money Concepts (SMC) Overlays (enabled by SMC button OR MI-007 SMC sub-toggle) ──
-  const isSmcActive = options.smcConfig !== undefined
+  const mi007WantsSmc = Boolean(options.showMi007 && options.mi007Config?.showSmc !== false);
+  const standaloneSmcEnabled = options.smcConfig !== undefined
     ? Boolean(options.smcConfig?.enabled)
-    : Boolean(options.showSmcOverlay || (options.showMi007 && options.mi007Config?.showSmc !== false));
+    : Boolean(options.showSmcOverlay);
+  const isSmcActive = standaloneSmcEnabled || mi007WantsSmc;
 
   if (isSmcActive) {
     const rawSmcCfg = options.smcConfig || DEFAULT_SMC_CONFIG;
+    // When MI-007 + SMC sub-toggle is ON while standalone SMC Analysis is OFF, ensure core SMC layers render automatically
     const smcCfg: SmcConfig = {
       ...DEFAULT_SMC_CONFIG,
       ...rawSmcCfg,
       enabled: true,
       visualizationMode: rawSmcCfg.visualizationMode || 'analysis',
+      ...(mi007WantsSmc && !standaloneSmcEnabled
+        ? {
+            showBos: true,
+            showChoch: true,
+            showSwings: true,
+            showBullishOb: true,
+            showBearishOb: true,
+            showBullishFvg: true,
+            showBearishFvg: true,
+            showLiquidityLevels: true,
+          }
+        : {}),
     };
     const sym = (options as any).symbol || 'NIFTY';
     const tf = options.timeframe || '1H';
@@ -1367,23 +1382,19 @@ export function renderChart(
         return true;
       });
 
-      // Density control: institutional pivot spacing
-      const minBarSpacing = isCleanMode ? 14 : (candleW < 8 * dpr ? 8 : candleW < 14 * dpr ? 6 : 4);
-      const minPixelSpacing = isCleanMode ? 85 * dpr : 45 * dpr;
-      const maxSwingsAllowed = isCleanMode ? 6 : 120;
+      // Density control: institutional pivot spacing across the ENTIRE visible history
+      const minBarSpacing = isCleanMode ? 8 : (candleW < 8 * dpr ? 8 : candleW < 14 * dpr ? 6 : 4);
+      const minPixelSpacing = isCleanMode ? 55 * dpr : 45 * dpr;
+      const maxSwingsAllowed = isCleanMode ? 40 : 120;
 
       if (visibleSwings.length > maxSwingsAllowed) {
-        if (isCleanMode) {
-          visibleSwings = visibleSwings.slice(-maxSwingsAllowed);
-        } else {
-          // Evenly span the entire visible history instead of dropping the left side of the chart
-          const step = visibleSwings.length / maxSwingsAllowed;
-          const sampled: typeof visibleSwings = [];
-          for (let si = 0; si < maxSwingsAllowed; si++) {
-            sampled.push(visibleSwings[Math.floor(si * step)]);
-          }
-          visibleSwings = sampled;
+        // Always evenly span the entire visible history instead of dropping the left side of the chart
+        const step = visibleSwings.length / maxSwingsAllowed;
+        const sampled: typeof visibleSwings = [];
+        for (let si = 0; si < maxSwingsAllowed; si++) {
+          sampled.push(visibleSwings[Math.floor(si * step)]);
         }
+        visibleSwings = sampled;
       }
 
       interface RenderedSwingPill {
@@ -1472,11 +1483,12 @@ export function renderChart(
       ctx.restore();
     }
 
-    // 4. Order Blocks & Breakers (Demand, Supply, Breakers) — Dedicated Quota Pools & High Contrast
+    // 4. Order Blocks & Breakers (Demand, Supply, Breakers) — Full History across Visible Viewport
     const lastPrice = candles[candles.length - 1]?.close || (pMin + pMax) / 2;
     const isTargetedMode = Boolean(options.targetSetupId);
-    const baseQuota = isTargetedMode ? 1 : 3;
-    const mitigatedQuota = smcCfg.showMitigatedOb ? 2 : 0;
+    const baseQuota = isTargetedMode ? 1 : 8;
+    const includeHistoricalMitigatedOb = smcCfg.showMitigatedOb !== false;
+    const mitigatedQuota = isTargetedMode ? 1 : (includeHistoricalMitigatedOb ? 8 : 0);
 
     const sortZonesByProximity = <T extends { topPrice: number; bottomPrice: number; startIndex: number; isMitigated?: boolean }>(zones: T[]): T[] => {
       const vpMid = (pMin + pMax) / 2;
@@ -1515,16 +1527,16 @@ export function renderChart(
 
     const allCandidateDemand = (showDemandBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
-    const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 2 : Math.max(4, baseQuota));
-    const mitigatedDemand = smcCfg.showMitigatedOb
+    const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 4 : Math.max(6, baseQuota));
+    const mitigatedDemand = includeHistoricalMitigatedOb
       ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, mitigatedQuota)
       : [];
     const demandBlocks = [...unmitigatedDemand, ...mitigatedDemand];
 
     const allCandidateSupply = (showSupplyBlocks ? smcData.orderBlocks : [])
       .filter((ob) => !ob.isBreaker && !ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
-    const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 2 : Math.max(4, baseQuota));
-    const mitigatedSupply = smcCfg.showMitigatedOb
+    const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, isCleanMode ? 4 : Math.max(6, baseQuota));
+    const mitigatedSupply = includeHistoricalMitigatedOb
       ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, mitigatedQuota)
       : [];
     const supplyBlocks = [...unmitigatedSupply, ...mitigatedSupply];
@@ -1665,21 +1677,21 @@ export function renderChart(
       ctx.restore();
     }
 
-    // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG) — Dedicated Quota Pools & High Visibility
-    const fvgBaseQuota = isTargetedMode ? 1 : (isCleanMode ? 1 : Math.max(5, Math.floor((smcCfg.maxVisibleZones || 10) / 2)));
-    const fvgMitigatedQuota = smcCfg.showMitigatedFvg ? 2 : 0;
+    // 5. Fair Value Gaps (FVG) & Inverse FVGs (IFVG) — Full History across Visible Viewport
+    const fvgBaseQuota = isTargetedMode ? 1 : (isCleanMode ? 4 : Math.max(8, Math.floor((smcCfg.maxVisibleZones || 16) / 2)));
+    const includeHistoricalMitigatedFvg = smcCfg.showMitigatedFvg !== false;
+    const fvgMitigatedQuota = isTargetedMode ? 1 : (includeHistoricalMitigatedFvg ? 6 : 0);
 
     const inWindowFvgs = smcData.fvgs.filter((fvg) => {
       if (fvg.isInverse) {
         if (fvg.isBullish && smcCfg.showBullishIfvg === false) return false;
         if (!fvg.isBullish && smcCfg.showBearishIfvg === false) return false;
         if (!smcCfg.showBullishIfvg && !smcCfg.showBearishIfvg) return false;
-        if (fvg.isInvalidated && !smcCfg.showMitigatedFvg) return false;
+        if (fvg.isInvalidated && !includeHistoricalMitigatedFvg) return false;
       } else {
         if (fvg.isBullish && smcCfg.showBullishFvg === false) return false;
         if (!fvg.isBullish && smcCfg.showBearishFvg === false) return false;
-        if (fvg.isMitigated && !smcCfg.showMitigatedFvg) return false;
-        if (fvg.isInvalidated && !smcCfg.showMitigatedFvg) return false;
+        if ((fvg.isMitigated || fvg.isInvalidated) && !includeHistoricalMitigatedFvg) return false;
       }
       if (fvg.startIndex > endIdx) return false;
       const isMit = fvg.isMitigated || fvg.isInvalidated;
@@ -1690,8 +1702,8 @@ export function renderChart(
     const getFvgGroup = (filterFn: (f: SmcFvg) => boolean) => {
       const candidates = inWindowFvgs.filter(filterFn);
       const unmit = sortZonesByProximity(candidates.filter(f => !f.isMitigated && !f.isInvalidated)).slice(0, fvgBaseQuota);
-      const mit = smcCfg.showMitigatedFvg
-        ? sortZonesByProximity(candidates.filter(f => (f.isMitigated || f.isInvalidated) && f.endIndex >= startIdx)).slice(0, Math.max(1, fvgMitigatedQuota))
+      const mit = includeHistoricalMitigatedFvg
+        ? sortZonesByProximity(candidates.filter(f => (f.isMitigated || f.isInvalidated) && f.endIndex >= startIdx)).slice(0, fvgMitigatedQuota)
         : [];
       return [...unmit, ...mit];
     };
@@ -1945,16 +1957,18 @@ export function renderChart(
         return lvl.type !== 'EQH' && lvl.type !== 'EQL';
       });
 
-      // Consolidate nearby levels into unified clusters (e.g. BSL / EQH)
-      const consolidated = sam.consolidateLiquidityLevels(rawLevels, lastPrice, isCleanMode ? 0.0035 : 0.0025);
-      const bslLevels = consolidated
-        .filter((l) => (l.type === 'BSL' || l.type === 'EQH') && l.price >= lastPrice && isBearishMaster)
-        .sort((a, b) => a.price - b.price)
-        .slice(0, isCleanMode ? 1 : 3);
-      const sslLevels = consolidated
-        .filter((l) => (l.type === 'SSL' || l.type === 'EQL') && l.price <= lastPrice && isBullishMaster)
-        .sort((a, b) => b.price - a.price)
-        .slice(0, isCleanMode ? 1 : 3);
+      // Consolidate nearby levels into unified clusters across the visible viewport price range
+      const vpMidPrice = (pMin + pMax) / 2;
+      const consolidated = sam.consolidateLiquidityLevels(rawLevels, vpMidPrice, isCleanMode ? 0.0035 : 0.0025);
+      const inViewLevels = consolidated.filter((l) => l.price >= pMin && l.price <= pMax);
+      const bslLevels = inViewLevels
+        .filter((l) => (l.type === 'BSL' || l.type === 'EQH') && isBearishMaster)
+        .sort((a, b) => Math.abs(a.price - vpMidPrice) - Math.abs(b.price - vpMidPrice))
+        .slice(0, isCleanMode ? 3 : 5);
+      const sslLevels = inViewLevels
+        .filter((l) => (l.type === 'SSL' || l.type === 'EQL') && isBullishMaster)
+        .sort((a, b) => Math.abs(a.price - vpMidPrice) - Math.abs(b.price - vpMidPrice))
+        .slice(0, isCleanMode ? 3 : 5);
 
       const levelsToDraw = [...bslLevels, ...sslLevels];
 
