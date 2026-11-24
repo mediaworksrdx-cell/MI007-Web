@@ -439,10 +439,10 @@ export const DEFAULT_SMC_CONFIG: SmcConfig = {
   // FVGs & IFVGs
   showBullishFvg: true,
   showBearishFvg: true,
-  showBullishIfvg: false,           // Default false: Secondary advanced structure to eliminate chart clutter
-  showBearishIfvg: false,           // Default false: Secondary advanced structure to eliminate chart clutter
+  showBullishIfvg: true,
+  showBearishIfvg: true,
   showFvgMidpoint: true,
-  showMitigatedFvg: false,
+  showMitigatedFvg: true,
 
   // Confluence Setups
   showBullishConfluence: true,

@@ -30,6 +30,18 @@ export default function ErrorBoundary({
           The chart telemetry session encountered a temporary exception. You can reload the stream or return to the main terminal dashboard.
         </p>
 
+        {error && (
+          <div className="mb-6 p-3 bg-rose-950/40 border border-rose-900/60 rounded-lg text-left overflow-auto max-h-48 text-[11px] font-mono text-rose-300 select-text">
+            <div className="font-bold text-rose-400 mb-1">Error: {error.message || String(error)}</div>
+            {error.digest && <div className="text-slate-500 text-[10px]">Digest: {error.digest}</div>}
+            {error.stack && (
+              <pre className="text-[9px] text-slate-400 whitespace-pre-wrap mt-2 overflow-x-auto">
+                {error.stack}
+              </pre>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={() => {

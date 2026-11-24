@@ -173,9 +173,22 @@ export async function saveStoredCandles(symbol: string, timeframe: string, candl
       return;
     }
 
-    // Fallback: localStorage (keep recent 800 for quota safety)
+    // Fallback: localStorage (keep recent 800 for quota safety, guarded against quota exhaustion)
     if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem(`mi007_candles_${key}`, JSON.stringify(trimmed.slice(-800)));
+      try {
+        localStorage.setItem(`mi007_candles_${key}`, JSON.stringify(trimmed.slice(-800)));
+      } catch {
+        // Prune older candle caches if browser storage quota is exhausted
+        try {
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('mi007_candles_') && k !== `mi007_candles_${key}`) {
+              localStorage.removeItem(k);
+            }
+          }
+          localStorage.setItem(`mi007_candles_${key}`, JSON.stringify(trimmed.slice(-400)));
+        } catch {}
+      }
     }
   } catch (err) {
     console.warn(`[CandleStorage] Error saving candles for ${key}:`, err);

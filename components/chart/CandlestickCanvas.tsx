@@ -494,6 +494,19 @@ export function CandlestickCanvas({
       }
     }
 
+    // Secondary fallback for intraday cross-timezone alignment (e.g. US market vs local IST)
+    if (fromIdx === -1 || toIdx === -1 || toIdx < fromIdx) {
+      const fromKey = toLocalDateKey(fromMs);
+      const toKey = toLocalDateKey(toMs);
+      for (let i = 0; i < cleanCandles.length; i++) {
+        const cKey = toLocalDateKey(cleanCandles[i].openTime);
+        if (cKey >= fromKey && cKey <= toKey) {
+          if (fromIdx === -1) fromIdx = i;
+          toIdx = i;
+        }
+      }
+    }
+
     let isNearestFallback = false;
     if (fromIdx === -1 || toIdx === -1 || toIdx < fromIdx) {
       isNearestFallback = true;

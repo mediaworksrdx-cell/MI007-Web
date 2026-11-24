@@ -621,7 +621,9 @@ export function ChartContainer({
         });
 
         setIndicatorConfigs(generatedConfigs);
-        localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(generatedConfigs));
+        try {
+          localStorage.setItem('mi007_chart_indicators_v2', JSON.stringify(generatedConfigs));
+        } catch {}
       }
     }
   }, []);

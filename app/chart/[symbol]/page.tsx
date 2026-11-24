@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, Suspense } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { ChartContainer } from '@/components/chart/ChartContainer';
 import { MarketType } from '@/lib/types';
@@ -36,9 +36,11 @@ const USA_SET = new Set([
 ]);
 const UAE_SET = new Set(['DFMGI', 'ADXGI', 'ADX', 'EMAAR', 'FAB', 'DEWA', 'ALDAR', 'ENBD', 'ADNOC', 'AIRARABIA', 'DFM GENERAL', 'ADX GENERAL', 'FTSE ADX 15', 'SALIK', 'DFM']);
 
-export default function ChartPage({ params, searchParams }: ChartPageProps) {
-  const { symbol } = use(params);
-  const resolvedSearchParams = use(searchParams);
+function ChartPageContent({ params, searchParams }: ChartPageProps) {
+  const unwrappedParams = use(params);
+  const unwrappedSearchParams = use(searchParams);
+  const symbol = unwrappedParams?.symbol || 'NIFTY';
+  const resolvedSearchParams = unwrappedSearchParams || {};
   const { market: marketParam, from } = resolvedSearchParams;
   const isFromScreener = from === 'screener';
 
@@ -64,8 +66,10 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const stored = sessionStorage.getItem('mi007_return_tab');
-      if (stored) setReturnTab(stored);
+      try {
+        const stored = sessionStorage.getItem('mi007_return_tab');
+        if (stored) setReturnTab(stored);
+      } catch {}
     }
   }, []);
 
@@ -116,5 +120,22 @@ export default function ChartPage({ params, searchParams }: ChartPageProps) {
         </div>
       </main>
     </>
+  );
+}
+
+export default function ChartPage(props: ChartPageProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#060A11] text-slate-200 flex flex-col items-center justify-center p-6 font-mono select-none">
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs text-slate-400">Loading terminal stream...</span>
+          </div>
+        </div>
+      }
+    >
+      <ChartPageContent {...props} />
+    </Suspense>
   );
 }

@@ -1005,7 +1005,7 @@ export function renderChart(
   const BM = CHART_BOTTOM_MARGIN * dpr; // institutional bottom time axis margin
 
   // Panel layout
-  const panelInds = options.indicators.filter(i => !isOverlay(i.type) && i.enabled);
+  const panelInds = (options.indicators || []).filter(i => !isOverlay(i.type) && i.enabled);
   const hasVolPanel = options.showVolumePanel;
   const totalPanels = panelInds.length + (hasVolPanel ? 1 : 0);
   const panelH = calculateDynamicPanelHeight(H, totalPanels, dpr);
@@ -1192,7 +1192,9 @@ export function renderChart(
     const sym = (options as any).symbol || 'NIFTY';
     const tf = options.timeframe || '1H';
     // Use caller-provided smcData computed with active smcCfg, falling back to fresh calculation with smcCfg
-    const smcData = options.smcData || calculateSMC(candles, smcCfg, sym, tf);
+    const smcData = (options.showMi007 && options.mi007Data?.smc)
+      ? options.mi007Data.smc
+      : (options.smcData || calculateSMC(candles, smcCfg, sym, tf));
     const isBullishMaster = smcCfg.showBullishSetups !== false;
     const isBearishMaster = smcCfg.showBearishSetups !== false;
 
@@ -1497,7 +1499,7 @@ export function renderChart(
 
     const sortZonesByProximity = <T extends { topPrice: number; bottomPrice: number; startIndex: number; isMitigated?: boolean }>(zones: T[]): T[] => {
       const vpMid = (pMin + pMax) / 2;
-      const vpMargin = (pMax - pMin) * 0.25;
+      const vpMargin = Math.max((pMax - pMin) * 2.0, (pMax - pMin) + 100);
       return zones
         .filter(z => z.topPrice >= pMin - vpMargin && z.bottomPrice <= pMax + vpMargin)
         .slice()
@@ -1531,7 +1533,7 @@ export function renderChart(
     const showSupplyBlocks = smcCfg.showBearishOb ?? isBearishMaster;
 
     const allCandidateDemand = (showDemandBlocks ? smcData.orderBlocks : [])
-      .filter((ob) => !ob.isBreaker && ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
+      .filter((ob) => ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
     const unmitigatedDemand = sortZonesByProximity(allCandidateDemand.filter(ob => !ob.isMitigated)).slice(0, 40);
     const mitigatedDemand = includeHistoricalMitigatedOb
       ? sortZonesByProximity(allCandidateDemand.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, 40)
@@ -1539,7 +1541,7 @@ export function renderChart(
     const demandBlocks = [...unmitigatedDemand, ...mitigatedDemand];
 
     const allCandidateSupply = (showSupplyBlocks ? smcData.orderBlocks : [])
-      .filter((ob) => !ob.isBreaker && !ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
+      .filter((ob) => !ob.isBullish && ob.startIndex <= endIdx && (ob.endIndex >= startIdx || !ob.isMitigated));
     const unmitigatedSupply = sortZonesByProximity(allCandidateSupply.filter(ob => !ob.isMitigated)).slice(0, 40);
     const mitigatedSupply = includeHistoricalMitigatedOb
       ? sortZonesByProximity(allCandidateSupply.filter(ob => ob.isMitigated && ob.endIndex >= startIdx)).slice(0, 40)
@@ -1954,7 +1956,7 @@ export function renderChart(
           // In clean mode, merge EQH/EQL into unified BSL/SSL clusters below
           return true;
         }
-        if (isCleanMode && lvl.isSwept) return false;
+        if (isCleanMode && lvl.isSwept && smcCfg.showSweeps === false) return false;
         return lvl.type !== 'EQH' && lvl.type !== 'EQL';
       });
 
@@ -4455,9 +4457,9 @@ export function renderChart(
   // ── LAYER 7: Indicator Overlays ───────────────────────────────────────
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 0, chartW, chartH); ctx.clip();
-  for (const cfg of options.indicators) {
+  for (const cfg of (options.indicators || [])) {
     if (!cfg.enabled || !isOverlay(cfg.type)) continue;
-    const result = options.indicatorResults.get(cfg.id || cfg.type);
+    const result = options.indicatorResults?.get ? options.indicatorResults.get(cfg.id || cfg.type) : undefined;
     if (!result) continue;
 
     function drawLine(vals: (number|null)[], color: string, sw: number) {
@@ -4653,9 +4655,9 @@ export function renderChart(
 
   // Price scale tags for active overlay indicators (TradingView institutional parity)
   if (endIdx >= candles.length && !options.skipCrosshair) {
-    for (const cfg of options.indicators) {
+    for (const cfg of (options.indicators || [])) {
       if (!cfg.enabled || !isOverlay(cfg.type)) continue;
-      const result = options.indicatorResults.get(cfg.id || cfg.type);
+      const result = options.indicatorResults?.get ? options.indicatorResults.get(cfg.id || cfg.type) : undefined;
       if (!result) continue;
       let lastVal: number | null = null;
       if (Array.isArray(result)) {
@@ -4958,7 +4960,7 @@ export function renderChart(
 
   // Indicator Panels
   for (const cfg of panelInds) {
-    const result = options.indicatorResults.get(cfg.id || cfg.type);
+    const result = options.indicatorResults?.get ? options.indicatorResults.get(cfg.id || cfg.type) : undefined;
     // Panel bg + separator
     ctx.fillStyle = themeColors.panelBg; ctx.fillRect(0, panelOffset, chartW+RM, pH);
     ctx.strokeStyle = themeColors.panelSep; ctx.lineWidth = 1*dpr;
@@ -5243,7 +5245,7 @@ export function renderOverlay(
   const RM = CHART_RIGHT_MARGIN * dpr;
   const BM = CHART_BOTTOM_MARGIN * dpr;
 
-  const panelInds = options.indicators.filter(i => !isOverlay(i.type) && i.enabled);
+  const panelInds = (options.indicators || []).filter(i => !isOverlay(i.type) && i.enabled);
   const hasVolPanel = options.showVolumePanel;
   const totalPanels = panelInds.length + (hasVolPanel ? 1 : 0);
   const panelH = calculateDynamicPanelHeight(H, totalPanels, dpr);
@@ -5562,7 +5564,9 @@ export function renderOverlay(
     let hoveredOB: HoveredOrderBlockInfo | null = null;
 
     // Check SMC Order Blocks and Breakers
-    const smcData = options.smcData || (options.showSmcOverlay && options.smcConfig ? calculateSMC(candles, options.smcConfig) : null);
+    const smcData = (options.showMi007 && options.mi007Data?.smc)
+      ? options.mi007Data.smc
+      : (options.smcData || (options.showSmcOverlay && options.smcConfig ? calculateSMC(candles, options.smcConfig) : null));
     if (smcData) {
       const allBlocks = [...(smcData.orderBlocks || []), ...(smcData.breakers || [])];
       for (const ob of allBlocks) {
