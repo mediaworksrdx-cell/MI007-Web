@@ -434,7 +434,7 @@ export const DEFAULT_SMC_CONFIG: SmcConfig = {
   showBreakers: true,
   showBullishBreakers: true,
   showBearishBreakers: true,
-  showMitigatedOb: false,
+  showMitigatedOb: true,
 
   // FVGs & IFVGs
   showBullishFvg: true,
@@ -3293,7 +3293,7 @@ export function detectAll16SmcSetups(
   };
 
   // ── Strategy 1: BOS Continuation Scanner
-  const recentBOS = breaks.filter((b) => b.breakType === 'BOS').slice(-8);
+  const recentBOS = breaks.filter((b) => b.breakType === 'BOS').slice(-40);
   for (const brk of recentBOS) {
     const isBull = brk.isBullish;
     const entry = brk.price;
@@ -3321,7 +3321,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 2: CHoCH / MSS Reversal Scanner
-  const recentCHoCH = breaks.filter((b) => b.breakType === 'CHoCH' || b.breakType === 'MSS').slice(-8);
+  const recentCHoCH = breaks.filter((b) => b.breakType === 'CHoCH' || b.breakType === 'MSS').slice(-40);
   for (const brk of recentCHoCH) {
     const isBull = brk.isBullish;
     const entry = brk.price;
@@ -3365,7 +3365,7 @@ export function detectAll16SmcSetups(
   };
 
   // ── Strategy 3: Liquidity Sweep Reversal (Mirrored BSL/SSL)
-  const recentSweeps = sweeps.slice(-8);
+  const recentSweeps = sweeps.slice(-40);
   for (const sw of recentSweeps) {
     const isBull = !sw.isHighSweep; // SSL sweep = Bullish reversal
     const confirmIdx = findSweepConfirmationBar(sw, isBull);
@@ -3406,7 +3406,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 4: Equal Highs & Equal Lows (EQH / EQL Sweep)
-  const eqSwept = sweeps.filter((s) => s.label.includes('EQH') || s.label.includes('EQL')).slice(-8);
+  const eqSwept = sweeps.filter((s) => s.label.includes('EQH') || s.label.includes('EQL')).slice(-40);
   for (const eq of eqSwept) {
     const isBull = !eq.isHighSweep;
     const confirmIdx = findSweepConfirmationBar(eq, isBull);
@@ -3447,7 +3447,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 5: Fair Value Gap (FVG) Retracement (Genuine unmitigated gap with ATR displacement)
-  const activeFvgs = fvgs.filter((f) => !f.isInverse && !f.isInvalidated && !f.isMitigated && f.state === 'FRESH').slice(-8);
+  const activeFvgs = fvgs.filter((f) => !f.isInverse && !f.isInvalidated && !f.isMitigated && f.state === 'FRESH').slice(-40);
   for (const fvg of activeFvgs) {
     const isBull = fvg.isBullish;
     const impulseBar = candles[fvg.startIndex + 1];
@@ -3487,7 +3487,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 6: Order Block (OB) Retest in Discount/Premium
-  const activeObs = orderBlocks.filter((ob) => !ob.isMitigated).slice(-8);
+  const activeObs = orderBlocks.filter((ob) => !ob.isMitigated).slice(-40);
   for (const ob of activeObs) {
     const isBull = ob.isBullish;
 
@@ -3536,7 +3536,7 @@ export function detectAll16SmcSetups(
   }
 
   // ── Strategy 7: Breaker Block Role Reversal
-  const activeBreakers = breakers.filter((b) => !b.isMitigated).slice(-8);
+  const activeBreakers = breakers.filter((b) => !b.isMitigated).slice(-40);
   for (const brk of activeBreakers) {
     const isBull = brk.label.includes('Bull') || (brk.isBreaker ? brk.isBullish : !brk.isBullish);
 
