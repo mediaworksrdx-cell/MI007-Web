@@ -39,6 +39,7 @@ export function renderMi007Overlay({
   const showSmc = config?.showSmc !== false;
   const showVolPro = config?.showVolPro !== false;
   const showFibo = config?.showFibo !== false;
+  const showTrendFibo = config?.showTrendFibo !== false;
   const vp = data.volumeProfile;
 
   ctx.save();
@@ -347,6 +348,159 @@ export function renderMi007Overlay({
         ctx.restore();
       }
     }
+  }
+
+  // ── 2B. 3-Point Trend-Based Fibonacci Extension (Entry 0.618-0.786 & Target 1.272-1.414) ──
+  const tfib = data.trendFibo;
+  if (showTrendFibo && tfib) {
+    const isBull = tfib.direction === 'BULLISH';
+    const ax = (tfib.pointA.index - startIdx) * candleW + candleW / 2;
+    const ay = priceToY(tfib.pointA.price);
+    const bx = (tfib.pointB.index - startIdx) * candleW + candleW / 2;
+    const by = priceToY(tfib.pointB.price);
+    const cx = (tfib.pointC.index - startIdx) * candleW + candleW / 2;
+    const cy = priceToY(tfib.pointC.price);
+    const rightBound = chartW - 6 * dpr;
+    const extStartX = Math.max(12 * dpr, Math.min(cx, rightBound - 60 * dpr));
+
+    ctx.save();
+
+    // Parallel channel trendlines (extended slightly right)
+    if (tfib.channel) {
+      const ch = tfib.channel;
+      const drawRay = (p1: { index: number; price: number }, p2: { index: number; price: number }) => {
+        const x1 = (p1.index - startIdx) * candleW + candleW / 2;
+        const y1 = priceToY(p1.price);
+        const x2 = (p2.index - startIdx) * candleW + candleW / 2;
+        const y2 = priceToY(p2.price);
+        if (Math.abs(x2 - x1) < 1) return;
+        const slope = (y2 - y1) / (x2 - x1);
+        const xEnd = Math.min(rightBound, x2 + Math.max(40 * dpr, (x2 - x1) * 0.6));
+        const yEnd = y2 + slope * (xEnd - x2);
+        ctx.strokeStyle = isDark ? 'rgba(226, 232, 240, 0.55)' : 'rgba(15, 23, 42, 0.55)';
+        ctx.lineWidth = 1.4 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(xEnd, yEnd);
+        ctx.stroke();
+      };
+      drawRay(ch.upperStart, ch.upperEnd);
+      drawRay(ch.lowerStart, ch.lowerEnd);
+    }
+
+    // 3-point A -> B -> C anchor path
+    ctx.strokeStyle = '#D97706';
+    ctx.lineWidth = 1.6 * dpr;
+    ctx.setLineDash([4 * dpr, 3 * dpr]);
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.lineTo(cx, cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    for (const pt of [
+      { x: ax, y: ay, tag: 'A' },
+      { x: bx, y: by, tag: 'B' },
+      { x: cx, y: cy, tag: 'C' },
+    ]) {
+      if (pt.x >= 0 && pt.x <= chartW && pt.y >= 0 && pt.y <= chartH) {
+        ctx.fillStyle = '#F59E0B';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 4 * dpr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = isDark ? '#0F172A' : '#FFFFFF';
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.stroke();
+        ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+        ctx.fillStyle = '#F59E0B';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(pt.tag, pt.x, pt.y - 6 * dpr);
+      }
+    }
+
+    // 0.618 - 0.786 Entry Zone Box (gold-bordered)
+    const eTop = Math.max(0, Math.min(priceToY(tfib.entryZone[0]), priceToY(tfib.entryZone[1])));
+    const eBot = Math.min(chartH, Math.max(priceToY(tfib.entryZone[0]), priceToY(tfib.entryZone[1])));
+    if (eBot > eTop) {
+      const eX1 = Math.max(12 * dpr, Math.min(bx, cx - 20 * dpr));
+      const eW = Math.max(50 * dpr, rightBound - eX1);
+      ctx.fillStyle = isBull ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.12)';
+      ctx.fillRect(eX1, eTop, eW, eBot - eTop);
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.strokeRect(eX1, eTop, eW, eBot - eTop);
+
+      ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+      ctx.fillStyle = isBull ? '#059669' : '#E11D48';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(isBull ? 'ENTRY LONG (0.618-0.786)' : 'ENTRY SHORT (0.618-0.786)', eX1 + 6 * dpr, (eTop + eBot) / 2);
+    }
+
+    // 1.272 - 1.414 Target Zone Box (teal/emerald with gold border)
+    const tTop = Math.max(0, Math.min(priceToY(tfib.targetZone[0]), priceToY(tfib.targetZone[1])));
+    const tBot = Math.min(chartH, Math.max(priceToY(tfib.targetZone[0]), priceToY(tfib.targetZone[1])));
+    if (tBot > tTop) {
+      const tW = Math.max(50 * dpr, rightBound - extStartX);
+      ctx.fillStyle = 'rgba(20, 184, 166, 0.16)';
+      ctx.fillRect(extStartX, tTop, tW, tBot - tTop);
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 1.3 * dpr;
+      ctx.strokeRect(extStartX, tTop, tW, tBot - tTop);
+
+      ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+      ctx.fillStyle = isDark ? '#2DD4BF' : '#0F766E';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('TARGET (1.272-1.414)', extStartX + 6 * dpr, (tTop + tBot) / 2);
+    }
+
+    // Trend-Based Extension lines & labels (0, 0.786, 1, 1.272, 1.414)
+    ctx.font = `bold ${7.5 * dpr}px "JetBrains Mono",monospace`;
+    for (const lvl of tfib.levels) {
+      const ly = priceToY(lvl.price);
+      if (ly < 8 * dpr || ly > chartH - 8 * dpr) continue;
+      const isTgt = lvl.ratio === 1.272 || lvl.ratio === 1.414;
+      ctx.strokeStyle = isTgt ? '#0D9488' : '#D97706';
+      ctx.lineWidth = isTgt ? 1.5 * dpr : 1.1 * dpr;
+      ctx.setLineDash(isTgt ? [] : [4 * dpr, 3 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(extStartX, ly);
+      ctx.lineTo(rightBound, ly);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const tag = `EXT ${lvl.label} (${formatPrice(lvl.price)})`;
+      const tw = ctx.measureText(tag).width + 8 * dpr;
+      const th = 12 * dpr;
+      const bxTag = rightBound - tw;
+      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(255, 255, 255, 0.92)';
+      ctx.fillRect(bxTag, ly - th / 2, tw, th);
+      ctx.strokeStyle = isTgt ? '#0D9488' : '#D97706';
+      ctx.lineWidth = 0.8 * dpr;
+      ctx.strokeRect(bxTag, ly - th / 2, tw, th);
+      ctx.fillStyle = isTgt ? (isDark ? '#2DD4BF' : '#0F766E') : '#D97706';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(tag, bxTag + 4 * dpr, ly);
+    }
+
+    // Stop Loss line
+    const slY = priceToY(tfib.stopLoss);
+    if (slY >= 8 * dpr && slY <= chartH - 8 * dpr) {
+      ctx.strokeStyle = '#DC2626';
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.setLineDash([3 * dpr, 3 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(extStartX, slY);
+      ctx.lineTo(rightBound, slY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    ctx.restore();
   }
 
   // ── 3. Active Institutional Setup Bracket (Entry / SL / TP1 / TP2 / TP3) ──────

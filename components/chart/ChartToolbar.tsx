@@ -1312,6 +1312,12 @@ export function ChartToolbar({
                       onChange={(v) => updateMi007({ showFibo: v })}
                     />
                     <SmcToggleRow
+                      label="Trend Fib Ext"
+                      sublabel="3-pt A-B-C entry 0.618-0.786 & target 1.272-1.414"
+                      checked={activeMi007.showTrendFibo !== false}
+                      onChange={(v) => updateMi007({ showTrendFibo: v })}
+                    />
+                    <SmcToggleRow
                       label="HUD Card"
                       sublabel="Confirmation checklist card"
                       checked={Boolean(activeMi007.showHud)}

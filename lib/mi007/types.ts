@@ -5,6 +5,7 @@ export interface Mi007Config {
   showSmc: boolean;
   showVolPro: boolean;
   showFibo: boolean;
+  showTrendFibo?: boolean;
   showHud?: boolean;
 }
 
@@ -13,6 +14,7 @@ export const DEFAULT_MI007_CONFIG: Mi007Config = {
   showSmc: true,
   showVolPro: true,
   showFibo: true,
+  showTrendFibo: true,
   showHud: false,
 };
 
@@ -95,6 +97,29 @@ export interface Mi007FibonacciConfluence {
   inOteZone: boolean;
 }
 
+export interface Mi007TrendFiboPoint {
+  index: number;
+  price: number;
+  time: number;
+}
+
+export interface Mi007TrendFiboExtension {
+  direction: 'BULLISH' | 'BEARISH';
+  pointA: Mi007TrendFiboPoint;
+  pointB: Mi007TrendFiboPoint;
+  pointC: Mi007TrendFiboPoint;
+  entryZone: [number, number];
+  levels: Array<{ ratio: number; label: string; price: number }>;
+  targetZone: [number, number];
+  stopLoss: number;
+  channel?: {
+    upperStart: Mi007TrendFiboPoint;
+    upperEnd: Mi007TrendFiboPoint;
+    lowerStart: Mi007TrendFiboPoint;
+    lowerEnd: Mi007TrendFiboPoint;
+  };
+}
+
 export interface Mi007VolumeBubble {
   candleIndex: number;
   time: number;
@@ -169,6 +194,7 @@ export interface Mi007AnalysisResult {
   smc: SmcAnalysis;
   volumeProfile: Mi007VolumeProfile;
   fibonacci: Mi007FibonacciConfluence | null;
+  trendFibo?: Mi007TrendFiboExtension | null;
   orderFlow: Mi007OrderFlowConfirmation;
   volumeBubbles: Mi007VolumeBubble[];
   activeSetup: Mi007TradeSetup | null;

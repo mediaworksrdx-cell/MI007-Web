@@ -22,6 +22,8 @@ import {
   Mi007OrderFlowConfirmation,
   Mi007ProfileSummary,
   Mi007TradeSetup,
+  Mi007TrendFiboExtension,
+  Mi007TrendFiboPoint,
   Mi007VolumeBin,
   Mi007VolumeBubble,
   Mi007VolumeProfile,
@@ -459,6 +461,107 @@ function computeFibonacciConfluence(
     inDiscount,
     inOteZone,
   };
+}
+
+// ── Module 05B: 3-Point Trend-Based Fibonacci Extension (A -> B -> C) ────────
+
+function computeTrendFiboExtension(
+  closedCandles: Candle[],
+  majorSwings: SmcSwingPoint[]
+): Mi007TrendFiboExtension | null {
+  if (closedCandles.length < 10 || majorSwings.length < 3) return null;
+
+  const sorted = [...majorSwings].sort((a, b) => a.index - b.index);
+  const alt: SmcSwingPoint[] = [];
+  for (const sw of sorted) {
+    const prev = alt[alt.length - 1];
+    if (!prev || prev.isHigh !== sw.isHigh) {
+      alt.push(sw);
+    } else if ((sw.isHigh && sw.price > prev.price) || (!sw.isHigh && sw.price < prev.price)) {
+      alt[alt.length - 1] = sw;
+    }
+  }
+  if (alt.length < 3) return null;
+
+  const a = alt[alt.length - 3];
+  const b = alt[alt.length - 2];
+  const c = alt[alt.length - 1];
+  const toPt = (s: SmcSwingPoint): Mi007TrendFiboPoint => ({
+    index: s.index,
+    price: s.price,
+    time: s.time,
+  });
+
+  const pointA = toPt(a);
+  const pointB = toPt(b);
+  const pointC = toPt(c);
+
+  // Build parallel channel endpoints from last 2 highs & last 2 lows when available
+  const highs = alt.filter((s) => s.isHigh);
+  const lows = alt.filter((s) => !s.isHigh);
+  const channel =
+    highs.length >= 2 && lows.length >= 2
+      ? {
+          upperStart: toPt(highs[highs.length - 2]),
+          upperEnd: toPt(highs[highs.length - 1]),
+          lowerStart: toPt(lows[lows.length - 2]),
+          lowerEnd: toPt(lows[lows.length - 1]),
+        }
+      : undefined;
+
+  if (a.isHigh && !b.isHigh && c.isHigh && a.price > b.price && c.price > b.price) {
+    const span = a.price - b.price;
+    const entryLow = roundPrice(b.price + span * 0.618);
+    const entryHigh = roundPrice(b.price + span * 0.786);
+    const ratios = [0, 0.786, 1.0, 1.272, 1.414];
+    const levels = ratios
+      .map((r) => ({
+        ratio: r,
+        label: r === 0 ? '0' : `${r}`,
+        price: roundPrice(Math.max(0.0001, c.price - span * r)),
+      }))
+      .filter((l) => l.price > 0);
+    const p1272 = roundPrice(Math.max(0.0001, c.price - span * 1.272));
+    const p1414 = roundPrice(Math.max(0.0001, c.price - span * 1.414));
+    return {
+      direction: 'BEARISH',
+      pointA,
+      pointB,
+      pointC,
+      entryZone: [entryLow, entryHigh],
+      levels,
+      targetZone: [Math.min(p1272, p1414), Math.max(p1272, p1414)],
+      stopLoss: roundPrice(Math.max(entryHigh, c.price) + span * 0.08),
+      channel,
+    };
+  }
+
+  if (!a.isHigh && b.isHigh && !c.isHigh && b.price > a.price && b.price > c.price) {
+    const span = b.price - a.price;
+    const entryHigh = roundPrice(b.price - span * 0.618);
+    const entryLow = roundPrice(b.price - span * 0.786);
+    const ratios = [0, 0.786, 1.0, 1.272, 1.414];
+    const levels = ratios.map((r) => ({
+      ratio: r,
+      label: r === 0 ? '0' : `${r}`,
+      price: roundPrice(c.price + span * r),
+    }));
+    const p1272 = roundPrice(c.price + span * 1.272);
+    const p1414 = roundPrice(c.price + span * 1.414);
+    return {
+      direction: 'BULLISH',
+      pointA,
+      pointB,
+      pointC,
+      entryZone: [entryLow, entryHigh],
+      levels,
+      targetZone: [Math.min(p1272, p1414), Math.max(p1272, p1414)],
+      stopLoss: roundPrice(Math.max(0.0001, Math.min(entryLow, c.price) - span * 0.08)),
+      channel,
+    };
+  }
+
+  return null;
 }
 
 // ── Module 06: Order Flow Confirmation (Strictly Gated by Actual Volume) ─────
@@ -948,6 +1051,7 @@ export function analyzeMi007Strategy(
 
   // Module 05: Fibonacci Confluence (anchored strictly to latest confirmed BOS/MSS impulse leg)
   const fibonacci = computeFibonacciConfluence(closedCandles, majorSwings, smc.structureBreaks);
+  const trendFibo = computeTrendFiboExtension(closedCandles, majorSwings);
 
 function detectVolumeBubbles(
   closedCandles: Candle[],
@@ -1032,6 +1136,7 @@ function detectVolumeBubbles(
     smc,
     volumeProfile,
     fibonacci,
+    trendFibo,
     orderFlow,
     volumeBubbles,
     activeSetup,
