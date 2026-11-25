@@ -465,7 +465,7 @@ function computeFibonacciConfluence(
 
 // ── Module 05B: 3-Point Trend-Based Fibonacci Extension (A -> B -> C) ────────
 
-function computeTrendFiboExtension(
+export function computeTrendFiboExtension(
   closedCandles: Candle[],
   majorSwings: SmcSwingPoint[]
 ): Mi007TrendFiboExtension | null {
@@ -1149,4 +1149,18 @@ function detectVolumeBubbles(
   }
   mi007Cache.set(fp, result);
   return result;
+}
+
+export function computeStandaloneTrendFibo(
+  candles: Candle[],
+  symbol = 'NIFTY',
+  timeframe = '1H'
+): Mi007TrendFiboExtension | null {
+  if (!candles || candles.length < 10) return null;
+  const closedCandles = candles.filter((c) => isCandleClosed(c));
+  if (closedCandles.length < 10) return null;
+  const smc = calculateSMC(closedCandles, undefined, symbol, timeframe);
+  const majorSwings = smc.swings.filter((s) => s.significance === 'MAJOR');
+  const pool = majorSwings.length >= 3 ? majorSwings : smc.swings;
+  return computeTrendFiboExtension(closedCandles, pool);
 }

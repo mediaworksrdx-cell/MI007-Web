@@ -190,6 +190,8 @@ export interface ChartOptions {
   mi007Config?: import('./mi007/types').Mi007Config;
   mi007Data?: import('./mi007/types').Mi007AnalysisResult | null;
   mi007HudCollapsed?: boolean;
+  showTrendFibo?: boolean;
+  trendFiboData?: import('./mi007/types').Mi007TrendFiboExtension | null;
   showVolumeProfile: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;

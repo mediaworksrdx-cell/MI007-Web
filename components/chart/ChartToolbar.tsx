@@ -54,6 +54,8 @@ interface ChartToolbarProps {
   mi007Config?: Mi007Config;
   onToggleMi007?: () => void;
   onMi007ConfigChange?: (partial: Partial<Mi007Config>) => void;
+  showTrendFibo?: boolean;
+  onToggleTrendFibo?: () => void;
   showVolumeProfile: boolean;
   showMagnifier?: boolean;
   onToggleMagnifier?: () => void;
@@ -172,6 +174,8 @@ export function ChartToolbar({
   mi007Config,
   onToggleMi007,
   onMi007ConfigChange,
+  showTrendFibo = false,
+  onToggleTrendFibo,
   showVolumeProfile,
   showMagnifier = false,
   onToggleMagnifier,
@@ -1312,12 +1316,6 @@ export function ChartToolbar({
                       onChange={(v) => updateMi007({ showFibo: v })}
                     />
                     <SmcToggleRow
-                      label="Trend Fib Ext"
-                      sublabel="3-pt A-B-C entry 0.618-0.786 & target 1.272-1.414"
-                      checked={activeMi007.showTrendFibo !== false}
-                      onChange={(v) => updateMi007({ showTrendFibo: v })}
-                    />
-                    <SmcToggleRow
                       label="HUD Card"
                       sublabel="Confirmation checklist card"
                       checked={Boolean(activeMi007.showHud)}
@@ -1329,6 +1327,32 @@ export function ChartToolbar({
             </div>
           );
         })()}
+
+        {/* 4.7 Separate Standalone 3-Point Trend-Based Fibonacci Extension */}
+        <button
+          type="button"
+          onClick={onToggleTrendFibo}
+          title="Trend-Based Fibonacci Extension (3-pt A-B-C: Entry 0.618-0.786, Target 1.272-1.414)"
+          className={`h-7 flex items-center gap-1.5 px-2.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+            showTrendFibo
+              ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 font-bold'
+              : 'border-slate-200 dark:border-slate-700 hover:border-amber-500/60 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800'
+          }`}
+        >
+          <span
+            className={`font-mono font-black text-[10.5px] px-1 rounded ${
+              showTrendFibo
+                ? 'bg-amber-500 text-slate-950'
+                : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400'
+            }`}
+          >
+            FIB EXT
+          </span>
+          <span className="hidden sm:inline">Trend Fib</span>
+          {showTrendFibo && (
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+          )}
+        </button>
 
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5" />
         

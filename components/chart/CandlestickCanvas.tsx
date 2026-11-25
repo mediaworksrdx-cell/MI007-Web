@@ -11,6 +11,7 @@ import { DrawingContextMenu } from './DrawingContextMenu';
 import type { CursorMode } from './DrawingToolbar';
 import type { SmcConfig } from '@/lib/smcEngine';
 import { calculateSMC, isCandleClosed, timeframeToMs, DEFAULT_SMC_CONFIG } from '@/lib/smcEngine';
+import { computeStandaloneTrendFibo, computeTrendFiboExtension } from '@/lib/mi007/mi007Engine';
 import { SmcInspectorModal, type SmcInspectorData } from './SmcInspectorModal';
 import { useAppTheme } from '@/lib/themeContext';
 
@@ -28,6 +29,7 @@ interface CandlestickCanvasProps {
   mi007Config?: import("../../lib/mi007/types").Mi007Config;
   mi007Data?: import("../../lib/mi007/types").Mi007AnalysisResult | null;
   showVolumeProfile: boolean;
+  showTrendFibo?: boolean;
   showFnoOverlay?: boolean;
   fnoLevels?: FnoOverlayLevels;
   strategyOverlay?: StrategyPayoffOverlay;
@@ -168,7 +170,7 @@ export function CandlestickCanvas({
   candles, chartType, showVolume, showVolumePanel,
   showSmcOverlay, smcConfig, showOrderFlow = false, orderFlowConfig, orderFlowData,
   showMi007 = false, mi007Config, mi007Data,
-  showVolumeProfile, showFnoOverlay, fnoLevels, strategyOverlay,
+  showVolumeProfile, showTrendFibo = false, showFnoOverlay, fnoLevels, strategyOverlay,
   indicators, indicatorResults,
   currentPriceOverride, timeframe, isMarketOpen = true, symbol, showMagnifier = false, onToggleMagnifier, targetCandleTime, goToRange, onClearGoToRange, targetSetupId, targetSmcSetup, className = '',
   activeDrawingTool = 'NONE',
@@ -1127,6 +1129,17 @@ export function CandlestickCanvas({
   }, [closedCandlesForSmc, smcConfig, showSmcOverlay, showMi007, mi007Config?.showSmc, symbol, timeframe]);
 
   const memoizedSmcData = workerSmcData;
+  const trendFiboData = useMemo(() => {
+    if (!showTrendFibo || cleanCandles.length < 10) return null;
+    if (mi007Data?.trendFibo) return mi007Data.trendFibo;
+    if (memoizedSmcData?.swings && memoizedSmcData.swings.length >= 3) {
+      const closed = cleanCandles.filter((c) => isCandleClosed(c));
+      const major = memoizedSmcData.swings.filter((s) => s.significance === 'MAJOR');
+      const pool = major.length >= 3 ? major : memoizedSmcData.swings;
+      return computeTrendFiboExtension(closed, pool);
+    }
+    return computeStandaloneTrendFibo(cleanCandles, symbol || 'NIFTY', timeframe);
+  }, [showTrendFibo, cleanCandles, mi007Data, memoizedSmcData, symbol, timeframe]);
 
   // Keep latest-value refs in sync before paint (avoids writing refs during render)
   useLayoutEffect(() => {
@@ -1442,6 +1455,8 @@ export function CandlestickCanvas({
           mi007Config,
           mi007Data,
           mi007HudCollapsed,
+          showTrendFibo,
+          trendFiboData,
           showVolumeProfile,
           showFnoOverlay, fnoLevels,
           strategyOverlay,
@@ -1466,7 +1481,7 @@ export function CandlestickCanvas({
       }
     };
   }, [cleanCandles, chartType, showVolume, showVolumePanel, showSmcOverlay, smcConfig, memoizedSmcData, showOrderFlow, orderFlowConfig, orderFlowData,
-      showMi007, mi007Config, mi007Data, mi007HudCollapsed, showVolumeProfile,
+      showMi007, mi007Config, mi007Data, mi007HudCollapsed, showTrendFibo, trendFiboData, showVolumeProfile,
       showFnoOverlay, fnoLevels, strategyOverlay,
       indicators, indicatorResults, currentPriceOverride, timeframe,
       drawings, isAllDrawingsHidden, startIdx, endIdx, priceScaleRatio, priceOffset, size, dpr, clockTick, theme]);

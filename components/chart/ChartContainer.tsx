@@ -365,6 +365,23 @@ export function ChartContainer({
       return next;
     });
   }, []);
+  const [showTrendFibo, setShowTrendFibo] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('mi007_trend_fibo_enabled') === 'true';
+      } catch {}
+    }
+    return false;
+  });
+  const handleToggleTrendFibo = useCallback(() => {
+    setShowTrendFibo(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem('mi007_trend_fibo_enabled', String(next)); } catch {}
+      }
+      return next;
+    });
+  }, []);
   const handleMi007ConfigChange = useCallback((partial: Partial<Mi007Config>) => {
     setMi007Config(prev => {
       const next = { ...prev, ...partial };
@@ -1990,6 +2007,8 @@ export function ChartContainer({
         mi007Config={mi007Config}
         onToggleMi007={handleToggleMi007}
         onMi007ConfigChange={handleMi007ConfigChange}
+        showTrendFibo={showTrendFibo}
+        onToggleTrendFibo={handleToggleTrendFibo}
         showVolumeProfile={showVolumeProfile}
         showMagnifier={isMagnifierActive}
         onToggleMagnifier={handleToggleMagnifier}
@@ -2092,6 +2111,7 @@ export function ChartContainer({
             showMi007={showMi007}
             mi007Config={mi007Config}
             mi007Data={mi007Data}
+            showTrendFibo={showTrendFibo}
             showVolumeProfile={showVolumeProfile}
             showFnoOverlay={false}
             fnoLevels={undefined}

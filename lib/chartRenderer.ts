@@ -19,7 +19,7 @@ import {
 import { calculateSMC, DEFAULT_SMC_CONFIG, SMC_TRADE_LIFESPAN_BARS, resolveSameBarTpSlOrder, inferCandleIntervalMs, getSmcTradingDayKey, isCandleClosed, type SmcConfig } from './smcEngine';
 import { SmartAnnotationManager, type SmcVisualizationMode } from './smc/smartAnnotationManager';
 import { renderOrderFlowFootprint, formatVol } from './orderflow/orderFlowRenderer';
-import { renderMi007Overlay } from './mi007/mi007Renderer';
+import { renderMi007Overlay, renderTrendFiboOverlay } from './mi007/mi007Renderer';
 import { computeVolumeProfile } from './volumeProfile';
 import {
   calculateSMA as calcSMA,
@@ -4858,6 +4858,22 @@ export function renderChart(
       candles,
       startIdx,
       endIdx,
+      chartW,
+      chartH,
+      candleW,
+      dpr,
+      isDark,
+      priceToY,
+      formatPrice: (p: number) => formatPrice(p, options.symbol),
+    });
+  }
+
+  // ── LAYER 7.7: Standalone 3-Point Trend-Based Fibonacci Extension ──
+  if (options.showTrendFibo && options.trendFiboData) {
+    renderTrendFiboOverlay({
+      ctx,
+      trendFibo: options.trendFiboData,
+      startIdx,
       chartW,
       chartH,
       candleW,
