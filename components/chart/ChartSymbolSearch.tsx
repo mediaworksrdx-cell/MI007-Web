@@ -416,7 +416,7 @@ export function ChartSymbolSearch({
 
           {/* ── Expandable Floating Search Dropdown (Institutional TV Style) ── */}
       {isOpen && (
-        <div className="absolute top-full left-0 w-full min-w-[320px] sm:min-w-[540px] md:min-w-[620px] max-w-2xl mt-1.5 max-h-96 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/98 dark:bg-[#0A0E1A]/98 backdrop-blur-xl shadow-2xl z-[250] overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-100">
+        <div className="absolute top-full left-0 w-[min(calc(100vw-1rem),620px)] sm:min-w-[540px] md:min-w-[620px] max-w-2xl mt-1.5 max-h-96 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/98 dark:bg-[#0A0E1A]/98 backdrop-blur-xl shadow-2xl z-[250] overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-100">
           {/* Category Tabs Header */}
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/80 px-3 py-2 gap-2">
             <div className="flex items-center gap-1 overflow-x-auto scrollbar-none whitespace-nowrap py-0.5">

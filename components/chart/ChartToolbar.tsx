@@ -457,10 +457,10 @@ export function ChartToolbar({
   return (
     <div
       ref={toolbarRef}
-      className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B0F19] px-2 sm:px-3 py-1 text-xs text-slate-800 dark:text-slate-200 shadow-xs gap-1 sm:gap-2 relative z-50 select-none overflow-visible flex-nowrap"
+      className="flex flex-wrap xl:flex-nowrap items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B0F19] px-1.5 sm:px-3 py-1 text-xs text-slate-800 dark:text-slate-200 shadow-xs gap-1 sm:gap-2 relative z-50 select-none overflow-visible"
     >
       {/* ── Left Controls: Timeframe, Chart Type, Indicators, Drawing, Overlays, Save & Templates ── */}
-      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-nowrap overflow-visible">
+      <div className="flex flex-wrap xl:flex-nowrap items-center gap-1 sm:gap-1.5 min-w-0 overflow-visible">
         {/* 1. Timeframe Simple Dropdown */}
         <div className="relative">
           <button
@@ -1348,7 +1348,7 @@ export function ChartToolbar({
           >
             FIB EXT
           </span>
-          <span className="hidden sm:inline">Trend Fib</span>
+          <span className="hidden lg:inline">Trend Fib</span>
           {showTrendFibo && (
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
           )}
