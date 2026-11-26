@@ -43,17 +43,21 @@ export function Footer() {
                 />
               </div>
               <div className="min-w-0 flex flex-col justify-center">
-                <div className="leading-tight">
+                <div className="leading-none">
                   <span
-                    className="text-[14px] sm:text-[15px] md:text-[16px] font-black font-sans uppercase tracking-[0.08em] footer-brand-title text-white whitespace-nowrap flex items-center gap-1.5 group-hover:text-emerald-400 transition-colors"
+                    className="text-[14px] sm:text-[15.5px] md:text-[17px] uppercase footer-brand-title text-white whitespace-nowrap flex items-center gap-2 transition-colors"
                     style={{ color: '#FFFFFF' }}
                   >
-                    <span className="text-white">Market Intelligence</span>
-                    <span className="font-mono font-black text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 tracking-widest">
-                      007
+                    <span className="text-slate-200 font-medium tracking-[0.13em]">Market</span>
+                    <span className="text-white font-black tracking-[0.06em]">Intelligence</span>
+                    <span className="h-3.5 w-[1.5px] bg-gradient-to-b from-amber-400 via-emerald-400 to-teal-400 rounded-full opacity-90" />
+                    <span className="font-mono font-black text-[12px] sm:text-[13px] px-2 py-0.5 rounded-md border border-emerald-400/40 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-amber-500/15 tracking-[0.16em] shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                      <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300 bg-clip-text text-transparent">
+                        007
+                      </span>
                     </span>
                   </span>
-                  <div className="h-[1.5px] w-full max-w-[200px] bg-gradient-to-r from-emerald-500 via-amber-400 to-transparent rounded-full mt-1" />
+                  <div className="h-[1px] w-full max-w-[240px] bg-gradient-to-r from-amber-400/70 via-emerald-400/70 to-transparent rounded-full mt-1.5" />
                 </div>
 
                 <div

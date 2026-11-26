@@ -292,16 +292,20 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               isHoveredExternal={brandHovered}
             />
           </div>
-          <div className="flex flex-col leading-tight min-w-0 justify-center">
-            <span className="navbar-brand-title text-[13px] xs:text-[14px] sm:text-[15.5px] md:text-[16.5px] font-black font-sans uppercase tracking-[0.08em] whitespace-nowrap flex items-center gap-1.5 shrink-0">
-              <span className="brand-title-dark">Market Intelligence</span>
-              <span className="font-mono font-black text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 tracking-widest shadow-xs">
-                007
+          <div className="flex flex-col leading-none min-w-0 justify-center">
+            <span className="navbar-brand-title text-[13px] xs:text-[14.5px] sm:text-[16px] md:text-[17px] uppercase whitespace-nowrap flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <span className="brand-title-dark font-medium tracking-[0.13em]">Market</span>
+              <span className="brand-title-dark font-black tracking-[0.06em]">Intelligence</span>
+              <span className="h-3.5 w-[1.5px] bg-gradient-to-b from-amber-400 via-emerald-500 to-teal-400 rounded-full opacity-90" />
+              <span className="font-mono font-black text-[12px] sm:text-[13px] px-2 py-0.5 rounded-md border border-emerald-500/40 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-amber-500/15 tracking-[0.16em] shadow-[0_0_12px_rgba(16,185,129,0.18)]">
+                <span className="bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-500 bg-clip-text text-transparent">
+                  007
+                </span>
               </span>
             </span>
-            <span className="h-[1.5px] w-full max-w-[190px] bg-gradient-to-r from-emerald-500 via-amber-400 to-transparent rounded-full mt-0.5 hidden xs:block" />
+            <span className="h-[1px] w-full max-w-[235px] bg-gradient-to-r from-amber-400/70 via-emerald-500/70 to-transparent rounded-full mt-1 hidden xs:block" />
             {/* Tagline Always Visible on screens >= xs */}
-            <span className="navbar-brand-subtitle text-[7px] xs:text-[7.5px] sm:text-[8.5px] tracking-[0.16em] sm:tracking-[0.18em] font-extrabold uppercase font-mono mt-0.5 truncate hidden xs:block">
+            <span className="navbar-brand-subtitle text-[6.5px] xs:text-[7px] sm:text-[8px] tracking-[0.22em] sm:tracking-[0.24em] font-bold uppercase font-mono mt-1 opacity-80 truncate hidden xs:block">
               Intelligence Beyond the Noise
             </span>
           </div>
