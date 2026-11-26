@@ -804,9 +804,7 @@ html[data-theme="techno"] .navbar-brand-badge {
 }
 
 .navbar-brand-title {
-  font-family: 'Berkshire Swash', 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
-  letter-spacing: 0 !important;
-  text-transform: none !important;
+  font-family: var(--font-plus-jakarta), 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .navbar-brand-subtitle {
@@ -905,9 +903,7 @@ footer .footer-brand-title,
 html footer .footer-brand-title,
 html[data-theme] footer .footer-brand-title,
 html[data-theme] footer span.footer-brand-title {
-  font-family: 'Berkshire Swash', 'Playwrite US Trad', 'Caveat', cursive, sans-serif !important;
-  letter-spacing: 0 !important;
-  text-transform: none !important;
+  font-family: var(--font-plus-jakarta), 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .footer-brand-subtitle,
