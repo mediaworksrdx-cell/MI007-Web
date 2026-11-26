@@ -293,12 +293,15 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
             />
           </div>
           <div className="flex flex-col leading-tight min-w-0 justify-center">
-            <span className="navbar-brand-title text-[15px] xs:text-[16px] sm:text-[17.5px] md:text-[19px] font-bold font-caveat whitespace-nowrap flex items-center gap-1.5 shrink-0">
-              <span className="brand-title-dark font-caveat">Market Intelligence</span>
-              <span className="brand-accent-green font-caveat">MI-007</span>
+            <span className="navbar-brand-title text-[13px] xs:text-[14px] sm:text-[15.5px] md:text-[16.5px] font-black font-sans uppercase tracking-[0.08em] whitespace-nowrap flex items-center gap-1.5 shrink-0">
+              <span className="brand-title-dark">Market Intelligence</span>
+              <span className="font-mono font-black text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 tracking-widest shadow-xs">
+                007
+              </span>
             </span>
+            <span className="h-[1.5px] w-full max-w-[190px] bg-gradient-to-r from-emerald-500 via-amber-400 to-transparent rounded-full mt-0.5 hidden xs:block" />
             {/* Tagline Always Visible on screens >= xs */}
-            <span className="navbar-brand-subtitle text-[7.5px] xs:text-[8px] sm:text-[9px] tracking-[0.14em] sm:tracking-[0.16em] font-extrabold uppercase font-mono mt-0.5 truncate hidden xs:block">
+            <span className="navbar-brand-subtitle text-[7px] xs:text-[7.5px] sm:text-[8.5px] tracking-[0.16em] sm:tracking-[0.18em] font-extrabold uppercase font-mono mt-0.5 truncate hidden xs:block">
               Intelligence Beyond the Noise
             </span>
           </div>
