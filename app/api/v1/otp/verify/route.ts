@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { routeAndVerifyOtp } from '@/lib/otp/router';
+import { getAuthenticatedUser, upsertUser } from '@/lib/auth/serverAuth';
 import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 export const dynamic = 'force-dynamic';
@@ -34,6 +35,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const targetKey = challengeId || destination.toLowerCase().replace(/[\s+()\-]/g, '');
+    const targetRate = checkRateLimit('otp-verify-target', targetKey, 5, 15 * 60_000);
+    if (!targetRate.allowed) {
+      return NextResponse.json(
+        { ok: false, verified: false, error: `Too many verification attempts for this challenge. Retry in ${targetRate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const result = routeAndVerifyOtp(challengeId, otp, destination);
 
     if (!result.ok) {
@@ -41,6 +51,19 @@ export async function POST(req: NextRequest) {
         { ok: false, verified: false, error: result.message },
         { status: 400 }
       );
+    }
+
+    // If caller is already signed in and verified their own email/phone, persist verification on server record
+    const authUser = getAuthenticatedUser(req);
+    if (authUser && result.destination) {
+      if (result.channel === 'email' && result.destination.trim().toLowerCase() === authUser.email.toLowerCase()) {
+        upsertUser({ ...authUser, emailVerified: true });
+      } else if (
+        result.channel === 'whatsapp' &&
+        result.destination.replace(/[\s+()\-]/g, '') === authUser.phone.replace(/[\s+()\-]/g, '')
+      ) {
+        upsertUser({ ...authUser, phoneVerified: true });
+      }
     }
 
     return NextResponse.json({

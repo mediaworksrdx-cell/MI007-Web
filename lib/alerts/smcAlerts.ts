@@ -70,13 +70,8 @@ export interface SmcAlertChannelSettings {
   whatsappProvider: 'selfhosted' | 'twilio' | 'callmebot' | 'meta';
   whatsappPhone: string;
   selfhostedUrl?: string;
-  callmebotApiKey: string;
-  twilioAccountSid?: string;
-  twilioAuthToken?: string;
   gmailEnabled: boolean;
   gmailTo: string;
-  gmailUser: string;
-  gmailAppPassword: string;
 }
 
 export interface SmcTriggeredAlert {
@@ -155,9 +150,6 @@ export const QUICK_WISH_INSTRUMENTS: QuickInstrumentOption[] = [
   { symbol: 'TSLA', name: 'Tesla Inc.', assetClass: 'STOCK', market: 'USA' },
 ];
 
-export const DEFAULT_TWILIO_SID = ['ACe1a711949e4f31', '763ab52a95fdc2b069'].join('');
-export const DEFAULT_TWILIO_TOKEN = ['09f58d2395d95a21', '2728227fdc098ac1'].join('');
-
 export const DEFAULT_CHANNEL_SETTINGS: SmcAlertChannelSettings = {
   browserEnabled: true,
   soundEnabled: true,
@@ -167,13 +159,8 @@ export const DEFAULT_CHANNEL_SETTINGS: SmcAlertChannelSettings = {
   whatsappProvider: 'selfhosted',
   whatsappPhone: '',
   selfhostedUrl: 'https://synthetixanalytics.com/whatsapp',
-  callmebotApiKey: '',
-  twilioAccountSid: DEFAULT_TWILIO_SID,
-  twilioAuthToken: DEFAULT_TWILIO_TOKEN,
   gmailEnabled: false,
   gmailTo: '',
-  gmailUser: '',
-  gmailAppPassword: '',
 };
 
 const WATCHLIST_KEY = 'mi007_smc_alert_watchlist_v1';
@@ -319,14 +306,29 @@ export function loadAlertSettings(): SmcAlertChannelSettings {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_CHANNEL_SETTINGS;
     const parsed = JSON.parse(raw);
-    return {
-      ...DEFAULT_CHANNEL_SETTINGS,
-      ...parsed,
+    const cleaned: SmcAlertChannelSettings = {
+      browserEnabled: parsed.browserEnabled ?? DEFAULT_CHANNEL_SETTINGS.browserEnabled,
+      soundEnabled: parsed.soundEnabled ?? DEFAULT_CHANNEL_SETTINGS.soundEnabled,
+      autoScanEnabled: parsed.autoScanEnabled ?? DEFAULT_CHANNEL_SETTINGS.autoScanEnabled,
+      pollIntervalSec: parsed.pollIntervalSec ?? DEFAULT_CHANNEL_SETTINGS.pollIntervalSec,
+      whatsappEnabled: Boolean(parsed.whatsappEnabled),
       whatsappProvider: 'selfhosted',
-      whatsappPhone: parsed.whatsappPhone || '+918838202279',
-      twilioAccountSid: parsed.twilioAccountSid || DEFAULT_TWILIO_SID,
-      twilioAuthToken: parsed.twilioAuthToken || DEFAULT_TWILIO_TOKEN,
+      whatsappPhone: typeof parsed.whatsappPhone === 'string' ? parsed.whatsappPhone : '',
+      selfhostedUrl: typeof parsed.selfhostedUrl === 'string' ? parsed.selfhostedUrl : DEFAULT_CHANNEL_SETTINGS.selfhostedUrl,
+      gmailEnabled: Boolean(parsed.gmailEnabled),
+      gmailTo: typeof parsed.gmailTo === 'string' ? parsed.gmailTo : '',
     };
+    // Scrub legacy client-stored secrets (gmailAppPassword, callmebotApiKey, twilio credentials) if present
+    if (
+      'gmailAppPassword' in parsed ||
+      'callmebotApiKey' in parsed ||
+      'twilioAccountSid' in parsed ||
+      'twilioAuthToken' in parsed ||
+      'gmailUser' in parsed
+    ) {
+      saveAlertSettings(cleaned);
+    }
+    return cleaned;
   } catch {
     return DEFAULT_CHANNEL_SETTINGS;
   }
@@ -335,7 +337,19 @@ export function loadAlertSettings(): SmcAlertChannelSettings {
 export function saveAlertSettings(settings: SmcAlertChannelSettings): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    const sanitized: SmcAlertChannelSettings = {
+      browserEnabled: settings.browserEnabled,
+      soundEnabled: settings.soundEnabled,
+      autoScanEnabled: settings.autoScanEnabled,
+      pollIntervalSec: settings.pollIntervalSec,
+      whatsappEnabled: settings.whatsappEnabled,
+      whatsappProvider: settings.whatsappProvider,
+      whatsappPhone: settings.whatsappPhone,
+      selfhostedUrl: settings.selfhostedUrl,
+      gmailEnabled: settings.gmailEnabled,
+      gmailTo: settings.gmailTo,
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(sanitized));
   } catch {
     // ignore quota errors
   }

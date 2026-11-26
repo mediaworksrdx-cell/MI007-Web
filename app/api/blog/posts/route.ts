@@ -4,6 +4,7 @@ import {
   createBlogPost,
   verifyBlogPasskey,
 } from '@/lib/blog/blogService';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,6 +48,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rate = checkRateLimit('blog-auth', ip, 10, 15 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { success: false, error: `Too many requests. Retry in ${rate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const passkey = (req.headers.get('x-blog-passkey') || body?.passkey || '').trim();
 

@@ -451,12 +451,35 @@ export async function POST(req: NextRequest) {
       );
     }
     if (payload.channels?.gmail) {
-      const verifiedUserEmail = authUser?.email && authUser.email.includes('@') ? authUser.email : undefined;
-      tasks.push(
-        sendGmail(payload, plainText, isAdmin, verifiedUserEmail).then((r) => {
-          results.gmail = r;
-        })
-      );
+      if (!isAdmin) {
+        if (!authUser?.emailVerified || !authUser.email || !authUser.email.includes('@')) {
+          results.gmail = {
+            ok: false,
+            message: 'Email ownership must be verified via OTP before receiving email alerts.',
+          };
+        } else {
+          const perUserEmailRate = checkSharedRateLimit('alerts-email-user-daily', authUser.id, 20, 24 * 3600_000);
+          if (!perUserEmailRate.allowed) {
+            results.gmail = {
+              ok: false,
+              message: `Per-account daily email limit reached (20/day). Retry in ${perUserEmailRate.retryAfterSeconds}s.`,
+            };
+          } else {
+            tasks.push(
+              sendGmail(payload, plainText, false, authUser.email).then((r) => {
+                results.gmail = r;
+              })
+            );
+          }
+        }
+      } else {
+        const verifiedUserEmail = authUser?.email && authUser.email.includes('@') ? authUser.email : undefined;
+        tasks.push(
+          sendGmail(payload, plainText, true, verifiedUserEmail).then((r) => {
+            results.gmail = r;
+          })
+        );
+      }
     }
 
     await Promise.all(tasks);

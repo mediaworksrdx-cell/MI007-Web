@@ -110,7 +110,6 @@ export function SmcAlertsTabView() {
   const [regName, setRegName] = useState<string>('');
   const [regEmail, setRegEmail] = useState<string>('');
   const [isSignInMode, setIsSignInMode] = useState<boolean>(false);
-  const [showAdvancedSmtp, setShowAdvancedSmtp] = useState<boolean>(false);
 
   const historyRef = useRef<SmcTriggeredAlert[]>([]);
   historyRef.current = history;
@@ -185,7 +184,7 @@ export function SmcAlertsTabView() {
   }, [resendCooldown]);
 
   const handleSendOtp = async (channel: 'whatsapp' | 'email' = 'whatsapp') => {
-    const destination = (channel === 'whatsapp' ? settings.whatsappPhone : settings.gmailTo || settings.gmailUser || '').trim();
+    const destination = (channel === 'whatsapp' ? settings.whatsappPhone : settings.gmailTo || '').trim();
     if (!destination || destination.length < 5) {
       setTestFeedback({
         channel: channel === 'whatsapp' ? 'WhatsApp' : 'Gmail',
@@ -369,12 +368,7 @@ export function SmcAlertsTabView() {
                 whatsappProvider: settings.whatsappProvider,
                 whatsappPhone: settings.whatsappPhone,
                 selfhostedUrl: settings.selfhostedUrl,
-                callmebotApiKey: settings.callmebotApiKey,
-                twilioAccountSid: settings.twilioAccountSid,
-                twilioAuthToken: settings.twilioAuthToken,
                 gmailTo: settings.gmailTo,
-                gmailUser: settings.gmailUser,
-                gmailAppPassword: settings.gmailAppPassword,
                 originUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
               },
             }),
@@ -551,12 +545,7 @@ export function SmcAlertsTabView() {
             whatsappProvider: settings.whatsappProvider,
             whatsappPhone: settings.whatsappPhone,
             selfhostedUrl: settings.selfhostedUrl,
-            callmebotApiKey: settings.callmebotApiKey,
-            twilioAccountSid: settings.twilioAccountSid,
-            twilioAuthToken: settings.twilioAuthToken,
             gmailTo: settings.gmailTo,
-            gmailUser: settings.gmailUser,
-            gmailAppPassword: settings.gmailAppPassword,
             originUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
           },
         }),
@@ -1034,48 +1023,9 @@ export function SmcAlertsTabView() {
                 </div>
               )}
 
-              {/* Optional Advanced SMTP Config Accordion */}
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedSmtp(!showAdvancedSmtp)}
-                  className="text-[11px] text-[var(--theme-card-text-muted)] hover:text-[var(--theme-card-text)] flex items-center gap-1 cursor-pointer"
-                >
-                  <span>{showAdvancedSmtp ? '▼' : '▶'}</span>
-                  <span>Advanced / Custom SMTP Sender (Optional)</span>
-                </button>
-
-                {showAdvancedSmtp && (
-                  <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-[var(--theme-card-border)] space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-medium text-[var(--theme-card-text-muted)] mb-0.5">
-                          Sender Gmail
-                        </label>
-                        <input
-                          type="email"
-                          placeholder="Optional if in .env"
-                          value={settings.gmailUser}
-                          onChange={(e) => setSettings((s) => ({ ...s, gmailUser: e.target.value }))}
-                          className="w-full px-2 py-1 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-medium text-[var(--theme-card-text-muted)] mb-0.5">
-                          App Password
-                        </label>
-                        <input
-                          type="password"
-                          placeholder="16-char App Password"
-                          value={settings.gmailAppPassword}
-                          onChange={(e) => setSettings((s) => ({ ...s, gmailAppPassword: e.target.value }))}
-                          className="w-full px-2 py-1 rounded border border-[var(--theme-card-border)] bg-[var(--theme-card-bg)] text-[var(--theme-card-text)] text-xs font-mono"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <p className="text-[11px] text-[var(--theme-card-text-muted)] leading-relaxed">
+                Emails are dispatched securely via server-side delivery only after your account email is verified via OTP.
+              </p>
             </div>
 
             <button

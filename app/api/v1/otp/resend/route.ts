@@ -34,6 +34,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const destKey = currentStatus.destination.toLowerCase().replace(/[\s+()\-]/g, '');
+    const destRate = checkRateLimit('otp-send-dest', destKey, 5, 15 * 60_000);
+    if (!destRate.allowed) {
+      return NextResponse.json(
+        { ok: false, error: `Too many OTP requests for this destination. Retry in ${destRate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const channel = fallbackChannel || currentStatus.channel;
     const result = await routeAndSendOtp({
       destination: currentStatus.destination,

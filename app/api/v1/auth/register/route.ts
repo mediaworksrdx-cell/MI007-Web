@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import {
   attachSessionCookie,
   findUserByEmail,
+  findUserByPhone,
   hashPassword,
   toPublicUser,
   upsertUser,
@@ -59,15 +60,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (findUserByEmail(email)) {
-      // Generic response prevents email enumeration
+    if (findUserByEmail(email) || findUserByPhone(cleanPhone)) {
+      // Generic response prevents email and phone enumeration
       return NextResponse.json(
         { ok: false, error: 'Unable to complete registration with the provided details.' },
         { status: 400 }
       );
     }
 
-    // Never trust client-supplied phoneVerified; derive strictly from server-verified OTP challenge
+    // Never trust client-supplied phoneVerified or emailVerified; derive strictly from server-verified OTP challenges
     let phoneVerified = false;
     if (challengeId) {
       const challengeStatus = routeGetStatus(challengeId);
@@ -81,6 +82,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    let emailVerified = false;
+    const emailChallengeId = String(body.email_challenge_id || body.emailChallengeId || '').trim();
+    if (emailChallengeId) {
+      const emailStatus = routeGetStatus(emailChallengeId);
+      if (
+        emailStatus &&
+        emailStatus.verified &&
+        !emailStatus.expired &&
+        emailStatus.channel === 'email' &&
+        emailStatus.destination.trim().toLowerCase() === email
+      ) {
+        emailVerified = true;
+      }
+    }
+
     const userId = `USR-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
     const deskId = `DESK-${crypto.randomInt(100, 1000)}`;
 
@@ -88,6 +104,7 @@ export async function POST(req: NextRequest) {
       id: userId,
       name,
       email,
+      emailVerified,
       phone: phone.startsWith('+') ? phone : `+${cleanPhone}`,
       phoneVerified,
       role: 'Pro Trader',

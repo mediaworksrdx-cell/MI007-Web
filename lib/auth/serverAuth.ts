@@ -7,6 +7,7 @@ export interface StoredUserRecord {
   id: string;
   name: string;
   email: string;
+  emailVerified?: boolean;
   phone: string;
   phoneVerified: boolean;
   role: string;
@@ -19,6 +20,7 @@ export interface PublicUserProfile {
   id: string;
   name: string;
   email: string;
+  emailVerified: boolean;
   phone: string;
   phoneVerified: boolean;
   role: string;
@@ -62,6 +64,7 @@ export function toPublicUser(record: StoredUserRecord): PublicUserProfile {
     id: record.id,
     name: record.name,
     email: record.email,
+    emailVerified: Boolean(record.emailVerified),
     phone: record.phone,
     phoneVerified: record.phoneVerified,
     role: record.role,

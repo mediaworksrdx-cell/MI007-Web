@@ -6,6 +6,7 @@ import {
   verifyBlogPasskey,
   getAllBlogPosts,
 } from '@/lib/blog/blogService';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ip = getClientIp(req);
+    const rate = checkRateLimit('blog-auth', ip, 10, 15 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { success: false, error: `Too many requests. Retry in ${rate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const { id } = await params;
     const body = await req.json();
     const passkey = (req.headers.get('x-blog-passkey') || body?.passkey || '').trim();
@@ -91,6 +101,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ip = getClientIp(req);
+    const rate = checkRateLimit('blog-auth', ip, 10, 15 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { success: false, error: `Too many requests. Retry in ${rate.retryAfterSeconds}s.` },
+        { status: 429 }
+      );
+    }
+
     const { id } = await params;
     const passkey = (req.headers.get('x-blog-passkey') || '').trim();
 

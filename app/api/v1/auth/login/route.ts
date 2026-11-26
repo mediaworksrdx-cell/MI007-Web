@@ -32,13 +32,13 @@ export async function POST(req: NextRequest) {
     const otp = String(body.otp || body.code || '').trim();
     const challengeId = String(body.challenge_id || '').trim();
 
-    // Per-account lockout (independent of IP, blocks distributed credential-stuffing / brute-force)
+    // Account + IP lockout (blocks brute-force without allowing remote DoS lockout of the legitimate owner)
     const acctKey = loginType === 'phone_otp' ? phone.replace(/[\s+()\-]/g, '') : email;
     if (acctKey) {
-      const acctRate = checkRateLimit('auth-login-acct', acctKey, 8, 15 * 60_000);
+      const acctRate = checkRateLimit('auth-login-acct-ip', `${acctKey}:${ip}`, 8, 15 * 60_000);
       if (!acctRate.allowed) {
         return NextResponse.json(
-          { ok: false, error: `Too many login attempts for this account. Retry in ${acctRate.retryAfterSeconds}s.` },
+          { ok: false, error: `Too many login attempts for this account from your IP. Retry in ${acctRate.retryAfterSeconds}s.` },
           { status: 429 }
         );
       }
