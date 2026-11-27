@@ -103,6 +103,18 @@ export function LoginModal({
     };
   }, [isOpen, onClose]);
 
+  // Load Google Identity Services script before early return so Hook order never changes
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return;
+    if (document.getElementById('google-gsi-client-script')) return;
+    const s = document.createElement('script');
+    s.id = 'google-gsi-client-script';
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.defer = true;
+    document.head.appendChild(s);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   // 1. Dispatch WhatsApp OTP
@@ -289,17 +301,6 @@ export function LoginModal({
   };
 
   // 7. Google Identity Services Popup Sign-In (uses Authorized JavaScript Origins + Client ID)
-  useEffect(() => {
-    if (!isOpen || typeof document === 'undefined') return;
-    if (document.getElementById('google-gsi-client-script')) return;
-    const s = document.createElement('script');
-    s.id = 'google-gsi-client-script';
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.async = true;
-    s.defer = true;
-    document.head.appendChild(s);
-  }, [isOpen]);
-
   const handleGoogleSignIn = () => {
     setErrorMessage(null);
     const g = (window as unknown as { google?: { accounts?: { oauth2?: { initTokenClient: (cfg: Record<string, unknown>) => { requestAccessToken: (opts?: Record<string, unknown>) => void } } } } }).google;
