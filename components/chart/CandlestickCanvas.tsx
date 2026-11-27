@@ -2849,6 +2849,50 @@ export function CandlestickCanvas({
         </button>
       )}
 
+      {/* ── Bottom-Center Zoom In / Reset / Zoom Out Controls ── */}
+      {size.w > 320 && (
+        <div
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            left: `${Math.round(Math.max(120, (size.w - CHART_RIGHT_MARGIN) / 2))}px`,
+            bottom: `${CHART_BOTTOM_MARGIN + 10}px`,
+          }}
+          className="absolute -translate-x-1/2 z-20 flex items-center rounded-full border border-slate-300/90 dark:border-slate-700/90 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-lg overflow-hidden select-none"
+        >
+          <button
+            type="button"
+            onClick={() => setZoom((z) => Math.max(0.15, +(z / 1.25).toFixed(2)))}
+            title="Zoom Out (-)"
+            aria-label="Zoom Out"
+            className="px-2.5 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-emerald-500 transition-colors cursor-pointer"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setZoom(1);
+              setScrollOffset(0);
+            }}
+            title="Reset Zoom & Scroll (0)"
+            aria-label="Reset Zoom"
+            className="px-2 py-1 text-[10.5px] font-mono font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border-x border-slate-200 dark:border-slate-700/80 transition-colors cursor-pointer min-w-[46px] text-center"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            type="button"
+            onClick={() => setZoom((z) => Math.min(6.0, +(z * 1.25).toFixed(2)))}
+            title="Zoom In (+)"
+            aria-label="Zoom In"
+            className="px-2.5 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-emerald-500 transition-colors cursor-pointer"
+          >
+            +
+          </button>
+        </div>
+      )}
+
       {/* Floating Drawing Quick Actions Bar (hidden when context menu is active) */}
       {selectedDrawing && quickBarPos && !contextMenuPos && (
         <DrawingQuickBar

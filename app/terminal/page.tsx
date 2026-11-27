@@ -143,6 +143,9 @@ const DEFAULT_COMMODITIES: CommodityItem[] = [
   { symbol: 'WTI', name: 'WTI Crude', base: 86.81, unit: 'USD / bbl', category: 'Energy', changePct: 1.27 },
   { symbol: 'NATGAS', name: 'Natural Gas', base: 3.10, unit: 'USD / MMBtu', category: 'Energy', changePct: -0.67 },
   { symbol: 'COPPER', name: 'Copper', base: 5.97, unit: 'USD / lb', category: 'Industrial Metals', changePct: -0.45 },
+  { symbol: 'PLATINUM', name: 'Platinum', base: 1024.50, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.42 },
+  { symbol: 'PALLADIUM', name: 'Palladium', base: 1085.20, unit: 'USD / oz', category: 'Precious Metals', changePct: 0.65 },
+  { symbol: 'ALUMINIUM', name: 'Aluminium', base: 2540.00, unit: 'USD / mt', category: 'Industrial Metals', changePct: 0.31 },
 ];
 
 const DEFAULT_FOREX: ForexItem[] = [
@@ -154,6 +157,8 @@ const DEFAULT_FOREX: ForexItem[] = [
   { symbol: 'AUDCAD', name: 'AUD / CAD', pair: 'AUD/CAD', base: 0.9620, pipSpread: '1.2 pips', changePct: -0.53 },
   { symbol: 'USDCHF', name: 'USD / CHF', pair: 'USD/CHF', base: 0.8410, pipSpread: '0.9 pips', changePct: 0.23 },
   { symbol: 'AUDUSD', name: 'AUD / USD', pair: 'AUD/USD', base: 0.6729, pipSpread: '1.1 pips', changePct: -0.74 },
+  { symbol: 'NZDUSD', name: 'NZD / USD', pair: 'NZD/USD', base: 0.5940, pipSpread: '1.2 pips', changePct: 0.18 },
+  { symbol: 'EURGBP', name: 'EUR / GBP', pair: 'EUR/GBP', base: 0.8332, pipSpread: '0.9 pips', changePct: -0.11 },
 ];
 
 // Predefined catalog of recognized indices & cryptos for instantaneous auto-detection
@@ -200,6 +205,8 @@ const KNOWN_COMMODITIES: Record<string, { name: string; base: number; unit: stri
   NATGAS: { name: 'Natural Gas', base: 3.10, unit: 'USD / MMBtu', category: 'Energy' },
   COPPER: { name: 'Copper', base: 5.97, unit: 'USD / lb', category: 'Industrial Metals' },
   PLATINUM: { name: 'Platinum', base: 1024.50, unit: 'USD / oz', category: 'Precious Metals' },
+  PALLADIUM: { name: 'Palladium', base: 1085.20, unit: 'USD / oz', category: 'Precious Metals' },
+  ALUMINIUM: { name: 'Aluminium', base: 2540.00, unit: 'USD / mt', category: 'Industrial Metals' },
 };
 
 const KNOWN_FOREX: Record<string, { name: string; base: number; pair: string; pipSpread: string }> = {
@@ -212,6 +219,8 @@ const KNOWN_FOREX: Record<string, { name: string; base: number; pair: string; pi
   USDCHF: { name: 'USD / CHF', pair: 'USD/CHF', base: 0.8410, pipSpread: '0.9 pips' },
   USDAED: { name: 'USD / AED', pair: 'USD/AED', base: 3.6725, pipSpread: '0.5 pips' },
   AUDUSD: { name: 'AUD / USD', pair: 'AUD/USD', base: 0.6729, pipSpread: '1.1 pips' },
+  NZDUSD: { name: 'NZD / USD', pair: 'NZD/USD', base: 0.5940, pipSpread: '1.2 pips' },
+  EURGBP: { name: 'EUR / GBP', pair: 'EUR/GBP', base: 0.8332, pipSpread: '0.9 pips' },
   UADCAD: { name: 'USD / CAD', pair: 'USD/CAD', base: 1.4304, pipSpread: '0.9 pips' },
 };
 
@@ -1798,7 +1807,17 @@ export default function TerminalPage() {
                     No commodities in this section. Use the search bar above or click Reset Defaults.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">
+                  <div className={`grid gap-3 mb-6 ${
+                    commodities.length <= 3
+                      ? 'grid-cols-1 sm:grid-cols-3'
+                      : commodities.length % 6 === 0
+                      ? 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
+                      : commodities.length % 5 === 0
+                      ? 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
+                      : commodities.length % 4 === 0
+                      ? 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-4'
+                      : 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
+                  }`}>
                     {commodities.map(c => (
                       <CommodityTile
                         key={c.symbol}
@@ -1827,7 +1846,17 @@ export default function TerminalPage() {
                     No forex pairs in this section. Use the search bar above or click Reset Defaults.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 mb-6">
+                  <div className={`grid gap-3 mb-6 ${
+                    forex.length <= 3
+                      ? 'grid-cols-1 sm:grid-cols-3'
+                      : forex.length % 6 === 0
+                      ? 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
+                      : forex.length % 5 === 0
+                      ? 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
+                      : forex.length % 4 === 0
+                      ? 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-4'
+                      : 'grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
+                  }`}>
                     {forex.map(f => (
                       <ForexTile
                         key={f.symbol}

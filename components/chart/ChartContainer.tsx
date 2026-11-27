@@ -33,6 +33,7 @@ import { SmcConfig, DEFAULT_SMC_CONFIG, getStoredSmcConfig, saveStoredSmcConfig 
 import { OrderFlowConfig, DEFAULT_ORDER_FLOW_CONFIG, ExchangeTradeTick } from '@/lib/orderflow/types';
 import { analyzeOrderFlow } from '@/lib/orderflow/orderFlowEngine';
 import { OrderFlowSignalsModal } from './OrderFlowSignalsModal';
+import { Mi007IntelligenceModal } from './Mi007IntelligenceModal';
 import { analyzeMi007Strategy } from '@/lib/mi007/mi007Engine';
 import { Mi007Config, DEFAULT_MI007_CONFIG } from '@/lib/mi007/types';
 import { ChartToolbar } from './ChartToolbar';
@@ -331,6 +332,7 @@ export function ChartContainer({
     return DEFAULT_ORDER_FLOW_CONFIG;
   });
   const [isOfSignalsOpen, setIsOfSignalsOpen] = useState(false);
+  const [isMi007LabOpen, setIsMi007LabOpen] = useState(false);
   const [isHotkeysOpen, setIsHotkeysOpen] = useState(false);
 
   const handleOrderFlowConfigChange = useCallback((newCfg: OrderFlowConfig) => {
@@ -2269,6 +2271,24 @@ export function ChartContainer({
       <ChartHotkeysModal
         isOpen={isHotkeysOpen}
         onClose={() => setIsHotkeysOpen(false)}
+      />
+
+      {/* ── MI-007 Intelligence & Backtesting Lab Modal ── */}
+      {mi007Config.enabled && (
+        <button
+          onClick={() => setIsMi007LabOpen(true)}
+          title="Open MI-007 AI Intelligence & Backtest Lab"
+          className="fixed bottom-4 right-4 z-40 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/90 hover:bg-amber-400 text-slate-950 shadow-lg border border-amber-300/40 transition"
+        >
+          MI-007 Intelligence &amp; Backtest
+        </button>
+      )}
+      <Mi007IntelligenceModal
+        isOpen={isMi007LabOpen}
+        onClose={() => setIsMi007LabOpen(false)}
+        candles={candles}
+        symbol={selectedSymbol}
+        timeframe={timeframe}
       />
     </div>
   );

@@ -295,6 +295,20 @@ export interface SmcConfirmedSetup {
   tp2Source?: string;
 }
 
+export interface SmcSupplyDemandZone {
+  id: string;
+  zoneType: 'SUPPLY' | 'DEMAND';
+  topPrice: number;
+  bottomPrice: number;
+  midPrice: number;
+  startIndex: number;
+  confirmationIndex: number;
+  formationTime: number;
+  mitigationState: 'FRESH' | 'PARTIALLY_MITIGATED' | 'MITIGATED' | 'INVALIDATED';
+  strengthScore: number; // 0..100 based on displacement ATR & volume ratio
+  source: 'ORDER_BLOCK' | 'IMPULSE_ORIGIN';
+}
+
 export interface SmcAnalysis {
   swings: SmcSwingPoint[];
   structureBreaks: SmcStructureBreak[];
@@ -302,6 +316,8 @@ export interface SmcAnalysis {
   sweeps: SmcLiquiditySweep[];
   orderBlocks: SmcOrderBlock[];
   breakers: SmcOrderBlock[];
+  mitigationBlocks?: SmcOrderBlock[];
+  supplyDemandZones?: SmcSupplyDemandZone[];
   fvgs: SmcFvg[];
   dealingRange: SmcDealingRange;
   sessionLevels: SmcSessionLevels;
@@ -4147,6 +4163,41 @@ export function calculateSMC(
   // 4. Detect Order Blocks & Breakers
   const { orderBlocks, breakers } = detectOrderBlocksAndBreakers(candles, structureBreaks, opt);
 
+  // 4.5 Derive Mitigation Blocks & Supply/Demand Zones strictly from closed-bar OBs & swings
+  const mitigationBlocks: SmcOrderBlock[] = breakers
+    .filter((b) => {
+      // A Mitigation Block is a flipped OB where no prior liquidity sweep occurred at its origin
+      const hasSweepNearOrigin = sweeps.some(
+        (sw) => Math.abs(sw.candleIndex - (b.originatingCandleIndex ?? b.startIndex)) <= 4
+      );
+      return !hasSweepNearOrigin;
+    })
+    .map((b) => ({
+      ...b,
+      id: b.id.replace(/^breaker-/, 'mitigation-'),
+      label: b.isBullish ? 'Mitigation (Bull)' : 'Mitigation (Bear)',
+    }));
+
+  const supplyDemandZones: SmcSupplyDemandZone[] = orderBlocks
+    .filter((ob) => !ob.isBreaker && ob.mitigationState !== 'INVALIDATED')
+    .map((ob) => {
+      const dispScore = Math.min(60, Math.round((ob.displacementAtr ?? 0.5) * 30));
+      const volScore = Math.min(40, Math.round((ob.volumeRatio ?? 1.0) * 20));
+      return {
+        id: `sd-${ob.isBullish ? 'demand' : 'supply'}-${ob.startIndex}`,
+        zoneType: ob.isBullish ? 'DEMAND' : 'SUPPLY',
+        topPrice: ob.topPrice,
+        bottomPrice: ob.bottomPrice,
+        midPrice: Number(((ob.topPrice + ob.bottomPrice) / 2).toFixed(4)),
+        startIndex: ob.startIndex,
+        confirmationIndex: ob.confirmationIndex ?? ob.startIndex + 1,
+        formationTime: ob.formationTime,
+        mitigationState: ob.mitigationState ?? (ob.isMitigated ? 'MITIGATED' : 'FRESH'),
+        strengthScore: Math.min(100, dispScore + volScore),
+        source: 'ORDER_BLOCK',
+      };
+    });
+
   // 5. Detect Fair Value Gaps (FVGs) with Invalidation-First Waterfall
   const fvgs = detectFairValueGaps(candles);
 
@@ -4226,6 +4277,8 @@ export function calculateSMC(
     sweeps,
     orderBlocks,
     breakers,
+    mitigationBlocks,
+    supplyDemandZones,
     fvgs,
     dealingRange,
     sessionLevels,
