@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use, Suspense } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
+import { TerminalAccessGate } from '@/components/auth/TerminalAccessGate';
 import { ChartContainer } from '@/components/chart/ChartContainer';
 import { MarketType } from '@/lib/types';
 
@@ -97,6 +98,7 @@ function ChartPageContent({ params, searchParams }: ChartPageProps) {
       <Navbar market={market} onMarketChange={setMarket} />
 
       <main className="pt-[84px] sm:pt-[88px] h-[100dvh] max-h-[100dvh] flex flex-col bg-transparent relative z-10 overflow-hidden">
+        <TerminalAccessGate showStatusBanner={false}>
         {/* ── Full Chart Terminal ── */}
         <div className="flex-1 min-h-0 w-full h-full p-0">
           <ChartContainer
@@ -118,6 +120,7 @@ function ChartPageContent({ params, searchParams }: ChartPageProps) {
             initialSetupName={resolvedSearchParams.setupName}
           />
         </div>
+        </TerminalAccessGate>
       </main>
     </>
   );
