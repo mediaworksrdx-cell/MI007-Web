@@ -42,6 +42,17 @@ export async function POST(req: NextRequest) {
           { status: 429 }
         );
       }
+
+      // High account-wide cap on password logins across all IPs (blocks distributed credential stuffing; owner can still use OTP)
+      if (loginType !== 'phone_otp') {
+        const globalAcctRate = checkRateLimit('auth-login-acct-global', acctKey, 100, 60 * 60_000);
+        if (!globalAcctRate.allowed) {
+          return NextResponse.json(
+            { ok: false, error: `Account temporarily rate-limited due to high login volume. Use WhatsApp OTP or retry in ${globalAcctRate.retryAfterSeconds}s.` },
+            { status: 429 }
+          );
+        }
+      }
     }
 
     if (loginType === 'phone_otp') {

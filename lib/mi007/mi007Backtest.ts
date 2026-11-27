@@ -144,17 +144,26 @@ function selectSetupForStrategy(
   strategyId: BacktestStrategyId,
   slice: Candle[],
   symbol: string,
-  timeframe: string
+  timeframe: string,
+  usedSetupIds: Set<string>,
+  maxSetupAgeBars = 12
 ): {
+  setupId: string;
   direction: 'BULLISH' | 'BEARISH';
   entryPrice: number;
   stopLoss: number;
   bias: 'BULLISH' | 'BEARISH' | 'RANGE';
 } | null {
+  const currentIdx = slice.length - 1;
+
   if (strategyId === 'MI007_CONFLUENCE') {
     const res = analyzeMi007Strategy(slice, { symbol, timeframe });
     if (!res || !res.activeSetup || !res.activeSetup.isTradeable) return null;
+    const sid = res.activeSetup.id;
+    if (usedSetupIds.has(sid)) return null;
+    if (currentIdx - (res.activeSetup.candleIndex ?? currentIdx) > maxSetupAgeBars) return null;
     return {
+      setupId: sid,
       direction: res.activeSetup.direction,
       entryPrice: res.activeSetup.entryPrice,
       stopLoss: res.activeSetup.stopLoss,
@@ -166,23 +175,38 @@ function selectSetupForStrategy(
   const setups: SmcConfirmedSetup[] = smc.confirmedSetups || [];
   const bias = smc.ltfBias ?? 'RANGE';
 
+  const isRecentUnused = (s: SmcConfirmedSetup) =>
+    !usedSetupIds.has(s.id) && currentIdx - (s.candleIndex ?? 0) <= maxSetupAgeBars;
+
+  // Sort newest-first so we always pick the freshest unused setup rather than stale historical entries
+  const recentSetups = setups
+    .filter(isRecentUnused)
+    .sort((a, b) => (b.candleIndex ?? 0) - (a.candleIndex ?? 0));
+
   let match: SmcConfirmedSetup | undefined;
   if (strategyId === 'SMC_OB_FVG') {
-    match = setups.find((s) =>
-      s.setupType.includes('OB') || s.setupType.includes('FVG')
+    match = recentSetups.find(
+      (s) => s.setupType.includes('OB') || s.setupType.includes('FVG')
     );
   } else if (strategyId === 'SMC_SWEEP_CHOCH') {
-    match = setups.find((s) =>
-      s.setupType.includes('SWEEP') || s.setupType.includes('CHOCH') || s.setupType.includes('LIQUIDITY')
+    match = recentSetups.find(
+      (s) =>
+        s.setupType.includes('SWEEP') ||
+        s.setupType.includes('CHOCH') ||
+        s.setupType.includes('LIQUIDITY')
     );
   } else if (strategyId === 'SMC_BREAKER_IFVG') {
-    match = setups.find((s) =>
-      s.setupType.includes('BREAKER') || s.setupType.includes('IFVG')
+    match = recentSetups.find(
+      (s) =>
+        s.setupType.includes('BREAKER') ||
+        s.setupType === 'INVERSE_FVG' ||
+        s.setupType.includes('IFVG')
     );
   }
 
   if (!match) return null;
   return {
+    setupId: match.id,
     direction: match.direction,
     entryPrice: match.entryPrice,
     stopLoss: match.stopLoss,
@@ -262,16 +286,20 @@ export function runMi007Backtest(
 
   // Round-trip cost rate in decimal (entry brokerage+slippage + exit brokerage+slippage+tax)
   const totalCostRate = (2 * brokerageBps + 2 * slippageBps + transactionCostBps) / 10_000;
+  const usedSetupIds = new Set<string>();
+  const MAX_LEVERAGE = 5;
 
   let i = 50;
   while (i < closed.length - 2) {
     const slice = closed.slice(0, i + 1);
-    const signal = selectSetupForStrategy(strategyId, slice, symbol, timeframe);
+    const signal = selectSetupForStrategy(strategyId, slice, symbol, timeframe, usedSetupIds);
 
     if (!signal) {
       i += stepBars;
       continue;
     }
+
+    usedSetupIds.add(signal.setupId);
 
     if (directionFilter !== 'BOTH' && signal.direction !== directionFilter) {
       i += stepBars;
@@ -297,14 +325,12 @@ export function runMi007Backtest(
       continue;
     }
 
-    // Wait up to 8 bars for entry fill (or immediate market fill if price is already within 0.25 ATR)
-    const atrNow = atrSeries[i] || riskDist;
+    // Wait up to 8 bars for actual price touch at entryPrice (no market-open shortcut)
     let entryIndex = -1;
     for (let k = i + 1; k <= Math.min(closed.length - 1, i + 8); k++) {
       const bar = closed[k];
       const touched = isBull ? bar.low <= rawEntry : bar.high >= rawEntry;
-      const near = Math.abs(bar.open - rawEntry) <= atrNow * 0.25;
-      if (touched || near) {
+      if (touched) {
         entryIndex = k;
         break;
       }
@@ -315,12 +341,12 @@ export function runMi007Backtest(
       continue;
     }
 
-    // Simulate bar-by-bar exit from entryIndex + 1
+    // Simulate bar-by-bar exit starting AT entryIndex so entry-bar stop hits are never missed
     let exitIndex = Math.min(closed.length - 1, entryIndex + maxHoldBars);
     let exitPrice = closed[exitIndex].close;
     let outcome: 'WIN' | 'LOSS' | 'EXPIRED' = 'EXPIRED';
 
-    for (let k = entryIndex + 1; k <= Math.min(closed.length - 1, entryIndex + maxHoldBars); k++) {
+    for (let k = entryIndex; k <= Math.min(closed.length - 1, entryIndex + maxHoldBars); k++) {
       const bar = closed[k];
       const hitTp = isBull ? bar.high >= takeProfit : bar.low <= takeProfit;
       const hitSl = isBull ? bar.low <= sl : bar.high >= sl;
@@ -354,12 +380,14 @@ export function runMi007Backtest(
       ? (exitPrice - entryPrice) / riskDist
       : (entryPrice - exitPrice) / riskDist;
 
-    const riskDollars = equity * (riskPerTradePct / 100);
-    const positionNotional = (riskDollars / riskDist) * entryPrice;
+    const targetRiskDollars = equity * (riskPerTradePct / 100);
+    const uncappedNotional = (targetRiskDollars / riskDist) * entryPrice;
+    const positionNotional = Math.min(uncappedNotional, equity * MAX_LEVERAGE);
+    const actualRiskDollars = (positionNotional / entryPrice) * riskDist;
     const tradeCostAbs = positionNotional * totalCostRate;
-    const costR = riskDollars > 0 ? tradeCostAbs / riskDollars : 0;
+    const costR = actualRiskDollars > 0 ? tradeCostAbs / actualRiskDollars : 0;
     const netR = grossR - costR;
-    const pnlAbs = netR * riskDollars;
+    const pnlAbs = netR * actualRiskDollars;
 
     equity = Math.max(0, equity + pnlAbs);
     totalCostsAbs += tradeCostAbs;

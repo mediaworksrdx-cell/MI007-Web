@@ -98,10 +98,16 @@ function calibrateConfidence(
   setupHistory: Mi007AnalysisResult['smc']['setupHistory']
 ): CalibratedConfidence {
   const isWin = (s: NonNullable<Mi007AnalysisResult['smc']['setupHistory']>[number]) =>
-    s.status === 'TARGET_HIT';
+    s.status === 'TARGET_HIT' || s.tp1Hit === true || s.tp2Hit === true;
 
   const closedOutcomes = (setupHistory ?? []).filter(
-    (s) => isWin(s) || s.signalState === 'INVALIDATED' || s.signalState === 'EXPIRED'
+    (s) =>
+      isWin(s) ||
+      s.status === 'EXITED' ||
+      s.status === 'INVALIDATED' ||
+      s.status === 'EXPIRED' ||
+      s.signalState === 'INVALIDATED' ||
+      s.signalState === 'EXPIRED'
   );
   const n = closedOutcomes.length;
   const wins = closedOutcomes.filter(isWin).length;
