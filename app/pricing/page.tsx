@@ -266,7 +266,7 @@ export default function PricingPage() {
             NEW LAUNCH OFFER
           </span>
           <span className="text-xs sm:text-sm font-bold">
-            Limited-Time <span className="text-amber-400 font-black">15% Discount</span> Across All Subscriptions + Extra <span className="text-emerald-400 font-black">10% Off</span> on Annual Plans!
+            <span className="text-emerald-400 font-black">15-Day Free Look-In Trial</span> + Limited-Time <span className="text-amber-400 font-black">15% Discount</span> Across All Subscriptions + Extra <span className="text-emerald-400 font-black">10% Off</span> on Annual Plans!
           </span>
         </div>
 

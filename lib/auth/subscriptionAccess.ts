@@ -35,7 +35,7 @@ export interface SubscriptionAccessState {
 
 const SUB_STORAGE_KEY = 'mi007_active_subscription_v1';
 const TRIAL_START_KEY = 'mi007_trial_started_at_v1';
-const FREE_LOOK_IN_DAYS = 3;
+const FREE_LOOK_IN_DAYS = 15;
 
 const ADMIN_EMAILS = new Set([
   'trader@synthetixanalytics.com',

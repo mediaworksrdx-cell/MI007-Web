@@ -61,7 +61,7 @@ export function TerminalAccessGate({
                 </h2>
                 <p className="text-xs text-slate-400 leading-relaxed">
                   Access live multi-market dashboards, non-repainting Smart Money Concepts (SMC) charts, F&amp;O Open Interest &amp; Greeks, and Screeners. Includes a{' '}
-                  <strong className="text-emerald-400">3-Day Free Look-In Trial</strong> upon sign-in.
+                  <strong className="text-emerald-400">15-Day Free Look-In Trial</strong> + <strong className="text-amber-400">15% New Launch Offer</strong> upon sign-in.
                 </p>
               </div>
 
@@ -91,7 +91,7 @@ export function TerminalAccessGate({
                   Upgrade Your MI-007 Subscription
                 </h2>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Hi <strong className="text-white">{access.user?.name}</strong>, your 3-day free look-in trial has ended. Choose a plan to continue accessing Live Charts, F&amp;O Analytics, Screeners, and MI-007 AI Intelligence with our{' '}
+                  Hi <strong className="text-white">{access.user?.name}</strong>, your 15-day free look-in trial has ended. Choose a plan to continue accessing Live Charts, F&amp;O Analytics, Screeners, and MI-007 AI Intelligence with our{' '}
                   <strong className="text-amber-400">15% New Launch Discount</strong>.
                 </p>
               </div>
