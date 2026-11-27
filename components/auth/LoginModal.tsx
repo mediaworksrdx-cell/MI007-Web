@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Falcon3DLogo } from '@/components/3d/logos/Falcon3DLogo';
 import { saveUserAccount, UserAccount } from '@/lib/auth/userAccount';
 
@@ -287,15 +288,17 @@ export function LoginModal({
     handleFinishLogin(demoUser);
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="relative w-full max-w-[460px] rounded-2xl border border-gray-200 bg-white text-gray-900 p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-150"
+        className="relative w-full max-w-[460px] max-h-[92vh] overflow-y-auto my-auto rounded-2xl border border-gray-200 bg-white text-gray-900 p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -734,6 +737,7 @@ export function LoginModal({
           <span>End-to-End Encrypted</span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
