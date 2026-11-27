@@ -2634,7 +2634,7 @@ export function CandlestickCanvas({
         onToggleMagnifier?.();
       } else if (e.key === '+' || e.key === '=') {
         e.preventDefault();
-        setZoom(z => Math.min(6.0, +(z * 1.25).toFixed(2)));
+        setZoom(z => Math.min(18.0, +(z * 1.25).toFixed(2)));
       } else if (e.key === '-' || e.key === '_') {
         e.preventDefault();
         setZoom(z => Math.max(0.15, +(z / 1.25).toFixed(2)));
@@ -2671,7 +2671,7 @@ export function CandlestickCanvas({
           setScrollOffset(s => Math.max(minScroll, Math.min(maxScroll, s + scroll)));
         }
         if (zoomMult !== 1) {
-          setZoom(z => Math.max(0.15, Math.min(6.0, +(z * zoomMult).toFixed(2))));
+          setZoom(z => Math.max(0.15, Math.min(18.0, +(z * zoomMult).toFixed(2))));
         }
       });
     }
@@ -2829,14 +2829,34 @@ export function CandlestickCanvas({
               {lockedRangeInfo.isNearestFallback ? ' · nearest' : ''})
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => onClearGoToRange?.()}
-            className="ml-1 px-2 py-0.5 rounded bg-slate-700 hover:bg-emerald-600 text-white font-mono text-[10px] font-bold transition-colors cursor-pointer"
-            title="Reset zoom & return to latest live candles"
-          >
-            Reset
-          </button>
+          <div className="flex items-center gap-1 ml-1">
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.max(0.15, +(z / 1.25).toFixed(2)))}
+              className="px-1.5 py-0.5 rounded bg-emerald-900/80 hover:bg-emerald-700 text-white font-mono text-[11px] font-bold transition-colors cursor-pointer"
+              title="Zoom Out (-)"
+              aria-label="Zoom Out on Selected Date"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.min(18.0, +(z * 1.25).toFixed(2)))}
+              className="px-1.5 py-0.5 rounded bg-emerald-900/80 hover:bg-emerald-700 text-white font-mono text-[11px] font-bold transition-colors cursor-pointer"
+              title="Zoom In (+)"
+              aria-label="Zoom In on Selected Date"
+            >
+              +
+            </button>
+            <button
+              type="button"
+              onClick={() => onClearGoToRange?.()}
+              className="px-2 py-0.5 rounded bg-slate-700 hover:bg-emerald-600 text-white font-mono text-[10px] font-bold transition-colors cursor-pointer"
+              title="Reset zoom & return to latest live candles"
+            >
+              Reset
+            </button>
+          </div>
         </div>
       )}
 
@@ -2883,7 +2903,7 @@ export function CandlestickCanvas({
           </button>
           <button
             type="button"
-            onClick={() => setZoom((z) => Math.min(6.0, +(z * 1.25).toFixed(2)))}
+            onClick={() => setZoom((z) => Math.min(18.0, +(z * 1.25).toFixed(2)))}
             title="Zoom In (+)"
             aria-label="Zoom In"
             className="px-2.5 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-emerald-500 transition-colors cursor-pointer"
