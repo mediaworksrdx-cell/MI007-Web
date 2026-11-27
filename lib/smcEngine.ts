@@ -1202,29 +1202,40 @@ export function detectOrderBlocksAndBreakers(
 
   const build = (i: number, isBull: boolean) => {
     const candle = candles[i];
-    const next = candles[i + 1];
-    // SMC-002: the impulse candle must be closed (only check forming bar for the latest candle)
-    if (i + 1 === candles.length - 1 && !isCandleClosed(next)) return;
+    const c1 = candles[i + 1];
+    const c2 = candles[i + 2];
+    const c3 = candles[i + 3];
+    if (!c1 || !c2 || !c3) return;
+    // SMC-002: all 3 impulse candles must be closed
+    if (!isCandleClosed(c1) || !isCandleClosed(c2) || !isCandleClosed(c3)) return;
+
+    // 1. Opposite candle rule: Bullish OB must be RED, Bearish OB must be GREEN
     const isOpposing = isBull ? candle.close < candle.open : candle.close > candle.open;
     if (!isOpposing) return;
 
-    const impulseBody = isBull ? next.close - next.open : next.open - next.close;
-    const brokeCandle = isBull ? next.close > candle.high : next.close < candle.low;
-    if (!brokeCandle || impulseBody <= 0) return;
-    // SMC-014: fixed impulse threshold — a nearby break no longer lowers it
-    if (impulseBody < (candle.high - candle.low) * 0.35) return;
-    // SMC-020-style ATR displacement for the impulse (SMC-016 default on)
-    if (reqDisp && atr[i + 1] && impulseBody < dispMult * atr[i + 1]) return;
+    // 2. Three consecutive same-direction candles (strict non-doji)
+    const threeConsecutive = isBull
+      ? c1.close > c1.open && c2.close > c2.open && c3.close > c3.open
+      : c1.close < c1.open && c2.close < c2.open && c3.close < c3.open;
+    if (!threeConsecutive) return;
+
+    // 3. FVG must be present within the three consecutive candles (between c1 and c3)
+    const gap = isBull ? c3.low - c1.high : c1.low - c3.high;
+    const noiseFloor = Math.max((atr[i + 2] || 0) * 0.1, c2.close * 0.0001);
+    if (gap <= noiseFloor) return;
+
+    const impulseBody = isBull ? c3.close - c1.open : c1.open - c3.close;
+    if (impulseBody <= 0) return;
+    if (reqDisp && atr[i + 2] && impulseBody < dispMult * atr[i + 2]) return;
 
     const ma = volBaseline(i + 1);
-    const volumeRatio = next.volume / Math.max(1, ma);
-    const obVolEstimated = isWindowVolumeEstimated(candles, Math.max(0, i + 1 - 20), i + 1);
-    if (reqVolSetting && !obVolEstimated && next.volume < volMult * ma) return;
+    const maxImpulseVol = Math.max(c1.volume, c2.volume, c3.volume);
+    const volumeRatio = maxImpulseVol / Math.max(1, ma);
+    const obVolEstimated = isWindowVolumeEstimated(candles, Math.max(0, i + 1 - 20), i + 3);
+    if (reqVolSetting && !obVolEstimated && maxImpulseVol < volMult * ma) return;
 
-    // SMC-013 / SMC-014: require a same-direction structural break caused by this displacement.
-    // "Caused" = break occurs within linkBars of the OB AND price never closed back through the OB
-    // between the impulse and the break (the leg is unbroken from the block).
-    const linked = breaks.find(b => {
+    // Optional linked structure break for confluence metadata
+    const linked = breaks.find((b) => {
       if (b.isBullish !== isBull) return false;
       if (b.candleIndex < i + 1 || b.candleIndex > i + linkBars) return false;
       for (let k = i + 1; k <= b.candleIndex; k++) {
@@ -1232,8 +1243,8 @@ export function detectOrderBlocksAndBreakers(
       }
       return true;
     });
-    if (!linked) return;
 
+    const confirmIdx = i + 3;
     const ob: SmcOrderBlock = {
       id: `ob-${isBull ? 'bull' : 'bear'}-${i}`,
       startIndex: i,
@@ -1249,15 +1260,15 @@ export function detectOrderBlocksAndBreakers(
       label: isBull ? 'OB (Demand)' : 'OB (Supply)',
       formationTime: candle.openTime,
       originatingCandleIndex: i,
-      displacementAtr: atr[i + 1] ? impulseBody / atr[i + 1] : undefined,
-      linkedBreakIndex: linked.candleIndex,
-      confirmationIndex: linked.candleIndex,
+      displacementAtr: atr[i + 2] ? impulseBody / atr[i + 2] : undefined,
+      linkedBreakIndex: linked?.candleIndex,
+      confirmationIndex: confirmIdx,
       clusterSize: 1,
     };
     const mt = (ob.topPrice + ob.bottomPrice) / 2; // 50% mean threshold
 
-    // SMC-017: progressive mitigation lifecycle, evaluated only after the OB is confirmed
-    for (let k = linked.candleIndex + 1; k < candles.length; k++) {
+    // SMC-017: progressive mitigation lifecycle, evaluated strictly after the 3rd impulse candle closes
+    for (let k = confirmIdx + 1; k < candles.length; k++) {
       const bar = candles[k];
       if (!isCandleClosed(bar)) break;
       const violated = isBull ? bar.close < ob.bottomPrice : bar.close > ob.topPrice;
@@ -1327,7 +1338,7 @@ export function detectOrderBlocksAndBreakers(
     orderBlocks.push(ob);
   };
 
-  for (let i = 2; i < candles.length - 1; i++) {
+  for (let i = 2; i < candles.length - 3; i++) {
     build(i, true);
     build(i, false);
   }

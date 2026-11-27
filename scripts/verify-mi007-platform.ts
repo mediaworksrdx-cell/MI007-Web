@@ -1,4 +1,4 @@
-import { calculateSMC } from '../lib/smcEngine';
+import { calculateSMC, detectOrderBlocksAndBreakers } from '../lib/smcEngine';
 import { calculateEMA, calculateMACD, calculateRSI, calculateSMA, calculateBollinger } from '../lib/indicators';
 import { analyzeMultiTimeframeSmc, resampleCandlesToHtf } from '../lib/mi007/mtfSmc';
 import { compareMi007Strategies, runMi007Backtest } from '../lib/mi007/mi007Backtest';
@@ -64,6 +64,30 @@ check(smc.structureBreaks.length > 0, 'Detects BOS / CHoCH / MSS structure break
 check(Array.isArray(smc.mitigationBlocks), 'Exposes Mitigation Blocks array');
 check(Array.isArray(smc.supplyDemandZones), 'Exposes Supply & Demand Zones array');
 check(smc.dealingRange.highPrice >= smc.equilibriumPrice && smc.equilibriumPrice >= smc.dealingRange.lowPrice, 'Equilibrium (50%) sits strictly within Dealing Range');
+
+// 1B. 3-Consecutive-Candle + FVG + Opposite-Candle Order Block Rule
+const tfMs = 3_600_000;
+const tBase = Date.now() - 40 * tfMs;
+const obTestCandles: Candle[] = Array.from({ length: 25 }, (_, i) => ({
+  openTime: tBase + i * tfMs,
+  open: 100,
+  high: 101,
+  low: 99,
+  close: 100.2,
+  volume: 10_000,
+}));
+// Index 20: Red opposite candle (OB), Index 21-23: 3 green candles with FVG (c23.low=106 > c21.high=102)
+obTestCandles[20] = { openTime: tBase + 20 * tfMs, open: 101, high: 101.5, low: 98.5, close: 99.0, volume: 12_000 };
+obTestCandles[21] = { openTime: tBase + 21 * tfMs, open: 99.0, high: 102.0, low: 98.8, close: 101.8, volume: 15_000 };
+obTestCandles[22] = { openTime: tBase + 22 * tfMs, open: 101.8, high: 107.0, low: 101.5, close: 106.5, volume: 24_000 };
+obTestCandles[23] = { openTime: tBase + 23 * tfMs, open: 106.5, high: 110.0, low: 106.0, close: 109.5, volume: 22_000 };
+obTestCandles[24] = { openTime: tBase + 24 * tfMs, open: 109.5, high: 111.0, low: 108.5, close: 110.2, volume: 12_000 };
+const obRes = detectOrderBlocksAndBreakers(obTestCandles, []);
+const bullObMatch = obRes.orderBlocks.find((ob) => ob.isBullish && ob.startIndex === 20);
+check(
+  bullObMatch !== undefined && bullObMatch.topPrice === 101.5 && bullObMatch.bottomPrice === 98.5 && bullObMatch.confirmationIndex === 23,
+  '3-candle green + FVG detects preceding RED candle as Bullish Order Block'
+);
 
 // 2. Zero-Repainting & Historical Signal Consistency
 console.log('\n── [2] Zero-Repainting & Walk-Forward Consistency ──');
