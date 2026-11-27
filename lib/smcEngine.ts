@@ -1202,37 +1202,52 @@ export function detectOrderBlocksAndBreakers(
 
   const build = (i: number, isBull: boolean) => {
     const candle = candles[i];
-    const c1 = candles[i + 1];
-    const c2 = candles[i + 2];
-    const c3 = candles[i + 3];
-    if (!c1 || !c2 || !c3) return;
-    // SMC-002: all 3 impulse candles must be closed
-    if (!isCandleClosed(c1) || !isCandleClosed(c2) || !isCandleClosed(c3)) return;
+    if (!candle || !isCandleClosed(candle)) return;
 
     // 1. Opposite candle rule: Bullish OB must be RED, Bearish OB must be GREEN
     const isOpposing = isBull ? candle.close < candle.open : candle.close > candle.open;
     if (!isOpposing) return;
 
-    // 2. Three consecutive same-direction candles (strict non-doji)
-    const threeConsecutive = isBull
-      ? c1.close > c1.open && c2.close > c2.open && c3.close > c3.open
-      : c1.close < c1.open && c2.close < c2.open && c3.close < c3.open;
-    if (!threeConsecutive) return;
+    // 2. Count consecutive closed same-direction candles immediately after candles[i] (3 to 5+ candle run)
+    let streak = 0;
+    while (i + 1 + streak < candles.length) {
+      const ck = candles[i + 1 + streak];
+      if (!ck || !isCandleClosed(ck)) break;
+      const sameDir = isBull ? ck.close > ck.open : ck.close < ck.open;
+      if (!sameDir) break;
+      streak++;
+    }
+    if (streak < 3) return;
 
-    // 3. FVG must be present within the three consecutive candles (between c1 and c3)
-    const gap = isBull ? c3.low - c1.high : c1.low - c3.high;
-    const noiseFloor = Math.max((atr[i + 2] || 0) * 0.1, c2.close * 0.0001);
-    if (gap <= noiseFloor) return;
+    // 3. FVG must be present within the consecutive impulse candles (check 3-candle FVG windows across the 3..5 candle streak)
+    const maxCheck = Math.min(streak, 5);
+    let fvgFound = false;
+    let fvgEndIdx = i + 3;
+    for (let m = 1; m < maxCheck; m++) {
+      const leftBar = candles[i + m - 1];
+      const rightBar = candles[i + m + 1];
+      if (!leftBar || !rightBar) continue;
+      const gap = isBull ? rightBar.low - leftBar.high : leftBar.low - rightBar.high;
+      if (gap > 0) {
+        fvgFound = true;
+        fvgEndIdx = Math.max(i + 3, i + m + 1);
+        break;
+      }
+    }
+    if (!fvgFound) return;
 
-    const impulseBody = isBull ? c3.close - c1.open : c1.open - c3.close;
+    const cFirst = candles[i + 1];
+    const cLast = candles[i + maxCheck];
+    const impulseBody = isBull ? cLast.close - cFirst.open : cFirst.open - cLast.close;
     if (impulseBody <= 0) return;
-    if (reqDisp && atr[i + 2] && impulseBody < dispMult * atr[i + 2]) return;
 
     const ma = volBaseline(i + 1);
-    const maxImpulseVol = Math.max(c1.volume, c2.volume, c3.volume);
+    let maxImpulseVol = 0;
+    for (let k = i + 1; k <= i + maxCheck; k++) {
+      if (candles[k].volume > maxImpulseVol) maxImpulseVol = candles[k].volume;
+    }
     const volumeRatio = maxImpulseVol / Math.max(1, ma);
-    const obVolEstimated = isWindowVolumeEstimated(candles, Math.max(0, i + 1 - 20), i + 3);
-    if (reqVolSetting && !obVolEstimated && maxImpulseVol < volMult * ma) return;
+    const obVolEstimated = isWindowVolumeEstimated(candles, Math.max(0, i + 1 - 20), fvgEndIdx);
 
     // Optional linked structure break for confluence metadata
     const linked = breaks.find((b) => {
@@ -1244,7 +1259,7 @@ export function detectOrderBlocksAndBreakers(
       return true;
     });
 
-    const confirmIdx = i + 3;
+    const confirmIdx = fvgEndIdx;
     const ob: SmcOrderBlock = {
       id: `ob-${isBull ? 'bull' : 'bear'}-${i}`,
       startIndex: i,
@@ -1267,7 +1282,7 @@ export function detectOrderBlocksAndBreakers(
     };
     const mt = (ob.topPrice + ob.bottomPrice) / 2; // 50% mean threshold
 
-    // SMC-017: progressive mitigation lifecycle, evaluated strictly after the 3rd impulse candle closes
+    // SMC-017: progressive mitigation lifecycle, evaluated strictly after the confirmation candle closes
     for (let k = confirmIdx + 1; k < candles.length; k++) {
       const bar = candles[k];
       if (!isCandleClosed(bar)) break;
@@ -1275,10 +1290,8 @@ export function detectOrderBlocksAndBreakers(
       if (violated) {
         ob.mitigationState = 'INVALIDATED';
         ob.isMitigated = true;
-        ob.isBreaker = true;
         ob.endIndex = k;
         ob.mitigationIndex = ob.mitigationIndex ?? k;
-        ob.label = isBull ? 'Breaker (Bear)' : 'Breaker (Bull)';
 
         // SMC-018: breaker has its own lifecycle (FRESH → retest → INVALIDATED)
         const brkVolEstimated = isWindowVolumeEstimated(candles, Math.max(0, k - 20), k);
