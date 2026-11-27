@@ -60,6 +60,7 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
     pathname.startsWith('/academy') ||
     pathname.startsWith('/calendar') ||
     pathname.startsWith('/news') ||
+    pathname.startsWith('/pricing') ||
     pathname.startsWith('/fno');
 
   const [scrolled, setScrolled] = useState(false);
@@ -352,6 +353,20 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
               <span>LAUNCH TERMINAL</span>
             </Link>
           )}
+
+          {/* ── Subscription / Plans Button (Directly before Bell Icon) ── */}
+          <Link
+            href="/pricing"
+            title="MI-007 Subscription Plans & Razorpay Checkout"
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11.5px] font-mono font-black tracking-wide border transition-all shadow-xs cursor-pointer active:scale-95 ${
+              pathname.startsWith('/pricing')
+                ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                : 'bg-gradient-to-r from-amber-500/20 to-emerald-500/20 hover:from-amber-500 hover:to-emerald-500 text-amber-300 hover:text-slate-950 border-amber-500/50'
+            }`}
+          >
+            <span>👑</span>
+            <span>SUBSCRIPTION</span>
+          </Link>
 
           {/* ── Notification Bell Icon with Live Alerts Flyout ── */}
           <div className="relative" ref={notificationMenuRef}>
