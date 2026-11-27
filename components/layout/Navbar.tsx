@@ -43,6 +43,7 @@ const TERMINAL_NAV_LINKS = [
   { href: '/academy',           label: 'Academy' },
   { href: '/calendar',          label: 'Calendar' },
   { href: '/news',              label: 'News' },
+  { href: '/pricing',           label: 'Pricing' },
 ];
 
 
