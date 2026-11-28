@@ -43,7 +43,6 @@ const TERMINAL_NAV_LINKS = [
   { href: '/academy',           label: 'Academy' },
   { href: '/calendar',          label: 'Calendar' },
   { href: '/news',              label: 'News' },
-  { href: '/pricing',           label: 'Pricing' },
 ];
 
 
@@ -341,31 +340,15 @@ export function Navbar({ market: propMarket, onMarketChange: propOnMarketChange 
 
         {/* ── Top-Right Institutional Cluster: Single Terminal CTA + 1 Unified Account/Settings Icon ── */}
         <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* ── Exactly 1 Single Launch Terminal Button ── */}
-          {(!isTerminalOrDashboard || pathname.startsWith('/pricing')) && (
-            <Link
-              href="/terminal"
-              className="launch-terminal-btn hidden sm:inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11.5px] font-mono font-bold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-amber-300">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-              </svg>
-              <span>LAUNCH TERMINAL</span>
-            </Link>
-          )}
-
-          {/* ── Subscription / Plans Button (Directly before Bell Icon) ── */}
+          {/* ── Single Launch Terminal Button (Directly before Bell Icon) ── */}
           <Link
-            href="/pricing"
-            title="MI-007 Subscription Plans & Razorpay Checkout"
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11.5px] font-mono font-black tracking-wide border transition-all shadow-xs cursor-pointer active:scale-95 ${
-              pathname.startsWith('/pricing')
-                ? 'bg-emerald-500 text-slate-950 border-emerald-400'
-                : 'bg-gradient-to-r from-amber-500/20 to-emerald-500/20 hover:from-amber-500 hover:to-emerald-500 text-amber-300 hover:text-slate-950 border-amber-500/50'
-            }`}
+            href="/terminal"
+            className="launch-terminal-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11.5px] font-mono font-bold tracking-wide transition-all shadow-xs cursor-pointer active:scale-95"
           >
-            <span>👑</span>
-            <span>SUBSCRIPTION</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-amber-300">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            <span>LAUNCH TERMINAL</span>
           </Link>
 
           {/* ── Notification Bell Icon with Live Alerts Flyout ── */}
