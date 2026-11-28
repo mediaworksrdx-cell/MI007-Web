@@ -1,10 +1,10 @@
 import { getUserAccount, UserAccount } from './userAccount';
 
-export type SubscriptionTier = 'GUEST' | 'TRIAL' | 'PULSE' | 'PRO' | 'MASTER_PRO';
+export type SubscriptionTier = 'GUEST' | 'UNSUBSCRIBED' | 'TRIAL' | 'PULSE' | 'PRO' | 'MASTER_PRO';
 
 export interface ActiveSubscriptionRecord {
-  planId: 'PULSE' | 'PRO' | 'MASTER_PRO';
-  billingCycle: 'MONTHLY' | 'ANNUAL';
+  planId: 'TRIAL' | 'PULSE' | 'PRO' | 'MASTER_PRO';
+  billingCycle: 'TRIAL_15D' | 'MONTHLY' | 'ANNUAL';
   paymentId?: string;
   orderId?: string;
   status: 'ACTIVE' | 'EXPIRED';
@@ -25,34 +25,19 @@ export interface SubscriptionAccessState {
   tier: SubscriptionTier;
   tierLabel: string;
   isSignedIn: boolean;
+  hasClaimedTrial: boolean;
   isTrialActive: boolean;
   isTrialExpired: boolean;
   isLockedOut: boolean;
   daysRemaining: number;
   user: UserAccount | null;
+  subscription: ActiveSubscriptionRecord | null;
   limits: TierLimits;
 }
 
 const SUB_STORAGE_KEY = 'mi007_active_subscription_v1';
-const TRIAL_START_KEY = 'mi007_trial_started_at_v1';
-const FREE_LOOK_IN_DAYS = 15;
-
-const ADMIN_EMAILS = new Set([
-  'trader@synthetixanalytics.com',
-  'admin@synthetixanalytics.com',
-  'support@synthetixanalytics.com',
-  'admin@marketintelligence-007.com',
-]);
-
-function isOwnerOrAdmin(user: UserAccount | null): boolean {
-  if (!user || !user.email) return false;
-  const email = user.email.trim().toLowerCase();
-  if (ADMIN_EMAILS.has(email)) return true;
-  if (email.endsWith('@synthetixanalytics.com') || email.endsWith('@marketintelligence-007.com')) {
-    return true;
-  }
-  return false;
-}
+const TRIAL_CLAIMED_PREFIX = 'mi007_trial_claimed_v1_';
+export const FREE_LOOK_IN_DAYS = 15;
 
 export function getStoredPaidSubscription(): ActiveSubscriptionRecord | null {
   if (typeof window === 'undefined') return null;
@@ -61,48 +46,120 @@ export function getStoredPaidSubscription(): ActiveSubscriptionRecord | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as ActiveSubscriptionRecord;
     if (!parsed || !parsed.planId || !parsed.validUntil) return null;
-    if (new Date(parsed.validUntil).getTime() <= Date.now()) return null;
     return parsed;
   } catch {
     return null;
   }
 }
 
+export function activateFreeLookInTrial(user: UserAccount): ActiveSubscriptionRecord {
+  const now = Date.now();
+  const validUntil = new Date(now + FREE_LOOK_IN_DAYS * 86_400_000).toISOString();
+  const rec: ActiveSubscriptionRecord = {
+    planId: 'TRIAL',
+    billingCycle: 'TRIAL_15D',
+    paymentId: `trial_${now.toString(36)}`,
+    status: 'ACTIVE',
+    activatedAt: new Date(now).toISOString(),
+    validUntil,
+  };
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(SUB_STORAGE_KEY, JSON.stringify(rec));
+    localStorage.setItem(`${TRIAL_CLAIMED_PREFIX}${user.email || user.id}`, 'true');
+    window.dispatchEvent(new Event('mi007-user-updated'));
+  }
+  return rec;
+}
+
+export function clearActiveSubscription(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(SUB_STORAGE_KEY);
+    window.dispatchEvent(new Event('mi007-user-updated'));
+  }
+}
+
 export function evaluateSubscriptionAccess(): SubscriptionAccessState {
-  const user = getUserAccount();
+  const rawUser = getUserAccount();
+  // Demo user does not bypass subscription gate
+  const user = rawUser && rawUser.id !== 'ACC-DEMO-007' ? rawUser : null;
+
+  const lockedLimits: TierLimits = {
+    maxPortfolioTrades: 0,
+    allowUnlimitedBacktest: false,
+    allowOptionsAlgorithm: false,
+    allowFullStrategyBuilder: false,
+    allowLiveHistoricalToi: false,
+    feedMode: 'DELAYED_15M',
+  };
 
   if (!user) {
     return {
       tier: 'GUEST',
-      tierLabel: 'Guest (Not Signed In)',
+      tierLabel: 'Guest (Sign-In Required)',
       isSignedIn: false,
+      hasClaimedTrial: false,
       isTrialActive: false,
       isTrialExpired: false,
       isLockedOut: true,
       daysRemaining: 0,
       user: null,
-      limits: {
-        maxPortfolioTrades: 0,
-        allowUnlimitedBacktest: false,
-        allowOptionsAlgorithm: false,
-        allowFullStrategyBuilder: false,
-        allowLiveHistoricalToi: false,
-        feedMode: 'DELAYED_15M',
-      },
+      subscription: null,
+      limits: lockedLimits,
     };
   }
 
-  // 1. Admin / Institutional Desk Bypass -> Permanent MASTER_PRO
-  if (isOwnerOrAdmin(user)) {
+  const hasClaimedTrial =
+    typeof window !== 'undefined' &&
+    localStorage.getItem(`${TRIAL_CLAIMED_PREFIX}${user.email || user.id}`) === 'true';
+
+  const sub = getStoredPaidSubscription();
+  if (!sub) {
+    return {
+      tier: 'UNSUBSCRIBED',
+      tierLabel: 'No Active Subscription',
+      isSignedIn: true,
+      hasClaimedTrial,
+      isTrialActive: false,
+      isTrialExpired: hasClaimedTrial,
+      isLockedOut: true,
+      daysRemaining: 0,
+      user,
+      subscription: null,
+      limits: lockedLimits,
+    };
+  }
+
+  const msLeft = new Date(sub.validUntil).getTime() - Date.now();
+  if (msLeft <= 0 || sub.status === 'EXPIRED') {
+    return {
+      tier: 'UNSUBSCRIBED',
+      tierLabel: sub.planId === 'TRIAL' ? '15-Day Free Trial Expired' : 'Subscription Expired',
+      isSignedIn: true,
+      hasClaimedTrial: true,
+      isTrialActive: false,
+      isTrialExpired: sub.planId === 'TRIAL',
+      isLockedOut: true,
+      daysRemaining: 0,
+      user,
+      subscription: sub,
+      limits: lockedLimits,
+    };
+  }
+
+  const daysRemaining = Math.max(1, Math.ceil(msLeft / 86_400_000));
+
+  if (sub.planId === 'MASTER_PRO') {
     return {
       tier: 'MASTER_PRO',
-      tierLabel: 'MARKET MASTER PRO (Institutional Desk)',
+      tierLabel: 'MARKET MASTER PRO (Ultra Alpha)',
       isSignedIn: true,
+      hasClaimedTrial,
       isTrialActive: false,
       isTrialExpired: false,
       isLockedOut: false,
-      daysRemaining: 365,
+      daysRemaining,
       user,
+      subscription: sub,
       limits: {
         maxPortfolioTrades: 999,
         allowUnlimitedBacktest: true,
@@ -114,63 +171,41 @@ export function evaluateSubscriptionAccess(): SubscriptionAccessState {
     };
   }
 
-  // 2. Active Paid Razorpay Subscription
-  const paid = getStoredPaidSubscription();
-  if (paid) {
-    const msLeft = Math.max(0, new Date(paid.validUntil).getTime() - Date.now());
-    const daysRemaining = Math.max(1, Math.ceil(msLeft / 86_400_000));
-
-    if (paid.planId === 'MASTER_PRO') {
-      return {
-        tier: 'MASTER_PRO',
-        tierLabel: 'MARKET MASTER PRO (Ultra Alpha)',
-        isSignedIn: true,
-        isTrialActive: false,
-        isTrialExpired: false,
-        isLockedOut: false,
-        daysRemaining,
-        user,
-        limits: {
-          maxPortfolioTrades: 999,
-          allowUnlimitedBacktest: true,
-          allowOptionsAlgorithm: true,
-          allowFullStrategyBuilder: true,
-          allowLiveHistoricalToi: true,
-          feedMode: 'LIVE',
-        },
-      };
-    }
-
-    if (paid.planId === 'PRO') {
-      return {
-        tier: 'PRO',
-        tierLabel: 'MARKET PRO (Edge Pro)',
-        isSignedIn: true,
-        isTrialActive: false,
-        isTrialExpired: false,
-        isLockedOut: false,
-        daysRemaining,
-        user,
-        limits: {
-          maxPortfolioTrades: 8,
-          allowUnlimitedBacktest: false,
-          allowOptionsAlgorithm: false,
-          allowFullStrategyBuilder: true,
-          allowLiveHistoricalToi: false,
-          feedMode: 'LIVE',
-        },
-      };
-    }
-
+  if (sub.planId === 'PRO') {
     return {
-      tier: 'PULSE',
-      tierLabel: 'MARKET PULSE (Pulse Basic)',
+      tier: 'PRO',
+      tierLabel: 'MARKET PRO (Edge Pro)',
       isSignedIn: true,
+      hasClaimedTrial,
       isTrialActive: false,
       isTrialExpired: false,
       isLockedOut: false,
       daysRemaining,
       user,
+      subscription: sub,
+      limits: {
+        maxPortfolioTrades: 8,
+        allowUnlimitedBacktest: false,
+        allowOptionsAlgorithm: false,
+        allowFullStrategyBuilder: true,
+        allowLiveHistoricalToi: false,
+        feedMode: 'LIVE',
+      },
+    };
+  }
+
+  if (sub.planId === 'PULSE') {
+    return {
+      tier: 'PULSE',
+      tierLabel: 'MARKET PULSE (Pulse Basic)',
+      isSignedIn: true,
+      hasClaimedTrial,
+      isTrialActive: false,
+      isTrialExpired: false,
+      isLockedOut: false,
+      daysRemaining,
+      user,
+      subscription: sub,
       limits: {
         maxPortfolioTrades: 4,
         allowUnlimitedBacktest: false,
@@ -182,41 +217,25 @@ export function evaluateSubscriptionAccess(): SubscriptionAccessState {
     };
   }
 
-  // 3. Free Look-In Trial (3 Days from user.createdAt or first terminal visit)
-  let trialStartMs = user.createdAt ? new Date(user.createdAt).getTime() : NaN;
-  if (!Number.isFinite(trialStartMs) && typeof window !== 'undefined') {
-    const storedStart = localStorage.getItem(TRIAL_START_KEY);
-    if (storedStart && Number.isFinite(Number(storedStart))) {
-      trialStartMs = Number(storedStart);
-    } else {
-      trialStartMs = Date.now();
-      localStorage.setItem(TRIAL_START_KEY, String(trialStartMs));
-    }
-  }
-
-  const trialEndMs = trialStartMs + FREE_LOOK_IN_DAYS * 86_400_000;
-  const msRemaining = trialEndMs - Date.now();
-  const isTrialActive = msRemaining > 0;
-  const daysRemaining = isTrialActive ? Math.max(1, Math.ceil(msRemaining / 86_400_000)) : 0;
-
+  // Explicitly activated 15-Day Free Look-In Trial
   return {
     tier: 'TRIAL',
-    tierLabel: isTrialActive
-      ? `Free Look-In Trial (${daysRemaining}d left · Pulse Limits)`
-      : 'Free Look-In Trial Expired',
+    tierLabel: `15-Day Free Look-In Trial (${daysRemaining}d left)`,
     isSignedIn: true,
-    isTrialActive,
-    isTrialExpired: !isTrialActive,
-    isLockedOut: !isTrialActive,
+    hasClaimedTrial: true,
+    isTrialActive: true,
+    isTrialExpired: false,
+    isLockedOut: false,
     daysRemaining,
     user,
+    subscription: sub,
     limits: {
       maxPortfolioTrades: 4,
       allowUnlimitedBacktest: false,
       allowOptionsAlgorithm: false,
       allowFullStrategyBuilder: false,
       allowLiveHistoricalToi: false,
-      feedMode: isTrialActive ? 'LIVE' : 'DELAYED_15M',
+      feedMode: 'LIVE',
     },
   };
 }

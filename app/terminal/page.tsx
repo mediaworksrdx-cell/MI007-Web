@@ -1413,7 +1413,6 @@ export default function TerminalPage() {
       <Navbar market={market} onMarketChange={setMarket} />
 
       <main className="min-h-screen pt-[86px] sm:pt-[92px] relative z-20 bg-transparent pb-10">
-        <TerminalAccessGate>
         {/* ── Master Dashboard Layer (Standard 1600px container matching Navbar & Screener) ── */}
         <div className="mx-auto max-w-[1600px] w-full px-2.5 xs:px-4 sm:px-6 lg:px-8 py-2.5 sm:py-4 relative z-20 isolate">
           <div className="relative rounded-2xl border-2 terminal-page-panel shadow-xl p-2.5 xs:p-3.5 sm:p-5 lg:p-6 overflow-hidden">
@@ -1902,7 +1901,6 @@ export default function TerminalPage() {
             )}
           </div>
         </div>
-        </TerminalAccessGate>
       </main>
 
       <Footer />
