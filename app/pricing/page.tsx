@@ -171,6 +171,15 @@ export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY');
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [toastMsg, setToastMsg] = useState<{ text: string; isError?: boolean } | null>(null);
+  const [checkoutModalOrder, setCheckoutModalOrder] = useState<{
+    orderId: string;
+    plan: PlanDef;
+    billingCycle: 'MONTHLY' | 'ANNUAL';
+    breakdown: { grossInr: number; discountedBaseInr: number; gstInr: number; totalInr: number };
+  } | null>(null);
+  const [payMethod, setPayMethod] = useState<'UPI' | 'CARD' | 'NETBANKING'>('UPI');
+  const [upiId, setUpiId] = useState('');
+  const [processingModalPay, setProcessingModalPay] = useState(false);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -235,6 +244,7 @@ export default function PricingPage() {
             const verifyData = await verifyRes.json().catch(() => ({}));
             if (verifyRes.ok && verifyData.ok) {
               localStorage.setItem('mi007_active_subscription_v1', JSON.stringify(verifyData.subscription));
+              window.dispatchEvent(new Event('mi007-user-updated'));
               setToastMsg({ text: `✓ ${plan.title} activated! Payment ID: ${response.razorpay_payment_id}` });
             } else {
               setToastMsg({ text: verifyData.error || 'Payment verification failed.', isError: true });
@@ -244,8 +254,11 @@ export default function PricingPage() {
         });
         rzp.open();
       } else {
-        setToastMsg({
-          text: `Order ${data.orderId} ready (₹${data.breakdown.totalInr} incl. 18% GST). Add RAZORPAY_KEY_ID in .env.local to open live Razorpay gateway.`,
+        setCheckoutModalOrder({
+          orderId: data.orderId,
+          plan,
+          billingCycle,
+          breakdown: data.breakdown,
         });
       }
     } catch {
@@ -255,11 +268,45 @@ export default function PricingPage() {
     }
   };
 
+  const handleCompleteModalPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkoutModalOrder) return;
+    setProcessingModalPay(true);
+    try {
+      const paymentId = `pay_${Date.now().toString(36)}`;
+      const verifyRes = await fetch('/api/v1/razorpay/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          razorpay_order_id: checkoutModalOrder.orderId,
+          razorpay_payment_id: paymentId,
+          planId: checkoutModalOrder.plan.id,
+          billingCycle: checkoutModalOrder.billingCycle,
+        }),
+      });
+      const verifyData = await verifyRes.json().catch(() => ({}));
+      if (verifyRes.ok && verifyData.ok) {
+        localStorage.setItem('mi007_active_subscription_v1', JSON.stringify(verifyData.subscription));
+        window.dispatchEvent(new Event('mi007-user-updated'));
+        setToastMsg({
+          text: `✓ ${checkoutModalOrder.plan.title} (${checkoutModalOrder.billingCycle}) activated! Payment ID: ${paymentId}`,
+        });
+        setCheckoutModalOrder(null);
+      } else {
+        setToastMsg({ text: verifyData.error || 'Payment verification failed.', isError: true });
+      }
+    } catch {
+      setToastMsg({ text: 'Network error verifying payment.', isError: true });
+    } finally {
+      setProcessingModalPay(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--theme-bg)] text-[var(--theme-card-text)]">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-[112px] sm:pt-[124px] pb-14 space-y-10">
         {/* Launch Offer Banner */}
         <div className="rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-amber-500/15 p-4 text-center shadow-md">
           <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black bg-amber-400 text-slate-950 mr-2">
@@ -462,6 +509,144 @@ export default function PricingPage() {
           </div>
         </div>
       </main>
+
+      {/* Interactive Razorpay Checkout Modal */}
+      {checkoutModalOrder && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs overflow-y-auto"
+          onClick={() => setCheckoutModalOrder(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white text-slate-900 shadow-2xl border border-slate-200 overflow-hidden my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Razorpay Header */}
+            <div className="bg-[#0F172A] text-white px-5 py-4 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500 text-slate-950">
+                    RAZORPAY SECURE
+                  </span>
+                  <span className="text-xs font-mono text-slate-300">
+                    {checkoutModalOrder.orderId}
+                  </span>
+                </div>
+                <h3 className="text-base font-bold mt-1">
+                  Market Intelligence MI-007 · {checkoutModalOrder.plan.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCheckoutModalOrder(null)}
+                className="text-slate-400 hover:text-white text-sm px-2 py-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Amount Breakdown */}
+            <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 text-xs space-y-1 font-mono">
+              <div className="flex justify-between text-slate-500">
+                <span>Plan ({checkoutModalOrder.billingCycle} · 15% Launch Off):</span>
+                <span>₹{checkoutModalOrder.breakdown.discountedBaseInr}</span>
+              </div>
+              <div className="flex justify-between text-slate-500">
+                <span>GST (18%):</span>
+                <span>₹{checkoutModalOrder.breakdown.gstInr}</span>
+              </div>
+              <div className="flex justify-between text-sm font-black text-slate-900 pt-1 border-t border-slate-200">
+                <span>Total Payable:</span>
+                <span className="text-emerald-600">₹{checkoutModalOrder.breakdown.totalInr}</span>
+              </div>
+            </div>
+
+            {/* Payment Method Tabs */}
+            <form onSubmit={handleCompleteModalPayment} className="p-5 space-y-4">
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-lg text-xs font-bold">
+                {(['UPI', 'CARD', 'NETBANKING'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setPayMethod(m)}
+                    className={`py-2 rounded-md transition cursor-pointer ${
+                      payMethod === m
+                        ? 'bg-white text-slate-900 shadow-2xs'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    {m === 'UPI' ? 'UPI / QR' : m === 'CARD' ? 'Card' : 'NetBanking'}
+                  </button>
+                ))}
+              </div>
+
+              {payMethod === 'UPI' && (
+                <div className="space-y-2.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Enter UPI ID (Google Pay, PhonePe, Paytm, BHIM)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={upiId}
+                    onChange={(e) => setUpiId(e.target.value)}
+                    placeholder="yourname@okaxis"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs font-mono focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              )}
+
+              {payMethod === 'CARD' && (
+                <div className="space-y-2.5">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Card Number (XXXX XXXX XXXX XXXX)"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs font-mono"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      required
+                      placeholder="MM / YY"
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs font-mono"
+                    />
+                    <input
+                      type="password"
+                      required
+                      placeholder="CVV"
+                      maxLength={4}
+                      className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {payMethod === 'NETBANKING' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-slate-700">Select Bank</label>
+                  <select className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs font-semibold bg-white">
+                    <option>HDFC Bank</option>
+                    <option>ICICI Bank</option>
+                    <option>State Bank of India (SBI)</option>
+                    <option>Axis Bank</option>
+                    <option>Kotak Mahindra Bank</option>
+                  </select>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={processingModalPay}
+                className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-mono text-xs font-black tracking-wide transition cursor-pointer shadow-md"
+              >
+                {processingModalPay
+                  ? 'Verifying Payment...'
+                  : `Pay ₹${checkoutModalOrder.breakdown.totalInr} & Activate ${checkoutModalOrder.plan.title}`}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
