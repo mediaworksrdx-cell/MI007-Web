@@ -276,20 +276,20 @@ export function ChartToolbar({
         showSweeps: true,
         showSslSweeps: true,
         showBslSweeps: true,
-        showEqualHighLow: true,
-        showLiquidityLevels: true,
+        showEqualHighLow: false,
+        showLiquidityLevels: false,
         showBullishOb: true,
         showBearishOb: true,
         showBreakers: true,
         showBullishBreakers: true,
         showBearishBreakers: true,
-        showMitigatedOb: true,
+        showMitigatedOb: false,
         showBullishFvg: true,
         showBearishFvg: true,
         showBullishIfvg: true,
         showBearishIfvg: true,
-        showFvgMidpoint: true,
-        showMitigatedFvg: true,
+        showFvgMidpoint: false,
+        showMitigatedFvg: false,
         showBullishConfluence: true,
         showBearishConfluence: true,
         showPremiumDiscount: true,
@@ -1021,20 +1021,24 @@ export function ChartToolbar({
                     showSweeps: true,
                     showSslSweeps: true,
                     showBslSweeps: true,
+                    showEqualHighLow: false,
+                    showLiquidityLevels: false,
                     showPremiumDiscount: true,
                     showEquilibrium: true,
                     showOte: true,
-                    showBreakers: true,
-                    showBullishIfvg: true,
-                    showBearishIfvg: true,
-                    showMitigatedOb: true,
-                    showMitigatedFvg: true,
+                    showBreakers: false,
+                    showBullishBreakers: false,
+                    showBearishBreakers: false,
+                    showBullishIfvg: false,
+                    showBearishIfvg: false,
+                    showMitigatedOb: false,
+                    showMitigatedFvg: false,
                     showFvgMidpoint: false,
                     showSwings: false,
                     showPdhPdl: false,
                     showPwhPwl: false,
-                    showBullishConfluence: true,
-                    showBearishConfluence: true,
+                    showBullishConfluence: false,
+                    showBearishConfluence: false,
                   })}
                   className="px-2 py-0.5 text-[10.5px] font-semibold rounded-md border bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 cursor-pointer transition-colors"
                 >
@@ -1081,27 +1085,27 @@ export function ChartToolbar({
                     <SmcToggleRow
                       label="Order Blocks (Buy & Sell)"
                       sublabel="Key institutional demand & supply zones"
-                      checked={Boolean(activeSmcConfig.showBullishOb !== false || activeSmcConfig.showBearishOb !== false)}
-                      onChange={(v) => handleUpdateSmc({ showBullishOb: v, showBearishOb: v })}
+                      checked={Boolean(activeSmcConfig.showBullishOb || activeSmcConfig.showBearishOb)}
+                      onChange={(v) => handleUpdateSmc({ showBullishOb: v, showBearishOb: v, showMitigatedOb: false })}
                       badge="OB"
                     />
                     <SmcToggleRow
                       label="Fair Value Gaps (FVG)"
                       sublabel="3-candle price imbalance zones"
-                      checked={Boolean(activeSmcConfig.showBullishFvg !== false || activeSmcConfig.showBearishFvg !== false)}
-                      onChange={(v) => handleUpdateSmc({ showBullishFvg: v, showBearishFvg: v })}
+                      checked={Boolean(activeSmcConfig.showBullishFvg || activeSmcConfig.showBearishFvg)}
+                      onChange={(v) => handleUpdateSmc({ showBullishFvg: v, showBearishFvg: v, showMitigatedFvg: false })}
                       badge="FVG"
                     />
                     <SmcToggleRow
                       label="Liquidity Sweeps"
                       sublabel="Stop-hunt wicks beyond highs & lows"
-                      checked={activeSmcConfig.showSweeps !== false}
-                      onChange={(v) => handleUpdateSmc({ showSweeps: v, showSslSweeps: v, showBslSweeps: v })}
+                      checked={Boolean(activeSmcConfig.showSweeps)}
+                      onChange={(v) => handleUpdateSmc({ showSweeps: v, showSslSweeps: v, showBslSweeps: v, showLiquidityLevels: false, showEqualHighLow: false })}
                     />
                     <SmcToggleRow
                       label="Premium / Discount & OTE"
                       sublabel="Dealing range, 50% EQ & 62–79% OTE"
-                      checked={Boolean(activeSmcConfig.showPremiumDiscount !== false || activeSmcConfig.showEquilibrium !== false || activeSmcConfig.showOte !== false)}
+                      checked={Boolean(activeSmcConfig.showPremiumDiscount || activeSmcConfig.showEquilibrium || activeSmcConfig.showOte)}
                       onChange={(v) => handleUpdateSmc({ showPremiumDiscount: v, showEquilibrium: v, showOte: v })}
                     />
                   </div>
@@ -1129,13 +1133,13 @@ export function ChartToolbar({
                     <SmcToggleRow
                       label="Swing Points (HH / HL / LH / LL)"
                       sublabel="Pivot high and low structure labels"
-                      checked={activeSmcConfig.showSwings !== false}
+                      checked={Boolean(activeSmcConfig.showSwings)}
                       onChange={(v) => handleUpdateSmc({ showSwings: v })}
                     />
                     <SmcToggleRow
                       label="SMC Trade Brackets"
                       sublabel="Auto Entry, SL & TP boxes (hidden when MI007 is ON)"
-                      checked={Boolean(activeSmcConfig.showBullishConfluence !== false || activeSmcConfig.showBearishConfluence !== false)}
+                      checked={Boolean(activeSmcConfig.showBullishConfluence || activeSmcConfig.showBearishConfluence)}
                       onChange={(v) => handleUpdateSmc({ showBullishConfluence: v, showBearishConfluence: v })}
                     />
                   </div>

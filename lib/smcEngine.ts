@@ -451,24 +451,24 @@ export const DEFAULT_SMC_CONFIG: SmcConfig = {
   showSweeps: true,
   showSslSweeps: true,
   showBslSweeps: true,
-  showEqualHighLow: true,
-  showLiquidityLevels: true,
+  showEqualHighLow: false,
+  showLiquidityLevels: false,
 
   // Order Blocks & Breakers
   showBullishOb: true,
   showBearishOb: true,
-  showBreakers: true,
-  showBullishBreakers: true,
-  showBearishBreakers: true,
-  showMitigatedOb: true,
+  showBreakers: false,
+  showBullishBreakers: false,
+  showBearishBreakers: false,
+  showMitigatedOb: false,
 
   // FVGs & IFVGs
   showBullishFvg: true,
   showBearishFvg: true,
-  showBullishIfvg: true,
-  showBearishIfvg: true,
-  showFvgMidpoint: true,
-  showMitigatedFvg: true,
+  showBullishIfvg: false,
+  showBearishIfvg: false,
+  showFvgMidpoint: false,
+  showMitigatedFvg: false,
 
   // Confluence Setups
   showBullishConfluence: true,
@@ -480,7 +480,7 @@ export const DEFAULT_SMC_CONFIG: SmcConfig = {
   showOte: true,
 
   // Session Levels
-  showPdhPdl: true,
+  showPdhPdl: false,
   showPwhPwl: false,
 
   maxVisibleZones: 6,               // Production grade: max 6 active proximity zones
@@ -496,7 +496,7 @@ export const DEFAULT_SMC_CONFIG: SmcConfig = {
 };
 
 const SMC_STORAGE_KEY = 'mi007_smc_config';
-const SMC_CONFIG_VERSION = 2; // Version 2: Sanitized IFVG default noise
+const SMC_CONFIG_VERSION = 3; // Version 3: Respect individual toggle isolation (EQH/EQL off, Breakers/IFVG off by default, respect Trade Brackets toggle)
 
 export function getStoredSmcConfig(): SmcConfig {
   if (typeof window === 'undefined') return { ...DEFAULT_SMC_CONFIG };
@@ -504,7 +504,12 @@ export function getStoredSmcConfig(): SmcConfig {
     const raw = localStorage.getItem(SMC_STORAGE_KEY);
     if (!raw) return { ...DEFAULT_SMC_CONFIG };
     const parsed = JSON.parse(raw);
-    const isV2 = parsed._version === SMC_CONFIG_VERSION;
+    const isV3 = parsed._version === SMC_CONFIG_VERSION;
+    const sweepsOn = parsed.showSweeps ?? true;
+    const breakersOn = isV3 ? Boolean(parsed.showBreakers) : false;
+    const tradeBracketsOn = parsed.showBullishConfluence !== undefined
+      ? Boolean(parsed.showBullishConfluence)
+      : true;
     return {
       ...DEFAULT_SMC_CONFIG,
       ...parsed,
@@ -521,16 +526,20 @@ export function getStoredSmcConfig(): SmcConfig {
       showBearishSetups: true,
       showBullishStructure: true,
       showBearishStructure: true,
-      showSslSweeps: parsed.showSweeps ?? true,
-      showBslSweeps: parsed.showSweeps ?? true,
-      showBullishBreakers: parsed.showBreakers ?? true,
-      showBearishBreakers: parsed.showBreakers ?? true,
-      showBullishConfluence: true,
-      showBearishConfluence: true,
-      // Suppress legacy unconstrained IFVG clutter on first upgrade to v2
-      showBullishIfvg: isV2 ? !!parsed.showBullishIfvg : false,
-      showBearishIfvg: isV2 ? !!parsed.showBearishIfvg : false,
-      maxVisibleZones: parsed.maxVisibleZones || 8,
+      showSweeps: sweepsOn,
+      showSslSweeps: sweepsOn,
+      showBslSweeps: sweepsOn,
+      // Equal High/Low toggle was removed from SMC filter — never render EQH/EQL or standalone BSL/SSL lines unless sweeps are active
+      showEqualHighLow: false,
+      showLiquidityLevels: false,
+      showBreakers: breakersOn,
+      showBullishBreakers: breakersOn,
+      showBearishBreakers: breakersOn,
+      showBullishIfvg: isV3 ? Boolean(parsed.showBullishIfvg) : false,
+      showBearishIfvg: isV3 ? Boolean(parsed.showBearishIfvg) : false,
+      showBullishConfluence: tradeBracketsOn,
+      showBearishConfluence: tradeBracketsOn,
+      maxVisibleZones: parsed.maxVisibleZones || 6,
     };
   } catch {
     return { ...DEFAULT_SMC_CONFIG };
