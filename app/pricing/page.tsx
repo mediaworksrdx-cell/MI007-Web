@@ -2,6 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
+import { getUserAccount } from '@/lib/auth/userAccount';
+import {
+  activateFreeLookInTrial,
+  evaluateSubscriptionAccess,
+  SubscriptionAccessState,
+} from '@/lib/auth/subscriptionAccess';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 type PlanId = 'PULSE' | 'PRO' | 'MASTER_PRO';
 
@@ -180,6 +187,49 @@ export default function PricingPage() {
   const [payMethod, setPayMethod] = useState<'UPI' | 'CARD' | 'NETBANKING'>('UPI');
   const [upiId, setUpiId] = useState('');
   const [processingModalPay, setProcessingModalPay] = useState(false);
+  const [accessState, setAccessState] = useState<SubscriptionAccessState | null>(null);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [pendingTrialPlan, setPendingTrialPlan] = useState<PlanDef | null>(null);
+
+  const syncAccess = () => {
+    setAccessState(evaluateSubscriptionAccess());
+  };
+
+  useEffect(() => {
+    syncAccess();
+    window.addEventListener('mi007-user-updated', syncAccess);
+    window.addEventListener('storage', syncAccess);
+    return () => {
+      window.removeEventListener('mi007-user-updated', syncAccess);
+      window.removeEventListener('storage', syncAccess);
+    };
+  }, []);
+
+  const handleStartFreeTrial = (plan: PlanDef) => {
+    setToastMsg(null);
+    const rawUser = getUserAccount();
+    const user = rawUser && rawUser.id !== 'ACC-DEMO-007' ? rawUser : null;
+    if (!user) {
+      setPendingTrialPlan(plan);
+      setIsLoginModalOpen(true);
+      return;
+    }
+    const current = evaluateSubscriptionAccess();
+    if (current.hasClaimedTrial && !current.isTrialActive) {
+      setToastMsg({
+        text: 'Your 15-Day Free Look-In Trial has already been used for this account. Please subscribe via Razorpay below.',
+        isError: true,
+      });
+      return;
+    }
+    const rec = activateFreeLookInTrial(user);
+    syncAccess();
+    setToastMsg({
+      text: `✓ 15-Day Free Look-In Trial Activated for ${plan.title}! Valid until ${new Date(
+        rec.validUntil
+      ).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}. After 15 days, your plan upgrades automatically via Razorpay.`,
+    });
+  };
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -310,14 +360,29 @@ export default function PricingPage() {
         style={{ paddingTop: '116px' }}
         className="max-w-7xl mx-auto px-4 sm:px-6 pb-14 space-y-10"
       >
-        {/* Launch Offer Banner */}
-        <div className="rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-amber-500/15 p-4 text-center shadow-md">
-          <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black bg-amber-400 text-slate-950 mr-2">
-            NEW LAUNCH OFFER
-          </span>
-          <span className="text-xs sm:text-sm font-bold">
-            <span className="text-emerald-400 font-black">15-Day Free Look-In Trial</span> + Limited-Time <span className="text-amber-400 font-black">15% Discount</span> Across All Subscriptions + Extra <span className="text-emerald-400 font-black">10% Off</span> on Annual Plans!
-          </span>
+        {/* Launch Offer & Free Trial CTA Banner */}
+        <div className="rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-amber-500/15 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
+          <div className="text-center sm:text-left">
+            <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black bg-amber-400 text-slate-950 mr-2">
+              NEW LAUNCH OFFER
+            </span>
+            <span className="text-xs sm:text-sm font-bold">
+              <span className="text-emerald-500 font-black">15-Day Free Look-In Trial</span> + Limited-Time <span className="text-amber-500 font-black">15% Discount</span> Across All Subscriptions + Extra <span className="text-emerald-500 font-black">10% Off</span> on Annual Plans!
+            </span>
+          </div>
+          {accessState?.isTrialActive ? (
+            <span className="shrink-0 px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-500 font-mono text-xs font-black">
+              ✓ 15-Day Free Trial Active ({accessState.daysRemaining}d remaining)
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => handleStartFreeTrial(PLANS[1])}
+              className="shrink-0 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-mono text-xs font-black shadow-sm transition cursor-pointer"
+            >
+              🎁 Start 15-Day Free Trial (₹0 Today)
+            </button>
+          )}
         </div>
 
         {/* Hero Heading & Billing Toggle */}
@@ -423,23 +488,43 @@ export default function PricingPage() {
                   </ul>
                 </div>
 
-                <button
-                  type="button"
-                  disabled={loadingPlan === plan.id}
-                  onClick={() => handleSubscribe(plan)}
-                  className={`mt-6 w-full py-3 px-4 rounded-xl mono text-xs font-black tracking-wide transition-colors cursor-pointer flex items-center justify-center gap-2 ${
-                    plan.popular
-                      ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md'
-                      : 'bg-slate-800 hover:bg-emerald-500 text-white hover:text-slate-950 border border-slate-700'
-                  }`}
-                >
-                  <span>⚡</span>
-                  <span>
-                    {loadingPlan === plan.id
-                      ? 'Initializing Razorpay...'
-                      : `Subscribe with Razorpay · ₹${price.effectiveMonthly}/mo + GST`}
-                  </span>
-                </button>
+                <div className="mt-6 space-y-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleStartFreeTrial(plan)}
+                    disabled={Boolean(accessState?.isTrialActive)}
+                    className={`w-full py-2.5 px-4 rounded-xl mono text-xs font-black tracking-wide transition-colors cursor-pointer flex items-center justify-center gap-2 border ${
+                      accessState?.isTrialActive
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-500 cursor-default'
+                        : 'bg-amber-400/15 hover:bg-amber-400 text-amber-600 hover:text-slate-950 border-amber-500/40'
+                    }`}
+                  >
+                    <span>🎁</span>
+                    <span>
+                      {accessState?.isTrialActive
+                        ? `✓ 15-Day Free Trial Active (${accessState.daysRemaining}d left)`
+                        : 'Start 15-Day Free Look-In Trial · ₹0 Today'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={loadingPlan === plan.id}
+                    onClick={() => handleSubscribe(plan)}
+                    className={`w-full py-3 px-4 rounded-xl mono text-xs font-black tracking-wide transition-colors cursor-pointer flex items-center justify-center gap-2 ${
+                      plan.popular
+                        ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md'
+                        : 'bg-slate-800 hover:bg-emerald-500 text-white hover:text-slate-950 border border-slate-700'
+                    }`}
+                  >
+                    <span>⚡</span>
+                    <span>
+                      {loadingPlan === plan.id
+                        ? 'Initializing Razorpay...'
+                        : `Subscribe with Razorpay · ₹${price.effectiveMonthly}/mo + GST`}
+                    </span>
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -650,6 +735,27 @@ export default function PricingPage() {
           </div>
         </div>
       )}
+
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => {
+          setIsLoginModalOpen(false);
+          setPendingTrialPlan(null);
+        }}
+        onLoginSuccess={(user) => {
+          setIsLoginModalOpen(false);
+          if (pendingTrialPlan) {
+            const rec = activateFreeLookInTrial(user);
+            syncAccess();
+            setToastMsg({
+              text: `✓ Signed in as ${user.email} & activated 15-Day Free Look-In Trial for ${pendingTrialPlan.title}! Valid until ${new Date(
+                rec.validUntil
+              ).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}.`,
+            });
+            setPendingTrialPlan(null);
+          }
+        }}
+      />
     </div>
   );
 }
