@@ -102,14 +102,24 @@ export interface SmcOrderBlock {
   clusterSize?: number;
   /** Bar index at which this zone became known (linked structure break / breaker conversion). */
   confirmationIndex?: number;
-  /** Index of the structural break that this OB's displacement caused (SMC-013). */
+  /** Index of the structural break that this OB's displacement caused (SMC-013 / Rule 2). */
   linkedBreakIndex?: number;
-  /** First bar that traded back into the zone after confirmation. */
+  /** First bar that traded back into the zone after confirmation (Rule 5). */
   firstTouchIndex?: number;
+  /** Number of distinct retest visits into the OB zone after confirmation (Rule 5: 0 = fresh, 1 = first retest). */
+  retestTouchCount?: number;
   /** Breaker retest bar (SMC-018). */
   retestIndex?: number;
   /** True when volumeRatio was derived from estimated (synthetic) volume. */
   volumeEstimated?: boolean;
+  /** Rule 2: True when the impulse move leaving the OB broke market structure (BOS / CHoCH). */
+  hasBosBreak?: boolean;
+  /** Rule 3: True when the impulse move leaving the OB left a Fair Value Gap (FVG) imbalance. */
+  hasFvgImbalance?: boolean;
+  /** Rule 4: True when the OB (or immediately preceding bar) swept resting liquidity first. */
+  hasLiquiditySweep?: boolean;
+  /** 5-Rule Perfect OB Checklist score (0..5: Rule 1 Opposite Candle, Rule 2 BOS, Rule 3 FVG, Rule 4 Sweep, Rule 5 Fresh/1st Retest). */
+  perfectObRulesPassed?: number;
 }
 
 export type SmcFvgState = 'FRESH' | 'PARTIALLY_MITIGATED' | 'MITIGATED' | 'INVALIDATED';
@@ -1180,7 +1190,8 @@ function isWindowVolumeEstimated(candles: Candle[], startIdx: number, endIdx: nu
 export function detectOrderBlocksAndBreakers(
   candles: Candle[],
   breaks: SmcStructureBreak[],
-  options?: SmcFilterOptions
+  options?: SmcFilterOptions,
+  sweeps?: SmcLiquiditySweep[]
 ): { orderBlocks: SmcOrderBlock[]; breakers: SmcOrderBlock[] } {
   const orderBlocks: SmcOrderBlock[] = [];
   const breakers: SmcOrderBlock[] = [];
@@ -1189,7 +1200,7 @@ export function detectOrderBlocksAndBreakers(
   const reqDisp = options?.requireDisplacement ?? true;
   const dispMult = options?.displacementAtrMultiple ?? 0.5;
   const volMult = options?.volumeSmaMultiple ?? 1.10;
-  const linkBars = Math.max(1, options?.obStructureLinkBars ?? 10);
+  const linkBars = Math.max(1, options?.obStructureLinkBars ?? 12);
   const reqVolSetting = options?.requireVolumeExpansion ?? true;
   const atr = computeAtrSeries(candles, 14);
 
@@ -1204,11 +1215,11 @@ export function detectOrderBlocksAndBreakers(
     const candle = candles[i];
     if (!candle || !isCandleClosed(candle)) return;
 
-    // 1. Opposite candle rule: Bullish OB must be RED, Bearish OB must be GREEN
+    // RULE 1: Last opposite candle = OB (Bullish OB must be RED, Bearish OB must be GREEN)
     const isOpposing = isBull ? candle.close < candle.open : candle.close > candle.open;
     if (!isOpposing) return;
 
-    // 2. Count consecutive closed same-direction candles immediately after candles[i] (3 to 5+ candle run)
+    // Count consecutive closed same-direction candles immediately after candles[i] (3 to 5+ candle run)
     let streak = 0;
     while (i + 1 + streak < candles.length) {
       const ck = candles[i + 1 + streak];
@@ -1219,7 +1230,7 @@ export function detectOrderBlocksAndBreakers(
     }
     if (streak < 3) return;
 
-    // 3. FVG must be present within the consecutive impulse candles (check 3-candle FVG windows across the 3..5 candle streak)
+    // RULE 3: Move leaves an imbalance (FVG must be present within the consecutive impulse candles)
     const maxCheck = Math.min(streak, 5);
     let fvgFound = false;
     let fvgEndIdx = i + 3;
@@ -1249,17 +1260,43 @@ export function detectOrderBlocksAndBreakers(
     const volumeRatio = maxImpulseVol / Math.max(1, ma);
     const obVolEstimated = isWindowVolumeEstimated(candles, Math.max(0, i + 1 - 20), fvgEndIdx);
 
-    // Optional linked structure break for confluence metadata
+    // RULE 2: Move breaks market structure (BOS / CHoCH linked to the impulse leg)
     const linked = breaks.find((b) => {
       if (b.isBullish !== isBull) return false;
-      if (b.candleIndex < i + 1 || b.candleIndex > i + linkBars) return false;
+      if (b.candleIndex < i + 1 || b.candleIndex > i + Math.max(linkBars, streak + 2)) return false;
       for (let k = i + 1; k <= b.candleIndex; k++) {
         if (isBull ? candles[k].close < candle.low : candles[k].close > candle.high) return false;
       }
       return true;
     });
+    const hasBosBreak = Boolean(linked);
 
-    const confirmIdx = fvgEndIdx;
+    // RULE 4: Best OBs sweep liquidity first (swept resting sell stops below low or buy stops above high near OB origin)
+    const sweptNearOrigin = Boolean(
+      sweeps &&
+        sweeps.some(
+          (sw) =>
+            (isBull ? !sw.isHighSweep : sw.isHighSweep) &&
+            sw.candleIndex >= Math.max(0, i - 3) &&
+            sw.candleIndex <= i + 1
+        )
+    ) || (() => {
+      // Also check if the OB candle itself wicked beyond the lowest low / highest high of the prior 5 bars
+      let sweptLocal = false;
+      const lookStart = Math.max(0, i - 6);
+      if (i > lookStart) {
+        let priorExtreme = isBull ? Infinity : -Infinity;
+        for (let p = lookStart; p < i; p++) {
+          priorExtreme = isBull ? Math.min(priorExtreme, candles[p].low) : Math.max(priorExtreme, candles[p].high);
+        }
+        sweptLocal = isBull
+          ? (candle.low < priorExtreme && candle.close >= priorExtreme)
+          : (candle.high > priorExtreme && candle.close <= priorExtreme);
+      }
+      return sweptLocal;
+    })();
+
+    const confirmIdx = linked ? Math.max(fvgEndIdx, linked.candleIndex) : fvgEndIdx;
     const ob: SmcOrderBlock = {
       id: `ob-${isBull ? 'bull' : 'bear'}-${i}`,
       startIndex: i,
@@ -1279,19 +1316,27 @@ export function detectOrderBlocksAndBreakers(
       linkedBreakIndex: linked?.candleIndex,
       confirmationIndex: confirmIdx,
       clusterSize: 1,
+      retestTouchCount: 0,
+      hasBosBreak,
+      hasFvgImbalance: true,
+      hasLiquiditySweep: sweptNearOrigin,
+      perfectObRulesPassed: 2 + (hasBosBreak ? 1 : 0) + (sweptNearOrigin ? 1 : 0) + 1, // Rule 1 + Rule 3 + Rule 2? + Rule 4? + Rule 5 (Fresh)
     };
     const mt = (ob.topPrice + ob.bottomPrice) / 2; // 50% mean threshold
 
-    // SMC-017: progressive mitigation lifecycle, evaluated strictly after the confirmation candle closes
+    // RULE 5 & INVALIDATION: Fresh zone, first retest; close beyond zone = INVALIDATED (no trade)
+    let inZoneTouch = false;
     for (let k = confirmIdx + 1; k < candles.length; k++) {
       const bar = candles[k];
       if (!isCandleClosed(bar)) break;
+      // INVALIDATION: Close beyond zone = no trade (converts to Breaker)
       const violated = isBull ? bar.close < ob.bottomPrice : bar.close > ob.topPrice;
       if (violated) {
         ob.mitigationState = 'INVALIDATED';
         ob.isMitigated = true;
         ob.endIndex = k;
         ob.mitigationIndex = ob.mitigationIndex ?? k;
+        ob.perfectObRulesPassed = 0;
 
         // SMC-018: breaker has its own lifecycle (FRESH → retest → INVALIDATED)
         const brkVolEstimated = isWindowVolumeEstimated(candles, Math.max(0, k - 20), k);
@@ -1335,14 +1380,23 @@ export function detectOrderBlocksAndBreakers(
       }
 
       const touched = isBull ? bar.low <= ob.topPrice : bar.high >= ob.bottomPrice;
-      if (!touched) continue;
+      if (!touched) {
+        inZoneTouch = false;
+        continue;
+      }
+      if (!inZoneTouch) {
+        inZoneTouch = true;
+        ob.retestTouchCount = (ob.retestTouchCount ?? 0) + 1;
+      }
       if (ob.firstTouchIndex === undefined) ob.firstTouchIndex = k;
       const deep = isBull ? bar.low <= mt : bar.high >= mt;
-      if (deep && ob.mitigationState !== 'MITIGATED') {
+      // Rule 5: Repeated tests (>1 distinct retest visit) or deep 50% mitigation marks the OB as mitigated
+      if ((deep || (ob.retestTouchCount ?? 0) > 1) && ob.mitigationState !== 'MITIGATED') {
         ob.mitigationState = 'MITIGATED';
         ob.isMitigated = true;
         ob.mitigationIndex = k;
         ob.endIndex = k;
+        ob.perfectObRulesPassed = Math.max(0, (ob.perfectObRulesPassed ?? 1) - 1);
         // keep scanning: a later close-through still converts it into a breaker
       } else if (ob.mitigationState === 'FRESH') {
         ob.mitigationState = 'PARTIALLY_MITIGATED';
@@ -1903,10 +1957,13 @@ export function evaluateInstitutionalConfluence(
   if (matchingObs.length > 0) {
     const ob = matchingObs[0];
     const inRange = entry >= ob.bottomPrice && entry <= ob.topPrice;
+    const isFreshFirstRetest = (ob.retestTouchCount ?? 0) <= 1 && ob.mitigationState !== 'MITIGATED' && ob.mitigationState !== 'INVALIDATED';
     if (inRange) {
       const strongVol = !ob.volumeEstimated && ob.volumeRatio >= 1.25;
-      obScore = strongVol ? 15 : 13;
-      obReason = `Order Block: Fresh ${isBull ? 'Demand' : 'Supply'} OB [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] (+${obScore}/15)`;
+      const hasBosAndSweep = Boolean(ob.hasBosBreak && ob.hasLiquiditySweep && isFreshFirstRetest);
+      obScore = (strongVol || hasBosAndSweep) ? 15 : 13;
+      const rulesTag = `5-Rule OB [${ob.perfectObRulesPassed ?? 4}/5: OppCandle✓${ob.hasBosBreak ? ' BOS✓' : ''}${ob.hasFvgImbalance ? ' FVG✓' : ''}${ob.hasLiquiditySweep ? ' Sweep✓' : ''}${isFreshFirstRetest ? ' Fresh1stRetest✓' : ''}]`;
+      obReason = `Order Block: Fresh ${isBull ? 'Demand' : 'Supply'} OB [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] ${rulesTag} (+${obScore}/15)`;
     } else {
       obScore = 9;
       obReason = 'Order Block: Unmitigated OB adjacent to entry zone (+9/15)';
@@ -3526,8 +3583,10 @@ export function detectAll16SmcSetups(
     ));
   }
 
-  // ── Strategy 6: Order Block (OB) Retest in Discount/Premium
-  const activeObs = orderBlocks.filter((ob) => !ob.isMitigated).slice(-40);
+  // ── Strategy 6: Order Block (OB) Retest in Discount/Premium (5-Rule Perfect OB Checklist)
+  const activeObs = orderBlocks
+    .filter((ob) => !ob.isMitigated && ob.mitigationState !== 'INVALIDATED' && (ob.retestTouchCount ?? 0) <= 1)
+    .slice(-40);
   for (const ob of activeObs) {
     const isBull = ob.isBullish;
 
@@ -3561,6 +3620,8 @@ export function detectAll16SmcSetups(
     );
     if (!validation.isValid) continue;
 
+    const rulesChecklist = `Rules ${ob.perfectObRulesPassed ?? 4}/5 (1.Opposite Candle✓ 2.BOS${ob.hasBosBreak ? '✓' : '·'} 3.FVG Imbalance✓ 4.Liquidity Sweep${ob.hasLiquiditySweep ? '✓' : '·'} 5.Fresh 1st Retest✓ | Close beyond ${isBull ? ob.bottomPrice.toFixed(2) : ob.topPrice.toFixed(2)} = Invalid)`;
+
     setups.push(makeSetup(
       `setup_ob_${ob.id}`,
       isBull ? 'Bullish Demand Order Block Retest' : 'Bearish Supply Order Block Retest',
@@ -3571,7 +3632,7 @@ export function detectAll16SmcSetups(
       entry,
       sl,
       tp,
-      `High-volume ${isBull ? 'Demand' : 'Supply'} order block [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] confirmed. ${validation.reason}`
+      `High-volume ${isBull ? 'Demand' : 'Supply'} order block [${ob.bottomPrice.toFixed(2)} - ${ob.topPrice.toFixed(2)}] confirmed. ${rulesChecklist}. ${validation.reason}`
     ));
   }
 
@@ -4184,8 +4245,8 @@ export function calculateSMC(
   // 3. Detect Liquidity Levels & Mirrored Sweeps
   const { levels: liquidityLevels, sweeps } = detectLiquidity(candles, swings);
 
-  // 4. Detect Order Blocks & Breakers
-  const { orderBlocks, breakers } = detectOrderBlocksAndBreakers(candles, structureBreaks, opt);
+  // 4. Detect Order Blocks & Breakers (with 5-Rule Perfect OB Checklist: Opposite Candle, BOS, FVG, Liquidity Sweep, Fresh 1st Retest)
+  const { orderBlocks, breakers } = detectOrderBlocksAndBreakers(candles, structureBreaks, opt, sweeps);
 
   // 4.5 Derive Mitigation Blocks & Supply/Demand Zones strictly from closed-bar OBs & swings
   const mitigationBlocks: SmcOrderBlock[] = breakers
