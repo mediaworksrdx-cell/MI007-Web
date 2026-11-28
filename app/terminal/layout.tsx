@@ -10,23 +10,5 @@ export default function TerminalSectionLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [locked, setLocked] = React.useState<boolean | null>(null);
-
-  React.useEffect(() => {
-    const update = () => setLocked(evaluateSubscriptionAccess().isLockedOut);
-    update();
-    window.addEventListener('mi007-user-updated', update);
-    window.addEventListener('storage', update);
-    return () => {
-      window.removeEventListener('mi007-user-updated', update);
-      window.removeEventListener('storage', update);
-    };
-  }, []);
-
-  return (
-    <>
-      {locked !== false && <Navbar />}
-      <TerminalAccessGate>{children}</TerminalAccessGate>
-    </>
-  );
+  return <>{children}</>;
 }
