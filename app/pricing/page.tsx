@@ -306,7 +306,10 @@ export default function PricingPage() {
     <div className="min-h-screen bg-[var(--theme-bg)] text-[var(--theme-card-text)]">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-[112px] sm:pt-[124px] pb-14 space-y-10">
+      <main
+        style={{ paddingTop: '116px' }}
+        className="max-w-7xl mx-auto px-4 sm:px-6 pb-14 space-y-10"
+      >
         {/* Launch Offer Banner */}
         <div className="rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-amber-500/15 p-4 text-center shadow-md">
           <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black bg-amber-400 text-slate-950 mr-2">
